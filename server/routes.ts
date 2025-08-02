@@ -807,6 +807,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { items, ...orderUpdates } = req.body;
       
+      console.log('PATCH /api/orders - received customerId:', orderUpdates.customerId);
+      
       const updates = {
         ...orderUpdates,
         // Convert date strings to Date objects if present
@@ -817,6 +819,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       Object.keys(updates).forEach(key => 
         updates[key] === undefined && delete updates[key]
       );
+      
+      console.log('PATCH /api/orders - updates to apply:', updates);
       
       const order = await storage.updateOrder(req.params.id, updates);
       

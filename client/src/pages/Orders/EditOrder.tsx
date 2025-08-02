@@ -377,6 +377,9 @@ export default function EditOrder() {
       })),
     };
 
+    console.log('Sending order update with customerId:', customerId);
+    console.log('Full orderData:', orderData);
+    
     updateOrderMutation.mutate(orderData);
   };
 
