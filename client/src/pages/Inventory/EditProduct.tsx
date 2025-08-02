@@ -249,12 +249,12 @@ export default function EditProduct() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="categoryId">Category</Label>
-                <Select value={form.watch('categoryId')} onValueChange={(value) => form.setValue('categoryId', value)}>
+                <Select value={form.watch('categoryId') || 'none'} onValueChange={(value) => form.setValue('categoryId', value === 'none' ? '' : value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {categories?.map((category: any) => (
                       <SelectItem key={category.id} value={category.id}>
                         {category.name}
@@ -266,12 +266,12 @@ export default function EditProduct() {
 
               <div>
                 <Label htmlFor="warehouseId">Warehouse</Label>
-                <Select value={form.watch('warehouseId')} onValueChange={(value) => form.setValue('warehouseId', value)}>
+                <Select value={form.watch('warehouseId') || 'none'} onValueChange={(value) => form.setValue('warehouseId', value === 'none' ? '' : value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select warehouse" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {warehouses?.map((warehouse: any) => (
                       <SelectItem key={warehouse.id} value={warehouse.id}>
                         {warehouse.name}
@@ -283,12 +283,12 @@ export default function EditProduct() {
 
               <div>
                 <Label htmlFor="supplierId">Supplier</Label>
-                <Select value={form.watch('supplierId')} onValueChange={(value) => form.setValue('supplierId', value)}>
+                <Select value={form.watch('supplierId') || 'none'} onValueChange={(value) => form.setValue('supplierId', value === 'none' ? '' : value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select supplier" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {suppliers?.map((supplier: any) => (
                       <SelectItem key={supplier.id} value={supplier.id}>
                         {supplier.name}

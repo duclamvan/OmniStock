@@ -494,12 +494,12 @@ export default function EditOrder() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="discountType">Discount Type</Label>
-                <Select value={form.watch('discountType')} onValueChange={(value) => form.setValue('discountType', value as any)}>
+                <Select value={form.watch('discountType') || 'none'} onValueChange={(value) => form.setValue('discountType', value === 'none' ? undefined : value as any)}>
                   <SelectTrigger>
                     <SelectValue placeholder="No discount" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No discount</SelectItem>
+                    <SelectItem value="none">No discount</SelectItem>
                     <SelectItem value="flat">Flat Amount</SelectItem>
                     <SelectItem value="rate">Percentage</SelectItem>
                   </SelectContent>
