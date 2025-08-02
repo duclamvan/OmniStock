@@ -175,6 +175,12 @@ export interface IStorage {
   getSettings(): Promise<Setting[]>;
   getSetting(key: string): Promise<Setting | undefined>;
   setSetting(setting: InsertSetting): Promise<Setting>;
+  
+  // Utility Functions
+  generateSKU(categoryName: string, productName: string): Promise<string>;
+  calculateAverageImportCost(existingProduct: Product, newQuantity: number, newImportCost: number, currency: string): Promise<{ importCostUsd?: string; importCostCzk?: string; importCostEur?: string }>;
+  generateShipmentId(shippingMethod: string, shippingCarrier: string): Promise<string>;
+  getActiveSalesForProduct(productId: string, categoryId: string | null): Promise<Sale[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -614,18 +620,43 @@ export class DatabaseStorage implements IStorage {
         )
       );
 
-    const totalRevenueToday = shippedOrdersToday.reduce(
-      (sum, order) => sum + parseFloat(order.grandTotal || '0'), 0
-    );
-
-    const totalProfitToday = shippedOrdersToday.reduce((sum, order) => {
-      const revenue = parseFloat(order.grandTotal || '0');
+    // Calculate revenue according to formula: Grand Total - Tax - Shipping Cost
+    const totalRevenueToday = shippedOrdersToday.reduce((sum, order) => {
+      const grandTotal = parseFloat(order.grandTotal || '0');
       const tax = parseFloat(order.taxAmount || '0');
-      const shipping = parseFloat(order.shippingCost || '0');
-      const actualShipping = parseFloat(order.actualShippingCost || '0');
-      // Simplified profit calculation (would need order items and import costs for accurate calculation)
-      return sum + (revenue - tax - (shipping - actualShipping));
+      const shippingCost = parseFloat(order.shippingCost || '0');
+      return sum + (grandTotal - tax - shippingCost);
     }, 0);
+
+    // Calculate profit according to formula: Grand Total - (Import Cost x quantity) - Tax - Discount - (Shipping paid - Actual Shipping Cost)
+    let totalProfitToday = 0;
+    for (const order of shippedOrdersToday) {
+      if (order.orderStatus === 'shipped' && order.paymentStatus === 'paid') {
+        const grandTotal = parseFloat(order.grandTotal || '0');
+        const tax = parseFloat(order.taxAmount || '0');
+        // Calculate discount from order items
+        const discount = parseFloat(order.discountValue || '0');
+        const shippingPaid = parseFloat(order.shippingCost || '0');
+        const actualShipping = parseFloat(order.actualShippingCost || '0');
+        
+        // Get order items with product costs
+        const items = await this.getOrderItems(order.id);
+        let productCosts = 0;
+        
+        for (const item of items) {
+          if (item.productId) {
+            const product = await this.getProductById(item.productId);
+            if (product) {
+              const importCost = parseFloat(product.importCostCzk || product.importCostEur || product.importCostUsd || '0');
+              productCosts += importCost * item.quantity;
+            }
+          }
+        }
+        
+        const profit = grandTotal - productCosts - tax - discount - (shippingPaid - actualShipping);
+        totalProfitToday += profit;
+      }
+    }
 
     const thisMonthRevenue = shippedOrdersThisMonth.reduce(
       (sum, order) => sum + parseFloat(order.grandTotal || '0'), 0
@@ -852,6 +883,110 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return newSetting;
+  }
+  
+  // Utility Functions
+  async generateSKU(categoryName: string, productName: string): Promise<string> {
+    // Format: X-CAT-PRODUCTNAME (max 10 chars for product part)
+    const categoryPrefix = categoryName.substring(0, 3).toUpperCase();
+    const productPart = productName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 10).toUpperCase();
+    const baseSkU = `X-${categoryPrefix}-${productPart}`;
+    
+    // Check if SKU exists
+    let sku = baseSkU;
+    let counter = 1;
+    while (await this.getProductBySku(sku)) {
+      sku = `${baseSkU}-${String(counter).padStart(2, '0')}`;
+      counter++;
+    }
+    
+    return sku;
+  }
+  
+  async calculateAverageImportCost(existingProduct: Product, newQuantity: number, newImportCost: number, currency: string): Promise<{ importCostUsd?: string; importCostCzk?: string; importCostEur?: string }> {
+    const existingQuantity = existingProduct.quantity || 0;
+    const totalQuantity = existingQuantity + newQuantity;
+    
+    // Get existing import cost in the same currency
+    let existingCost = 0;
+    if (currency === 'USD') existingCost = parseFloat(existingProduct.importCostUsd || '0');
+    else if (currency === 'CZK') existingCost = parseFloat(existingProduct.importCostCzk || '0');
+    else if (currency === 'EUR') existingCost = parseFloat(existingProduct.importCostEur || '0');
+    
+    // Calculate weighted average
+    const totalCost = (existingCost * existingQuantity) + (newImportCost * newQuantity);
+    const averageCost = totalQuantity > 0 ? (totalCost / totalQuantity).toFixed(2) : '0';
+    
+    // Return updated costs
+    const result: { importCostUsd?: string; importCostCzk?: string; importCostEur?: string } = {};
+    if (currency === 'USD') result.importCostUsd = averageCost;
+    else if (currency === 'CZK') result.importCostCzk = averageCost;
+    else if (currency === 'EUR') result.importCostEur = averageCost;
+    
+    return result;
+  }
+  
+  async generateShipmentId(shippingMethod: string, shippingCarrier: string): Promise<string> {
+    // Format: #METHOD-CARRIER-YYYYMMDDXX
+    const methodMap: { [key: string]: string } = {
+      'Railway general': 'RAIL-GEN',
+      'Sea general': 'SEA-GEN',
+      'Railway sensitive': 'RAIL-SEN',
+      'Sea sensitive': 'SEA-SEN',
+      'Express Air': 'AIR-EXP',
+      'Air DDP': 'AIR-DDP',
+      'Local truck': 'TRUCK',
+      'Post': 'POST',
+      'Pickup': 'PICKUP',
+    };
+    
+    const methodCode = methodMap[shippingMethod] || shippingMethod.substring(0, 8).toUpperCase();
+    const carrierCode = shippingCarrier.substring(0, 3).toUpperCase();
+    
+    const today = new Date();
+    const dateStr = today.getFullYear() + 
+                   String(today.getMonth() + 1).padStart(2, '0') + 
+                   String(today.getDate()).padStart(2, '0');
+    
+    // Find last shipment ID for today
+    const prefix = `#${methodCode}-${carrierCode}-${dateStr}`;
+    const [lastShipment] = await db
+      .select()
+      .from(incomingShipments)
+      .where(like(incomingShipments.shipmentId, `${prefix}%`))
+      .orderBy(desc(incomingShipments.shipmentId))
+      .limit(1);
+    
+    let sequence = 1;
+    if (lastShipment) {
+      const lastSeq = parseInt(lastShipment.shipmentId.slice(-2));
+      sequence = lastSeq + 1;
+    }
+    
+    return `${prefix}${String(sequence).padStart(2, '0')}`;
+  }
+  
+  async getActiveSalesForProduct(productId: string, categoryId: string | null): Promise<Sale[]> {
+    const today = new Date();
+    
+    const activeSales = await db
+      .select()
+      .from(sales)
+      .where(
+        and(
+          eq(sales.status, 'active'),
+          lte(sales.dateFrom, today),
+          gte(sales.dateTo, today)
+        )
+      );
+    
+    return activeSales.filter(sale => {
+      if (sale.applicationScope === 'all_products') return true;
+      if (sale.applicationScope === 'specific_product' && sale.targetProductIds?.includes(productId)) return true;
+      if (sale.applicationScope === 'specific_category' && categoryId && sale.targetCategoryIds?.includes(categoryId)) return true;
+      if (sale.applicationScope === 'selected_products' && sale.targetProductIds?.includes(productId)) return true;
+      return false;
+    });
   }
 }
 

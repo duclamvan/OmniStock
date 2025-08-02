@@ -203,6 +203,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/products', isAuthenticated, async (req: any, res) => {
     try {
       const data = insertProductSchema.parse(req.body);
+      
+      // Check if product with same name and SKU exists
+      if (data.sku) {
+        const existingProduct = await storage.getProductBySku(data.sku);
+        if (existingProduct && existingProduct.name === data.name) {
+          // Calculate average import cost
+          const importCurrency = data.importCostUsd ? 'USD' : data.importCostCzk ? 'CZK' : 'EUR';
+          const importCost = parseFloat(data.importCostUsd || data.importCostCzk || data.importCostEur || '0');
+          const newCosts = await storage.calculateAverageImportCost(
+            existingProduct,
+            data.quantity || 0,
+            importCost,
+            importCurrency
+          );
+          
+          // Update existing product
+          const updatedProduct = await storage.updateProduct(existingProduct.id, {
+            quantity: (existingProduct.quantity || 0) + (data.quantity || 0),
+            ...newCosts,
+          });
+          
+          await storage.createUserActivity({
+            userId: String(req.user.claims.sub),
+            action: 'updated',
+            entityType: 'product',
+            entityId: updatedProduct.id,
+            description: `Added ${data.quantity} units to existing product: ${updatedProduct.name}`,
+          });
+          
+          return res.json(updatedProduct);
+        }
+      }
+      
       const product = await storage.createProduct(data);
       
       await storage.createUserActivity({
@@ -386,6 +419,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating order:", error);
       res.status(500).json({ message: "Failed to update order" });
+    }
+  });
+
+  // Generate SKU endpoint
+  app.post('/api/generate-sku', isAuthenticated, async (req, res) => {
+    try {
+      const { categoryName, productName } = req.body;
+      if (!categoryName || !productName) {
+        return res.status(400).json({ message: "Category name and product name are required" });
+      }
+      
+      const sku = await storage.generateSKU(categoryName, productName);
+      res.json({ sku });
+    } catch (error) {
+      console.error("Error generating SKU:", error);
+      res.status(500).json({ message: "Failed to generate SKU" });
     }
   });
 
