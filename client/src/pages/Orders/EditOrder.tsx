@@ -368,7 +368,8 @@ export default function EditOrder() {
         
         console.log('Creating new customer:', customerData);
         const response = await apiRequest('POST', '/api/customers', customerData);
-        customerId = response.id;
+        const customerResponse = await response.json();
+        customerId = customerResponse.id;
         console.log('New customer created with ID:', customerId);
         
         // Update selectedCustomer with the new ID

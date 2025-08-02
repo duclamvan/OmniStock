@@ -169,7 +169,7 @@ export default function AddOrder() {
       // Check if we have a selected customer without an ID (new customer)
       if (selectedCustomer && !selectedCustomer.id) {
         console.log('Creating new customer:', selectedCustomer);
-        const customerResponse = await apiRequest('POST', '/api/customers', {
+        const customerData = {
           name: selectedCustomer.name,
           facebookName: selectedCustomer.facebookName || undefined,
           facebookUrl: selectedCustomer.facebookUrl || undefined,
@@ -182,9 +182,13 @@ export default function AddOrder() {
           country: selectedCustomer.country || undefined,
           company: selectedCustomer.company || undefined,
           type: selectedCustomer.type || 'regular',
-        });
-        console.log('New customer created with ID:', customerResponse.id);
-        data.customerId = customerResponse.id;
+        };
+        console.log('Sending customer data:', customerData);
+        const response = await apiRequest('POST', '/api/customers', customerData);
+        const customerResponse = await response.json();
+        console.log('Customer API response:', customerResponse);
+        console.log('New customer created with ID:', customerResponse?.id);
+        data.customerId = customerResponse?.id;
       } else if (selectedCustomer?.id) {
         // Use the existing customer's ID
         data.customerId = selectedCustomer.id;

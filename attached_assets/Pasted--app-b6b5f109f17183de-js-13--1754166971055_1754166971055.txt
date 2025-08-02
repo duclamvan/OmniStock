@@ -1,0 +1,68 @@
+_app-b6b5f109f17183de.js:13 
+      /////////////////////
+   ///////////////////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////        Curious and driven?
+  ///////////////@@@@@@@///////        Work with us!
+  ///////////////@@@@@@@///////
+  ///////////////@@@@@@@///////        https://join.replit.com/hack.with.us
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@#//////////////
+   ///////////////////////////
+      /////////////////////
+      
+_app-b6b5f109f17183de.js:13 [LaunchDarkly] LaunchDarkly client initialized
+OmniStock:1 Banner not shown: beforeinstallpromptevent.preventDefault() called. The page must call beforeinstallpromptevent.prompt() to show the banner.
+Grammarly-check.js:1 [Violation] Permissions policy violation: unload is not allowed in this document.
+(anonymous) @ Grammarly-check.js:1
+ Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+_ @ framework-9bfc368571c1b99b.js:1
+ Unrecognized feature: 'battery'.
+_ @ framework-9bfc368571c1b99b.js:1
+ Unrecognized feature: 'layout-animations'.
+_ @ framework-9bfc368571c1b99b.js:1
+ Unrecognized feature: 'legacy-image-formats'.
+_ @ framework-9bfc368571c1b99b.js:1
+ Unrecognized feature: 'navigation-override'.
+_ @ framework-9bfc368571c1b99b.js:1
+ Unrecognized feature: 'oversized-images'.
+_ @ framework-9bfc368571c1b99b.js:1
+ Unrecognized feature: 'publickey-credentials'.
+_ @ framework-9bfc368571c1b99b.js:1
+ Unrecognized feature: 'unoptimized-images'.
+_ @ framework-9bfc368571c1b99b.js:1
+ Unrecognized feature: 'unsized-media'.
+_ @ framework-9bfc368571c1b99b.js:1
+ Unrecognized feature: 'pointer-lock'.
+_ @ framework-9bfc368571c1b99b.js:1
+ Allow attribute will take precedence over 'allowfullscreen'.
+_ @ framework-9bfc368571c1b99b.js:1
+ Allow attribute will take precedence over 'allowpaymentrequest'.
+_ @ framework-9bfc368571c1b99b.js:1
+workspace_iframe.html:32 Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+workspace_iframe.html:32 Unrecognized feature: 'battery'.
+workspace_iframe.html:32 Unrecognized feature: 'layout-animations'.
+workspace_iframe.html:32 Unrecognized feature: 'legacy-image-formats'.
+workspace_iframe.html:32 Unrecognized feature: 'navigation-override'.
+workspace_iframe.html:32 Unrecognized feature: 'oversized-images'.
+workspace_iframe.html:32 Unrecognized feature: 'publickey-credentials'.
+workspace_iframe.html:32 Unrecognized feature: 'unoptimized-images'.
+workspace_iframe.html:32 Unrecognized feature: 'unsized-media'.
+workspace_iframe.html:32 Allow attribute will take precedence over 'allowfullscreen'.
+workspace_iframe.html:32 Allow attribute will take precedence over 'allowpaymentrequest'.
+6e81966b-af7d-438d-b68d-89d915c5170b-00-2fold30az50k4.riker.replit.dev/api/orders/481294f5-5a8e-456f-8ec0-5a84274d0f56:1  Failed to load resource: the server responded with a status of 404 (Not Found)
+6e81966b-af7d-438d-b68d-89d915c5170b-00-2fold30az50k4.riker.replit.dev/api/orders/2f0c5a7a-fe5f-411e-85ec-4d1e6def3aab:1  Failed to load resource: the server responded with a status of 404 (Not Found)
+6e81966b-af7d-438d-b68d-89d915c5170b-00-2fold30az50k4.riker.replit.dev/api/orders/df2e6268-4054-4bf9-981a-a99826f7655b:1  Failed to load resource: the server responded with a status of 404 (Not Found)
+Console.js:61 New customer selected (no ID yet): Object
+Console.js:61 Creating order with customerId: undefined
+Console.js:61 New customer selected (no ID yet): Object
+Console.js:61 Creating new customer: Object
+Console.js:61 New customer created with ID: undefined
+Console.js:61 Sending order update with customerId: undefined
+Console.js:61 Full orderData: Object
+Console.js:61 New customer selected (no ID yet): Object
+Console.js:61 Creating new customer: Object
+Console.js:61 New customer created with ID: undefined
+Console.js:61 Creating order with customerId: undefined
