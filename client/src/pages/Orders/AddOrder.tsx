@@ -732,9 +732,12 @@ export default function AddOrder() {
                       }}
                       onPaste={(e) => {
                         // Parse address after paste
+                        const target = e.currentTarget;
                         setTimeout(() => {
-                          const pastedText = e.currentTarget.value;
-                          parseAddress(pastedText);
+                          if (target && target.value) {
+                            const pastedText = target.value;
+                            parseAddress(pastedText);
+                          }
                         }, 100);
                       }}
                       placeholder="Paste full address here (e.g., Dragounská 2545/9A, Cheb, 35002, Karlovarsky kraj, Czechia)"
