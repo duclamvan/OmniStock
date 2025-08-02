@@ -168,6 +168,7 @@ export default function AddOrder() {
     mutationFn: async (data: any) => {
       // If there's a new customer, create it first
       if (showNewCustomerForm && newCustomer.name) {
+        console.log('Creating new customer:', newCustomer);
         const customerResponse = await apiRequest('POST', '/api/customers', {
           name: newCustomer.name,
           facebookName: newCustomer.facebookName || undefined,
@@ -182,9 +183,14 @@ export default function AddOrder() {
           company: newCustomer.company || undefined,
           type: newCustomer.type || 'regular',
         });
+        console.log('New customer created with ID:', customerResponse.id);
         data.customerId = customerResponse.id;
+      } else if (selectedCustomer?.id) {
+        // Use the selected customer's ID
+        data.customerId = selectedCustomer.id;
       }
       
+      console.log('Creating order with customerId:', data.customerId);
       await apiRequest('POST', '/api/orders', data);
     },
     onSuccess: () => {
@@ -298,7 +304,7 @@ export default function AddOrder() {
 
     const orderData = {
       ...data,
-      customerId: selectedCustomer?.id,
+      // Don't override customerId - it's set in createOrderMutation if a new customer is created
       subtotal: calculateSubtotal().toFixed(2),
       taxAmount: calculateTax().toFixed(2),
       grandTotal: calculateGrandTotal().toFixed(2),
@@ -680,6 +686,25 @@ export default function AddOrder() {
                     </div>
                   </div>
                 </div>
+                
+                {/* Add customer to order button */}
+                <Button
+                  type="button"
+                  className="w-full mt-4"
+                  onClick={() => {
+                    if (newCustomer.name) {
+                      // Set the new customer without an ID - it will be created on save
+                      setSelectedCustomer({
+                        ...newCustomer,
+                        id: undefined // Explicitly set to undefined to trigger creation
+                      });
+                      setShowNewCustomerForm(false);
+                      console.log('New customer selected (no ID yet):', newCustomer);
+                    }
+                  }}
+                >
+                  Add Customer to Order
+                </Button>
               </div>
             )}
           </CardContent>
