@@ -770,10 +770,22 @@ export default function AddOrder() {
                         </div>
                         <div className="text-right">
                           <div className="font-medium text-slate-900">
-                            {formatCurrency(parseFloat(product.sellingPrice || product.retailPrice || '0'), product.currency || 'EUR')}
+                            {(() => {
+                              const selectedCurrency = form.watch('currency') || 'EUR';
+                              let price = 0;
+                              if (selectedCurrency === 'CZK' && product.priceCzk) {
+                                price = parseFloat(product.priceCzk);
+                              } else if (selectedCurrency === 'EUR' && product.priceEur) {
+                                price = parseFloat(product.priceEur);
+                              } else {
+                                // Fallback to any available price
+                                price = parseFloat(product.priceEur || product.priceCzk || '0');
+                              }
+                              return formatCurrency(price, selectedCurrency);
+                            })()}
                           </div>
                           <div className="text-sm text-slate-500">
-                            Stock: {product.stockQuantity || product.currentStock || 0}
+                            Stock: {product.stockQuantity || 0}
                           </div>
                           {product.warehouseName && (
                             <div className="text-xs text-slate-400">{product.warehouseName}</div>
