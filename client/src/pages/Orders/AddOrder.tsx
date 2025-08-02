@@ -125,6 +125,16 @@ export default function AddOrder() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Fetch all products for real-time filtering
+  const { data: allProducts } = useQuery({
+    queryKey: ['/api/products'],
+  });
+
+  // Fetch all customers for real-time filtering
+  const { data: allCustomers } = useQuery({
+    queryKey: ['/api/customers'],
+  });
+
   // Update product prices when currency changes
   const selectedCurrency = form.watch('currency');
   useEffect(() => {
@@ -153,16 +163,6 @@ export default function AddOrder() {
       })
     );
   }, [selectedCurrency, allProducts]);
-
-  // Fetch all products for real-time filtering
-  const { data: allProducts } = useQuery({
-    queryKey: ['/api/products'],
-  });
-
-  // Fetch all customers for real-time filtering
-  const { data: allCustomers } = useQuery({
-    queryKey: ['/api/customers'],
-  });
 
   const createOrderMutation = useMutation({
     mutationFn: async (data: any) => {
