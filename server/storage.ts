@@ -450,7 +450,36 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(customers, eq(orders.customerId, customers.id))
       .orderBy(desc(orders.createdAt));
     
-    return ordersWithCustomers as any;
+    // Get order items with product details for each order
+    const ordersWithItems = await Promise.all(
+      ordersWithCustomers.map(async (order: any) => {
+        const items = await db
+          .select({
+            id: orderItems.id,
+            productId: orderItems.productId,
+            productName: orderItems.productName,
+            sku: orderItems.sku,
+            quantity: orderItems.quantity,
+            price: orderItems.price,
+            discount: orderItems.discount,
+            tax: orderItems.tax,
+            total: orderItems.total,
+            product: {
+              id: products.id,
+              importCostCzk: products.importCostCzk,
+              importCostEur: products.importCostEur,
+              importCostUsd: products.importCostUsd,
+            }
+          })
+          .from(orderItems)
+          .leftJoin(products, eq(orderItems.productId, products.id))
+          .where(eq(orderItems.orderId, order.id));
+        
+        return { ...order, items };
+      })
+    );
+    
+    return ordersWithItems as any;
   }
 
   async getOrderById(id: string): Promise<Order | undefined> {
@@ -528,7 +557,36 @@ export class DatabaseStorage implements IStorage {
       .where(eq(orders.orderStatus, status as any))
       .orderBy(desc(orders.createdAt));
     
-    return ordersWithCustomers as any;
+    // Get order items with product details for each order
+    const ordersWithItems = await Promise.all(
+      ordersWithCustomers.map(async (order: any) => {
+        const items = await db
+          .select({
+            id: orderItems.id,
+            productId: orderItems.productId,
+            productName: orderItems.productName,
+            sku: orderItems.sku,
+            quantity: orderItems.quantity,
+            price: orderItems.price,
+            discount: orderItems.discount,
+            tax: orderItems.tax,
+            total: orderItems.total,
+            product: {
+              id: products.id,
+              importCostCzk: products.importCostCzk,
+              importCostEur: products.importCostEur,
+              importCostUsd: products.importCostUsd,
+            }
+          })
+          .from(orderItems)
+          .leftJoin(products, eq(orderItems.productId, products.id))
+          .where(eq(orderItems.orderId, order.id));
+        
+        return { ...order, items };
+      })
+    );
+    
+    return ordersWithItems as any;
   }
 
   async getOrdersByPaymentStatus(paymentStatus: string): Promise<Order[]> {

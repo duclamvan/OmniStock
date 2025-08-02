@@ -153,20 +153,32 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     }
   };
 
+  // Calculate profit for each order
+  const calculateOrderProfit = (order: any) => {
+    // Calculate total cost from order items
+    let totalCost = 0;
+    if (order.items && Array.isArray(order.items)) {
+      order.items.forEach((item: any) => {
+        // Get product cost based on currency
+        let itemCost = 0;
+        if (order.currency === 'CZK' && item.product?.importCostCzk) {
+          itemCost = parseFloat(item.product.importCostCzk) * item.quantity;
+        } else if (order.currency === 'EUR' && item.product?.importCostEur) {
+          itemCost = parseFloat(item.product.importCostEur) * item.quantity;
+        } else if (order.currency === 'USD' && item.product?.importCostUsd) {
+          itemCost = parseFloat(item.product.importCostUsd) * item.quantity;
+        }
+        totalCost += itemCost;
+      });
+    }
+    
+    const revenue = parseFloat(order.grandTotal || '0');
+    const profit = revenue - totalCost;
+    return profit;
+  };
+
   // Define table columns
   const columns: DataTableColumn<any>[] = [
-    {
-      key: "orderId",
-      header: "Order ID",
-      sortable: true,
-      cell: (order) => (
-        <Link href={`/orders/${order.id}/edit`}>
-          <span className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer">
-            {order.orderId || '#' + order.id.slice(0, 8)}
-          </span>
-        </Link>
-      ),
-    },
     {
       key: "customer",
       header: "Customer",
@@ -212,10 +224,24 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       cell: (order) => getPaymentStatusBadge(order.paymentStatus),
     },
     {
+      key: "profit",
+      header: "Total Profit",
+      sortable: true,
+      cell: (order) => {
+        const profit = calculateOrderProfit(order);
+        return (
+          <span className={profit >= 0 ? 'text-green-600' : 'text-red-600'}>
+            {formatCurrency(profit, order.currency)}
+          </span>
+        );
+      },
+      className: "text-right",
+    },
+    {
       key: "actions",
       header: "Actions",
       cell: (order) => (
-        <Link href={`/orders/edit/${order.id}`}>
+        <Link href={`/orders/${order.id}/edit`}>
           <Button size="sm" variant="ghost">
             <Edit className="h-4 w-4" />
           </Button>
