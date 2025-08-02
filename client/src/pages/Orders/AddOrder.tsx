@@ -166,27 +166,27 @@ export default function AddOrder() {
 
   const createOrderMutation = useMutation({
     mutationFn: async (data: any) => {
-      // If there's a new customer, create it first
-      if (showNewCustomerForm && newCustomer.name) {
-        console.log('Creating new customer:', newCustomer);
+      // Check if we have a selected customer without an ID (new customer)
+      if (selectedCustomer && !selectedCustomer.id) {
+        console.log('Creating new customer:', selectedCustomer);
         const customerResponse = await apiRequest('POST', '/api/customers', {
-          name: newCustomer.name,
-          facebookName: newCustomer.facebookName || undefined,
-          facebookUrl: newCustomer.facebookUrl || undefined,
-          email: newCustomer.email || undefined,
-          phone: newCustomer.phone || undefined,
-          address: newCustomer.address || undefined,
-          city: newCustomer.city || undefined,
-          state: newCustomer.state || undefined,
-          zipCode: newCustomer.zipCode || undefined,
-          country: newCustomer.country || undefined,
-          company: newCustomer.company || undefined,
-          type: newCustomer.type || 'regular',
+          name: selectedCustomer.name,
+          facebookName: selectedCustomer.facebookName || undefined,
+          facebookUrl: selectedCustomer.facebookUrl || undefined,
+          email: selectedCustomer.email || undefined,
+          phone: selectedCustomer.phone || undefined,
+          address: selectedCustomer.address || undefined,
+          city: selectedCustomer.city || undefined,
+          state: selectedCustomer.state || undefined,
+          zipCode: selectedCustomer.zipCode || undefined,
+          country: selectedCustomer.country || undefined,
+          company: selectedCustomer.company || undefined,
+          type: selectedCustomer.type || 'regular',
         });
         console.log('New customer created with ID:', customerResponse.id);
         data.customerId = customerResponse.id;
       } else if (selectedCustomer?.id) {
-        // Use the selected customer's ID
+        // Use the existing customer's ID
         data.customerId = selectedCustomer.id;
       }
       
