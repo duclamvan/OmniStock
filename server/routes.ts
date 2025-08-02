@@ -804,7 +804,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/orders/:id', async (req: any, res) => {
     try {
-      const updates = req.body;
+      const updates = {
+        ...req.body,
+        // Convert date strings to Date objects if present
+        shippedAt: req.body.shippedAt ? new Date(req.body.shippedAt) : undefined,
+      };
+      
+      // Remove undefined fields
+      Object.keys(updates).forEach(key => 
+        updates[key] === undefined && delete updates[key]
+      );
+      
       const order = await storage.updateOrder(req.params.id, updates);
       
       await storage.createUserActivity({

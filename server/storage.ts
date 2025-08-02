@@ -663,25 +663,43 @@ export class DatabaseStorage implements IStorage {
       (sum, order) => sum + parseFloat(order.grandTotal || '0'), 0
     );
 
-    const thisMonthProfit = shippedOrdersThisMonth.reduce((sum, order) => {
+    // Calculate this month's profit with proper cost deduction
+    let thisMonthProfit = 0;
+    for (const order of shippedOrdersThisMonth) {
       const revenue = parseFloat(order.grandTotal || '0');
       const tax = parseFloat(order.taxAmount || '0');
+      const discount = parseFloat(order.discountValue || '0');
       const shipping = parseFloat(order.shippingCost || '0');
       const actualShipping = parseFloat(order.actualShippingCost || '0');
-      return sum + (revenue - tax - (shipping - actualShipping));
-    }, 0);
+      
+      // Estimate product costs as 40% of subtotal (for mock data)
+      const subtotal = parseFloat(order.subtotal || '0');
+      const estimatedCost = subtotal * 0.4;
+      
+      const profit = revenue - estimatedCost - tax - discount - (shipping - actualShipping);
+      thisMonthProfit += profit;
+    }
 
     const lastMonthRevenue = shippedOrdersLastMonth.reduce(
       (sum, order) => sum + parseFloat(order.grandTotal || '0'), 0
     );
 
-    const lastMonthProfit = shippedOrdersLastMonth.reduce((sum, order) => {
+    // Calculate last month's profit with proper cost deduction
+    let lastMonthProfit = 0;
+    for (const order of shippedOrdersLastMonth) {
       const revenue = parseFloat(order.grandTotal || '0');
       const tax = parseFloat(order.taxAmount || '0');
+      const discount = parseFloat(order.discountValue || '0');
       const shipping = parseFloat(order.shippingCost || '0');
       const actualShipping = parseFloat(order.actualShippingCost || '0');
-      return sum + (revenue - tax - (shipping - actualShipping));
-    }, 0);
+      
+      // Estimate product costs as 40% of subtotal (for mock data)
+      const subtotal = parseFloat(order.subtotal || '0');
+      const estimatedCost = subtotal * 0.4;
+      
+      const profit = revenue - estimatedCost - tax - discount - (shipping - actualShipping);
+      lastMonthProfit += profit;
+    }
 
     return {
       fulfillOrdersToday: fulfillOrdersToday.count,
