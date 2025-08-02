@@ -211,6 +211,30 @@ export default function AddCustomer() {
     },
     // Germany addresses (Bavaria region near Czech border)
     {
+      formatted: "Herforder Straße 8A, 33602 Bielefeld, Germany",
+      street: "Herforder Straße 8A",
+      city: "Bielefeld",
+      state: "North Rhine-Westphalia",
+      zipCode: "33602",
+      country: "Germany"
+    },
+    {
+      formatted: "Herforder Straße 12, 33602 Bielefeld, Germany",
+      street: "Herforder Straße 12",
+      city: "Bielefeld",
+      state: "North Rhine-Westphalia",
+      zipCode: "33602",
+      country: "Germany"
+    },
+    {
+      formatted: "Herforder Straße 156, 33609 Bielefeld, Germany",
+      street: "Herforder Straße 156",
+      city: "Bielefeld",
+      state: "North Rhine-Westphalia",
+      zipCode: "33609",
+      country: "Germany"
+    },
+    {
       formatted: "Ludwigstraße 19, 80539 Munich, Germany",
       street: "Ludwigstraße 19",
       city: "Munich",
@@ -842,7 +866,7 @@ export default function AddCustomer() {
 
   // Address search with fuzzy matching
   const searchAddresses = (query: string) => {
-    if (query.length < 3) {
+    if (query.length < 2) {
       setAddressSuggestions([]);
       setShowAddressDropdown(false);
       return;
@@ -853,36 +877,54 @@ export default function AddCustomer() {
 
     // Simulate async search with timeout
     setTimeout(() => {
-      const searchTerms = query.toLowerCase().split(/\s+/);
+      const queryLower = query.toLowerCase();
+      const searchTerms = queryLower.split(/[\s,;]+/).filter(term => term.length > 0);
       
       const results = mockAddresses
         .map(address => {
           let score = 0;
           const addressLower = address.formatted.toLowerCase();
           
+          // Check if the full query string appears in the address
+          if (addressLower.includes(queryLower)) {
+            score += queryLower.length * 10; // High score for full match
+          }
+          
           // Check each search term
+          let matchedTerms = 0;
           searchTerms.forEach(term => {
             if (addressLower.includes(term)) {
-              score += term.length * 2; // Give more weight to longer matches
+              matchedTerms++;
+              score += term.length * 3;
               
-              // Bonus for exact word matches
-              const words = addressLower.split(/\s+/);
-              if (words.some(word => word === term)) {
-                score += term.length;
+              // Bonus for matching at word boundaries
+              const regex = new RegExp(`\\b${term}`, 'i');
+              if (regex.test(address.formatted)) {
+                score += term.length * 2;
               }
             }
           });
           
+          // Bonus for matching all terms
+          if (searchTerms.length > 0 && matchedTerms === searchTerms.length) {
+            score += 20;
+          }
+          
           // Additional scoring for specific field matches
-          if (address.city && searchTerms.some(term => address.city.toLowerCase().includes(term))) {
-            score += 5;
-          }
-          if (address.zipCode && searchTerms.some(term => address.zipCode.includes(term))) {
-            score += 10; // High score for zip code matches
-          }
-          if (address.country && searchTerms.some(term => address.country.toLowerCase().includes(term))) {
-            score += 3;
-          }
+          searchTerms.forEach(term => {
+            if (address.street && address.street.toLowerCase().includes(term)) {
+              score += 8;
+            }
+            if (address.city && address.city.toLowerCase().includes(term)) {
+              score += 6;
+            }
+            if (address.zipCode && address.zipCode.includes(term)) {
+              score += 15; // High score for zip code matches
+            }
+            if (address.country && address.country.toLowerCase().includes(term)) {
+              score += 4;
+            }
+          });
           
           return { address, score };
         })
@@ -1007,7 +1049,7 @@ export default function AddCustomer() {
                     searchAddresses(value);
                   }}
                   onFocus={() => {
-                    if (addressAutocomplete.length >= 3) {
+                    if (addressAutocomplete.length >= 2) {
                       searchAddresses(addressAutocomplete);
                     }
                   }}
