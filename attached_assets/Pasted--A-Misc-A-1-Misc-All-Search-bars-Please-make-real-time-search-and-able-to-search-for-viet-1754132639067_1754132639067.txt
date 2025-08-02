@@ -1,0 +1,602 @@
+# A Misc
+
+## A.1 Misc - All Search bars:
+
+- Please make real time search and able to search for vietnamese diacritics:
+    - e.g. search: Bao pha, found: Bào phá
+    - here is my code from my old inventory app:
+    
+    ```
+    <script>
+            function removeDiacritics(str) {
+                const vietnameseMap = {
+                'á': 'a', 'à': 'a', 'ả': 'a', 'ã': 'a', 'ạ': 'a',
+                'ă': 'a', 'ắ': 'a', 'ằ': 'a', 'ẳ': 'a', 'ẵ': 'a', 'ặ': 'a',
+                'â': 'a', 'ấ': 'a', 'ầ': 'a', 'ẩ': 'a', 'ẫ': 'a', 'ậ': 'a',
+                'đ': 'd',
+                'é': 'e', 'è': 'e', 'ẻ': 'e', 'ẽ': 'e', 'ẹ': 'e',
+                'ê': 'e', 'ế': 'e', 'ề': 'e', 'ể': 'e', 'ễ': 'e', 'ệ': 'e',
+                'í': 'i', 'ì': 'i', 'ỉ': 'i', 'ĩ': 'i', 'ị': 'i',
+                'ó': 'o', 'ò': 'o', 'ỏ': 'o', 'õ': 'o', 'ọ': 'o',
+                'ô': 'o', 'ố': 'o', 'ồ': 'o', 'ổ': 'o', 'ỗ': 'o', 'ộ': 'o',
+                'ơ': 'o', 'ớ': 'o', 'ờ': 'o', 'ở': 'o', 'ỡ': 'o', 'ợ': 'o',
+                'ú': 'u', 'ù': 'u', 'ủ': 'u', 'ũ': 'u', 'ụ': 'u',
+                'ư': 'u', 'ứ': 'u', 'ừ': 'u', 'ử': 'u', 'ữ': 'u', 'ự': 'u',
+                'ý': 'y', 'ỳ': 'y', 'ỷ': 'y', 'ỹ': 'y', 'ỵ': 'y'
+                };
+    
+                return str.split('').map(function(char) {
+                    return vietnameseMap[char] || char;
+                }).join('');
+            }
+    ```
+    
+
+## A.2 Misc - Bell icon at top bar
+
+- Show all notifications
+- Also show pop-ups for new orders, messages, **every new changes**
+
+A.3 Misc - API for tracking shipped orders via GLS:
+
+[Link](https://www.aftership.com/carriers/gls/api?utm_source=perplexity)
+
+# 0 Dashboard
+
+- For Profit and Revenue calculation please check this: [Block](https://www.notion.so/Davie-Inventory-Backend-179cfc66274e8003b758cf9513ae283f?pvs=21)
+
+- Fulfill Orders Today: Count of ALL Orders with **Status: To Fulfill**
+- Total Orders Today: Count of all Orders with **Status: Shipped** that has been marked as **Status: Shipped** today
+- Total Revenue Today: Sum of all Revenue from Orders with **Status: Shipped** that has been marked as **Status: Shipped** today
+- Total Profit Today: Sum of profit (Revenue-Product costs) from Orders with **Status: Shipped** that has been marked as **Status: Shipped** today
+- High score: If there is a new high score please add 🏆 emoji at the end
+    - e.g. High score: 100 🏆
+
+## 0.1 Dashboard - Revenue and Profit
+
+- Green - Profit, Revenue - Gray
+- Calculate total revenue and profit for each month from Orders
+
+## 0.2 Dashboard - Total Expenses
+
+- Same as [Reports - Total Expenses](https://www.notion.so/Davie-Inventory-Backend-179cfc66274e8003b758cf9513ae283f?pvs=21)
+
+## 0.3 Dashboard - Yearly Report
+
+- Dark blue - Purchased - Total Import cost from Purchases for each month
+- Light blue - Sold amount - Total revenue from all Orders for each month
+
+## 0.4 Dashboard - Unpaid Orders
+
+- Show all **Orders** filtered with **Status: Pending AND** **Payment Status: Pending**
+
+## 0.5 Dashboard - User Activities
+
+- Show ALL changes in inventory app
+    - like added new order, added new warehouse, sale, purchase, etc.
+
+## 0.6 Dashboard - Low in Stock
+
+- Show all Products in **Inventory** with ≤ [Low Stock Alert](https://www.notion.so/Davie-Inventory-Backend-179cfc66274e8003b758cf9513ae283f?pvs=21) value
+- and show all Products from **Inventory** with sorting from least quantity
+
+## 0.7 Dashboard - Monthly Financial Summary
+
+- Always show rows for this year only, add ability to show all rows
+
+- **Month** - Format MM-YY
+    - e.g. 06-2024
+- **Total Profit EUR** - Total profit from ALL ORDERS for each month and CONVERT CURRENCY of all order to EUR (profit calculation: check this: [block](https://www.notion.so/Davie-Inventory-Backend-179cfc66274e8003b758cf9513ae283f?pvs=21))
+- **Total Revenue EUR** - Total Revenue from ALL ORDERS for each month and CONVERT CURRENCY of all order to EUR (revenue calculation: check this: [block](https://www.notion.so/Davie-Inventory-Backend-179cfc66274e8003b758cf9513ae283f?pvs=21))
+
+- **Profit CZK Orders** - Show Profit from Orders that are in **Currency: CZK**
+- **Revenue CZK Orders** -  Show Revenue from Orders that are in **Currency: CZK**
+- **Profit EUR Orders** - Show Profit from Orders that are in **Currency: EUR**
+- **Revenue EUR Orders** - Show Revenue from Orders that are in **Currency: EUR**
+
+- **Total Profit CZK** - Convert **Total Profit EUR** to CZK from this row
+- **Total Revenue CZK** - Convert **Total Revenue EUR** to CZK from this row
+
+# 1 Orders
+
+- Left sidebar: Please use dropdown for each page in Orders
+- Order profit calculation: if **Order Status: Shipped** and **Payment Status: Paid** then the Order is finished, and prepare to calculate profit and revenue from this order
+    - **Profit** = Grand Total - (Import Cost of each Product x quantity) - Tax - Discount - (Shipping paid - Actual Shipping Cost)
+    - **Revenue** = Grand Total - Tax - Shipping Cost
+
+## 1.1 Orders - Add Order
+
+### 1.1.1 Orders - Add Order - Order Information:
+
+- Date - Autofill Today
+- Order ID: Autogenerate (e.g. 20240112001 = YYYYMMDDXXX)
+- Biller: Autofill Current user
+- Currency: CZK, EUR, USD, VND (this will determine the whole order’s currency, like shipping cost, etc.)
+- Order Priority: Autochoose Medium
+- Order Status: Pending (default) / To Fulfill / Shipped
+
+- Select Product:
+- Show a list of products from dropdown (realtime search)
+    - Include image of the product
+    - Product name
+    - Product price czk/eur
+    
+    - Click on barcode: Scan barcode EAN-13, Automatically add to Order List
+
+- Order List:
+    - Cells that can be edited for user input: Quantity, Price, Discount, Tax
+
+## 1.1.2 Orders - Add Order - Payment Details
+
+- Payment Status: Pending (default) / Paid / Pay Later
+- Discount Type: Flat / Rate
+- Shipping Method:
+- Shipping Cost: automatically search shipping method in settings and input the correct shipping cost
+- Actual Shipping Cost: the user will input the cost for example 4.95
+- Tax: Select from settings 0%, 19%, 21%
+- Grand Total:
+    - Automatically calculates grand total to this column
+    - If user edits this Grand total number then the total will be this number
+    - for example if the Order List total will be 101 eur, Grand total I can input like 100 eur, so it will add a row in Order List below Order Tax:
+        - Price Adjustment: 1 eur
+
+- Order List:
+- Copy formatted text
+    - Use same format as in Settings → Copy Invoice Format
+    - if there is discount, use the price after discount
+    - if there is tax, use the format will be:
+
+```
+TỔNG KẾT
+======================
+<item name> (<quantity> × <price>)
+======================
+<sum> = <subtotal> (+<shippingCost> ship) = <grandtotal> + <tax-percent> = <grandtotalaftertax>
+```
+
+- (delete Bank details)
+
+## 1.1.3 Orders - Add Order - Customer Details
+
+- Customer Name: Automatically appear dropdown to search customer name in real time from Customers database
+- Facebook Name: Automatically appear dropdown to search Facebook name in real time from Customers database
+- Facebook URL:
+    - Please rename this to Facebook ID
+    - automatically fill if customer exists
+- Address Autocomplete Cell: Search address just by typing a part of address and then it shows dropdown of the whole correct address → When Selected Extract it to Cells: City, ZIP Code, Location, Tel
+
+## 1.2 Orders - Order Details Page
+
+- Bank Details: Paste from Settings → Payment Details
+    - If Currency is EUR, then use PayPal and EUR Bank Details
+    - If Currency is CZK, then use only CZK Bank Details
+    - If Currency is VND, then use only VND Bank Details
+- Attached Document:
+    - Show an icon of file format and name, when clicked it will download
+- Print: Print invoice
+
+## 1.3 Orders - All
+
+- Export in XLS: Export selected rows in XLS format
+- Export in PDF: Export whole page in PDF format
+- Table:
+    - Automatically sort this table list by newest order
+    - … - show all other information related to order
+    - Show Entries: 10 (if I select 20, then it will remember that this page will be shown always 20)
+
+### 1.3.1 Orders - To Fulfill Orders
+
+- Please make this page a dedicated URL Link directly to To Fulfill Orders (app.daviesupply.com/orders/to-fulfill)
+- This page will be filtered by **Status: To Fulfill** from All Orders
+
+### 1.3.2. Orders - Shipped Orders
+
+- Please make this page a dedicated URL Link directly to To Fulfill Orders (app.daviesupply.com/orders/shipped)
+- This page will be filtered by **Status: Shipped** from All Orders
+
+### 1.3.3. Orders - Pay Later
+
+- Please make this page a dedicated URL Link directly to To Fulfill Orders (app.daviesupply.com/orders/pay-later)
+- This page will be filtered by **Payment status: Pay Later** and by **Status: Shipped** from All Orders
+
+### 1.3.4 Orders - Pre-Order
+
+- IMPORTANT: this page is not associated with All Orders, this is a separate page from Orders
+- Chat will be with link: https://messenger.com/t/<facebook-id>
+- Finish: Delete row
+
+### 1.3.4.1 Orders - Pre-Order - Add Pre-Order
+
+- (Please let Amir design a popup to add pre-order)
+- Cells: Customer Name, Facebook ID, Items (textbox), Date (today)
+
+# 2 Inventory
+
+- Automatically sort be newest added
+- Import Product from XLS sheet with this format:
+    - product name,category,warehouse,sku,priceczk,priceeur,supplier,supplier link, quantity, import cost usd,import cost czk,import cost eur
+    - Please edit Note text under Upload CSV file: product-name,category,warehouse,sku,priceczk,priceeur,supplier,supplier link,quantity,import cost usd,import cost czk,import cost eur
+
+## 2.1 Inventory - Add Product
+
+- Upload Photo: automatically compress photo to save storage
+- Product Name: Show dropdown of all products in Inventory, if the product name as well as SKU is same, the product quantity will be added to an existing product and the Import Cost will be recalculated (Average Purchase Cost)
+    - Calculation:
+        - If I have 5pcs of Apple at Import Cost USD: 2 USD
+        - I add new 2pcs of Apple at new Import Cost USD: 3 USD
+        - Total pcs: 7pcs of Apple
+        - Total Cost USD: 5x2USD+2x3USD = 16 USD
+        - Average Landed Cost: 16/7 = 2.29 USD (use max 2 decimals)
+- SKU:
+    - when click autogenerate: use Category name, Product name
+    - for example: Category name is: Fruit, Product name: Pineapple
+    - SKU will be: X-FRU-PINEAPPLE
+    - if there is already X-FRU-PINEAPPLE taken, then use X-FRU-PINEAPPLE-01
+- Category: Show dropdown of Categories, ability to type new Category in dropdown menu
+- PLEASE ADD NEW CELL INPUT: Low Stock Alert (place next to Quantity)
+    - it will look like this:
+        - Supplier | Supplier Link
+        - Quantity | Low Stock Alert
+- Add Variant:
+    - add a new row with text input in Product Variants table and a save button
+- Add Variant series:
+    - add a new row with text input in Product Variants table and a save button
+    - if Product name has for example: Gel Polish <1-100>, then it will automatically add 100 new variants names: Gel Polish 1, Gel Polish 2, Gel Polish 3, … Gel Polish 100
+
+## 2.2 Inventory - Inventory Details
+
+- Variants: sort by the least quantity, if there are too many variants → add pagination
+
+# 3 Warehouse
+
+- Self explanatory, please make same as design/frontend
+
+3.1 Warehouse Details
+
+- Show all File Attachments
+
+# 4 Sale
+
+- Sale means Discount
+
+# 4.1 Sale - Add Sale
+
+- Discount ID - autofill Discount ID in this format:
+    - if Discount name is: Black Friday 20%OFF
+    - Date from 2024-10-14 to 2024-10-20
+    - then Discount ID will be: #2024BLACKFRIDAY20
+- Discount Percentage: user input will be only integer, like 10, 20, or 50
+- Status: Active/Inactive/Finished
+    - If status is Active, please make all new orders with correct items/category with Discount column e.g. 20%
+        
+        ![Screenshot 2025-01-12 at 23.46.33.png](https://prod-files-secure.s3.us-west-2.amazonaws.com/6ae63053-f667-4c96-9240-a4a38f787e8e/3a6181b9-af0e-4ff7-93f8-ecb8b23d97c1/Screenshot_2025-01-12_at_23.46.33.png)
+        
+- Application Scope: Specific product
+    - Show “Product name” cell below: this is a dropdown to select which item will be discounted
+- Application Scope: All products
+    - Remove “Product name” cell below
+    - all items will be discounted
+- Application Scope: Specific category
+    - Show “Category” cell below: this is a dropdown to select which category will be discounted
+- Application Scope: Selected products
+    - Show “Product name” cell below: this is a dropdown to select which item will be discounted
+    - Add button, to add another “Product name” cell below each other and click save
+    - all saved items will be discounted
+
+# 5 Purchase
+
+- this is a process for example: when I order apples from a distributor, and paid for them and waiting to be shipped to me
+
+## 5.1 Purchase - Add Purchase
+
+- Product name:
+    - Type realtime search for ***Inventory →  Products***
+    - if product name is selected, then autofill SKU
+- SKU if click autogenerate icon:
+    - (same like [Inventory - Add Product - SKU](https://www.notion.so/Davie-Inventory-Backend-179cfc66274e8003b758cf9513ae283f?pvs=21))
+    - when click autogenerate: use Category name, Product name
+    - for example: Category name is: Fruit, Product name: Pineapple
+    - SKU will be: X-FRU-PINEAPPLE (max 10 chars for PINEAPPLE part)
+    - if there is already X-FRU-PINEAPPLE taken, then use X-FRU-PINEAPPLE-01
+- Status: Purchased / Processing / Ready to Ship / Shipped / Delivered
+- Import Currency: CZK, USD, EUR, VND, CNY (dropdown, ability to add new currency in the dropdown menu)
+- Shipment ID:
+    - <blank>
+- Add variant will be similar to this from [Inventory - Add Product - Product Variants](https://www.notion.so/Davie-Inventory-Backend-179cfc66274e8003b758cf9513ae283f?pvs=21)
+    
+    ![Screenshot 2025-01-13 at 0.09.13.png](https://prod-files-secure.s3.us-west-2.amazonaws.com/6ae63053-f667-4c96-9240-a4a38f787e8e/93aade5c-c9cc-476b-b5e0-80f3dff93d0f/Screenshot_2025-01-13_at_0.09.13.png)
+    
+
+## 5.2 Purchase - Import Purchase
+
+- Upload CSV/XLS format:
+    - Name, SKU, Quantity, Import Price, Import currency, Supplier name, Supplier URL, Status, Description
+
+# 6 Incoming Shipments
+
+- this is a process for example: this is where I ship apples from my distributors to me via different shipping options
+
+## 6.1 Incoming Shipments - Add Shipments
+
+- Date shipped - Use Today, or click calendar to choose date
+- Shipping method: Use options from *Settings → Incoming Shipments → Shipping Options*
+    - e.g. Railway general, Sea general, Railway sensitive, Sea sensitive,Express Air, Air DDP, Local truck, Post, Pickup
+- Shipping carrier: Use options from *Settings → Incoming Shipments → Shipping Carriers*
+    - e.g. DHL, FEDEX, UPS, DPD, SLS, Truck, Post, Pickup
+- Shipment ID (autogenerate)
+    - for example: shipping method is “Railway general”
+    - shipping carrier is DPD
+    - then shipment ID will be: #RAIL-GEN-DPD-2024123101
+        - number format: YYYYMMDDXX
+- Currency: CZK, USD, EUR, VND, CNY (dropdown, ability to add new currency in the dropdown menu)
+
+- “Order List” Table - please rename it to “Purchase List” Table
+    - “+ Add item” button:
+        - Add a new row
+        - Item name: Please make dropdown for all ***Purchase → Product Names***
+            - When Item name is selected, then it will autocomplete all data from **Purchase Products** (e.g. Quantity, SKU, Import Price, Currency, Supplier name)
+- “Save now” button:
+    - Use this **Shipment ID** and apply to all products from Order List and update their Shipment ID ***Purchase → Products → Shipment ID***
+
+## 6.2 Incoming Shipments - Shipment Details
+
+- “Mark as Delivered” button:
+    - Ask Amir to design a New Pop-up “Import Preview”:
+        
+        ![472590244_1343454486552820_3113533272452368516_n.jpg](https://prod-files-secure.s3.us-west-2.amazonaws.com/6ae63053-f667-4c96-9240-a4a38f787e8e/a31e99d3-7813-453a-8279-d82fe1408089/472590244_1343454486552820_3113533272452368516_n.jpg)
+        
+    - A table with 4 columns:
+        - Item Name, Purchase cost, QtyProp, PriceProp
+        - Purchase cost: is **Import Price** from each product from Order List (Purchase List)
+        - **QtyProp:**
+            - (the algorithm provided below is designed to calculate **landed costs per unit** for a given quantity of items.)
+            - Calculation:
+            
+            ```jsx
+            const costs = tmp_costs.map(Number);
+            const quantities = tmp_quantities.map(Number);
+            
+            // Assuming shipping_cost is defined elsewhere
+            
+            // Calculate total quantity
+            var total_quantity = 0;
+            for (var i = 0; i < quantities.length; i++) {
+              total_quantity += quantities[i];
+            }
+            
+            // Calculate cost per unit from shipping cost
+            var cost_per_unit = shipping_cost / total_quantity;
+            
+            // Calculate landed costs and round to three decimal places
+            var landed_costs_q = new Array(costs.length);
+            for (var i = 0; i < costs.length; i++) {
+              // Calculate the final landed cost per unit, including the shipping cost
+              var final_cost_per_unit = costs[i] + cost_per_unit;
+              // Round the final cost to 3 decimal places
+              landed_costs_q[i] = Math.round(final_cost_per_unit * 1000) / 1000;
+            }
+            ```
+            
+            ### `Scenario:`
+            
+            - `You have the following items:`
+                - **`5 pcs of Product A** at a unit cost of **2 USD**`
+                - **`3 pcs of Product B** at a unit cost of **3 USD**`
+            - `Shipping cost: **4 USD**`
+            
+            ### `Calculation:`
+            
+            1. **`Total Quantity**:`
+                - `5+3=85 + 3 = 85+3=8 pcs.`
+            2. **`Cost Per Unit of Shipping**:`
+                - `Shipping Cost Per Unit=48=0.50\text{Shipping Cost Per Unit} = \frac{4}{8} = 0.50Shipping Cost Per Unit=84=0.50 USD per unit.`
+            3. **`Landed Cost Per Unit**:`
+                - `Product A: 2+0.50=2.50 USD`
+                    
+                    `2+0.50=2.502 + 0.50 = 2.50`
+                    
+                - `Product B: 3+0.50=3.50 USD`
+                    
+                    `3+0.50=3.503 + 0.50 = 3.50`
+                    
+            4. **`Results**:`
+                - `Landed Costs (Rounded to 2 decimals):`
+                    - `Product A: **2.50 USD**`
+                    - `Product B: **3.50 USD**`
+        - **PriceProp:**
+            - this algorithm is specifically designed to calculate **product import costs** using a **proportional cost allocation**
+            - Calculation:
+            
+            ```jsx
+            const costs = tmp_costs.map(Number);
+            const quantities = tmp_quantities.map(Number);
+            
+            // Calculate the total value of all items (considering the quantities)
+            var total_value = 0;
+            for (var i = 0; i < costs.length; i++) {
+              total_value += costs[i] * quantities[i];
+            }
+            
+            // Calculate the cost proportion for each item based on the total value
+            var cost_proportions = new Array(costs.length); // Pre-allocate array with fixed size
+            for (var i = 0; i < costs.length; i++) {
+              cost_proportions[i] = (costs[i] * quantities[i]) / total_value;
+            }
+            
+            // Calculate the final unit costs including their share of the shipping cost
+            var landed_costs_price = new Array(costs.length); // Corrected array size
+            for (var i = 0; i < costs.length; i++) {
+              var cost_proportion = cost_proportions[i];
+              var additional_cost = cost_proportion * shipping_cost;
+              // Distribute the additional cost per unit based on the quantities
+              var final_unit_cost = costs[i] + (additional_cost / quantities[i]);
+              landed_costs_price[i] = Math.round(final_unit_cost * 1000) / 1000; // Round to 3 decimal places
+            }
+            ```
+            
+            ### **`Scenario:`**
+            
+            - `You have the following items:`
+                - `5 pcs of Product A at a unit cost of 2 USD`
+                - `3 pcs of Product B at a unit cost of 3 USD`
+            - `Shipping cost: 8 USD`
+            
+            ### **`Calculation:`**
+            
+            1. `Total Value:`
+                - `Product A: 5 × 2 = 10 USD`
+                - `Product B: 3 × 3 = 9 USD`
+                - `Total Value = 10 + 9 = 19 USD`
+            2. `Cost Proportion:`
+                - `Product A: 10 / 19 = 0.5263 (52.63%)`
+                - `Product B: 9 / 19 = 0.4737 (47.37%)`
+            3. `Shipping Cost Allocation:`
+                - `Product A: 0.5263 × 8 = 4.21 USD`
+                - `Product B: 0.4737 × 8 = 3.79 USD`
+            4. `Landed Cost Per Unit:`
+                - `Product A: 2 + (4.21 / 5) = 2 + 0.84 = 2.84 USD`
+                - `Product B: 3 + (3.79 / 3) = 3 + 1.26 = 4.26 USD`
+            
+            `Results:`
+            
+            - `Landed Costs:`
+                - `Product A: 2.84 USD`
+                - `Product B: 4.26 USD`
+    
+    - Quantity Proportion or Price Proportion (button)
+        - Add all products to Inventory, import cost will be from the results of import cost calculation
+        - If the product SKU is same as some products in Inventory, then update Inventory Item Quantity and update Import Cost calculate Average Purchase Price, same as [add Inventory Product](https://www.notion.so/Davie-Inventory-Backend-179cfc66274e8003b758cf9513ae283f?pvs=21)
+            - Also Import cost currency will be automatically exchange currency from currency exchange API to CZK, USD, EUR
+                - for example: Import cost 5 USD
+                - exchange USD→CZK, USD→EUR
+                - if convert from EUR then from EUR→CZK, EUR→USD
+
+# 7 Suppliers
+
+- Supplier List→ Total Purchased: **Automatically calculate** and Show total import cost from all purchases from this Supplier
+
+## 7.1 Suppliers - Add Supplier
+
+- Purchase History table: make each row clickable, when clicked it will show the **Purchase→ Purchase Detail**
+
+# 8 Returns
+
+## 8.1 Returns - Add Return
+
+- ID: automatically generate
+    - format: RET-YYYY-MM-DD-XX
+    - e.g. RET-2024-07-30-01
+- Customer name:
+    - Dropdown search for all customers
+- Order Number:
+    - Dropdown search for menu Orders ID - Customer Name - Total Order Value
+    - if selected Order ID, then automatically fill: Customer Name
+- Return Date: Automatically Today or click calendar to choose
+- Return Type: Show all options dropdown from **Settings → Returns Settings → Return Types**
+- Status: Awaiting / Processing / Completed
+- Shipping Carrier: Show all options dropdown from **Settings → Return Settings → Return Shipping Carriers**
+
+- Items Returned:
+    - Please ask Amir to redesign this table:
+    - Item name - Quantity - SKU - Price
+    - If type Item name select from dropdown to choose item from Inventory item, and then autofill SKU
+    - + Add item: add new row with same Item name - Quantity - SKU - Price
+
+## 8.2 Returns - Returns Details
+
+- Please ask Amir to add a table below Returns Details that shows all Items Returned
+- Click “Finished” - Please move all return items back to Inventory (update quantity of Inventory Products)
+
+# 9 Reports
+
+- Avg Order Value:
+    - calculate average order value from all orders with Filter only Orders with “Status: Finished” and “Payment Status: Paid”
+- Avg Profit Margin:
+    - calculate average profit margin from all orders with Filter only Orders with “Status: Finished” and “Payment Status: Paid
+    - Profit margin:
+        
+        ![Screenshot 2025-01-13 at 23.21.48.png](https://prod-files-secure.s3.us-west-2.amazonaws.com/6ae63053-f667-4c96-9240-a4a38f787e8e/29d238ae-daa4-45a9-aa9c-37d6896a8c22/Screenshot_2025-01-13_at_23.21.48.png)
+        
+- Total Net worth:
+    - Sum of all Import cost of all products from **Inventory**
+- “Total Expenses” rename to “Total Spend by Year”:
+    - Sum of all Import cost from **Purchase** for the year
+    - filter how many years to show
+
+# 10 Customers
+
+- Customers will automatically added from Order → Add New Order
+- Total Orders: Count of all orders from this customer
+- Total Order Value: Sum of all Revenue from Orders filtered by each customer
+- 
+
+## 10.1 Customers - Add Customer
+
+- rename **Facebook Profile URL** to **Facebook Profile ID**
+- Country: Country dropdown of all countries in the world
+
+## 10.2 Customers - Customer Detail
+
+- “Show All Order” button → Goto **Orders** and filter by Customer name by newest items first
+- Order History item - if clicked it will show **Order Details** pulled from Orders
+
+# 11 Message
+
+- Real time message
+- Get notifications Alert in-browser and in-App (top bell icon) and **show Pop-up** in app
+- ability to send attachment files
+
+# 12 Expenses
+
+## 12.1 Expenses - Add Expense
+
+- Fix Currency rename to “Category” cell is missing, please add
+- Category: Show all options from **Settings → Expenses → Expense Categories**
+- Expense ID autogenerate:
+    - Format: #EXPEN-YYYYMMDDXX
+    - #EXPEN-2024073001
+- Expense Currency: CZK, USD, EUR, VND, CNY
+- Recurring: Daily, Weekly, Monthly, Yearly
+    - Don’t forget to always update Date of the Expense item if it’s daily, weekly, monthly or yearly
+    - For example
+        - Recurring: Yearly, Name: rent, Date: 30/12/2024
+        - if it’s 30/12/2025 then it will be 30/12/2025 instead of 2024
+        - Result: Recurring: Yearly, Name: rent, Date: 30/12/2022
+        
+- Payment Method: Show all options from **Settings → Expenses → Expense Payment Method**
+- Status: Pending, Overdue, Paid
+
+# 13 POS
+
+- Date: automatically Today
+- Biller: automatically current User
+- Customer: automatically “Walk-in Customer”, if in focus, then show dropdown of all customers
+- Currency: CZK/EUR
+
+- Most Used: All items sorted by most sales
+- Category: Show all categories from **Inventory → Category**
+    - If Category is selected, it will show all items from the selected category
+
+- Barcode scan: Scan from EAN-13 barcode and add new item from the barcode to Invoice, if same item is added, update quantity
+
+- Invoice right sidebar:
+    - Discount: default 0
+    - Tax: default 0
+    - Shipping: default 0
+
+- If click Cash / Bank Transfer / Card / Pay Later → Show Receipt popup (ask Amir to design a popup with Receipt and ability to print button)
+    
+    ![Screenshot 2025-01-14 at 0.01.29.png](https://prod-files-secure.s3.us-west-2.amazonaws.com/6ae63053-f667-4c96-9240-a4a38f787e8e/33c4892a-a151-4247-b25c-4fb1f00a9ec5/Screenshot_2025-01-14_at_0.01.29.png)
+    
+- the width is 80mm (can be adjusted in **Settings → POS Settings → POS Receipt Format**)
+- Show buttons: Print / Cancel
+- If Print, it will go back to POS and the order will save to **Orders**
+- if Cancel, close the popup and keep all Invoice items
+
+- if click Draft - It will save to Orders with **Status: Pending** and **Payment Status: Pending**
+
+# 14 Wiki
+
+- + Add Folder: add new section
+- Content: Headings, Text, with formatting, add images and automatically add hyperlinks if e.g. https://google.com it will be automatically clickable
+- Add option to Delete article
