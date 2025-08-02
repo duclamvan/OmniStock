@@ -417,24 +417,36 @@ export const insertCategorySchema = createInsertSchema(categories).omit({ id: tr
 export const insertWarehouseSchema = createInsertSchema(warehouses).omit({ id: true, createdAt: true });
 export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true, createdAt: true });
 export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true, updatedAt: true }).extend({
-  quantity: z.number().min(0).optional(),
-  lowStockAlert: z.number().min(0).optional(),
-  priceCzk: z.string().optional(),
-  priceEur: z.string().optional(),
-  importCostUsd: z.string().optional(),
-  importCostCzk: z.string().optional(),
-  importCostEur: z.string().optional(),
+  quantity: z.coerce.number().min(0).optional(),
+  lowStockAlert: z.coerce.number().min(0).optional(),
+  priceCzk: z.coerce.string().optional(),
+  priceEur: z.coerce.string().optional(),
+  importCostUsd: z.coerce.string().optional(),
+  importCostCzk: z.coerce.string().optional(),
+  importCostEur: z.coerce.string().optional(),
 });
 export const insertProductVariantSchema = createInsertSchema(productVariants).omit({ id: true, createdAt: true });
 export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true, updatedAt: true, shippedAt: true });
-export const insertOrderItemSchema = createInsertSchema(orderItems).omit({ id: true });
+export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true, updatedAt: true, shippedAt: true }).extend({
+  totalAmount: z.coerce.string().optional(),
+  shippingCost: z.coerce.string().optional(),
+  discountAmount: z.coerce.string().optional(),
+});
+export const insertOrderItemSchema = createInsertSchema(orderItems).omit({ id: true }).extend({
+  unitPrice: z.coerce.string().optional(),
+  totalPrice: z.coerce.string().optional(),
+  quantity: z.coerce.number().min(1),
+});
 export const insertPurchaseSchema = createInsertSchema(purchases).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertIncomingShipmentSchema = createInsertSchema(incomingShipments).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertSaleSchema = createInsertSchema(sales).omit({ id: true, createdAt: true });
+export const insertSaleSchema = createInsertSchema(sales).omit({ id: true, createdAt: true }).extend({
+  discountValue: z.coerce.string(),
+});
 export const insertReturnSchema = createInsertSchema(returns).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertReturnItemSchema = createInsertSchema(returnItems).omit({ id: true });
-export const insertExpenseSchema = createInsertSchema(expenses).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertExpenseSchema = createInsertSchema(expenses).omit({ id: true, createdAt: true, updatedAt: true }).extend({
+  totalCost: z.coerce.string(),
+});
 export const insertPreOrderSchema = createInsertSchema(preOrders).omit({ id: true, createdAt: true });
 export const insertUserActivitySchema = createInsertSchema(userActivities).omit({ id: true, createdAt: true });
 export const insertSettingSchema = createInsertSchema(settings).omit({ id: true, updatedAt: true });
