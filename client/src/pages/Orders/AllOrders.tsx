@@ -25,8 +25,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   const [statusFilter, setStatusFilter] = useState(filter || "all");
   const [entriesPerPage, setEntriesPerPage] = useState(10);
 
-  const { data: orders, isLoading, error } = useQuery({
-    queryKey: ['/api/orders', statusFilter !== 'all' ? { status: statusFilter } : {}],
+  const { data: orders = [], isLoading, error } = useQuery({
+    queryKey: statusFilter !== 'all' ? ['/api/orders', statusFilter] : ['/api/orders'],
     retry: false,
   });
 
@@ -53,17 +53,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       });
     },
     onError: (error) => {
-      if (isUnauthorizedError(error as Error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
+      console.error("Order update error:", error);
       toast({
         title: "Error",
         description: "Failed to update order",

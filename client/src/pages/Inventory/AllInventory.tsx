@@ -21,8 +21,8 @@ export default function AllInventory() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [entriesPerPage, setEntriesPerPage] = useState(20);
 
-  const { data: products, isLoading, error } = useQuery({
-    queryKey: ['/api/products', searchQuery ? { search: searchQuery } : {}],
+  const { data: products = [], isLoading, error } = useQuery({
+    queryKey: searchQuery ? ['/api/products', searchQuery] : ['/api/products'],
   });
 
   const { data: categories } = useQuery({
@@ -52,17 +52,7 @@ export default function AllInventory() {
       });
     },
     onError: (error) => {
-      if (isUnauthorizedError(error as Error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
+      console.error("Product update error:", error);
       toast({
         title: "Error",
         description: "Failed to update product",
