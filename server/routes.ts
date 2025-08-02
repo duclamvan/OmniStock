@@ -1362,6 +1362,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   }
 
+  // Geocoding endpoint for address search
+  app.get('/api/geocode', async (req, res) => {
+    try {
+      const { q } = req.query;
+      if (!q || typeof q !== 'string' || q.length < 2) {
+        return res.json([]);
+      }
+
+      // Using OpenStreetMap's Nominatim API (free, no API key required)
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?` + 
+        new URLSearchParams({
+          q: q,
+          format: 'json',
+          addressdetails: '1',
+          limit: '10',
+          countrycodes: 'cz,de,at', // Limit to Czech Republic, Germany, Austria
+        }),
+        {
+          headers: {
+            'User-Agent': 'DavieSupply/1.0', // Required by Nominatim
+          }
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Geocoding API error: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      // Transform the response to our format
+      const suggestions = data.map((item: any) => ({
+        formatted: item.display_name,
+        street: item.address?.road || item.address?.pedestrian || '',
+        houseNumber: item.address?.house_number || '',
+        city: item.address?.city || item.address?.town || item.address?.village || '',
+        state: item.address?.state || '',
+        zipCode: item.address?.postcode || '',
+        country: item.address?.country || '',
+        lat: parseFloat(item.lat),
+        lon: parseFloat(item.lon),
+      }));
+
+      res.json(suggestions);
+    } catch (error) {
+      console.error('Geocoding error:', error);
+      res.status(500).json({ error: 'Failed to fetch addresses' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

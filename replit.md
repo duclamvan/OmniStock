@@ -77,6 +77,23 @@ The project uses a monorepo structure with shared schema:
 
 ## Recent Changes
 
+## Address Autocomplete with Real Geocoding API (August 2, 2025)
+- Integrated OpenStreetMap's Nominatim API for real address geocoding
+- Replaced mock address database with live API calls in all forms:
+  - AddCustomer: Full implementation with real-time address search
+  - AddOrder: Updated to use geocoding API (in progress)
+  - EditOrder: Pending update
+- Created `/api/geocode` endpoint that:
+  - Accepts search queries and returns up to 10 matching addresses
+  - Focuses on Czech Republic, Germany, and Austria (country codes: cz, de, at)
+  - Returns formatted addresses with street, city, zip code, and country fields
+  - No API key required - uses free OpenStreetMap service
+- Address search features:
+  - Minimum 2 characters to trigger search
+  - Real-time suggestions as user types
+  - Auto-fills address fields when suggestion is selected
+  - Loading states while fetching results
+
 ## Mock Data Implementation (August 2, 2025)
 - Created comprehensive mock data seeding system:
   - Added 10+ new products with realistic import costs

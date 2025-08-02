@@ -76,8 +76,31 @@ export default function AddOrder() {
   const [showAddressDropdown, setShowAddressDropdown] = useState(false);
   const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
 
-  // Comprehensive mock address database for Czech Republic and neighbors
-  // In production, this would be replaced with a real geocoding API like Google Maps
+  // Fetch real addresses from geocoding API
+  const fetchRealAddresses = async (query: string): Promise<any[]> => {
+    try {
+      const response = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch addresses');
+      }
+      const data = await response.json();
+      
+      // Transform the response to match our format
+      return data.map((item: any) => ({
+        formatted: item.formatted,
+        street: `${item.street} ${item.houseNumber}`.trim() || item.street,
+        city: item.city,
+        state: item.state,
+        zipCode: item.zipCode,
+        country: item.country,
+      }));
+    } catch (error) {
+      console.error('Error fetching addresses:', error);
+      return [];
+    }
+  };
+
+  // Remove the old mock addresses array
   const mockAddressDatabase = [
     // Czech Republic addresses
     { 
@@ -180,7 +203,7 @@ export default function AddOrder() {
     }
   ];
 
-  // Function to search addresses with fuzzy matching
+  // Function to search addresses using real geocoding API
   const searchAddresses = async (query: string) => {
     if (!query || query.length < 3) {
       setAddressSuggestions([]);
@@ -189,58 +212,17 @@ export default function AddOrder() {
     }
 
     setIsLoadingAddresses(true);
+    setShowAddressDropdown(true);
     
-    // Simulate API delay
-    setTimeout(() => {
-      const queryLower = query.toLowerCase();
-      
-      // Score each address based on fuzzy matching
-      const scoredAddresses = mockAddressDatabase.map(addr => {
-        let score = 0;
-        const formattedLower = addr.formatted.toLowerCase();
-        
-        // Exact match gets highest score
-        if (formattedLower === queryLower) {
-          score = 100;
-        }
-        // Starting with query gets high score
-        else if (formattedLower.startsWith(queryLower)) {
-          score = 80;
-        }
-        // Contains the full query
-        else if (formattedLower.includes(queryLower)) {
-          score = 60;
-        }
-        // Check individual words
-        else {
-          const queryWords = queryLower.split(/\s+/);
-          const addressWords = formattedLower.split(/\s+/);
-          
-          queryWords.forEach(qWord => {
-            addressWords.forEach(aWord => {
-              if (aWord.startsWith(qWord)) {
-                score += 20;
-              } else if (aWord.includes(qWord)) {
-                score += 10;
-              }
-            });
-          });
-        }
-        
-        return { ...addr, score };
-      });
-      
-      // Filter addresses with score > 0 and sort by score
-      const filtered = scoredAddresses
-        .filter(addr => addr.score > 0)
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 10) // Limit to top 10 results
-        .map(({ score, ...addr }) => addr); // Remove score from final result
-      
-      setAddressSuggestions(filtered);
-      setShowAddressDropdown(filtered.length > 0);
+    try {
+      const results = await fetchRealAddresses(query);
+      setAddressSuggestions(results);
+    } catch (error) {
+      console.error('Error searching addresses:', error);
+      setAddressSuggestions([]);
+    } finally {
       setIsLoadingAddresses(false);
-    }, 300);
+    }
   };
 
   // Function to select an address from suggestions
