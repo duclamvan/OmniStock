@@ -96,38 +96,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
       const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0, 23, 59, 59, 999);
       
-      const todayOrders = allOrders.filter(order => new Date(order.createdAt) >= today);
-      const thisMonthOrders = allOrders.filter(order => new Date(order.createdAt) >= thisMonthStart);
-      const lastMonthOrders = allOrders.filter(order => {
-        const orderDate = new Date(order.createdAt);
-        return orderDate >= lastMonthStart && orderDate <= lastMonthEnd;
+      // Fulfill Orders Today: ALL orders with status "to_fulfill"
+      const fulfillOrdersToday = allOrders.filter(order => order.orderStatus === 'to_fulfill').length;
+      
+      // Total Orders Today: Orders with status "shipped" that were marked as shipped TODAY
+      const todayShippedOrders = allOrders.filter(order => {
+        if (order.orderStatus !== 'shipped') return false;
+        // Check if the order was updated today (marked as shipped today)
+        const updatedDate = new Date(order.updatedAt || order.createdAt);
+        return updatedDate >= today;
       });
       
-      // Calculate totals in EUR
-      const calculateTotalInEur = (orders: any[]) => {
+      const thisMonthOrders = allOrders.filter(order => {
+        const orderDate = new Date(order.createdAt);
+        return orderDate >= thisMonthStart && order.orderStatus === 'shipped';
+      });
+      
+      const lastMonthOrders = allOrders.filter(order => {
+        const orderDate = new Date(order.createdAt);
+        return orderDate >= lastMonthStart && orderDate <= lastMonthEnd && order.orderStatus === 'shipped';
+      });
+      
+      // Calculate revenue in EUR (Revenue = Grand Total - Tax - Shipping Cost)
+      const calculateRevenueInEur = (orders: any[]) => {
         return orders.reduce((sum, order) => {
-          const amount = parseFloat(order.grandTotal || '0');
-          return sum + convertToEur(amount, order.currency);
+          const grandTotal = parseFloat(order.grandTotal || '0');
+          const tax = parseFloat(order.tax || '0');
+          const shippingCost = parseFloat(order.shippingCost || '0');
+          const revenue = grandTotal - tax - shippingCost;
+          return sum + convertToEur(revenue, order.currency);
         }, 0);
       };
       
+      // Calculate profit in EUR (Profit = Grand Total - (Import Cost × quantity) - Tax - Discount - (Shipping paid - Actual Shipping Cost))
       const calculateProfitInEur = (orders: any[]) => {
         return orders.reduce((sum, order) => {
-          const revenue = parseFloat(order.grandTotal || '0');
-          const cost = parseFloat(order.totalCost || '0');
-          const profit = revenue - cost;
+          if (order.orderStatus !== 'shipped' || order.paymentStatus !== 'paid') {
+            return sum; // Only calculate profit for completed orders
+          }
+          
+          const grandTotal = parseFloat(order.grandTotal || '0');
+          const totalCost = parseFloat(order.totalCost || '0'); // Import cost × quantity
+          const tax = parseFloat(order.tax || '0');
+          const discount = parseFloat(order.discount || '0');
+          const shippingPaid = parseFloat(order.shippingCost || '0');
+          const actualShippingCost = parseFloat(order.actualShippingCost || shippingPaid); // Use shippingPaid if actual not set
+          
+          const profit = grandTotal - totalCost - tax - discount - (shippingPaid - actualShippingCost);
           return sum + convertToEur(profit, order.currency);
         }, 0);
       };
       
       const metricsWithConversion = {
-        fulfillOrdersToday: todayOrders.filter(o => o.orderStatus === 'to_fulfill').length,
-        totalOrdersToday: todayOrders.length,
-        totalRevenueToday: calculateTotalInEur(todayOrders),
-        totalProfitToday: calculateProfitInEur(todayOrders),
-        thisMonthRevenue: calculateTotalInEur(thisMonthOrders),
+        fulfillOrdersToday,
+        totalOrdersToday: todayShippedOrders.length,
+        totalRevenueToday: calculateRevenueInEur(todayShippedOrders),
+        totalProfitToday: calculateProfitInEur(todayShippedOrders),
+        thisMonthRevenue: calculateRevenueInEur(thisMonthOrders),
         thisMonthProfit: calculateProfitInEur(thisMonthOrders),
-        lastMonthRevenue: calculateTotalInEur(lastMonthOrders),
+        lastMonthRevenue: calculateRevenueInEur(lastMonthOrders),
         lastMonthProfit: calculateProfitInEur(lastMonthOrders),
         exchangeRates: exchangeRates.eur
       };
@@ -168,25 +195,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         const monthOrders = allOrders.filter(order => {
           const orderDate = new Date(order.createdAt);
-          return orderDate >= monthStart && orderDate <= monthEnd && order.orderStatus === 'shipped';
+          return orderDate >= monthStart && orderDate <= monthEnd && order.orderStatus === 'shipped' && order.paymentStatus === 'paid';
         });
         
+        // Separate orders by currency
+        const czkOrders = monthOrders.filter(order => order.currency === 'CZK');
+        const eurOrders = monthOrders.filter(order => order.currency === 'EUR');
+        
+        // Calculate revenue and profit for each currency
+        const calculateRevenue = (orders: any[]) => {
+          return orders.reduce((sum, order) => {
+            const grandTotal = parseFloat(order.grandTotal || '0');
+            const tax = parseFloat(order.tax || '0');
+            const shippingCost = parseFloat(order.shippingCost || '0');
+            return sum + (grandTotal - tax - shippingCost);
+          }, 0);
+        };
+        
+        const calculateProfit = (orders: any[]) => {
+          return orders.reduce((sum, order) => {
+            const grandTotal = parseFloat(order.grandTotal || '0');
+            const totalCost = parseFloat(order.totalCost || '0');
+            const tax = parseFloat(order.tax || '0');
+            const discount = parseFloat(order.discount || '0');
+            const shippingPaid = parseFloat(order.shippingCost || '0');
+            const actualShippingCost = parseFloat(order.actualShippingCost || shippingPaid);
+            return sum + (grandTotal - totalCost - tax - discount - (shippingPaid - actualShippingCost));
+          }, 0);
+        };
+        
+        const profitCzkOrders = calculateProfit(czkOrders);
+        const revenueCzkOrders = calculateRevenue(czkOrders);
+        const profitEurOrders = calculateProfit(eurOrders);
+        const revenueEurOrders = calculateRevenue(eurOrders);
+        
+        // Calculate total in EUR
         const totalRevenueEur = monthOrders.reduce((sum, order) => {
-          const amount = parseFloat(order.grandTotal || '0');
-          return sum + convertToEur(amount, order.currency);
+          const grandTotal = parseFloat(order.grandTotal || '0');
+          const tax = parseFloat(order.tax || '0');
+          const shippingCost = parseFloat(order.shippingCost || '0');
+          const revenue = grandTotal - tax - shippingCost;
+          return sum + convertToEur(revenue, order.currency);
         }, 0);
         
         const totalProfitEur = monthOrders.reduce((sum, order) => {
-          const revenue = parseFloat(order.grandTotal || '0');
-          const cost = parseFloat(order.totalCost || '0');
-          const profit = revenue - cost;
+          const grandTotal = parseFloat(order.grandTotal || '0');
+          const totalCost = parseFloat(order.totalCost || '0');
+          const tax = parseFloat(order.tax || '0');
+          const discount = parseFloat(order.discount || '0');
+          const shippingPaid = parseFloat(order.shippingCost || '0');
+          const actualShippingCost = parseFloat(order.actualShippingCost || shippingPaid);
+          const profit = grandTotal - totalCost - tax - discount - (shippingPaid - actualShippingCost);
           return sum + convertToEur(profit, order.currency);
         }, 0);
         
+        // Convert EUR totals to CZK
+        const eurToCzk = exchangeRates.eur?.czk || 25.0;
+        const totalProfitCzk = totalProfitEur * eurToCzk;
+        const totalRevenueCzk = totalRevenueEur * eurToCzk;
+        
         monthlySummary.push({
           month: `${String(month + 1).padStart(2, '0')}-${String(year).slice(-2)}`,
-          totalRevenueEur,
           totalProfitEur,
+          totalRevenueEur,
+          profitCzkOrders,
+          revenueCzkOrders,
+          profitEurOrders,
+          revenueEurOrders,
+          totalProfitCzk,
+          totalRevenueCzk,
           orderCount: monthOrders.length
         });
       }

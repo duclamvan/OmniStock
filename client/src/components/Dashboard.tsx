@@ -371,18 +371,28 @@ export function Dashboard() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Month</TableHead>
-                    <TableHead>Total Revenue (EUR)</TableHead>
-                    <TableHead>Total Profit (EUR)</TableHead>
-                    <TableHead>Order Count</TableHead>
+                    <TableHead>Total Profit EUR</TableHead>
+                    <TableHead>Total Revenue EUR</TableHead>
+                    <TableHead>Profit CZK Orders</TableHead>
+                    <TableHead>Revenue CZK Orders</TableHead>
+                    <TableHead>Profit EUR Orders</TableHead>
+                    <TableHead>Revenue EUR Orders</TableHead>
+                    <TableHead>Total Profit CZK</TableHead>
+                    <TableHead>Total Revenue CZK</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {financialSummary?.slice(0, 12).map((month: any) => (
+                  {financialSummary?.filter((month: any) => month.orderCount > 0 || new Date().getFullYear() === parseInt('20' + month.month.split('-')[1])).map((month: any) => (
                     <TableRow key={month.month}>
                       <TableCell>{month.month}</TableCell>
-                      <TableCell>{formatCurrency(month.totalRevenueEur || 0, 'EUR')}</TableCell>
                       <TableCell>{formatCurrency(month.totalProfitEur || 0, 'EUR')}</TableCell>
-                      <TableCell>{month.orderCount || 0}</TableCell>
+                      <TableCell>{formatCurrency(month.totalRevenueEur || 0, 'EUR')}</TableCell>
+                      <TableCell>{formatCurrency(month.profitCzkOrders || 0, 'CZK')}</TableCell>
+                      <TableCell>{formatCurrency(month.revenueCzkOrders || 0, 'CZK')}</TableCell>
+                      <TableCell>{formatCurrency(month.profitEurOrders || 0, 'EUR')}</TableCell>
+                      <TableCell>{formatCurrency(month.revenueEurOrders || 0, 'EUR')}</TableCell>
+                      <TableCell>{formatCurrency(month.totalProfitCzk || 0, 'CZK')}</TableCell>
+                      <TableCell>{formatCurrency(month.totalRevenueCzk || 0, 'CZK')}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
