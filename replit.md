@@ -97,6 +97,13 @@ The project uses a monorepo structure with shared schema:
 - Updated Revenue, Expenses, and Yearly charts to use real data with EUR conversion
 - Added real-time currency conversion for orders from CZK, USD, VND, CNY to EUR
 
+## Delete Functionality for Edit Pages (August 2, 2025)
+- Added DELETE endpoints for orders and products in backend routes
+- Implemented delete buttons on EditOrder and EditProduct pages
+- Positioned delete buttons at bottom left on same line as cancel/save buttons
+- Added confirmation dialogs with entity names to prevent accidental deletions
+- Enhanced error handling for foreign key constraints (products used in orders)
+
 # Future Integrations
 - **GLS Shipping API**: Planned integration for real-time order tracking
 - **Real-time Exchange Rates**: API integration for accurate currency conversion

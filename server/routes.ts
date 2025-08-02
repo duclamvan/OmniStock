@@ -514,6 +514,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete('/api/products/:id', async (req: any, res) => {
+    try {
+      const product = await storage.getProductById(req.params.id);
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+      
+      await storage.deleteProduct(req.params.id);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'deleted',
+        entityType: 'product',
+        entityId: req.params.id,
+        description: `Deleted product: ${product.name}`,
+      });
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      res.status(500).json({ message: "Failed to delete product" });
+    }
+  });
+
   // Customers endpoints
   app.get('/api/customers', async (req, res) => {
     try {
@@ -657,6 +681,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating order:", error);
       res.status(500).json({ message: "Failed to update order" });
+    }
+  });
+
+  app.delete('/api/orders/:id', async (req: any, res) => {
+    try {
+      const order = await storage.getOrderById(req.params.id);
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+      
+      await storage.deleteOrder(req.params.id);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'delete',
+        entityType: 'order',
+        entityId: req.params.id,
+        description: `Deleted order: ${order.orderId}`,
+      });
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting order:", error);
+      res.status(500).json({ message: "Failed to delete order" });
     }
   });
 

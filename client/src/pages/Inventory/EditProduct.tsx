@@ -153,11 +153,14 @@ export default function EditProduct() {
       });
       setLocation('/inventory');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Product delete error:", error);
+      const errorMessage = error.message || "Failed to delete product";
       toast({
         title: "Error",
-        description: "Failed to delete product",
+        description: errorMessage.includes('referenced') || errorMessage.includes('constraint')
+          ? "Cannot delete product - it's being used in existing orders" 
+          : errorMessage,
         variant: "destructive",
       });
     },
