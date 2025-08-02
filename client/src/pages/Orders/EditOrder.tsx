@@ -146,6 +146,40 @@ export default function EditOrder() {
     }
   }, [order]);
 
+  // Fetch all products for real-time filtering
+  const { data: allProducts } = useQuery({
+    queryKey: ['/api/products'],
+  });
+
+  // Update product prices when currency changes
+  const selectedCurrency = form.watch('currency');
+  useEffect(() => {
+    if (!selectedCurrency || orderItems.length === 0 || !allProducts) return;
+
+    setOrderItems(items => 
+      items.map(item => {
+        const product = allProducts.find((p: any) => p.id === item.productId);
+        if (!product) return item;
+
+        let newPrice = 0;
+        if (selectedCurrency === 'CZK' && product.priceCzk) {
+          newPrice = parseFloat(product.priceCzk);
+        } else if (selectedCurrency === 'EUR' && product.priceEur) {
+          newPrice = parseFloat(product.priceEur);
+        } else {
+          // Fallback to any available price
+          newPrice = parseFloat(product.priceEur || product.priceCzk || '0');
+        }
+
+        return {
+          ...item,
+          price: newPrice,
+          total: item.quantity * newPrice - item.discount
+        };
+      })
+    );
+  }, [selectedCurrency, allProducts]);
+
   const updateOrderMutation = useMutation({
     mutationFn: async (data: any) => {
       await apiRequest('PATCH', `/api/orders/${id}`, data);
@@ -201,16 +235,29 @@ export default function EditOrder() {
           : item
       ));
     } else {
+      // Get the price based on the selected currency
+      const selectedCurrency = form.watch('currency') || 'EUR';
+      let productPrice = 0;
+      
+      if (selectedCurrency === 'CZK' && product.priceCzk) {
+        productPrice = parseFloat(product.priceCzk);
+      } else if (selectedCurrency === 'EUR' && product.priceEur) {
+        productPrice = parseFloat(product.priceEur);
+      } else {
+        // Fallback to any available price if specific currency price is not available
+        productPrice = parseFloat(product.priceEur || product.priceCzk || '0');
+      }
+      
       const newItem: OrderItem = {
         id: `new-${Date.now()}`,
         productId: product.id,
         productName: product.name,
         sku: product.sku,
         quantity: 1,
-        price: parseFloat(product.priceCzk || product.priceEur || '0'),
+        price: productPrice,
         discount: 0,
         tax: 0,
-        total: parseFloat(product.priceCzk || product.priceEur || '0'),
+        total: productPrice,
       };
       setOrderItems([...orderItems, newItem]);
     }

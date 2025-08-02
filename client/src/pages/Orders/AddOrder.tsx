@@ -125,6 +125,35 @@ export default function AddOrder() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Update product prices when currency changes
+  const selectedCurrency = form.watch('currency');
+  useEffect(() => {
+    if (!selectedCurrency || orderItems.length === 0 || !allProducts) return;
+
+    setOrderItems(items => 
+      items.map(item => {
+        const product = allProducts.find((p: any) => p.id === item.productId);
+        if (!product) return item;
+
+        let newPrice = 0;
+        if (selectedCurrency === 'CZK' && product.priceCzk) {
+          newPrice = parseFloat(product.priceCzk);
+        } else if (selectedCurrency === 'EUR' && product.priceEur) {
+          newPrice = parseFloat(product.priceEur);
+        } else {
+          // Fallback to any available price
+          newPrice = parseFloat(product.priceEur || product.priceCzk || '0');
+        }
+
+        return {
+          ...item,
+          price: newPrice,
+          total: item.quantity * newPrice - item.discount
+        };
+      })
+    );
+  }, [selectedCurrency, allProducts]);
+
   // Fetch all products for real-time filtering
   const { data: allProducts } = useQuery({
     queryKey: ['/api/products'],
