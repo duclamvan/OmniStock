@@ -587,7 +587,16 @@ export default function AddOrder() {
                     <Input
                       id="customerName"
                       value={newCustomer.name}
-                      onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
+                      onChange={(e) => {
+                        const newName = e.target.value;
+                        // Update customer name and also mirror to Facebook name if it's empty or matches the previous name
+                        setNewCustomer(prev => ({
+                          ...prev,
+                          name: newName,
+                          // Mirror to Facebook name if it's currently empty or was previously mirroring
+                          facebookName: prev.facebookName === prev.name || prev.facebookName === "" ? newName : prev.facebookName
+                        }));
+                      }}
                       placeholder="Type here"
                       required
                     />
