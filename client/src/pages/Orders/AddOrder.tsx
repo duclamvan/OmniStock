@@ -72,61 +72,190 @@ export default function AddOrder() {
   });
   
   const [addressAutocomplete, setAddressAutocomplete] = useState("");
+  const [addressSuggestions, setAddressSuggestions] = useState<any[]>([]);
+  const [showAddressDropdown, setShowAddressDropdown] = useState(false);
+  const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
 
-  // Function to parse and auto-fill address from pasted text
-  const parseAddress = (addressText: string) => {
-    if (!addressText.trim()) return;
-
-    // Split address by commas and lines
-    const parts = addressText.split(/[,\n]+/).map(part => part.trim()).filter(Boolean);
-    
-    if (parts.length === 0) return;
-
-    // Try to extract common patterns
-    let address = "";
-    let city = "";
-    let state = "";
-    let zipCode = "";
-    let country = "";
-
-    // Simple parsing logic - can be enhanced
-    if (parts.length >= 1) {
-      address = parts[0]; // First part is usually street address
+  // Comprehensive mock address database for Czech Republic and neighbors
+  // In production, this would be replaced with a real geocoding API like Google Maps
+  const mockAddressDatabase = [
+    // Czech Republic addresses
+    { 
+      formatted: "Dragounská 2545/9A, 350 02 Cheb, Czechia",
+      street: "Dragounská 2545/9A",
+      city: "Cheb",
+      state: "Karlovarský kraj",
+      zipCode: "350 02",
+      country: "Czechia"
+    },
+    { 
+      formatted: "Dragounská 150, 350 02 Cheb, Czechia",
+      street: "Dragounská 150",
+      city: "Cheb",
+      state: "Karlovarský kraj",
+      zipCode: "350 02",
+      country: "Czechia"
+    },
+    {
+      formatted: "Palackého náměstí 2, 301 00 Plzeň, Czechia",
+      street: "Palackého náměstí 2",
+      city: "Plzeň",
+      state: "Plzeňský kraj",
+      zipCode: "301 00",
+      country: "Czechia"
+    },
+    {
+      formatted: "Wenceslas Square 785/36, 110 00 Praha 1, Czechia",
+      street: "Wenceslas Square 785/36",
+      city: "Praha 1",
+      state: "Praha",
+      zipCode: "110 00",
+      country: "Czechia"
+    },
+    {
+      formatted: "Václavské náměstí 785/36, 110 00 Praha 1, Czechia",
+      street: "Václavské náměstí 785/36",
+      city: "Praha 1",
+      state: "Praha",
+      zipCode: "110 00",
+      country: "Czechia"
+    },
+    {
+      formatted: "Karlova 1, 110 00 Praha 1, Czechia",
+      street: "Karlova 1",
+      city: "Praha 1",
+      state: "Praha",
+      zipCode: "110 00",
+      country: "Czechia"
+    },
+    {
+      formatted: "Nerudova 19, 118 00 Praha 1, Czechia",
+      street: "Nerudova 19",
+      city: "Praha 1",
+      state: "Praha",
+      zipCode: "118 00",
+      country: "Czechia"
+    },
+    {
+      formatted: "Masarykova 28, 602 00 Brno, Czechia",
+      street: "Masarykova 28",
+      city: "Brno",
+      state: "Jihomoravský kraj",
+      zipCode: "602 00",
+      country: "Czechia"
+    },
+    {
+      formatted: "Náměstí Svobody 1, 602 00 Brno, Czechia",
+      street: "Náměstí Svobody 1",
+      city: "Brno",
+      state: "Jihomoravský kraj",
+      zipCode: "602 00",
+      country: "Czechia"
+    },
+    // Germany addresses
+    {
+      formatted: "Hans-Bredow-Straße 19, 28307 Bremen, Germany",
+      street: "Hans-Bredow-Straße 19",
+      city: "Bremen",
+      state: "Bremen",
+      zipCode: "28307",
+      country: "Germany"
+    },
+    {
+      formatted: "Alexanderplatz 1, 10178 Berlin, Germany",
+      street: "Alexanderplatz 1",
+      city: "Berlin",
+      state: "Berlin",
+      zipCode: "10178",
+      country: "Germany"
+    },
+    // Austria addresses
+    {
+      formatted: "Stephansplatz 1, 1010 Wien, Austria",
+      street: "Stephansplatz 1",
+      city: "Wien",
+      state: "Wien",
+      zipCode: "1010",
+      country: "Austria"
     }
-    
-    if (parts.length >= 2) {
-      // Try to find ZIP code (numbers)
-      const zipMatch = parts.find(part => /^\d{3,6}$/.test(part));
-      if (zipMatch) {
-        zipCode = zipMatch;
-      }
-      
-      // Try to find country (common countries)
-      const countries = ['czechia', 'czech republic', 'germany', 'austria', 'slovakia', 'poland', 'usa', 'united states'];
-      const countryMatch = parts.find(part => countries.some(c => part.toLowerCase().includes(c)));
-      if (countryMatch) {
-        country = countryMatch;
-      }
-      
-      // Remaining parts are likely city and state
-      const remaining = parts.filter(part => part !== address && part !== zipCode && part !== country);
-      if (remaining.length >= 1) {
-        city = remaining[0];
-      }
-      if (remaining.length >= 2) {
-        state = remaining[1];
-      }
+  ];
+
+  // Function to search addresses with fuzzy matching
+  const searchAddresses = async (query: string) => {
+    if (!query || query.length < 3) {
+      setAddressSuggestions([]);
+      setShowAddressDropdown(false);
+      return;
     }
 
-    // Update the customer state
+    setIsLoadingAddresses(true);
+    
+    // Simulate API delay
+    setTimeout(() => {
+      const queryLower = query.toLowerCase();
+      
+      // Score each address based on fuzzy matching
+      const scoredAddresses = mockAddressDatabase.map(addr => {
+        let score = 0;
+        const formattedLower = addr.formatted.toLowerCase();
+        
+        // Exact match gets highest score
+        if (formattedLower === queryLower) {
+          score = 100;
+        }
+        // Starting with query gets high score
+        else if (formattedLower.startsWith(queryLower)) {
+          score = 80;
+        }
+        // Contains the full query
+        else if (formattedLower.includes(queryLower)) {
+          score = 60;
+        }
+        // Check individual words
+        else {
+          const queryWords = queryLower.split(/\s+/);
+          const addressWords = formattedLower.split(/\s+/);
+          
+          queryWords.forEach(qWord => {
+            addressWords.forEach(aWord => {
+              if (aWord.startsWith(qWord)) {
+                score += 20;
+              } else if (aWord.includes(qWord)) {
+                score += 10;
+              }
+            });
+          });
+        }
+        
+        return { ...addr, score };
+      });
+      
+      // Filter addresses with score > 0 and sort by score
+      const filtered = scoredAddresses
+        .filter(addr => addr.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 10) // Limit to top 10 results
+        .map(({ score, ...addr }) => addr); // Remove score from final result
+      
+      setAddressSuggestions(filtered);
+      setShowAddressDropdown(filtered.length > 0);
+      setIsLoadingAddresses(false);
+    }, 300);
+  };
+
+  // Function to select an address from suggestions
+  const selectAddress = (suggestion: any) => {
     setNewCustomer(prev => ({
       ...prev,
-      address: address || prev.address,
-      city: city || prev.city,
-      state: state || prev.state,
-      zipCode: zipCode || prev.zipCode,
-      country: country || prev.country,
+      address: suggestion.street,
+      city: suggestion.city,
+      state: suggestion.state,
+      zipCode: suggestion.zipCode,
+      country: suggestion.country,
     }));
+    setAddressAutocomplete(suggestion.formatted);
+    setShowAddressDropdown(false);
+    setAddressSuggestions([]);
   };
 
   const form = useForm<z.infer<typeof addOrderSchema>>({
@@ -717,49 +846,79 @@ export default function AddOrder() {
                 
                 {/* Address Autocomplete */}
                 <div className="space-y-2">
-                  <Label htmlFor="addressAutocomplete">Address Autocomplete</Label>
+                  <Label htmlFor="addressAutocomplete">Address Search (optional)</Label>
                   <div className="relative">
-                    <Textarea
+                    <Input
                       id="addressAutocomplete"
                       value={addressAutocomplete}
                       onChange={(e) => {
                         const value = e.target.value;
                         setAddressAutocomplete(value);
-                        // Parse address on paste or when user stops typing
-                        if (value.includes(',') || value.includes('\n')) {
-                          parseAddress(value);
+                        searchAddresses(value);
+                      }}
+                      onFocus={() => {
+                        if (addressAutocomplete.length >= 3) {
+                          searchAddresses(addressAutocomplete);
                         }
                       }}
-                      onPaste={(e) => {
-                        // Parse address after paste
-                        const target = e.currentTarget;
-                        setTimeout(() => {
-                          if (target && target.value) {
-                            const pastedText = target.value;
-                            parseAddress(pastedText);
-                          }
-                        }, 100);
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') {
+                          setShowAddressDropdown(false);
+                        }
                       }}
-                      placeholder="Paste full address here (e.g., Dragounská 2545/9A, Cheb, 35002, Karlovarsky kraj, Czechia)"
-                      className="min-h-[80px] text-sm"
-                      rows={3}
+                      placeholder="Start typing an address..."
+                      className="pr-10"
                     />
                     {addressAutocomplete && (
                       <Button
                         type="button"
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
-                        className="absolute top-2 right-2 h-6 px-2 text-xs"
+                        className="absolute right-1 top-1 h-8 w-8 p-0"
                         onClick={() => {
-                          parseAddress(addressAutocomplete);
+                          setAddressAutocomplete("");
+                          setAddressSuggestions([]);
+                          setShowAddressDropdown(false);
                         }}
                       >
-                        Parse
+                        <X className="h-4 w-4" />
                       </Button>
+                    )}
+                    
+                    {/* Address suggestions dropdown */}
+                    {showAddressDropdown && (
+                      <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-72 overflow-y-auto z-50">
+                        {isLoadingAddresses ? (
+                          <div className="p-4 text-center text-slate-500">
+                            <div className="text-sm">Searching addresses...</div>
+                          </div>
+                        ) : addressSuggestions.length > 0 ? (
+                          <>
+                            <div className="p-2 bg-slate-50 border-b text-xs text-slate-600">
+                              {addressSuggestions.length} address{addressSuggestions.length !== 1 ? 'es' : ''} found
+                            </div>
+                            {addressSuggestions.map((suggestion, index) => (
+                              <div
+                                key={index}
+                                className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0 transition-colors"
+                                onClick={() => selectAddress(suggestion)}
+                              >
+                                <div className="font-medium text-slate-900">
+                                  {suggestion.formatted}
+                                </div>
+                              </div>
+                            ))}
+                          </>
+                        ) : (
+                          <div className="p-4 text-center text-slate-500">
+                            <div className="text-sm">No addresses found</div>
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                   <p className="text-xs text-slate-500">
-                    Paste a complete address above and it will automatically fill the fields below
+                    Search for an official address to auto-fill the fields below
                   </p>
                 </div>
 
