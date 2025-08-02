@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCurrency } from "@/lib/currencyUtils";
-import { ArrowLeft, Save, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Save, Plus, Trash2, X } from "lucide-react";
 import { Link } from "wouter";
 import {
   AlertDialog,
@@ -61,6 +61,21 @@ export default function EditOrder() {
   const [productSearch, setProductSearch] = useState("");
   const [customerSearch, setCustomerSearch] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+  const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({
+    name: "",
+    facebookName: "",
+    facebookUrl: "",
+    email: "",
+    phone: "",
+    address: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    country: "",
+    company: "",
+    type: "regular"
+  });
 
   // Fetch order details
   const { data: order, isLoading: orderLoading } = useQuery({
@@ -317,7 +332,7 @@ export default function EditOrder() {
     return subtotal + tax + shipping - discount;
   };
 
-  const onSubmit = (data: z.infer<typeof editOrderSchema>) => {
+  const onSubmit = async (data: z.infer<typeof editOrderSchema>) => {
     if (orderItems.length === 0) {
       toast({
         title: "Error",
@@ -327,9 +342,26 @@ export default function EditOrder() {
       return;
     }
 
+    let customerId = selectedCustomer?.id;
+
+    // If new customer, create it first
+    if (selectedCustomer && !selectedCustomer.id) {
+      try {
+        const response = await apiRequest('POST', '/api/customers', selectedCustomer);
+        customerId = response.id;
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to create customer",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     const orderData = {
       ...data,
-      customerId: selectedCustomer?.id,
+      customerId,
       subtotal: calculateSubtotal(),
       taxAmount: calculateTax(),
       grandTotal: calculateGrandTotal(),
@@ -497,6 +529,201 @@ export default function EditOrder() {
                         )}
                       </div>
                     ))}
+                  </div>
+                )}
+                {customerSearch && customers?.length === 0 && !showNewCustomerForm && (
+                  <div className="mt-2 p-4 border rounded-lg bg-slate-50">
+                    <p className="text-sm text-slate-600 mb-2">No customers found</p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setShowNewCustomerForm(true);
+                        setNewCustomer({ ...newCustomer, name: customerSearch });
+                      }}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add New Customer
+                    </Button>
+                  </div>
+                )}
+                
+                {showNewCustomerForm && (
+                  <div className="space-y-4 border border-blue-200 bg-blue-50 p-4 rounded-lg mt-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="font-medium text-blue-900">New Customer Details</h4>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setShowNewCustomerForm(false);
+                          setNewCustomer({
+                            name: "",
+                            facebookName: "",
+                            facebookUrl: "",
+                            email: "",
+                            phone: "",
+                            address: "",
+                            city: "",
+                            state: "",
+                            zipCode: "",
+                            country: "",
+                            company: "",
+                            type: "regular"
+                          });
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    
+                    {/* Basic Information */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="customerName">Customer Name *</Label>
+                        <Input
+                          id="customerName"
+                          value={newCustomer.name}
+                          onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
+                          placeholder="Type here"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="facebookName">Facebook Name</Label>
+                        <Input
+                          id="facebookName"
+                          value={newCustomer.facebookName}
+                          onChange={(e) => setNewCustomer({ ...newCustomer, facebookName: e.target.value })}
+                          placeholder="Type here"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="facebookUrl">Facebook URL</Label>
+                        <Input
+                          id="facebookUrl"
+                          value={newCustomer.facebookUrl}
+                          onChange={(e) => setNewCustomer({ ...newCustomer, facebookUrl: e.target.value })}
+                          placeholder="Place URL or Type"
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Contact Information */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="customerEmail">Email</Label>
+                        <Input
+                          id="customerEmail"
+                          type="email"
+                          value={newCustomer.email}
+                          onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
+                          placeholder="name@example.com"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="customerPhone">Phone</Label>
+                        <Input
+                          id="customerPhone"
+                          value={newCustomer.phone}
+                          onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
+                          placeholder="+1234567890"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="customerCompany">Company</Label>
+                        <Input
+                          id="customerCompany"
+                          value={newCustomer.company}
+                          onChange={(e) => setNewCustomer({ ...newCustomer, company: e.target.value })}
+                          placeholder="Company name"
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Address Information */}
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="shippingAddress">Shipping Address</Label>
+                        <Input
+                          id="shippingAddress"
+                          value={newCustomer.address}
+                          onChange={(e) => setNewCustomer({ ...newCustomer, address: e.target.value })}
+                          placeholder="Street address"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div>
+                          <Label htmlFor="city">City</Label>
+                          <Input
+                            id="city"
+                            value={newCustomer.city}
+                            onChange={(e) => setNewCustomer({ ...newCustomer, city: e.target.value })}
+                            placeholder="Type here"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="state">State</Label>
+                          <Input
+                            id="state"
+                            value={newCustomer.state}
+                            onChange={(e) => setNewCustomer({ ...newCustomer, state: e.target.value })}
+                            placeholder="Type here"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="zipCode">ZIP Code</Label>
+                          <Input
+                            id="zipCode"
+                            value={newCustomer.zipCode}
+                            onChange={(e) => setNewCustomer({ ...newCustomer, zipCode: e.target.value })}
+                            placeholder="12345"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="country">Country</Label>
+                          <Input
+                            id="country"
+                            value={newCustomer.country}
+                            onChange={(e) => setNewCustomer({ ...newCustomer, country: e.target.value })}
+                            placeholder="Type here"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Customer Type */}
+                    <div>
+                      <Label htmlFor="customerType">Customer Type</Label>
+                      <Select
+                        value={newCustomer.type}
+                        onValueChange={(value) => setNewCustomer({ ...newCustomer, type: value })}
+                      >
+                        <SelectTrigger id="customerType">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="regular">Regular</SelectItem>
+                          <SelectItem value="vip">VIP</SelectItem>
+                          <SelectItem value="wholesale">Wholesale</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <Button
+                      type="button"
+                      className="w-full"
+                      onClick={() => {
+                        if (newCustomer.name) {
+                          setSelectedCustomer(newCustomer);
+                          setShowNewCustomerForm(false);
+                        }
+                      }}
+                    >
+                      Add Customer to Order
+                    </Button>
                   </div>
                 )}
               </div>
