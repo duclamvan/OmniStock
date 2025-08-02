@@ -1074,6 +1074,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/seed-comprehensive-data', async (req, res) => {
+    try {
+      const { seedComprehensiveData } = await import('./seedComprehensiveData');
+      const result = await seedComprehensiveData();
+      res.json(result);
+    } catch (error) {
+      console.error("Error seeding comprehensive data:", error);
+      res.status(500).json({ message: "Failed to seed comprehensive data", error: error.message });
+    }
+  });
+
   // Fix order items endpoint
   app.post('/api/fix-order-items', async (req, res) => {
     try {

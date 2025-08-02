@@ -415,20 +415,120 @@ export class DatabaseStorage implements IStorage {
 
   // Orders
   async getOrders(): Promise<Order[]> {
-    return await db.select().from(orders).orderBy(desc(orders.createdAt));
+    const ordersWithCustomers = await db
+      .select({
+        id: orders.id,
+        orderId: orders.orderId,
+        customerId: orders.customerId,
+        billerId: orders.billerId,
+        currency: orders.currency,
+        orderStatus: orders.orderStatus,
+        paymentStatus: orders.paymentStatus,
+        priority: orders.priority,
+        subtotal: orders.subtotal,
+        discountType: orders.discountType,
+        discountValue: orders.discountValue,
+        taxRate: orders.taxRate,
+        taxAmount: orders.taxAmount,
+        shippingCost: orders.shippingCost,
+        actualShippingCost: orders.actualShippingCost,
+        grandTotal: orders.grandTotal,
+        notes: orders.notes,
+        attachmentUrl: orders.attachmentUrl,
+        createdAt: orders.createdAt,
+        updatedAt: orders.updatedAt,
+        shippedAt: orders.shippedAt,
+        customer: {
+          id: customers.id,
+          name: customers.name,
+          facebookName: customers.facebookName,
+          email: customers.email,
+          phone: customers.phone,
+        }
+      })
+      .from(orders)
+      .leftJoin(customers, eq(orders.customerId, customers.id))
+      .orderBy(desc(orders.createdAt));
+    
+    return ordersWithCustomers as any;
   }
 
   async getOrderById(id: string): Promise<Order | undefined> {
-    const [order] = await db.select().from(orders).where(eq(orders.id, id));
-    return order;
+    const [order] = await db
+      .select({
+        id: orders.id,
+        orderId: orders.orderId,
+        customerId: orders.customerId,
+        billerId: orders.billerId,
+        currency: orders.currency,
+        orderStatus: orders.orderStatus,
+        paymentStatus: orders.paymentStatus,
+        priority: orders.priority,
+        subtotal: orders.subtotal,
+        discountType: orders.discountType,
+        discountValue: orders.discountValue,
+        taxRate: orders.taxRate,
+        taxAmount: orders.taxAmount,
+        shippingCost: orders.shippingCost,
+        actualShippingCost: orders.actualShippingCost,
+        grandTotal: orders.grandTotal,
+        notes: orders.notes,
+        attachmentUrl: orders.attachmentUrl,
+        createdAt: orders.createdAt,
+        updatedAt: orders.updatedAt,
+        shippedAt: orders.shippedAt,
+        customer: {
+          id: customers.id,
+          name: customers.name,
+          facebookName: customers.facebookName,
+          email: customers.email,
+          phone: customers.phone,
+        }
+      })
+      .from(orders)
+      .leftJoin(customers, eq(orders.customerId, customers.id))
+      .where(eq(orders.id, id));
+    return order as any;
   }
 
   async getOrdersByStatus(status: string): Promise<Order[]> {
-    return await db
-      .select()
+    const ordersWithCustomers = await db
+      .select({
+        id: orders.id,
+        orderId: orders.orderId,
+        customerId: orders.customerId,
+        billerId: orders.billerId,
+        currency: orders.currency,
+        orderStatus: orders.orderStatus,
+        paymentStatus: orders.paymentStatus,
+        priority: orders.priority,
+        subtotal: orders.subtotal,
+        discountType: orders.discountType,
+        discountValue: orders.discountValue,
+        taxRate: orders.taxRate,
+        taxAmount: orders.taxAmount,
+        shippingCost: orders.shippingCost,
+        actualShippingCost: orders.actualShippingCost,
+        grandTotal: orders.grandTotal,
+        notes: orders.notes,
+        attachmentUrl: orders.attachmentUrl,
+        createdAt: orders.createdAt,
+        updatedAt: orders.updatedAt,
+        shippedAt: orders.shippedAt,
+        customer: {
+          id: customers.id,
+          name: customers.name,
+          facebookName: customers.facebookName,
+          email: customers.email,
+          phone: customers.phone,
+        }
+      })
       .from(orders)
+      .leftJoin(customers, eq(orders.customerId, customers.id))
       .where(eq(orders.orderStatus, status as any))
       .orderBy(desc(orders.createdAt));
+    
+    return ordersWithCustomers as any;
   }
 
   async getOrdersByPaymentStatus(paymentStatus: string): Promise<Order[]> {
