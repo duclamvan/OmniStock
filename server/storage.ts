@@ -11,7 +11,6 @@ import {
   purchases,
   incomingShipments,
   sales,
-  saleProducts,
   returns,
   returnItems,
   expenses,
@@ -980,24 +979,20 @@ export class DatabaseStorage implements IStorage {
   async getActiveSalesForProduct(productId: string, categoryId: string | null): Promise<Sale[]> {
     const today = new Date();
     
+    // Get all active sales
     const activeSales = await db
       .select()
       .from(sales)
       .where(
         and(
           eq(sales.status, 'active'),
-          lte(sales.dateFrom, today),
-          gte(sales.dateTo, today)
+          lte(sales.startDate, today),
+          gte(sales.endDate, today)
         )
       );
     
-    return activeSales.filter(sale => {
-      if (sale.applicationScope === 'all_products') return true;
-      if (sale.applicationScope === 'specific_product' && sale.targetProductIds?.includes(productId)) return true;
-      if (sale.applicationScope === 'specific_category' && categoryId && sale.targetCategoryIds?.includes(categoryId)) return true;
-      if (sale.applicationScope === 'selected_products' && sale.targetProductIds?.includes(productId)) return true;
-      return false;
-    });
+    // For now, return all active sales since we don't have product-specific filtering
+    return activeSales;
   }
 }
 

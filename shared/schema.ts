@@ -62,9 +62,13 @@ export const warehouses = pgTable("warehouses", {
   name: varchar("name", { length: 255 }).notNull(),
   address: text("address"),
   city: varchar("city", { length: 100 }),
+  country: varchar("country", { length: 100 }).default("Czech Republic"),
   zipCode: varchar("zip_code", { length: 20 }),
   phone: varchar("phone", { length: 20 }),
   email: varchar("email", { length: 255 }),
+  manager: varchar("manager", { length: 255 }),
+  capacity: integer("capacity").default(0),
+  type: varchar("type", { length: 50 }).default("branch"), // main, branch, temporary
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -127,6 +131,7 @@ export const customers = pgTable("customers", {
   city: varchar("city", { length: 100 }),
   zipCode: varchar("zip_code", { length: 20 }),
   country: varchar("country", { length: 100 }),
+  type: varchar("type", { length: 50 }).default("regular"), // regular, vip, wholesale
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -206,23 +211,21 @@ export const incomingShipments = pgTable("incoming_shipments", {
 // Sales/Discounts
 export const sales = pgTable("sales", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  discountId: varchar("discount_id", { length: 100 }).unique().notNull(),
   name: varchar("name", { length: 255 }).notNull(),
-  discountPercentage: integer("discount_percentage").notNull(),
+  description: text("description"),
+  code: varchar("code", { length: 100 }).unique(),
+  type: varchar("type", { length: 20 }).default('percentage'), // percentage, fixed
+  value: decimal("value", { precision: 12, scale: 2 }).notNull(),
+  currency: currencyEnum("currency").default('EUR'),
+  startDate: timestamp("start_date"),
+  endDate: timestamp("end_date"),
+  minimumAmount: decimal("minimum_amount", { precision: 12, scale: 2 }),
+  maximumDiscount: decimal("maximum_discount", { precision: 12, scale: 2 }),
   status: varchar("status", { length: 20 }).default('active'),
-  applicationScope: varchar("application_scope", { length: 50 }).notNull(), // specific_product, all_products, specific_category, selected_products
-  dateFrom: timestamp("date_from").notNull(),
-  dateTo: timestamp("date_to").notNull(),
-  categoryId: varchar("category_id").references(() => categories.id),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Sale Products (for selected products scope)
-export const saleProducts = pgTable("sale_products", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  saleId: varchar("sale_id").references(() => sales.id, { onDelete: 'cascade' }).notNull(),
-  productId: varchar("product_id").references(() => products.id, { onDelete: 'cascade' }).notNull(),
-});
 
 // Returns
 export const returns = pgTable("returns", {
@@ -386,24 +389,7 @@ export const returnItemsRelations = relations(returnItems, ({ one }) => ({
   }),
 }));
 
-export const salesRelations = relations(sales, ({ one, many }) => ({
-  category: one(categories, {
-    fields: [sales.categoryId],
-    references: [categories.id],
-  }),
-  products: many(saleProducts),
-}));
-
-export const saleProductsRelations = relations(saleProducts, ({ one }) => ({
-  sale: one(sales, {
-    fields: [saleProducts.saleId],
-    references: [sales.id],
-  }),
-  product: one(products, {
-    fields: [saleProducts.productId],
-    references: [products.id],
-  }),
-}));
+export const salesRelations = relations(sales, ({ }) => ({}));
 
 export const userActivitiesRelations = relations(userActivities, ({ one }) => ({
   user: one(users, {
@@ -439,8 +425,10 @@ export const insertOrderItemSchema = createInsertSchema(orderItems).omit({ id: t
 });
 export const insertPurchaseSchema = createInsertSchema(purchases).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertIncomingShipmentSchema = createInsertSchema(incomingShipments).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertSaleSchema = createInsertSchema(sales).omit({ id: true, createdAt: true }).extend({
-  discountValue: z.coerce.string(),
+export const insertSaleSchema = createInsertSchema(sales).omit({ id: true, createdAt: true, updatedAt: true }).extend({
+  value: z.coerce.string(),
+  minimumAmount: z.coerce.string().optional(),
+  maximumDiscount: z.coerce.string().optional(),
 });
 export const insertReturnSchema = createInsertSchema(returns).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertReturnItemSchema = createInsertSchema(returnItems).omit({ id: true });

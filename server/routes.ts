@@ -956,7 +956,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/sales', async (req: any, res) => {
     try {
-      const data = insertSaleSchema.parse(req.body);
+      // Parse dates from strings to Date objects
+      const body = {
+        ...req.body,
+        startDate: req.body.startDate ? new Date(req.body.startDate) : undefined,
+        endDate: req.body.endDate ? new Date(req.body.endDate) : undefined,
+      };
+      
+      const data = insertSaleSchema.parse(body);
       const sale = await storage.createSale(data);
       
       await storage.createUserActivity({
@@ -989,7 +996,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/sales/:id', async (req: any, res) => {
     try {
-      const updates = req.body;
+      // Parse dates from strings to Date objects
+      const updates = {
+        ...req.body,
+        startDate: req.body.startDate ? new Date(req.body.startDate) : undefined,
+        endDate: req.body.endDate ? new Date(req.body.endDate) : undefined,
+      };
+      
       const sale = await storage.updateSale(req.params.id, updates);
       
       await storage.createUserActivity({
