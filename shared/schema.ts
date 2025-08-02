@@ -416,7 +416,15 @@ export const userActivitiesRelations = relations(userActivities, ({ one }) => ({
 export const insertCategorySchema = createInsertSchema(categories).omit({ id: true, createdAt: true });
 export const insertWarehouseSchema = createInsertSchema(warehouses).omit({ id: true, createdAt: true });
 export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true, createdAt: true });
-export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true, updatedAt: true }).extend({
+  quantity: z.number().min(0).optional(),
+  lowStockAlert: z.number().min(0).optional(),
+  priceCzk: z.string().optional(),
+  priceEur: z.string().optional(),
+  importCostUsd: z.string().optional(),
+  importCostCzk: z.string().optional(),
+  importCostEur: z.string().optional(),
+});
 export const insertProductVariantSchema = createInsertSchema(productVariants).omit({ id: true, createdAt: true });
 export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true, updatedAt: true, shippedAt: true });

@@ -22,7 +22,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = String(req.user.claims.sub);
       const user = await storage.getUser(userId);
       res.json(user);
     } catch (error) {
@@ -82,8 +82,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Log activity
       await storage.createUserActivity({
-        userId: req.user.claims.sub,
-        action: 'create',
+        userId: String(req.user.claims.sub),
+        action: 'created',
         entityType: 'category',
         entityId: category.id,
         description: `Created category: ${category.name}`,
@@ -113,8 +113,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const warehouse = await storage.createWarehouse(data);
       
       await storage.createUserActivity({
-        userId: req.user.claims.sub,
-        action: 'create',
+        userId: String(req.user.claims.sub),
+        action: 'created',
         entityType: 'warehouse',
         entityId: warehouse.id,
         description: `Created warehouse: ${warehouse.name}`,
@@ -144,8 +144,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const supplier = await storage.createSupplier(data);
       
       await storage.createUserActivity({
-        userId: req.user.claims.sub,
-        action: 'create',
+        userId: String(req.user.claims.sub),
+        action: 'created',
         entityType: 'supplier',
         entityId: supplier.id,
         description: `Created supplier: ${supplier.name}`,
@@ -206,8 +206,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const product = await storage.createProduct(data);
       
       await storage.createUserActivity({
-        userId: req.user.claims.sub,
-        action: 'create',
+        userId: String(req.user.claims.sub),
+        action: 'created',
         entityType: 'product',
         entityId: product.id,
         description: `Created product: ${product.name}`,
@@ -216,6 +216,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(product);
     } catch (error) {
       console.error("Error creating product:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
       res.status(500).json({ message: "Failed to create product" });
     }
   });
@@ -226,8 +229,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const product = await storage.updateProduct(req.params.id, updates);
       
       await storage.createUserActivity({
-        userId: req.user.claims.sub,
-        action: 'update',
+        userId: String(req.user.claims.sub),
+        action: 'updated',
         entityType: 'product',
         entityId: product.id,
         description: `Updated product: ${product.name}`,
@@ -265,8 +268,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const customer = await storage.createCustomer(data);
       
       await storage.createUserActivity({
-        userId: req.user.claims.sub,
-        action: 'create',
+        userId: String(req.user.claims.sub),
+        action: 'created',
         entityType: 'customer',
         entityId: customer.id,
         description: `Created customer: ${customer.name}`,
@@ -352,7 +355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       await storage.createUserActivity({
-        userId: req.user.claims.sub,
+        userId: String(req.user.claims.sub),
         action: 'create',
         entityType: 'order',
         entityId: order.id,
@@ -372,7 +375,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const order = await storage.updateOrder(req.params.id, updates);
       
       await storage.createUserActivity({
-        userId: req.user.claims.sub,
+        userId: String(req.user.claims.sub),
         action: 'update',
         entityType: 'order',
         entityId: order.id,
@@ -403,7 +406,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const preOrder = await storage.createPreOrder(data);
       
       await storage.createUserActivity({
-        userId: req.user.claims.sub,
+        userId: String(req.user.claims.sub),
         action: 'create',
         entityType: 'pre-order',
         entityId: preOrder.id,
@@ -422,7 +425,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.deletePreOrder(req.params.id);
       
       await storage.createUserActivity({
-        userId: req.user.claims.sub,
+        userId: String(req.user.claims.sub),
         action: 'delete',
         entityType: 'pre-order',
         entityId: req.params.id,
@@ -453,7 +456,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const expense = await storage.createExpense(data);
       
       await storage.createUserActivity({
-        userId: req.user.claims.sub,
+        userId: String(req.user.claims.sub),
         action: 'create',
         entityType: 'expense',
         entityId: expense.id,
@@ -484,7 +487,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const sale = await storage.createSale(data);
       
       await storage.createUserActivity({
-        userId: req.user.claims.sub,
+        userId: String(req.user.claims.sub),
         action: 'create',
         entityType: 'sale',
         entityId: sale.id,
