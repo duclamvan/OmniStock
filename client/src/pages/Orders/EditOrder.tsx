@@ -785,9 +785,27 @@ export default function EditOrder() {
                       className="p-3 hover:bg-slate-50 cursor-pointer flex justify-between items-center"
                       onClick={() => addProductToOrder(product)}
                     >
-                      <div>
+                      <div className="flex-1">
                         <p className="font-medium">{product.name}</p>
                         <p className="text-sm text-slate-600">SKU: {product.sku}</p>
+                      </div>
+                      <div className="text-right mr-3">
+                        <p className="font-medium">
+                          {(() => {
+                            const selectedCurrency = form.watch('currency') || 'EUR';
+                            let price = 0;
+                            if (selectedCurrency === 'CZK' && product.priceCzk) {
+                              price = parseFloat(product.priceCzk);
+                            } else if (selectedCurrency === 'EUR' && product.priceEur) {
+                              price = parseFloat(product.priceEur);
+                            } else {
+                              // Fallback to any available price
+                              price = parseFloat(product.priceEur || product.priceCzk || '0');
+                            }
+                            return formatCurrency(price, selectedCurrency);
+                          })()}
+                        </p>
+                        <p className="text-sm text-slate-500">Stock: {product.stockQuantity || 0}</p>
                       </div>
                       <Button type="button" size="sm">
                         <Plus className="h-4 w-4" />
