@@ -1405,7 +1405,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Build street with house number for formatted display
         let streetWithNumber = street;
         if (houseNumber && street) {
-          streetWithNumber = `${street} ${houseNumber}`;
+          // Check if the street already contains the house number to avoid duplication
+          if (!street.includes(houseNumber)) {
+            streetWithNumber = `${street} ${houseNumber}`;
+          } else {
+            streetWithNumber = street; // Street already contains house number
+          }
         }
         
         // Create short formatted address: "Street Number, Postcode City, Country"
