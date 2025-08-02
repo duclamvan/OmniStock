@@ -173,6 +173,8 @@ export default function EditOrder() {
 
         return {
           ...item,
+          productName: item.productName || product.name, // Preserve productName
+          sku: item.sku || product.sku, // Preserve sku
           price: newPrice,
           total: item.quantity * newPrice - item.discount
         };

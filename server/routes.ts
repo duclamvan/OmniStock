@@ -755,8 +755,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Order not found" });
       }
       
-      const items = await storage.getOrderItems(req.params.id);
-      res.json({ ...order, items });
+      // Order already includes items from getOrderById
+      res.json(order);
     } catch (error) {
       console.error("Error fetching order:", error);
       res.status(500).json({ message: "Failed to fetch order" });
