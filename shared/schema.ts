@@ -129,6 +129,7 @@ export const customers = pgTable("customers", {
   phone: varchar("phone", { length: 20 }),
   address: text("address"),
   city: varchar("city", { length: 100 }),
+  state: varchar("state", { length: 100 }),
   zipCode: varchar("zip_code", { length: 20 }),
   country: varchar("country", { length: 100 }),
   type: varchar("type", { length: 50 }).default("regular"), // regular, vip, wholesale

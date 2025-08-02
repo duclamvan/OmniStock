@@ -347,9 +347,34 @@ export default function EditOrder() {
     // If new customer, create it first
     if (selectedCustomer && !selectedCustomer.id) {
       try {
-        const response = await apiRequest('POST', '/api/customers', selectedCustomer);
+        const customerData = {
+          name: selectedCustomer.name,
+          facebookName: selectedCustomer.facebookName || undefined,
+          facebookId: selectedCustomer.facebookUrl || undefined,
+          email: selectedCustomer.email || undefined,
+          phone: selectedCustomer.phone || undefined,
+          address: selectedCustomer.address || undefined,
+          city: selectedCustomer.city || undefined,
+          state: selectedCustomer.state || undefined,
+          zipCode: selectedCustomer.zipCode || undefined,
+          country: selectedCustomer.country || undefined,
+          type: selectedCustomer.type || 'regular'
+        };
+        
+        // Remove undefined fields
+        Object.keys(customerData).forEach(key => 
+          customerData[key] === undefined && delete customerData[key]
+        );
+        
+        console.log('Creating new customer:', customerData);
+        const response = await apiRequest('POST', '/api/customers', customerData);
         customerId = response.id;
+        console.log('New customer created with ID:', customerId);
+        
+        // Update selectedCustomer with the new ID
+        setSelectedCustomer({ ...selectedCustomer, id: customerId });
       } catch (error) {
+        console.error('Failed to create customer:', error);
         toast({
           title: "Error",
           description: "Failed to create customer",
