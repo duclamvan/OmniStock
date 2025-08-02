@@ -1,0 +1,56 @@
+_app-b6b5f109f17183de.js:13 
+      /////////////////////
+   ///////////////////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////        Curious and driven?
+  ///////////////@@@@@@@///////        Work with us!
+  ///////////////@@@@@@@///////
+  ///////////////@@@@@@@///////        https://join.replit.com/hack.with.us
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@#//////////////
+   ///////////////////////////
+      /////////////////////
+      
+_app-b6b5f109f17183de.js:13 [LaunchDarkly] LaunchDarkly client initialized
+OmniStock:1 Banner not shown: beforeinstallpromptevent.preventDefault() called. The page must call beforeinstallpromptevent.prompt() to show the banner.
+Grammarly-check.js:1 [Violation] Permissions policy violation: unload is not allowed in this document.
+(anonymous) @ Grammarly-check.js:1
+framework-9bfc368571c1b99b.js:1 Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+_ @ framework-9bfc368571c1b99b.js:1
+framework-9bfc368571c1b99b.js:1 Unrecognized feature: 'battery'.
+_ @ framework-9bfc368571c1b99b.js:1
+framework-9bfc368571c1b99b.js:1 Unrecognized feature: 'layout-animations'.
+_ @ framework-9bfc368571c1b99b.js:1
+framework-9bfc368571c1b99b.js:1 Unrecognized feature: 'legacy-image-formats'.
+_ @ framework-9bfc368571c1b99b.js:1
+framework-9bfc368571c1b99b.js:1 Unrecognized feature: 'navigation-override'.
+_ @ framework-9bfc368571c1b99b.js:1
+framework-9bfc368571c1b99b.js:1 Unrecognized feature: 'oversized-images'.
+_ @ framework-9bfc368571c1b99b.js:1
+framework-9bfc368571c1b99b.js:1 Unrecognized feature: 'publickey-credentials'.
+_ @ framework-9bfc368571c1b99b.js:1
+framework-9bfc368571c1b99b.js:1 Unrecognized feature: 'unoptimized-images'.
+_ @ framework-9bfc368571c1b99b.js:1
+framework-9bfc368571c1b99b.js:1 Unrecognized feature: 'unsized-media'.
+_ @ framework-9bfc368571c1b99b.js:1
+framework-9bfc368571c1b99b.js:1 Unrecognized feature: 'pointer-lock'.
+_ @ framework-9bfc368571c1b99b.js:1
+framework-9bfc368571c1b99b.js:1 Allow attribute will take precedence over 'allowfullscreen'.
+_ @ framework-9bfc368571c1b99b.js:1
+framework-9bfc368571c1b99b.js:1 Allow attribute will take precedence over 'allowpaymentrequest'.
+_ @ framework-9bfc368571c1b99b.js:1
+framework-9bfc368571c1b99b.js:1 Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+_ @ framework-9bfc368571c1b99b.js:1
+workspace_iframe.html:32 Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+workspace_iframe.html:32 Unrecognized feature: 'battery'.
+workspace_iframe.html:32 Unrecognized feature: 'layout-animations'.
+workspace_iframe.html:32 Unrecognized feature: 'legacy-image-formats'.
+workspace_iframe.html:32 Unrecognized feature: 'navigation-override'.
+workspace_iframe.html:32 Unrecognized feature: 'oversized-images'.
+workspace_iframe.html:32 Unrecognized feature: 'publickey-credentials'.
+workspace_iframe.html:32 Unrecognized feature: 'unoptimized-images'.
+workspace_iframe.html:32 Unrecognized feature: 'unsized-media'.
+workspace_iframe.html:32 Allow attribute will take precedence over 'allowfullscreen'.
+workspace_iframe.html:32 Allow attribute will take precedence over 'allowpaymentrequest'.
