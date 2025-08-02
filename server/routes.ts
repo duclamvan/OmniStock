@@ -1402,16 +1402,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const zipCode = address.postcode || '';
         const country = address.country || '';
         
-        // Build street with house number
-        let fullStreet = street;
+        // Build street with house number for formatted display
+        let streetWithNumber = street;
         if (houseNumber && street) {
-          fullStreet = `${street} ${houseNumber}`;
+          streetWithNumber = `${street} ${houseNumber}`;
         }
         
         // Create short formatted address: "Street Number, Postcode City, Country"
         let shortFormatted = '';
-        if (fullStreet && zipCode && city) {
-          shortFormatted = `${fullStreet}, ${zipCode} ${city}`;
+        if (streetWithNumber && zipCode && city) {
+          shortFormatted = `${streetWithNumber}, ${zipCode} ${city}`;
           if (country) {
             shortFormatted += `, ${country}`;
           }
@@ -1422,7 +1422,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         return {
           formatted: shortFormatted,
-          street: fullStreet,
+          street: streetWithNumber,  // Full street address with number for display
+          streetOnly: street,  // Street name without house number
           houseNumber,
           city,
           state: address.state || '',
