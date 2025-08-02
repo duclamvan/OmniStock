@@ -70,6 +70,64 @@ export default function AddOrder() {
     company: "",
     type: "regular"
   });
+  
+  const [addressAutocomplete, setAddressAutocomplete] = useState("");
+
+  // Function to parse and auto-fill address from pasted text
+  const parseAddress = (addressText: string) => {
+    if (!addressText.trim()) return;
+
+    // Split address by commas and lines
+    const parts = addressText.split(/[,\n]+/).map(part => part.trim()).filter(Boolean);
+    
+    if (parts.length === 0) return;
+
+    // Try to extract common patterns
+    let address = "";
+    let city = "";
+    let state = "";
+    let zipCode = "";
+    let country = "";
+
+    // Simple parsing logic - can be enhanced
+    if (parts.length >= 1) {
+      address = parts[0]; // First part is usually street address
+    }
+    
+    if (parts.length >= 2) {
+      // Try to find ZIP code (numbers)
+      const zipMatch = parts.find(part => /^\d{3,6}$/.test(part));
+      if (zipMatch) {
+        zipCode = zipMatch;
+      }
+      
+      // Try to find country (common countries)
+      const countries = ['czechia', 'czech republic', 'germany', 'austria', 'slovakia', 'poland', 'usa', 'united states'];
+      const countryMatch = parts.find(part => countries.some(c => part.toLowerCase().includes(c)));
+      if (countryMatch) {
+        country = countryMatch;
+      }
+      
+      // Remaining parts are likely city and state
+      const remaining = parts.filter(part => part !== address && part !== zipCode && part !== country);
+      if (remaining.length >= 1) {
+        city = remaining[0];
+      }
+      if (remaining.length >= 2) {
+        state = remaining[1];
+      }
+    }
+
+    // Update the customer state
+    setNewCustomer(prev => ({
+      ...prev,
+      address: address || prev.address,
+      city: city || prev.city,
+      state: state || prev.state,
+      zipCode: zipCode || prev.zipCode,
+      country: country || prev.country,
+    }));
+  };
 
   const form = useForm<z.infer<typeof addOrderSchema>>({
     resolver: zodResolver(addOrderSchema),
@@ -560,6 +618,7 @@ export default function AddOrder() {
                     size="sm"
                     onClick={() => {
                       setShowNewCustomerForm(false);
+                      setAddressAutocomplete("");
                       setNewCustomer({
                         name: "",
                         facebookName: "",
@@ -656,6 +715,51 @@ export default function AddOrder() {
                   </div>
                 </div>
                 
+                {/* Address Autocomplete */}
+                <div className="space-y-2">
+                  <Label htmlFor="addressAutocomplete">Address Autocomplete</Label>
+                  <div className="relative">
+                    <Textarea
+                      id="addressAutocomplete"
+                      value={addressAutocomplete}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setAddressAutocomplete(value);
+                        // Parse address on paste or when user stops typing
+                        if (value.includes(',') || value.includes('\n')) {
+                          parseAddress(value);
+                        }
+                      }}
+                      onPaste={(e) => {
+                        // Parse address after paste
+                        setTimeout(() => {
+                          const pastedText = e.currentTarget.value;
+                          parseAddress(pastedText);
+                        }, 100);
+                      }}
+                      placeholder="Paste full address here (e.g., Dragounská 2545/9A, Cheb, 35002, Karlovarsky kraj, Czechia)"
+                      className="min-h-[80px] text-sm"
+                      rows={3}
+                    />
+                    {addressAutocomplete && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="absolute top-2 right-2 h-6 px-2 text-xs"
+                        onClick={() => {
+                          parseAddress(addressAutocomplete);
+                        }}
+                      >
+                        Parse
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    Paste a complete address above and it will automatically fill the fields below
+                  </p>
+                </div>
+
                 {/* Address Information */}
                 <div className="space-y-2">
                   <Label>Shipping Address</Label>
