@@ -104,6 +104,12 @@ The project uses a monorepo structure with shared schema:
 - Added confirmation dialogs with entity names to prevent accidental deletions
 - Enhanced error handling for foreign key constraints (products used in orders)
 
+## Mock Data Currency Update (August 2, 2025)
+- Updated all mock orders to use only CZK or EUR currencies (removed VND, USD, CNY)
+- Linked order items to actual products from inventory database
+- Recalculated order totals based on actual product prices in respective currencies
+- Orders now alternate between CZK and EUR for realistic multi-currency testing
+
 # Future Integrations
 - **GLS Shipping API**: Planned integration for real-time order tracking
 - **Real-time Exchange Rates**: API integration for accurate currency conversion
