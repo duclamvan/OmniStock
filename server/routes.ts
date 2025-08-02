@@ -365,6 +365,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/warehouses/:id', async (req, res) => {
+    try {
+      const warehouse = await storage.getWarehouseById(req.params.id);
+      if (!warehouse) {
+        return res.status(404).json({ message: "Warehouse not found" });
+      }
+      res.json(warehouse);
+    } catch (error) {
+      console.error("Error fetching warehouse:", error);
+      res.status(500).json({ message: "Failed to fetch warehouse" });
+    }
+  });
+
+  app.patch('/api/warehouses/:id', async (req: any, res) => {
+    try {
+      const updates = req.body;
+      const warehouse = await storage.updateWarehouse(req.params.id, updates);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'updated',
+        entityType: 'warehouse',
+        entityId: warehouse.id,
+        description: `Updated warehouse: ${warehouse.name}`,
+      });
+      
+      res.json(warehouse);
+    } catch (error) {
+      console.error("Error updating warehouse:", error);
+      res.status(500).json({ message: "Failed to update warehouse" });
+    }
+  });
+
+  app.delete('/api/warehouses/:id', async (req: any, res) => {
+    try {
+      const warehouse = await storage.getWarehouseById(req.params.id);
+      if (!warehouse) {
+        return res.status(404).json({ message: "Warehouse not found" });
+      }
+      
+      await storage.deleteWarehouse(req.params.id);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'deleted',
+        entityType: 'warehouse',
+        entityId: req.params.id,
+        description: `Deleted warehouse: ${warehouse.name}`,
+      });
+      
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Error deleting warehouse:", error);
+      
+      // Check if it's a foreign key constraint error
+      if (error.code === '23503' || error.message?.includes('constraint')) {
+        return res.status(409).json({ 
+          message: "Cannot delete warehouse - it's being used by products" 
+        });
+      }
+      
+      res.status(500).json({ message: "Failed to delete warehouse" });
+    }
+  });
+
   // Suppliers endpoints
   app.get('/api/suppliers', async (req, res) => {
     try {
@@ -582,6 +647,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error creating customer:", error);
       res.status(500).json({ message: "Failed to create customer" });
+    }
+  });
+
+  app.get('/api/customers/:id', async (req, res) => {
+    try {
+      const customer = await storage.getCustomerById(req.params.id);
+      if (!customer) {
+        return res.status(404).json({ message: "Customer not found" });
+      }
+      res.json(customer);
+    } catch (error) {
+      console.error("Error fetching customer:", error);
+      res.status(500).json({ message: "Failed to fetch customer" });
+    }
+  });
+
+  app.patch('/api/customers/:id', async (req: any, res) => {
+    try {
+      const updates = req.body;
+      const customer = await storage.updateCustomer(req.params.id, updates);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'updated',
+        entityType: 'customer',
+        entityId: customer.id,
+        description: `Updated customer: ${customer.name}`,
+      });
+      
+      res.json(customer);
+    } catch (error) {
+      console.error("Error updating customer:", error);
+      res.status(500).json({ message: "Failed to update customer" });
+    }
+  });
+
+  app.delete('/api/customers/:id', async (req: any, res) => {
+    try {
+      const customer = await storage.getCustomerById(req.params.id);
+      if (!customer) {
+        return res.status(404).json({ message: "Customer not found" });
+      }
+      
+      await storage.deleteCustomer(req.params.id);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'deleted',
+        entityType: 'customer',
+        entityId: req.params.id,
+        description: `Deleted customer: ${customer.name}`,
+      });
+      
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Error deleting customer:", error);
+      
+      // Check if it's a foreign key constraint error
+      if (error.code === '23503' || error.message?.includes('constraint')) {
+        return res.status(409).json({ 
+          message: "Cannot delete customer - they have existing orders" 
+        });
+      }
+      
+      res.status(500).json({ message: "Failed to delete customer" });
     }
   });
 

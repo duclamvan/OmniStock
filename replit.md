@@ -117,6 +117,23 @@ The project uses a monorepo structure with shared schema:
 - Products used in orders show clear error message explaining they cannot be deleted
 - Backend returns 409 status code for foreign key constraint violations
 
+## Complete Backend Implementation for Warehouses and Customers (August 2, 2025)
+- Implemented full CRUD operations for warehouses:
+  - GET /api/warehouses - List all warehouses
+  - POST /api/warehouses - Create new warehouse  
+  - GET /api/warehouses/:id - Get warehouse by ID
+  - PATCH /api/warehouses/:id - Update warehouse
+  - DELETE /api/warehouses/:id - Delete warehouse with constraint validation
+- Implemented full CRUD operations for customers:
+  - GET /api/customers - List all customers with search support
+  - POST /api/customers - Create new customer
+  - GET /api/customers/:id - Get customer by ID  
+  - PATCH /api/customers/:id - Update customer
+  - DELETE /api/customers/:id - Delete customer with constraint validation
+- All endpoints follow REST standards with appropriate HTTP status codes
+- Delete operations return 409 for foreign key constraint violations
+- User activity tracking for all create, update, and delete operations
+
 # Future Integrations
 - **GLS Shipping API**: Planned integration for real-time order tracking
 - **Real-time Exchange Rates**: API integration for accurate currency conversion
