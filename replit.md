@@ -90,6 +90,13 @@ The project uses a monorepo structure with shared schema:
 - Removed redundant status filter dropdown from filtered pages
 - Maintained consistent UI/UX across all order views
 
+## Dashboard Currency Conversion (August 2, 2025)
+- Integrated Fawaz Ahmed's free currency API for real-time exchange rates
+- Updated dashboard metrics endpoint to convert all amounts to EUR
+- Modified all dashboard cards to display values in EUR with currency conversion
+- Updated Revenue, Expenses, and Yearly charts to use real data with EUR conversion
+- Added real-time currency conversion for orders from CZK, USD, VND, CNY to EUR
+
 # Future Integrations
 - **GLS Shipping API**: Planned integration for real-time order tracking
 - **Real-time Exchange Rates**: API integration for accurate currency conversion

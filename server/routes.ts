@@ -65,8 +65,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard endpoints
   app.get('/api/dashboard/metrics', async (req, res) => {
     try {
+      // Fetch exchange rates from free API
+      const exchangeRateResponse = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eur.json');
+      const exchangeRates = await exchangeRateResponse.json();
+      
       const metrics = await storage.getDashboardMetrics();
-      res.json(metrics);
+      const allOrders = await storage.getOrders();
+      
+      // Convert amount to EUR
+      const convertToEur = (amount: number, currency: string): number => {
+        if (!amount || !currency) return 0;
+        if (currency === 'EUR') return amount;
+        
+        // Get the rate from the currency to EUR
+        const currencyLower = currency.toLowerCase();
+        if (exchangeRates.eur && exchangeRates.eur[currencyLower]) {
+          // The API gives EUR to other currency rates, so we need to invert
+          return amount / exchangeRates.eur[currencyLower];
+        }
+        
+        // Fallback if rate not found
+        console.warn(`Exchange rate not found for ${currency}`);
+        return amount;
+      };
+      
+      // Calculate metrics with currency conversion
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const thisMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+      const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0, 23, 59, 59, 999);
+      
+      const todayOrders = allOrders.filter(order => new Date(order.createdAt) >= today);
+      const thisMonthOrders = allOrders.filter(order => new Date(order.createdAt) >= thisMonthStart);
+      const lastMonthOrders = allOrders.filter(order => {
+        const orderDate = new Date(order.createdAt);
+        return orderDate >= lastMonthStart && orderDate <= lastMonthEnd;
+      });
+      
+      // Calculate totals in EUR
+      const calculateTotalInEur = (orders: any[]) => {
+        return orders.reduce((sum, order) => {
+          const amount = parseFloat(order.grandTotal || '0');
+          return sum + convertToEur(amount, order.currency);
+        }, 0);
+      };
+      
+      const calculateProfitInEur = (orders: any[]) => {
+        return orders.reduce((sum, order) => {
+          const revenue = parseFloat(order.grandTotal || '0');
+          const cost = parseFloat(order.totalCost || '0');
+          const profit = revenue - cost;
+          return sum + convertToEur(profit, order.currency);
+        }, 0);
+      };
+      
+      const metricsWithConversion = {
+        fulfillOrdersToday: todayOrders.filter(o => o.orderStatus === 'to_fulfill').length,
+        totalOrdersToday: todayOrders.length,
+        totalRevenueToday: calculateTotalInEur(todayOrders),
+        totalProfitToday: calculateProfitInEur(todayOrders),
+        thisMonthRevenue: calculateTotalInEur(thisMonthOrders),
+        thisMonthProfit: calculateProfitInEur(thisMonthOrders),
+        lastMonthRevenue: calculateTotalInEur(lastMonthOrders),
+        lastMonthProfit: calculateProfitInEur(lastMonthOrders),
+        exchangeRates: exchangeRates.eur
+      };
+      
+      res.json(metricsWithConversion);
     } catch (error) {
       console.error("Error fetching dashboard metrics:", error);
       res.status(500).json({ message: "Failed to fetch dashboard metrics" });
@@ -75,9 +141,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/dashboard/financial-summary', async (req, res) => {
     try {
-      const year = req.query.year ? parseInt(req.query.year as string) : undefined;
-      const summary = await storage.getMonthlyFinancialSummary(year);
-      res.json(summary);
+      // Fetch exchange rates from free API
+      const exchangeRateResponse = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eur.json');
+      const exchangeRates = await exchangeRateResponse.json();
+      
+      const convertToEur = (amount: number, currency: string): number => {
+        if (!amount || !currency) return 0;
+        if (currency === 'EUR') return amount;
+        
+        const currencyLower = currency.toLowerCase();
+        if (exchangeRates.eur && exchangeRates.eur[currencyLower]) {
+          return amount / exchangeRates.eur[currencyLower];
+        }
+        
+        return amount;
+      };
+      
+      const year = req.query.year ? parseInt(req.query.year as string) : new Date().getFullYear();
+      const allOrders = await storage.getOrders();
+      
+      // Generate monthly summary
+      const monthlySummary = [];
+      for (let month = 0; month < 12; month++) {
+        const monthStart = new Date(year, month, 1);
+        const monthEnd = new Date(year, month + 1, 0, 23, 59, 59, 999);
+        
+        const monthOrders = allOrders.filter(order => {
+          const orderDate = new Date(order.createdAt);
+          return orderDate >= monthStart && orderDate <= monthEnd && order.orderStatus === 'shipped';
+        });
+        
+        const totalRevenueEur = monthOrders.reduce((sum, order) => {
+          const amount = parseFloat(order.grandTotal || '0');
+          return sum + convertToEur(amount, order.currency);
+        }, 0);
+        
+        const totalProfitEur = monthOrders.reduce((sum, order) => {
+          const revenue = parseFloat(order.grandTotal || '0');
+          const cost = parseFloat(order.totalCost || '0');
+          const profit = revenue - cost;
+          return sum + convertToEur(profit, order.currency);
+        }, 0);
+        
+        monthlySummary.push({
+          month: `${String(month + 1).padStart(2, '0')}-${String(year).slice(-2)}`,
+          totalRevenueEur,
+          totalProfitEur,
+          orderCount: monthOrders.length
+        });
+      }
+      
+      res.json(monthlySummary);
     } catch (error) {
       console.error("Error fetching financial summary:", error);
       res.status(500).json({ message: "Failed to fetch financial summary" });

@@ -120,7 +120,7 @@ export function Dashboard() {
             <p className="text-2xl font-bold text-slate-900">
               {formatCurrency(metrics?.thisMonthRevenue || 0, 'EUR')}
             </p>
-            <p className="text-xs text-slate-500 mt-1">From 158 ₹</p>
+            <p className="text-xs text-slate-500 mt-1">All currencies converted to EUR</p>
           </CardContent>
         </Card>
         <Card>
@@ -129,7 +129,7 @@ export function Dashboard() {
             <p className="text-2xl font-bold text-slate-900">
               {formatCurrency(metrics?.thisMonthProfit || 0, 'EUR')}
             </p>
-            <p className="text-xs text-slate-500 mt-1">From 158 ₹</p>
+            <p className="text-xs text-slate-500 mt-1">All currencies converted to EUR</p>
           </CardContent>
         </Card>
         <Card>
@@ -138,7 +138,7 @@ export function Dashboard() {
             <p className="text-2xl font-bold text-slate-900">
               {formatCurrency(metrics?.lastMonthRevenue || 0, 'EUR')}
             </p>
-            <p className="text-xs text-slate-500 mt-1">From 158 ₹</p>
+            <p className="text-xs text-slate-500 mt-1">All currencies converted to EUR</p>
           </CardContent>
         </Card>
         <Card>
@@ -147,7 +147,7 @@ export function Dashboard() {
             <p className="text-2xl font-bold text-slate-900">
               {formatCurrency(metrics?.lastMonthProfit || 0, 'EUR')}
             </p>
-            <p className="text-xs text-slate-500 mt-1">From 158 ₹</p>
+            <p className="text-xs text-slate-500 mt-1">All currencies converted to EUR</p>
           </CardContent>
         </Card>
       </div>
