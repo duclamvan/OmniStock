@@ -1,8 +1,21 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { Menu, X } from 'lucide-react';
+import { 
+  Menu, 
+  X, 
+  ChartLine, 
+  ShoppingCart, 
+  Package, 
+  Warehouse, 
+  Percent, 
+  Users, 
+  BarChart3, 
+  ChevronDown,
+  Plus
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 
 interface MobileResponsiveLayoutProps {
@@ -12,34 +25,132 @@ interface MobileResponsiveLayoutProps {
 export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps) {
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [openItems, setOpenItems] = useState<string[]>([]);
 
-  const navItems = [
-    { href: '/', label: 'Dashboard' },
-    { href: '/orders', label: 'Orders' },
-    { href: '/inventory', label: 'Inventory' },
-    { href: '/customers', label: 'Customers' },
-    { href: '/warehouses', label: 'Warehouses' },
-    { href: '/sales', label: 'Sales' },
-    { href: '/reports', label: 'Reports' },
+  const toggleItem = (itemName: string) => {
+    setOpenItems(prev => 
+      prev.includes(itemName) 
+        ? prev.filter(name => name !== itemName)
+        : [...prev, itemName]
+    );
+  };
+
+  const navigation = [
+    {
+      name: "Dashboard",
+      href: "/",
+      icon: ChartLine,
+    },
+    {
+      name: "Orders",
+      icon: ShoppingCart,
+      children: [
+        { name: "All Orders", href: "/orders" },
+        { name: "Add Order", href: "/orders/add" },
+        { name: "To Fulfill", href: "/orders/to-fulfill" },
+        { name: "Shipped", href: "/orders/shipped" },
+        { name: "Pre-Orders", href: "/orders/pre-orders" },
+      ],
+    },
+    {
+      name: "Inventory",
+      href: "/inventory",
+      icon: Package,
+    },
+    {
+      name: "Warehouses",
+      href: "/warehouses",
+      icon: Warehouse,
+    },
+    {
+      name: "Sales",
+      href: "/sales",
+      icon: Percent,
+    },
+    {
+      name: "Customers",
+      href: "/customers",
+      icon: Users,
+    },
+    {
+      name: "Reports",
+      href: "/reports",
+      icon: BarChart3,
+    },
   ];
 
   const NavLinks = () => (
     <>
-      {navItems.map((item) => (
-        <Link
-          key={item.href}
-          href={item.href}
-          className={cn(
-            "block px-3 py-2 rounded-md text-mobile-base font-medium transition-colors touch-target",
-            location === item.href
-              ? "bg-primary text-white"
-              : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-          )}
-          onClick={() => setIsMobileMenuOpen(false)}
-        >
-          {item.label}
-        </Link>
-      ))}
+      {navigation.map((item) => {
+        if (item.children) {
+          const isOpen = openItems.includes(item.name);
+          const isActive = item.children.some(child => location === child.href);
+          
+          return (
+            <Collapsible
+              key={item.name}
+              open={isOpen}
+              onOpenChange={() => toggleItem(item.name)}
+            >
+              <CollapsibleTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className={cn(
+                    "w-full justify-between text-left font-medium px-3 py-2 rounded-md touch-target",
+                    isActive && "bg-emerald-50 text-primary"
+                  )}
+                >
+                  <div className="flex items-center">
+                    <item.icon className="mr-3 h-5 w-5" />
+                    {item.name}
+                  </div>
+                  <ChevronDown className={cn(
+                    "h-4 w-4 transition-transform",
+                    isOpen && "rotate-180"
+                  )} />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-1">
+                <div className="pl-8 space-y-1">
+                  {item.children.map((child) => (
+                    <Link key={child.href} href={child.href}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={cn(
+                          "w-full justify-start text-slate-600 px-3 py-2 rounded-md touch-target",
+                          location === child.href && "bg-slate-100 text-slate-900"
+                        )}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        {child.name}
+                      </Button>
+                    </Link>
+                  ))}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          );
+        }
+
+        const isActive = location === item.href;
+        
+        return (
+          <Link key={item.name} href={item.href}>
+            <Button
+              variant="ghost"
+              className={cn(
+                "w-full justify-start font-medium px-3 py-2 rounded-md touch-target",
+                isActive && "bg-emerald-50 text-primary"
+              )}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              <item.icon className="mr-3 h-5 w-5" />
+              {item.name}
+            </Button>
+          </Link>
+        );
+      })}
     </>
   );
 
