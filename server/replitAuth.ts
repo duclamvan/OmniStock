@@ -14,8 +14,10 @@ if (!process.env.REPLIT_DOMAINS) {
 
 const getOidcConfig = memoize(
   async () => {
+    const issuerUrl = process.env.ISSUER_URL || "https://replit.com/oidc";
+    console.log("Using issuer URL:", issuerUrl);
     return await client.discovery(
-      new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
+      new URL(issuerUrl),
       process.env.REPL_ID!
     );
   },
@@ -36,9 +38,11 @@ export function getSession() {
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
+    rolling: true,
     cookie: {
       httpOnly: true,
       secure: true,
+      sameSite: 'none',
       maxAge: sessionTtl,
     },
   });
@@ -57,6 +61,7 @@ function updateUserSession(
 async function upsertUser(
   claims: any,
 ) {
+  console.log("Upserting user with sub:", claims["sub"]);
   await storage.upsertUser({
     id: String(claims["sub"]),
     email: claims["email"] || null,
@@ -78,6 +83,7 @@ export async function setupAuth(app: Express) {
     tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
     verified: passport.AuthenticateCallback
   ) => {
+    console.log("Verifying user authentication");
     const user = {};
     updateUserSession(user, tokens);
     await upsertUser(tokens.claims());
@@ -86,6 +92,7 @@ export async function setupAuth(app: Express) {
 
   for (const domain of process.env
     .REPLIT_DOMAINS!.split(",")) {
+    console.log("Registering strategy for domain:", domain);
     const strategy = new Strategy(
       {
         name: `replitauth:${domain}`,
@@ -102,6 +109,8 @@ export async function setupAuth(app: Express) {
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
   app.get("/api/login", (req, res, next) => {
+    console.log("Login route hit, hostname:", req.hostname);
+    console.log("Full URL:", `${req.protocol}://${req.hostname}${req.originalUrl}`);
     passport.authenticate(`replitauth:${req.hostname}`, {
       prompt: "login consent",
       scope: ["openid", "email", "profile", "offline_access"],
@@ -109,9 +118,36 @@ export async function setupAuth(app: Express) {
   });
 
   app.get("/api/callback", (req, res, next) => {
+    console.log("Callback hit for hostname:", req.hostname);
+    console.log("Query params:", req.query);
     passport.authenticate(`replitauth:${req.hostname}`, {
       successReturnToOrRedirect: "/",
       failureRedirect: "/api/login",
+      failureMessage: true,
+    }, (err: any, user: any, info: any) => {
+      if (err) {
+        console.error("Authentication error:", err);
+        return res.status(500).json({ error: "Authentication failed", details: err.message });
+      }
+      if (!user) {
+        console.error("No user returned, info:", info);
+        return res.redirect("/api/login");
+      }
+      req.logIn(user, (err) => {
+        if (err) {
+          console.error("Login error:", err);
+          return res.status(500).json({ error: "Login failed", details: err.message });
+        }
+        console.log("User logged in successfully");
+        // Ensure session is saved before redirecting
+        req.session.save((err) => {
+          if (err) {
+            console.error("Session save error:", err);
+            return res.status(500).json({ error: "Session save failed" });
+          }
+          return res.redirect("/");
+        });
+      });
     })(req, res, next);
   });
 
