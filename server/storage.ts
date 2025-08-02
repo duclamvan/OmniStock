@@ -185,6 +185,29 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  // Helper method for Vietnamese search
+  private removeDiacritics(str: string): string {
+    const vietnameseMap: Record<string, string> = {
+      'á': 'a', 'à': 'a', 'ả': 'a', 'ã': 'a', 'ạ': 'a',
+      'ă': 'a', 'ắ': 'a', 'ằ': 'a', 'ẳ': 'a', 'ẵ': 'a', 'ặ': 'a',
+      'â': 'a', 'ấ': 'a', 'ầ': 'a', 'ẩ': 'a', 'ẫ': 'a', 'ậ': 'a',
+      'đ': 'd',
+      'é': 'e', 'è': 'e', 'ẻ': 'e', 'ẽ': 'e', 'ẹ': 'e',
+      'ê': 'e', 'ế': 'e', 'ề': 'e', 'ể': 'e', 'ễ': 'e', 'ệ': 'e',
+      'í': 'i', 'ì': 'i', 'ỉ': 'i', 'ĩ': 'i', 'ị': 'i',
+      'ó': 'o', 'ò': 'o', 'ỏ': 'o', 'õ': 'o', 'ọ': 'o',
+      'ô': 'o', 'ố': 'o', 'ồ': 'o', 'ổ': 'o', 'ỗ': 'o', 'ộ': 'o',
+      'ơ': 'o', 'ớ': 'o', 'ờ': 'o', 'ở': 'o', 'ỡ': 'o', 'ợ': 'o',
+      'ú': 'u', 'ù': 'u', 'ủ': 'u', 'ũ': 'u', 'ụ': 'u',
+      'ư': 'u', 'ứ': 'u', 'ừ': 'u', 'ử': 'u', 'ữ': 'u', 'ự': 'u',
+      'ý': 'y', 'ỳ': 'y', 'ỷ': 'y', 'ỹ': 'y', 'ỵ': 'y'
+    };
+
+    return str.split('').map(char => {
+      return vietnameseMap[char.toLowerCase()] || char;
+    }).join('');
+  }
+
   // User operations
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
@@ -332,16 +355,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async searchProducts(query: string): Promise<Product[]> {
-    return await db
-      .select()
-      .from(products)
-      .where(
-        or(
-          like(products.name, `%${query}%`),
-          like(products.sku, `%${query}%`)
-        )
-      )
-      .orderBy(desc(products.createdAt));
+    // Normalize the query for Vietnamese search
+    const normalizedQuery = this.removeDiacritics(query.toLowerCase());
+    
+    // Get all products and filter them in memory for proper Vietnamese search
+    const allProducts = await db.select().from(products).orderBy(desc(products.createdAt));
+    
+    return allProducts.filter(product => {
+      const normalizedName = this.removeDiacritics(product.name.toLowerCase());
+      const normalizedSku = this.removeDiacritics(product.sku.toLowerCase());
+      
+      return normalizedName.includes(normalizedQuery) || 
+             normalizedSku.includes(normalizedQuery);
+    });
   }
 
   // Product Variants
@@ -400,17 +426,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async searchCustomers(query: string): Promise<Customer[]> {
-    return await db
-      .select()
-      .from(customers)
-      .where(
-        or(
-          like(customers.name, `%${query}%`),
-          like(customers.facebookName, `%${query}%`),
-          like(customers.email, `%${query}%`)
-        )
-      )
-      .orderBy(desc(customers.createdAt));
+    // Normalize the query for Vietnamese search
+    const normalizedQuery = this.removeDiacritics(query.toLowerCase());
+    
+    // Get all customers and filter them in memory for proper Vietnamese search
+    const allCustomers = await db.select().from(customers).orderBy(desc(customers.createdAt));
+    
+    return allCustomers.filter(customer => {
+      const normalizedName = this.removeDiacritics(customer.name.toLowerCase());
+      const normalizedFacebookName = customer.facebookName ? this.removeDiacritics(customer.facebookName.toLowerCase()) : '';
+      const normalizedEmail = customer.email ? this.removeDiacritics(customer.email.toLowerCase()) : '';
+      
+      return normalizedName.includes(normalizedQuery) || 
+             normalizedFacebookName.includes(normalizedQuery) || 
+             normalizedEmail.includes(normalizedQuery);
+    });
   }
 
   // Orders
