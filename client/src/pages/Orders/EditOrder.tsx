@@ -229,6 +229,14 @@ export default function EditOrder() {
     }
   };
 
+  const updateItemPrice = (itemId: string, price: number) => {
+    setOrderItems(orderItems.map(item => 
+      item.id === itemId 
+        ? { ...item, price, total: item.quantity * price }
+        : item
+    ));
+  };
+
   const removeItem = (itemId: string) => {
     setOrderItems(orderItems.filter(item => item.id !== itemId));
   };
@@ -507,7 +515,15 @@ export default function EditOrder() {
                             className="w-20"
                           />
                         </TableCell>
-                        <TableCell>{formatCurrency(item.price, form.watch('currency'))}</TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            value={item.price}
+                            onChange={(e) => updateItemPrice(item.id, parseFloat(e.target.value) || 0)}
+                            className="w-24"
+                            step="0.01"
+                          />
+                        </TableCell>
                         <TableCell>{formatCurrency(item.total, form.watch('currency'))}</TableCell>
                         <TableCell>
                           <Button

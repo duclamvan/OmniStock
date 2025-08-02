@@ -55,6 +55,21 @@ export default function AddOrder() {
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const [debouncedProductSearch, setDebouncedProductSearch] = useState("");
   const [debouncedCustomerSearch, setDebouncedCustomerSearch] = useState("");
+  const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({
+    name: "",
+    facebookName: "",
+    facebookUrl: "",
+    email: "",
+    phone: "",
+    address: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    country: "",
+    company: "",
+    type: "regular"
+  });
 
   const form = useForm<z.infer<typeof addOrderSchema>>({
     resolver: zodResolver(addOrderSchema),
@@ -122,10 +137,30 @@ export default function AddOrder() {
 
   const createOrderMutation = useMutation({
     mutationFn: async (data: any) => {
+      // If there's a new customer, create it first
+      if (showNewCustomerForm && newCustomer.name) {
+        const customerResponse = await apiRequest('POST', '/api/customers', {
+          name: newCustomer.name,
+          facebookName: newCustomer.facebookName || undefined,
+          facebookUrl: newCustomer.facebookUrl || undefined,
+          email: newCustomer.email || undefined,
+          phone: newCustomer.phone || undefined,
+          address: newCustomer.address || undefined,
+          city: newCustomer.city || undefined,
+          state: newCustomer.state || undefined,
+          zipCode: newCustomer.zipCode || undefined,
+          country: newCustomer.country || undefined,
+          company: newCustomer.company || undefined,
+          type: newCustomer.type || 'regular',
+        });
+        data.customerId = customerResponse.id;
+      }
+      
       await apiRequest('POST', '/api/orders', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
       toast({
         title: "Success",
         description: "Order created successfully",
@@ -412,12 +447,26 @@ export default function AddOrder() {
                 </div>
               )}
               
-              {/* No results message */}
+              {/* No results message with Add new customer button */}
               {showCustomerDropdown && customerSearch.length >= 2 && (!filteredCustomers || filteredCustomers.length === 0) && (
                 <div className="absolute top-full left-0 right-0 mt-1 border rounded-md bg-white shadow-lg p-4 text-center text-slate-500 z-50">
                   <Search className="h-6 w-6 mx-auto mb-2 text-slate-400" />
                   <div>No customers found for "{customerSearch}"</div>
                   <div className="text-xs mt-1">Try searching by name, email, or Facebook name</div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mt-3"
+                    onClick={() => {
+                      setShowNewCustomerForm(true);
+                      setNewCustomer({ ...newCustomer, name: customerSearch });
+                      setShowCustomerDropdown(false);
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add new customer
+                  </Button>
                 </div>
               )}
             </div>
@@ -444,6 +493,150 @@ export default function AddOrder() {
                   >
                     Change
                   </Button>
+                </div>
+              </div>
+            )}
+            
+            {/* New customer form */}
+            {showNewCustomerForm && (
+              <div className="space-y-4 border border-blue-200 bg-blue-50 p-4 rounded-lg">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-medium text-blue-900">New Customer Details</h4>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setShowNewCustomerForm(false);
+                      setNewCustomer({
+                        name: "",
+                        facebookName: "",
+                        facebookUrl: "",
+                        email: "",
+                        phone: "",
+                        address: "",
+                        city: "",
+                        state: "",
+                        zipCode: "",
+                        country: "",
+                        company: "",
+                        type: "regular"
+                      });
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                {/* Basic Information */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="customerName">Customer Name *</Label>
+                    <Input
+                      id="customerName"
+                      value={newCustomer.name}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
+                      placeholder="Type here"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="facebookName">Facebook Name</Label>
+                    <Input
+                      id="facebookName"
+                      value={newCustomer.facebookName}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, facebookName: e.target.value })}
+                      placeholder="Type here"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="facebookUrl">Facebook URL</Label>
+                    <Input
+                      id="facebookUrl"
+                      value={newCustomer.facebookUrl}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, facebookUrl: e.target.value })}
+                      placeholder="Place URL or Type"
+                    />
+                  </div>
+                </div>
+                
+                {/* Contact Information */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="customerEmail">Email</Label>
+                    <Input
+                      id="customerEmail"
+                      type="email"
+                      value={newCustomer.email}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
+                      placeholder="email@example.com"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="customerPhone">Phone</Label>
+                    <Input
+                      id="customerPhone"
+                      value={newCustomer.phone}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
+                      placeholder="Type here"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="company">Company</Label>
+                    <Input
+                      id="company"
+                      value={newCustomer.company}
+                      onChange={(e) => setNewCustomer({ ...newCustomer, company: e.target.value })}
+                      placeholder="Type here"
+                    />
+                  </div>
+                </div>
+                
+                {/* Address Information */}
+                <div className="space-y-2">
+                  <Label>Shipping Address</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <Input
+                        id="address"
+                        value={newCustomer.address}
+                        onChange={(e) => setNewCustomer({ ...newCustomer, address: e.target.value })}
+                        placeholder="Full address"
+                      />
+                    </div>
+                    <div>
+                      <Input
+                        id="city"
+                        value={newCustomer.city}
+                        onChange={(e) => setNewCustomer({ ...newCustomer, city: e.target.value })}
+                        placeholder="City"
+                      />
+                    </div>
+                    <div>
+                      <Input
+                        id="zipCode"
+                        value={newCustomer.zipCode}
+                        onChange={(e) => setNewCustomer({ ...newCustomer, zipCode: e.target.value })}
+                        placeholder="ZIP Code"
+                      />
+                    </div>
+                    <div>
+                      <Input
+                        id="state"
+                        value={newCustomer.state}
+                        onChange={(e) => setNewCustomer({ ...newCustomer, state: e.target.value })}
+                        placeholder="State/Province"
+                      />
+                    </div>
+                    <div>
+                      <Input
+                        id="country"
+                        value={newCustomer.country}
+                        onChange={(e) => setNewCustomer({ ...newCustomer, country: e.target.value })}
+                        placeholder="Country"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
