@@ -406,64 +406,32 @@ export default function AllInventory() {
         </CardHeader>
         <CardContent className="p-0 sm:p-6">
           {/* Mobile Card View */}
-          <div className="sm:hidden">
+          <div className="sm:hidden space-y-3 p-3">
             {filteredProducts?.map((product: any) => (
-              <div key={product.id} className="border-b last:border-b-0 p-4 hover:bg-gray-50">
+              <div key={product.id} className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
                 <div className="space-y-3">
-                  {/* Product Header */}
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-12 w-12">
+                  {/* Top Row - Product, Stock Status, Actions */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <Avatar className="h-12 w-12 flex-shrink-0">
                         <AvatarImage src={product.imageUrl} />
-                        <AvatarFallback className="text-sm">{product.name?.charAt(0) || 'P'}</AvatarFallback>
+                        <AvatarFallback className="text-sm bg-gray-100">{product.name?.charAt(0) || 'P'}</AvatarFallback>
                       </Avatar>
-                      <div>
-                        <p className="font-medium text-mobile-base">{product.name}</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-gray-900 truncate">{product.name}</p>
                         <p className="text-xs text-gray-500">SKU: {product.sku}</p>
                       </div>
                     </div>
-                    {getStockStatus(product.quantity, product.lowStockAlert)}
-                  </div>
-                  
-                  {/* Product Details */}
-                  <div className="grid grid-cols-2 gap-2 text-mobile-sm">
-                    <div>
-                      <span className="text-gray-500">Category:</span>
-                      <p className="font-medium">
-                        {(categories as any[])?.find((c: any) => c.id === product.categoryId)?.name || 'N/A'}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Supplier:</span>
-                      <p className="font-medium">{product.supplier?.name || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Stock:</span>
-                      <p className="font-medium">{product.quantity} units</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Price (EUR):</span>
-                      <p className="font-medium">{formatCurrency(parseFloat(product.priceEur || '0'), 'EUR')}</p>
-                    </div>
-                  </div>
-                  
-                  {/* Actions */}
-                  <div className="flex items-center justify-between pt-2 border-t">
-                    <div>
-                      <p className="text-gray-500 text-xs">Import Cost</p>
-                      <p className="font-semibold text-mobile-base">
-                        {formatCurrency(parseFloat(product.importCostEur || '0'), 'EUR')}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {getStockStatus(product.quantity, product.lowStockAlert)}
                       <Link href={`/inventory/${product.id}/edit`}>
-                        <Button size="sm" variant="ghost" className="touch-target">
+                        <Button size="icon" variant="ghost" className="h-8 w-8">
                           <Edit className="h-4 w-4" />
                         </Button>
                       </Link>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700 touch-target">
+                          <Button size="icon" variant="ghost" className="h-8 w-8 text-red-600 hover:text-red-700">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </AlertDialogTrigger>
@@ -485,6 +453,37 @@ export default function AllInventory() {
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
+                    </div>
+                  </div>
+                  
+                  {/* Middle Row - Key Details */}
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-gray-500">Category</p>
+                      <p className="font-medium text-gray-900">
+                        {(categories as any[])?.find((c: any) => c.id === product.categoryId)?.name || 'N/A'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Stock</p>
+                      <p className="font-medium text-gray-900">{product.quantity} units</p>
+                    </div>
+                  </div>
+                  
+                  {/* Bottom Row - Pricing */}
+                  <div className="flex items-end justify-between">
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Sell Price / Import Cost</p>
+                      <p className="text-lg font-bold text-gray-900">
+                        {formatCurrency(parseFloat(product.priceEur || '0'), 'EUR')}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        Cost: {formatCurrency(parseFloat(product.importCostEur || '0'), 'EUR')}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-500">Supplier</p>
+                      <p className="text-sm font-medium text-gray-900">{product.supplier?.name || 'N/A'}</p>
                     </div>
                   </div>
                 </div>

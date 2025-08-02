@@ -360,59 +360,50 @@ export default function AllOrders({ filter }: AllOrdersProps) {
         </CardHeader>
         <CardContent className="p-0 sm:p-6">
           {/* Mobile Card View */}
-          <div className="sm:hidden">
+          <div className="sm:hidden space-y-3 p-3">
             {filteredOrders?.map((order: any) => (
-              <div key={order.id} className="border-b last:border-b-0 p-4 hover:bg-gray-50">
+              <div key={order.id} className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
                 <div className="space-y-3">
-                  {/* Customer and Status Row */}
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-10 w-10">
+                  {/* Top Row - Customer, Status, Edit */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <Avatar className="h-10 w-10 flex-shrink-0">
                         <AvatarImage src={order.customer?.profileImageUrl} />
-                        <AvatarFallback className="text-sm">{order.customer?.name?.charAt(0) || 'C'}</AvatarFallback>
+                        <AvatarFallback className="text-sm bg-gray-100">{order.customer?.name?.charAt(0) || 'C'}</AvatarFallback>
                       </Avatar>
-                      <div>
-                        <p className="font-medium text-mobile-base">{order.customer?.name || 'N/A'}</p>
-                        {order.customer?.facebookName && (
-                          <p className="text-xs text-gray-500">FB: {order.customer.facebookName}</p>
-                        )}
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-gray-900 truncate">{order.customer?.name || 'N/A'}</p>
+                        <p className="text-xs text-gray-500 truncate">FB: {order.customer?.facebookName || 'N/A'}</p>
                       </div>
                     </div>
-                    <div className="flex flex-col items-end gap-1">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       {getStatusBadge(order.orderStatus)}
-                      {getPaymentStatusBadge(order.paymentStatus)}
+                      <Link href={`/orders/${order.id}/edit`}>
+                        <Button size="icon" variant="ghost" className="h-8 w-8">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </Link>
                     </div>
                   </div>
                   
-                  {/* Order Details */}
-                  <div className="grid grid-cols-2 gap-2 text-mobile-sm">
-                    <div>
-                      <span className="text-gray-500">Order ID:</span>
-                      <p className="font-medium">{order.orderId}</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-500">Date:</span>
-                      <p className="font-medium">{new Date(order.createdAt).toLocaleDateString('vi-VN')}</p>
-                    </div>
+                  {/* Middle Row - Order Info */}
+                  <div className="flex items-center justify-between text-sm text-gray-600">
+                    <span>Order ID: <span className="font-medium text-gray-900">{order.orderId}</span></span>
+                    <span>{new Date(order.createdAt).toLocaleDateString('vi-VN')}</span>
                   </div>
                   
-                  {/* Financial Info */}
-                  <div className="flex items-end justify-between pt-2 border-t">
+                  {/* Bottom Row - Financial */}
+                  <div className="flex items-end justify-between">
                     <div>
-                      <p className="text-gray-500 text-xs">Total / Profit</p>
-                      <p className="font-semibold text-mobile-lg">
+                      <p className="text-xs text-gray-500 mb-1">Total / Profit</p>
+                      <p className="text-lg font-bold text-gray-900">
                         {formatCurrency(parseFloat(order.grandTotal || '0'), order.currency)}
                       </p>
-                      <p className={`text-mobile-sm ${calculateOrderProfit(order) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      <p className={`text-sm font-medium ${calculateOrderProfit(order) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {formatCurrency(calculateOrderProfit(order), order.currency)}
                       </p>
                     </div>
-                    <Link href={`/orders/${order.id}/edit`}>
-                      <Button size="sm" variant="ghost" className="touch-target">
-                        <Edit className="h-4 w-4 mr-1" />
-                        Edit
-                      </Button>
-                    </Link>
+                    {getPaymentStatusBadge(order.paymentStatus)}
                   </div>
                 </div>
               </div>
