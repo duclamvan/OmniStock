@@ -19,6 +19,7 @@ import EditWarehouse from "@/pages/Warehouse/EditWarehouse";
 import AllSales from "@/pages/Sales/AllSales";
 import EditSale from "@/pages/Sales/EditSale";
 import AllCustomers from "@/pages/Customers/AllCustomers";
+import AddCustomer from "@/pages/Customers/AddCustomer";
 import EditCustomer from "@/pages/Customers/EditCustomer";
 
 function Router() {
@@ -55,9 +56,7 @@ function Router() {
         </Route>
         <Route path="/sales/:id/edit" component={EditSale} />
         <Route path="/customers" component={AllCustomers} />
-        <Route path="/customers/add">
-          {() => <div>Add Customer page coming soon</div>}
-        </Route>
+        <Route path="/customers/add" component={AddCustomer} />
         <Route path="/customers/:id/edit" component={EditCustomer} />
         <Route path="/reports">
           {() => <div>Reports page coming soon</div>}
