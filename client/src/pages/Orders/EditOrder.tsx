@@ -745,8 +745,13 @@ export default function EditOrder() {
                       className="w-full"
                       onClick={() => {
                         if (newCustomer.name) {
-                          setSelectedCustomer(newCustomer);
+                          // Set the new customer without an ID - it will be created on save
+                          setSelectedCustomer({
+                            ...newCustomer,
+                            id: undefined // Explicitly set to undefined to trigger creation
+                          });
                           setShowNewCustomerForm(false);
+                          console.log('New customer selected (no ID yet):', newCustomer);
                         }
                       }}
                     >

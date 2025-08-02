@@ -807,7 +807,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { items, ...orderUpdates } = req.body;
       
-      console.log('PATCH /api/orders - received customerId:', orderUpdates.customerId);
+      console.log('PATCH /api/orders/:id - Full request body:', req.body);
+      console.log('PATCH /api/orders/:id - customerId in orderUpdates:', orderUpdates.customerId);
       
       const updates = {
         ...orderUpdates,
@@ -820,9 +821,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updates[key] === undefined && delete updates[key]
       );
       
-      console.log('PATCH /api/orders - updates to apply:', updates);
+      console.log('PATCH /api/orders/:id - Final updates object:', updates);
+      console.log('PATCH /api/orders/:id - customerId in final updates:', updates.customerId);
       
       const order = await storage.updateOrder(req.params.id, updates);
+      console.log('PATCH /api/orders/:id - Updated order returned:', order);
       
       // Update order items if provided
       if (items && Array.isArray(items)) {
