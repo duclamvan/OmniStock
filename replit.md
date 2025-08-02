@@ -166,6 +166,7 @@ The project uses a monorepo structure with shared schema:
 - Fixed issue where edited order items weren't persisting to database
 - Updated PATCH /api/orders/:id endpoint to handle order items updates
 - Added deleteOrderItems method to storage class to clear old items before adding updated ones
+- Fixed getOrderById method to include order items when fetching single order
 - Order editing now properly saves both order details and all item changes
 - Items with updated prices and quantities now persist correctly after saving
 

@@ -548,7 +548,33 @@ export class DatabaseStorage implements IStorage {
       .from(orders)
       .leftJoin(customers, eq(orders.customerId, customers.id))
       .where(eq(orders.id, id));
-    return order as any;
+    
+    if (!order) return undefined;
+    
+    // Get order items
+    const items = await db
+      .select({
+        id: orderItems.id,
+        productId: orderItems.productId,
+        productName: orderItems.productName,
+        sku: orderItems.sku,
+        quantity: orderItems.quantity,
+        price: orderItems.price,
+        discount: orderItems.discount,
+        tax: orderItems.tax,
+        total: orderItems.total,
+        product: {
+          id: products.id,
+          importCostCzk: products.importCostCzk,
+          importCostEur: products.importCostEur,
+          importCostUsd: products.importCostUsd,
+        }
+      })
+      .from(orderItems)
+      .leftJoin(products, eq(orderItems.productId, products.id))
+      .where(eq(orderItems.orderId, id));
+    
+    return { ...order, items } as any;
   }
 
   async getOrdersByStatus(status: string): Promise<Order[]> {
