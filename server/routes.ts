@@ -129,34 +129,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }, 0);
       };
       
-      // Calculate profit in EUR (Profit = Grand Total - (Import Cost × quantity) - Tax - Discount - (Shipping paid - Actual Shipping Cost))
-      const calculateProfitInEur = (orders: any[]) => {
-        return orders.reduce((sum, order) => {
+      // Calculate profit in EUR (Profit = Grand Total - Total Import Cost - Tax Amount - Discount Value)
+      const calculateProfitInEur = async (orders: any[]) => {
+        let totalProfit = 0;
+        
+        for (const order of orders) {
           if (order.orderStatus !== 'shipped' || order.paymentStatus !== 'paid') {
-            return sum; // Only calculate profit for completed orders
+            continue; // Only calculate profit for completed orders
           }
           
           const grandTotal = parseFloat(order.grandTotal || '0');
-          const totalCost = parseFloat(order.totalCost || '0'); // Import cost × quantity
-          const tax = parseFloat(order.tax || '0');
-          const discount = parseFloat(order.discount || '0');
-          const shippingPaid = parseFloat(order.shippingCost || '0');
-          const actualShippingCost = parseFloat(order.actualShippingCost || shippingPaid); // Use shippingPaid if actual not set
+          const taxAmount = parseFloat(order.taxAmount || '0');
+          const discountValue = parseFloat(order.discountValue || '0');
           
-          const profit = grandTotal - totalCost - tax - discount - (shippingPaid - actualShippingCost);
-          return sum + convertToEur(profit, order.currency);
-        }, 0);
+          // Get order items to calculate import cost
+          const orderItems = await storage.getOrderItems(order.id);
+          let totalImportCost = 0;
+          
+          for (const item of orderItems) {
+            const product = await storage.getProductById(item.productId);
+            if (product) {
+              const quantity = parseInt(item.quantity || '0');
+              let importCost = 0;
+              
+              // Use import cost based on order currency
+              if (order.currency === 'CZK' && product.importCostCzk) {
+                importCost = parseFloat(product.importCostCzk);
+              } else if (order.currency === 'EUR' && product.importCostEur) {
+                importCost = parseFloat(product.importCostEur);
+              } else if (product.importCostUsd) {
+                // Convert USD to order currency, then to EUR
+                const importCostUsd = parseFloat(product.importCostUsd);
+                importCost = convertToEur(importCostUsd, 'USD');
+              }
+              
+              totalImportCost += importCost * quantity;
+            }
+          }
+          
+          // Profit = Revenue - Import Costs - Tax - Discount
+          const profit = grandTotal - totalImportCost - taxAmount - discountValue;
+          totalProfit += convertToEur(profit, order.currency);
+        }
+        
+        return totalProfit;
       };
       
       const metricsWithConversion = {
         fulfillOrdersToday,
         totalOrdersToday: todayShippedOrders.length,
         totalRevenueToday: calculateRevenueInEur(todayShippedOrders),
-        totalProfitToday: calculateProfitInEur(todayShippedOrders),
+        totalProfitToday: await calculateProfitInEur(todayShippedOrders),
         thisMonthRevenue: calculateRevenueInEur(thisMonthOrders),
-        thisMonthProfit: calculateProfitInEur(thisMonthOrders),
+        thisMonthProfit: await calculateProfitInEur(thisMonthOrders),
         lastMonthRevenue: calculateRevenueInEur(lastMonthOrders),
-        lastMonthProfit: calculateProfitInEur(lastMonthOrders),
+        lastMonthProfit: await calculateProfitInEur(lastMonthOrders),
         exchangeRates: exchangeRates.eur
       };
       
