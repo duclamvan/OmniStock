@@ -12,8 +12,19 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ArrowLeft, Save, RotateCcw, Upload } from "lucide-react";
+import { ArrowLeft, Save, RotateCcw, Upload, Trash2 } from "lucide-react";
 import { Link } from "wouter";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const editProductSchema = z.object({
   name: z.string().min(1, "Product name is required"),
@@ -125,6 +136,28 @@ export default function EditProduct() {
       toast({
         title: "Error",
         description: "Failed to update product",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteProductMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest('DELETE', `/api/products/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      toast({
+        title: "Success",
+        description: "Product deleted successfully",
+      });
+      setLocation('/inventory');
+    },
+    onError: (error) => {
+      console.error("Product delete error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete product",
         variant: "destructive",
       });
     },
@@ -435,16 +468,45 @@ export default function EditProduct() {
         </Card>
 
         {/* Action Buttons */}
-        <div className="flex justify-end space-x-4">
-          <Link href="/inventory">
-            <Button type="button" variant="outline">
-              Cancel
+        <div className="flex justify-between">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button type="button" variant="destructive">
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Product
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete the product
+                  "{product?.name}" and remove it from all inventory.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => deleteProductMutation.mutate()}
+                  disabled={deleteProductMutation.isPending}
+                >
+                  {deleteProductMutation.isPending ? 'Deleting...' : 'Delete'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          
+          <div className="flex space-x-4">
+            <Link href="/inventory">
+              <Button type="button" variant="outline">
+                Cancel
+              </Button>
+            </Link>
+            <Button type="submit" disabled={updateProductMutation.isPending}>
+              <Save className="h-4 w-4 mr-2" />
+              {updateProductMutation.isPending ? 'Saving...' : 'Save Changes'}
             </Button>
-          </Link>
-          <Button type="submit" disabled={updateProductMutation.isPending}>
-            <Save className="h-4 w-4 mr-2" />
-            {updateProductMutation.isPending ? 'Saving...' : 'Save Changes'}
-          </Button>
+          </div>
         </div>
       </form>
     </div>

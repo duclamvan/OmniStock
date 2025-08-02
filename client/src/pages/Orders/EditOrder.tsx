@@ -16,6 +16,17 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { ArrowLeft, Save, Plus, Trash2 } from "lucide-react";
 import { Link } from "wouter";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const editOrderSchema = z.object({
   currency: z.enum(['CZK', 'EUR', 'USD', 'VND', 'CNY']),
@@ -153,6 +164,28 @@ export default function EditOrder() {
       toast({
         title: "Error",
         description: "Failed to update order",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteOrderMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest('DELETE', `/api/orders/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      toast({
+        title: "Success",
+        description: "Order deleted successfully",
+      });
+      setLocation('/orders');
+    },
+    onError: (error) => {
+      console.error("Order delete error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete order",
         variant: "destructive",
       });
     },
@@ -602,16 +635,45 @@ export default function EditOrder() {
         </Card>
 
         {/* Action Buttons */}
-        <div className="flex justify-end space-x-4">
-          <Link href="/orders">
-            <Button type="button" variant="outline">
-              Cancel
+        <div className="flex justify-between">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button type="button" variant="destructive">
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Order
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete the order
+                  "{order?.orderId}" and all its items.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => deleteOrderMutation.mutate()}
+                  disabled={deleteOrderMutation.isPending}
+                >
+                  {deleteOrderMutation.isPending ? 'Deleting...' : 'Delete'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          
+          <div className="flex space-x-4">
+            <Link href="/orders">
+              <Button type="button" variant="outline">
+                Cancel
+              </Button>
+            </Link>
+            <Button type="submit" disabled={updateOrderMutation.isPending}>
+              <Save className="h-4 w-4 mr-2" />
+              {updateOrderMutation.isPending ? 'Saving...' : 'Save Changes'}
             </Button>
-          </Link>
-          <Button type="submit" disabled={updateOrderMutation.isPending}>
-            <Save className="h-4 w-4 mr-2" />
-            {updateOrderMutation.isPending ? 'Saving...' : 'Save Changes'}
-          </Button>
+          </div>
         </div>
       </form>
     </div>
