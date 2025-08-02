@@ -91,17 +91,7 @@ export default function AddOrder() {
       setLocation('/orders');
     },
     onError: (error) => {
-      if (isUnauthorizedError(error as Error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
+      console.error("Order creation error:", error);
       toast({
         title: "Error",
         description: "Failed to create order",

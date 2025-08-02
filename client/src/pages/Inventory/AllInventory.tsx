@@ -29,17 +29,14 @@ export default function AllInventory() {
     queryKey: ['/api/categories'],
   });
 
-  // Handle unauthorized errors
+  // Error handling
   useEffect(() => {
-    if (error && isUnauthorizedError(error as Error)) {
+    if (error) {
       toast({
-        title: "Unauthorized",
-        description: "You are logged out. Logging in again...",
+        title: "Error",
+        description: "Failed to load products",
         variant: "destructive",
       });
-      setTimeout(() => {
-        window.location.href = "/api/login";
-      }, 500);
     }
   }, [error, toast]);
 
