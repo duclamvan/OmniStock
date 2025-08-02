@@ -596,9 +596,12 @@ export default function AddOrder() {
                     <Label htmlFor="facebookName">Facebook Name</Label>
                     <Input
                       id="facebookName"
-                      value={newCustomer.facebookName}
-                      onChange={(e) => setNewCustomer({ ...newCustomer, facebookName: e.target.value })}
-                      placeholder="Type here"
+                      value={newCustomer.facebookName || ""}
+                      onChange={(e) => {
+                        console.log('Facebook Name changed to:', e.target.value);
+                        setNewCustomer({ ...newCustomer, facebookName: e.target.value });
+                      }}
+                      placeholder="Facebook display name"
                     />
                   </div>
                   <div>
