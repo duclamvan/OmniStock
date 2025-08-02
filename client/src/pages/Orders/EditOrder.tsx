@@ -805,7 +805,7 @@ export default function EditOrder() {
                             return formatCurrency(price, selectedCurrency);
                           })()}
                         </p>
-                        <p className="text-sm text-slate-500">Stock: {product.stockQuantity || 0}</p>
+                        <p className="text-sm text-slate-500">Stock: {product.quantity || 0}</p>
                       </div>
                       <Button type="button" size="sm">
                         <Plus className="h-4 w-4" />
