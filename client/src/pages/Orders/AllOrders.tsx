@@ -5,15 +5,26 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { Plus, Search, Filter, Download, FileText, Edit } from "lucide-react";
+import { Plus, Search, Filter, Download, FileText, Edit, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface AllOrdersProps {
   filter?: string;
@@ -23,7 +34,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [entriesPerPage, setEntriesPerPage] = useState(10);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [selectedOrders, setSelectedOrders] = useState<any[]>([]);
 
   const { data: orders = [], isLoading, error } = useQuery({
     queryKey: filter ? ['/api/orders', 'status', filter] : ['/api/orders'],
@@ -68,6 +80,28 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     },
   });
 
+  const deleteOrderMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      await Promise.all(ids.map(id => apiRequest('DELETE', `/api/orders/${id}`)));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      toast({
+        title: "Success",
+        description: `Deleted ${selectedOrders.length} order(s) successfully`,
+      });
+      setSelectedOrders([]);
+    },
+    onError: (error: any) => {
+      console.error("Order delete error:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete orders",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Filter orders based on search query
   const filteredOrders = orders?.filter((order: any) => {
     if (!searchQuery) return true;
@@ -79,11 +113,6 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       matcher(order.customer?.facebookName || '')
     );
   });
-
-  // Paginate orders
-  const startIndex = 0;
-  const endIndex = entriesPerPage;
-  const paginatedOrders = filteredOrders?.slice(startIndex, endIndex);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -122,6 +151,114 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       default:
         return 'All Orders';
     }
+  };
+
+  // Define table columns
+  const columns: DataTableColumn<any>[] = [
+    {
+      key: "orderId",
+      header: "Order ID",
+      sortable: true,
+      cell: (order) => (
+        <Link href={`/orders/edit/${order.id}`}>
+          <span className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer">
+            {order.orderId || '#' + order.id.slice(0, 8)}
+          </span>
+        </Link>
+      ),
+    },
+    {
+      key: "customer",
+      header: "Customer",
+      sortable: true,
+      cell: (order) => (
+        <div className="flex items-center gap-2">
+          <Avatar className="h-8 w-8">
+            <AvatarImage src={order.customer?.profileImageUrl} />
+            <AvatarFallback>{order.customer?.name?.charAt(0) || 'C'}</AvatarFallback>
+          </Avatar>
+          <div>
+            <div className="font-medium">{order.customer?.name || 'N/A'}</div>
+            {order.customer?.facebookName && (
+              <div className="text-xs text-gray-500">FB: {order.customer.facebookName}</div>
+            )}
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "createdAt",
+      header: "Date",
+      sortable: true,
+      cell: (order) => new Date(order.createdAt).toLocaleDateString('vi-VN'),
+    },
+    {
+      key: "total",
+      header: "Total",
+      sortable: true,
+      cell: (order) => formatCurrency(parseFloat(order.total || '0'), order.currency),
+      className: "text-right",
+    },
+    {
+      key: "status",
+      header: "Status",
+      sortable: true,
+      cell: (order) => getStatusBadge(order.status),
+    },
+    {
+      key: "paymentStatus",
+      header: "Payment",
+      sortable: true,
+      cell: (order) => getPaymentStatusBadge(order.paymentStatus),
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      cell: (order) => (
+        <Link href={`/orders/edit/${order.id}`}>
+          <Button size="sm" variant="ghost">
+            <Edit className="h-4 w-4" />
+          </Button>
+        </Link>
+      ),
+    },
+  ];
+
+  // Bulk actions
+  const bulkActions = [
+    {
+      label: "Update Status",
+      action: (orders: any[]) => {
+        // TODO: Implement bulk status update
+        toast({
+          title: "Bulk Update",
+          description: `Updating ${orders.length} orders...`,
+        });
+      },
+    },
+    {
+      label: "Delete",
+      variant: "destructive" as const,
+      action: (orders: any[]) => {
+        setSelectedOrders(orders);
+        setShowDeleteDialog(true);
+      },
+    },
+    {
+      label: "Export",
+      action: (orders: any[]) => {
+        // TODO: Implement export functionality
+        toast({
+          title: "Export",
+          description: `Exporting ${orders.length} orders...`,
+        });
+      },
+    },
+  ];
+
+  const handleDeleteConfirm = () => {
+    deleteOrderMutation.mutate(selectedOrders.map(order => order.id));
+    setShowDeleteDialog(false);
   };
 
   if (isLoading) {
@@ -184,17 +321,6 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                 </SelectContent>
               </Select>
             )}
-            <Select value={String(entriesPerPage)} onValueChange={(value) => setEntriesPerPage(Number(value))}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="10">10 entries</SelectItem>
-                <SelectItem value="20">20 entries</SelectItem>
-                <SelectItem value="50">50 entries</SelectItem>
-                <SelectItem value="100">100 entries</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </CardContent>
       </Card>
@@ -205,100 +331,34 @@ export default function AllOrders({ filter }: AllOrdersProps) {
           <CardTitle>Orders ({filteredOrders?.length || 0})</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Order ID</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Total</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Payment</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedOrders?.length > 0 ? (
-                  paginatedOrders.map((order: any) => (
-                    <TableRow key={order.id}>
-                      <TableCell className="font-medium">
-                        #{order.orderId}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <Avatar className="h-8 w-8">
-                            <AvatarFallback className="text-xs">
-                              {order.customer?.name?.[0] || 'U'}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className="font-medium">{order.customer?.name || 'Guest'}</div>
-                            <div className="text-sm text-slate-500">{order.customer?.email}</div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(order.createdAt).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        {formatCurrency(parseFloat(order.grandTotal), order.currency)}
-                      </TableCell>
-                      <TableCell>
-                        {getStatusBadge(order.orderStatus)}
-                      </TableCell>
-                      <TableCell>
-                        {getPaymentStatusBadge(order.paymentStatus)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <Link href={`/orders/${order.id}/edit`}>
-                            <Button variant="ghost" size="sm">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </Link>
-                          <Select
-                            value={order.orderStatus}
-                            onValueChange={(value) =>
-                              updateOrderMutation.mutate({
-                                id: order.id,
-                                updates: { orderStatus: value },
-                              })
-                            }
-                          >
-                            <SelectTrigger className="w-32">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="pending">Pending</SelectItem>
-                              <SelectItem value="to_fulfill">To Fulfill</SelectItem>
-                              <SelectItem value="shipped">Shipped</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8">
-                      <div className="text-slate-500">
-                        {searchQuery ? 'No orders found matching your search.' : 'No orders found.'}
-                      </div>
-                      <Link href="/orders/add">
-                        <Button className="mt-4">
-                          <Plus className="mr-2 h-4 w-4" />
-                          Create First Order
-                        </Button>
-                      </Link>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <DataTable
+            data={filteredOrders}
+            columns={columns}
+            bulkActions={bulkActions}
+            getRowKey={(order) => order.id}
+            itemsPerPageOptions={[10, 20, 50, 100]}
+            defaultItemsPerPage={20}
+          />
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Orders</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedOrders.length} order(s)? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

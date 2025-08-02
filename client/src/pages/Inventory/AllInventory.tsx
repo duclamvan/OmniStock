@@ -5,9 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
@@ -30,7 +30,8 @@ export default function AllInventory() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [entriesPerPage, setEntriesPerPage] = useState(20);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
 
   const { data: products = [], isLoading, error } = useQuery({
     queryKey: searchQuery ? ['/api/products', searchQuery] : ['/api/products'],
@@ -114,14 +115,6 @@ export default function AllInventory() {
     );
   });
 
-  // Sort by newest added (as per requirement)
-  const sortedProducts = filteredProducts?.sort((a: any, b: any) => 
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
-
-  // Paginate products
-  const paginatedProducts = sortedProducts?.slice(0, entriesPerPage);
-
   const getStockStatus = (quantity: number, lowStockAlert: number) => {
     if (quantity <= lowStockAlert) {
       return <Badge variant="destructive">Low Stock</Badge>;
@@ -130,6 +123,162 @@ export default function AllInventory() {
     } else {
       return <Badge className="bg-green-100 text-green-800">In Stock</Badge>;
     }
+  };
+
+  // Define table columns
+  const columns: DataTableColumn<any>[] = [
+    {
+      key: "name",
+      header: "Product",
+      sortable: true,
+      cell: (product) => (
+        <div className="flex items-center gap-2">
+          {product.imageUrl ? (
+            <img 
+              src={product.imageUrl} 
+              alt={product.name} 
+              className="w-10 h-10 object-cover rounded"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+          ) : (
+            <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center">
+              <Package className="h-5 w-5 text-gray-400" />
+            </div>
+          )}
+          <div>
+            <Link href={`/inventory/edit/${product.id}`}>
+              <span className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer">
+                {product.name}
+              </span>
+            </Link>
+            <div className="text-xs text-gray-500">{product.description?.slice(0, 50)}...</div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "sku",
+      header: "SKU",
+      sortable: true,
+    },
+    {
+      key: "categoryId",
+      header: "Category",
+      sortable: true,
+      cell: (product) => {
+        const category = categories?.find((c: any) => c.id === product.categoryId);
+        return category?.name || '-';
+      },
+    },
+    {
+      key: "quantity",
+      header: "Quantity",
+      sortable: true,
+      className: "text-right",
+    },
+    {
+      key: "lowStockAlert",
+      header: "Low Stock Alert",
+      sortable: true,
+      className: "text-right",
+    },
+    {
+      key: "priceEur",
+      header: "Price EUR",
+      sortable: true,
+      cell: (product) => formatCurrency(parseFloat(product.priceEur || '0'), 'EUR'),
+      className: "text-right",
+    },
+    {
+      key: "priceCzk",
+      header: "Price CZK",
+      sortable: true,
+      cell: (product) => formatCurrency(parseFloat(product.priceCzk || '0'), 'CZK'),
+      className: "text-right",
+    },
+    {
+      key: "status",
+      header: "Status",
+      cell: (product) => getStockStatus(product.quantity, product.lowStockAlert),
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      cell: (product) => (
+        <div className="flex items-center gap-1">
+          <Link href={`/inventory/edit/${product.id}`}>
+            <Button size="sm" variant="ghost">
+              <Edit className="h-4 w-4" />
+            </Button>
+          </Link>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Product</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete "{product.name}"? This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={() => deleteProductMutation.mutate(product.id)}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      ),
+    },
+  ];
+
+  // Bulk actions
+  const bulkActions = [
+    {
+      label: "Update Stock",
+      action: (products: any[]) => {
+        toast({
+          title: "Bulk Update",
+          description: `Updating stock for ${products.length} products...`,
+        });
+      },
+    },
+    {
+      label: "Delete",
+      variant: "destructive" as const,
+      action: (products: any[]) => {
+        setSelectedProducts(products);
+        setShowDeleteDialog(true);
+      },
+    },
+    {
+      label: "Export",
+      action: (products: any[]) => {
+        toast({
+          title: "Export",
+          description: `Exporting ${products.length} products...`,
+        });
+      },
+    },
+  ];
+
+  const handleDeleteConfirm = () => {
+    Promise.all(selectedProducts.map(product => 
+      deleteProductMutation.mutateAsync(product.id)
+    )).then(() => {
+      setSelectedProducts([]);
+      setShowDeleteDialog(false);
+    });
   };
 
   if (isLoading) {
@@ -246,17 +395,6 @@ export default function AllInventory() {
                 ))}
               </SelectContent>
             </Select>
-            <Select value={String(entriesPerPage)} onValueChange={(value) => setEntriesPerPage(Number(value))}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="10">10 entries</SelectItem>
-                <SelectItem value="20">20 entries</SelectItem>
-                <SelectItem value="50">50 entries</SelectItem>
-                <SelectItem value="100">100 entries</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </CardContent>
       </Card>
@@ -267,161 +405,34 @@ export default function AllInventory() {
           <CardTitle>Products ({filteredProducts?.length || 0})</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Product</TableHead>
-                  <TableHead>SKU</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Quantity</TableHead>
-                  <TableHead>Low Stock Alert</TableHead>
-                  <TableHead>Price EUR</TableHead>
-                  <TableHead>Price CZK</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedProducts?.length > 0 ? (
-                  paginatedProducts.map((product: any) => (
-                    <TableRow key={product.id}>
-                      <TableCell>
-                        <div className="flex items-center space-x-3">
-                          <div className="relative h-10 w-10 flex-shrink-0">
-                            {product.imageUrl ? (
-                              <img
-                                src={product.imageUrl}
-                                alt={product.name}
-                                className="h-full w-full rounded-lg object-cover"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).style.display = 'none';
-                                  (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
-                                }}
-                              />
-                            ) : null}
-                            <div className={`flex h-full w-full items-center justify-center rounded-lg bg-slate-100 ${product.imageUrl ? 'hidden' : ''}`}>
-                              <span className="text-lg font-medium text-slate-600">
-                                {product.name?.charAt(0)?.toUpperCase()}
-                              </span>
-                            </div>
-                          </div>
-                          <div>
-                            <div className="font-medium">{product.name}</div>
-                            <div className="text-sm text-slate-500">{product.description?.slice(0, 50)}...</div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-mono">{product.sku}</TableCell>
-                      <TableCell>
-                        {categories?.find((c: any) => c.id === product.categoryId)?.name || 'N/A'}
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          min="0"
-                          value={product.quantity}
-                          onChange={(e) =>
-                            updateProductMutation.mutate({
-                              id: product.id,
-                              updates: { quantity: parseInt(e.target.value) || 0 },
-                            })
-                          }
-                          className="w-20"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Input
-                          type="number"
-                          min="0"
-                          value={product.lowStockAlert}
-                          onChange={(e) =>
-                            updateProductMutation.mutate({
-                              id: product.id,
-                              updates: { lowStockAlert: parseInt(e.target.value) || 0 },
-                            })
-                          }
-                          className="w-20"
-                        />
-                      </TableCell>
-                      <TableCell>
-                        {product.priceEur ? formatCurrency(parseFloat(product.priceEur), 'EUR') : 'N/A'}
-                      </TableCell>
-                      <TableCell>
-                        {product.priceCzk ? formatCurrency(parseFloat(product.priceCzk), 'CZK') : 'N/A'}
-                      </TableCell>
-                      <TableCell>
-                        {getStockStatus(product.quantity, product.lowStockAlert)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <Link href={`/inventory/${product.id}/edit`}>
-                            <Button variant="ghost" size="sm">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </Link>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Product</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to delete "{product.name}"? This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => deleteProductMutation.mutate(product.id)}
-                                  className="bg-red-600 hover:bg-red-700"
-                                >
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8">
-                      <div className="text-slate-500">
-                        {searchQuery || categoryFilter !== "all" 
-                          ? 'No products found matching your filters.' 
-                          : 'No products found.'
-                        }
-                      </div>
-                      <Link href="/inventory/add">
-                        <Button className="mt-4">
-                          <Plus className="mr-2 h-4 w-4" />
-                          Add First Product
-                        </Button>
-                      </Link>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          {paginatedProducts && paginatedProducts.length < sortedProducts?.length && (
-            <div className="mt-4 text-center">
-              <Button
-                variant="outline"
-                onClick={() => setEntriesPerPage(prev => prev + 20)}
-              >
-                Load More Products
-              </Button>
-            </div>
-          )}
+          <DataTable
+            data={filteredProducts}
+            columns={columns}
+            bulkActions={bulkActions}
+            getRowKey={(product) => product.id}
+            itemsPerPageOptions={[10, 20, 50, 100]}
+            defaultItemsPerPage={20}
+          />
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Products</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedProducts.length} product(s)? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

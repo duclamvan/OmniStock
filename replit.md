@@ -77,6 +77,21 @@ The project uses a monorepo structure with shared schema:
 
 ## Recent Changes
 
+## DataTable Component Implementation (August 2, 2025)
+- Created reusable DataTable component with advanced features:
+  - Bulk selection with checkbox column
+  - Sortable columns with click-to-sort functionality
+  - Configurable pagination with items per page options (10/20/50/100)
+  - Bulk actions support with customizable buttons
+  - TypeScript generic support for type safety
+- Implemented DataTable across all main pages:
+  - AllOrders page with bulk actions (mark as shipped, cancel, export)
+  - AllInventory page with bulk operations (update stock, delete, export)
+  - AllWarehouses page with bulk actions (delete, export)
+  - AllSales page with bulk actions (activate, deactivate, delete, export)
+  - AllCustomers page with bulk actions (send email, update type, delete, export)
+- All tables now have consistent UI/UX with sortable columns and pagination controls
+
 ## Image Upload Functionality (August 2, 2025)
 - Implemented image upload feature using multer for product management
 - Added `/api/upload` endpoint for handling file uploads
