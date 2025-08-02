@@ -150,3 +150,86 @@
 .border-slate-100 {
   border-color: hsl(210, 40%, 95%);
 }
+
+/* Mobile-First Responsive Utilities */
+@layer utilities {
+  /* Responsive table utilities */
+  .table-mobile-stack {
+    @apply block sm:table;
+  }
+  
+  .table-mobile-row {
+    @apply block sm:table-row border-b sm:border-b-0;
+  }
+  
+  .table-mobile-cell {
+    @apply block sm:table-cell px-3 py-2 sm:px-6 sm:py-3;
+  }
+  
+  .table-mobile-label {
+    @apply inline-block sm:hidden font-medium min-w-[120px];
+  }
+  
+  /* Mobile card layouts */
+  .mobile-card-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4;
+  }
+  
+  /* Responsive text sizes */
+  .text-mobile-sm {
+    @apply text-xs sm:text-sm;
+  }
+  
+  .text-mobile-base {
+    @apply text-sm sm:text-base;
+  }
+  
+  .text-mobile-lg {
+    @apply text-base sm:text-lg;
+  }
+  
+  .text-mobile-xl {
+    @apply text-lg sm:text-xl;
+  }
+  
+  .text-mobile-2xl {
+    @apply text-xl sm:text-2xl;
+  }
+  
+  /* Mobile navigation */
+  .mobile-nav-toggle {
+    @apply lg:hidden;
+  }
+  
+  .mobile-sidebar {
+    @apply fixed inset-y-0 left-0 z-50 w-72 transform -translate-x-full transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0;
+  }
+  
+  .mobile-sidebar-open {
+    @apply translate-x-0;
+  }
+  
+  /* Mobile padding/spacing */
+  .px-mobile {
+    @apply px-4 sm:px-6 lg:px-8;
+  }
+  
+  .py-mobile {
+    @apply py-4 sm:py-6 lg:py-8;
+  }
+  
+  /* Mobile overflow handling */
+  .mobile-scroll-container {
+    @apply overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0;
+  }
+  
+  /* Touch-friendly sizes */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+  
+  /* Mobile-optimized form layouts */
+  .form-mobile-stack {
+    @apply space-y-4 sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-4;
+  }
+}

@@ -299,21 +299,23 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">{getPageTitle()}</h1>
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <h1 className="text-mobile-2xl font-bold text-slate-900">{getPageTitle()}</h1>
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <Button variant="outline" size="sm" className="flex-1 sm:flex-none touch-target">
             <Download className="mr-2 h-4 w-4" />
-            Export XLS
+            <span className="hidden sm:inline">Export XLS</span>
+            <span className="sm:hidden">XLS</span>
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="flex-1 sm:flex-none touch-target">
             <FileText className="mr-2 h-4 w-4" />
-            Export PDF
+            <span className="hidden sm:inline">Export PDF</span>
+            <span className="sm:hidden">PDF</span>
           </Button>
-          <Link href="/orders/add">
-            <Button>
+          <Link href="/orders/add" className="flex-1 sm:flex-none">
+            <Button className="w-full touch-target">
               <Plus className="mr-2 h-4 w-4" />
               Add Order
             </Button>
@@ -323,20 +325,20 @@ export default function AllOrders({ filter }: AllOrdersProps) {
 
       {/* Filters */}
       <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row gap-4">
+        <CardContent className="p-4 sm:p-6">
+          <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
               <Input
-                placeholder="Search orders by ID, customer name..."
+                placeholder="Search orders..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 touch-target"
               />
             </div>
             {!filter && (
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-full sm:w-48 touch-target">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -353,18 +355,81 @@ export default function AllOrders({ filter }: AllOrdersProps) {
 
       {/* Orders Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>Orders ({filteredOrders?.length || 0})</CardTitle>
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-mobile-lg">Orders ({filteredOrders?.length || 0})</CardTitle>
         </CardHeader>
-        <CardContent>
-          <DataTable
-            data={filteredOrders}
-            columns={columns}
-            bulkActions={bulkActions}
-            getRowKey={(order) => order.id}
-            itemsPerPageOptions={[10, 20, 50, 100]}
-            defaultItemsPerPage={20}
-          />
+        <CardContent className="p-0 sm:p-6">
+          {/* Mobile Card View */}
+          <div className="sm:hidden">
+            {filteredOrders?.map((order: any) => (
+              <div key={order.id} className="border-b last:border-b-0 p-4 hover:bg-gray-50">
+                <div className="space-y-3">
+                  {/* Customer and Status Row */}
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={order.customer?.profileImageUrl} />
+                        <AvatarFallback className="text-sm">{order.customer?.name?.charAt(0) || 'C'}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium text-mobile-base">{order.customer?.name || 'N/A'}</p>
+                        {order.customer?.facebookName && (
+                          <p className="text-xs text-gray-500">FB: {order.customer.facebookName}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      {getStatusBadge(order.orderStatus)}
+                      {getPaymentStatusBadge(order.paymentStatus)}
+                    </div>
+                  </div>
+                  
+                  {/* Order Details */}
+                  <div className="grid grid-cols-2 gap-2 text-mobile-sm">
+                    <div>
+                      <span className="text-gray-500">Order ID:</span>
+                      <p className="font-medium">{order.orderId}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Date:</span>
+                      <p className="font-medium">{new Date(order.createdAt).toLocaleDateString('vi-VN')}</p>
+                    </div>
+                  </div>
+                  
+                  {/* Financial Info */}
+                  <div className="flex items-end justify-between pt-2 border-t">
+                    <div>
+                      <p className="text-gray-500 text-xs">Total / Profit</p>
+                      <p className="font-semibold text-mobile-lg">
+                        {formatCurrency(parseFloat(order.grandTotal || '0'), order.currency)}
+                      </p>
+                      <p className={`text-mobile-sm ${calculateOrderProfit(order) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {formatCurrency(calculateOrderProfit(order), order.currency)}
+                      </p>
+                    </div>
+                    <Link href={`/orders/${order.id}/edit`}>
+                      <Button size="sm" variant="ghost" className="touch-target">
+                        <Edit className="h-4 w-4 mr-1" />
+                        Edit
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Desktop Table View */}
+          <div className="hidden sm:block">
+            <DataTable
+              data={filteredOrders}
+              columns={columns}
+              bulkActions={bulkActions}
+              getRowKey={(order) => order.id}
+              itemsPerPageOptions={[10, 20, 50, 100]}
+              defaultItemsPerPage={20}
+            />
+          </div>
         </CardContent>
       </Card>
 

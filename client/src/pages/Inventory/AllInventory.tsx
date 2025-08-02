@@ -293,16 +293,16 @@ export default function AllInventory() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">Inventory</h1>
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm">
-            Import from XLS
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <h1 className="text-mobile-2xl font-bold text-slate-900">Inventory</h1>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Button variant="outline" size="sm" className="flex-1 sm:flex-none touch-target">
+            Import XLS
           </Button>
-          <Link href="/inventory/add">
-            <Button>
+          <Link href="/inventory/add" className="flex-1 sm:flex-none">
+            <Button className="w-full touch-target">
               <Plus className="mr-2 h-4 w-4" />
               Add Product
             </Button>
@@ -311,27 +311,27 @@ export default function AllInventory() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center">
-              <Package className="h-8 w-8 text-blue-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-slate-600">Total Products</p>
-                <p className="text-2xl font-bold text-slate-900">{products?.length || 0}</p>
+              <Package className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
+              <div className="ml-3 sm:ml-4">
+                <p className="text-mobile-sm font-medium text-slate-600">Total Products</p>
+                <p className="text-mobile-xl font-bold text-slate-900">{products?.length || 0}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center">
-              <AlertTriangle className="h-8 w-8 text-orange-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-slate-600">Low Stock Items</p>
-                <p className="text-2xl font-bold text-slate-900">
-                  {products?.filter((p: any) => p.quantity <= p.lowStockAlert).length || 0}
+              <AlertTriangle className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
+              <div className="ml-3 sm:ml-4">
+                <p className="text-mobile-sm font-medium text-slate-600">Low Stock</p>
+                <p className="text-mobile-xl font-bold text-slate-900">
+                  {(products as any[])?.filter((p: any) => p.quantity <= p.lowStockAlert).length || 0}
                 </p>
               </div>
             </div>
@@ -339,26 +339,26 @@ export default function AllInventory() {
         </Card>
 
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center">
-              <Package className="h-8 w-8 text-green-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-slate-600">Categories</p>
-                <p className="text-2xl font-bold text-slate-900">{categories?.length || 0}</p>
+              <Package className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
+              <div className="ml-3 sm:ml-4">
+                <p className="text-mobile-sm font-medium text-slate-600">Categories</p>
+                <p className="text-mobile-xl font-bold text-slate-900">{(categories as any[])?.length || 0}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center">
-              <Package className="h-8 w-8 text-purple-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-slate-600">Total Value</p>
-                <p className="text-2xl font-bold text-slate-900">
+              <Package className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600" />
+              <div className="ml-3 sm:ml-4">
+                <p className="text-mobile-sm font-medium text-slate-600">Total Value</p>
+                <p className="text-mobile-lg font-bold text-slate-900 break-all">
                   {formatCurrency(
-                    products?.reduce((sum: number, p: any) => 
+                    (products as any[])?.reduce((sum: number, p: any) => 
                       sum + (parseFloat(p.priceEur || '0') * p.quantity), 0) || 0, 
                     'EUR'
                   )}
@@ -371,24 +371,24 @@ export default function AllInventory() {
 
       {/* Filters */}
       <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row gap-4">
+        <CardContent className="p-4 sm:p-6">
+          <div className="flex flex-col gap-3 sm:gap-4 sm:flex-row">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
               <Input
-                placeholder="Search products by name, SKU, or description..."
+                placeholder="Search products..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 touch-target"
               />
             </div>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-full sm:w-48 touch-target">
                 <SelectValue placeholder="Filter by category" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
-                {categories?.map((category: any) => (
+                {(categories as any[])?.map((category: any) => (
                   <SelectItem key={category.id} value={category.id}>
                     {category.name}
                   </SelectItem>
@@ -401,18 +401,108 @@ export default function AllInventory() {
 
       {/* Products Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>Products ({filteredProducts?.length || 0})</CardTitle>
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-mobile-lg">Products ({filteredProducts?.length || 0})</CardTitle>
         </CardHeader>
-        <CardContent>
-          <DataTable
-            data={filteredProducts}
-            columns={columns}
-            bulkActions={bulkActions}
-            getRowKey={(product) => product.id}
-            itemsPerPageOptions={[10, 20, 50, 100]}
-            defaultItemsPerPage={20}
-          />
+        <CardContent className="p-0 sm:p-6">
+          {/* Mobile Card View */}
+          <div className="sm:hidden">
+            {filteredProducts?.map((product: any) => (
+              <div key={product.id} className="border-b last:border-b-0 p-4 hover:bg-gray-50">
+                <div className="space-y-3">
+                  {/* Product Header */}
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage src={product.imageUrl} />
+                        <AvatarFallback className="text-sm">{product.name?.charAt(0) || 'P'}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium text-mobile-base">{product.name}</p>
+                        <p className="text-xs text-gray-500">SKU: {product.sku}</p>
+                      </div>
+                    </div>
+                    {getStockStatus(product.quantity, product.lowStockAlert)}
+                  </div>
+                  
+                  {/* Product Details */}
+                  <div className="grid grid-cols-2 gap-2 text-mobile-sm">
+                    <div>
+                      <span className="text-gray-500">Category:</span>
+                      <p className="font-medium">
+                        {(categories as any[])?.find((c: any) => c.id === product.categoryId)?.name || 'N/A'}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Supplier:</span>
+                      <p className="font-medium">{product.supplier?.name || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Stock:</span>
+                      <p className="font-medium">{product.quantity} units</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Price (EUR):</span>
+                      <p className="font-medium">{formatCurrency(parseFloat(product.priceEur || '0'), 'EUR')}</p>
+                    </div>
+                  </div>
+                  
+                  {/* Actions */}
+                  <div className="flex items-center justify-between pt-2 border-t">
+                    <div>
+                      <p className="text-gray-500 text-xs">Import Cost</p>
+                      <p className="font-semibold text-mobile-base">
+                        {formatCurrency(parseFloat(product.importCostEur || '0'), 'EUR')}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Link href={`/inventory/${product.id}/edit`}>
+                        <Button size="sm" variant="ghost" className="touch-target">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700 touch-target">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Product</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete "{product.name}"? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => deleteProductMutation.mutate(product.id)}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Desktop Table View */}
+          <div className="hidden sm:block">
+            <DataTable
+              data={filteredProducts}
+              columns={columns}
+              bulkActions={bulkActions}
+              getRowKey={(product) => product.id}
+              itemsPerPageOptions={[10, 20, 50, 100]}
+              defaultItemsPerPage={20}
+            />
+          </div>
         </CardContent>
       </Card>
 

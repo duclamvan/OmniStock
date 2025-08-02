@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { MobileCardView } from "@/components/ui/responsive-table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Truck, Package, Euro, TrendingUp, Filter, ArrowUpDown } from "lucide-react";
 import { RevenueChart } from "./charts/RevenueChart";
@@ -36,22 +37,22 @@ export function Dashboard() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 sm:space-y-6 lg:space-y-8">
       {/* Key Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         {/* Fulfill Orders Today */}
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600">Fulfill Orders Today</p>
-                <p className="text-2xl font-bold text-slate-900">
+              <div className="flex-1">
+                <p className="text-mobile-sm font-medium text-slate-600">Fulfill Orders Today</p>
+                <p className="text-mobile-2xl font-bold text-slate-900 mt-1">
                   {metrics?.fulfillOrdersToday || 0}+
                 </p>
                 <p className="text-xs text-slate-500 mt-1">Orders to fulfill</p>
               </div>
-              <div className="p-3 bg-emerald-100 rounded-lg">
-                <Truck className="h-6 w-6 text-emerald-600" />
+              <div className="p-2 sm:p-3 bg-emerald-100 rounded-lg ml-4">
+                <Truck className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600" />
               </div>
             </div>
           </CardContent>
@@ -59,17 +60,17 @@ export function Dashboard() {
 
         {/* Total Orders Today */}
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600">Total Orders Today</p>
-                <p className="text-2xl font-bold text-slate-900">
+              <div className="flex-1">
+                <p className="text-mobile-sm font-medium text-slate-600">Total Orders Today</p>
+                <p className="text-mobile-2xl font-bold text-slate-900 mt-1">
                   {metrics?.totalOrdersToday || 0}+
                 </p>
                 <p className="text-xs text-slate-500 mt-1">Shipped today</p>
               </div>
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <Package className="h-6 w-6 text-blue-600" />
+              <div className="p-2 sm:p-3 bg-blue-100 rounded-lg ml-4">
+                <Package className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
               </div>
             </div>
           </CardContent>
@@ -77,17 +78,17 @@ export function Dashboard() {
 
         {/* Total Revenue Today */}
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600">Total Revenue</p>
-                <p className="text-2xl font-bold text-slate-900">
+              <div className="flex-1">
+                <p className="text-mobile-sm font-medium text-slate-600">Total Revenue</p>
+                <p className="text-mobile-xl font-bold text-slate-900 mt-1 break-all">
                   {formatCurrency(metrics?.totalRevenueToday || 0, 'EUR')}
                 </p>
                 <p className="text-xs text-emerald-600 mt-1">Today +10%</p>
               </div>
-              <div className="p-3 bg-green-100 rounded-lg">
-                <Euro className="h-6 w-6 text-green-600" />
+              <div className="p-2 sm:p-3 bg-green-100 rounded-lg ml-4">
+                <Euro className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
               </div>
             </div>
           </CardContent>
@@ -95,17 +96,17 @@ export function Dashboard() {
 
         {/* Total Profit Today */}
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600">Total Profit</p>
-                <p className="text-2xl font-bold text-slate-900">
+              <div className="flex-1">
+                <p className="text-mobile-sm font-medium text-slate-600">Total Profit</p>
+                <p className="text-mobile-xl font-bold text-slate-900 mt-1 break-all">
                   {formatCurrency(metrics?.totalProfitToday || 0, 'EUR')}
                 </p>
                 <p className="text-xs text-emerald-600 mt-1">Today +15% 🏆</p>
               </div>
-              <div className="p-3 bg-yellow-100 rounded-lg">
-                <TrendingUp className="h-6 w-6 text-yellow-600" />
+              <div className="p-2 sm:p-3 bg-yellow-100 rounded-lg ml-4">
+                <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600" />
               </div>
             </div>
           </CardContent>
@@ -113,11 +114,11 @@ export function Dashboard() {
       </div>
 
       {/* Monthly Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         <Card>
-          <CardContent className="p-6">
-            <p className="text-sm font-medium text-slate-600">This Month's Total Revenue</p>
-            <p className="text-2xl font-bold text-slate-900">
+          <CardContent className="p-4 sm:p-6">
+            <p className="text-mobile-sm font-medium text-slate-600">This Month's Total Revenue</p>
+            <p className="text-mobile-xl font-bold text-slate-900 mt-1 break-all">
               {formatCurrency(metrics?.thisMonthRevenue || 0, 'EUR')}
             </p>
             <p className="text-xs text-slate-500 mt-1">All currencies converted to EUR</p>
@@ -203,56 +204,94 @@ export function Dashboard() {
       </Card>
 
       {/* Data Tables Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Unpaid Orders */}
         <Card>
-          <CardHeader>
-            <CardTitle>Unpaid Orders</CardTitle>
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-mobile-lg">Unpaid Orders</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              {unpaidLoading ? (
-                <div>Loading unpaid orders...</div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Customer Name</TableHead>
-                      <TableHead>Order ID</TableHead>
-                      <TableHead>Order Date</TableHead>
-                      <TableHead>Order Value</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {unpaidOrders?.slice(0, 4).map((order: any) => (
-                      <TableRow key={order.id}>
-                        <TableCell className="flex items-center space-x-2">
-                          <Avatar className="h-6 w-6">
+          <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+            {unpaidLoading ? (
+              <div className="text-center py-4">Loading unpaid orders...</div>
+            ) : (
+              <>
+                {/* Mobile Card View */}
+                <MobileCardView
+                  items={unpaidOrders?.slice(0, 4) || []}
+                  renderCard={(order) => (
+                    <div key={order.id} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <Avatar className="h-8 w-8">
                             <AvatarFallback className="text-xs">
                               {order.customer?.name?.[0] || 'U'}
                             </AvatarFallback>
                           </Avatar>
-                          <span>{order.customer?.name || 'Unknown'}</span>
-                        </TableCell>
-                        <TableCell>{order.orderId}</TableCell>
-                        <TableCell>
-                          {new Date(order.createdAt).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell>
-                          {formatCurrency(parseFloat(order.grandTotal), order.currency)}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={order.paymentStatus === 'pay_later' ? 'default' : 'secondary'}>
-                            {order.paymentStatus === 'pay_later' ? 'Pay Later' : 'Pending'}
-                          </Badge>
-                        </TableCell>
+                          <span className="font-medium text-mobile-base">{order.customer?.name || 'Unknown'}</span>
+                        </div>
+                        <Badge variant={order.paymentStatus === 'pay_later' ? 'default' : 'secondary'} className="text-xs">
+                          {order.paymentStatus === 'pay_later' ? 'Pay Later' : 'Pending'}
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-mobile-sm">
+                        <div>
+                          <span className="text-gray-500">Order ID:</span>
+                          <p className="font-medium">{order.orderId}</p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Date:</span>
+                          <p className="font-medium">{new Date(order.createdAt).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                      <div className="pt-2 border-t">
+                        <span className="text-gray-500 text-mobile-sm">Order Value:</span>
+                        <p className="font-semibold text-mobile-lg">{formatCurrency(parseFloat(order.grandTotal), order.currency)}</p>
+                      </div>
+                    </div>
+                  )}
+                />
+                {/* Desktop Table View */}
+                <div className="hidden sm:block overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Customer Name</TableHead>
+                        <TableHead>Order ID</TableHead>
+                        <TableHead>Order Date</TableHead>
+                        <TableHead>Order Value</TableHead>
+                        <TableHead>Status</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </div>
+                    </TableHeader>
+                    <TableBody>
+                      {unpaidOrders?.slice(0, 4).map((order: any) => (
+                        <TableRow key={order.id}>
+                          <TableCell className="flex items-center space-x-2">
+                            <Avatar className="h-6 w-6">
+                              <AvatarFallback className="text-xs">
+                                {order.customer?.name?.[0] || 'U'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span>{order.customer?.name || 'Unknown'}</span>
+                          </TableCell>
+                          <TableCell>{order.orderId}</TableCell>
+                          <TableCell>
+                            {new Date(order.createdAt).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            {formatCurrency(parseFloat(order.grandTotal), order.currency)}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={order.paymentStatus === 'pay_later' ? 'default' : 'secondary'}>
+                              {order.paymentStatus === 'pay_later' ? 'Pay Later' : 'Pending'}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 
