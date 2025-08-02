@@ -168,8 +168,10 @@ export interface IStorage {
 
   // Sales/Discounts
   getSales(): Promise<Sale[]>;
+  getSaleById(id: string): Promise<Sale | undefined>;
   createSale(sale: InsertSale): Promise<Sale>;
   updateSale(id: string, sale: Partial<InsertSale>): Promise<Sale>;
+  deleteSale(id: string): Promise<void>;
 
   // Settings
   getSettings(): Promise<Setting[]>;
@@ -846,6 +848,11 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(sales).orderBy(desc(sales.createdAt));
   }
 
+  async getSaleById(id: string): Promise<Sale | undefined> {
+    const [sale] = await db.select().from(sales).where(eq(sales.id, id));
+    return sale;
+  }
+
   async createSale(sale: InsertSale): Promise<Sale> {
     const [newSale] = await db.insert(sales).values(sale).returning();
     return newSale;
@@ -858,6 +865,10 @@ export class DatabaseStorage implements IStorage {
       .where(eq(sales.id, id))
       .returning();
     return updatedSale;
+  }
+
+  async deleteSale(id: string): Promise<void> {
+    await db.delete(sales).where(eq(sales.id, id));
   }
 
   // Settings

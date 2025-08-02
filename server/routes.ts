@@ -974,6 +974,306 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/sales/:id', async (req, res) => {
+    try {
+      const sale = await storage.getSaleById(req.params.id);
+      if (!sale) {
+        return res.status(404).json({ message: "Sale not found" });
+      }
+      res.json(sale);
+    } catch (error) {
+      console.error("Error fetching sale:", error);
+      res.status(500).json({ message: "Failed to fetch sale" });
+    }
+  });
+
+  app.patch('/api/sales/:id', async (req: any, res) => {
+    try {
+      const updates = req.body;
+      const sale = await storage.updateSale(req.params.id, updates);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'updated',
+        entityType: 'sale',
+        entityId: sale.id,
+        description: `Updated sale: ${sale.name}`,
+      });
+      
+      res.json(sale);
+    } catch (error) {
+      console.error("Error updating sale:", error);
+      res.status(500).json({ message: "Failed to update sale" });
+    }
+  });
+
+  app.delete('/api/sales/:id', async (req: any, res) => {
+    try {
+      const sale = await storage.getSaleById(req.params.id);
+      if (!sale) {
+        return res.status(404).json({ message: "Sale not found" });
+      }
+      
+      await storage.deleteSale(req.params.id);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'deleted',
+        entityType: 'sale',
+        entityId: req.params.id,
+        description: `Deleted sale: ${sale.name}`,
+      });
+      
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Error deleting sale:", error);
+      
+      // Check if it's a foreign key constraint error
+      if (error.code === '23503' || error.message?.includes('constraint')) {
+        return res.status(409).json({ 
+          message: "Cannot delete sale - it's being used by other records" 
+        });
+      }
+      
+      res.status(500).json({ message: "Failed to delete sale" });
+    }
+  });
+
+  // Reports endpoints
+  app.get('/api/reports/sales-summary', async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      const orders = await storage.getOrders();
+      
+      // Filter orders by date range if provided
+      let filteredOrders = orders;
+      if (startDate && endDate) {
+        const start = new Date(startDate as string);
+        const end = new Date(endDate as string);
+        filteredOrders = orders.filter(order => {
+          const orderDate = new Date(order.createdAt!);
+          return orderDate >= start && orderDate <= end;
+        });
+      }
+      
+      // Calculate summary
+      const summary = {
+        totalOrders: filteredOrders.length,
+        totalRevenue: filteredOrders.reduce((sum, order) => sum + parseFloat(order.total || '0'), 0),
+        averageOrderValue: filteredOrders.length > 0 ? 
+          filteredOrders.reduce((sum, order) => sum + parseFloat(order.total || '0'), 0) / filteredOrders.length : 0,
+        ordersByStatus: filteredOrders.reduce((acc, order) => {
+          acc[order.status] = (acc[order.status] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>),
+        ordersByCurrency: filteredOrders.reduce((acc, order) => {
+          acc[order.currency] = (acc[order.currency] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>)
+      };
+      
+      res.json(summary);
+    } catch (error) {
+      console.error("Error generating sales summary:", error);
+      res.status(500).json({ message: "Failed to generate sales summary" });
+    }
+  });
+
+  app.get('/api/reports/inventory-summary', async (req, res) => {
+    try {
+      const products = await storage.getProducts();
+      const warehouses = await storage.getWarehouses();
+      
+      const summary = {
+        totalProducts: products.length,
+        totalStockValue: products.reduce((sum, product) => {
+          const price = parseFloat(product.sellingPriceCzk || '0');
+          return sum + (price * (product.quantity || 0));
+        }, 0),
+        lowStockProducts: products.filter(p => (p.quantity || 0) < (p.minQuantity || 10)).length,
+        outOfStockProducts: products.filter(p => (p.quantity || 0) === 0).length,
+        productsByWarehouse: warehouses.map(warehouse => ({
+          warehouseId: warehouse.id,
+          warehouseName: warehouse.name,
+          productCount: products.filter(p => p.warehouseId === warehouse.id).length,
+          totalStock: products
+            .filter(p => p.warehouseId === warehouse.id)
+            .reduce((sum, p) => sum + (p.quantity || 0), 0)
+        })),
+        productsByCategory: products.reduce((acc, product) => {
+          const categoryId = product.categoryId || 'uncategorized';
+          if (!acc[categoryId]) {
+            acc[categoryId] = { count: 0, totalStock: 0 };
+          }
+          acc[categoryId].count++;
+          acc[categoryId].totalStock += product.quantity || 0;
+          return acc;
+        }, {} as Record<string, { count: number; totalStock: number }>)
+      };
+      
+      res.json(summary);
+    } catch (error) {
+      console.error("Error generating inventory summary:", error);
+      res.status(500).json({ message: "Failed to generate inventory summary" });
+    }
+  });
+
+  app.get('/api/reports/customer-analytics', async (req, res) => {
+    try {
+      const customers = await storage.getCustomers();
+      const orders = await storage.getOrders();
+      
+      // Calculate customer metrics
+      const customerMetrics = customers.map(customer => {
+        const customerOrders = orders.filter(o => o.customerId === customer.id);
+        const totalSpent = customerOrders.reduce((sum, order) => sum + parseFloat(order.total || '0'), 0);
+        const lastOrderDate = customerOrders.length > 0 ? 
+          customerOrders.sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime())[0].createdAt : null;
+        
+        return {
+          customerId: customer.id,
+          customerName: customer.name,
+          totalOrders: customerOrders.length,
+          totalSpent,
+          averageOrderValue: customerOrders.length > 0 ? totalSpent / customerOrders.length : 0,
+          lastOrderDate
+        };
+      });
+      
+      // Sort by total spent
+      customerMetrics.sort((a, b) => b.totalSpent - a.totalSpent);
+      
+      const analytics = {
+        totalCustomers: customers.length,
+        topCustomers: customerMetrics.slice(0, 10),
+        customerSegments: {
+          vip: customerMetrics.filter(c => c.totalSpent > 100000).length,
+          regular: customerMetrics.filter(c => c.totalSpent > 10000 && c.totalSpent <= 100000).length,
+          occasional: customerMetrics.filter(c => c.totalSpent <= 10000).length
+        },
+        averageCustomerValue: customerMetrics.length > 0 ?
+          customerMetrics.reduce((sum, c) => sum + c.totalSpent, 0) / customerMetrics.length : 0
+      };
+      
+      res.json(analytics);
+    } catch (error) {
+      console.error("Error generating customer analytics:", error);
+      res.status(500).json({ message: "Failed to generate customer analytics" });
+    }
+  });
+
+  app.get('/api/reports/financial-summary', async (req, res) => {
+    try {
+      const { year, month } = req.query;
+      
+      // Get financial data
+      const orders = await storage.getOrders();
+      const expenses = await storage.getExpenses();
+      const purchases = await storage.getPurchases();
+      
+      // Filter by year/month if provided
+      let filteredOrders = orders;
+      let filteredExpenses = expenses;
+      let filteredPurchases = purchases;
+      
+      if (year) {
+        const yearNum = parseInt(year as string);
+        filteredOrders = orders.filter(o => new Date(o.createdAt!).getFullYear() === yearNum);
+        filteredExpenses = expenses.filter(e => new Date(e.date!).getFullYear() === yearNum);
+        filteredPurchases = purchases.filter(p => new Date(p.createdAt!).getFullYear() === yearNum);
+        
+        if (month) {
+          const monthNum = parseInt(month as string) - 1; // JS months are 0-indexed
+          filteredOrders = filteredOrders.filter(o => new Date(o.createdAt!).getMonth() === monthNum);
+          filteredExpenses = filteredExpenses.filter(e => new Date(e.date!).getMonth() === monthNum);
+          filteredPurchases = filteredPurchases.filter(p => new Date(p.createdAt!).getMonth() === monthNum);
+        }
+      }
+      
+      // Calculate financial summary
+      const revenue = filteredOrders
+        .filter(o => o.status === 'shipped' || o.status === 'delivered')
+        .reduce((sum, order) => sum + parseFloat(order.total || '0'), 0);
+      
+      const totalExpenses = filteredExpenses
+        .filter(e => e.status === 'paid')
+        .reduce((sum, expense) => sum + parseFloat(expense.amount || '0'), 0);
+      
+      const totalPurchases = filteredPurchases
+        .reduce((sum, purchase) => {
+          const qty = purchase.quantity || 0;
+          const price = parseFloat(purchase.importPrice || '0');
+          return sum + (qty * price);
+        }, 0);
+      
+      const profit = revenue - totalExpenses - totalPurchases;
+      
+      const summary = {
+        revenue,
+        expenses: totalExpenses,
+        purchases: totalPurchases,
+        profit,
+        profitMargin: revenue > 0 ? (profit / revenue) * 100 : 0,
+        expenseBreakdown: filteredExpenses.reduce((acc, expense) => {
+          const category = expense.category || 'Other';
+          acc[category] = (acc[category] || 0) + parseFloat(expense.amount || '0');
+          return acc;
+        }, {} as Record<string, number>),
+        monthlyTrend: year ? getMonthlyTrend(orders, expenses, purchases, parseInt(year as string)) : []
+      };
+      
+      res.json(summary);
+    } catch (error) {
+      console.error("Error generating financial summary:", error);
+      res.status(500).json({ message: "Failed to generate financial summary" });
+    }
+  });
+
+  // Helper function for monthly trend
+  function getMonthlyTrend(orders: Order[], expenses: Expense[], purchases: Purchase[], year: number) {
+    const months = Array.from({ length: 12 }, (_, i) => i);
+    
+    return months.map(month => {
+      const monthOrders = orders.filter(o => 
+        new Date(o.createdAt!).getFullYear() === year && 
+        new Date(o.createdAt!).getMonth() === month
+      );
+      
+      const monthExpenses = expenses.filter(e => 
+        new Date(e.date!).getFullYear() === year && 
+        new Date(e.date!).getMonth() === month
+      );
+      
+      const monthPurchases = purchases.filter(p => 
+        new Date(p.createdAt!).getFullYear() === year && 
+        new Date(p.createdAt!).getMonth() === month
+      );
+      
+      const revenue = monthOrders
+        .filter(o => o.status === 'shipped' || o.status === 'delivered')
+        .reduce((sum, order) => sum + parseFloat(order.total || '0'), 0);
+      
+      const totalExpenses = monthExpenses
+        .filter(e => e.status === 'paid')
+        .reduce((sum, expense) => sum + parseFloat(expense.amount || '0'), 0);
+      
+      const totalPurchases = monthPurchases
+        .reduce((sum, purchase) => {
+          const qty = purchase.quantity || 0;
+          const price = parseFloat(purchase.importPrice || '0');
+          return sum + (qty * price);
+        }, 0);
+      
+      return {
+        month: month + 1,
+        revenue,
+        expenses: totalExpenses,
+        purchases: totalPurchases,
+        profit: revenue - totalExpenses - totalPurchases
+      };
+    });
+  }
+
   const httpServer = createServer(app);
   return httpServer;
 }
