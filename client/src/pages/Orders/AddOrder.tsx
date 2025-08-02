@@ -196,14 +196,15 @@ export default function AddOrder() {
 
   const calculateTax = () => {
     const subtotal = calculateSubtotal();
-    return (subtotal * form.watch('taxRate')) / 100;
+    const taxRate = parseFloat(form.watch('taxRate') || '0') || 0;
+    return (subtotal * taxRate) / 100;
   };
 
   const calculateGrandTotal = () => {
     const subtotal = calculateSubtotal();
     const tax = calculateTax();
-    const shipping = form.watch('shippingCost') || 0;
-    const discount = form.watch('discountValue') || 0;
+    const shipping = parseFloat(form.watch('shippingCost') || '0') || 0;
+    const discount = parseFloat(form.watch('discountValue') || '0') || 0;
     
     return subtotal + tax + shipping - discount;
   };
@@ -221,18 +222,22 @@ export default function AddOrder() {
     const orderData = {
       ...data,
       customerId: selectedCustomer?.id,
-      subtotal: calculateSubtotal(),
-      taxAmount: calculateTax(),
-      grandTotal: calculateGrandTotal(),
+      subtotal: calculateSubtotal().toFixed(2),
+      taxAmount: calculateTax().toFixed(2),
+      grandTotal: calculateGrandTotal().toFixed(2),
+      discountValue: (data.discountValue || 0).toString(),
+      taxRate: (data.taxRate || 0).toString(),
+      shippingCost: (data.shippingCost || 0).toString(),
+      actualShippingCost: (data.actualShippingCost || 0).toString(),
       items: orderItems.map(item => ({
         productId: item.productId,
         productName: item.productName,
         sku: item.sku,
         quantity: item.quantity,
-        price: item.price,
-        discount: item.discount,
-        tax: item.tax,
-        total: item.total,
+        price: item.price.toFixed(2),
+        discount: item.discount.toFixed(2),
+        tax: item.tax.toFixed(2),
+        total: item.total.toFixed(2),
       })),
     };
 
@@ -638,7 +643,7 @@ export default function AddOrder() {
                 <Input
                   type="number"
                   step="0.01"
-                  {...form.register('discountValue')}
+                  {...form.register('discountValue', { valueAsNumber: true })}
                 />
               </div>
 
@@ -648,7 +653,7 @@ export default function AddOrder() {
                   type="number"
                   step="0.01"
                   max="100"
-                  {...form.register('taxRate')}
+                  {...form.register('taxRate', { valueAsNumber: true })}
                 />
               </div>
 
@@ -657,7 +662,7 @@ export default function AddOrder() {
                 <Input
                   type="number"
                   step="0.01"
-                  {...form.register('shippingCost')}
+                  {...form.register('shippingCost', { valueAsNumber: true })}
                 />
               </div>
             </div>
@@ -683,16 +688,16 @@ export default function AddOrder() {
               <span>{formatCurrency(calculateSubtotal(), form.watch('currency'))}</span>
             </div>
             <div className="flex justify-between">
-              <span>Tax ({form.watch('taxRate')}%):</span>
+              <span>Tax ({form.watch('taxRate') || 0}%):</span>
               <span>{formatCurrency(calculateTax(), form.watch('currency'))}</span>
             </div>
             <div className="flex justify-between">
               <span>Shipping:</span>
-              <span>{formatCurrency(form.watch('shippingCost') || 0, form.watch('currency'))}</span>
+              <span>{formatCurrency(parseFloat(form.watch('shippingCost') || '0') || 0, form.watch('currency'))}</span>
             </div>
             <div className="flex justify-between">
               <span>Discount:</span>
-              <span>-{formatCurrency(form.watch('discountValue') || 0, form.watch('currency'))}</span>
+              <span>-{formatCurrency(parseFloat(form.watch('discountValue') || '0') || 0, form.watch('currency'))}</span>
             </div>
             <div className="border-t pt-2">
               <div className="flex justify-between font-bold text-lg">
