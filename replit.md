@@ -75,7 +75,22 @@ The project uses a monorepo structure with shared schema:
 - **ESBuild**: Fast JavaScript bundler for production builds
 - **TypeScript**: Type safety across the entire application stack
 
-## Future Integrations
+## Recent Changes
+
+## Image Upload Functionality (August 2, 2025)
+- Implemented image upload feature using multer for product management
+- Added `/api/upload` endpoint for handling file uploads
+- Images are stored in `/public/images/` directory
+- Updated AddProduct and EditProduct components to support image uploads
+- Fixed image display in inventory list with proper fallback handling
+
+## Order Status Filtering (August 2, 2025)
+- Created ToFulfill and Shipped pages as filtered views of AllOrders
+- Updated AllOrders component to accept filter prop for status-based filtering
+- Removed redundant status filter dropdown from filtered pages
+- Maintained consistent UI/UX across all order views
+
+# Future Integrations
 - **GLS Shipping API**: Planned integration for real-time order tracking
 - **Real-time Exchange Rates**: API integration for accurate currency conversion
 - **AfterShip**: Third-party shipping tracking service integration

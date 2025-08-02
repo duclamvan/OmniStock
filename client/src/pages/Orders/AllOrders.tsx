@@ -22,11 +22,17 @@ interface AllOrdersProps {
 export default function AllOrders({ filter }: AllOrdersProps) {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState(filter || "all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [entriesPerPage, setEntriesPerPage] = useState(10);
 
   const { data: orders = [], isLoading, error } = useQuery({
-    queryKey: statusFilter !== 'all' ? ['/api/orders', statusFilter] : ['/api/orders'],
+    queryKey: filter ? ['/api/orders', 'status', filter] : ['/api/orders'],
+    queryFn: async () => {
+      const url = filter ? `/api/orders?status=${filter}` : '/api/orders';
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Failed to fetch orders');
+      return response.json();
+    },
     retry: false,
   });
 
@@ -165,17 +171,19 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                 className="pl-10"
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Orders</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="to_fulfill">To Fulfill</SelectItem>
-                <SelectItem value="shipped">Shipped</SelectItem>
-              </SelectContent>
-            </Select>
+            {!filter && (
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Orders</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="to_fulfill">To Fulfill</SelectItem>
+                  <SelectItem value="shipped">Shipped</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
             <Select value={String(entriesPerPage)} onValueChange={(value) => setEntriesPerPage(Number(value))}>
               <SelectTrigger className="w-32">
                 <SelectValue />
