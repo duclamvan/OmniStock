@@ -1,0 +1,406 @@
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Truck, Package, Euro, TrendingUp, Filter, ArrowUpDown } from "lucide-react";
+import { RevenueChart } from "./charts/RevenueChart";
+import { ExpensesChart } from "./charts/ExpensesChart";
+import { YearlyChart } from "./charts/YearlyChart";
+import { formatCurrency } from "@/lib/currencyUtils";
+
+export function Dashboard() {
+  const { data: metrics, isLoading: metricsLoading } = useQuery({
+    queryKey: ['/api/dashboard/metrics'],
+  });
+
+  const { data: financialSummary, isLoading: summaryLoading } = useQuery({
+    queryKey: ['/api/dashboard/financial-summary'],
+  });
+
+  const { data: activities, isLoading: activitiesLoading } = useQuery({
+    queryKey: ['/api/dashboard/activities'],
+  });
+
+  const { data: unpaidOrders, isLoading: unpaidLoading } = useQuery({
+    queryKey: ['/api/orders/unpaid'],
+  });
+
+  const { data: lowStockProducts, isLoading: lowStockLoading } = useQuery({
+    queryKey: ['/api/products/low-stock'],
+  });
+
+  if (metricsLoading) {
+    return <div>Loading dashboard...</div>;
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* Key Metrics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Fulfill Orders Today */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-600">Fulfill Orders Today</p>
+                <p className="text-2xl font-bold text-slate-900">
+                  {metrics?.fulfillOrdersToday || 0}+
+                </p>
+                <p className="text-xs text-slate-500 mt-1">Orders to fulfill</p>
+              </div>
+              <div className="p-3 bg-emerald-100 rounded-lg">
+                <Truck className="h-6 w-6 text-emerald-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Total Orders Today */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-600">Total Orders Today</p>
+                <p className="text-2xl font-bold text-slate-900">
+                  {metrics?.totalOrdersToday || 0}+
+                </p>
+                <p className="text-xs text-slate-500 mt-1">Shipped today</p>
+              </div>
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <Package className="h-6 w-6 text-blue-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Total Revenue Today */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-600">Total Revenue</p>
+                <p className="text-2xl font-bold text-slate-900">
+                  {formatCurrency(metrics?.totalRevenueToday || 0, 'EUR')}
+                </p>
+                <p className="text-xs text-emerald-600 mt-1">Today +10%</p>
+              </div>
+              <div className="p-3 bg-green-100 rounded-lg">
+                <Euro className="h-6 w-6 text-green-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Total Profit Today */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-600">Total Profit</p>
+                <p className="text-2xl font-bold text-slate-900">
+                  {formatCurrency(metrics?.totalProfitToday || 0, 'EUR')}
+                </p>
+                <p className="text-xs text-emerald-600 mt-1">Today +15% 🏆</p>
+              </div>
+              <div className="p-3 bg-yellow-100 rounded-lg">
+                <TrendingUp className="h-6 w-6 text-yellow-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Monthly Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-sm font-medium text-slate-600">This Month's Total Revenue</p>
+            <p className="text-2xl font-bold text-slate-900">
+              {formatCurrency(metrics?.thisMonthRevenue || 0, 'EUR')}
+            </p>
+            <p className="text-xs text-slate-500 mt-1">From 158 ₹</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-sm font-medium text-slate-600">This Month's Total Profit</p>
+            <p className="text-2xl font-bold text-slate-900">
+              {formatCurrency(metrics?.thisMonthProfit || 0, 'EUR')}
+            </p>
+            <p className="text-xs text-slate-500 mt-1">From 158 ₹</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-sm font-medium text-slate-600">Last Month's Total Revenue</p>
+            <p className="text-2xl font-bold text-slate-900">
+              {formatCurrency(metrics?.lastMonthRevenue || 0, 'EUR')}
+            </p>
+            <p className="text-xs text-slate-500 mt-1">From 158 ₹</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-sm font-medium text-slate-600">Last Month's Total Profit</p>
+            <p className="text-2xl font-bold text-slate-900">
+              {formatCurrency(metrics?.lastMonthProfit || 0, 'EUR')}
+            </p>
+            <p className="text-xs text-slate-500 mt-1">From 158 ₹</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Revenue and Profit</CardTitle>
+            <select className="text-sm border border-slate-300 rounded px-3 py-1">
+              <option>Year</option>
+              <option>Month</option>
+              <option>Week</option>
+            </select>
+          </CardHeader>
+          <CardContent>
+            <RevenueChart />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Total Expenses</CardTitle>
+            <select className="text-sm border border-slate-300 rounded px-3 py-1">
+              <option>This Year</option>
+              <option>Last Year</option>
+            </select>
+          </CardHeader>
+          <CardContent>
+            <ExpensesChart />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Yearly Report Chart */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Yearly Report</CardTitle>
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-blue-800 rounded"></div>
+              <span className="text-sm text-slate-600">Purchased</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-blue-400 rounded"></div>
+              <span className="text-sm text-slate-600">Sold Amount</span>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <YearlyChart />
+        </CardContent>
+      </Card>
+
+      {/* Data Tables Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Unpaid Orders */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Unpaid Orders</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              {unpaidLoading ? (
+                <div>Loading unpaid orders...</div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Customer Name</TableHead>
+                      <TableHead>Order ID</TableHead>
+                      <TableHead>Order Date</TableHead>
+                      <TableHead>Order Value</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {unpaidOrders?.slice(0, 4).map((order: any) => (
+                      <TableRow key={order.id}>
+                        <TableCell className="flex items-center space-x-2">
+                          <Avatar className="h-6 w-6">
+                            <AvatarFallback className="text-xs">
+                              {order.customer?.name?.[0] || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span>{order.customer?.name || 'Unknown'}</span>
+                        </TableCell>
+                        <TableCell>{order.orderId}</TableCell>
+                        <TableCell>
+                          {new Date(order.createdAt).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          {formatCurrency(parseFloat(order.grandTotal), order.currency)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={order.paymentStatus === 'pay_later' ? 'default' : 'secondary'}>
+                            {order.paymentStatus === 'pay_later' ? 'Pay Later' : 'Pending'}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* User Activities */}
+        <Card>
+          <CardHeader>
+            <CardTitle>User Activities</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {activitiesLoading ? (
+                <div>Loading activities...</div>
+              ) : (
+                activities?.map((activity: any) => (
+                  <div key={activity.id} className="flex items-center space-x-3">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="text-xs">
+                        {activity.user?.firstName?.[0]}{activity.user?.lastName?.[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-slate-900">
+                        {activity.user?.firstName} {activity.user?.lastName}
+                      </p>
+                      <p className="text-xs text-slate-500">{activity.description}</p>
+                    </div>
+                    <span className="text-xs text-slate-400">
+                      {new Date(activity.createdAt).toLocaleTimeString()}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Low in Stock Table */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Low in Stock</CardTitle>
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-slate-600">View All Products</span>
+            <Button variant="outline" size="sm">
+              <Filter className="mr-1 h-4 w-4" />
+              Filter
+            </Button>
+            <Button variant="outline" size="sm">
+              <ArrowUpDown className="mr-1 h-4 w-4" />
+              Sort
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            {lowStockLoading ? (
+              <div>Loading low stock products...</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Product ID</TableHead>
+                    <TableHead>Product Name</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>SKU</TableHead>
+                    <TableHead>Current Stock</TableHead>
+                    <TableHead>Low Stock Alert</TableHead>
+                    <TableHead>Supplier</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {lowStockProducts?.slice(0, 5).map((product: any) => (
+                    <TableRow key={product.id}>
+                      <TableCell>#{product.id.slice(-6)}</TableCell>
+                      <TableCell>{product.name}</TableCell>
+                      <TableCell>{product.category?.name || 'N/A'}</TableCell>
+                      <TableCell>{product.sku}</TableCell>
+                      <TableCell>{product.quantity}</TableCell>
+                      <TableCell>{product.lowStockAlert}</TableCell>
+                      <TableCell>{product.supplier?.name || 'N/A'}</TableCell>
+                      <TableCell>
+                        <Badge variant="destructive">Low Stock</Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Monthly Financial Summary Table */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Monthly Financial Summary</CardTitle>
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-slate-600">Show 2024 Results</span>
+            <Button variant="outline" size="sm">
+              <Filter className="mr-1 h-4 w-4" />
+              Filter
+            </Button>
+            <Button variant="outline" size="sm">
+              <ArrowUpDown className="mr-1 h-4 w-4" />
+              Sort
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            {summaryLoading ? (
+              <div>Loading financial summary...</div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Month</TableHead>
+                    <TableHead>Total Profit EUR</TableHead>
+                    <TableHead>Total Revenue EUR</TableHead>
+                    <TableHead>Profit CZK Orders</TableHead>
+                    <TableHead>Revenue CZK Orders</TableHead>
+                    <TableHead>Profit EUR Orders</TableHead>
+                    <TableHead>Revenue EUR Orders</TableHead>
+                    <TableHead>Total Profit CZK</TableHead>
+                    <TableHead>Total Revenue CZK</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {financialSummary?.slice(0, 5).map((month: any) => (
+                    <TableRow key={month.month}>
+                      <TableCell>{month.month}</TableCell>
+                      <TableCell>{month.totalProfitEur.toFixed(2)}</TableCell>
+                      <TableCell>{month.totalRevenueEur.toFixed(2)}</TableCell>
+                      <TableCell>{month.profitCzkOrders.toFixed(2)}</TableCell>
+                      <TableCell>{month.revenueCzkOrders.toFixed(2)}</TableCell>
+                      <TableCell>{month.profitEurOrders.toFixed(2)}</TableCell>
+                      <TableCell>{month.revenueEurOrders.toFixed(2)}</TableCell>
+                      <TableCell>{month.totalProfitCzk.toFixed(2)}</TableCell>
+                      <TableCell>{month.totalRevenueCzk.toFixed(2)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
