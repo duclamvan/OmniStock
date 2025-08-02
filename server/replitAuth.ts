@@ -41,8 +41,8 @@ export function getSession() {
     rolling: true,
     cookie: {
       httpOnly: true,
-      secure: true,
-      sameSite: 'none',
+      secure: false, // Set to false for development
+      sameSite: 'lax',
       maxAge: sessionTtl,
     },
   });
@@ -120,11 +120,10 @@ export async function setupAuth(app: Express) {
   app.get("/api/callback", (req, res, next) => {
     console.log("Callback hit for hostname:", req.hostname);
     console.log("Query params:", req.query);
-    passport.authenticate(`replitauth:${req.hostname}`, {
-      successReturnToOrRedirect: "/",
-      failureRedirect: "/api/login",
-      failureMessage: true,
-    }, (err: any, user: any, info: any) => {
+    console.log("Session ID:", req.sessionID);
+    console.log("Is authenticated before:", req.isAuthenticated());
+    
+    passport.authenticate(`replitauth:${req.hostname}`, (err: any, user: any, info: any) => {
       if (err) {
         console.error("Authentication error:", err);
         return res.status(500).json({ error: "Authentication failed", details: err.message });
@@ -133,20 +132,16 @@ export async function setupAuth(app: Express) {
         console.error("No user returned, info:", info);
         return res.redirect("/api/login");
       }
+      
+      console.log("User object received:", user);
       req.logIn(user, (err) => {
         if (err) {
           console.error("Login error:", err);
           return res.status(500).json({ error: "Login failed", details: err.message });
         }
         console.log("User logged in successfully");
-        // Ensure session is saved before redirecting
-        req.session.save((err) => {
-          if (err) {
-            console.error("Session save error:", err);
-            return res.status(500).json({ error: "Session save failed" });
-          }
-          return res.redirect("/");
-        });
+        console.log("Is authenticated after login:", req.isAuthenticated());
+        return res.redirect("/");
       });
     })(req, res, next);
   });
