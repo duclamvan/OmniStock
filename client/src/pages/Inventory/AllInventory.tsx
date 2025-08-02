@@ -253,12 +253,24 @@ export default function AllInventory() {
                     <TableRow key={product.id}>
                       <TableCell>
                         <div className="flex items-center space-x-3">
-                          <Avatar className="h-10 w-10">
-                            <AvatarImage src={product.imageUrl} alt={product.name} />
-                            <AvatarFallback>
-                              {product.name?.charAt(0)?.toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
+                          <div className="relative h-10 w-10 flex-shrink-0">
+                            {product.imageUrl ? (
+                              <img
+                                src={product.imageUrl}
+                                alt={product.name}
+                                className="h-full w-full rounded-lg object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                  (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                                }}
+                              />
+                            ) : null}
+                            <div className={`flex h-full w-full items-center justify-center rounded-lg bg-slate-100 ${product.imageUrl ? 'hidden' : ''}`}>
+                              <span className="text-lg font-medium text-slate-600">
+                                {product.name?.charAt(0)?.toUpperCase()}
+                              </span>
+                            </div>
+                          </div>
                           <div>
                             <div className="font-medium">{product.name}</div>
                             <div className="text-sm text-slate-500">{product.description?.slice(0, 50)}...</div>

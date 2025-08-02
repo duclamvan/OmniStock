@@ -91,6 +91,24 @@ export default function EditProduct() {
 
   const updateProductMutation = useMutation({
     mutationFn: async (data: any) => {
+      // Upload new image if one was selected
+      if (imageFile) {
+        const formData = new FormData();
+        formData.append('image', imageFile);
+        
+        const uploadResponse = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        if (!uploadResponse.ok) {
+          throw new Error('Failed to upload image');
+        }
+        
+        const { imageUrl } = await uploadResponse.json();
+        data.imageUrl = imageUrl;
+      }
+      
       await apiRequest('PATCH', `/api/products/${id}`, data);
     },
     onSuccess: () => {
