@@ -805,10 +805,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/orders/:id', async (req: any, res) => {
     try {
+      const { items, ...orderUpdates } = req.body;
+      
       const updates = {
-        ...req.body,
+        ...orderUpdates,
         // Convert date strings to Date objects if present
-        shippedAt: req.body.shippedAt ? new Date(req.body.shippedAt) : undefined,
+        shippedAt: orderUpdates.shippedAt ? new Date(orderUpdates.shippedAt) : undefined,
       };
       
       // Remove undefined fields
@@ -817,6 +819,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       
       const order = await storage.updateOrder(req.params.id, updates);
+      
+      // Update order items if provided
+      if (items && Array.isArray(items)) {
+        // Delete existing items and add new ones
+        await storage.deleteOrderItems(req.params.id);
+        
+        // Add new items
+        for (const item of items) {
+          await storage.createOrderItem({
+            orderId: req.params.id,
+            productId: item.productId,
+            productName: item.productName,
+            sku: item.sku,
+            quantity: item.quantity,
+            price: item.price.toString(),
+            discount: item.discount?.toString() || '0',
+            tax: item.tax?.toString() || '0',
+            total: item.total.toString(),
+          });
+        }
+      }
       
       await storage.createUserActivity({
         userId: "test-user",

@@ -162,6 +162,13 @@ The project uses a monorepo structure with shared schema:
 - Delete operations return 409 for foreign key constraint violations
 - User activity tracking for all create, update, and delete operations
 
+## Order Items Update Fix (August 2, 2025)
+- Fixed issue where edited order items weren't persisting to database
+- Updated PATCH /api/orders/:id endpoint to handle order items updates
+- Added deleteOrderItems method to storage class to clear old items before adding updated ones
+- Order editing now properly saves both order details and all item changes
+- Items with updated prices and quantities now persist correctly after saving
+
 ## Complete Backend Implementation for Sales and Reports (August 2, 2025)
 - Implemented full CRUD operations for sales/discounts:
   - GET /api/sales - List all sales

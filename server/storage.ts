@@ -125,6 +125,7 @@ export interface IStorage {
   createOrderItem(item: InsertOrderItem): Promise<OrderItem>;
   updateOrderItem(id: string, item: Partial<InsertOrderItem>): Promise<OrderItem>;
   deleteOrderItem(id: string): Promise<void>;
+  deleteOrderItems(orderId: string): Promise<void>;
 
   // Dashboard Analytics
   getDashboardMetrics(): Promise<{
@@ -744,6 +745,10 @@ export class DatabaseStorage implements IStorage {
 
   async deleteOrderItem(id: string): Promise<void> {
     await db.delete(orderItems).where(eq(orderItems.id, id));
+  }
+
+  async deleteOrderItems(orderId: string): Promise<void> {
+    await db.delete(orderItems).where(eq(orderItems.orderId, orderId));
   }
 
   // Dashboard Analytics
