@@ -61,13 +61,23 @@ export default function EditOrder() {
 
   // Fetch products for selection
   const { data: products } = useQuery({
-    queryKey: ['/api/products', productSearch ? { search: productSearch } : {}],
+    queryKey: ['/api/products', 'search', productSearch],
+    queryFn: async () => {
+      const response = await fetch(`/api/products?search=${encodeURIComponent(productSearch)}`);
+      if (!response.ok) throw new Error('Failed to fetch products');
+      return response.json();
+    },
     enabled: productSearch.length > 0,
   });
 
   // Fetch customers for selection
   const { data: customers } = useQuery({
-    queryKey: ['/api/customers', customerSearch ? { search: customerSearch } : {}],
+    queryKey: ['/api/customers', 'search', customerSearch],
+    queryFn: async () => {
+      const response = await fetch(`/api/customers?search=${encodeURIComponent(customerSearch)}`);
+      if (!response.ok) throw new Error('Failed to fetch customers');
+      return response.json();
+    },
     enabled: customerSearch.length > 0,
   });
 
