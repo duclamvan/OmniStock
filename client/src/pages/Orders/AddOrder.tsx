@@ -189,16 +189,29 @@ export default function AddOrder() {
         )
       );
     } else {
+      // Get the price based on the selected currency
+      const selectedCurrency = form.watch('currency') || 'EUR';
+      let productPrice = 0;
+      
+      if (selectedCurrency === 'CZK' && product.priceCzk) {
+        productPrice = parseFloat(product.priceCzk);
+      } else if (selectedCurrency === 'EUR' && product.priceEur) {
+        productPrice = parseFloat(product.priceEur);
+      } else {
+        // Fallback to any available price if specific currency price is not available
+        productPrice = parseFloat(product.priceEur || product.priceCzk || '0');
+      }
+      
       const newItem: OrderItem = {
         id: Math.random().toString(36).substr(2, 9),
         productId: product.id,
         productName: product.name,
         sku: product.sku,
         quantity: 1,
-        price: parseFloat(product.sellingPrice || product.retailPrice || '0'),
+        price: productPrice,
         discount: 0,
         tax: 0,
-        total: parseFloat(product.sellingPrice || product.retailPrice || '0'),
+        total: productPrice,
       };
       setOrderItems(items => [...items, newItem]);
     }
