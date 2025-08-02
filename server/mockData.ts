@@ -580,26 +580,38 @@ export async function seedMockData() {
   }
 }
 
-// Helper function to generate order items
+// Helper function to generate order items with product names
 function getOrderItemsForOrder(orderId: string): any[] {
+  const productNames: Record<string, string> = {
+    'prod-1': 'MacBook Pro 16" M3',
+    'prod-2': 'iPad Pro 12.9"',
+    'prod-3': 'Sony WH-1000XM5',
+    'prod-4': 'Samsung Frame TV 65"',
+    'prod-5': 'DJI Mini 3 Pro',
+    'prod-6': 'Dyson V15 Detect',
+    'prod-7': 'iPhone 15 Pro Max',
+    'prod-8': 'Apple Watch Series 9',
+    'prod-9': 'AirPods Pro (2nd Gen)'
+  };
+  
   const itemsMap: Record<string, any[]> = {
     'order-7': [
-      { orderId: 'order-7', productId: 'prod-7', quantity: 2, price: '2600.00', total: '5200.00' },
-      { orderId: 'order-7', productId: 'prod-9', quantity: 1, price: '300.00', total: '300.00' }
+      { orderId: 'order-7', productId: 'prod-7', productName: productNames['prod-7'], quantity: 2, price: '2600.00', total: '5200.00' },
+      { orderId: 'order-7', productId: 'prod-9', productName: productNames['prod-9'], quantity: 1, price: '300.00', total: '300.00' }
     ],
     'order-8': [
-      { orderId: 'order-8', productId: 'prod-1', quantity: 1, price: '32500.00', total: '32500.00' },
-      { orderId: 'order-8', productId: 'prod-9', quantity: 2, price: '6250.00', total: '12500.00' }
+      { orderId: 'order-8', productId: 'prod-1', productName: productNames['prod-1'], quantity: 1, price: '32500.00', total: '32500.00' },
+      { orderId: 'order-8', productId: 'prod-9', productName: productNames['prod-9'], quantity: 2, price: '6250.00', total: '12500.00' }
     ],
     'order-9': [
-      { orderId: 'order-9', productId: 'prod-8', quantity: 2, price: '1150.00', total: '2300.00' }
+      { orderId: 'order-9', productId: 'prod-8', productName: productNames['prod-8'], quantity: 2, price: '1150.00', total: '2300.00' }
     ],
     'order-10': [
-      { orderId: 'order-10', productId: 'prod-5', quantity: 2, price: '7900.00', total: '15800.00' }
+      { orderId: 'order-10', productId: 'prod-5', productName: productNames['prod-5'], quantity: 2, price: '7900.00', total: '15800.00' }
     ],
     'order-11': [
-      { orderId: 'order-11', productId: 'prod-7', quantity: 3, price: '2600.00', total: '7800.00' },
-      { orderId: 'order-11', productId: 'prod-8', quantity: 1, price: '1100.00', total: '1100.00' }
+      { orderId: 'order-11', productId: 'prod-7', productName: productNames['prod-7'], quantity: 3, price: '2600.00', total: '7800.00' },
+      { orderId: 'order-11', productId: 'prod-8', productName: productNames['prod-8'], quantity: 1, price: '1100.00', total: '1100.00' }
     ]
   };
   

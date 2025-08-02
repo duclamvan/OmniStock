@@ -196,14 +196,14 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       key: "total",
       header: "Total",
       sortable: true,
-      cell: (order) => formatCurrency(parseFloat(order.total || '0'), order.currency),
+      cell: (order) => formatCurrency(parseFloat(order.grandTotal || '0'), order.currency),
       className: "text-right",
     },
     {
       key: "status",
       header: "Status",
       sortable: true,
-      cell: (order) => getStatusBadge(order.status),
+      cell: (order) => getStatusBadge(order.orderStatus),
     },
     {
       key: "paymentStatus",

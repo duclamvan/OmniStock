@@ -1074,6 +1074,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Fix order items endpoint
+  app.post('/api/fix-order-items', async (req, res) => {
+    try {
+      const { addMissingOrderItems } = await import('./fixOrderItems');
+      await addMissingOrderItems();
+      res.json({ message: "Order items fixed successfully" });
+    } catch (error) {
+      console.error("Error fixing order items:", error);
+      res.status(500).json({ message: "Failed to fix order items" });
+    }
+  });
+
   // Reports endpoints
   app.get('/api/reports/sales-summary', async (req, res) => {
     try {
