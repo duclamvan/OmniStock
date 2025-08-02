@@ -148,7 +148,7 @@ export default function AllInventory() {
             </div>
           )}
           <div>
-            <Link href={`/inventory/edit/${product.id}`}>
+            <Link href={`/inventory/${product.id}/edit`}>
               <span className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer">
                 {product.name}
               </span>
@@ -208,7 +208,7 @@ export default function AllInventory() {
       header: "Actions",
       cell: (product) => (
         <div className="flex items-center gap-1">
-          <Link href={`/inventory/edit/${product.id}`}>
+          <Link href={`/inventory/${product.id}/edit`}>
             <Button size="sm" variant="ghost">
               <Edit className="h-4 w-4" />
             </Button>

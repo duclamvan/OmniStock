@@ -90,7 +90,7 @@ export default function AllWarehouses() {
       cell: (warehouse) => (
         <div className="flex items-center gap-2">
           <Warehouse className="h-5 w-5 text-gray-400" />
-          <Link href={`/warehouses/edit/${warehouse.id}`}>
+          <Link href={`/warehouses/${warehouse.id}/edit`}>
             <span className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer">
               {warehouse.name}
             </span>
@@ -153,7 +153,7 @@ export default function AllWarehouses() {
       header: "Actions",
       cell: (warehouse) => (
         <div className="flex items-center gap-1">
-          <Link href={`/warehouses/edit/${warehouse.id}`}>
+          <Link href={`/warehouses/${warehouse.id}/edit`}>
             <Button size="sm" variant="ghost">
               <Edit className="h-4 w-4" />
             </Button>

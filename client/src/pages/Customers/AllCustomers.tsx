@@ -81,7 +81,7 @@ export default function AllCustomers() {
             <User className="h-4 w-4 text-gray-600" />
           </div>
           <div>
-            <Link href={`/customers/edit/${customer.id}`}>
+            <Link href={`/customers/${customer.id}/edit`}>
               <span className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer">
                 {customer.name}
               </span>
@@ -155,7 +155,7 @@ export default function AllCustomers() {
       header: "Actions",
       cell: (customer) => (
         <div className="flex items-center gap-1">
-          <Link href={`/customers/edit/${customer.id}`}>
+          <Link href={`/customers/${customer.id}/edit`}>
             <Button size="sm" variant="ghost">
               <Edit className="h-4 w-4" />
             </Button>

@@ -160,7 +160,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       header: "Order ID",
       sortable: true,
       cell: (order) => (
-        <Link href={`/orders/edit/${order.id}`}>
+        <Link href={`/orders/${order.id}/edit`}>
           <span className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer">
             {order.orderId || '#' + order.id.slice(0, 8)}
           </span>
