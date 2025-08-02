@@ -950,14 +950,7 @@ export default function AddOrder() {
                         placeholder="ZIP Code"
                       />
                     </div>
-                    <div>
-                      <Input
-                        id="state"
-                        value={newCustomer.state}
-                        onChange={(e) => setNewCustomer({ ...newCustomer, state: e.target.value })}
-                        placeholder="State/Province"
-                      />
-                    </div>
+
                     <div>
                       <Input
                         id="country"

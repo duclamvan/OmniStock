@@ -932,7 +932,7 @@ export default function EditOrder() {
                           placeholder="Street address"
                         />
                       </div>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                           <Label htmlFor="city">City</Label>
                           <Input
@@ -942,15 +942,7 @@ export default function EditOrder() {
                             placeholder="Type here"
                           />
                         </div>
-                        <div>
-                          <Label htmlFor="state">State</Label>
-                          <Input
-                            id="state"
-                            value={newCustomer.state}
-                            onChange={(e) => setNewCustomer({ ...newCustomer, state: e.target.value })}
-                            placeholder="Type here"
-                          />
-                        </div>
+
                         <div>
                           <Label htmlFor="zipCode">ZIP Code</Label>
                           <Input
