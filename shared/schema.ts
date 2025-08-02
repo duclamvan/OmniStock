@@ -47,6 +47,8 @@ export const purchaseStatusEnum = pgEnum('purchase_status', ['purchased', 'proce
 export const returnStatusEnum = pgEnum('return_status', ['awaiting', 'processing', 'completed']);
 export const expenseStatusEnum = pgEnum('expense_status', ['pending', 'overdue', 'paid']);
 export const recurringEnum = pgEnum('recurring', ['daily', 'weekly', 'monthly', 'yearly']);
+export const shippingMethodEnum = pgEnum('shipping_method', ['GLS', 'PPL', 'DHL', 'DPD']);
+export const paymentMethodEnum = pgEnum('payment_method', ['Bank Transfer', 'PayPal', 'COD', 'Cash']);
 
 // Categories
 export const categories = pgTable("categories", {
@@ -153,6 +155,8 @@ export const orders = pgTable("orders", {
   discountValue: decimal("discount_value", { precision: 12, scale: 2 }).default('0'),
   taxRate: decimal("tax_rate", { precision: 5, scale: 2 }).default('0'),
   taxAmount: decimal("tax_amount", { precision: 12, scale: 2 }).default('0'),
+  shippingMethod: shippingMethodEnum("shipping_method"),
+  paymentMethod: paymentMethodEnum("payment_method"),
   shippingCost: decimal("shipping_cost", { precision: 12, scale: 2 }).default('0'),
   actualShippingCost: decimal("actual_shipping_cost", { precision: 12, scale: 2 }).default('0'),
   grandTotal: decimal("grand_total", { precision: 12, scale: 2 }).notNull(),

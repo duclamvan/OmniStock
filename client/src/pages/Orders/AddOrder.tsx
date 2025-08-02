@@ -16,6 +16,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { calculateShippingCost } from "@/lib/shippingCosts";
 import { Plus, Search, Trash2, ShoppingCart, X, CheckCircle } from "lucide-react";
 
 const addOrderSchema = z.object({
@@ -24,6 +25,8 @@ const addOrderSchema = z.object({
   priority: z.enum(['low', 'medium', 'high']).default('medium'),
   orderStatus: z.enum(['pending', 'to_fulfill', 'shipped']).default('pending'),
   paymentStatus: z.enum(['pending', 'paid', 'pay_later']).default('pending'),
+  shippingMethod: z.enum(['GLS', 'PPL', 'DHL', 'DPD']).optional(),
+  paymentMethod: z.enum(['Bank Transfer', 'PayPal', 'COD', 'Cash']).optional(),
   discountType: z.enum(['flat', 'rate']).optional(),
   discountValue: z.coerce.number().min(0).default(0),
   taxRate: z.coerce.number().min(0).max(100).default(0),
@@ -333,6 +336,23 @@ export default function AddOrder() {
     );
   }, [selectedCurrency, allProducts]);
 
+  // Auto-calculate shipping cost when shipping method or customer country changes
+  const watchedShippingMethod = form.watch('shippingMethod');
+  const watchedCurrency = form.watch('currency');
+  
+  useEffect(() => {
+    if (!watchedShippingMethod || !selectedCustomer?.country) return;
+    
+    const calculatedCost = calculateShippingCost(
+      watchedShippingMethod,
+      selectedCustomer.country,
+      watchedCurrency
+    );
+    
+    form.setValue('actualShippingCost', calculatedCost);
+    form.setValue('shippingCost', calculatedCost); // Also set shipping cost for display
+  }, [watchedShippingMethod, selectedCustomer?.country, watchedCurrency, form]);
+
   const createOrderMutation = useMutation({
     mutationFn: async (data: any) => {
       // Check if we have a selected customer without an ID (new customer)
@@ -587,6 +607,38 @@ export default function AddOrder() {
                     <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="to_fulfill">To Fulfill</SelectItem>
                     <SelectItem value="shipped">Shipped</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="shippingMethod">Shipping Method</Label>
+                <Select value={form.watch('shippingMethod')} onValueChange={(value) => form.setValue('shippingMethod', value as any)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select shipping method" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="GLS">GLS</SelectItem>
+                    <SelectItem value="PPL">PPL</SelectItem>
+                    <SelectItem value="DHL">DHL</SelectItem>
+                    <SelectItem value="DPD">DPD</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="paymentMethod">Payment Method</Label>
+                <Select value={form.watch('paymentMethod')} onValueChange={(value) => form.setValue('paymentMethod', value as any)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select payment method" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                    <SelectItem value="PayPal">PayPal</SelectItem>
+                    <SelectItem value="COD">COD</SelectItem>
+                    <SelectItem value="Cash">Cash</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1192,6 +1244,17 @@ export default function AddOrder() {
                   type="number"
                   step="0.01"
                   {...form.register('shippingCost', { valueAsNumber: true })}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="actualShippingCost">Actual Shipping Cost (Auto-calculated)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  {...form.register('actualShippingCost', { valueAsNumber: true })}
+                  className="bg-slate-50"
+                  readOnly
                 />
               </div>
             </div>

@@ -77,6 +77,19 @@ The project uses a monorepo structure with shared schema:
 
 ## Recent Changes
 
+## Enhanced Order Management with Shipping & Payment Methods (August 3, 2025)
+- Added shipping method dropdown (GLS, PPL, DHL, DPD) to Add Order page
+- Added payment method dropdown (Bank Transfer, PayPal, COD, Cash) to Add Order page
+- Implemented automatic shipping cost calculation based on shipping method and customer country
+- Created shipping cost calculator with country-specific rates:
+  - Czech Republic: rates in CZK (GLS: 150, PPL: 180, DHL: 200, DPD: 160)
+  - Germany & Austria: rates in EUR (varying by method)
+  - Default European rates for other countries
+- Added "Actual Shipping Cost" auto-calculated field (read-only)
+- Updated database schema with new enum types and fields for shipping/payment methods
+- Facebook Name field automatically mirrors Customer Name input but remains editable
+- Fixed revenue vs profit calculation bug using actual product import costs from database
+
 ## Mobile-First Responsive Design Implementation (August 3, 2025)
 - Implemented comprehensive mobile-first responsive design across all pages
 - Created clean, card-based mobile views that eliminate confusing lines and borders
