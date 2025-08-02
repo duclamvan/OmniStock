@@ -55,7 +55,17 @@ export function convertCurrency(
   return amount * rate;
 }
 
-export function formatCurrency(amount: number, currency: Currency): string {
+export function formatCurrency(amount: number, currency: Currency | string): string {
+  // Handle undefined or null values
+  if (amount === undefined || amount === null || isNaN(amount)) {
+    amount = 0;
+  }
+  
+  // Default to EUR if currency is not provided
+  if (!currency) {
+    currency = 'EUR';
+  }
+  
   const formatters: Record<Currency, Intl.NumberFormat> = {
     EUR: new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }),
     CZK: new Intl.NumberFormat('cs-CZ', { style: 'currency', currency: 'CZK' }),
@@ -64,7 +74,7 @@ export function formatCurrency(amount: number, currency: Currency): string {
     CNY: new Intl.NumberFormat('zh-CN', { style: 'currency', currency: 'CNY' }),
   };
 
-  return formatters[currency]?.format(amount) || `${amount} ${currency}`;
+  return formatters[currency as Currency]?.format(amount) || `${amount.toFixed(2)} ${currency}`;
 }
 
 export function getCurrencySymbol(currency: Currency): string {

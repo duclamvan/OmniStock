@@ -351,7 +351,7 @@ export function Dashboard() {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Monthly Financial Summary</CardTitle>
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-slate-600">Show 2024 Results</span>
+            <span className="text-sm text-slate-600">All amounts in EUR</span>
             <Button variant="outline" size="sm">
               <Filter className="mr-1 h-4 w-4" />
               Filter
@@ -371,28 +371,18 @@ export function Dashboard() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Month</TableHead>
-                    <TableHead>Total Profit EUR</TableHead>
-                    <TableHead>Total Revenue EUR</TableHead>
-                    <TableHead>Profit CZK Orders</TableHead>
-                    <TableHead>Revenue CZK Orders</TableHead>
-                    <TableHead>Profit EUR Orders</TableHead>
-                    <TableHead>Revenue EUR Orders</TableHead>
-                    <TableHead>Total Profit CZK</TableHead>
-                    <TableHead>Total Revenue CZK</TableHead>
+                    <TableHead>Total Revenue (EUR)</TableHead>
+                    <TableHead>Total Profit (EUR)</TableHead>
+                    <TableHead>Order Count</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {financialSummary?.slice(0, 5).map((month: any) => (
+                  {financialSummary?.slice(0, 12).map((month: any) => (
                     <TableRow key={month.month}>
                       <TableCell>{month.month}</TableCell>
-                      <TableCell>{month.totalProfitEur.toFixed(2)}</TableCell>
-                      <TableCell>{month.totalRevenueEur.toFixed(2)}</TableCell>
-                      <TableCell>{month.profitCzkOrders.toFixed(2)}</TableCell>
-                      <TableCell>{month.revenueCzkOrders.toFixed(2)}</TableCell>
-                      <TableCell>{month.profitEurOrders.toFixed(2)}</TableCell>
-                      <TableCell>{month.revenueEurOrders.toFixed(2)}</TableCell>
-                      <TableCell>{month.totalProfitCzk.toFixed(2)}</TableCell>
-                      <TableCell>{month.totalRevenueCzk.toFixed(2)}</TableCell>
+                      <TableCell>{formatCurrency(month.totalRevenueEur || 0, 'EUR')}</TableCell>
+                      <TableCell>{formatCurrency(month.totalProfitEur || 0, 'EUR')}</TableCell>
+                      <TableCell>{month.orderCount || 0}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
