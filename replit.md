@@ -77,6 +77,19 @@ The project uses a monorepo structure with shared schema:
 
 ## Recent Changes
 
+## Mock Data Implementation (August 2, 2025)
+- Created comprehensive mock data seeding system:
+  - Added 10+ new products with realistic import costs
+  - Created purchases records for inventory tracking
+  - Added operational expenses (rent, salaries, utilities, shipping)
+  - Expanded customer base with VIP and business customers
+  - Added international warehouses (Berlin, Vienna)
+  - Created promotional sales and discount codes
+  - Generated additional orders with varied statuses
+- Fixed profit calculation to properly account for product costs
+- Dashboard now shows realistic profit margins vs revenue
+- All entities have comprehensive mock data for testing
+
 ## DataTable Component Implementation (August 2, 2025)
 - Created reusable DataTable component with advanced features:
   - Bulk selection with checkbox column

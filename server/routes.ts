@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./replitAuth";
+import { seedMockData } from "./mockData";
 import multer from "multer";
 import path from "path";
 import { promises as fs } from "fs";
@@ -1059,6 +1060,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.status(500).json({ message: "Failed to delete sale" });
+    }
+  });
+
+  // Mock data endpoint (for development)
+  app.post('/api/seed-mock-data', async (req, res) => {
+    try {
+      await seedMockData();
+      res.json({ message: "Mock data seeded successfully" });
+    } catch (error) {
+      console.error("Error seeding mock data:", error);
+      res.status(500).json({ message: "Failed to seed mock data" });
     }
   });
 
