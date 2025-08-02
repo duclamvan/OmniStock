@@ -155,14 +155,20 @@ export default function EditProduct() {
     },
     onError: (error: any) => {
       console.error("Product delete error:", error);
-      const errorMessage = error.message || "Failed to delete product";
-      toast({
-        title: "Error",
-        description: errorMessage.includes('referenced') || errorMessage.includes('constraint')
-          ? "Cannot delete product - it's being used in existing orders" 
-          : errorMessage,
-        variant: "destructive",
-      });
+      // Check for 409 status code or constraint error message
+      if (error.status === 409 || error.message?.includes('409') || error.message?.includes('constraint') || error.message?.includes('referenced')) {
+        toast({
+          title: "Cannot Delete Product",
+          description: "This product is being used in existing orders and cannot be deleted.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to delete product. Please try again.",
+          variant: "destructive",
+        });
+      }
     },
   });
 

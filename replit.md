@@ -110,6 +110,13 @@ The project uses a monorepo structure with shared schema:
 - Recalculated order totals based on actual product prices in respective currencies
 - Orders now alternate between CZK and EUR for realistic multi-currency testing
 
+## Inventory Delete Functionality (August 2, 2025)
+- Implemented delete functionality for trash icons in inventory list page
+- Added confirmation dialogs with product names for all delete actions
+- Improved error handling with user-friendly messages for constraint violations
+- Products used in orders show clear error message explaining they cannot be deleted
+- Backend returns 409 status code for foreign key constraint violations
+
 # Future Integrations
 - **GLS Shipping API**: Planned integration for real-time order tracking
 - **Real-time Exchange Rates**: API integration for accurate currency conversion

@@ -532,8 +532,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       res.status(204).send();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting product:", error);
+      
+      // Check if it's a foreign key constraint error
+      if (error.code === '23503' || error.message?.includes('constraint')) {
+        return res.status(409).json({ 
+          message: "Cannot delete product - it's being used in existing orders" 
+        });
+      }
+      
       res.status(500).json({ message: "Failed to delete product" });
     }
   });
