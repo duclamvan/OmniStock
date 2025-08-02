@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
@@ -16,7 +16,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { Plus, Search, Trash2, ShoppingCart } from "lucide-react";
+import { Plus, Search, Trash2, ShoppingCart, X, CheckCircle } from "lucide-react";
 
 const addOrderSchema = z.object({
   customerId: z.string().optional(),
@@ -51,6 +51,10 @@ export default function AddOrder() {
   const [productSearch, setProductSearch] = useState("");
   const [customerSearch, setCustomerSearch] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+  const [showProductDropdown, setShowProductDropdown] = useState(false);
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+  const [debouncedProductSearch, setDebouncedProductSearch] = useState("");
+  const [debouncedCustomerSearch, setDebouncedCustomerSearch] = useState("");
 
   const form = useForm<z.infer<typeof addOrderSchema>>({
     resolver: zodResolver(addOrderSchema),
@@ -66,16 +70,54 @@ export default function AddOrder() {
     },
   });
 
-  // Fetch products for selection
-  const { data: products } = useQuery({
-    queryKey: ['/api/products', productSearch ? { search: productSearch } : {}],
-    enabled: productSearch.length > 0,
+  // Debounce search inputs for better performance
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedProductSearch(productSearch);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [productSearch]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedCustomerSearch(customerSearch);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [customerSearch]);
+
+  // Show/hide dropdowns based on search input
+  useEffect(() => {
+    setShowProductDropdown(productSearch.length >= 2);
+  }, [productSearch]);
+
+  useEffect(() => {
+    setShowCustomerDropdown(customerSearch.length >= 2 && !selectedCustomer);
+  }, [customerSearch, selectedCustomer]);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.customer-search-container')) {
+        setShowCustomerDropdown(false);
+      }
+      if (!target.closest('.product-search-container')) {
+        setShowProductDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Fetch all products for real-time filtering
+  const { data: allProducts } = useQuery({
+    queryKey: ['/api/products'],
   });
 
-  // Fetch customers for selection
-  const { data: customers } = useQuery({
-    queryKey: ['/api/customers', customerSearch ? { search: customerSearch } : {}],
-    enabled: customerSearch.length > 0,
+  // Fetch all customers for real-time filtering
+  const { data: allCustomers } = useQuery({
+    queryKey: ['/api/customers'],
   });
 
   const createOrderMutation = useMutation({
@@ -118,14 +160,15 @@ export default function AddOrder() {
         productName: product.name,
         sku: product.sku,
         quantity: 1,
-        price: parseFloat(product.priceEur || product.priceCzk || '0'),
+        price: parseFloat(product.sellingPrice || product.retailPrice || '0'),
         discount: 0,
         tax: 0,
-        total: parseFloat(product.priceEur || product.priceCzk || '0'),
+        total: parseFloat(product.sellingPrice || product.retailPrice || '0'),
       };
       setOrderItems(items => [...items, newItem]);
     }
     setProductSearch("");
+    setShowProductDropdown(false);
   };
 
   const updateOrderItem = (id: string, field: keyof OrderItem, value: any) => {
@@ -196,19 +239,37 @@ export default function AddOrder() {
     createOrderMutation.mutate(orderData);
   };
 
-  // Filter products with Vietnamese search
-  const filteredProducts = products?.filter((product: any) => {
-    if (!productSearch) return false;
-    const matcher = createVietnameseSearchMatcher(productSearch);
-    return matcher(product.name) || matcher(product.sku);
-  });
+  // Filter products with Vietnamese search (memoized for performance)
+  const filteredProducts = useMemo(() => {
+    if (!Array.isArray(allProducts) || !debouncedProductSearch || debouncedProductSearch.length < 2) return [];
+    
+    const matcher = createVietnameseSearchMatcher(debouncedProductSearch);
+    
+    return allProducts
+      .filter((product: any) => {
+        return matcher(product.name) || 
+               matcher(product.sku) || 
+               matcher(product.description || '') ||
+               matcher(product.categoryName || '');
+      })
+      .slice(0, 8); // Limit to 8 results for better UX
+  }, [allProducts, debouncedProductSearch]);
 
-  // Filter customers with Vietnamese search
-  const filteredCustomers = customers?.filter((customer: any) => {
-    if (!customerSearch) return false;
-    const matcher = createVietnameseSearchMatcher(customerSearch);
-    return matcher(customer.name) || matcher(customer.facebookName || '');
-  });
+  // Filter customers with Vietnamese search (memoized for performance)
+  const filteredCustomers = useMemo(() => {
+    if (!Array.isArray(allCustomers) || !debouncedCustomerSearch || debouncedCustomerSearch.length < 2) return [];
+    
+    const matcher = createVietnameseSearchMatcher(debouncedCustomerSearch);
+    
+    return allCustomers
+      .filter((customer: any) => {
+        return matcher(customer.name) || 
+               matcher(customer.facebookName || '') || 
+               matcher(customer.email || '') ||
+               matcher(customer.phone || '');
+      })
+      .slice(0, 8); // Limit to 8 results for better UX
+  }, [allCustomers, debouncedCustomerSearch]);
 
   return (
     <div className="space-y-6">
@@ -278,39 +339,107 @@ export default function AddOrder() {
             <CardTitle>Customer Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
+            <div className="relative customer-search-container">
               <Label htmlFor="customer">Search Customer</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                 <Input
-                  placeholder="Search by name or Facebook name..."
+                  placeholder="Type to search customers (Vietnamese diacritics supported)..."
                   value={customerSearch}
                   onChange={(e) => setCustomerSearch(e.target.value)}
                   className="pl-10"
+                  onFocus={() => setShowCustomerDropdown(customerSearch.length >= 2 && !selectedCustomer)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      setShowCustomerDropdown(false);
+                    }
+                  }}
                 />
+                {selectedCustomer && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-1 top-1 h-8 w-8 p-0"
+                    onClick={() => {
+                      setSelectedCustomer(null);
+                      setCustomerSearch("");
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
-              {filteredCustomers && filteredCustomers.length > 0 && (
-                <div className="mt-2 border rounded-md max-h-48 overflow-y-auto">
-                  {filteredCustomers.slice(0, 5).map((customer: any) => (
+              
+              {/* Real-time dropdown for customers */}
+              {showCustomerDropdown && filteredCustomers && filteredCustomers.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-60 overflow-y-auto z-50">
+                  <div className="p-2 bg-slate-50 border-b text-xs text-slate-600">
+                    {filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''} found
+                  </div>
+                  {filteredCustomers.map((customer: any) => (
                     <div
                       key={customer.id}
-                      className="p-3 hover:bg-slate-50 cursor-pointer border-b last:border-b-0"
+                      className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0 transition-colors"
                       onClick={() => {
                         setSelectedCustomer(customer);
                         setCustomerSearch(customer.name);
+                        setShowCustomerDropdown(false);
                       }}
                     >
-                      <div className="font-medium">{customer.name}</div>
-                      <div className="text-sm text-slate-500">{customer.email}</div>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium text-slate-900">{customer.name}</div>
+                          <div className="text-sm text-slate-500">{customer.email}</div>
+                          {customer.facebookName && (
+                            <div className="text-xs text-blue-600">FB: {customer.facebookName}</div>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <div className="text-xs text-slate-500">{customer.phone}</div>
+                          <div className="text-xs px-2 py-1 rounded bg-slate-100 text-slate-600 mt-1">
+                            {customer.type}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
               )}
+              
+              {/* No results message */}
+              {showCustomerDropdown && customerSearch.length >= 2 && (!filteredCustomers || filteredCustomers.length === 0) && (
+                <div className="absolute top-full left-0 right-0 mt-1 border rounded-md bg-white shadow-lg p-4 text-center text-slate-500 z-50">
+                  <Search className="h-6 w-6 mx-auto mb-2 text-slate-400" />
+                  <div>No customers found for "{customerSearch}"</div>
+                  <div className="text-xs mt-1">Try searching by name, email, or Facebook name</div>
+                </div>
+              )}
             </div>
+            
+            {/* Selected customer display */}
             {selectedCustomer && (
-              <div className="p-3 bg-green-50 rounded-md">
-                <div className="font-medium text-green-800">Selected: {selectedCustomer.name}</div>
-                <div className="text-sm text-green-600">{selectedCustomer.email}</div>
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <div>
+                      <div className="font-medium text-green-800">{selectedCustomer.name}</div>
+                      <div className="text-sm text-green-600">{selectedCustomer.email}</div>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedCustomer(null);
+                      setCustomerSearch("");
+                    }}
+                  >
+                    Change
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>
@@ -322,35 +451,81 @@ export default function AddOrder() {
             <CardTitle>Add Products</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="product">Search Product</Label>
+            <div className="relative product-search-container">
+              <Label htmlFor="product">Search Products</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                 <Input
-                  placeholder="Search by product name or SKU..."
+                  placeholder="Type to search products (Vietnamese diacritics supported)..."
                   value={productSearch}
                   onChange={(e) => setProductSearch(e.target.value)}
                   className="pl-10"
+                  onFocus={() => setShowProductDropdown(productSearch.length >= 2)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      setShowProductDropdown(false);
+                    }
+                  }}
                 />
+                {productSearch && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-1 top-1 h-8 w-8 p-0"
+                    onClick={() => {
+                      setProductSearch("");
+                      setShowProductDropdown(false);
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
-              {filteredProducts && filteredProducts.length > 0 && (
-                <div className="mt-2 border rounded-md max-h-48 overflow-y-auto">
-                  {filteredProducts.slice(0, 5).map((product: any) => (
+              
+              {/* Real-time dropdown for products */}
+              {showProductDropdown && filteredProducts && filteredProducts.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-72 overflow-y-auto z-50">
+                  <div className="p-2 bg-slate-50 border-b text-xs text-slate-600">
+                    {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found - Click to add
+                  </div>
+                  {filteredProducts.map((product: any) => (
                     <div
                       key={product.id}
-                      className="p-3 hover:bg-slate-50 cursor-pointer border-b last:border-b-0 flex items-center justify-between"
+                      className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0 transition-colors"
                       onClick={() => addProductToOrder(product)}
                     >
-                      <div>
-                        <div className="font-medium">{product.name}</div>
-                        <div className="text-sm text-slate-500">SKU: {product.sku}</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium">{formatCurrency(parseFloat(product.priceEur || product.priceCzk || '0'), 'EUR')}</div>
-                        <div className="text-sm text-slate-500">Stock: {product.quantity}</div>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium text-slate-900">{product.name}</div>
+                          <div className="text-sm text-slate-500">SKU: {product.sku}</div>
+                          {product.categoryName && (
+                            <div className="text-xs text-blue-600">{product.categoryName}</div>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <div className="font-medium text-slate-900">
+                            {formatCurrency(parseFloat(product.sellingPrice || product.retailPrice || '0'), product.currency || 'EUR')}
+                          </div>
+                          <div className="text-sm text-slate-500">
+                            Stock: {product.stockQuantity || product.currentStock || 0}
+                          </div>
+                          {product.warehouseName && (
+                            <div className="text-xs text-slate-400">{product.warehouseName}</div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+              
+              {/* No results message */}
+              {showProductDropdown && productSearch.length >= 2 && (!filteredProducts || filteredProducts.length === 0) && (
+                <div className="absolute top-full left-0 right-0 mt-1 border rounded-md bg-white shadow-lg p-4 text-center text-slate-500 z-50">
+                  <Search className="h-6 w-6 mx-auto mb-2 text-slate-400" />
+                  <div>No products found for "{productSearch}"</div>
+                  <div className="text-xs mt-1">Try searching by name, SKU, or category</div>
                 </div>
               )}
             </div>
