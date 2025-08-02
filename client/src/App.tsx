@@ -10,8 +10,10 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import AllOrders from "@/pages/Orders/AllOrders";
 import AddOrder from "@/pages/Orders/AddOrder";
+import EditOrder from "@/pages/Orders/EditOrder";
 import AllInventory from "@/pages/Inventory/AllInventory";
 import AddProduct from "@/pages/Inventory/AddProduct";
+import EditProduct from "@/pages/Inventory/EditProduct";
 
 function Router() {
   return (
@@ -20,6 +22,7 @@ function Router() {
         <Route path="/" component={Home} />
         <Route path="/orders" component={AllOrders} />
         <Route path="/orders/add" component={AddOrder} />
+        <Route path="/orders/:id/edit" component={EditOrder} />
         <Route path="/orders/to-fulfill">
           {() => <AllOrders filter="to_fulfill" />}
         </Route>
@@ -34,6 +37,7 @@ function Router() {
         </Route>
         <Route path="/inventory" component={AllInventory} />
         <Route path="/inventory/add" component={AddProduct} />
+        <Route path="/inventory/:id/edit" component={EditProduct} />
         <Route path="/warehouse">
           {() => <div>Warehouse page coming soon</div>}
         </Route>

@@ -13,7 +13,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { Plus, Search, Filter, Download, FileText } from "lucide-react";
+import { Plus, Search, Filter, Download, FileText, Edit } from "lucide-react";
 
 interface AllOrdersProps {
   filter?: string;
@@ -244,6 +244,11 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-2">
+                          <Link href={`/orders/${order.id}/edit`}>
+                            <Button variant="ghost" size="sm">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </Link>
                           <Select
                             value={order.orderStatus}
                             onValueChange={(value) =>

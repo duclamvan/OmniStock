@@ -1,0 +1,609 @@
+import { useState, useEffect } from "react";
+import { useParams, useLocation } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { formatCurrency } from "@/lib/currencyUtils";
+import { ArrowLeft, Save, Plus, Trash2 } from "lucide-react";
+import { Link } from "wouter";
+
+const editOrderSchema = z.object({
+  currency: z.enum(['CZK', 'EUR', 'USD', 'VND', 'CNY']),
+  priority: z.enum(['low', 'medium', 'high']),
+  orderStatus: z.enum(['pending', 'to_fulfill', 'shipped']),
+  paymentStatus: z.enum(['pending', 'paid', 'pay_later']),
+  discountType: z.enum(['flat', 'rate']).optional(),
+  discountValue: z.coerce.number().min(0).default(0),
+  taxRate: z.coerce.number().min(0).max(100).default(0),
+  shippingCost: z.coerce.number().min(0).default(0),
+  actualShippingCost: z.coerce.number().min(0).default(0),
+  notes: z.string().optional(),
+});
+
+interface OrderItem {
+  id: string;
+  productId: string;
+  productName: string;
+  sku: string;
+  quantity: number;
+  price: number;
+  discount: number;
+  tax: number;
+  total: number;
+}
+
+export default function EditOrder() {
+  const { id } = useParams();
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
+  const [productSearch, setProductSearch] = useState("");
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+
+  // Fetch order details
+  const { data: order, isLoading: orderLoading } = useQuery({
+    queryKey: ['/api/orders', id],
+    enabled: !!id,
+  });
+
+  // Order data already includes items from the API
+
+  // Fetch products for selection
+  const { data: products } = useQuery({
+    queryKey: ['/api/products', productSearch ? { search: productSearch } : {}],
+    enabled: productSearch.length > 0,
+  });
+
+  // Fetch customers for selection
+  const { data: customers } = useQuery({
+    queryKey: ['/api/customers', customerSearch ? { search: customerSearch } : {}],
+    enabled: customerSearch.length > 0,
+  });
+
+  const form = useForm<z.infer<typeof editOrderSchema>>({
+    resolver: zodResolver(editOrderSchema),
+    defaultValues: {
+      currency: 'EUR',
+      priority: 'medium',
+      orderStatus: 'pending',
+      paymentStatus: 'pending',
+      discountValue: 0,
+      taxRate: 0,
+      shippingCost: 0,
+      actualShippingCost: 0,
+    },
+  });
+
+  // Update form and state when order data is loaded
+  useEffect(() => {
+    if (order) {
+      form.reset({
+        currency: order.currency || 'EUR',
+        priority: order.priority || 'medium',
+        orderStatus: order.orderStatus || 'pending',
+        paymentStatus: order.paymentStatus || 'pending',
+        discountType: order.discountType || undefined,
+        discountValue: order.discountValue ? parseFloat(order.discountValue) : 0,
+        taxRate: order.taxRate ? parseFloat(order.taxRate) : 0,
+        shippingCost: order.shippingCost ? parseFloat(order.shippingCost) : 0,
+        actualShippingCost: order.actualShippingCost ? parseFloat(order.actualShippingCost) : 0,
+        notes: order.notes || '',
+      });
+
+      // Set customer if exists
+      if (order.customer) {
+        setSelectedCustomer(order.customer);
+      }
+    }
+  }, [order, form]);
+
+  // Load order items
+  useEffect(() => {
+    if (order?.items) {
+      setOrderItems(order.items.map((item: any) => ({
+        id: item.id,
+        productId: item.productId,
+        productName: item.productName,
+        sku: item.sku,
+        quantity: item.quantity,
+        price: parseFloat(item.price),
+        discount: parseFloat(item.discount),
+        tax: parseFloat(item.tax),
+        total: parseFloat(item.total),
+      })));
+    }
+  }, [order]);
+
+  const updateOrderMutation = useMutation({
+    mutationFn: async (data: any) => {
+      await apiRequest('PATCH', `/api/orders/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders', id] });
+      toast({
+        title: "Success",
+        description: "Order updated successfully",
+      });
+      setLocation('/orders');
+    },
+    onError: (error) => {
+      console.error("Order update error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update order",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const addProductToOrder = (product: any) => {
+    const existingItem = orderItems.find(item => item.productId === product.id);
+    
+    if (existingItem) {
+      setOrderItems(orderItems.map(item => 
+        item.productId === product.id 
+          ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * item.price }
+          : item
+      ));
+    } else {
+      const newItem: OrderItem = {
+        id: `new-${Date.now()}`,
+        productId: product.id,
+        productName: product.name,
+        sku: product.sku,
+        quantity: 1,
+        price: parseFloat(product.priceCzk || product.priceEur || '0'),
+        discount: 0,
+        tax: 0,
+        total: parseFloat(product.priceCzk || product.priceEur || '0'),
+      };
+      setOrderItems([...orderItems, newItem]);
+    }
+    setProductSearch("");
+  };
+
+  const updateItemQuantity = (itemId: string, quantity: number) => {
+    if (quantity <= 0) {
+      setOrderItems(orderItems.filter(item => item.id !== itemId));
+    } else {
+      setOrderItems(orderItems.map(item => 
+        item.id === itemId 
+          ? { ...item, quantity, total: quantity * item.price }
+          : item
+      ));
+    }
+  };
+
+  const removeItem = (itemId: string) => {
+    setOrderItems(orderItems.filter(item => item.id !== itemId));
+  };
+
+  const calculateSubtotal = () => {
+    return orderItems.reduce((sum, item) => sum + item.total, 0);
+  };
+
+  const calculateTax = () => {
+    const subtotal = calculateSubtotal();
+    const taxRate = form.watch('taxRate') || 0;
+    return (subtotal * taxRate) / 100;
+  };
+
+  const calculateGrandTotal = () => {
+    const subtotal = calculateSubtotal();
+    const tax = calculateTax();
+    const shipping = form.watch('shippingCost') || 0;
+    const discountType = form.watch('discountType');
+    const discountValue = form.watch('discountValue') || 0;
+    
+    let discount = 0;
+    if (discountType === 'flat') {
+      discount = discountValue;
+    } else if (discountType === 'rate') {
+      discount = (subtotal * discountValue) / 100;
+    }
+    
+    return subtotal + tax + shipping - discount;
+  };
+
+  const onSubmit = (data: z.infer<typeof editOrderSchema>) => {
+    if (orderItems.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please add at least one item to the order",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const orderData = {
+      ...data,
+      customerId: selectedCustomer?.id,
+      subtotal: calculateSubtotal(),
+      taxAmount: calculateTax(),
+      grandTotal: calculateGrandTotal(),
+      items: orderItems.map(item => ({
+        productId: item.productId,
+        productName: item.productName,
+        sku: item.sku,
+        quantity: item.quantity,
+        price: item.price,
+        discount: item.discount,
+        tax: item.tax,
+        total: item.total,
+      })),
+    };
+
+    updateOrderMutation.mutate(orderData);
+  };
+
+  if (orderLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-slate-500">Loading order details...</div>
+      </div>
+    );
+  }
+
+  if (!order) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-slate-500">Order not found</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <Link href="/orders">
+            <Button variant="ghost" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </Button>
+          </Link>
+          <h1 className="text-2xl font-bold text-slate-900">Edit Order #{order.orderId}</h1>
+        </div>
+      </div>
+
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {/* Order Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Order Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="currency">Currency</Label>
+                <Select value={form.watch('currency')} onValueChange={(value) => form.setValue('currency', value as any)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CZK">CZK</SelectItem>
+                    <SelectItem value="EUR">EUR</SelectItem>
+                    <SelectItem value="USD">USD</SelectItem>
+                    <SelectItem value="VND">VND</SelectItem>
+                    <SelectItem value="CNY">CNY</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="priority">Priority</Label>
+                <Select value={form.watch('priority')} onValueChange={(value) => form.setValue('priority', value as any)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="orderStatus">Order Status</Label>
+                <Select value={form.watch('orderStatus')} onValueChange={(value) => form.setValue('orderStatus', value as any)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="to_fulfill">To Fulfill</SelectItem>
+                    <SelectItem value="shipped">Shipped</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="paymentStatus">Payment Status</Label>
+              <Select value={form.watch('paymentStatus')} onValueChange={(value) => form.setValue('paymentStatus', value as any)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="paid">Paid</SelectItem>
+                  <SelectItem value="pay_later">Pay Later</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Customer Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Customer Information</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {selectedCustomer ? (
+              <div className="p-4 border rounded-lg space-y-2">
+                <p className="font-medium">{selectedCustomer.name}</p>
+                {selectedCustomer.facebookName && (
+                  <p className="text-sm text-slate-600">Facebook: {selectedCustomer.facebookName}</p>
+                )}
+                {selectedCustomer.phone && (
+                  <p className="text-sm text-slate-600">Phone: {selectedCustomer.phone}</p>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedCustomer(null)}
+                >
+                  Change Customer
+                </Button>
+              </div>
+            ) : (
+              <div>
+                <Label htmlFor="customerSearch">Search Customer</Label>
+                <Input
+                  value={customerSearch}
+                  onChange={(e) => setCustomerSearch(e.target.value)}
+                  placeholder="Search by name or Facebook name..."
+                />
+                {customers && customers.length > 0 && (
+                  <div className="mt-2 border rounded-lg max-h-48 overflow-y-auto">
+                    {customers.map((customer: any) => (
+                      <div
+                        key={customer.id}
+                        className="p-3 hover:bg-slate-50 cursor-pointer"
+                        onClick={() => {
+                          setSelectedCustomer(customer);
+                          setCustomerSearch("");
+                        }}
+                      >
+                        <p className="font-medium">{customer.name}</p>
+                        {customer.facebookName && (
+                          <p className="text-sm text-slate-600">Facebook: {customer.facebookName}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Order Items */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Order Items</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="productSearch">Add Products</Label>
+              <Input
+                value={productSearch}
+                onChange={(e) => setProductSearch(e.target.value)}
+                placeholder="Search products by name or SKU..."
+              />
+              {products && products.length > 0 && (
+                <div className="mt-2 border rounded-lg max-h-48 overflow-y-auto">
+                  {products.map((product: any) => (
+                    <div
+                      key={product.id}
+                      className="p-3 hover:bg-slate-50 cursor-pointer flex justify-between items-center"
+                      onClick={() => addProductToOrder(product)}
+                    >
+                      <div>
+                        <p className="font-medium">{product.name}</p>
+                        <p className="text-sm text-slate-600">SKU: {product.sku}</p>
+                      </div>
+                      <Button type="button" size="sm">
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {orderItems.length > 0 && (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Product</TableHead>
+                      <TableHead>SKU</TableHead>
+                      <TableHead>Quantity</TableHead>
+                      <TableHead>Price</TableHead>
+                      <TableHead>Total</TableHead>
+                      <TableHead>Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {orderItems.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell>{item.productName}</TableCell>
+                        <TableCell>{item.sku}</TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            value={item.quantity}
+                            onChange={(e) => updateItemQuantity(item.id, parseInt(e.target.value) || 0)}
+                            className="w-20"
+                          />
+                        </TableCell>
+                        <TableCell>{formatCurrency(item.price, form.watch('currency'))}</TableCell>
+                        <TableCell>{formatCurrency(item.total, form.watch('currency'))}</TableCell>
+                        <TableCell>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeItem(item.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Pricing & Discounts */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Pricing & Discounts</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="discountType">Discount Type</Label>
+                <Select value={form.watch('discountType')} onValueChange={(value) => form.setValue('discountType', value as any)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="No discount" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No discount</SelectItem>
+                    <SelectItem value="flat">Flat Amount</SelectItem>
+                    <SelectItem value="rate">Percentage</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="discountValue">Discount Value</Label>
+                <Input
+                  type="number"
+                  {...form.register('discountValue')}
+                  placeholder="0"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="taxRate">Tax Rate (%)</Label>
+                <Input
+                  type="number"
+                  {...form.register('taxRate')}
+                  placeholder="0"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="shippingCost">Shipping Cost</Label>
+                <Input
+                  type="number"
+                  {...form.register('shippingCost')}
+                  placeholder="0"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="actualShippingCost">Actual Shipping Cost</Label>
+                <Input
+                  type="number"
+                  {...form.register('actualShippingCost')}
+                  placeholder="0"
+                />
+              </div>
+            </div>
+
+            {/* Order Summary */}
+            <div className="mt-6 p-4 bg-slate-50 rounded-lg space-y-2">
+              <div className="flex justify-between">
+                <span>Subtotal:</span>
+                <span>{formatCurrency(calculateSubtotal(), form.watch('currency'))}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Tax:</span>
+                <span>{formatCurrency(calculateTax(), form.watch('currency'))}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Shipping:</span>
+                <span>{formatCurrency(form.watch('shippingCost') || 0, form.watch('currency'))}</span>
+              </div>
+              {form.watch('discountType') && (
+                <div className="flex justify-between text-green-600">
+                  <span>Discount:</span>
+                  <span>
+                    -{form.watch('discountType') === 'rate' 
+                      ? `${form.watch('discountValue')}%`
+                      : formatCurrency(form.watch('discountValue') || 0, form.watch('currency'))}
+                  </span>
+                </div>
+              )}
+              <div className="flex justify-between font-bold text-lg border-t pt-2">
+                <span>Grand Total:</span>
+                <span>{formatCurrency(calculateGrandTotal(), form.watch('currency'))}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Notes */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Notes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Textarea
+              {...form.register('notes')}
+              placeholder="Add any additional notes about this order..."
+              rows={3}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Action Buttons */}
+        <div className="flex justify-end space-x-4">
+          <Link href="/orders">
+            <Button type="button" variant="outline">
+              Cancel
+            </Button>
+          </Link>
+          <Button type="submit" disabled={updateOrderMutation.isPending}>
+            <Save className="h-4 w-4 mr-2" />
+            {updateOrderMutation.isPending ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+}
