@@ -1394,17 +1394,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const data = await response.json();
       
       // Transform the response to our format
-      const suggestions = data.map((item: any) => ({
-        formatted: item.display_name,
-        street: item.address?.road || item.address?.pedestrian || '',
-        houseNumber: item.address?.house_number || '',
-        city: item.address?.city || item.address?.town || item.address?.village || '',
-        state: item.address?.state || '',
-        zipCode: item.address?.postcode || '',
-        country: item.address?.country || '',
-        lat: parseFloat(item.lat),
-        lon: parseFloat(item.lon),
-      }));
+      const suggestions = data.map((item: any) => {
+        const address = item.address || {};
+        const street = address.road || address.pedestrian || '';
+        const houseNumber = address.house_number || '';
+        const city = address.city || address.town || address.village || '';
+        const zipCode = address.postcode || '';
+        const country = address.country || '';
+        
+        // Build street with house number
+        let fullStreet = street;
+        if (houseNumber && street) {
+          fullStreet = `${street} ${houseNumber}`;
+        }
+        
+        // Create short formatted address: "Street Number, Postcode City, Country"
+        let shortFormatted = '';
+        if (fullStreet && zipCode && city) {
+          shortFormatted = `${fullStreet}, ${zipCode} ${city}`;
+          if (country) {
+            shortFormatted += `, ${country}`;
+          }
+        } else {
+          // Fallback to original display name if we can't build short format
+          shortFormatted = item.display_name;
+        }
+        
+        return {
+          formatted: shortFormatted,
+          street: fullStreet,
+          houseNumber,
+          city,
+          state: address.state || '',
+          zipCode,
+          country,
+          lat: parseFloat(item.lat),
+          lon: parseFloat(item.lon),
+        };
+      });
 
       res.json(suggestions);
     } catch (error) {
