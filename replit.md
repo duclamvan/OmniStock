@@ -1,6 +1,11 @@
 # Overview
 Davie Supply is a comprehensive warehouse and order management system designed as a full-stack web application. Its primary purpose is to manage the complete order lifecycle from creation to fulfillment, track inventory, manage customers, and provide financial reporting with multi-currency support. Key capabilities include real-time Vietnamese diacritics search and integration with external shipping APIs for order tracking. The business vision is to provide a robust, efficient platform for streamlined supply chain operations.
 
+## Recent Changes (August 3, 2025)
+- **Performance Optimization**: Added bulk API endpoints for product variant operations to improve performance when creating series and deleting multiple variants
+- **Fixed TypeScript Errors**: Resolved type annotations in AddProduct and EditProduct components
+- **Query Optimization**: Added query configuration to prevent excessive re-fetching of product variants data
+
 # User Preferences
 Preferred communication style: Simple, everyday language.
 

@@ -57,21 +57,21 @@ export default function EditProduct() {
   const [imageFile, setImageFile] = useState<File | null>(null);
 
   // Fetch product details
-  const { data: product, isLoading: productLoading } = useQuery({
+  const { data: product, isLoading: productLoading } = useQuery<any>({
     queryKey: ['/api/products', id],
     enabled: !!id,
   });
 
   // Fetch categories, warehouses, and suppliers
-  const { data: categories } = useQuery({
+  const { data: categories } = useQuery<any[]>({
     queryKey: ['/api/categories'],
   });
 
-  const { data: warehouses } = useQuery({
+  const { data: warehouses } = useQuery<any[]>({
     queryKey: ['/api/warehouses'],
   });
 
-  const { data: suppliers } = useQuery({
+  const { data: suppliers } = useQuery<any[]>({
     queryKey: ['/api/suppliers'],
   });
 

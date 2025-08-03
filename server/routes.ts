@@ -717,6 +717,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Bulk create product variants
+  app.post('/api/products/:productId/variants/bulk', async (req: any, res) => {
+    try {
+      const { variants } = req.body;
+      if (!Array.isArray(variants)) {
+        return res.status(400).json({ message: "Variants must be an array" });
+      }
+
+      const createdVariants = [];
+      for (const variantData of variants) {
+        const data = insertProductVariantSchema.parse({
+          ...variantData,
+          productId: req.params.productId
+        });
+        
+        const variant = await storage.createProductVariant(data);
+        createdVariants.push(variant);
+      }
+
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'created',
+        entityType: 'product_variant',
+        entityId: req.params.productId,
+        description: `Created ${createdVariants.length} product variants`,
+      });
+
+      res.json(createdVariants);
+    } catch (error) {
+      console.error("Error creating product variants in bulk:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create product variants" });
+    }
+  });
+
+  // Bulk delete product variants
+  app.delete('/api/products/:productId/variants/bulk', async (req: any, res) => {
+    try {
+      const { variantIds } = req.body;
+      if (!Array.isArray(variantIds)) {
+        return res.status(400).json({ message: "variantIds must be an array" });
+      }
+
+      for (const variantId of variantIds) {
+        await storage.deleteProductVariant(variantId);
+      }
+
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'deleted',
+        entityType: 'product_variant',
+        entityId: req.params.productId,
+        description: `Deleted ${variantIds.length} product variants`,
+      });
+
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting product variants in bulk:", error);
+      res.status(500).json({ message: "Failed to delete product variants" });
+    }
+  });
+
   // Customers endpoints
   app.get('/api/customers', async (req, res) => {
     try {

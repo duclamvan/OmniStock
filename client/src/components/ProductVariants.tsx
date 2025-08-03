@@ -60,6 +60,9 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
   const { data: variants = [], isLoading } = useQuery<ProductVariant[]>({
     queryKey: [`/api/products/${productId}/variants`],
     enabled: !!productId,
+    refetchInterval: false,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   });
 
   // Create variant mutation
@@ -150,13 +153,25 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
     }
   };
 
-  const handleDeleteSelected = () => {
+  const handleDeleteSelected = async () => {
     if (selectedVariants.length === 0) return;
     
-    Promise.all(selectedVariants.map((id) => deleteVariantMutation.mutateAsync(id)))
-      .then(() => {
-        setSelectedVariants([]);
+    try {
+      const response = await apiRequest("DELETE", `/api/products/${productId}/variants/bulk`, { variantIds: selectedVariants });
+      
+      queryClient.invalidateQueries({ queryKey: [`/api/products/${productId}/variants`] });
+      toast({
+        title: "Success",
+        description: `Deleted ${selectedVariants.length} product variants`,
       });
+      setSelectedVariants([]);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete selected variants",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleCreateVariant = () => {
@@ -203,16 +218,9 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
     }
 
     try {
-      // Create variants in batches to avoid overwhelming the server
-      const batchSize = 10;
-      for (let i = 0; i < variants.length; i += batchSize) {
-        const batch = variants.slice(i, i + batchSize);
-        await Promise.all(
-          batch.map(variant => 
-            apiRequest("POST", `/api/products/${productId}/variants`, variant)
-          )
-        );
-      }
+      // Use bulk endpoint for better performance
+      const response = await apiRequest("POST", `/api/products/${productId}/variants/bulk`, { variants });
+      const result = await response.json();
 
       queryClient.invalidateQueries({ queryKey: [`/api/products/${productId}/variants`] });
       toast({
