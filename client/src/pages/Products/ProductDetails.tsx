@@ -414,11 +414,16 @@ export default function ProductDetails() {
               {productOrders.slice(0, 5).map((order) => {
                 const orderItems = order.items?.filter(item => item.productId === product.id) || [];
                 return (
-                  <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <div className="font-medium">Order #{order.orderId}</div>
+                  <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50">
+                    <div className="flex-1">
+                      <div className="font-medium text-base">
+                        Order #{order.orderId} - {order.customer?.name || "Unknown Customer"}
+                      </div>
                       <div className="text-sm text-slate-500">
                         {order.createdAt ? format(new Date(order.createdAt), "PPP") : "N/A"}
+                      </div>
+                      <div className="text-sm text-slate-500 mt-1">
+                        Status: <Badge variant={order.orderStatus === 'delivered' ? 'default' : 'outline'}>{order.orderStatus}</Badge>
                       </div>
                     </div>
                     <div className="text-right">
