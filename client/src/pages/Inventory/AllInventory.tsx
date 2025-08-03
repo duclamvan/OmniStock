@@ -131,37 +131,33 @@ export default function AllInventory() {
       key: "name",
       header: "Product",
       sortable: true,
+      className: "min-w-[300px]",
       cell: (product) => (
         <div className="flex items-center gap-2">
           {product.imageUrl ? (
             <img 
               src={product.imageUrl} 
               alt={product.name} 
-              className="w-10 h-10 object-cover rounded"
+              className="w-10 h-10 object-cover rounded flex-shrink-0"
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
               }}
             />
           ) : (
-            <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center">
+            <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
               <Package className="h-5 w-5 text-gray-400" />
             </div>
           )}
-          <div>
+          <div className="min-w-0">
             <Link href={`/inventory/products/${product.id}`}>
-              <span className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer">
+              <span className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer block">
                 {product.name}
               </span>
             </Link>
-            <div className="text-xs text-gray-500">{product.description?.slice(0, 50)}...</div>
+            <div className="text-xs text-gray-500 truncate">{product.description}</div>
           </div>
         </div>
       ),
-    },
-    {
-      key: "sku",
-      header: "SKU",
-      sortable: true,
     },
     {
       key: "categoryId",
@@ -174,9 +170,9 @@ export default function AllInventory() {
     },
     {
       key: "quantity",
-      header: "Quantity",
+      header: "Qty",
       sortable: true,
-      className: "text-right",
+      className: "text-right w-[80px]",
     },
     {
       key: "lowStockAlert",
