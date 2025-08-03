@@ -55,7 +55,7 @@ import {
   type InsertSetting,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, asc, and, or, like, sql, gte, lte, count, inArray } from "drizzle-orm";
+import { eq, desc, asc, and, or, like, sql, gte, lte, count, inArray, isNotNull } from "drizzle-orm";
 
 export interface IStorage {
   // User operations (mandatory for Replit Auth)
@@ -460,8 +460,35 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Customers
-  async getCustomers(): Promise<Customer[]> {
-    return await db.select().from(customers).orderBy(desc(customers.createdAt));
+  async getCustomers(): Promise<(Customer & { 
+    orderCount?: number; 
+    totalSpent?: string; 
+    lastOrderDate?: Date | null 
+  })[]> {
+    const customersData = await db.select().from(customers).orderBy(desc(customers.createdAt));
+    
+    // Get order statistics for all customers
+    const orderStats = await db
+      .select({
+        customerId: orders.customerId,
+        orderCount: sql<number>`count(*)::integer`,
+        totalSpent: sql<string>`sum(${orders.grandTotal})::text`,
+        lastOrderDate: sql<Date>`max(${orders.createdAt})`
+      })
+      .from(orders)
+      .where(isNotNull(orders.customerId))
+      .groupBy(orders.customerId);
+    
+    // Create a map for quick lookup
+    const statsMap = new Map(orderStats.map(stat => [stat.customerId, stat]));
+    
+    // Merge customers with their order statistics
+    return customersData.map(customer => ({
+      ...customer,
+      orderCount: statsMap.get(customer.id)?.orderCount || 0,
+      totalSpent: statsMap.get(customer.id)?.totalSpent || '0',
+      lastOrderDate: statsMap.get(customer.id)?.lastOrderDate || null
+    }));
   }
 
   async getCustomerById(id: string): Promise<Customer | undefined> {

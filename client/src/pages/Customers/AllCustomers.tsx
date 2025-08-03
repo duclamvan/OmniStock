@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
 import { formatCurrency } from "@/lib/currencyUtils";
-import { Plus, Search, Edit, Trash2, User, Mail, Phone, Star } from "lucide-react";
+import { Plus, Search, Edit, Trash2, User, Mail, Phone, Star, MessageCircle, MapPin, MoreVertical, Ban } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,6 +21,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function AllCustomers() {
   const { toast } = useToast();
@@ -28,7 +35,7 @@ export default function AllCustomers() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedCustomers, setSelectedCustomers] = useState<any[]>([]);
 
-  const { data: customers = [], isLoading, error } = useQuery({
+  const { data: customers = [], isLoading, error } = useQuery<any[]>({
     queryKey: searchQuery ? ['/api/customers', { search: searchQuery }] : ['/api/customers'],
     retry: false,
   });
@@ -76,92 +83,106 @@ export default function AllCustomers() {
       header: "Customer Name",
       sortable: true,
       cell: (customer) => (
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-            <User className="h-4 w-4 text-gray-600" />
-          </div>
-          <div>
-            <Link href={`/customers/${customer.id}/edit`}>
-              <span className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer">
-                {customer.name}
-              </span>
-            </Link>
-            {customer.type === 'vip' && (
-              <Star className="inline-block ml-1 h-4 w-4 text-yellow-500 fill-yellow-500" />
-            )}
-          </div>
+        <div>
+          <Link href={`/customers/${customer.id}/edit`}>
+            <div className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer">
+              {customer.name}
+            </div>
+          </Link>
+          {customer.facebookName && (
+            <div className="text-sm text-gray-500">FB: {customer.facebookName}</div>
+          )}
         </div>
       ),
     },
     {
-      key: "email",
-      header: "Email",
+      key: "country",
+      header: "Country",
       sortable: true,
-      cell: (customer) => customer.email ? (
+      cell: (customer) => customer.country ? (
         <div className="flex items-center gap-1">
-          <Mail className="h-4 w-4 text-gray-400" />
-          {customer.email}
+          <MapPin className="h-4 w-4 text-gray-400" />
+          {customer.country}
         </div>
       ) : '-',
     },
     {
-      key: "phone",
-      header: "Phone",
+      key: "lastOrderDate",
+      header: "Last Purchase",
       sortable: true,
-      cell: (customer) => customer.phone ? (
-        <div className="flex items-center gap-1">
-          <Phone className="h-4 w-4 text-gray-400" />
-          {customer.phone}
-        </div>
-      ) : '-',
+      cell: (customer) => customer.lastOrderDate 
+        ? new Date(customer.lastOrderDate).toLocaleDateString() 
+        : '-',
     },
     {
-      key: "type",
-      header: "Type",
+      key: "orderCount",
+      header: "Total Orders",
       sortable: true,
-      cell: (customer) => {
-        const types: Record<string, { label: string; color: string }> = {
-          'regular': { label: 'Regular', color: 'bg-gray-100 text-gray-800' },
-          'vip': { label: 'VIP', color: 'bg-yellow-100 text-yellow-800' },
-          'wholesale': { label: 'Wholesale', color: 'bg-blue-100 text-blue-800' },
-        };
-        const type = types[customer.type] || { label: customer.type, color: 'bg-gray-100 text-gray-800' };
-        return <Badge className={type.color}>{type.label}</Badge>;
-      },
+      className: "text-center",
+      cell: (customer) => (
+        <div className="text-center">{customer.orderCount || 0}</div>
+      ),
     },
     {
       key: "totalSpent",
-      header: "Total Spent",
+      header: "Total Sales",
       sortable: true,
       cell: (customer) => formatCurrency(parseFloat(customer.totalSpent || '0'), 'EUR'),
       className: "text-right",
     },
     {
-      key: "orderCount",
-      header: "Orders",
-      sortable: true,
-      className: "text-right",
-    },
-    {
-      key: "lastOrderDate",
-      header: "Last Order",
-      sortable: true,
-      cell: (customer) => customer.lastOrderDate 
-        ? new Date(customer.lastOrderDate).toLocaleDateString() 
-        : 'No orders',
-    },
-    {
       key: "actions",
       header: "Actions",
-      cell: (customer) => (
-        <div className="flex items-center gap-1">
-          <Link href={`/customers/${customer.id}/edit`}>
-            <Button size="sm" variant="ghost">
-              <Edit className="h-4 w-4" />
-            </Button>
-          </Link>
-        </div>
-      ),
+      cell: (customer) => {
+        // Extract Facebook ID from URL if available
+        const getFacebookId = (fbId: string | null, fbName: string | null) => {
+          if (!fbId && !fbName) return null;
+          if (fbId) return fbId;
+          // If we have a Facebook name but no ID, use the name as ID
+          return fbName;
+        };
+        
+        const facebookId = getFacebookId(customer.facebookId, customer.facebookName);
+        
+        return (
+          <div className="flex items-center gap-1">
+            {facebookId && (
+              <a
+                href={`https://m.me/${facebookId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button size="sm" variant="ghost" title="Open in Messenger">
+                  <MessageCircle className="h-4 w-4" />
+                </Button>
+              </a>
+            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" variant="ghost">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link href={`/customers/${customer.id}/edit`}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => handleBlacklistCustomer(customer)}
+                  className="text-destructive"
+                >
+                  <Ban className="h-4 w-4 mr-2" />
+                  Blacklist Customer
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        );
+      },
     },
   ];
 
@@ -207,6 +228,14 @@ export default function AllCustomers() {
   const handleDeleteConfirm = () => {
     deleteCustomerMutation.mutate(selectedCustomers.map(customer => customer.id));
     setShowDeleteDialog(false);
+  };
+
+  const handleBlacklistCustomer = (customer: any) => {
+    toast({
+      title: "Blacklist Customer",
+      description: `This will block ${customer.name}'s Facebook ID and address for future orders.`,
+    });
+    // TODO: Implement blacklist functionality
   };
 
   if (isLoading) {

@@ -10,6 +10,7 @@ Davie Supply is a comprehensive warehouse and order management system designed a
 - **Soft Delete Implementation**: Converted product deletion to soft delete by adding isActive flag, preserving referential integrity with existing orders while hiding inactive products from inventory views
 - **Sales to Discounts Rename**: Renamed all "Sales" references to "Discounts" throughout the application including navigation, routes (/sales to /discounts), API endpoints (/api/sales to /api/discounts), and all UI components
 - **Discounts Data Reset**: Added /api/reseed-discounts endpoint to clear and repopulate discount data with fresh examples
+- **Customers Page Update**: Enhanced customers table with order statistics (total orders, total sales, last purchase date) and added Messenger integration with blacklist functionality placeholder
 
 # User Preferences
 Preferred communication style: Simple, everyday language.
