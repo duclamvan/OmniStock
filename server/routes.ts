@@ -532,6 +532,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/products/order-counts', async (req, res) => {
+    try {
+      const { productIds } = req.body;
+      if (!Array.isArray(productIds)) {
+        return res.status(400).json({ message: "Product IDs must be an array" });
+      }
+      
+      const orderCounts = await storage.getProductsOrderCounts(productIds);
+      res.json(orderCounts);
+    } catch (error) {
+      console.error("Error fetching product order counts:", error);
+      res.status(500).json({ message: "Failed to fetch product order counts" });
+    }
+  });
+
   app.post('/api/products', async (req: any, res) => {
     try {
       const data = insertProductSchema.parse(req.body);

@@ -32,6 +32,7 @@ export default function AllInventory() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
+  const [orderCounts, setOrderCounts] = useState<{ [productId: string]: number }>({});
 
   const { data: products = [], isLoading, error } = useQuery({
     queryKey: searchQuery ? ['/api/products', searchQuery] : ['/api/products'],
@@ -219,8 +220,14 @@ export default function AllInventory() {
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete Product</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Are you sure you want to delete "{product.name}"? The product will be marked as inactive and hidden from inventory.
+                  Are you sure you want to delete "{product.name}"?
                 </AlertDialogDescription>
+                <div className="space-y-2 text-sm text-muted-foreground mt-4">
+                  <div className="text-amber-600 font-medium">
+                    ℹ️ Product will be marked as inactive and hidden from inventory.
+                  </div>
+                  <div>This preserves order history while removing the product from active use.</div>
+                </div>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -252,8 +259,19 @@ export default function AllInventory() {
     {
       label: "Delete",
       variant: "destructive" as const,
-      action: (products: any[]) => {
+      action: async (products: any[]) => {
         setSelectedProducts(products);
+        
+        // Fetch order counts for selected products
+        try {
+          const productIds = products.map(p => p.id);
+          const response = await apiRequest('POST', '/api/products/order-counts', { productIds });
+          setOrderCounts(response);
+        } catch (error) {
+          console.error("Failed to fetch order counts:", error);
+          setOrderCounts({});
+        }
+        
         setShowDeleteDialog(true);
       },
     },
@@ -455,8 +473,14 @@ export default function AllInventory() {
                           <AlertDialogHeader>
                             <AlertDialogTitle>Delete Product</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Are you sure you want to delete "{product.name}"? The product will be marked as inactive and hidden from inventory.
+                              Are you sure you want to delete "{product.name}"?
                             </AlertDialogDescription>
+                            <div className="space-y-2 text-sm text-muted-foreground mt-4">
+                              <div className="text-amber-600 font-medium">
+                                ℹ️ Product will be marked as inactive and hidden from inventory.
+                              </div>
+                              <div>This preserves order history while removing the product from active use.</div>
+                            </div>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -526,13 +550,27 @@ export default function AllInventory() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Products</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              <p>Are you sure you want to delete {selectedProducts.length} product(s)?</p>
-              <p className="text-amber-600 font-medium">
-                ℹ️ Products will be marked as inactive and hidden from inventory.
-              </p>
-              <p>This preserves order history while removing products from active use.</p>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedProducts.length} product(s)?
             </AlertDialogDescription>
+            <div className="space-y-3 text-sm text-muted-foreground mt-4">
+              {selectedProducts.some(p => orderCounts[p.id] > 0) && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <div className="font-medium text-amber-800 mb-2">⚠️ Products with order history:</div>
+                  <div className="space-y-1">
+                    {selectedProducts.filter(p => orderCounts[p.id] > 0).map(product => (
+                      <div key={product.id} className="text-amber-700 text-xs">
+                        • {product.name}: {orderCounts[product.id]} order(s)
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="text-amber-600 font-medium">
+                ℹ️ Products will be marked as inactive and hidden from inventory.
+              </div>
+              <div>This preserves order history while removing products from active use.</div>
+            </div>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>

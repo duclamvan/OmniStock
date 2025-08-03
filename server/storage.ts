@@ -55,7 +55,7 @@ import {
   type InsertSetting,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, asc, and, or, like, sql, gte, lte, count } from "drizzle-orm";
+import { eq, desc, asc, and, or, like, sql, gte, lte, count, inArray } from "drizzle-orm";
 
 export interface IStorage {
   // User operations (mandatory for Replit Auth)
@@ -92,6 +92,8 @@ export interface IStorage {
   updateProduct(id: string, product: Partial<InsertProduct>): Promise<Product>;
   deleteProduct(id: string): Promise<void>;
   searchProducts(query: string): Promise<Product[]>;
+  getProductOrderCount(productId: string): Promise<number>;
+  getProductsOrderCounts(productIds: string[]): Promise<{ [productId: string]: number }>;
 
   // Product Variants
   getProductVariants(productId: string): Promise<ProductVariant[]>;
@@ -366,6 +368,33 @@ export class DatabaseStorage implements IStorage {
       .update(products)
       .set({ isActive: false, updatedAt: new Date() })
       .where(eq(products.id, id));
+  }
+
+  async getProductOrderCount(productId: string): Promise<number> {
+    const [result] = await db
+      .select({ count: count() })
+      .from(orderItems)
+      .where(eq(orderItems.productId, productId));
+    return result.count;
+  }
+
+  async getProductsOrderCounts(productIds: string[]): Promise<{ [productId: string]: number }> {
+    if (productIds.length === 0) return {};
+    
+    const results = await db
+      .select({
+        productId: orderItems.productId,
+        count: count()
+      })
+      .from(orderItems)
+      .where(inArray(orderItems.productId, productIds))
+      .groupBy(orderItems.productId);
+    
+    const counts: { [productId: string]: number } = {};
+    productIds.forEach(id => counts[id] = 0); // Initialize all to 0
+    results.forEach(result => counts[result.productId] = result.count);
+    
+    return counts;
   }
 
   async searchProducts(query: string): Promise<Product[]> {
