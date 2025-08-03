@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { Upload, Package, RotateCcw, Plus, Trash2, MoreHorizontal } from "lucide-react";
-import { formatCurrency } from "@/lib/currencyUtils";
+import { formatCurrency, convertCurrency, type Currency } from "@/lib/currencyUtils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -75,6 +75,9 @@ export default function AddProduct() {
     importCostCzk: "",
     importCostEur: "",
   });
+  
+  // Auto-conversion state
+  const conversionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const form = useForm<z.infer<typeof addProductSchema>>({
     resolver: zodResolver(addProductSchema),
@@ -83,6 +86,67 @@ export default function AddProduct() {
       lowStockAlert: 5,
     },
   });
+
+  // Watch import cost fields for auto-conversion
+  const importCostUsd = form.watch('importCostUsd');
+  const importCostCzk = form.watch('importCostCzk');
+  const importCostEur = form.watch('importCostEur');
+
+  // Auto-convert import costs after 1 second
+  useEffect(() => {
+    if (conversionTimeoutRef.current) {
+      clearTimeout(conversionTimeoutRef.current);
+    }
+
+    conversionTimeoutRef.current = setTimeout(() => {
+      // Count how many fields have values
+      const filledFields = [
+        importCostUsd ? 'USD' : null,
+        importCostCzk ? 'CZK' : null,
+        importCostEur ? 'EUR' : null,
+      ].filter(Boolean);
+
+      // Only convert if exactly one field has a value
+      if (filledFields.length === 1) {
+        const sourceCurrency = filledFields[0] as Currency;
+        let sourceValue = 0;
+
+        switch (sourceCurrency) {
+          case 'USD':
+            sourceValue = parseFloat(String(importCostUsd)) || 0;
+            break;
+          case 'CZK':
+            sourceValue = parseFloat(String(importCostCzk)) || 0;
+            break;
+          case 'EUR':
+            sourceValue = parseFloat(String(importCostEur)) || 0;
+            break;
+        }
+
+        if (sourceValue > 0) {
+          // Convert to other currencies
+          if (sourceCurrency !== 'USD' && !importCostUsd) {
+            const usdValue = convertCurrency(sourceValue, sourceCurrency, 'USD');
+            form.setValue('importCostUsd', parseFloat(usdValue.toFixed(2)));
+          }
+          if (sourceCurrency !== 'CZK' && !importCostCzk) {
+            const czkValue = convertCurrency(sourceValue, sourceCurrency, 'CZK');
+            form.setValue('importCostCzk', parseFloat(czkValue.toFixed(2)));
+          }
+          if (sourceCurrency !== 'EUR' && !importCostEur) {
+            const eurValue = convertCurrency(sourceValue, sourceCurrency, 'EUR');
+            form.setValue('importCostEur', parseFloat(eurValue.toFixed(2)));
+          }
+        }
+      }
+    }, 1000);
+
+    return () => {
+      if (conversionTimeoutRef.current) {
+        clearTimeout(conversionTimeoutRef.current);
+      }
+    };
+  }, [importCostUsd, importCostCzk, importCostEur, form]);
 
   // Fetch categories, warehouses, and suppliers
   const { data: categories = [] } = useQuery<any[]>({
