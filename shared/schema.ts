@@ -112,6 +112,8 @@ export const products = pgTable("products", {
   width: decimal("width", { precision: 10, scale: 2 }), // in cm
   height: decimal("height", { precision: 10, scale: 2 }), // in cm
   weight: decimal("weight", { precision: 10, scale: 3 }), // in kg
+  // Soft delete flag
+  isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

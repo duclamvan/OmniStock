@@ -7,7 +7,7 @@ Davie Supply is a comprehensive warehouse and order management system designed a
 - **Query Optimization**: Added query configuration to prevent excessive re-fetching of product variants data
 - **Bulk Delete Fix**: Changed bulk delete endpoint from DELETE to POST method to ensure request body is properly handled
 - **Inventory UI Improvements**: Removed SKU column, made product names more visible with proper width constraints, and shortened quantity column header to "Qty"
-- **Bulk Product Deletion**: Enhanced error handling for bulk delete operations with proper foreign key constraint handling and informative user feedback
+- **Soft Delete Implementation**: Converted product deletion to soft delete by adding isActive flag, preserving referential integrity with existing orders while hiding inactive products from inventory views
 
 # User Preferences
 Preferred communication style: Simple, everyday language.

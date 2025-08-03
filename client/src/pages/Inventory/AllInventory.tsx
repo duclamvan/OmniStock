@@ -81,7 +81,7 @@ export default function AllInventory() {
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
       toast({
         title: "Success",
-        description: "Product deleted successfully",
+        description: "Product marked as inactive",
       });
     },
     onError: (error: any) => {
@@ -219,7 +219,7 @@ export default function AllInventory() {
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete Product</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Are you sure you want to delete "{product.name}"? This action cannot be undone.
+                  Are you sure you want to delete "{product.name}"? The product will be marked as inactive and hidden from inventory.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -281,13 +281,13 @@ export default function AllInventory() {
     if (failed > 0) {
       toast({
         title: "Partial Success",
-        description: `${succeeded} products deleted successfully. ${failed} products could not be deleted because they are used in existing orders.`,
+        description: `${succeeded} products marked as inactive. ${failed} products could not be processed.`,
         variant: succeeded > 0 ? "default" : "destructive",
       });
     } else {
       toast({
         title: "Success",
-        description: `All ${succeeded} products deleted successfully.`,
+        description: `All ${succeeded} products have been marked as inactive.`,
       });
     }
     
@@ -455,7 +455,7 @@ export default function AllInventory() {
                           <AlertDialogHeader>
                             <AlertDialogTitle>Delete Product</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Are you sure you want to delete "{product.name}"? This action cannot be undone.
+                              Are you sure you want to delete "{product.name}"? The product will be marked as inactive and hidden from inventory.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
@@ -529,9 +529,9 @@ export default function AllInventory() {
             <AlertDialogDescription className="space-y-2">
               <p>Are you sure you want to delete {selectedProducts.length} product(s)?</p>
               <p className="text-amber-600 font-medium">
-                ⚠️ Products that are used in existing orders cannot be deleted.
+                ℹ️ Products will be marked as inactive and hidden from inventory.
               </p>
-              <p>The system will only delete products that are not referenced in any orders.</p>
+              <p>This preserves order history while removing products from active use.</p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

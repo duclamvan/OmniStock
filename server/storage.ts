@@ -316,11 +316,17 @@ export class DatabaseStorage implements IStorage {
 
   // Products
   async getProducts(): Promise<Product[]> {
-    return await db.select().from(products).orderBy(desc(products.createdAt));
+    return await db.select().from(products)
+      .where(eq(products.isActive, true))
+      .orderBy(desc(products.createdAt));
   }
 
   async getProductById(id: string): Promise<Product | undefined> {
-    const [product] = await db.select().from(products).where(eq(products.id, id));
+    const [product] = await db.select().from(products)
+      .where(and(
+        eq(products.id, id),
+        eq(products.isActive, true)
+      ));
     return product;
   }
 
@@ -333,7 +339,10 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(products)
-      .where(sql`${products.quantity} <= ${products.lowStockAlert}`)
+      .where(and(
+        eq(products.isActive, true),
+        sql`${products.quantity} <= ${products.lowStockAlert}`
+      ))
       .orderBy(asc(products.quantity));
   }
 
@@ -352,15 +361,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteProduct(id: string): Promise<void> {
-    await db.delete(products).where(eq(products.id, id));
+    // Soft delete - just mark as inactive
+    await db
+      .update(products)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(products.id, id));
   }
 
   async searchProducts(query: string): Promise<Product[]> {
     // Normalize the query for Vietnamese search
     const normalizedQuery = this.removeDiacritics(query.toLowerCase());
     
-    // Get all products and filter them in memory for proper Vietnamese search
-    const allProducts = await db.select().from(products).orderBy(desc(products.createdAt));
+    // Get all active products and filter them in memory for proper Vietnamese search
+    const allProducts = await db.select().from(products)
+      .where(eq(products.isActive, true))
+      .orderBy(desc(products.createdAt));
     
     return allProducts.filter(product => {
       const normalizedName = this.removeDiacritics(product.name.toLowerCase());
