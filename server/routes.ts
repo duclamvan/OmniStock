@@ -1178,7 +1178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Sales/Discounts endpoints
-  app.get('/api/sales', async (req, res) => {
+  app.get('/api/discounts', async (req, res) => {
     try {
       const sales = await storage.getSales();
       res.json(sales);
@@ -1188,7 +1188,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/sales', async (req: any, res) => {
+  app.post('/api/discounts', async (req: any, res) => {
     try {
       // Parse dates from strings to Date objects
       const body = {
@@ -1215,7 +1215,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/sales/:id', async (req, res) => {
+  app.get('/api/discounts/:id', async (req, res) => {
     try {
       const sale = await storage.getSaleById(req.params.id);
       if (!sale) {
@@ -1228,7 +1228,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch('/api/sales/:id', async (req: any, res) => {
+  app.patch('/api/discounts/:id', async (req: any, res) => {
     try {
       // Parse dates from strings to Date objects
       const updates = {
@@ -1254,7 +1254,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/sales/:id', async (req: any, res) => {
+  app.delete('/api/discounts/:id', async (req: any, res) => {
     try {
       const sale = await storage.getSaleById(req.params.id);
       if (!sale) {

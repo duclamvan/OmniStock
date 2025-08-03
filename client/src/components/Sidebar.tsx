@@ -46,8 +46,8 @@ const navigation = [
     icon: Warehouse,
   },
   {
-    name: "Sales",
-    href: "/sales",
+    name: "Discounts",
+    href: "/discounts",
     icon: Percent,
   },
   {

@@ -23,14 +23,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-export default function AllSales() {
+export default function AllDiscounts() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedSales, setSelectedSales] = useState<any[]>([]);
 
   const { data: sales = [], isLoading, error } = useQuery({
-    queryKey: ['/api/sales'],
+    queryKey: ['/api/discounts'],
     retry: false,
   });
 
@@ -39,7 +39,7 @@ export default function AllSales() {
     if (error) {
       toast({
         title: "Error",
-        description: "Failed to load sales",
+        description: "Failed to load discounts",
         variant: "destructive",
       });
     }
@@ -47,23 +47,23 @@ export default function AllSales() {
 
   const deleteSaleMutation = useMutation({
     mutationFn: async (ids: string[]) => {
-      await Promise.all(ids.map(id => apiRequest('DELETE', `/api/sales/${id}`)));
+      await Promise.all(ids.map(id => apiRequest('DELETE', `/api/discounts/${id}`)));
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/sales'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/discounts'] });
       toast({
         title: "Success",
-        description: `Deleted ${selectedSales.length} sale(s) successfully`,
+        description: `Deleted ${selectedSales.length} discount(s) successfully`,
       });
       setSelectedSales([]);
     },
     onError: (error: any) => {
       console.error("Sale delete error:", error);
-      const errorMessage = error.message || "Failed to delete sales";
+      const errorMessage = error.message || "Failed to delete discounts";
       toast({
         title: "Error",
         description: errorMessage.includes('referenced') || errorMessage.includes('constraint')
-          ? "Cannot delete sale - it's being used in existing records" 
+          ? "Cannot delete discount - it's being used in existing records" 
           : errorMessage,
         variant: "destructive",
       });
@@ -94,12 +94,12 @@ export default function AllSales() {
   const columns: DataTableColumn<any>[] = [
     {
       key: "name",
-      header: "Sale Name",
+      header: "Discount Name",
       sortable: true,
       cell: (sale) => (
         <div className="flex items-center gap-2">
           <Tag className="h-5 w-5 text-gray-400" />
-          <Link href={`/sales/${sale.id}/edit`}>
+          <Link href={`/discounts/${sale.id}/edit`}>
             <span className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer">
               {sale.name}
             </span>
@@ -180,7 +180,7 @@ export default function AllSales() {
       header: "Actions",
       cell: (sale) => (
         <div className="flex items-center gap-1">
-          <Link href={`/sales/${sale.id}/edit`}>
+          <Link href={`/discounts/${sale.id}/edit`}>
             <Button size="sm" variant="ghost">
               <Edit className="h-4 w-4" />
             </Button>
@@ -223,7 +223,7 @@ export default function AllSales() {
       action: (sales: any[]) => {
         toast({
           title: "Export",
-          description: `Exporting ${sales.length} sales...`,
+          description: `Exporting ${sales.length} discounts...`,
         });
       },
     },
@@ -239,7 +239,7 @@ export default function AllSales() {
       <div className="flex items-center justify-center min-h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading sales...</p>
+          <p className="text-slate-600">Loading discounts...</p>
         </div>
       </div>
     );
@@ -249,11 +249,11 @@ export default function AllSales() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">Sales & Discounts</h1>
-        <Link href="/sales/add">
+        <h1 className="text-2xl font-bold text-slate-900">Discounts</h1>
+        <Link href="/discounts/add">
           <Button>
             <Plus className="mr-2 h-4 w-4" />
-            Add Sale
+            Add Discount
           </Button>
         </Link>
       </div>
@@ -265,7 +265,7 @@ export default function AllSales() {
             <div className="flex items-center">
               <Tag className="h-8 w-8 text-blue-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-slate-600">Total Sales</p>
+                <p className="text-sm font-medium text-slate-600">Total Discounts</p>
                 <p className="text-2xl font-bold text-slate-900">{sales?.length || 0}</p>
               </div>
             </div>
@@ -277,7 +277,7 @@ export default function AllSales() {
             <div className="flex items-center">
               <Tag className="h-8 w-8 text-green-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-slate-600">Active Sales</p>
+                <p className="text-sm font-medium text-slate-600">Active Discounts</p>
                 <p className="text-2xl font-bold text-slate-900">
                   {sales?.filter((s: any) => isSaleActive(s)).length || 0}
                 </p>
@@ -291,7 +291,7 @@ export default function AllSales() {
             <div className="flex items-center">
               <Percent className="h-8 w-8 text-purple-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-slate-600">Percentage Sales</p>
+                <p className="text-sm font-medium text-slate-600">Percentage Discounts</p>
                 <p className="text-2xl font-bold text-slate-900">
                   {sales?.filter((s: any) => s.type === 'percentage').length || 0}
                 </p>
@@ -305,7 +305,7 @@ export default function AllSales() {
             <div className="flex items-center">
               <Tag className="h-8 w-8 text-orange-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-slate-600">Fixed Sales</p>
+                <p className="text-sm font-medium text-slate-600">Fixed Discounts</p>
                 <p className="text-2xl font-bold text-slate-900">
                   {sales?.filter((s: any) => s.type === 'fixed').length || 0}
                 </p>
@@ -333,7 +333,7 @@ export default function AllSales() {
       {/* Sales Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Sales ({filteredSales?.length || 0})</CardTitle>
+          <CardTitle>Discounts ({filteredSales?.length || 0})</CardTitle>
         </CardHeader>
         <CardContent>
           <DataTable
@@ -351,9 +351,9 @@ export default function AllSales() {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Sales</AlertDialogTitle>
+            <AlertDialogTitle>Delete Discounts</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete {selectedSales.length} sale(s)? This action cannot be undone.
+              Are you sure you want to delete {selectedSales.length} discount(s)? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

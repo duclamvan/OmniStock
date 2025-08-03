@@ -39,15 +39,15 @@ const saleSchema = z.object({
 
 type SaleFormData = z.infer<typeof saleSchema>;
 
-export default function EditSale() {
+export default function EditDiscount() {
   const { id } = useParams();
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const { data: sale, isLoading } = useQuery({
-    queryKey: ['/api/sales', id],
-    queryFn: () => apiRequest('GET', `/api/sales/${id}`),
+    queryKey: ['/api/discounts', id],
+    queryFn: () => apiRequest('GET', `/api/discounts/${id}`),
     enabled: !!id,
   });
 
@@ -92,41 +92,41 @@ export default function EditSale() {
         minimumAmount: data.minimumAmount ? parseFloat(data.minimumAmount) : undefined,
         maximumDiscount: data.maximumDiscount ? parseFloat(data.maximumDiscount) : undefined,
       };
-      return apiRequest('PATCH', `/api/sales/${id}`, payload);
+      return apiRequest('PATCH', `/api/discounts/${id}`, payload);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/sales'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/discounts'] });
       toast({
         title: "Success",
-        description: "Sale updated successfully",
+        description: "Discount updated successfully",
       });
-      navigate("/sales");
+      navigate("/discounts");
     },
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to update sale",
+        description: error.message || "Failed to update discount",
         variant: "destructive",
       });
     },
   });
 
   const deleteSaleMutation = useMutation({
-    mutationFn: () => apiRequest('DELETE', `/api/sales/${id}`),
+    mutationFn: () => apiRequest('DELETE', `/api/discounts/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/sales'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/discounts'] });
       toast({
         title: "Success",
-        description: "Sale deleted successfully",
+        description: "Discount deleted successfully",
       });
-      navigate("/sales");
+      navigate("/discounts");
     },
     onError: (error: any) => {
       toast({
         title: "Error",
         description: error.message.includes('referenced') || error.message.includes('constraint')
-          ? "Cannot delete sale - it's being used in existing records" 
-          : error.message || "Failed to delete sale",
+          ? "Cannot delete discount - it's being used in existing records" 
+          : error.message || "Failed to delete discount",
         variant: "destructive",
       });
     },
@@ -141,7 +141,7 @@ export default function EditSale() {
       <div className="flex items-center justify-center min-h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading sale...</p>
+          <p className="text-slate-600">Loading discount...</p>
         </div>
       </div>
     );
@@ -150,9 +150,9 @@ export default function EditSale() {
   if (!sale) {
     return (
       <div className="text-center py-8">
-        <p className="text-slate-600">Sale not found</p>
-        <Button className="mt-4" onClick={() => navigate("/sales")}>
-          Back to Sales
+        <p className="text-slate-600">Discount not found</p>
+        <Button className="mt-4" onClick={() => navigate("/discounts")}>
+          Back to Discounts
         </Button>
       </div>
     );
@@ -165,24 +165,24 @@ export default function EditSale() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate("/sales")}
+            onClick={() => navigate("/discounts")}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
-          <h1 className="text-2xl font-bold text-slate-900">Edit Sale</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Edit Discount</h1>
         </div>
       </div>
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Sale Information</CardTitle>
+            <CardTitle>Discount Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="name">Sale Name</Label>
+                <Label htmlFor="name">Discount Name</Label>
                 <Input
                   id="name"
                   {...form.register("name")}
@@ -325,14 +325,14 @@ export default function EditSale() {
             onClick={() => setShowDeleteDialog(true)}
           >
             <Trash2 className="h-4 w-4 mr-2" />
-            Delete Sale
+            Delete Discount
           </Button>
 
           <div className="flex gap-2">
             <Button
               type="button"
               variant="outline"
-              onClick={() => navigate("/sales")}
+              onClick={() => navigate("/discounts")}
             >
               Cancel
             </Button>
@@ -347,7 +347,7 @@ export default function EditSale() {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Sale</AlertDialogTitle>
+            <AlertDialogTitle>Delete Discount</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete "{sale.name}"? This action cannot be undone.
             </AlertDialogDescription>
