@@ -691,8 +691,8 @@ export default function AddProduct() {
                   )}
                 </div>
 
-                <div className="border rounded-lg overflow-hidden">
-                  <Table>
+                <div className="border rounded-lg overflow-hidden overflow-x-auto">
+                  <Table className="min-w-full">
                     <TableHeader>
                       <TableRow>
                         <TableHead className="w-12">
@@ -701,7 +701,7 @@ export default function AddProduct() {
                             onCheckedChange={toggleSelectAll}
                           />
                         </TableHead>
-                        <TableHead>Product Name</TableHead>
+                        <TableHead className="min-w-[200px]">Product Name</TableHead>
                         <TableHead>Barcode</TableHead>
                         <TableHead>Quantity</TableHead>
                         <TableHead>Import Cost (USD)</TableHead>
@@ -725,11 +725,11 @@ export default function AddProduct() {
                               }}
                             />
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="min-w-[200px]">
                             <Input
                               value={variant.name}
                               onChange={(e) => updateVariant(variant.id, 'name', e.target.value)}
-                              className="border-0 bg-transparent p-0 focus-visible:ring-0"
+                              className="border-0 bg-transparent p-0 focus-visible:ring-0 w-full"
                             />
                           </TableCell>
                           <TableCell>
