@@ -19,6 +19,7 @@ import {
   insertSaleSchema,
 } from "@shared/schema";
 import { z } from "zod";
+import { nanoid } from "nanoid";
 
 // Configure multer for image uploads
 const storage_disk = multer.diskStorage({
@@ -1317,6 +1318,103 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fixing order items:", error);
       res.status(500).json({ message: "Failed to fix order items" });
+    }
+  });
+
+  // Clear and reseed sales/discounts data
+  app.post('/api/reseed-discounts', async (req, res) => {
+    try {
+      // Clear existing sales data
+      await storage.deleteAllSales();
+      console.log("Cleared all existing sales/discounts data");
+      
+      // Create new discounts data
+      const newDiscounts = [
+        {
+          id: nanoid(),
+          name: "Summer Tech Sale 2025",
+          description: "Big discounts on electronics for summer",
+          code: "SUMMER2025",
+          type: "percentage" as const,
+          value: "20",
+          currency: "EUR" as const,
+          startDate: new Date("2025-06-01"),
+          endDate: new Date("2025-08-31"),
+          minimumAmount: "100",
+          maximumDiscount: "500",
+          status: "active" as const,
+        },
+        {
+          id: nanoid(),
+          name: "New Customer Welcome",
+          description: "Welcome discount for first-time customers",
+          code: "WELCOME10",
+          type: "percentage" as const,
+          value: "10",
+          currency: "EUR" as const,
+          startDate: new Date("2025-01-01"),
+          endDate: new Date("2025-12-31"),
+          minimumAmount: "50",
+          maximumDiscount: "100",
+          status: "active" as const,
+        },
+        {
+          id: nanoid(),
+          name: "Bulk Order Discount",
+          description: "Save more when you buy more",
+          code: "BULK15",
+          type: "fixed" as const,
+          value: "15",
+          currency: "EUR" as const,
+          startDate: new Date("2025-01-01"),
+          endDate: new Date("2025-12-31"),
+          minimumAmount: "200",
+          maximumDiscount: null,
+          status: "active" as const,
+        },
+        {
+          id: nanoid(),
+          name: "Flash Weekend Deal",
+          description: "Limited time weekend offer",
+          code: "WEEKEND25",
+          type: "percentage" as const,
+          value: "25",
+          currency: "EUR" as const,
+          startDate: new Date("2025-08-01"),
+          endDate: new Date("2025-08-04"),
+          minimumAmount: "75",
+          maximumDiscount: "200",
+          status: "active" as const,
+        },
+        {
+          id: nanoid(),
+          name: "VIP Member Exclusive",
+          description: "Exclusive discount for VIP members",
+          code: "VIP30",
+          type: "percentage" as const,
+          value: "30",
+          currency: "EUR" as const,
+          startDate: new Date("2025-01-01"),
+          endDate: new Date("2025-12-31"),
+          minimumAmount: "0",
+          maximumDiscount: "1000",
+          status: "active" as const,
+        }
+      ];
+
+      // Create each discount
+      for (const discount of newDiscounts) {
+        await storage.createSale(discount);
+        console.log(`Created discount: ${discount.name}`);
+      }
+
+      res.json({ 
+        message: "Discounts data reseeded successfully",
+        count: newDiscounts.length 
+      });
+    } catch (error) {
+      console.error("Error reseeding discounts:", error);
+      res.status(500).json({ message: "Failed to reseed discounts data" });
     }
   });
 

@@ -63,8 +63,8 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
       icon: Warehouse,
     },
     {
-      name: "Sales",
-      href: "/sales",
+      name: "Discounts",
+      href: "/discounts",
       icon: Percent,
     },
     {

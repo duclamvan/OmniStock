@@ -1168,6 +1168,10 @@ export class DatabaseStorage implements IStorage {
     await db.delete(sales).where(eq(sales.id, id));
   }
 
+  async deleteAllSales(): Promise<void> {
+    await db.delete(sales);
+  }
+
   // Settings
   async getSettings(): Promise<Setting[]> {
     return await db.select().from(settings).orderBy(asc(settings.category), asc(settings.key));
