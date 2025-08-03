@@ -46,6 +46,7 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
   const { toast } = useToast();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedVariants, setSelectedVariants] = useState<string[]>([]);
+  const [seriesInput, setSeriesInput] = useState("");
   const [newVariant, setNewVariant] = useState({
     name: "",
     barcode: "",
@@ -162,6 +163,73 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
     createVariantMutation.mutate(newVariant);
   };
 
+  const handleCreateSeries = async () => {
+    // Parse series format like "Gel Polish <1-100>"
+    const seriesMatch = seriesInput.match(/^(.+?)\s*<(\d+)-(\d+)>$/);
+    
+    if (!seriesMatch) {
+      toast({
+        title: "Invalid Format",
+        description: 'Please use format like "Gel Polish <1-100>"',
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const [, baseName, startStr, endStr] = seriesMatch;
+    const start = parseInt(startStr);
+    const end = parseInt(endStr);
+
+    if (start > end || end - start > 1000) {
+      toast({
+        title: "Invalid Range",
+        description: "Range must be valid and not exceed 1000 items",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Create all variants in the series
+    const variants = [];
+    for (let i = start; i <= end; i++) {
+      variants.push({
+        name: `${baseName.trim()} ${i}`,
+        barcode: "",
+        quantity: 0,
+        importCostUsd: "",
+        importCostCzk: "",
+        importCostEur: "",
+      });
+    }
+
+    try {
+      // Create variants in batches to avoid overwhelming the server
+      const batchSize = 10;
+      for (let i = 0; i < variants.length; i += batchSize) {
+        const batch = variants.slice(i, i + batchSize);
+        await Promise.all(
+          batch.map(variant => 
+            apiRequest("POST", `/api/products/${productId}/variants`, variant)
+          )
+        );
+      }
+
+      queryClient.invalidateQueries({ queryKey: [`/api/products/${productId}/variants`] });
+      toast({
+        title: "Success",
+        description: `Created ${variants.length} product variants`,
+      });
+      setSeriesInput("");
+      setIsAddDialogOpen(false);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create series",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
     return <div className="text-center py-4">Loading variants...</div>;
   }
@@ -188,14 +256,43 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
                 Add Variant
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[600px]">
               <DialogHeader>
-                <DialogTitle>Add Product Variant</DialogTitle>
+                <DialogTitle>Add Product Variants</DialogTitle>
                 <DialogDescription>
-                  Create a new variant for this product
+                  Add a single variant or create a series of variants
                 </DialogDescription>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
+              
+              {/* Series Creation Section */}
+              <div className="space-y-4 border-b pb-4">
+                <div className="space-y-2">
+                  <Label htmlFor="series-input">Create Series</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="series-input"
+                      value={seriesInput}
+                      onChange={(e) => setSeriesInput(e.target.value)}
+                      placeholder='e.g., "Gel Polish <1-100>"'
+                      className="flex-1"
+                    />
+                    <Button 
+                      onClick={handleCreateSeries}
+                      disabled={!seriesInput}
+                      type="button"
+                    >
+                      Add Series
+                    </Button>
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    For series: Use format like "Gel Polish &lt;1-100&gt;" to automatically create 100 variants
+                  </p>
+                </div>
+              </div>
+
+              {/* Single Variant Section */}
+              <div className="space-y-4 pt-4">
+                <div className="text-sm font-medium text-slate-600">Or add a single variant:</div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="variant-name">Variant Name</Label>
@@ -205,7 +302,7 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
                       onChange={(e) =>
                         setNewVariant((prev) => ({ ...prev, name: e.target.value }))
                       }
-                      placeholder="e.g., 4XC - Hoa cúc ULTRA"
+                      placeholder="e.g., Size XL"
                     />
                   </div>
                   <div>
@@ -276,19 +373,15 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
               </div>
               <DialogFooter>
                 <Button
-                  variant="outline"
-                  onClick={() => setIsAddDialogOpen(false)}
+                  type="button"
+                  onClick={handleCreateVariant}
+                  disabled={!newVariant.name}
                 >
-                  Cancel
+                  Add Variant
                 </Button>
-                <Button onClick={handleCreateVariant}>Create Variant</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
-          <Button variant="outline" size="sm" disabled>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Variant Series
-          </Button>
         </div>
       </CardHeader>
       <CardContent>
