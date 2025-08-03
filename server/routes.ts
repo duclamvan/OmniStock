@@ -494,12 +494,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/products', async (req, res) => {
     try {
       const search = req.query.search as string;
+      const includeInactive = req.query.includeInactive === 'true';
       let products;
       
       if (search) {
-        products = await storage.searchProducts(search);
+        products = await storage.searchProducts(search, includeInactive);
       } else {
-        products = await storage.getProducts();
+        products = await storage.getProducts(includeInactive);
       }
       
       res.json(products);

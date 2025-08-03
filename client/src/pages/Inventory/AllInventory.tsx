@@ -33,14 +33,58 @@ export default function AllInventory() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
   const [orderCounts, setOrderCounts] = useState<{ [productId: string]: number }>({});
+  const [showInactive, setShowInactive] = useState(false);
+  const [ctrlPressed, setCtrlPressed] = useState(false);
 
   const { data: products = [], isLoading, error } = useQuery({
-    queryKey: searchQuery ? ['/api/products', searchQuery] : ['/api/products'],
+    queryKey: showInactive ? ['/api/products', 'all'] : ['/api/products'],
+    queryFn: async () => {
+      const url = showInactive ? '/api/products?includeInactive=true' : '/api/products';
+      const response = await fetch(url, {
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch products');
+      }
+      return response.json();
+    },
   });
 
   const { data: categories } = useQuery({
     queryKey: ['/api/categories'],
   });
+
+  // Keyboard event listeners for hidden feature
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        setCtrlPressed(true);
+      }
+      // Ctrl/Cmd + Shift + I to toggle inactive products
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'I') {
+        e.preventDefault();
+        setShowInactive(prev => !prev);
+        toast({
+          title: showInactive ? "Hidden" : "Showing",
+          description: showInactive ? "Inactive products hidden" : "Showing inactive products",
+        });
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (!e.ctrlKey && !e.metaKey) {
+        setCtrlPressed(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [showInactive, toast]);
 
   // Error handling
   useEffect(() => {
@@ -93,6 +137,27 @@ export default function AllInventory() {
         description: errorMessage.includes('referenced') || errorMessage.includes('constraint')
           ? "Cannot delete product - it's being used in existing orders" 
           : errorMessage,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const restoreProductMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest('PATCH', `/api/products/${id}`, { isActive: true });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      toast({
+        title: "Success",
+        description: "Product restored successfully",
+      });
+    },
+    onError: (error) => {
+      console.error("Product restore error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to restore product",
         variant: "destructive",
       });
     },
@@ -151,11 +216,14 @@ export default function AllInventory() {
           )}
           <div className="min-w-0 flex-1">
             <Link href={`/inventory/products/${product.id}`}>
-              <span className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer block truncate" title={product.name}>
+              <span className={`font-medium cursor-pointer block truncate ${product.isActive ? 'text-blue-600 hover:text-blue-800' : 'text-gray-400 line-through'}`} title={product.name}>
                 {product.name}
               </span>
             </Link>
-            <div className="text-xs text-gray-500 truncate">{product.description}</div>
+            <div className="text-xs text-gray-500 truncate">
+              {product.description}
+              {!product.isActive && <span className="text-amber-600 font-medium ml-2">(Inactive)</span>}
+            </div>
           </div>
         </div>
       ),
@@ -205,41 +273,54 @@ export default function AllInventory() {
       header: "Actions",
       cell: (product) => (
         <div className="flex items-center gap-1">
-          <Link href={`/inventory/${product.id}/edit`}>
-            <Button size="sm" variant="ghost">
-              <Edit className="h-4 w-4" />
+          {product.isActive ? (
+            <>
+              <Link href={`/inventory/${product.id}/edit`}>
+                <Button size="sm" variant="ghost">
+                  <Edit className="h-4 w-4" />
+                </Button>
+              </Link>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Product</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete "{product.name}"?
+                    </AlertDialogDescription>
+                    <div className="space-y-2 text-sm text-muted-foreground mt-4">
+                      <div className="text-amber-600 font-medium">
+                        ℹ️ Product will be marked as inactive and hidden from inventory.
+                      </div>
+                      <div>This preserves order history while removing the product from active use.</div>
+                    </div>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={() => deleteProductMutation.mutate(product.id)}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </>
+          ) : (
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="text-green-600 border-green-600 hover:bg-green-50"
+              onClick={() => restoreProductMutation.mutate(product.id)}
+            >
+              Restore
             </Button>
-          </Link>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button size="sm" variant="ghost" className="text-red-600 hover:text-red-700">
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete Product</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to delete "{product.name}"?
-                </AlertDialogDescription>
-                <div className="space-y-2 text-sm text-muted-foreground mt-4">
-                  <div className="text-amber-600 font-medium">
-                    ℹ️ Product will be marked as inactive and hidden from inventory.
-                  </div>
-                  <div>This preserves order history while removing the product from active use.</div>
-                </div>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction 
-                  onClick={() => deleteProductMutation.mutate(product.id)}
-                  className="bg-red-600 hover:bg-red-700"
-                >
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          )}
         </div>
       ),
     },
@@ -328,7 +409,26 @@ export default function AllInventory() {
     <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <h1 className="text-mobile-2xl font-bold text-slate-900">Inventory</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-mobile-2xl font-bold text-slate-900">Inventory</h1>
+          {/* Hidden toggle button - only visible when Ctrl/Cmd is pressed */}
+          {ctrlPressed && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setShowInactive(!showInactive);
+                toast({
+                  title: showInactive ? "Hidden" : "Showing",
+                  description: showInactive ? "Inactive products hidden" : "Showing inactive products",
+                });
+              }}
+              className="text-xs"
+            >
+              {showInactive ? "Hide" : "Show"} Inactive
+            </Button>
+          )}
+        </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <Button variant="outline" size="sm" className="flex-1 sm:flex-none touch-target">
             Import XLS
@@ -451,48 +551,64 @@ export default function AllInventory() {
                       </Avatar>
                       <div className="min-w-0 flex-1">
                         <Link href={`/inventory/products/${product.id}`}>
-                          <p className="font-semibold text-gray-900 truncate hover:text-blue-600 cursor-pointer">{product.name}</p>
+                          <p className={`font-semibold truncate cursor-pointer ${product.isActive ? 'text-gray-900 hover:text-blue-600' : 'text-gray-400 line-through'}`}>{product.name}</p>
                         </Link>
-                        <p className="text-xs text-gray-500">SKU: {product.sku}</p>
+                        <p className="text-xs text-gray-500">
+                          SKU: {product.sku}
+                          {!product.isActive && <span className="text-amber-600 font-medium ml-2">(Inactive)</span>}
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      {getStockStatus(product.quantity, product.lowStockAlert)}
-                      <Link href={`/inventory/${product.id}/edit`}>
-                        <Button size="icon" variant="ghost" className="h-8 w-8">
-                          <Edit className="h-4 w-4" />
+                      {product.isActive ? (
+                        <>
+                          {getStockStatus(product.quantity, product.lowStockAlert)}
+                          <Link href={`/inventory/${product.id}/edit`}>
+                            <Button size="icon" variant="ghost" className="h-8 w-8">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="icon" variant="ghost" className="h-8 w-8 text-red-600 hover:text-red-700">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Product</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete "{product.name}"?
+                                </AlertDialogDescription>
+                                <div className="space-y-2 text-sm text-muted-foreground mt-4">
+                                  <div className="text-amber-600 font-medium">
+                                    ℹ️ Product will be marked as inactive and hidden from inventory.
+                                  </div>
+                                  <div>This preserves order history while removing the product from active use.</div>
+                                </div>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={() => deleteProductMutation.mutate(product.id)}
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </>
+                      ) : (
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="text-green-600 border-green-600 hover:bg-green-50"
+                          onClick={() => restoreProductMutation.mutate(product.id)}
+                        >
+                          Restore
                         </Button>
-                      </Link>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button size="icon" variant="ghost" className="h-8 w-8 text-red-600 hover:text-red-700">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Product</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Are you sure you want to delete "{product.name}"?
-                            </AlertDialogDescription>
-                            <div className="space-y-2 text-sm text-muted-foreground mt-4">
-                              <div className="text-amber-600 font-medium">
-                                ℹ️ Product will be marked as inactive and hidden from inventory.
-                              </div>
-                              <div>This preserves order history while removing the product from active use.</div>
-                            </div>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction 
-                              onClick={() => deleteProductMutation.mutate(product.id)}
-                              className="bg-red-600 hover:bg-red-700"
-                            >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                      )}
                     </div>
                   </div>
                   

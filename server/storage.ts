@@ -84,14 +84,14 @@ export interface IStorage {
   deleteSupplier(id: string): Promise<void>;
 
   // Products
-  getProducts(): Promise<Product[]>;
+  getProducts(includeInactive?: boolean): Promise<Product[]>;
   getProductById(id: string): Promise<Product | undefined>;
   getProductBySku(sku: string): Promise<Product | undefined>;
   getLowStockProducts(): Promise<Product[]>;
   createProduct(product: InsertProduct): Promise<Product>;
   updateProduct(id: string, product: Partial<InsertProduct>): Promise<Product>;
   deleteProduct(id: string): Promise<void>;
-  searchProducts(query: string): Promise<Product[]>;
+  searchProducts(query: string, includeInactive?: boolean): Promise<Product[]>;
   getProductOrderCount(productId: string): Promise<number>;
   getProductsOrderCounts(productIds: string[]): Promise<{ [productId: string]: number }>;
 
@@ -317,7 +317,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Products
-  async getProducts(): Promise<Product[]> {
+  async getProducts(includeInactive: boolean = false): Promise<Product[]> {
+    if (includeInactive) {
+      return await db.select().from(products)
+        .orderBy(desc(products.createdAt));
+    }
     return await db.select().from(products)
       .where(eq(products.isActive, true))
       .orderBy(desc(products.createdAt));
@@ -397,14 +401,20 @@ export class DatabaseStorage implements IStorage {
     return counts;
   }
 
-  async searchProducts(query: string): Promise<Product[]> {
+  async searchProducts(query: string, includeInactive: boolean = false): Promise<Product[]> {
     // Normalize the query for Vietnamese search
     const normalizedQuery = this.removeDiacritics(query.toLowerCase());
     
-    // Get all active products and filter them in memory for proper Vietnamese search
-    const allProducts = await db.select().from(products)
-      .where(eq(products.isActive, true))
-      .orderBy(desc(products.createdAt));
+    // Get all products and filter them in memory for proper Vietnamese search
+    let allProducts;
+    if (includeInactive) {
+      allProducts = await db.select().from(products)
+        .orderBy(desc(products.createdAt));
+    } else {
+      allProducts = await db.select().from(products)
+        .where(eq(products.isActive, true))
+        .orderBy(desc(products.createdAt));
+    }
     
     return allProducts.filter(product => {
       const normalizedName = this.removeDiacritics(product.name.toLowerCase());
