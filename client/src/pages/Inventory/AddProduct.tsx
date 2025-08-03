@@ -10,10 +10,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { Upload, Package, RotateCcw } from "lucide-react";
+import { Upload, Package, RotateCcw, Plus, Trash2, MoreHorizontal } from "lucide-react";
+import { formatCurrency } from "@/lib/currencyUtils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const addProductSchema = z.object({
   name: z.string().min(1, "Product name is required"),
@@ -37,8 +46,25 @@ export default function AddProduct() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [variants, setVariants] = useState<string[]>([]);
-  const [newVariant, setNewVariant] = useState("");
+  const [variants, setVariants] = useState<Array<{
+    id: string;
+    name: string;
+    barcode: string;
+    quantity: number;
+    importCostUsd: string;
+    importCostCzk: string;
+    importCostEur: string;
+  }>>([]);
+  const [selectedVariants, setSelectedVariants] = useState<string[]>([]);
+  const [seriesInput, setSeriesInput] = useState("");
+  const [newVariant, setNewVariant] = useState({
+    name: "",
+    barcode: "",
+    quantity: 0,
+    importCostUsd: "",
+    importCostCzk: "",
+    importCostEur: "",
+  });
 
   const form = useForm<z.infer<typeof addProductSchema>>({
     resolver: zodResolver(addProductSchema),
@@ -49,15 +75,15 @@ export default function AddProduct() {
   });
 
   // Fetch categories, warehouses, and suppliers
-  const { data: categories } = useQuery({
+  const { data: categories = [] } = useQuery({
     queryKey: ['/api/categories'],
   });
 
-  const { data: warehouses } = useQuery({
+  const { data: warehouses = [] } = useQuery({
     queryKey: ['/api/warehouses'],
   });
 
-  const { data: suppliers } = useQuery({
+  const { data: suppliers = [] } = useQuery({
     queryKey: ['/api/suppliers'],
   });
 
@@ -114,40 +140,70 @@ export default function AddProduct() {
   };
 
   const addVariant = () => {
-    if (newVariant.trim()) {
-      setVariants([...variants, newVariant.trim()]);
-      setNewVariant("");
+    if (newVariant.name.trim()) {
+      const variantWithId = {
+        ...newVariant,
+        id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        name: newVariant.name.trim(),
+      };
+      setVariants([...variants, variantWithId]);
+      setNewVariant({
+        name: "",
+        barcode: "",
+        quantity: 0,
+        importCostUsd: "",
+        importCostCzk: "",
+        importCostEur: "",
+      });
     }
   };
 
-  const removeVariant = (index: number) => {
-    setVariants(variants.filter((_, i) => i !== index));
+  const removeVariant = (id: string) => {
+    setVariants(variants.filter(v => v.id !== id));
+    setSelectedVariants(selectedVariants.filter(selectedId => selectedId !== id));
   };
 
   const addVariantSeries = () => {
-    const name = form.watch('name');
-    if (!name) {
+    if (!seriesInput.trim()) {
       toast({
         title: "Error",
-        description: "Please enter a product name first",
+        description: "Please enter a series pattern",
         variant: "destructive",
       });
       return;
     }
 
-    // Check if name contains pattern like "Product Name <1-100>"
-    const match = name.match(/<(\d+)-(\d+)>/);
+    // Check if input contains pattern like "Product Name <1-100>"
+    const match = seriesInput.match(/<(\d+)-(\d+)>/);
     if (match) {
       const start = parseInt(match[1]);
       const end = parseInt(match[2]);
-      const baseName = name.replace(/<\d+-\d+>/, '').trim();
+      const baseName = seriesInput.replace(/<\d+-\d+>/, '').trim();
+      
+      if (end - start > 200) {
+        toast({
+          title: "Error",
+          description: "Series range too large. Maximum 200 variants at once.",
+          variant: "destructive",
+        });
+        return;
+      }
       
       const newVariants = [];
       for (let i = start; i <= end; i++) {
-        newVariants.push(`${baseName} ${i}`);
+        newVariants.push({
+          id: `temp-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 9)}`,
+          name: `${baseName} ${i}`,
+          barcode: "",
+          quantity: 0,
+          importCostUsd: "",
+          importCostCzk: "",
+          importCostEur: "",
+        });
       }
       
       setVariants([...variants, ...newVariants]);
+      setSeriesInput("");
       toast({
         title: "Success",
         description: `Added ${newVariants.length} variants`,
@@ -155,10 +211,34 @@ export default function AddProduct() {
     } else {
       toast({
         title: "Error",
-        description: "Product name should contain range pattern like 'Product Name <1-100>'",
+        description: "Use format like 'Gel Polish <1-100>' to create series",
         variant: "destructive",
       });
     }
+  };
+
+  const bulkDeleteVariants = () => {
+    if (selectedVariants.length === 0) return;
+    setVariants(variants.filter(v => !selectedVariants.includes(v.id)));
+    setSelectedVariants([]);
+    toast({
+      title: "Success",
+      description: `Deleted ${selectedVariants.length} variants`,
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedVariants.length === variants.length) {
+      setSelectedVariants([]);
+    } else {
+      setSelectedVariants(variants.map(v => v.id));
+    }
+  };
+
+  const updateVariant = (id: string, field: string, value: string | number) => {
+    setVariants(variants.map(v => 
+      v.id === id ? { ...v, [field]: value } : v
+    ));
   };
 
   const onSubmit = (data: z.infer<typeof addProductSchema>) => {
@@ -426,20 +506,22 @@ export default function AddProduct() {
 
         {/* Product Variants */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
             <CardTitle>Product Variants</CardTitle>
+            <Button type="button" onClick={addVariant} size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Variant
+            </Button>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Add Series Input */}
             <div className="flex space-x-2">
               <Input
-                value={newVariant}
-                onChange={(e) => setNewVariant(e.target.value)}
+                value={seriesInput}
+                onChange={(e) => setSeriesInput(e.target.value)}
                 placeholder="Enter variant name"
                 onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addVariant())}
               />
-              <Button type="button" variant="outline" onClick={addVariant}>
-                Add Variant
-              </Button>
               <Button type="button" variant="outline" onClick={addVariantSeries}>
                 Add Series
               </Button>
@@ -449,23 +531,130 @@ export default function AddProduct() {
               <p>For series: Use format like "Gel Polish &lt;1-100&gt;" to automatically create 100 variants</p>
             </div>
 
+            {/* Variants Table */}
             {variants.length > 0 && (
-              <div className="space-y-2">
-                <h4 className="font-medium">Variants ({variants.length})</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
-                  {variants.map((variant, index) => (
-                    <div key={index} className="flex items-center justify-between bg-slate-50 p-2 rounded">
-                      <span className="text-sm">{variant}</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeVariant(index)}
-                      >
-                        ×
-                      </Button>
-                    </div>
-                  ))}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      checked={selectedVariants.length === variants.length && variants.length > 0}
+                      onCheckedChange={toggleSelectAll}
+                    />
+                    <span className="text-sm text-slate-600">
+                      {selectedVariants.length > 0 ? `${selectedVariants.length} selected` : `${variants.length} variants`}
+                    </span>
+                  </div>
+                  {selectedVariants.length > 0 && (
+                    <Button type="button" variant="destructive" size="sm" onClick={bulkDeleteVariants}>
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete ({selectedVariants.length})
+                    </Button>
+                  )}
+                </div>
+
+                <div className="border rounded-lg overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12">
+                          <Checkbox
+                            checked={selectedVariants.length === variants.length && variants.length > 0}
+                            onCheckedChange={toggleSelectAll}
+                          />
+                        </TableHead>
+                        <TableHead>Product Name</TableHead>
+                        <TableHead>Barcode</TableHead>
+                        <TableHead>Quantity</TableHead>
+                        <TableHead>Import Cost (USD)</TableHead>
+                        <TableHead>Import Cost (CZK)</TableHead>
+                        <TableHead>Import Cost (EUR)</TableHead>
+                        <TableHead className="w-12"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {variants.map((variant) => (
+                        <TableRow key={variant.id}>
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedVariants.includes(variant.id)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedVariants([...selectedVariants, variant.id]);
+                                } else {
+                                  setSelectedVariants(selectedVariants.filter(id => id !== variant.id));
+                                }
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              value={variant.name}
+                              onChange={(e) => updateVariant(variant.id, 'name', e.target.value)}
+                              className="border-0 bg-transparent p-0 focus-visible:ring-0"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              value={variant.barcode}
+                              onChange={(e) => updateVariant(variant.id, 'barcode', e.target.value)}
+                              className="border-0 bg-transparent p-0 focus-visible:ring-0"
+                              placeholder="-"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              value={variant.quantity}
+                              onChange={(e) => updateVariant(variant.id, 'quantity', parseInt(e.target.value) || 0)}
+                              className="border-0 bg-transparent p-0 focus-visible:ring-0"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              value={variant.importCostUsd}
+                              onChange={(e) => updateVariant(variant.id, 'importCostUsd', e.target.value)}
+                              className="border-0 bg-transparent p-0 focus-visible:ring-0"
+                              placeholder="$0.00"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              value={variant.importCostCzk}
+                              onChange={(e) => updateVariant(variant.id, 'importCostCzk', e.target.value)}
+                              className="border-0 bg-transparent p-0 focus-visible:ring-0"
+                              placeholder="0,00 Kč"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              value={variant.importCostEur}
+                              onChange={(e) => updateVariant(variant.id, 'importCostEur', e.target.value)}
+                              className="border-0 bg-transparent p-0 focus-visible:ring-0"
+                              placeholder="0,00 €"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => removeVariant(variant.id)}
+                                  className="text-red-600"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
               </div>
             )}
