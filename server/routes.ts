@@ -755,12 +755,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Bulk delete product variants
-  app.delete('/api/products/:productId/variants/bulk', async (req: any, res) => {
+  app.post('/api/products/:productId/variants/bulk-delete', async (req: any, res) => {
     try {
+      console.log("Bulk delete request body:", req.body);
       const { variantIds } = req.body;
-      if (!Array.isArray(variantIds)) {
+      
+      if (!variantIds || !Array.isArray(variantIds)) {
         return res.status(400).json({ message: "variantIds must be an array" });
       }
+
+      if (variantIds.length === 0) {
+        return res.status(400).json({ message: "No variant IDs provided" });
+      }
+
+      console.log(`Deleting ${variantIds.length} variants:`, variantIds);
 
       for (const variantId of variantIds) {
         await storage.deleteProductVariant(variantId);

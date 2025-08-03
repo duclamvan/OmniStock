@@ -157,7 +157,7 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
     if (selectedVariants.length === 0) return;
     
     try {
-      const response = await apiRequest("DELETE", `/api/products/${productId}/variants/bulk`, { variantIds: selectedVariants });
+      const response = await apiRequest("POST", `/api/products/${productId}/variants/bulk-delete`, { variantIds: selectedVariants });
       
       queryClient.invalidateQueries({ queryKey: [`/api/products/${productId}/variants`] });
       toast({

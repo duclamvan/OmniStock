@@ -5,6 +5,7 @@ Davie Supply is a comprehensive warehouse and order management system designed a
 - **Performance Optimization**: Added bulk API endpoints for product variant operations to improve performance when creating series and deleting multiple variants
 - **Fixed TypeScript Errors**: Resolved type annotations in AddProduct and EditProduct components
 - **Query Optimization**: Added query configuration to prevent excessive re-fetching of product variants data
+- **Bulk Delete Fix**: Changed bulk delete endpoint from DELETE to POST method to ensure request body is properly handled
 
 # User Preferences
 Preferred communication style: Simple, everyday language.
