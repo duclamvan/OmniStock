@@ -653,8 +653,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/products/:productId/variants', async (req: any, res) => {
     try {
-      const data = insertProductVariantSchema.parse({
+      // Convert empty strings to null for numeric fields
+      const cleanedBody = {
         ...req.body,
+        importCostUsd: req.body.importCostUsd === '' ? null : req.body.importCostUsd,
+        importCostCzk: req.body.importCostCzk === '' ? null : req.body.importCostCzk,
+        importCostEur: req.body.importCostEur === '' ? null : req.body.importCostEur,
+      };
+
+      const data = insertProductVariantSchema.parse({
+        ...cleanedBody,
         productId: req.params.productId
       });
       
