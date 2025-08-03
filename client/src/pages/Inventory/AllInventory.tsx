@@ -268,13 +268,31 @@ export default function AllInventory() {
     },
   ];
 
-  const handleDeleteConfirm = () => {
-    Promise.all(selectedProducts.map(product => 
-      deleteProductMutation.mutateAsync(product.id)
-    )).then(() => {
-      setSelectedProducts([]);
-      setShowDeleteDialog(false);
-    });
+  const handleDeleteConfirm = async () => {
+    const results = await Promise.allSettled(
+      selectedProducts.map(product => 
+        deleteProductMutation.mutateAsync(product.id)
+      )
+    );
+    
+    const succeeded = results.filter(r => r.status === 'fulfilled').length;
+    const failed = results.filter(r => r.status === 'rejected').length;
+    
+    if (failed > 0) {
+      toast({
+        title: "Partial Success",
+        description: `${succeeded} products deleted successfully. ${failed} products could not be deleted because they are used in existing orders.`,
+        variant: succeeded > 0 ? "default" : "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: `All ${succeeded} products deleted successfully.`,
+      });
+    }
+    
+    setSelectedProducts([]);
+    setShowDeleteDialog(false);
   };
 
   if (isLoading) {
@@ -508,14 +526,18 @@ export default function AllInventory() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Products</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete {selectedProducts.length} product(s)? This action cannot be undone.
+            <AlertDialogDescription className="space-y-2">
+              <p>Are you sure you want to delete {selectedProducts.length} product(s)?</p>
+              <p className="text-amber-600 font-medium">
+                ⚠️ Products that are used in existing orders cannot be deleted.
+              </p>
+              <p>The system will only delete products that are not referenced in any orders.</p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteConfirm} className="bg-red-600 hover:bg-red-700">
-              Delete
+              Proceed with Deletion
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
