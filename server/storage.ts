@@ -381,7 +381,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createProductVariant(variant: InsertProductVariant): Promise<ProductVariant> {
-    const [newVariant] = await db.insert(productVariants).values(variant).returning();
+    // Clean up numeric fields - convert empty strings to null
+    const cleanedVariant = {
+      ...variant,
+      importCostUsd: variant.importCostUsd || null,
+      importCostCzk: variant.importCostCzk || null,
+      importCostEur: variant.importCostEur || null,
+    };
+    const [newVariant] = await db.insert(productVariants).values(cleanedVariant).returning();
     return newVariant;
   }
 
