@@ -23,6 +23,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const addProductSchema = z.object({
   name: z.string().min(1, "Product name is required"),
@@ -57,6 +66,7 @@ export default function AddProduct() {
   }>>([]);
   const [selectedVariants, setSelectedVariants] = useState<string[]>([]);
   const [seriesInput, setSeriesInput] = useState("");
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newVariant, setNewVariant] = useState({
     name: "",
     barcode: "",
@@ -155,6 +165,11 @@ export default function AddProduct() {
         importCostCzk: "",
         importCostEur: "",
       });
+      setIsAddDialogOpen(false);
+      toast({
+        title: "Success",
+        description: "Product variant added successfully",
+      });
     }
   };
 
@@ -204,6 +219,7 @@ export default function AddProduct() {
       
       setVariants([...variants, ...newVariants]);
       setSeriesInput("");
+      setIsAddDialogOpen(false);
       toast({
         title: "Success",
         description: `Added ${newVariants.length} variants`,
@@ -508,28 +524,151 @@ export default function AddProduct() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
             <CardTitle>Product Variants</CardTitle>
-            <Button type="button" onClick={addVariant} size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Variant
-            </Button>
+            <div className="flex gap-2">
+              {selectedVariants.length > 0 && (
+                <Button type="button" variant="destructive" size="sm" onClick={bulkDeleteVariants}>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Selected ({selectedVariants.length})
+                </Button>
+              )}
+              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button type="button" size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Variant
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[600px]">
+                  <DialogHeader>
+                    <DialogTitle>Add Product Variants</DialogTitle>
+                    <DialogDescription>
+                      Add a single variant or create a series of variants
+                    </DialogDescription>
+                  </DialogHeader>
+                  
+                  {/* Series Creation Section */}
+                  <div className="space-y-4 border-b pb-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="series-input">Create Series</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="series-input"
+                          value={seriesInput}
+                          onChange={(e) => setSeriesInput(e.target.value)}
+                          placeholder='e.g., "Gel Polish <1-100>"'
+                          className="flex-1"
+                        />
+                        <Button 
+                          onClick={addVariantSeries}
+                          disabled={!seriesInput}
+                          type="button"
+                        >
+                          Add Series
+                        </Button>
+                      </div>
+                      <p className="text-xs text-slate-500">
+                        For series: Use format like "Gel Polish &lt;1-100&gt;" to automatically create 100 variants
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Single Variant Section */}
+                  <div className="space-y-4 pt-4">
+                    <div className="text-sm font-medium text-slate-600">Or add a single variant:</div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="variant-name">Variant Name</Label>
+                        <Input
+                          id="variant-name"
+                          value={newVariant.name}
+                          onChange={(e) =>
+                            setNewVariant((prev) => ({ ...prev, name: e.target.value }))
+                          }
+                          placeholder="e.g., Size XL"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="variant-barcode">Barcode</Label>
+                        <Input
+                          id="variant-barcode"
+                          value={newVariant.barcode}
+                          onChange={(e) =>
+                            setNewVariant((prev) => ({ ...prev, barcode: e.target.value }))
+                          }
+                          placeholder="123456789012"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="variant-quantity">Quantity</Label>
+                      <Input
+                        id="variant-quantity"
+                        type="number"
+                        value={newVariant.quantity}
+                        onChange={(e) =>
+                          setNewVariant((prev) => ({ ...prev, quantity: parseInt(e.target.value) || 0 }))
+                        }
+                        placeholder="0"
+                      />
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="variant-cost-usd">Import Cost (USD)</Label>
+                        <Input
+                          id="variant-cost-usd"
+                          value={newVariant.importCostUsd}
+                          onChange={(e) =>
+                            setNewVariant((prev) => ({ ...prev, importCostUsd: e.target.value }))
+                          }
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="variant-cost-czk">Import Cost (CZK)</Label>
+                        <Input
+                          id="variant-cost-czk"
+                          value={newVariant.importCostCzk}
+                          onChange={(e) =>
+                            setNewVariant((prev) => ({ ...prev, importCostCzk: e.target.value }))
+                          }
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="variant-cost-eur">Import Cost (EUR)</Label>
+                        <Input
+                          id="variant-cost-eur"
+                          value={newVariant.importCostEur}
+                          onChange={(e) =>
+                            setNewVariant((prev) => ({ ...prev, importCostEur: e.target.value }))
+                          }
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsAddDialogOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={addVariant}
+                      disabled={!newVariant.name.trim()}
+                    >
+                      Add Variant
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Add Series Input */}
-            <div className="flex space-x-2">
-              <Input
-                value={seriesInput}
-                onChange={(e) => setSeriesInput(e.target.value)}
-                placeholder="Enter variant name"
-                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addVariant())}
-              />
-              <Button type="button" variant="outline" onClick={addVariantSeries}>
-                Add Series
-              </Button>
-            </div>
-
-            <div className="text-sm text-slate-600">
-              <p>For series: Use format like "Gel Polish &lt;1-100&gt;" to automatically create 100 variants</p>
-            </div>
 
             {/* Variants Table */}
             {variants.length > 0 && (
