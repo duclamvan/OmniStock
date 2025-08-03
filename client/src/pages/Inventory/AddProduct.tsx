@@ -85,15 +85,15 @@ export default function AddProduct() {
   });
 
   // Fetch categories, warehouses, and suppliers
-  const { data: categories = [] } = useQuery({
+  const { data: categories = [] } = useQuery<any[]>({
     queryKey: ['/api/categories'],
   });
 
-  const { data: warehouses = [] } = useQuery({
+  const { data: warehouses = [] } = useQuery<any[]>({
     queryKey: ['/api/warehouses'],
   });
 
-  const { data: suppliers = [] } = useQuery({
+  const { data: suppliers = [] } = useQuery<any[]>({
     queryKey: ['/api/suppliers'],
   });
 
