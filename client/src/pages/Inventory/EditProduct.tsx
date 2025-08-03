@@ -25,9 +25,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import ProductVariants from "@/components/ProductVariants";
 
 const editProductSchema = z.object({
   name: z.string().min(1, "Product name is required"),
+  englishName: z.string().optional(),
   sku: z.string().min(1, "SKU is required"),
   categoryId: z.string().optional().or(z.literal("")),
   warehouseId: z.string().optional().or(z.literal("")),
@@ -42,6 +44,10 @@ const editProductSchema = z.object({
   importCostEur: z.coerce.number().min(0).optional(),
   supplierLink: z.string().url().optional().or(z.literal("")),
   barcode: z.string().optional(),
+  length: z.coerce.number().min(0).optional(),
+  width: z.coerce.number().min(0).optional(),
+  height: z.coerce.number().min(0).optional(),
+  weight: z.coerce.number().min(0).optional(),
 });
 
 export default function EditProduct() {
@@ -82,6 +88,7 @@ export default function EditProduct() {
     if (product) {
       form.reset({
         name: product.name || '',
+        englishName: product.englishName || '',
         sku: product.sku || '',
         categoryId: product.categoryId || '',
         warehouseId: product.warehouseId || '',
@@ -96,6 +103,10 @@ export default function EditProduct() {
         importCostEur: product.importCostEur ? parseFloat(product.importCostEur) : undefined,
         supplierLink: product.supplierLink || '',
         barcode: product.barcode || '',
+        length: product.length ? parseFloat(product.length) : undefined,
+        width: product.width ? parseFloat(product.width) : undefined,
+        height: product.height ? parseFloat(product.height) : undefined,
+        weight: product.weight ? parseFloat(product.weight) : undefined,
       });
     }
   }, [product, form]);
@@ -290,6 +301,16 @@ export default function EditProduct() {
               </div>
 
               <div>
+                <Label htmlFor="englishName">English Name</Label>
+                <Input
+                  {...form.register('englishName')}
+                  placeholder="Enter English name (optional)"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
                 <Label htmlFor="sku">SKU</Label>
                 <div className="flex space-x-2">
                   <Input
@@ -303,6 +324,14 @@ export default function EditProduct() {
                 {form.formState.errors.sku && (
                   <p className="text-sm text-red-600 mt-1">{form.formState.errors.sku.message}</p>
                 )}
+              </div>
+
+              <div>
+                <Label htmlFor="barcode">Barcode</Label>
+                <Input
+                  {...form.register('barcode')}
+                  placeholder="Enter barcode"
+                />
               </div>
             </div>
 
@@ -376,7 +405,7 @@ export default function EditProduct() {
             <CardTitle>Inventory & Stock</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="quantity">Current Stock</Label>
                 <Input
@@ -394,12 +423,54 @@ export default function EditProduct() {
                   placeholder="5"
                 />
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Dimensions & Weight */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Dimensions & Weight</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <Label htmlFor="length">Length (cm)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  {...form.register('length')}
+                  placeholder="0.00"
+                />
+              </div>
 
               <div>
-                <Label htmlFor="barcode">Barcode</Label>
+                <Label htmlFor="width">Width (cm)</Label>
                 <Input
-                  {...form.register('barcode')}
-                  placeholder="Enter barcode"
+                  type="number"
+                  step="0.01"
+                  {...form.register('width')}
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="height">Height (cm)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  {...form.register('height')}
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="weight">Weight (kg)</Label>
+                <Input
+                  type="number"
+                  step="0.001"
+                  {...form.register('weight')}
+                  placeholder="0.000"
                 />
               </div>
             </div>
@@ -475,6 +546,9 @@ export default function EditProduct() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Product Variants */}
+        {id && <ProductVariants productId={id} />}
 
         {/* Action Buttons */}
         <div className="flex justify-between">

@@ -91,6 +91,7 @@ export const suppliers = pgTable("suppliers", {
 export const products = pgTable("products", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: varchar("name", { length: 255 }).notNull(),
+  englishName: varchar("english_name", { length: 255 }),
   sku: varchar("sku", { length: 100 }).unique().notNull(),
   categoryId: varchar("category_id").references(() => categories.id),
   warehouseId: varchar("warehouse_id").references(() => warehouses.id),
@@ -106,6 +107,11 @@ export const products = pgTable("products", {
   supplierLink: text("supplier_link"),
   imageUrl: varchar("image_url", { length: 500 }),
   barcode: varchar("barcode", { length: 50 }),
+  // Dimensions and weight
+  length: decimal("length", { precision: 10, scale: 2 }), // in cm
+  width: decimal("width", { precision: 10, scale: 2 }), // in cm
+  height: decimal("height", { precision: 10, scale: 2 }), // in cm
+  weight: decimal("weight", { precision: 10, scale: 3 }), // in kg
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -115,9 +121,11 @@ export const productVariants = pgTable("product_variants", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   productId: varchar("product_id").references(() => products.id, { onDelete: 'cascade' }).notNull(),
   name: varchar("name", { length: 255 }).notNull(),
-  sku: varchar("sku", { length: 100 }),
+  barcode: varchar("barcode", { length: 50 }),
   quantity: integer("quantity").default(0),
-  price: decimal("price", { precision: 12, scale: 2 }),
+  importCostUsd: decimal("import_cost_usd", { precision: 12, scale: 2 }),
+  importCostCzk: decimal("import_cost_czk", { precision: 12, scale: 2 }),
+  importCostEur: decimal("import_cost_eur", { precision: 12, scale: 2 }),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -415,8 +423,17 @@ export const insertProductSchema = createInsertSchema(products).omit({ id: true,
   importCostUsd: z.coerce.string().optional(),
   importCostCzk: z.coerce.string().optional(),
   importCostEur: z.coerce.string().optional(),
+  length: z.coerce.string().optional(),
+  width: z.coerce.string().optional(),
+  height: z.coerce.string().optional(),
+  weight: z.coerce.string().optional(),
 });
-export const insertProductVariantSchema = createInsertSchema(productVariants).omit({ id: true, createdAt: true });
+export const insertProductVariantSchema = createInsertSchema(productVariants).omit({ id: true, createdAt: true }).extend({
+  quantity: z.coerce.number().min(0).optional(),
+  importCostUsd: z.coerce.string().optional(),
+  importCostCzk: z.coerce.string().optional(),
+  importCostEur: z.coerce.string().optional(),
+});
 export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true, updatedAt: true, shippedAt: true }).extend({
   totalAmount: z.coerce.string().optional(),

@@ -28,6 +28,11 @@ export default function ProductDetails() {
     queryKey: ['/api/warehouses'],
   });
 
+  const { data: variants } = useQuery<any[]>({
+    queryKey: [`/api/products/${id}/variants`],
+    enabled: !!id,
+  });
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -114,12 +119,15 @@ export default function ProductDetails() {
                 </div>
               )}
               <div>
-                <CardTitle className="text-2xl mb-2">{product.name}</CardTitle>
+                <CardTitle className="text-2xl mb-1">{product.name}</CardTitle>
+                {product.englishName && (
+                  <div className="text-lg text-slate-600 mb-2">{product.englishName}</div>
+                )}
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="outline">SKU: {product.sku}</Badge>
                   {product.barcode && <Badge variant="outline">Barcode: {product.barcode}</Badge>}
                   <Badge variant={stockBadgeVariant}>
-                    Stock: {product.quantity} {product.unit}
+                    Stock: {product.quantity} {product.unit || 'pcs'}
                   </Badge>
                 </div>
               </div>
@@ -288,6 +296,29 @@ export default function ProductDetails() {
                 <div className="mt-1 font-medium">{product.reorderQuantity || 0}</div>
               </div>
             </div>
+
+            {/* Dimensions & Weight */}
+            {(product.length || product.width || product.height || product.weight) && (
+              <div>
+                <div className="text-sm text-slate-500 mb-2">Dimensions & Weight</div>
+                <div className="grid grid-cols-2 gap-4">
+                  {(product.length || product.width || product.height) && (
+                    <div>
+                      <div className="text-xs text-slate-500">Dimensions (L×W×H)</div>
+                      <div className="mt-1 font-medium">
+                        {product.length || 0} × {product.width || 0} × {product.height || 0} cm
+                      </div>
+                    </div>
+                  )}
+                  {product.weight && (
+                    <div>
+                      <div className="text-xs text-slate-500">Weight</div>
+                      <div className="mt-1 font-medium">{product.weight} kg</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -324,6 +355,49 @@ export default function ProductDetails() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Product Variants */}
+      {variants && variants.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Product Variants</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-2 px-4 text-sm font-medium text-slate-600">Variant Name</th>
+                    <th className="text-left py-2 px-4 text-sm font-medium text-slate-600">Barcode</th>
+                    <th className="text-right py-2 px-4 text-sm font-medium text-slate-600">Quantity</th>
+                    <th className="text-right py-2 px-4 text-sm font-medium text-slate-600">Import Cost (USD)</th>
+                    <th className="text-right py-2 px-4 text-sm font-medium text-slate-600">Import Cost (CZK)</th>
+                    <th className="text-right py-2 px-4 text-sm font-medium text-slate-600">Import Cost (EUR)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {variants.map((variant) => (
+                    <tr key={variant.id} className="border-b hover:bg-slate-50">
+                      <td className="py-2 px-4 text-sm">{variant.name}</td>
+                      <td className="py-2 px-4 text-sm">{variant.barcode || "-"}</td>
+                      <td className="py-2 px-4 text-sm text-right">{variant.quantity}</td>
+                      <td className="py-2 px-4 text-sm text-right">
+                        {variant.importCostUsd ? formatCurrency(variant.importCostUsd, "USD") : "-"}
+                      </td>
+                      <td className="py-2 px-4 text-sm text-right">
+                        {variant.importCostCzk ? formatCurrency(variant.importCostCzk, "CZK") : "-"}
+                      </td>
+                      <td className="py-2 px-4 text-sm text-right">
+                        {variant.importCostEur ? formatCurrency(variant.importCostEur, "EUR") : "-"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Recent Orders */}
       <Card>

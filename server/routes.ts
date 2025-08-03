@@ -8,6 +8,7 @@ import path from "path";
 import { promises as fs } from "fs";
 import {
   insertProductSchema,
+  insertProductVariantSchema,
   insertOrderSchema,
   insertCustomerSchema,
   insertCategorySchema,
@@ -636,6 +637,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.status(500).json({ message: "Failed to delete product" });
+    }
+  });
+
+  // Product Variants
+  app.get('/api/products/:productId/variants', async (req, res) => {
+    try {
+      const variants = await storage.getProductVariants(req.params.productId);
+      res.json(variants);
+    } catch (error) {
+      console.error("Error fetching product variants:", error);
+      res.status(500).json({ message: "Failed to fetch product variants" });
+    }
+  });
+
+  app.post('/api/products/:productId/variants', async (req: any, res) => {
+    try {
+      const data = insertProductVariantSchema.parse({
+        ...req.body,
+        productId: req.params.productId
+      });
+      
+      const variant = await storage.createProductVariant(data);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'created',
+        entityType: 'product_variant',
+        entityId: variant.id,
+        description: `Created variant: ${variant.name}`,
+      });
+      
+      res.json(variant);
+    } catch (error) {
+      console.error("Error creating product variant:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create product variant" });
+    }
+  });
+
+  app.patch('/api/products/:productId/variants/:id', async (req: any, res) => {
+    try {
+      const updates = req.body;
+      const variant = await storage.updateProductVariant(req.params.id, updates);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'updated',
+        entityType: 'product_variant',
+        entityId: variant.id,
+        description: `Updated variant: ${variant.name}`,
+      });
+      
+      res.json(variant);
+    } catch (error) {
+      console.error("Error updating product variant:", error);
+      res.status(500).json({ message: "Failed to update product variant" });
+    }
+  });
+
+  app.delete('/api/products/:productId/variants/:id', async (req: any, res) => {
+    try {
+      await storage.deleteProductVariant(req.params.id);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'deleted',
+        entityType: 'product_variant',
+        entityId: req.params.id,
+        description: `Deleted product variant`,
+      });
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting product variant:", error);
+      res.status(500).json({ message: "Failed to delete product variant" });
     }
   });
 
