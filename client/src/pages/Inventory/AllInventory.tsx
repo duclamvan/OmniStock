@@ -131,7 +131,7 @@ export default function AllInventory() {
       key: "name",
       header: "Product",
       sortable: true,
-      className: "min-w-[300px]",
+      className: "min-w-[150px] max-w-[200px]",
       cell: (product) => (
         <div className="flex items-center gap-2">
           {product.imageUrl ? (
@@ -148,9 +148,9 @@ export default function AllInventory() {
               <Package className="h-5 w-5 text-gray-400" />
             </div>
           )}
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <Link href={`/inventory/products/${product.id}`}>
-              <span className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer block">
+              <span className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer block truncate" title={product.name}>
                 {product.name}
               </span>
             </Link>
