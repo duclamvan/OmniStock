@@ -13,7 +13,13 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { Plus, Search, Edit, Trash2, Package, AlertTriangle } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Package, AlertTriangle, MoreVertical, Archive } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,13 +39,13 @@ export default function AllInventory() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
   const [orderCounts, setOrderCounts] = useState<{ [productId: string]: number }>({});
-  const [showInactive, setShowInactive] = useState(false);
-  const [ctrlPressed, setCtrlPressed] = useState(false);
+  const [showArchive, setShowArchive] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
 
   const { data: products = [], isLoading, error } = useQuery({
-    queryKey: showInactive ? ['/api/products', 'all'] : ['/api/products'],
+    queryKey: showArchive ? ['/api/products', 'archive'] : ['/api/products'],
     queryFn: async () => {
-      const url = showInactive ? '/api/products?includeInactive=true' : '/api/products';
+      const url = showArchive ? '/api/products?includeInactive=true' : '/api/products';
       const response = await fetch(url, {
         credentials: 'include',
       });
@@ -54,37 +60,38 @@ export default function AllInventory() {
     queryKey: ['/api/categories'],
   });
 
-  // Keyboard event listeners for hidden feature
+  // Triple-click event listener for hidden dropdown
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.metaKey) {
-        setCtrlPressed(true);
-      }
-      // Ctrl/Cmd + Shift + I to toggle inactive products
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'I') {
-        e.preventDefault();
-        setShowInactive(prev => !prev);
-        toast({
-          title: showInactive ? "Hidden" : "Showing",
-          description: showInactive ? "Inactive products hidden" : "Showing inactive products",
-        });
+    let clickCount = 0;
+    let clickTimer: NodeJS.Timeout;
+
+    const handleClick = (e: MouseEvent) => {
+      // Check if click is on the header area
+      const target = e.target as HTMLElement;
+      const header = target.closest('.inventory-header');
+      
+      if (header) {
+        clickCount++;
+        
+        if (clickCount === 3) {
+          setShowDropdown(true);
+          clickCount = 0;
+        }
+        
+        clearTimeout(clickTimer);
+        clickTimer = setTimeout(() => {
+          clickCount = 0;
+        }, 500);
       }
     };
 
-    const handleKeyUp = (e: KeyboardEvent) => {
-      if (!e.ctrlKey && !e.metaKey) {
-        setCtrlPressed(false);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('click', handleClick);
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('click', handleClick);
+      clearTimeout(clickTimer);
     };
-  }, [showInactive, toast]);
+  }, []);
 
   // Error handling
   useEffect(() => {
@@ -163,8 +170,16 @@ export default function AllInventory() {
     },
   });
 
-  // Filter products based on search query and category
+  // Filter products based on search query, category, and archive status
   const filteredProducts = products?.filter((product: any) => {
+    // Archive filter - only show inactive products in archive mode
+    if (showArchive && product.isActive) {
+      return false;
+    }
+    if (!showArchive && !product.isActive) {
+      return false;
+    }
+
     // Category filter
     if (categoryFilter !== "all" && product.categoryId !== categoryFilter) {
       return false;
@@ -327,7 +342,43 @@ export default function AllInventory() {
   ];
 
   // Bulk actions
-  const bulkActions = [
+  const bulkActions = showArchive ? [
+    {
+      label: "Restore Selected",
+      action: async (products: any[]) => {
+        const results = await Promise.allSettled(
+          products.map(product => 
+            restoreProductMutation.mutateAsync(product.id)
+          )
+        );
+        
+        const succeeded = results.filter(r => r.status === 'fulfilled').length;
+        const failed = results.filter(r => r.status === 'rejected').length;
+        
+        if (failed > 0) {
+          toast({
+            title: "Partial Success",
+            description: `${succeeded} products restored. ${failed} products could not be restored.`,
+            variant: succeeded > 0 ? "default" : "destructive",
+          });
+        } else {
+          toast({
+            title: "Success",
+            description: `All ${succeeded} products have been restored.`,
+          });
+        }
+      },
+    },
+    {
+      label: "Export",
+      action: (products: any[]) => {
+        toast({
+          title: "Export",
+          description: `Exporting ${products.length} archived products...`,
+        });
+      },
+    },
+  ] : [
     {
       label: "Update Stock",
       action: (products: any[]) => {
@@ -408,98 +459,110 @@ export default function AllInventory() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 inventory-header">
         <div className="flex items-center gap-3">
-          <h1 className="text-mobile-2xl font-bold text-slate-900">Inventory</h1>
-          {/* Hidden toggle button - only visible when Ctrl/Cmd is pressed */}
-          {ctrlPressed && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setShowInactive(!showInactive);
-                toast({
-                  title: showInactive ? "Hidden" : "Showing",
-                  description: showInactive ? "Inactive products hidden" : "Showing inactive products",
-                });
-              }}
-              className="text-xs"
-            >
-              {showInactive ? "Hide" : "Show"} Inactive
-            </Button>
+          <h1 className="text-mobile-2xl font-bold text-slate-900">
+            {showArchive ? "Archive" : "Inventory"}
+          </h1>
+          {/* Hidden dropdown - appears after triple-click on header */}
+          {showDropdown && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem 
+                  onClick={() => {
+                    setShowArchive(!showArchive);
+                    setShowDropdown(false);
+                  }}
+                >
+                  <Archive className="mr-2 h-4 w-4" />
+                  {showArchive ? "View Active Products" : "View Archive"}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Button variant="outline" size="sm" className="flex-1 sm:flex-none touch-target">
-            Import XLS
-          </Button>
-          <Link href="/inventory/add" className="flex-1 sm:flex-none">
-            <Button className="w-full touch-target">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Product
-            </Button>
-          </Link>
+          {!showArchive && (
+            <>
+              <Button variant="outline" size="sm" className="flex-1 sm:flex-none touch-target">
+                Import XLS
+              </Button>
+              <Link href="/inventory/add" className="flex-1 sm:flex-none">
+                <Button className="w-full touch-target">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Product
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center">
-              <Package className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
-              <div className="ml-3 sm:ml-4">
-                <p className="text-mobile-sm font-medium text-slate-600">Total Products</p>
-                <p className="text-mobile-xl font-bold text-slate-900">{products?.length || 0}</p>
+      {!showArchive && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+          <Card>
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center">
+                <Package className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
+                <div className="ml-3 sm:ml-4">
+                  <p className="text-mobile-sm font-medium text-slate-600">Total Products</p>
+                  <p className="text-mobile-xl font-bold text-slate-900">{filteredProducts?.length || 0}</p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center">
-              <AlertTriangle className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
-              <div className="ml-3 sm:ml-4">
-                <p className="text-mobile-sm font-medium text-slate-600">Low Stock</p>
-                <p className="text-mobile-xl font-bold text-slate-900">
-                  {(products as any[])?.filter((p: any) => p.quantity <= p.lowStockAlert).length || 0}
-                </p>
+          <Card>
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center">
+                <AlertTriangle className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
+                <div className="ml-3 sm:ml-4">
+                  <p className="text-mobile-sm font-medium text-slate-600">Low Stock</p>
+                  <p className="text-mobile-xl font-bold text-slate-900">
+                    {filteredProducts?.filter((p: any) => p.quantity <= p.lowStockAlert).length || 0}
+                  </p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center">
-              <Package className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
-              <div className="ml-3 sm:ml-4">
-                <p className="text-mobile-sm font-medium text-slate-600">Categories</p>
-                <p className="text-mobile-xl font-bold text-slate-900">{(categories as any[])?.length || 0}</p>
+          <Card>
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center">
+                <Package className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
+                <div className="ml-3 sm:ml-4">
+                  <p className="text-mobile-sm font-medium text-slate-600">Categories</p>
+                  <p className="text-mobile-xl font-bold text-slate-900">{(categories as any[])?.length || 0}</p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center">
-              <Package className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600" />
-              <div className="ml-3 sm:ml-4">
-                <p className="text-mobile-sm font-medium text-slate-600">Total Value</p>
-                <p className="text-mobile-lg font-bold text-slate-900 break-all">
-                  {formatCurrency(
-                    (products as any[])?.reduce((sum: number, p: any) => 
-                      sum + (parseFloat(p.priceEur || '0') * p.quantity), 0) || 0, 
-                    'EUR'
-                  )}
-                </p>
+          <Card>
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center">
+                <Package className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600" />
+                <div className="ml-3 sm:ml-4">
+                  <p className="text-mobile-sm font-medium text-slate-600">Total Value</p>
+                  <p className="text-mobile-lg font-bold text-slate-900 break-all">
+                    {formatCurrency(
+                      filteredProducts?.reduce((sum: number, p: any) => 
+                        sum + (parseFloat(p.priceEur || '0') * p.quantity), 0) || 0, 
+                      'EUR'
+                    )}
+                  </p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Filters */}
       <Card>
@@ -534,7 +597,9 @@ export default function AllInventory() {
       {/* Products Table */}
       <Card>
         <CardHeader className="p-4 sm:p-6">
-          <CardTitle className="text-mobile-lg">Products ({filteredProducts?.length || 0})</CardTitle>
+          <CardTitle className="text-mobile-lg">
+            {showArchive ? `Archived Products (${filteredProducts?.length || 0})` : `Products (${filteredProducts?.length || 0})`}
+          </CardTitle>
         </CardHeader>
         <CardContent className="p-0 sm:p-6">
           {/* Mobile Card View */}
