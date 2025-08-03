@@ -1,238 +1,72 @@
 # Overview
-
-Davie Supply is a comprehensive warehouse and order management system built as a full-stack web application. The system handles complete order lifecycle management from creation to fulfillment, inventory tracking, customer management, and financial reporting with multi-currency support. It features real-time Vietnamese diacritics search functionality and integrates with external shipping APIs for order tracking.
+Davie Supply is a comprehensive warehouse and order management system designed as a full-stack web application. Its primary purpose is to manage the complete order lifecycle from creation to fulfillment, track inventory, manage customers, and provide financial reporting with multi-currency support. Key capabilities include real-time Vietnamese diacritics search and integration with external shipping APIs for order tracking. The business vision is to provide a robust, efficient platform for streamlined supply chain operations.
 
 # User Preferences
-
 Preferred communication style: Simple, everyday language.
 
 # System Architecture
 
-## Frontend Architecture
-The client-side is built with React and TypeScript using Vite as the build tool. The application follows a component-based architecture with:
-- **UI Framework**: Shadcn/ui components built on Radix UI primitives for consistent design
-- **Styling**: Tailwind CSS with CSS variables for theming support
-- **State Management**: TanStack Query for server state management and caching
-- **Routing**: Wouter for lightweight client-side routing
-- **Form Handling**: React Hook Form with Zod validation schemas
+## Frontend
+The client-side uses React and TypeScript with Vite. It features a component-based architecture utilizing:
+- **UI Framework**: Shadcn/ui (Radix UI primitives)
+- **Styling**: Tailwind CSS with CSS variables
+- **State Management**: TanStack Query
+- **Routing**: Wouter
+- **Form Handling**: React Hook Form with Zod
 
-## Backend Architecture
-The server-side uses Express.js with TypeScript in an ESM module setup:
+## Backend
+The server-side is built with Express.js and TypeScript (ESM modules). Key aspects include:
 - **API Design**: RESTful API endpoints with consistent error handling
-- **Database**: PostgreSQL with Neon serverless driver for connection pooling
-- **ORM**: Drizzle ORM for type-safe database operations and migrations
-- **Session Management**: Express sessions with PostgreSQL storage for persistence
+- **Database**: PostgreSQL with Neon serverless driver
+- **ORM**: Drizzle ORM for type-safe operations and migrations
+- **Session Management**: Express sessions with PostgreSQL storage
 
 ## Authentication System
-The application uses Replit's OpenID Connect (OIDC) authentication system:
-- **Provider**: Replit OIDC for user authentication
-- **Session Storage**: PostgreSQL-backed sessions with connect-pg-simple
-- **Security**: HTTP-only cookies with secure flags for production
+The application leverages Replit's OpenID Connect (OIDC) for user authentication, using PostgreSQL-backed sessions with HTTP-only cookies for security.
 
 ## Database Design
-The database schema supports a comprehensive e-commerce workflow:
-- **Core Entities**: Users, products, orders, customers, warehouses, suppliers
-- **Order Management**: Complete order lifecycle with status tracking, payment processing
-- **Inventory System**: Product variants, stock tracking, warehouse management
-- **Financial Tracking**: Sales, expenses, purchases with multi-currency support
-- **Audit Trail**: User activities and system events logging
+The schema supports a comprehensive e-commerce workflow, including core entities like users, products, orders, customers, warehouses, and suppliers. It covers complete order lifecycle management, inventory tracking (product variants, stock), financial tracking (sales, expenses, purchases with multi-currency), and an audit trail for user activities.
 
 ## Multi-Currency Support
-The system supports five currencies (CZK, EUR, USD, VND, CNY) with:
-- **Exchange Rates**: Simplified rate conversion system (production would use real-time APIs)
-- **Currency Utilities**: Conversion functions with formatting for display
-- **Database Schema**: Currency enums enforced at database level
+The system supports five currencies (CZK, EUR, USD, VND, CNY) with simplified exchange rate conversion and currency utility functions.
 
 ## Search Functionality
-Vietnamese diacritics search implementation:
-- **Normalization**: Custom Vietnamese character mapping for accent-insensitive search
-- **Real-time Search**: Debounced search across all entities
-- **Search Utility**: Reusable search matcher functions for consistent behavior
+Includes real-time Vietnamese diacritics search with custom character normalization for accent-insensitive results across all entities.
 
 ## Development Setup
-The project uses a monorepo structure with shared schema:
-- **Shared Types**: Common TypeScript types and Zod schemas in `/shared`
-- **Path Aliases**: Configured aliases for clean imports (@, @shared, @assets)
-- **Development Tools**: Hot reload, error overlays, and Replit integration plugins
+The project is structured as a monorepo with shared TypeScript types and Zod schemas. It uses path aliases and development tools like hot reload for efficient development.
+
+## Core Features
+- **Product Management**: Comprehensive product details page with key metrics, pricing, and location details.
+- **Order Management**: Enhanced order creation with shipping and payment method selection, automatic shipping cost calculation, and full CRUD operations.
+- **Responsive Design**: Mobile-first responsive design implemented across all pages, featuring clean, card-based layouts.
+- **Address Autocomplete**: Integration with OpenStreetMap's Nominatim API for real address geocoding in forms.
+- **Data Management**: Comprehensive mock data seeding system for testing and development.
+- **Reusable Components**: Generic DataTable component with features like bulk selection, sorting, pagination, and bulk actions.
+- **Image Upload**: Image upload functionality for products via Multer, storing images locally.
+- **Reporting**: Comprehensive sales, inventory, customer, and financial reports with filtering capabilities.
+- **CRUD Operations**: Full CRUD functionality implemented for warehouses, customers, sales/discounts, and products/orders, with robust error handling and foreign key constraint validation.
 
 # External Dependencies
 
 ## Database Services
-- **Neon PostgreSQL**: Serverless PostgreSQL database with connection pooling
-- **Drizzle Kit**: Database migration and schema management tools
+- **Neon PostgreSQL**: Serverless PostgreSQL database.
+- **Drizzle Kit**: Database migration and schema management.
 
-## Authentication Services  
-- **Replit OIDC**: OAuth 2.0/OpenID Connect authentication provider
-- **OpenID Client**: OIDC client library for Passport.js integration
+## Authentication Services
+- **Replit OIDC**: OAuth 2.0/OpenID Connect provider.
+- **OpenID Client**: OIDC client library.
 
 ## UI and Styling
-- **Radix UI**: Headless UI component primitives for accessibility
-- **Tailwind CSS**: Utility-first CSS framework with design system
-- **Lucide React**: SVG icon library for consistent iconography
+- **Radix UI**: Headless UI component primitives.
+- **Tailwind CSS**: Utility-first CSS framework.
+- **Lucide React**: SVG icon library.
 
 ## Development and Build Tools
-- **Vite**: Frontend build tool with React plugin and development server
-- **ESBuild**: Fast JavaScript bundler for production builds
-- **TypeScript**: Type safety across the entire application stack
+- **Vite**: Frontend build tool.
+- **ESBuild**: Fast JavaScript bundler.
+- **TypeScript**: Type safety across the application.
 
-## Recent Changes
-
-## Enhanced Order Management with Shipping & Payment Methods (August 3, 2025)
-- Added shipping method dropdown (GLS, PPL, DHL, DPD) to Add Order page
-- Added payment method dropdown (Bank Transfer, PayPal, COD, Cash) to Add Order page
-- Implemented automatic shipping cost calculation based on shipping method and customer country
-- Created shipping cost calculator with country-specific rates:
-  - Czech Republic: rates in CZK (GLS: 150, PPL: 180, DHL: 200, DPD: 160)
-  - Germany & Austria: rates in EUR (varying by method)
-  - Default European rates for other countries
-- Added "Actual Shipping Cost" auto-calculated field (read-only)
-- Updated database schema with new enum types and fields for shipping/payment methods
-- Facebook Name field automatically mirrors Customer Name input but remains editable
-- Fixed revenue vs profit calculation bug using actual product import costs from database
-
-## Mobile-First Responsive Design Implementation (August 3, 2025)
-- Implemented comprehensive mobile-first responsive design across all pages
-- Created clean, card-based mobile views that eliminate confusing lines and borders
-- Mobile card design features:
-  - Rounded corners with subtle shadows for better visual separation
-  - Consolidated information into logical rows without excessive dividers
-  - Touch-friendly icon buttons (44px minimum touch targets)
-  - Responsive text sizes using custom mobile text utilities
-  - Simplified layouts that stack vertically on small screens
-- Updated components:
-  - Dashboard: Responsive metric cards and mobile-optimized charts
-  - AllOrders: Clean card layout with customer info, status badges, and financial data
-  - AllInventory: Product cards with avatar images, stock status, and pricing info
-  - Mobile breakpoints: sm:640px, md:768px, lg:1024px
-- User feedback addressed: Removed confusing table lines on mobile for cleaner appearance
-
-## Address Autocomplete with Real Geocoding API (August 2, 2025)
-- Integrated OpenStreetMap's Nominatim API for real address geocoding
-- Replaced mock address database with live API calls in all forms:
-  - AddCustomer: Full implementation with real-time address search
-  - AddOrder: Updated to use geocoding API (in progress)
-  - EditOrder: Pending update
-- Created `/api/geocode` endpoint that:
-  - Accepts search queries and returns up to 10 matching addresses
-  - Focuses on Czech Republic, Germany, and Austria (country codes: cz, de, at)
-  - Returns formatted addresses with street, city, zip code, and country fields
-  - No API key required - uses free OpenStreetMap service
-- Address search features:
-  - Minimum 2 characters to trigger search
-  - Real-time suggestions as user types
-  - Auto-fills address fields when suggestion is selected
-  - Loading states while fetching results
-
-## Mock Data Implementation (August 2, 2025)
-- Created comprehensive mock data seeding system:
-  - Added 10+ new products with realistic import costs
-  - Created purchases records for inventory tracking
-  - Added operational expenses (rent, salaries, utilities, shipping)
-  - Expanded customer base with VIP and business customers
-  - Added international warehouses (Berlin, Vienna)
-  - Created promotional sales and discount codes
-  - Generated additional orders with varied statuses
-- Fixed profit calculation to properly account for product costs
-- Dashboard now shows realistic profit margins vs revenue
-- All entities have comprehensive mock data for testing
-
-## DataTable Component Implementation (August 2, 2025)
-- Created reusable DataTable component with advanced features:
-  - Bulk selection with checkbox column
-  - Sortable columns with click-to-sort functionality
-  - Configurable pagination with items per page options (10/20/50/100)
-  - Bulk actions support with customizable buttons
-  - TypeScript generic support for type safety
-- Implemented DataTable across all main pages:
-  - AllOrders page with bulk actions (mark as shipped, cancel, export)
-  - AllInventory page with bulk operations (update stock, delete, export)
-  - AllWarehouses page with bulk actions (delete, export)
-  - AllSales page with bulk actions (activate, deactivate, delete, export)
-  - AllCustomers page with bulk actions (send email, update type, delete, export)
-- All tables now have consistent UI/UX with sortable columns and pagination controls
-
-## Image Upload Functionality (August 2, 2025)
-- Implemented image upload feature using multer for product management
-- Added `/api/upload` endpoint for handling file uploads
-- Images are stored in `/public/images/` directory
-- Updated AddProduct and EditProduct components to support image uploads
-- Fixed image display in inventory list with proper fallback handling
-
-## Order Status Filtering (August 2, 2025)
-- Created ToFulfill and Shipped pages as filtered views of AllOrders
-- Updated AllOrders component to accept filter prop for status-based filtering
-- Removed redundant status filter dropdown from filtered pages
-- Maintained consistent UI/UX across all order views
-
-## Dashboard Currency Conversion (August 2, 2025)
-- Integrated Fawaz Ahmed's free currency API for real-time exchange rates
-- Updated dashboard metrics endpoint to convert all amounts to EUR
-- Modified all dashboard cards to display values in EUR with currency conversion
-- Updated Revenue, Expenses, and Yearly charts to use real data with EUR conversion
-- Added real-time currency conversion for orders from CZK, USD, VND, CNY to EUR
-
-## Delete Functionality for Edit Pages (August 2, 2025)
-- Added DELETE endpoints for orders and products in backend routes
-- Implemented delete buttons on EditOrder and EditProduct pages
-- Positioned delete buttons at bottom left on same line as cancel/save buttons
-- Added confirmation dialogs with entity names to prevent accidental deletions
-- Enhanced error handling for foreign key constraints (products used in orders)
-
-## Mock Data Currency Update (August 2, 2025)
-- Updated all mock orders to use only CZK or EUR currencies (removed VND, USD, CNY)
-- Linked order items to actual products from inventory database
-- Recalculated order totals based on actual product prices in respective currencies
-- Orders now alternate between CZK and EUR for realistic multi-currency testing
-
-## Inventory Delete Functionality (August 2, 2025)
-- Implemented delete functionality for trash icons in inventory list page
-- Added confirmation dialogs with product names for all delete actions
-- Improved error handling with user-friendly messages for constraint violations
-- Products used in orders show clear error message explaining they cannot be deleted
-- Backend returns 409 status code for foreign key constraint violations
-
-## Complete Backend Implementation for Warehouses and Customers (August 2, 2025)
-- Implemented full CRUD operations for warehouses:
-  - GET /api/warehouses - List all warehouses
-  - POST /api/warehouses - Create new warehouse  
-  - GET /api/warehouses/:id - Get warehouse by ID
-  - PATCH /api/warehouses/:id - Update warehouse
-  - DELETE /api/warehouses/:id - Delete warehouse with constraint validation
-- Implemented full CRUD operations for customers:
-  - GET /api/customers - List all customers with search support
-  - POST /api/customers - Create new customer
-  - GET /api/customers/:id - Get customer by ID  
-  - PATCH /api/customers/:id - Update customer
-  - DELETE /api/customers/:id - Delete customer with constraint validation
-- All endpoints follow REST standards with appropriate HTTP status codes
-- Delete operations return 409 for foreign key constraint violations
-- User activity tracking for all create, update, and delete operations
-
-## Order Items Update Fix (August 2, 2025)
-- Fixed issue where edited order items weren't persisting to database
-- Updated PATCH /api/orders/:id endpoint to handle order items updates
-- Added deleteOrderItems method to storage class to clear old items before adding updated ones
-- Fixed getOrderById method to include order items when fetching single order
-- Order editing now properly saves both order details and all item changes
-- Items with updated prices and quantities now persist correctly after saving
-
-## Complete Backend Implementation for Sales and Reports (August 2, 2025)
-- Implemented full CRUD operations for sales/discounts:
-  - GET /api/sales - List all sales
-  - GET /api/sales/:id - Get sale by ID
-  - POST /api/sales - Create new sale
-  - PATCH /api/sales/:id - Update sale
-  - DELETE /api/sales/:id - Delete sale with constraint validation
-- Implemented comprehensive reports endpoints:
-  - GET /api/reports/sales-summary - Sales summary with date range filtering
-  - GET /api/reports/inventory-summary - Inventory analytics by warehouse and category
-  - GET /api/reports/customer-analytics - Customer metrics and segmentation
-  - GET /api/reports/financial-summary - Financial overview with monthly trends
-- Reports support query parameters for filtering by date, year, and month
-- Financial reports calculate revenue, expenses, purchases, and profit margins
-- Customer analytics includes VIP segmentation based on spending thresholds
-
-# Future Integrations
-- **GLS Shipping API**: Planned integration for real-time order tracking
-- **Real-time Exchange Rates**: API integration for accurate currency conversion
-- **AfterShip**: Third-party shipping tracking service integration
+## Other APIs
+- **OpenStreetMap Nominatim API**: For address geocoding.
+- **Fawaz Ahmed's free currency API**: For real-time exchange rates.

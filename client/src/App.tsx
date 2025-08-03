@@ -14,6 +14,7 @@ import EditOrder from "@/pages/Orders/EditOrder";
 import AllInventory from "@/pages/Inventory/AllInventory";
 import AddProduct from "@/pages/Inventory/AddProduct";
 import EditProduct from "@/pages/Inventory/EditProduct";
+import ProductDetails from "@/pages/Products/ProductDetails";
 import AllWarehouses from "@/pages/Warehouse/AllWarehouses";
 import EditWarehouse from "@/pages/Warehouse/EditWarehouse";
 import AllSales from "@/pages/Sales/AllSales";
@@ -43,8 +44,11 @@ function Router() {
           {() => <div>Pre-orders page coming soon</div>}
         </Route>
         <Route path="/inventory" component={AllInventory} />
+        <Route path="/inventory/products" component={AllInventory} />
+        <Route path="/inventory/products/:id" component={ProductDetails} />
         <Route path="/inventory/add" component={AddProduct} />
         <Route path="/inventory/:id/edit" component={EditProduct} />
+        <Route path="/inventory/products/edit/:id" component={EditProduct} />
         <Route path="/warehouse" component={AllWarehouses} />
         <Route path="/warehouses/add">
           {() => <div>Add Warehouse page coming soon</div>}

@@ -148,7 +148,7 @@ export default function AllInventory() {
             </div>
           )}
           <div>
-            <Link href={`/inventory/${product.id}/edit`}>
+            <Link href={`/inventory/products/${product.id}`}>
               <span className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer">
                 {product.name}
               </span>
@@ -418,7 +418,9 @@ export default function AllInventory() {
                         <AvatarFallback className="text-sm bg-gray-100">{product.name?.charAt(0) || 'P'}</AvatarFallback>
                       </Avatar>
                       <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-gray-900 truncate">{product.name}</p>
+                        <Link href={`/inventory/products/${product.id}`}>
+                          <p className="font-semibold text-gray-900 truncate hover:text-blue-600 cursor-pointer">{product.name}</p>
+                        </Link>
                         <p className="text-xs text-gray-500">SKU: {product.sku}</p>
                       </div>
                     </div>
