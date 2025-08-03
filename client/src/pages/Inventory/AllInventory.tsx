@@ -40,7 +40,6 @@ export default function AllInventory() {
   const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
   const [orderCounts, setOrderCounts] = useState<{ [productId: string]: number }>({});
   const [showArchive, setShowArchive] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
 
   const { data: products = [], isLoading, error } = useQuery({
     queryKey: showArchive ? ['/api/products', 'archive'] : ['/api/products'],
@@ -60,38 +59,7 @@ export default function AllInventory() {
     queryKey: ['/api/categories'],
   });
 
-  // Triple-click event listener for hidden dropdown
-  useEffect(() => {
-    let clickCount = 0;
-    let clickTimer: NodeJS.Timeout;
 
-    const handleClick = (e: MouseEvent) => {
-      // Check if click is on the header area
-      const target = e.target as HTMLElement;
-      const header = target.closest('.inventory-header');
-      
-      if (header) {
-        clickCount++;
-        
-        if (clickCount === 3) {
-          setShowDropdown(true);
-          clickCount = 0;
-        }
-        
-        clearTimeout(clickTimer);
-        clickTimer = setTimeout(() => {
-          clickCount = 0;
-        }, 500);
-      }
-    };
-
-    window.addEventListener('click', handleClick);
-
-    return () => {
-      window.removeEventListener('click', handleClick);
-      clearTimeout(clickTimer);
-    };
-  }, []);
 
   // Error handling
   useEffect(() => {
@@ -459,34 +427,32 @@ export default function AllInventory() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 inventory-header">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <h1 className="text-mobile-2xl font-bold text-slate-900">
             {showArchive ? "Archive" : "Inventory"}
           </h1>
-          {/* Hidden dropdown - appears after triple-click on header */}
-          {showDropdown && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                <DropdownMenuItem 
-                  onClick={() => {
-                    setShowArchive(!showArchive);
-                    setShowDropdown(false);
-                  }}
-                >
-                  <Archive className="mr-2 h-4 w-4" />
-                  {showArchive ? "View Active Products" : "View Archive"}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
+          {/* Archive dropdown - always visible */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-9 px-3">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem 
+                onClick={() => {
+                  setShowArchive(!showArchive);
+                }}
+              >
+                <Archive className="mr-2 h-4 w-4" />
+                {showArchive ? "View Active Products" : "View Archive"}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
           {!showArchive && (
             <>
               <Button variant="outline" size="sm" className="flex-1 sm:flex-none touch-target">
