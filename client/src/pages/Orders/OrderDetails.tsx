@@ -5,6 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "wouter";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { 
   ArrowLeft, 
   Edit, 
@@ -27,7 +33,9 @@ import {
   AlertCircle,
   Printer,
   Download,
-  Share2
+  Share2,
+  MoreVertical,
+  RotateCcw
 } from "lucide-react";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { useToast } from "@/hooks/use-toast";
@@ -299,15 +307,37 @@ export default function OrderDetails() {
                           <span>{formatCurrency(item.price || 0, order.currency || 'EUR')} each</span>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-semibold text-slate-900">
-                          {formatCurrency(item.total || 0, order.currency || 'EUR')}
-                        </p>
-                        {item.discount > 0 && (
-                          <p className="text-sm text-green-600">
-                            -{formatCurrency(item.discount || 0, order.currency || 'EUR')} discount
+                      <div className="flex items-center gap-2">
+                        <div className="text-right">
+                          <p className="font-semibold text-slate-900">
+                            {formatCurrency(item.total || 0, order.currency || 'EUR')}
                           </p>
-                        )}
+                          {item.discount > 0 && (
+                            <p className="text-sm text-green-600">
+                              -{formatCurrency(item.discount || 0, order.currency || 'EUR')} discount
+                            </p>
+                          )}
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem 
+                              onClick={() => {
+                                toast({
+                                  title: "Coming Soon",
+                                  description: "Return ticket functionality will be available soon",
+                                });
+                              }}
+                            >
+                              <RotateCcw className="mr-2 h-4 w-4" />
+                              Create Return ticket
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                     {index < order.items.length - 1 && <Separator className="mt-4" />}
