@@ -22,6 +22,7 @@ import EditDiscount from "@/pages/Discounts/EditDiscount";
 import AllCustomers from "@/pages/Customers/AllCustomers";
 import AddCustomer from "@/pages/Customers/AddCustomer";
 import EditCustomer from "@/pages/Customers/EditCustomer";
+import CustomerDetails from "@/pages/Customers/CustomerDetails";
 
 function Router() {
   return (
@@ -62,6 +63,7 @@ function Router() {
         <Route path="/customers" component={AllCustomers} />
         <Route path="/customers/add" component={AddCustomer} />
         <Route path="/customers/:id/edit" component={EditCustomer} />
+        <Route path="/customers/:id" component={CustomerDetails} />
         <Route path="/reports">
           {() => <div>Reports page coming soon</div>}
         </Route>

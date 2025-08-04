@@ -11,7 +11,8 @@ Davie Supply is a comprehensive warehouse and order management system designed a
 - **Sales to Discounts Rename**: Renamed all "Sales" references to "Discounts" throughout the application including navigation, routes (/sales to /discounts), API endpoints (/api/sales to /api/discounts), and all UI components
 - **Discounts Data Reset**: Added /api/reseed-discounts endpoint to clear and repopulate discount data with fresh examples
 - **Customers Page Update**: Enhanced customers table with order statistics (total orders, total sales, last purchase date) and added Messenger integration with blacklist functionality placeholder
-- **Edit Customer Page**: Created comprehensive edit customer form with prefilled data, address lookup integration, organized sections for basic info, contact & address (combined), notes, and order history with clickable order links
+- **Edit Customer Page**: Created comprehensive edit customer form with prefilled data, address lookup integration, organized sections for basic info, contact & address (combined), and notes
+- **Customer Details Page**: Added dedicated customer details view showing customer type, total orders, total spent, contact & address info, notes, and complete order history with clickable order links
 
 # User Preferences
 Preferred communication style: Simple, everyday language.

@@ -84,7 +84,7 @@ export default function AllCustomers() {
       sortable: true,
       cell: (customer) => (
         <div>
-          <Link href={`/customers/${customer.id}/edit`}>
+          <Link href={`/customers/${customer.id}`}>
             <div className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer">
               {customer.name}
             </div>
