@@ -49,6 +49,7 @@ export const expenseStatusEnum = pgEnum('expense_status', ['pending', 'overdue',
 export const recurringEnum = pgEnum('recurring', ['daily', 'weekly', 'monthly', 'yearly']);
 export const shippingMethodEnum = pgEnum('shipping_method', ['GLS', 'PPL', 'DHL', 'DPD']);
 export const paymentMethodEnum = pgEnum('payment_method', ['Bank Transfer', 'PayPal', 'COD', 'Cash']);
+export const warehouseStatusEnum = pgEnum('warehouse_status', ['active', 'inactive', 'maintenance', 'rented']);
 
 // Categories
 export const categories = pgTable("categories", {
@@ -62,6 +63,7 @@ export const categories = pgTable("categories", {
 export const warehouses = pgTable("warehouses", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: varchar("name", { length: 255 }).notNull(),
+  location: varchar("location", { length: 255 }),
   address: text("address"),
   city: varchar("city", { length: 100 }),
   country: varchar("country", { length: 100 }).default("Czech Republic"),
@@ -71,6 +73,23 @@ export const warehouses = pgTable("warehouses", {
   manager: varchar("manager", { length: 255 }),
   capacity: integer("capacity").default(0),
   type: varchar("type", { length: 50 }).default("branch"), // main, branch, temporary
+  status: warehouseStatusEnum("status").default("active"),
+  rentedFromDate: timestamp("rented_from_date"),
+  expenseId: varchar("expense_id", { length: 255 }),
+  contact: varchar("contact", { length: 255 }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Warehouse Files
+export const warehouseFiles = pgTable("warehouse_files", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  warehouseId: varchar("warehouse_id").references(() => warehouses.id, { onDelete: 'cascade' }).notNull(),
+  fileName: varchar("file_name", { length: 255 }).notNull(),
+  fileType: varchar("file_type", { length: 100 }).notNull(),
+  fileUrl: text("file_url").notNull(),
+  fileSize: integer("file_size"),
+  uploadedBy: varchar("uploaded_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -432,6 +451,7 @@ export const userActivitiesRelations = relations(userActivities, ({ one }) => ({
 // Insert schemas
 export const insertCategorySchema = createInsertSchema(categories).omit({ id: true, createdAt: true });
 export const insertWarehouseSchema = createInsertSchema(warehouses).omit({ id: true, createdAt: true });
+export const insertWarehouseFileSchema = createInsertSchema(warehouseFiles).omit({ id: true, createdAt: true });
 export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true, createdAt: true });
 export const insertSupplierFileSchema = createInsertSchema(supplierFiles).omit({ id: true, createdAt: true });
 export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true, updatedAt: true }).extend({
@@ -487,6 +507,8 @@ export type Category = typeof categories.$inferSelect;
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type Warehouse = typeof warehouses.$inferSelect;
 export type InsertWarehouse = z.infer<typeof insertWarehouseSchema>;
+export type WarehouseFile = typeof warehouseFiles.$inferSelect;
+export type InsertWarehouseFile = z.infer<typeof insertWarehouseFileSchema>;
 export type Supplier = typeof suppliers.$inferSelect;
 export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
 export type SupplierFile = typeof supplierFiles.$inferSelect;

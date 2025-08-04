@@ -27,7 +27,7 @@ export default function AllWarehouses() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedWarehouses, setSelectedWarehouses] = useState<any[]>([]);
 
-  const { data: warehouses = [], isLoading, error } = useQuery({
+  const { data: warehouses = [], isLoading, error } = useQuery<any[]>({
     queryKey: ['/api/warehouses'],
     retry: false,
   });
@@ -90,7 +90,7 @@ export default function AllWarehouses() {
       cell: (warehouse) => (
         <div className="flex items-center gap-2">
           <Warehouse className="h-5 w-5 text-gray-400" />
-          <Link href={`/warehouses/${warehouse.id}/edit`}>
+          <Link href={`/warehouses/${warehouse.id}`}>
             <span className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer">
               {warehouse.name}
             </span>

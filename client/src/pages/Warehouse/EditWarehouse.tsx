@@ -12,7 +12,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ArrowLeft, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, Save, Trash2, FileUp, Calendar } from "lucide-react";
+import { ObjectUploader } from "@/components/ObjectUploader";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,9 +26,15 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const warehouseSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  address: z.string().min(1, "Address is required"),
-  city: z.string().min(1, "City is required"),
+  name: z.string().min(1, "Warehouse name is required"),
+  location: z.string().optional(),
+  status: z.enum(["active", "inactive", "maintenance", "rented"]).default("active"),
+  rentedFromDate: z.string().optional(),
+  expenseId: z.string().optional(),
+  contact: z.string().optional(),
+  notes: z.string().optional(),
+  address: z.string().optional(),
+  city: z.string().optional(),
   country: z.string().default("Czech Republic"),
   zipCode: z.string().optional(),
   phone: z.string().optional(),
@@ -55,6 +62,12 @@ export default function EditWarehouse() {
     resolver: zodResolver(warehouseSchema),
     defaultValues: {
       name: "",
+      location: "",
+      status: "active",
+      rentedFromDate: "",
+      expenseId: "",
+      contact: "",
+      notes: "",
       address: "",
       city: "",
       country: "Czech Republic",
@@ -71,6 +84,12 @@ export default function EditWarehouse() {
     if (warehouse) {
       form.reset({
         name: warehouse.name || "",
+        location: warehouse.location || "",
+        status: warehouse.status || "active",
+        rentedFromDate: warehouse.rentedFromDate ? new Date(warehouse.rentedFromDate).toISOString().split('T')[0] : "",
+        expenseId: warehouse.expenseId || "",
+        contact: warehouse.contact || "",
+        notes: warehouse.notes || "",
         address: warehouse.address || "",
         city: warehouse.city || "",
         country: warehouse.country || "Czech Republic",
@@ -125,17 +144,40 @@ export default function EditWarehouse() {
     },
   });
 
+  const handleGetUploadParameters = async () => {
+    const response = await apiRequest('POST', '/api/objects/upload');
+    return {
+      method: 'PUT' as const,
+      url: response.uploadURL,
+    };
+  };
+
+  const handleFileUploadComplete = (result: any) => {
+    if (result.successful && result.successful.length > 0) {
+      toast({
+        title: "Success",
+        description: "Files uploaded successfully",
+      });
+    }
+  };
+
   const onSubmit = (data: WarehouseFormData) => {
     updateWarehouseMutation.mutate(data);
+  };
+
+  const handleDelete = () => {
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = () => {
+    deleteWarehouseMutation.mutate();
+    setShowDeleteDialog(false);
   };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading warehouse...</p>
-        </div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -152,7 +194,7 @@ export default function EditWarehouse() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button
@@ -173,13 +215,14 @@ export default function EditWarehouse() {
             <CardTitle>Warehouse Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Top Row - Warehouse Name and Location */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="name">Warehouse Name</Label>
                 <Input
                   id="name"
                   {...form.register("name")}
-                  placeholder="Main Warehouse"
+                  placeholder="Type here"
                 />
                 {form.formState.errors.name && (
                   <p className="text-sm text-red-600 mt-1">{form.formState.errors.name.message}</p>
@@ -187,149 +230,246 @@ export default function EditWarehouse() {
               </div>
 
               <div>
-                <Label htmlFor="type">Type</Label>
-                <Select value={form.watch("type")} onValueChange={(value: any) => form.setValue("type", value)}>
+                <Label htmlFor="location">Location</Label>
+                <Select value={form.watch("location") || ""} onValueChange={(value) => form.setValue("location", value)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select type" />
+                    <SelectValue placeholder="Please select" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="main">Main</SelectItem>
-                    <SelectItem value="branch">Branch</SelectItem>
-                    <SelectItem value="temporary">Temporary</SelectItem>
+                    <SelectItem value="warehouse-a">Warehouse A</SelectItem>
+                    <SelectItem value="warehouse-b">Warehouse B</SelectItem>
+                    <SelectItem value="warehouse-c">Warehouse C</SelectItem>
+                    <SelectItem value="main-facility">Main Facility</SelectItem>
+                    <SelectItem value="branch-office">Branch Office</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
+            {/* Second Row - Status and Rented From Date */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="status">Status</Label>
+                <Select value={form.watch("status")} onValueChange={(value: any) => form.setValue("status", value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Please select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="maintenance">Maintenance</SelectItem>
+                    <SelectItem value="rented">Rented</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="rentedFromDate">Rented From Date</Label>
+                <div className="relative">
+                  <Input
+                    id="rentedFromDate"
+                    type="date"
+                    {...form.register("rentedFromDate")}
+                  />
+                  <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                </div>
+              </div>
+            </div>
+
+            {/* Third Row - Contact and Expense ID */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="contact">Contact</Label>
+                <Input
+                  id="contact"
+                  {...form.register("contact")}
+                  placeholder="Type here"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="expenseId">Expense ID</Label>
+                <Input
+                  id="expenseId"
+                  {...form.register("expenseId")}
+                  placeholder="Type here"
+                />
+              </div>
+            </div>
+
+            {/* Notes Section */}
             <div>
-              <Label htmlFor="address">Address</Label>
-              <Input
-                id="address"
-                {...form.register("address")}
-                placeholder="123 Main Street"
+              <Label htmlFor="notes">Note</Label>
+              <Textarea
+                id="notes"
+                {...form.register("notes")}
+                placeholder="Type here..."
+                className="min-h-[100px]"
               />
-              {form.formState.errors.address && (
-                <p className="text-sm text-red-600 mt-1">{form.formState.errors.address.message}</p>
-              )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="city">City</Label>
-                <Input
-                  id="city"
-                  {...form.register("city")}
-                  placeholder="Prague"
-                />
-                {form.formState.errors.city && (
-                  <p className="text-sm text-red-600 mt-1">{form.formState.errors.city.message}</p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="zipCode">ZIP Code</Label>
-                <Input
-                  id="zipCode"
-                  {...form.register("zipCode")}
-                  placeholder="10000"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="country">Country</Label>
-                <Input
-                  id="country"
-                  {...form.register("country")}
-                  placeholder="Czech Republic"
-                />
+            {/* File Upload Section */}
+            <div>
+              <Label>Add Attachments</Label>
+              <div className="mt-2">
+                <ObjectUploader
+                  maxNumberOfFiles={5}
+                  maxFileSize={50 * 1024 * 1024} // 50MB
+                  onGetUploadParameters={handleGetUploadParameters}
+                  onComplete={handleFileUploadComplete}
+                  buttonClassName="w-full border-2 border-dashed border-slate-300 hover:border-slate-400 transition-colors py-8"
+                >
+                  <div className="flex flex-col items-center gap-2 text-slate-600">
+                    <FileUp className="h-8 w-8" />
+                    <p className="text-sm">Drag & Drop or choose file to upload</p>
+                    <p className="text-xs text-slate-500">You can attach PDF, IMAGE, any file</p>
+                  </div>
+                </ObjectUploader>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  {...form.register("phone")}
-                  placeholder="+420 123 456 789"
-                />
-              </div>
+            {/* Legacy fields in collapsible section */}
+            <details className="mt-6">
+              <summary className="cursor-pointer text-sm font-medium text-slate-600 hover:text-slate-900">
+                Additional Information
+              </summary>
+              <div className="mt-4 space-y-4 pl-4 border-l-2 border-slate-200">
+                <div>
+                  <Label htmlFor="address">Address</Label>
+                  <Input
+                    id="address"
+                    {...form.register("address")}
+                    placeholder="123 Main Street"
+                  />
+                </div>
 
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  {...form.register("email")}
-                  placeholder="warehouse@company.com"
-                />
-                {form.formState.errors.email && (
-                  <p className="text-sm text-red-600 mt-1">{form.formState.errors.email.message}</p>
-                )}
-              </div>
-            </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="city">City</Label>
+                    <Input
+                      id="city"
+                      {...form.register("city")}
+                      placeholder="Prague"
+                    />
+                  </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="manager">Manager</Label>
-                <Input
-                  id="manager"
-                  {...form.register("manager")}
-                  placeholder="John Doe"
-                />
-              </div>
+                  <div>
+                    <Label htmlFor="zipCode">ZIP Code</Label>
+                    <Input
+                      id="zipCode"
+                      {...form.register("zipCode")}
+                      placeholder="10000"
+                    />
+                  </div>
 
-              <div>
-                <Label htmlFor="capacity">Capacity (units)</Label>
-                <Input
-                  id="capacity"
-                  type="number"
-                  {...form.register("capacity", { valueAsNumber: true })}
-                  placeholder="10000"
-                />
+                  <div>
+                    <Label htmlFor="country">Country</Label>
+                    <Input
+                      id="country"
+                      {...form.register("country")}
+                      placeholder="Czech Republic"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="phone">Phone</Label>
+                    <Input
+                      id="phone"
+                      {...form.register("phone")}
+                      placeholder="+420 123 456 789"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      {...form.register("email")}
+                      placeholder="warehouse@company.com"
+                    />
+                    {form.formState.errors.email && (
+                      <p className="text-sm text-red-600 mt-1">{form.formState.errors.email.message}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="manager">Manager</Label>
+                    <Input
+                      id="manager"
+                      {...form.register("manager")}
+                      placeholder="John Doe"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="capacity">Capacity</Label>
+                    <Input
+                      id="capacity"
+                      type="number"
+                      {...form.register("capacity", { valueAsNumber: true })}
+                      placeholder="1000"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="type">Type</Label>
+                    <Select value={form.watch("type")} onValueChange={(value: any) => form.setValue("type", value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="main">Main</SelectItem>
+                        <SelectItem value="branch">Branch</SelectItem>
+                        <SelectItem value="temporary">Temporary</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
-            </div>
+            </details>
           </CardContent>
         </Card>
 
-        <div className="flex justify-between">
+        <div className="flex items-center justify-between">
           <Button
             type="button"
             variant="destructive"
-            onClick={() => setShowDeleteDialog(true)}
+            onClick={handleDelete}
+            disabled={deleteWarehouseMutation.isPending}
           >
             <Trash2 className="h-4 w-4 mr-2" />
             Delete Warehouse
           </Button>
 
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate("/warehouse")}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={updateWarehouseMutation.isPending}>
-              <Save className="h-4 w-4 mr-2" />
-              Save Changes
-            </Button>
-          </div>
+          <Button
+            type="submit"
+            disabled={updateWarehouseMutation.isPending}
+          >
+            <Save className="h-4 w-4 mr-2" />
+            {updateWarehouseMutation.isPending ? "Saving..." : "Save Changes"}
+          </Button>
         </div>
       </form>
 
+      {/* Delete Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Warehouse</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{warehouse.name}"? This action cannot be undone.
+              Are you sure you want to delete this warehouse? This action cannot be undone.
+              This will also remove all associated data.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => deleteWarehouseMutation.mutate()}
+            <AlertDialogAction 
+              onClick={confirmDelete}
               className="bg-red-600 hover:bg-red-700"
             >
               Delete

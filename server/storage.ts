@@ -2,6 +2,7 @@ import {
   users,
   categories,
   warehouses,
+  warehouseFiles,
   suppliers,
   supplierFiles,
   products,
@@ -24,6 +25,8 @@ import {
   type InsertCategory,
   type Warehouse,
   type InsertWarehouse,
+  type WarehouseFile,
+  type InsertWarehouseFile,
   type Supplier,
   type InsertSupplier,
   type SupplierFile,
@@ -78,6 +81,13 @@ export interface IStorage {
   createWarehouse(warehouse: InsertWarehouse): Promise<Warehouse>;
   updateWarehouse(id: string, warehouse: Partial<InsertWarehouse>): Promise<Warehouse>;
   deleteWarehouse(id: string): Promise<void>;
+  getProductsByWarehouseId(warehouseId: string): Promise<Product[]>;
+
+  // Warehouse Files
+  getWarehouseFiles(warehouseId: string): Promise<WarehouseFile[]>;
+  getWarehouseFileById(id: string): Promise<WarehouseFile | undefined>;
+  createWarehouseFile(file: InsertWarehouseFile): Promise<WarehouseFile>;
+  deleteWarehouseFile(id: string): Promise<void>;
 
   // Suppliers
   getSuppliers(): Promise<Supplier[]>;
@@ -295,6 +305,35 @@ export class DatabaseStorage implements IStorage {
 
   async deleteWarehouse(id: string): Promise<void> {
     await db.delete(warehouses).where(eq(warehouses.id, id));
+  }
+
+  async getProductsByWarehouseId(warehouseId: string): Promise<Product[]> {
+    return await db.select()
+      .from(products)
+      .where(eq(products.warehouseId, warehouseId))
+      .orderBy(asc(products.name));
+  }
+
+  // Warehouse Files
+  async getWarehouseFiles(warehouseId: string): Promise<WarehouseFile[]> {
+    return await db.select()
+      .from(warehouseFiles)
+      .where(eq(warehouseFiles.warehouseId, warehouseId))
+      .orderBy(desc(warehouseFiles.createdAt));
+  }
+
+  async getWarehouseFileById(id: string): Promise<WarehouseFile | undefined> {
+    const [file] = await db.select().from(warehouseFiles).where(eq(warehouseFiles.id, id));
+    return file;
+  }
+
+  async createWarehouseFile(file: InsertWarehouseFile): Promise<WarehouseFile> {
+    const [newFile] = await db.insert(warehouseFiles).values(file).returning();
+    return newFile;
+  }
+
+  async deleteWarehouseFile(id: string): Promise<void> {
+    await db.delete(warehouseFiles).where(eq(warehouseFiles.id, id));
   }
 
   // Suppliers

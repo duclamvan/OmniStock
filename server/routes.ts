@@ -466,6 +466,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get products in a warehouse
+  app.get('/api/warehouses/:id/products', async (req, res) => {
+    try {
+      const products = await storage.getProductsByWarehouseId(req.params.id);
+      res.json(products);
+    } catch (error) {
+      console.error("Error fetching warehouse products:", error);
+      res.status(500).json({ message: "Failed to fetch warehouse products" });
+    }
+  });
+
+  // Warehouse file management endpoints
+  app.get('/api/warehouses/:id/files', async (req, res) => {
+    try {
+      const files = await storage.getWarehouseFiles(req.params.id);
+      res.json(files);
+    } catch (error) {
+      console.error("Error fetching warehouse files:", error);
+      res.status(500).json({ message: "Failed to fetch warehouse files" });
+    }
+  });
+
+  app.post('/api/warehouses/:id/files', async (req: any, res) => {
+    try {
+      const { fileName, fileType, fileUrl, fileSize } = req.body;
+      
+      if (!fileName || !fileUrl) {
+        return res.status(400).json({ message: "fileName and fileUrl are required" });
+      }
+
+      const file = await storage.createWarehouseFile({
+        warehouseId: req.params.id,
+        fileName,
+        fileType: fileType || 'application/octet-stream',
+        fileUrl,
+        fileSize: fileSize || 0,
+      });
+
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'created',
+        entityType: 'warehouse_file',
+        entityId: file.id,
+        description: `Added file to warehouse: ${fileName}`,
+      });
+
+      res.json(file);
+    } catch (error) {
+      console.error("Error creating warehouse file:", error);
+      res.status(500).json({ message: "Failed to create warehouse file" });
+    }
+  });
+
+  app.delete('/api/warehouse-files/:id', async (req: any, res) => {
+    try {
+      const file = await storage.getWarehouseFileById(req.params.id);
+      if (!file) {
+        return res.status(404).json({ message: "File not found" });
+      }
+
+      await storage.deleteWarehouseFile(req.params.id);
+
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'deleted',
+        entityType: 'warehouse_file',
+        entityId: req.params.id,
+        description: `Deleted warehouse file: ${file.fileName}`,
+      });
+
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting warehouse file:", error);
+      res.status(500).json({ message: "Failed to delete warehouse file" });
+    }
+  });
+
   // Suppliers endpoints
   app.get('/api/suppliers', async (req, res) => {
     try {
@@ -569,6 +646,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching supplier files:", error);
       res.status(500).json({ message: "Failed to fetch supplier files" });
+    }
+  });
+
+  // Generic object upload endpoint
+  app.post('/api/objects/upload', async (req: any, res) => {
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      res.json({ uploadURL });
+    } catch (error) {
+      console.error("Error getting upload URL:", error);
+      res.status(500).json({ message: "Failed to get upload URL" });
     }
   });
 
