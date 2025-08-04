@@ -293,14 +293,24 @@ export function DataTable<T>({
                       ))}
                     </TableRow>
                     {expandable && isExpanded && (
-                      <TableRow>
-                        <TableCell
-                          colSpan={columns.length + (bulkActions ? 1 : 0) + 1}
-                          className="bg-muted/30 p-4"
-                        >
-                          {expandable.render(item)}
-                        </TableCell>
-                      </TableRow>
+                      <>
+                        <TableRow className="hover:bg-transparent">
+                          <TableCell
+                            colSpan={columns.length + (bulkActions ? 1 : 0) + 1}
+                            className="bg-slate-50 dark:bg-slate-900/30 p-6 border-l-4 border-l-blue-500 shadow-inner"
+                          >
+                            <div className="relative">
+                              {expandable.render(item)}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                        <TableRow className="hover:bg-transparent border-b-2 border-slate-200 dark:border-slate-700">
+                          <TableCell 
+                            colSpan={columns.length + (bulkActions ? 1 : 0) + 1} 
+                            className="p-0 h-2 bg-gradient-to-b from-slate-50 dark:from-slate-900/30 to-transparent"
+                          />
+                        </TableRow>
+                      </>
                     )}
                   </React.Fragment>
                 );
