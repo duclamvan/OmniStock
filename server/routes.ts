@@ -2116,6 +2116,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: 'Failed to fetch addresses' });
     }
   });
+  
+  // Seed returns data
+  app.post('/api/seed-returns', async (req, res) => {
+    try {
+      const { seedReturns } = await import('./seedReturns');
+      await seedReturns();
+      res.json({ message: "Returns seeded successfully" });
+    } catch (error) {
+      console.error("Error seeding returns:", error);
+      res.status(500).json({ message: "Failed to seed returns" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

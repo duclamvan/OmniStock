@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { DataTable, DataTableColumn } from "@/components/ui/data-table";
-import { createVietnameseSearchMatcher } from "@/lib/vietnamese-search";
+import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
 import { Plus, Package, PackageX, RefreshCw, Search, Eye } from "lucide-react";
 import { format } from "date-fns";
 import {
