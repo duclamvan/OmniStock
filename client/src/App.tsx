@@ -32,8 +32,6 @@ function Router() {
         <Route path="/" component={Home} />
         <Route path="/orders" component={AllOrders} />
         <Route path="/orders/add" component={AddOrder} />
-        <Route path="/orders/:id/edit" component={EditOrder} />
-        <Route path="/orders/:id" component={OrderDetails} />
         <Route path="/orders/to-fulfill">
           {() => <AllOrders filter="to_fulfill" />}
         </Route>
@@ -46,6 +44,8 @@ function Router() {
         <Route path="/orders/pre-orders">
           {() => <div>Pre-orders page coming soon</div>}
         </Route>
+        <Route path="/orders/:id/edit" component={EditOrder} />
+        <Route path="/orders/:id" component={OrderDetails} />
         <Route path="/inventory" component={AllInventory} />
         <Route path="/inventory/products" component={AllInventory} />
         <Route path="/inventory/products/:id" component={ProductDetails} />

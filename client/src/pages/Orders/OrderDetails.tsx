@@ -14,8 +14,7 @@ import {
   Phone,
   Mail,
   DollarSign,
-  Truck,
-  MessageCircle
+  Truck
 } from "lucide-react";
 import { formatCurrency } from "@/lib/currencyUtils";
 
@@ -57,19 +56,15 @@ export default function OrderDetails() {
   }
 
   const statusVariant = 
-    order.orderStatus === 'delivered' ? 'default' :
     order.orderStatus === 'shipped' ? 'outline' :
     order.orderStatus === 'to_fulfill' ? 'secondary' :
     order.orderStatus === 'pending' ? 'secondary' :
-    order.orderStatus === 'cancelled' ? 'destructive' :
     'secondary';
 
   const statusText = 
     order.orderStatus === 'to_fulfill' ? 'To Fulfill' :
-    order.orderStatus === 'delivered' ? 'Delivered' :
     order.orderStatus === 'shipped' ? 'Shipped' :
     order.orderStatus === 'pending' ? 'Pending' :
-    order.orderStatus === 'cancelled' ? 'Cancelled' :
     order.orderStatus;
 
   const paymentStatusVariant = 
@@ -167,32 +162,15 @@ export default function OrderDetails() {
             <CardTitle>Customer Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <User className="h-5 w-5 text-slate-400" />
-                <div>
-                  <Link href={`/customers/${order.customer.id}`}>
-                    <p className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer">
-                      {order.customer.name}
-                    </p>
-                  </Link>
-                  {order.customer.facebookName && (
-                    <p className="text-sm text-slate-500">Facebook: {order.customer.facebookName}</p>
-                  )}
-                </div>
+            <div className="flex items-center gap-3">
+              <User className="h-5 w-5 text-slate-400" />
+              <div>
+                <Link href={`/customers/${order.customer.id}`}>
+                  <p className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer">
+                    {order.customer.name}
+                  </p>
+                </Link>
               </div>
-              {order.customer.facebookId && (
-                <a
-                  href={`https://m.me/${order.customer.facebookId}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Button variant="outline" size="sm">
-                    <MessageCircle className="mr-2 h-4 w-4" />
-                    Message
-                  </Button>
-                </a>
-              )}
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
