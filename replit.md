@@ -1,7 +1,7 @@
 # Overview
 Davie Supply is a comprehensive warehouse and order management system designed as a full-stack web application. Its primary purpose is to manage the complete order lifecycle from creation to fulfillment, track inventory, manage customers, and provide financial reporting with multi-currency support. Key capabilities include real-time Vietnamese diacritics search and integration with external shipping APIs for order tracking. The business vision is to provide a robust, efficient platform for streamlined supply chain operations.
 
-## Recent Changes (August 3, 2025)
+## Recent Changes (August 4, 2025)
 - **Performance Optimization**: Added bulk API endpoints for product variant operations to improve performance when creating series and deleting multiple variants
 - **Fixed TypeScript Errors**: Resolved type annotations in AddProduct and EditProduct components
 - **Query Optimization**: Added query configuration to prevent excessive re-fetching of product variants data
@@ -14,6 +14,8 @@ Davie Supply is a comprehensive warehouse and order management system designed a
 - **Edit Customer Page**: Created comprehensive edit customer form with prefilled data, address lookup integration, organized sections for basic info, contact & address (combined), and notes
 - **Customer Details Page**: Added dedicated customer details view showing customer type, total orders, total spent, contact & address info, notes, and complete order history with clickable order links
 - **Order Details Page**: Created comprehensive order details page for viewing orders without editing functionality, with proper status formatting (e.g., "To Fulfill" instead of "to_fulfill") and color coding
+- **Enhanced Order Details Page**: Added comprehensive features including quick stats cards, order timeline, pricing breakdown, customer information, and action buttons for print/share/export
+- **Expandable Order Rows**: Modified DataTable component to support expandable rows and implemented expandable order rows in AllOrders table to quickly view order items, with click-to-view functionality for full order details
 
 # User Preferences
 Preferred communication style: Simple, everyday language.

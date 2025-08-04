@@ -35,6 +35,12 @@ interface DataTableProps<T> {
   showPagination?: boolean;
   getRowKey: (item: T) => string;
   className?: string;
+  expandable?: {
+    render: (item: T) => React.ReactNode;
+    expandIcon?: React.ReactNode;
+    collapseIcon?: React.ReactNode;
+  };
+  onRowClick?: (item: T) => void;
 }
 
 type SortDirection = "asc" | "desc" | null;
@@ -48,8 +54,11 @@ export function DataTable<T>({
   showPagination = true,
   getRowKey,
   className,
+  expandable,
+  onRowClick,
 }: DataTableProps<T>) {
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -102,6 +111,16 @@ export function DataTable<T>({
       newSelected.delete(key);
     }
     setSelectedRows(newSelected);
+  };
+
+  const handleToggleExpand = (key: string) => {
+    const newExpanded = new Set(expandedRows);
+    if (newExpanded.has(key)) {
+      newExpanded.delete(key);
+    } else {
+      newExpanded.add(key);
+    }
+    setExpandedRows(newExpanded);
   };
 
   const isAllSelected = paginatedData.length > 0 && 
@@ -176,6 +195,11 @@ export function DataTable<T>({
         <Table>
           <TableHeader>
             <TableRow>
+              {expandable && (
+                <TableHead className="w-12">
+                  {/* Empty header for expand column */}
+                </TableHead>
+              )}
               {bulkActions && (
                 <TableHead className="w-12">
                   <Checkbox
@@ -207,7 +231,7 @@ export function DataTable<T>({
             {paginatedData.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length + (bulkActions ? 1 : 0)}
+                  colSpan={columns.length + (bulkActions ? 1 : 0) + (expandable ? 1 : 0)}
                   className="h-24 text-center"
                 >
                   No results found.
@@ -217,25 +241,68 @@ export function DataTable<T>({
               paginatedData.map((item) => {
                 const key = getRowKey(item);
                 const isSelected = selectedRows.has(key);
+                const isExpanded = expandedRows.has(key);
                 
                 return (
-                  <TableRow key={key} data-state={isSelected && "selected"}>
-                    {bulkActions && (
-                      <TableCell>
-                        <Checkbox
-                          checked={isSelected}
-                          onCheckedChange={(checked) => handleSelectRow(key, checked as boolean)}
-                          aria-label="Select row"
-                          className="translate-y-[2px]"
-                        />
-                      </TableCell>
+                  <React.Fragment key={key}>
+                    <TableRow 
+                      data-state={isSelected && "selected"}
+                      className={cn(
+                        onRowClick && "cursor-pointer hover:bg-muted/50",
+                        isExpanded && "border-b-0"
+                      )}
+                    >
+                      {expandable && (
+                        <TableCell className="w-12">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleExpand(key);
+                            }}
+                          >
+                            {isExpanded ? (
+                              expandable.collapseIcon || <ChevronUp className="h-4 w-4" />
+                            ) : (
+                              expandable.expandIcon || <ChevronDown className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </TableCell>
+                      )}
+                      {bulkActions && (
+                        <TableCell>
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={(checked) => handleSelectRow(key, checked as boolean)}
+                            aria-label="Select row"
+                            className="translate-y-[2px]"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </TableCell>
+                      )}
+                      {columns.map((column) => (
+                        <TableCell 
+                          key={column.key} 
+                          className={column.className}
+                          onClick={() => onRowClick && onRowClick(item)}
+                        >
+                          {column.cell ? column.cell(item) : (item as any)[column.key]}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                    {expandable && isExpanded && (
+                      <TableRow>
+                        <TableCell
+                          colSpan={columns.length + (bulkActions ? 1 : 0) + 1}
+                          className="bg-muted/30 p-4"
+                        >
+                          {expandable.render(item)}
+                        </TableCell>
+                      </TableRow>
                     )}
-                    {columns.map((column) => (
-                      <TableCell key={column.key} className={column.className}>
-                        {column.cell ? column.cell(item) : (item as any)[column.key]}
-                      </TableCell>
-                    ))}
-                  </TableRow>
+                  </React.Fragment>
                 );
               })
             )}

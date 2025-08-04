@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { Plus, Search, Filter, Download, FileText, Edit, Trash2 } from "lucide-react";
+import { Plus, Search, Filter, Download, FileText, Edit, Trash2, Package, Eye } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +32,7 @@ interface AllOrdersProps {
 
 export default function AllOrders({ filter }: AllOrdersProps) {
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -237,17 +238,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       },
       className: "text-right",
     },
-    {
-      key: "actions",
-      header: "Actions",
-      cell: (order) => (
-        <Link href={`/orders/${order.id}/edit`}>
-          <Button size="sm" variant="ghost">
-            <Edit className="h-4 w-4" />
-          </Button>
-        </Link>
-      ),
-    },
+
   ];
 
   // Bulk actions
@@ -362,7 +353,11 @@ export default function AllOrders({ filter }: AllOrdersProps) {
           {/* Mobile Card View */}
           <div className="sm:hidden space-y-3 p-3">
             {filteredOrders?.map((order: any) => (
-              <div key={order.id} className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+              <div 
+                key={order.id} 
+                className="bg-white rounded-lg shadow-sm border border-gray-100 p-4 cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => navigate(`/orders/${order.id}`)}
+              >
                 <div className="space-y-3">
                   {/* Top Row - Customer, Status, Edit */}
                   <div className="flex items-start justify-between gap-2">
@@ -378,11 +373,17 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       {getStatusBadge(order.orderStatus)}
-                      <Link href={`/orders/${order.id}/edit`}>
-                        <Button size="icon" variant="ghost" className="h-8 w-8">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </Link>
+                      <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        className="h-8 w-8"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/orders/${order.id}/edit`);
+                        }}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                   
@@ -391,6 +392,23 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                     <span>Order ID: <span className="font-medium text-gray-900">{order.orderId}</span></span>
                     <span>{new Date(order.createdAt).toLocaleDateString('vi-VN')}</span>
                   </div>
+                  
+                  {/* Items Summary */}
+                  {order.items && order.items.length > 0 && (
+                    <div className="bg-gray-50 rounded-md p-2 text-xs">
+                      <p className="font-medium text-gray-700 mb-1">Items ({order.items.length}):</p>
+                      <div className="space-y-1">
+                        {order.items.slice(0, 2).map((item: any, index: number) => (
+                          <p key={index} className="text-gray-600">
+                            {item.productName} × {item.quantity}
+                          </p>
+                        ))}
+                        {order.items.length > 2 && (
+                          <p className="text-gray-500 italic">+{order.items.length - 2} more items</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
                   
                   {/* Bottom Row - Financial */}
                   <div className="flex items-end justify-between">
@@ -419,6 +437,83 @@ export default function AllOrders({ filter }: AllOrdersProps) {
               getRowKey={(order) => order.id}
               itemsPerPageOptions={[10, 20, 50, 100]}
               defaultItemsPerPage={20}
+              onRowClick={(order) => navigate(`/orders/${order.id}`)}
+              expandable={{
+                render: (order) => (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                        <Package className="h-4 w-4" />
+                        Order Items ({order.items?.length || 0})
+                      </h4>
+                      <Link href={`/orders/${order.id}`}>
+                        <Button size="sm" variant="outline">
+                          <Eye className="mr-2 h-4 w-4" />
+                          View Details
+                        </Button>
+                      </Link>
+                    </div>
+                    <div className="border rounded-lg overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="bg-slate-50">
+                            <TableHead className="text-xs">Product</TableHead>
+                            <TableHead className="text-xs text-center">Qty</TableHead>
+                            <TableHead className="text-xs text-right">Unit Price</TableHead>
+                            <TableHead className="text-xs text-right">Total</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {order.items?.map((item: any, index: number) => (
+                            <TableRow key={item.id || index} className="text-sm">
+                              <TableCell className="font-medium">
+                                {item.productName}
+                                <div className="text-xs text-slate-500">SKU: {item.sku}</div>
+                              </TableCell>
+                              <TableCell className="text-center">{item.quantity}</TableCell>
+                              <TableCell className="text-right">
+                                {formatCurrency(item.price || 0, order.currency || 'EUR')}
+                              </TableCell>
+                              <TableCell className="text-right font-medium">
+                                {formatCurrency(item.total || 0, order.currency || 'EUR')}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2">
+                      <div className="text-sm">
+                        <p className="text-slate-500">Subtotal</p>
+                        <p className="font-medium">{formatCurrency(order.subtotal || 0, order.currency || 'EUR')}</p>
+                      </div>
+                      {order.discountValue > 0 && (
+                        <div className="text-sm">
+                          <p className="text-slate-500">Discount</p>
+                          <p className="font-medium text-green-600">
+                            -{formatCurrency(
+                              order.discountType === 'rate' 
+                                ? (order.subtotal * order.discountValue / 100) 
+                                : order.discountValue || 0, 
+                              order.currency || 'EUR'
+                            )}
+                          </p>
+                        </div>
+                      )}
+                      {order.shippingCost > 0 && (
+                        <div className="text-sm">
+                          <p className="text-slate-500">Shipping</p>
+                          <p className="font-medium">{formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}</p>
+                        </div>
+                      )}
+                      <div className="text-sm">
+                        <p className="text-slate-500">Grand Total</p>
+                        <p className="font-bold text-lg">{formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}</p>
+                      </div>
+                    </div>
+                  </div>
+                ),
+              }}
             />
           </div>
         </CardContent>
