@@ -1354,6 +1354,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Purchases endpoints
+  app.get('/api/purchases', async (req, res) => {
+    try {
+      const purchases = await storage.getPurchases();
+      res.json(purchases);
+    } catch (error) {
+      console.error("Error fetching purchases:", error);
+      res.status(500).json({ message: "Failed to fetch purchases" });
+    }
+  });
+
   // Mock data endpoint (for development)
   app.post('/api/seed-mock-data', async (req, res) => {
     try {
