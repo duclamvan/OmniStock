@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
 import type { Supplier, Product, Purchase, SupplierFile } from "@shared/schema";
 import { 
   ArrowLeft, 
@@ -22,17 +24,21 @@ import {
   Upload,
   File,
   Trash2,
-  Download
+  Download,
+  Search
 } from "lucide-react";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { UploadResult } from "@uppy/core";
 import { toast } from "@/hooks/use-toast";
+import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
 
 export default function SupplierDetails() {
   const { id } = useParams();
   const [, setLocation] = useLocation();
+  const [productSearch, setProductSearch] = useState("");
+  const [purchaseSearch, setPurchaseSearch] = useState("");
 
   const { data: supplier, isLoading } = useQuery<Supplier>({
     queryKey: [`/api/suppliers/${id}`],
@@ -113,6 +119,20 @@ export default function SupplierDetails() {
         return match;
       })
     : [];
+  
+  // Filter products by search term
+  const filteredProducts = supplierProducts.filter(product => {
+    if (!productSearch) return true;
+    const matcher = createVietnameseSearchMatcher(productSearch);
+    return matcher(product.name) || matcher(product.sku);
+  });
+  
+  // Filter purchases by search term
+  const filteredPurchases = supplierPurchases.filter(purchase => {
+    if (!purchaseSearch) return true;
+    const matcher = createVietnameseSearchMatcher(purchaseSearch);
+    return matcher(purchase.productName) || (purchase.sku && matcher(purchase.sku));
+  });
 
   if (isLoading) {
     return (
@@ -230,17 +250,32 @@ export default function SupplierDetails() {
           {/* Products */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                Products from this Supplier ({supplierProducts.length})
-              </CardTitle>
+              <div className="space-y-4">
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="h-5 w-5" />
+                  Products from this Supplier ({filteredProducts.length} of {supplierProducts.length})
+                </CardTitle>
+                {supplierProducts.length > 0 && (
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      placeholder="Search products by name or SKU..."
+                      value={productSearch}
+                      onChange={(e) => setProductSearch(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               {supplierProducts.length === 0 ? (
                 <p className="text-slate-500">No products from this supplier yet.</p>
+              ) : filteredProducts.length === 0 ? (
+                <p className="text-slate-500">No products match your search.</p>
               ) : (
                 <div className="space-y-1">
-                  {supplierProducts.map((product) => (
+                  {filteredProducts.map((product) => (
                     <div
                       key={product.id}
                       className="flex items-center justify-between p-2 border rounded hover:bg-slate-50 cursor-pointer text-sm"
@@ -266,17 +301,32 @@ export default function SupplierDetails() {
           {/* Purchase History */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ShoppingCart className="h-5 w-5" />
-                Purchase History ({supplierPurchases.length})
-              </CardTitle>
+              <div className="space-y-4">
+                <CardTitle className="flex items-center gap-2">
+                  <ShoppingCart className="h-5 w-5" />
+                  Purchase History ({filteredPurchases.length} of {supplierPurchases.length})
+                </CardTitle>
+                {supplierPurchases.length > 0 && (
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      placeholder="Search purchases by product name or SKU..."
+                      value={purchaseSearch}
+                      onChange={(e) => setPurchaseSearch(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               {supplierPurchases.length === 0 ? (
                 <p className="text-slate-500">No purchase history yet.</p>
+              ) : filteredPurchases.length === 0 ? (
+                <p className="text-slate-500">No purchases match your search.</p>
               ) : (
                 <div className="space-y-2">
-                  {supplierPurchases.slice(0, 10).map((purchase) => (
+                  {filteredPurchases.slice(0, 10).map((purchase) => (
                     <div
                       key={purchase.id}
                       className="p-3 border rounded-lg"
@@ -307,9 +357,9 @@ export default function SupplierDetails() {
                       )}
                     </div>
                   ))}
-                  {supplierPurchases.length > 10 && (
+                  {filteredPurchases.length > 10 && (
                     <p className="text-sm text-slate-500 text-center pt-2">
-                      Showing latest 10 of {supplierPurchases.length} purchases
+                      Showing latest 10 of {filteredPurchases.length} filtered purchases
                     </p>
                   )}
                 </div>
