@@ -26,8 +26,11 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ArrowLeft, Save, MapPin, Search } from "lucide-react";
+import { ArrowLeft, Save, MapPin, Search, Package, Calendar, DollarSign } from "lucide-react";
 import { insertCustomerSchema } from "@shared/schema";
+import { Link } from "wouter";
+import { Badge } from "@/components/ui/badge";
+import { formatCurrency } from "@/lib/currencyUtils";
 
 // Extend the schema for form validation
 const editCustomerSchema = insertCustomerSchema.extend({
@@ -55,6 +58,12 @@ export default function EditCustomer() {
   // Fetch customer data
   const { data: customer, isLoading } = useQuery<any>({
     queryKey: [`/api/customers/${id}`],
+    enabled: !!id,
+  });
+
+  // Fetch customer orders
+  const { data: orders = [] } = useQuery<any[]>({
+    queryKey: [`/api/orders?customerId=${id}`],
     enabled: !!id,
   });
 
@@ -325,7 +334,7 @@ export default function EditCustomer() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Contact Information</CardTitle>
+              <CardTitle>Contact & Address Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -357,15 +366,8 @@ export default function EditCustomer() {
                   )}
                 />
               </div>
-            </CardContent>
-          </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Address Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-4">
+              <div className="space-y-4 mt-4">
                 <FormField
                   control={form.control}
                   name="address"
@@ -475,6 +477,57 @@ export default function EditCustomer() {
                   </FormItem>
                 )}
               />
+            </CardContent>
+          </Card>
+
+          {/* Order History */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Order History</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {orders.length === 0 ? (
+                <p className="text-sm text-slate-500">No orders found for this customer.</p>
+              ) : (
+                <div className="space-y-4">
+                  {orders.map((order: any) => (
+                    <Link key={order.id} href={`/orders/${order.id}/edit`}>
+                      <div className="border rounded-lg p-4 hover:bg-slate-50 cursor-pointer transition-colors">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <Package className="h-5 w-5 text-slate-400" />
+                            <div>
+                              <p className="font-medium text-sm">Order #{order.id.slice(0, 8)}</p>
+                              <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
+                                <Calendar className="h-3 w-3" />
+                                <span>{new Date(order.createdAt).toLocaleDateString()}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-medium text-sm">{formatCurrency(order.total || 0, order.currency || 'EUR')}</p>
+                            <Badge 
+                              variant={
+                                order.status === 'delivered' ? 'default' :
+                                order.status === 'shipped' ? 'secondary' :
+                                order.status === 'processing' ? 'outline' :
+                                'destructive'
+                              }
+                              className="mt-1"
+                            >
+                              {order.status}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
+                          <span>{order.items?.length || 0} items</span>
+                          <span>Payment: {order.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}</span>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
 

@@ -114,6 +114,7 @@ export interface IStorage {
   getOrderById(id: string): Promise<Order | undefined>;
   getOrdersByStatus(status: string): Promise<Order[]>;
   getOrdersByPaymentStatus(paymentStatus: string): Promise<Order[]>;
+  getOrdersByCustomerId(customerId: string): Promise<Order[]>;
   getUnpaidOrders(): Promise<Order[]>;
   getTodayOrders(): Promise<Order[]>;
   getOrdersShippedToday(): Promise<Order[]>;
@@ -740,6 +741,61 @@ export class DatabaseStorage implements IStorage {
       .from(orders)
       .where(eq(orders.paymentStatus, paymentStatus as any))
       .orderBy(desc(orders.createdAt));
+  }
+
+  async getOrdersByCustomerId(customerId: string): Promise<Order[]> {
+    const ordersWithCustomers = await db
+      .select({
+        id: orders.id,
+        customerId: orders.customerId,
+        currency: orders.currency,
+        orderStatus: orders.orderStatus,
+        paymentStatus: orders.paymentStatus,
+        priority: orders.priority,
+        subtotal: orders.subtotal,
+        discountType: orders.discountType,
+        discountValue: orders.discountValue,
+        taxRate: orders.taxRate,
+        taxAmount: orders.taxAmount,
+        shippingCost: orders.shippingCost,
+        actualShippingCost: orders.actualShippingCost,
+        grandTotal: orders.grandTotal,
+        notes: orders.notes,
+        attachmentUrl: orders.attachmentUrl,
+        createdAt: orders.createdAt,
+        updatedAt: orders.updatedAt,
+        shippedAt: orders.shippedAt,
+        total: orders.grandTotal, // Add total field for the UI
+        customer: {
+          id: customers.id,
+          name: customers.name,
+          facebookName: customers.facebookName,
+          email: customers.email,
+          phone: customers.phone,
+        }
+      })
+      .from(orders)
+      .leftJoin(customers, eq(orders.customerId, customers.id))
+      .where(eq(orders.customerId, customerId))
+      .orderBy(desc(orders.createdAt));
+    
+    // Get order items for each order
+    const ordersWithItems = await Promise.all(
+      ordersWithCustomers.map(async (order: any) => {
+        const items = await db
+          .select()
+          .from(orderItems)
+          .where(eq(orderItems.orderId, order.id));
+        
+        return { 
+          ...order, 
+          items,
+          status: order.orderStatus // Add status field for the UI
+        };
+      })
+    );
+    
+    return ordersWithItems as any;
   }
 
   async getUnpaidOrders(): Promise<Order[]> {

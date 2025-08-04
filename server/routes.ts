@@ -915,12 +915,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const status = req.query.status as string;
       const paymentStatus = req.query.paymentStatus as string;
+      const customerId = req.query.customerId as string;
       
       let orders;
       if (status) {
         orders = await storage.getOrdersByStatus(status);
       } else if (paymentStatus) {
         orders = await storage.getOrdersByPaymentStatus(paymentStatus);
+      } else if (customerId) {
+        orders = await storage.getOrdersByCustomerId(customerId);
       } else {
         orders = await storage.getOrders();
       }
