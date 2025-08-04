@@ -11,7 +11,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { insertSupplierSchema, type InsertSupplier, type Supplier } from "@shared/schema";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { countries } from "@/lib/countries";
 
 
 const formSchema = insertSupplierSchema.extend({});
@@ -37,7 +41,6 @@ export default function EditSupplier() {
       address: "",
       country: "",
       website: "",
-      supplierLink: "",
       notes: "",
     },
   });
@@ -52,7 +55,6 @@ export default function EditSupplier() {
         address: supplier.address || "",
         country: supplier.country || "",
         website: supplier.website || "",
-        supplierLink: supplier.supplierLink || "",
         notes: supplier.notes || "",
       });
     }
@@ -143,11 +145,50 @@ export default function EditSupplier() {
                   control={form.control}
                   name="country"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="flex flex-col">
                       <FormLabel>Country</FormLabel>
-                      <FormControl>
-                        <Input {...field} value={field.value || ""} placeholder="Country" />
-                      </FormControl>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              className={cn(
+                                "justify-between",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value || "Select country..."}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[300px] p-0">
+                          <Command>
+                            <CommandInput placeholder="Search country..." />
+                            <CommandEmpty>No country found.</CommandEmpty>
+                            <CommandGroup className="max-h-[300px] overflow-auto">
+                              {countries.map((country) => (
+                                <CommandItem
+                                  key={country}
+                                  value={country}
+                                  onSelect={() => {
+                                    field.onChange(country);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      field.value === country ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  {country}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -182,36 +223,20 @@ export default function EditSupplier() {
                 />
               </div>
 
-              {/* Links */}
-              <div className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="website"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Website</FormLabel>
-                      <FormControl>
-                        <Input {...field} value={field.value || ""} placeholder="https://supplier-website.com" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="supplierLink"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Supplier Link</FormLabel>
-                      <FormControl>
-                        <Input {...field} value={field.value || ""} placeholder="https://supplier-catalog.com" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              {/* Website */}
+              <FormField
+                control={form.control}
+                name="website"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Website</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ""} placeholder="https://supplier-website.com" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               {/* Address */}
               <FormField

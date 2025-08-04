@@ -1,7 +1,7 @@
 # Overview
 Davie Supply is a comprehensive warehouse and order management system designed as a full-stack web application. Its primary purpose is to manage the complete order lifecycle from creation to fulfillment, track inventory, manage customers, and provide financial reporting with multi-currency support. Key capabilities include real-time Vietnamese diacritics search and integration with external shipping APIs for order tracking. The business vision is to provide a robust, efficient platform for streamlined supply chain operations.
 
-## Recent Changes (August 4, 2025)
+## Recent Changes (August 4-5, 2025)
 - **Performance Optimization**: Added bulk API endpoints for product variant operations to improve performance when creating series and deleting multiple variants
 - **Fixed TypeScript Errors**: Resolved type annotations in AddProduct and EditProduct components
 - **Query Optimization**: Added query configuration to prevent excessive re-fetching of product variants data
@@ -21,6 +21,8 @@ Davie Supply is a comprehensive warehouse and order management system designed a
 - **Shipping Status Enhancement**: Updated shipping status display to properly sync with order status changes, showing green checkmark when shipped and automatically setting shippedAt timestamp when order status changes to "shipped"
 - **Suppliers Management**: Implemented complete Suppliers CRUD functionality with AllSuppliers table featuring Vietnamese search, AddSupplier/EditSupplier forms, comprehensive SupplierDetails page showing products and purchase history
 - **Supplier Detail Enhancements**: Added purchase history section to supplier details with compact product rows for better visibility, purchase statistics including total purchases count, and proper TypeScript error handling for date fields
+- **Purchase History API**: Added /api/purchases endpoint to server routes enabling frontend to fetch purchase history data for supplier details page
+- **Supplier Form Updates**: Removed duplicate "Supplier Link" field from Add/Edit Supplier forms (redundant with Website field) and replaced Country text input with searchable dropdown using Command component for better UX
 
 # User Preferences
 Preferred communication style: Simple, everyday language.
