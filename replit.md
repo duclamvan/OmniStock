@@ -10,6 +10,7 @@ Davie Supply is a comprehensive warehouse and order management system designed a
 - **Soft Delete Implementation**: Converted product deletion to soft delete by adding isActive flag, preserving referential integrity with existing orders while hiding inactive products from inventory views
 - **Sales to Discounts Rename**: Renamed all "Sales" references to "Discounts" throughout the application including navigation, routes (/sales to /discounts), API endpoints (/api/sales to /api/discounts), and all UI components
 - **Discounts Data Reset**: Added /api/reseed-discounts endpoint to clear and repopulate discount data with fresh examples
+- **Discount System Overhaul**: Completely redesigned discount system removing "Code" field, implementing auto-generated discount IDs (#YEARNAME format), adding percentage-only discounts (integer field), dynamic application scopes (specific product, all products, specific category, selected products), and status management (active/inactive/finished)
 - **Customers Page Update**: Enhanced customers table with order statistics (total orders, total sales, last purchase date) and added Messenger integration with blacklist functionality placeholder
 - **Edit Customer Page**: Created comprehensive edit customer form with prefilled data, address lookup integration, organized sections for basic info, contact & address (combined), and notes
 - **Customer Details Page**: Added dedicated customer details view showing customer type, total orders, total spent, contact & address info, notes, and complete order history with clickable order links
@@ -72,6 +73,7 @@ The project is structured as a monorepo with shared TypeScript types and Zod sch
 - **Image Upload**: Image upload functionality for products via Multer, storing images locally.
 - **Reporting**: Comprehensive sales, inventory, customer, and financial reports with filtering capabilities.
 - **CRUD Operations**: Full CRUD functionality implemented for warehouses, customers, sales/discounts, and products/orders, with robust error handling and foreign key constraint validation.
+- **Discount Management**: Advanced discount system with auto-generated IDs, percentage-based discounts, flexible application scopes (product/category/all products), and automatic integration with order creation to apply active discounts.
 
 # External Dependencies
 

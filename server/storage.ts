@@ -204,6 +204,7 @@ export interface IStorage {
   calculateAverageImportCost(existingProduct: Product, newQuantity: number, newImportCost: number, currency: string): Promise<{ importCostUsd?: string; importCostCzk?: string; importCostEur?: string }>;
   generateShipmentId(shippingMethod: string, shippingCarrier: string): Promise<string>;
   getActiveSalesForProduct(productId: string, categoryId: string | null): Promise<Sale[]>;
+  generateDiscountId(name: string, startDate: Date): string;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1298,7 +1299,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createSale(sale: InsertSale): Promise<Sale> {
-    const [newSale] = await db.insert(sales).values(sale).returning();
+    // Generate discount ID
+    const discountId = this.generateDiscountId(sale.name, sale.startDate);
+    
+    const [newSale] = await db.insert(sales).values({
+      ...sale,
+      discountId
+    }).returning();
     return newSale;
   }
 
@@ -1426,22 +1433,41 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getActiveSalesForProduct(productId: string, categoryId: string | null): Promise<Sale[]> {
-    const today = new Date();
+    const now = new Date();
     
-    // Get all active sales
-    const activeSales = await db
-      .select()
+    const activeSales = await db.select()
       .from(sales)
       .where(
         and(
           eq(sales.status, 'active'),
-          lte(sales.startDate, today),
-          gte(sales.endDate, today)
+          lte(sales.startDate, now),
+          gte(sales.endDate, now),
+          or(
+            eq(sales.applicationScope, 'all_products'),
+            and(eq(sales.applicationScope, 'specific_product'), eq(sales.productId, productId)),
+            and(eq(sales.applicationScope, 'specific_category'), categoryId ? eq(sales.categoryId, categoryId) : sql`false`),
+            and(eq(sales.applicationScope, 'selected_products'), sql`${sales.selectedProductIds} @> ARRAY[${productId}]::text[]`)
+          )
         )
       );
     
-    // For now, return all active sales since we don't have product-specific filtering
     return activeSales;
+  }
+
+  generateDiscountId(name: string, startDate: Date): string {
+    // Extract year from start date
+    const year = startDate.getFullYear();
+    
+    // Clean the name: remove special characters, convert to uppercase, extract letters and numbers
+    const cleanName = name
+      .toUpperCase()
+      .replace(/[^A-Z0-9\s]/g, '') // Remove special characters except spaces
+      .split(' ')
+      .filter(word => word.length > 0)
+      .join('');
+    
+    // Format: #YEARNAME (e.g., #2024BLACKFRIDAY20)
+    return `#${year}${cleanName}`;
   }
 }
 

@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useLocation, useParams } from "wouter";
+import { useState } from "react";
+import { useLocation } from "wouter";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -60,18 +60,12 @@ const discountSchema = z.object({
 
 type DiscountFormData = z.infer<typeof discountSchema>;
 
-export default function EditDiscount() {
+export default function AddDiscount() {
   const [, navigate] = useLocation();
-  const { id } = useParams();
   const { toast } = useToast();
+  const [discountId, setDiscountId] = useState("");
   const [productSearchOpen, setProductSearchOpen] = useState(false);
   const [categorySearchOpen, setCategorySearchOpen] = useState(false);
-
-  // Fetch discount data
-  const { data: discount, isLoading: discountLoading } = useQuery({
-    queryKey: [`/api/discounts/${id}`],
-    enabled: !!id,
-  });
 
   // Fetch products
   const { data: products = [] } = useQuery({
@@ -102,41 +96,38 @@ export default function EditDiscount() {
     name: "selectedProductIds",
   });
 
+  const watchName = form.watch("name");
+  const watchStartDate = form.watch("startDate");
   const watchApplicationScope = form.watch("applicationScope");
 
-  // Update form when discount data is loaded
+  // Generate discount ID when name or start date changes
   useEffect(() => {
-    if (discount) {
-      form.reset({
-        name: discount.name || "",
-        description: discount.description || "",
-        percentage: discount.percentage || 0,
-        status: discount.status || "active",
-        startDate: discount.startDate ? format(new Date(discount.startDate), 'yyyy-MM-dd') : "",
-        endDate: discount.endDate ? format(new Date(discount.endDate), 'yyyy-MM-dd') : "",
-        applicationScope: discount.applicationScope || "specific_product",
-        productId: discount.productId || undefined,
-        categoryId: discount.categoryId || undefined,
-        selectedProductIds: discount.selectedProductIds?.map((id: string) => ({ productId: id })) || [],
-      });
+    if (watchName && watchStartDate) {
+      const year = new Date(watchStartDate).getFullYear();
+      const cleanName = watchName
+        .toUpperCase()
+        .replace(/[^A-Z0-9\s]/g, '')
+        .split(' ')
+        .filter(word => word.length > 0)
+        .join('');
+      setDiscountId(`#${year}${cleanName}`);
     }
-  }, [discount, form]);
+  }, [watchName, watchStartDate]);
 
-  const updateDiscountMutation = useMutation({
-    mutationFn: (data: any) => apiRequest('PUT', `/api/discounts/${id}`, data),
+  const createDiscountMutation = useMutation({
+    mutationFn: (data: any) => apiRequest('POST', '/api/discounts', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/discounts'] });
-      queryClient.invalidateQueries({ queryKey: [`/api/discounts/${id}`] });
       toast({
         title: "Success",
-        description: "Discount updated successfully",
+        description: "Discount created successfully",
       });
       navigate("/discounts");
     },
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to update discount",
+        description: error.message || "Failed to create discount",
         variant: "destructive",
       });
     },
@@ -161,28 +152,8 @@ export default function EditDiscount() {
       submitData.selectedProductIds = data.selectedProductIds?.map(item => item.productId);
     }
 
-    updateDiscountMutation.mutate(submitData);
+    createDiscountMutation.mutate(submitData);
   };
-
-  if (discountLoading) {
-    return (
-      <div className="p-6 max-w-4xl mx-auto">
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!discount) {
-    return (
-      <div className="p-6 max-w-4xl mx-auto">
-        <div className="text-center">
-          <p className="text-gray-500">Discount not found</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -196,7 +167,7 @@ export default function EditDiscount() {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Discounts
         </Button>
-        <h1 className="text-2xl font-bold">Edit Discount</h1>
+        <h1 className="text-2xl font-bold">Add New Discount</h1>
       </div>
 
       <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -209,7 +180,8 @@ export default function EditDiscount() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Discount ID</Label>
-                <Input value={discount.discountId || ""} disabled className="bg-gray-50" />
+                <Input value={discountId} disabled className="bg-gray-50" />
+                <p className="text-xs text-gray-500 mt-1">Auto-generated from name and date</p>
               </div>
               <div>
                 <Label>Discount Name</Label>
@@ -493,11 +465,11 @@ export default function EditDiscount() {
               </Button>
               <Button
                 type="submit"
-                disabled={updateDiscountMutation.isPending}
+                disabled={createDiscountMutation.isPending}
                 className="bg-teal-600 hover:bg-teal-700"
               >
                 <Save className="h-4 w-4 mr-2" />
-                Save Changes
+                Save Now
               </Button>
             </div>
           </CardContent>

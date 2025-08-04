@@ -261,17 +261,17 @@ export const incomingShipments = pgTable("incoming_shipments", {
 // Sales/Discounts
 export const sales = pgTable("sales", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  discountId: varchar("discount_id", { length: 100 }).unique().notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
-  code: varchar("code", { length: 100 }).unique(),
-  type: varchar("type", { length: 20 }).default('percentage'), // percentage, fixed
-  value: decimal("value", { precision: 12, scale: 2 }).notNull(),
-  currency: currencyEnum("currency").default('EUR'),
-  startDate: timestamp("start_date"),
-  endDate: timestamp("end_date"),
-  minimumAmount: decimal("minimum_amount", { precision: 12, scale: 2 }),
-  maximumDiscount: decimal("maximum_discount", { precision: 12, scale: 2 }),
-  status: varchar("status", { length: 20 }).default('active'),
+  percentage: integer("percentage").notNull(), // Store as integer (e.g., 20 for 20%)
+  status: varchar("status", { length: 20 }).default('active'), // active, inactive, finished
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  applicationScope: varchar("application_scope", { length: 50 }).notNull(), // specific_product, all_products, specific_category, selected_products
+  productId: varchar("product_id").references(() => products.id), // For specific_product scope
+  categoryId: varchar("category_id").references(() => categories.id), // For specific_category scope
+  selectedProductIds: text("selected_product_ids").array(), // For selected_products scope
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -486,10 +486,12 @@ export const insertOrderItemSchema = createInsertSchema(orderItems).omit({ id: t
 });
 export const insertPurchaseSchema = createInsertSchema(purchases).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertIncomingShipmentSchema = createInsertSchema(incomingShipments).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertSaleSchema = createInsertSchema(sales).omit({ id: true, createdAt: true, updatedAt: true }).extend({
-  value: z.coerce.string(),
-  minimumAmount: z.coerce.string().optional(),
-  maximumDiscount: z.coerce.string().optional(),
+export const insertSaleSchema = createInsertSchema(sales).omit({ id: true, discountId: true, createdAt: true, updatedAt: true }).extend({
+  percentage: z.coerce.number().min(1).max(100),
+  applicationScope: z.enum(['specific_product', 'all_products', 'specific_category', 'selected_products']),
+  productId: z.string().optional(),
+  categoryId: z.string().optional(),
+  selectedProductIds: z.array(z.string()).optional(),
 });
 export const insertReturnSchema = createInsertSchema(returns).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertReturnItemSchema = createInsertSchema(returnItems).omit({ id: true });

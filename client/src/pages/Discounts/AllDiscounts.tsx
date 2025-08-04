@@ -29,7 +29,7 @@ export default function AllDiscounts() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedSales, setSelectedSales] = useState<any[]>([]);
 
-  const { data: sales = [], isLoading, error } = useQuery({
+  const { data: sales = [], isLoading, error } = useQuery<any[]>({
     queryKey: ['/api/discounts'],
     retry: false,
   });
@@ -78,12 +78,13 @@ export default function AllDiscounts() {
     return (
       matcher(sale.name || '') ||
       matcher(sale.description || '') ||
-      matcher(sale.code || '')
+      matcher(sale.discountId || '')
     );
   });
 
   // Check if sale is active
   const isSaleActive = (sale: any) => {
+    if (sale.status !== 'active') return false;
     const now = new Date();
     const start = new Date(sale.startDate);
     const end = new Date(sale.endDate);
@@ -108,43 +109,36 @@ export default function AllDiscounts() {
       ),
     },
     {
-      key: "code",
-      header: "Code",
+      key: "discountId",
+      header: "Discount ID",
       sortable: true,
-      cell: (sale) => <span className="font-mono">{sale.code}</span>,
+      cell: (sale) => <span className="font-mono text-sm">{sale.discountId}</span>,
     },
     {
-      key: "type",
-      header: "Type",
+      key: "percentage",
+      header: "Discount",
+      sortable: true,
+      cell: (sale) => (
+        <div className="flex items-center gap-1">
+          <Percent className="h-4 w-4 text-gray-400" />
+          <span className="font-medium">{sale.percentage}%</span>
+        </div>
+      ),
+    },
+    {
+      key: "applicationScope",
+      header: "Application Scope",
       sortable: true,
       cell: (sale) => {
-        const types: Record<string, { label: string; color: string }> = {
-          'percentage': { label: 'Percentage', color: 'bg-blue-100 text-blue-800' },
-          'fixed': { label: 'Fixed', color: 'bg-green-100 text-green-800' },
-          'buy_x_get_y': { label: 'Buy X Get Y', color: 'bg-purple-100 text-purple-800' },
+        const scopes: Record<string, { label: string; color: string }> = {
+          'specific_product': { label: 'Specific Product', color: 'bg-blue-100 text-blue-800' },
+          'all_products': { label: 'All Products', color: 'bg-green-100 text-green-800' },
+          'specific_category': { label: 'Specific Category', color: 'bg-purple-100 text-purple-800' },
+          'selected_products': { label: 'Selected Products', color: 'bg-orange-100 text-orange-800' },
         };
-        const type = types[sale.type] || { label: sale.type, color: 'bg-gray-100 text-gray-800' };
-        return <Badge className={type.color}>{type.label}</Badge>;
+        const scope = scopes[sale.applicationScope] || { label: sale.applicationScope, color: 'bg-gray-100 text-gray-800' };
+        return <Badge className={scope.color}>{scope.label}</Badge>;
       },
-    },
-    {
-      key: "value",
-      header: "Value",
-      sortable: true,
-      cell: (sale) => {
-        if (sale.type === 'percentage') {
-          return (
-            <div className="flex items-center gap-1">
-              <Percent className="h-4 w-4 text-gray-400" />
-              {sale.value}%
-            </div>
-          );
-        } else if (sale.type === 'fixed') {
-          return formatCurrency(parseFloat(sale.value || '0'), sale.currency || 'EUR');
-        }
-        return sale.value || '-';
-      },
-      className: "text-right",
     },
     {
       key: "startDate",
@@ -167,12 +161,13 @@ export default function AllDiscounts() {
       key: "status",
       header: "Status",
       cell: (sale) => {
-        const active = isSaleActive(sale);
-        return (
-          <Badge className={active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
-            {active ? 'Active' : 'Inactive'}
-          </Badge>
-        );
+        const statusMap: Record<string, { label: string; color: string }> = {
+          'active': { label: 'Active', color: 'bg-green-100 text-green-800' },
+          'inactive': { label: 'Inactive', color: 'bg-gray-100 text-gray-800' },
+          'finished': { label: 'Finished', color: 'bg-red-100 text-red-800' },
+        };
+        const status = statusMap[sale.status] || { label: sale.status, color: 'bg-gray-100 text-gray-800' };
+        return <Badge className={status.color}>{status.label}</Badge>;
       },
     },
     {
@@ -291,9 +286,9 @@ export default function AllDiscounts() {
             <div className="flex items-center">
               <Percent className="h-8 w-8 text-purple-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-slate-600">Percentage Discounts</p>
+                <p className="text-sm font-medium text-slate-600">All Products</p>
                 <p className="text-2xl font-bold text-slate-900">
-                  {sales?.filter((s: any) => s.type === 'percentage').length || 0}
+                  {sales?.filter((s: any) => s.applicationScope === 'all_products').length || 0}
                 </p>
               </div>
             </div>
@@ -305,9 +300,9 @@ export default function AllDiscounts() {
             <div className="flex items-center">
               <Tag className="h-8 w-8 text-orange-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-slate-600">Fixed Discounts</p>
+                <p className="text-sm font-medium text-slate-600">Product Specific</p>
                 <p className="text-2xl font-bold text-slate-900">
-                  {sales?.filter((s: any) => s.type === 'fixed').length || 0}
+                  {sales?.filter((s: any) => s.applicationScope === 'specific_product' || s.applicationScope === 'selected_products').length || 0}
                 </p>
               </div>
             </div>
@@ -321,7 +316,7 @@ export default function AllDiscounts() {
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
             <Input
-              placeholder="Search sales by name, description, or code..."
+              placeholder="Search discounts by name, description, or discount ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
