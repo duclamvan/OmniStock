@@ -38,9 +38,11 @@ export default function OrderDetails() {
   const { toast } = useToast();
 
   // Fetch order data
-  const { data: order, isLoading } = useQuery<any>({
+  const { data: order, isLoading, isFetching } = useQuery<any>({
     queryKey: [`/api/orders/${id}`],
     enabled: !!id,
+    refetchInterval: 5000, // Refetch every 5 seconds for real-time updates
+    refetchOnWindowFocus: true, // Refetch when user returns to the tab
   });
 
   const copyToClipboard = (text: string, label: string) => {
@@ -96,16 +98,18 @@ export default function OrderDetails() {
   }
 
   const statusVariant = 
-    order.orderStatus === 'shipped' ? 'outline' :
+    order.orderStatus === 'shipped' ? 'default' :
     order.orderStatus === 'to_fulfill' ? 'secondary' :
-    order.orderStatus === 'pending' ? 'secondary' :
+    order.orderStatus === 'pending' ? 'outline' :
+    order.orderStatus === 'cancelled' ? 'destructive' :
     'secondary';
 
   const statusText = 
     order.orderStatus === 'to_fulfill' ? 'To Fulfill' :
     order.orderStatus === 'shipped' ? 'Shipped' :
     order.orderStatus === 'pending' ? 'Pending' :
-    order.orderStatus;
+    order.orderStatus === 'cancelled' ? 'Cancelled' :
+    order.orderStatus?.charAt(0).toUpperCase() + order.orderStatus?.slice(1) || 'Unknown';
 
   const paymentStatusVariant = 
     order.paymentStatus === 'paid' ? 'default' :
@@ -147,6 +151,12 @@ export default function OrderDetails() {
               >
                 <Copy className="h-3 w-3" />
               </Button>
+              {isFetching && !isLoading && (
+                <div className="flex items-center gap-1 text-xs text-slate-500">
+                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-slate-500"></div>
+                  <span>Syncing...</span>
+                </div>
+              )}
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant={statusVariant}>{statusText}</Badge>
@@ -238,11 +248,23 @@ export default function OrderDetails() {
               <div>
                 <p className="text-sm font-medium text-slate-600 mb-1">Shipping Status</p>
                 <div className="flex items-center gap-2">
-                  <Truck className="h-5 w-5 text-orange-500" />
-                  <p className="text-lg font-semibold">
-                    {order.shippedAt ? 'Shipped' : 'Not Shipped'}
-                  </p>
+                  {order.orderStatus === 'shipped' || order.shippedAt ? (
+                    <>
+                      <CheckCircle2 className="h-5 w-5 text-green-500" />
+                      <p className="text-lg font-semibold text-green-700">Shipped</p>
+                    </>
+                  ) : (
+                    <>
+                      <Truck className="h-5 w-5 text-orange-500" />
+                      <p className="text-lg font-semibold">Not Shipped</p>
+                    </>
+                  )}
                 </div>
+                {order.shippedAt && (
+                  <p className="text-xs text-slate-500 mt-1">
+                    {new Date(order.shippedAt).toLocaleDateString()}
+                  </p>
+                )}
               </div>
               <Package className="h-8 w-8 text-orange-500 opacity-20" />
             </div>

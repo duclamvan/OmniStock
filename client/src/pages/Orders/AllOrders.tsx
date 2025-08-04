@@ -47,6 +47,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       return response.json();
     },
     retry: false,
+    refetchInterval: 10000, // Refetch every 10 seconds
+    refetchOnWindowFocus: true, // Refetch when user returns to the tab
   });
 
   // Error handling

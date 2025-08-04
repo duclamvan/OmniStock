@@ -16,6 +16,9 @@ Davie Supply is a comprehensive warehouse and order management system designed a
 - **Order Details Page**: Created comprehensive order details page for viewing orders without editing functionality, with proper status formatting (e.g., "To Fulfill" instead of "to_fulfill") and color coding
 - **Enhanced Order Details Page**: Added comprehensive features including quick stats cards, order timeline, pricing breakdown, customer information, and action buttons for print/share/export
 - **Expandable Order Rows**: Modified DataTable component to support expandable rows and implemented expandable order rows in AllOrders table to quickly view order items, with click-to-view functionality for full order details
+- **Enhanced UI Separation**: Improved visual separation between expanded order rows with blue left borders, light gray backgrounds, gradient fade effects, and thicker bottom borders for better user experience
+- **Real-Time Sync Implementation**: Added automatic data refresh (5-second intervals for order details, 10-second intervals for order lists) with visual sync indicators showing when data is being updated
+- **Shipping Status Enhancement**: Updated shipping status display to properly sync with order status changes, showing green checkmark when shipped and automatically setting shippedAt timestamp when order status changes to "shipped"
 
 # User Preferences
 Preferred communication style: Simple, everyday language.
