@@ -471,6 +471,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/suppliers/:id', async (req, res) => {
+    try {
+      const supplier = await storage.getSupplierById(req.params.id);
+      if (!supplier) {
+        return res.status(404).json({ message: "Supplier not found" });
+      }
+      res.json(supplier);
+    } catch (error) {
+      console.error("Error fetching supplier:", error);
+      res.status(500).json({ message: "Failed to fetch supplier" });
+    }
+  });
+
   app.post('/api/suppliers', async (req: any, res) => {
     try {
       const data = insertSupplierSchema.parse(req.body);
@@ -488,6 +501,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error creating supplier:", error);
       res.status(500).json({ message: "Failed to create supplier" });
+    }
+  });
+
+  app.patch('/api/suppliers/:id', async (req: any, res) => {
+    try {
+      const supplier = await storage.updateSupplier(req.params.id, req.body);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'updated',
+        entityType: 'supplier',
+        entityId: supplier.id,
+        description: `Updated supplier: ${supplier.name}`,
+      });
+      
+      res.json(supplier);
+    } catch (error) {
+      console.error("Error updating supplier:", error);
+      res.status(500).json({ message: "Failed to update supplier" });
+    }
+  });
+
+  app.delete('/api/suppliers/:id', async (req: any, res) => {
+    try {
+      const supplier = await storage.getSupplierById(req.params.id);
+      if (!supplier) {
+        return res.status(404).json({ message: "Supplier not found" });
+      }
+      
+      await storage.deleteSupplier(req.params.id);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'deleted',
+        entityType: 'supplier',
+        entityId: req.params.id,
+        description: `Deleted supplier: ${supplier.name}`,
+      });
+      
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Error deleting supplier:", error);
+      
+      // Check if it's a foreign key constraint error
+      if (error.code === '23503' || error.message?.includes('constraint')) {
+        return res.status(409).json({ 
+          message: "Cannot delete supplier - it's being used by products" 
+        });
+      }
+      
+      res.status(500).json({ message: "Failed to delete supplier" });
     }
   });
 

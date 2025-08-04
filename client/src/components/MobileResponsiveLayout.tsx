@@ -73,6 +73,11 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
       icon: Users,
     },
     {
+      name: "Suppliers",
+      href: "/suppliers",
+      icon: Package,
+    },
+    {
       name: "Reports",
       href: "/reports",
       icon: BarChart3,

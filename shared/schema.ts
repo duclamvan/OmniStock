@@ -82,7 +82,11 @@ export const suppliers = pgTable("suppliers", {
   email: varchar("email", { length: 255 }),
   phone: varchar("phone", { length: 20 }),
   address: text("address"),
+  country: varchar("country", { length: 100 }),
   website: varchar("website", { length: 255 }),
+  supplierLink: text("supplier_link"),
+  lastPurchaseDate: timestamp("last_purchase_date"),
+  totalPurchased: decimal("total_purchased", { precision: 12, scale: 2 }).default('0'),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
 });

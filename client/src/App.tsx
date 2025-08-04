@@ -24,6 +24,10 @@ import AllCustomers from "@/pages/Customers/AllCustomers";
 import AddCustomer from "@/pages/Customers/AddCustomer";
 import EditCustomer from "@/pages/Customers/EditCustomer";
 import CustomerDetails from "@/pages/Customers/CustomerDetails";
+import AllSuppliers from "@/pages/Suppliers/AllSuppliers";
+import AddSupplier from "@/pages/Suppliers/AddSupplier";
+import EditSupplier from "@/pages/Suppliers/EditSupplier";
+import SupplierDetails from "@/pages/Suppliers/SupplierDetails";
 
 function Router() {
   return (
@@ -66,6 +70,10 @@ function Router() {
         <Route path="/customers/add" component={AddCustomer} />
         <Route path="/customers/:id/edit" component={EditCustomer} />
         <Route path="/customers/:id" component={CustomerDetails} />
+        <Route path="/suppliers" component={AllSuppliers} />
+        <Route path="/suppliers/new" component={AddSupplier} />
+        <Route path="/suppliers/:id/edit" component={EditSupplier} />
+        <Route path="/suppliers/:id" component={SupplierDetails} />
         <Route path="/reports">
           {() => <div>Reports page coming soon</div>}
         </Route>
