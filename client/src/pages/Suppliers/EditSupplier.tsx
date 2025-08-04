@@ -62,10 +62,7 @@ export default function EditSupplier() {
 
   const updateMutation = useMutation({
     mutationFn: (data: InsertSupplier) =>
-      apiRequest(`/api/suppliers/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify(data),
-      }),
+      apiRequest("PATCH", `/api/suppliers/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
       queryClient.invalidateQueries({ queryKey: [`/api/suppliers/${id}`] });

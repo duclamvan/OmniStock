@@ -41,10 +41,7 @@ export default function AddSupplier() {
 
   const createMutation = useMutation({
     mutationFn: (data: InsertSupplier) =>
-      apiRequest("/api/suppliers", {
-        method: "POST",
-        body: JSON.stringify(data),
-      }),
+      apiRequest("POST", "/api/suppliers", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
       toast({ description: "Supplier created successfully" });
