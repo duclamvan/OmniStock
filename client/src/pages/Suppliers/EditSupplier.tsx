@@ -10,12 +10,14 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { insertSupplierSchema, type InsertSupplier, type Supplier } from "@shared/schema";
-import { ArrowLeft, Loader2, Check, ChevronsUpDown } from "lucide-react";
+import { insertSupplierSchema, type InsertSupplier, type Supplier, type SupplierFile } from "@shared/schema";
+import { ArrowLeft, Loader2, Check, ChevronsUpDown, FileText, Upload, File, Trash2, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { countries } from "@/lib/countries";
+import { ObjectUploader } from "@/components/ObjectUploader";
+import type { UploadResult } from "@uppy/core";
 
 
 const formSchema = insertSupplierSchema.extend({});
@@ -30,6 +32,61 @@ export default function EditSupplier() {
     queryKey: [`/api/suppliers/${id}`],
     enabled: !!id,
   });
+
+  const { data: supplierFiles = [] } = useQuery<SupplierFile[]>({
+    queryKey: [`/api/suppliers/${id}/files`],
+    enabled: !!id,
+  });
+
+  const deleteFileMutation = useMutation({
+    mutationFn: async (fileId: string) => {
+      return apiRequest('DELETE', `/api/suppliers/${id}/files/${fileId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/suppliers/${id}/files`] });
+      toast({
+        title: "File deleted",
+        description: "The file has been removed successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete the file.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleGetUploadParameters = async () => {
+    const response = await apiRequest('POST', `/api/suppliers/${id}/files/upload`);
+    const data = await response.json();
+    return {
+      method: 'PUT' as const,
+      url: data.uploadURL,
+    };
+  };
+
+  const handleUploadComplete = async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
+    if (result.successful && result.successful.length > 0) {
+      for (const file of result.successful) {
+        const uploadData = {
+          fileName: file.name,
+          fileType: file.type || 'application/octet-stream',
+          fileUrl: file.uploadURL,
+          fileSize: file.size,
+        };
+
+        await apiRequest('POST', `/api/suppliers/${id}/files`, uploadData);
+      }
+
+      queryClient.invalidateQueries({ queryKey: [`/api/suppliers/${id}/files`] });
+      toast({
+        title: "Upload successful",
+        description: `${result.successful.length} file(s) uploaded successfully.`,
+      });
+    }
+  };
 
   const form = useForm<InsertSupplier>({
     resolver: zodResolver(formSchema),
@@ -290,6 +347,70 @@ export default function EditSupplier() {
               </div>
             </form>
           </Form>
+        </CardContent>
+      </Card>
+
+      {/* Files & Documents Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Files & Documents ({supplierFiles.length})
+            </CardTitle>
+            <ObjectUploader
+              maxNumberOfFiles={10}
+              maxFileSize={50 * 1024 * 1024} // 50MB
+              onGetUploadParameters={handleGetUploadParameters}
+              onComplete={handleUploadComplete}
+              buttonClassName="flex items-center gap-2"
+            >
+              <Upload className="h-4 w-4" />
+              Upload Files
+            </ObjectUploader>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {supplierFiles.length === 0 ? (
+            <p className="text-slate-500">No files uploaded yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {supplierFiles.map((file) => (
+                <div
+                  key={file.id}
+                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-slate-50"
+                >
+                  <div className="flex items-center gap-3">
+                    <File className="h-5 w-5 text-slate-400" />
+                    <div>
+                      <p className="font-medium">{file.fileName}</p>
+                      <p className="text-sm text-slate-500">
+                        {file.fileSize ? `${(file.fileSize / 1024 / 1024).toFixed(2)} MB` : 'Unknown size'} • 
+                        {file.createdAt ? new Date(file.createdAt).toLocaleDateString() : ''}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => window.open(file.fileUrl, '_blank')}
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => deleteFileMutation.mutate(file.id)}
+                      disabled={deleteFileMutation.isPending}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

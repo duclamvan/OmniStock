@@ -1,10 +1,10 @@
 import { useParams, useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import type { Supplier, Product, Purchase } from "@shared/schema";
+import type { Supplier, Product, Purchase, SupplierFile } from "@shared/schema";
 import { 
   ArrowLeft, 
   Pencil, 
@@ -18,9 +18,17 @@ import {
   DollarSign,
   FileText,
   ShoppingCart,
-  TrendingUp
+  TrendingUp,
+  Upload,
+  File,
+  Trash2,
+  Download
 } from "lucide-react";
 import { formatCurrency } from "@/lib/currencyUtils";
+import { ObjectUploader } from "@/components/ObjectUploader";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import type { UploadResult } from "@uppy/core";
+import { toast } from "@/hooks/use-toast";
 
 export default function SupplierDetails() {
   const { id } = useParams();
@@ -38,6 +46,61 @@ export default function SupplierDetails() {
   const { data: purchases = [] } = useQuery<Purchase[]>({
     queryKey: ["/api/purchases"],
   });
+
+  const { data: supplierFiles = [] } = useQuery<SupplierFile[]>({
+    queryKey: [`/api/suppliers/${id}/files`],
+    enabled: !!id,
+  });
+
+  const deleteFileMutation = useMutation({
+    mutationFn: async (fileId: string) => {
+      return apiRequest('DELETE', `/api/suppliers/${id}/files/${fileId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/suppliers/${id}/files`] });
+      toast({
+        title: "File deleted",
+        description: "The file has been removed successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete the file.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleGetUploadParameters = async () => {
+    const response = await apiRequest('POST', `/api/suppliers/${id}/files/upload`);
+    const data = await response.json();
+    return {
+      method: 'PUT' as const,
+      url: data.uploadURL,
+    };
+  };
+
+  const handleUploadComplete = async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
+    if (result.successful && result.successful.length > 0) {
+      for (const file of result.successful) {
+        const uploadData = {
+          fileName: file.name,
+          fileType: file.type || 'application/octet-stream',
+          fileUrl: file.uploadURL,
+          fileSize: file.size,
+        };
+
+        await apiRequest('POST', `/api/suppliers/${id}/files`, uploadData);
+      }
+
+      queryClient.invalidateQueries({ queryKey: [`/api/suppliers/${id}/files`] });
+      toast({
+        title: "Upload successful",
+        description: `${result.successful.length} file(s) uploaded successfully.`,
+      });
+    }
+  };
 
   // Filter products by this supplier
   const supplierProducts = products.filter(p => p.supplierId === id && p.isActive);
@@ -249,6 +312,70 @@ export default function SupplierDetails() {
                       Showing latest 10 of {supplierPurchases.length} purchases
                     </p>
                   )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Files & Documents */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Files & Documents ({supplierFiles.length})
+                </CardTitle>
+                <ObjectUploader
+                  maxNumberOfFiles={10}
+                  maxFileSize={50 * 1024 * 1024} // 50MB
+                  onGetUploadParameters={handleGetUploadParameters}
+                  onComplete={handleUploadComplete}
+                  buttonClassName="flex items-center gap-2"
+                >
+                  <Upload className="h-4 w-4" />
+                  Upload Files
+                </ObjectUploader>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {supplierFiles.length === 0 ? (
+                <p className="text-slate-500">No files uploaded yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  {supplierFiles.map((file) => (
+                    <div
+                      key={file.id}
+                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-slate-50"
+                    >
+                      <div className="flex items-center gap-3">
+                        <File className="h-5 w-5 text-slate-400" />
+                        <div>
+                          <p className="font-medium">{file.fileName}</p>
+                          <p className="text-sm text-slate-500">
+                            {file.fileSize ? `${(file.fileSize / 1024 / 1024).toFixed(2)} MB` : 'Unknown size'} • 
+                            {file.createdAt ? new Date(file.createdAt).toLocaleDateString() : ''}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => window.open(file.fileUrl, '_blank')}
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteFileMutation.mutate(file.id)}
+                          disabled={deleteFileMutation.isPending}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </CardContent>

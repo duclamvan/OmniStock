@@ -3,6 +3,7 @@ import {
   categories,
   warehouses,
   suppliers,
+  supplierFiles,
   products,
   productVariants,
   customers,
@@ -25,6 +26,8 @@ import {
   type InsertWarehouse,
   type Supplier,
   type InsertSupplier,
+  type SupplierFile,
+  type InsertSupplierFile,
   type Product,
   type InsertProduct,
   type ProductVariant,
@@ -82,6 +85,11 @@ export interface IStorage {
   createSupplier(supplier: InsertSupplier): Promise<Supplier>;
   updateSupplier(id: string, supplier: Partial<InsertSupplier>): Promise<Supplier>;
   deleteSupplier(id: string): Promise<void>;
+  
+  // Supplier Files
+  getSupplierFiles(supplierId: string): Promise<SupplierFile[]>;
+  createSupplierFile(file: InsertSupplierFile): Promise<SupplierFile>;
+  deleteSupplierFile(id: string): Promise<void>;
 
   // Products
   getProducts(includeInactive?: boolean): Promise<Product[]>;
@@ -315,6 +323,23 @@ export class DatabaseStorage implements IStorage {
 
   async deleteSupplier(id: string): Promise<void> {
     await db.delete(suppliers).where(eq(suppliers.id, id));
+  }
+  
+  // Supplier Files
+  async getSupplierFiles(supplierId: string): Promise<SupplierFile[]> {
+    return await db.select()
+      .from(supplierFiles)
+      .where(eq(supplierFiles.supplierId, supplierId))
+      .orderBy(desc(supplierFiles.createdAt));
+  }
+  
+  async createSupplierFile(file: InsertSupplierFile): Promise<SupplierFile> {
+    const [newFile] = await db.insert(supplierFiles).values(file).returning();
+    return newFile;
+  }
+  
+  async deleteSupplierFile(id: string): Promise<void> {
+    await db.delete(supplierFiles).where(eq(supplierFiles.id, id));
   }
 
   // Products

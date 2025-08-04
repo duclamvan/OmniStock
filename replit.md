@@ -23,6 +23,7 @@ Davie Supply is a comprehensive warehouse and order management system designed a
 - **Supplier Detail Enhancements**: Added purchase history section to supplier details with compact product rows for better visibility, purchase statistics including total purchases count, and proper TypeScript error handling for date fields
 - **Purchase History API**: Added /api/purchases endpoint to server routes enabling frontend to fetch purchase history data for supplier details page
 - **Supplier Form Updates**: Removed duplicate "Supplier Link" field from Add/Edit Supplier forms (redundant with Website field) and replaced Country text input with searchable dropdown using Command component for better UX
+- **Supplier File Management**: Implemented complete file upload functionality for suppliers using object storage - added supplier_files table, ObjectUploader component with drag-and-drop support, file management APIs, and integrated file upload/display/delete features in both SupplierDetails and EditSupplier pages
 
 # User Preferences
 Preferred communication style: Simple, everyday language.

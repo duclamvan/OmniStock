@@ -14,12 +14,18 @@ import {
   insertCategorySchema,
   insertWarehouseSchema,
   insertSupplierSchema,
+  insertSupplierFileSchema,
   insertExpenseSchema,
   insertPreOrderSchema,
   insertSaleSchema,
 } from "@shared/schema";
 import { z } from "zod";
 import { nanoid } from "nanoid";
+import {
+  ObjectStorageService,
+  ObjectNotFoundError,
+} from "./objectStorage";
+import { ObjectPermission } from "./objectAcl";
 
 // Configure multer for image uploads
 const storage_disk = multer.diskStorage({
@@ -552,6 +558,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.status(500).json({ message: "Failed to delete supplier" });
+    }
+  });
+
+  // Supplier Files endpoints
+  app.get('/api/suppliers/:id/files', async (req, res) => {
+    try {
+      const files = await storage.getSupplierFiles(req.params.id);
+      res.json(files);
+    } catch (error) {
+      console.error("Error fetching supplier files:", error);
+      res.status(500).json({ message: "Failed to fetch supplier files" });
+    }
+  });
+
+  app.post('/api/suppliers/:id/files/upload', async (req: any, res) => {
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      res.json({ uploadURL });
+    } catch (error) {
+      console.error("Error getting upload URL:", error);
+      res.status(500).json({ message: "Failed to get upload URL" });
+    }
+  });
+
+  app.post('/api/suppliers/:id/files', async (req: any, res) => {
+    try {
+      const { fileName, fileType, fileUrl, fileSize } = req.body;
+      
+      const objectStorageService = new ObjectStorageService();
+      const objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
+        fileUrl,
+        {
+          owner: "test-user",
+          visibility: "private",
+        }
+      );
+
+      const fileData = {
+        supplierId: req.params.id,
+        fileName,
+        fileType,
+        fileUrl: objectPath,
+        fileSize,
+        uploadedBy: "test-user",
+      };
+
+      const file = await storage.createSupplierFile(fileData);
+      res.json(file);
+    } catch (error) {
+      console.error("Error creating supplier file:", error);
+      res.status(500).json({ message: "Failed to create supplier file" });
+    }
+  });
+
+  app.delete('/api/suppliers/:id/files/:fileId', async (req: any, res) => {
+    try {
+      await storage.deleteSupplierFile(req.params.fileId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting supplier file:", error);
+      res.status(500).json({ message: "Failed to delete supplier file" });
+    }
+  });
+
+  // Serve private objects
+  app.get("/objects/:objectPath(*)", async (req, res) => {
+    const objectStorageService = new ObjectStorageService();
+    try {
+      const objectFile = await objectStorageService.getObjectEntityFile(
+        req.path,
+      );
+      const canAccess = await objectStorageService.canAccessObjectEntity({
+        objectFile,
+        userId: "test-user",
+        requestedPermission: ObjectPermission.READ,
+      });
+      if (!canAccess) {
+        return res.sendStatus(401);
+      }
+      objectStorageService.downloadObject(objectFile, res);
+    } catch (error) {
+      console.error("Error checking object access:", error);
+      if (error instanceof ObjectNotFoundError) {
+        return res.sendStatus(404);
+      }
+      return res.sendStatus(500);
     }
   });
 
