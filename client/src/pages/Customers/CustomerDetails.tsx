@@ -207,38 +207,45 @@ export default function CustomerDetails() {
           ) : (
             <div className="space-y-4">
               {orders.map((order: any) => (
-                <Link key={order.id} href={`/orders/${order.id}/edit`}>
+                <Link key={order.id} href={`/orders/${order.id}`}>
                   <div className="border rounded-lg p-4 hover:bg-slate-50 cursor-pointer transition-colors">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <Package className="h-5 w-5 text-slate-400" />
-                        <div>
-                          <p className="font-medium text-sm">Order #{order.id.slice(0, 8)}</p>
-                          <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
-                            <Calendar className="h-3 w-3" />
-                            <span>{new Date(order.createdAt).toLocaleDateString()}</span>
-                          </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <Package className="h-5 w-5 text-slate-400" />
+                      <div>
+                        <p className="font-medium text-sm">Order #{order.id.slice(0, 8)}</p>
+                        <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
+                          <Calendar className="h-3 w-3" />
+                          <span>{new Date(order.createdAt).toLocaleDateString()}</span>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-medium text-sm">{formatCurrency(order.total || 0, order.currency || 'EUR')}</p>
-                        <Badge 
-                          variant={
-                            order.status === 'delivered' ? 'default' :
-                            order.status === 'shipped' ? 'secondary' :
-                            order.status === 'processing' ? 'outline' :
-                            'destructive'
-                          }
-                          className="mt-1"
-                        >
-                          {order.status}
-                        </Badge>
-                      </div>
                     </div>
-                    <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
-                      <span>{order.items?.length || 0} items</span>
-                      <span>Payment: {order.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}</span>
+                    <div className="text-right">
+                      <p className="font-medium text-sm">{formatCurrency(order.total || 0, order.currency || 'EUR')}</p>
+                      <Badge 
+                        variant={
+                          order.status === 'delivered' ? 'default' :
+                          order.status === 'shipped' ? 'outline' :
+                          order.status === 'to_fulfill' ? 'secondary' :
+                          order.status === 'pending' ? 'secondary' :
+                          order.status === 'cancelled' ? 'destructive' :
+                          'secondary'
+                        }
+                        className="mt-1"
+                      >
+                        {order.status === 'to_fulfill' ? 'To Fulfill' :
+                         order.status === 'delivered' ? 'Delivered' :
+                         order.status === 'shipped' ? 'Shipped' :
+                         order.status === 'pending' ? 'Pending' :
+                         order.status === 'cancelled' ? 'Cancelled' :
+                         order.status}
+                      </Badge>
                     </div>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
+                    <span>{order.items?.length || 0} items</span>
+                    <span>Payment: {order.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}</span>
+                  </div>
                   </div>
                 </Link>
               ))}

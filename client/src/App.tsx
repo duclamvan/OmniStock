@@ -11,6 +11,7 @@ import Home from "@/pages/Home";
 import AllOrders from "@/pages/Orders/AllOrders";
 import AddOrder from "@/pages/Orders/AddOrder";
 import EditOrder from "@/pages/Orders/EditOrder";
+import OrderDetails from "@/pages/Orders/OrderDetails";
 import AllInventory from "@/pages/Inventory/AllInventory";
 import AddProduct from "@/pages/Inventory/AddProduct";
 import EditProduct from "@/pages/Inventory/EditProduct";
@@ -32,6 +33,7 @@ function Router() {
         <Route path="/orders" component={AllOrders} />
         <Route path="/orders/add" component={AddOrder} />
         <Route path="/orders/:id/edit" component={EditOrder} />
+        <Route path="/orders/:id" component={OrderDetails} />
         <Route path="/orders/to-fulfill">
           {() => <AllOrders filter="to_fulfill" />}
         </Route>

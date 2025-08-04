@@ -13,6 +13,7 @@ Davie Supply is a comprehensive warehouse and order management system designed a
 - **Customers Page Update**: Enhanced customers table with order statistics (total orders, total sales, last purchase date) and added Messenger integration with blacklist functionality placeholder
 - **Edit Customer Page**: Created comprehensive edit customer form with prefilled data, address lookup integration, organized sections for basic info, contact & address (combined), and notes
 - **Customer Details Page**: Added dedicated customer details view showing customer type, total orders, total spent, contact & address info, notes, and complete order history with clickable order links
+- **Order Details Page**: Created comprehensive order details page for viewing orders without editing functionality, with proper status formatting (e.g., "To Fulfill" instead of "to_fulfill") and color coding
 
 # User Preferences
 Preferred communication style: Simple, everyday language.
