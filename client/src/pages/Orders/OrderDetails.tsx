@@ -209,6 +209,18 @@ export default function OrderDetails() {
           </CardContent>
         </Card>
 
+        <Card className="border-l-4 border-l-purple-500">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-600 mb-1">Total Items</p>
+                <p className="text-2xl font-bold text-slate-900">{order.items?.length || 0}</p>
+              </div>
+              <ShoppingCart className="h-8 w-8 text-purple-500 opacity-20" />
+            </div>
+          </CardContent>
+        </Card>
+
         <Card className="border-l-4 border-l-green-500">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -255,18 +267,6 @@ export default function OrderDetails() {
                 )}
               </div>
               <Package className="h-8 w-8 text-orange-500 opacity-20" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-purple-500">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600 mb-1">Total Items</p>
-                <p className="text-2xl font-bold text-slate-900">{order.items?.length || 0}</p>
-              </div>
-              <ShoppingCart className="h-8 w-8 text-purple-500 opacity-20" />
             </div>
           </CardContent>
         </Card>
