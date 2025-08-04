@@ -1546,6 +1546,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch purchases" });
     }
   });
+  
+  // Returns endpoints
+  app.get('/api/returns', async (req, res) => {
+    try {
+      const returns = await storage.getReturns();
+      res.json(returns);
+    } catch (error) {
+      console.error("Error fetching returns:", error);
+      res.status(500).json({ message: "Failed to fetch returns" });
+    }
+  });
+  
+  app.get('/api/returns/:id', async (req, res) => {
+    try {
+      const returnData = await storage.getReturnById(req.params.id);
+      if (!returnData) {
+        return res.status(404).json({ message: "Return not found" });
+      }
+      res.json(returnData);
+    } catch (error) {
+      console.error("Error fetching return:", error);
+      res.status(500).json({ message: "Failed to fetch return" });
+    }
+  });
+  
+  app.post('/api/returns', async (req: any, res) => {
+    try {
+      const { items, ...returnData } = req.body;
+      
+      // Create the return
+      const newReturn = await storage.createReturn(returnData);
+      
+      // Create return items
+      if (items && items.length > 0) {
+        await Promise.all(items.map((item: any) => 
+          storage.createReturnItem({
+            ...item,
+            returnId: newReturn.id,
+          })
+        ));
+      }
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'created',
+        entityType: 'return',
+        entityId: newReturn.id,
+        description: `Created return: ${newReturn.returnId}`,
+      });
+      
+      res.json(newReturn);
+    } catch (error) {
+      console.error("Error creating return:", error);
+      res.status(500).json({ message: "Failed to create return" });
+    }
+  });
+  
+  app.put('/api/returns/:id', async (req: any, res) => {
+    try {
+      const { items, ...returnData } = req.body;
+      
+      // Update the return
+      const updatedReturn = await storage.updateReturn(req.params.id, returnData);
+      
+      // Delete existing items and recreate
+      if (items) {
+        await storage.deleteReturnItems(req.params.id);
+        await Promise.all(items.map((item: any) => 
+          storage.createReturnItem({
+            ...item,
+            returnId: req.params.id,
+          })
+        ));
+      }
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'updated',
+        entityType: 'return',
+        entityId: updatedReturn.id,
+        description: `Updated return: ${updatedReturn.returnId}`,
+      });
+      
+      res.json(updatedReturn);
+    } catch (error) {
+      console.error("Error updating return:", error);
+      res.status(500).json({ message: "Failed to update return" });
+    }
+  });
+  
+  app.delete('/api/returns/:id', async (req: any, res) => {
+    try {
+      const returnData = await storage.getReturnById(req.params.id);
+      if (!returnData) {
+        return res.status(404).json({ message: "Return not found" });
+      }
+      
+      await storage.deleteReturn(req.params.id);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'deleted',
+        entityType: 'return',
+        entityId: req.params.id,
+        description: `Deleted return: ${returnData.returnId}`,
+      });
+      
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Error deleting return:", error);
+      
+      if (error.code === '23503' || error.message?.includes('constraint')) {
+        return res.status(409).json({ 
+          message: "Cannot delete return - it's being referenced by other records" 
+        });
+      }
+      
+      res.status(500).json({ message: "Failed to delete return" });
+    }
+  });
 
   // Mock data endpoint (for development)
   app.post('/api/seed-mock-data', async (req, res) => {

@@ -174,8 +174,15 @@ export interface IStorage {
 
   // Returns
   getReturns(): Promise<Return[]>;
+  getReturnById(id: string): Promise<Return | undefined>;
   createReturn(returnData: InsertReturn): Promise<Return>;
   updateReturn(id: string, returnData: Partial<InsertReturn>): Promise<Return>;
+  deleteReturn(id: string): Promise<void>;
+  
+  // Return Items
+  getReturnItems(returnId: string): Promise<ReturnItem[]>;
+  createReturnItem(item: InsertReturnItem): Promise<ReturnItem>;
+  deleteReturnItems(returnId: string): Promise<void>;
 
   // Expenses
   getExpenses(): Promise<Expense[]>;
@@ -1238,7 +1245,52 @@ export class DatabaseStorage implements IStorage {
 
   // Returns
   async getReturns(): Promise<Return[]> {
-    return await db.select().from(returns).orderBy(desc(returns.createdAt));
+    const result = await db.select({
+      return: returns,
+      customer: customers,
+      order: orders,
+    })
+    .from(returns)
+    .leftJoin(customers, eq(returns.customerId, customers.id))
+    .leftJoin(orders, eq(returns.orderId, orders.id))
+    .orderBy(desc(returns.createdAt));
+    
+    // Get items for each return
+    const returnsWithItems = await Promise.all(result.map(async (row) => {
+      const items = await this.getReturnItems(row.return.id);
+      return {
+        ...row.return,
+        customer: row.customer,
+        order: row.order,
+        items,
+      };
+    }));
+    
+    return returnsWithItems;
+  }
+  
+  async getReturnById(id: string): Promise<Return | undefined> {
+    const result = await db.select({
+      return: returns,
+      customer: customers,
+      order: orders,
+    })
+    .from(returns)
+    .leftJoin(customers, eq(returns.customerId, customers.id))
+    .leftJoin(orders, eq(returns.orderId, orders.id))
+    .where(eq(returns.id, id))
+    .limit(1);
+    
+    if (result.length === 0) return undefined;
+    
+    const items = await this.getReturnItems(id);
+    
+    return {
+      ...result[0].return,
+      customer: result[0].customer,
+      order: result[0].order,
+      items,
+    };
   }
 
   async createReturn(returnData: InsertReturn): Promise<Return> {
@@ -1253,6 +1305,35 @@ export class DatabaseStorage implements IStorage {
       .where(eq(returns.id, id))
       .returning();
     return updatedReturn;
+  }
+  
+  async deleteReturn(id: string): Promise<void> {
+    await db.delete(returns).where(eq(returns.id, id));
+  }
+  
+  // Return Items
+  async getReturnItems(returnId: string): Promise<ReturnItem[]> {
+    const items = await db.select({
+      returnItem: returnItems,
+      product: products,
+    })
+    .from(returnItems)
+    .leftJoin(products, eq(returnItems.productId, products.id))
+    .where(eq(returnItems.returnId, returnId));
+    
+    return items.map(item => ({
+      ...item.returnItem,
+      product: item.product,
+    }));
+  }
+  
+  async createReturnItem(item: InsertReturnItem): Promise<ReturnItem> {
+    const [newItem] = await db.insert(returnItems).values(item).returning();
+    return newItem;
+  }
+  
+  async deleteReturnItems(returnId: string): Promise<void> {
+    await db.delete(returnItems).where(eq(returnItems.returnId, returnId));
   }
 
   // Expenses

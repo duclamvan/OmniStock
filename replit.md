@@ -27,6 +27,7 @@ Davie Supply is a comprehensive warehouse and order management system designed a
 - **Supplier File Management**: Implemented complete file upload functionality for suppliers using object storage - added supplier_files table, ObjectUploader component with drag-and-drop support, file management APIs, and integrated file upload/display/delete features in both SupplierDetails and EditSupplier pages
 - **Warehouse Management System**: Completed comprehensive warehouse management with AllWarehouses listing page, WarehouseDetails with file management, EditWarehouse form with all required fields (status, rented from date, expense ID, notes, attachments), database schema updates with warehouseFiles table, and proper navigation between warehouse pages
 - **Warehouse File Management**: Integrated object storage for warehouse documents - added warehouse file upload/download/delete APIs, ObjectUploader integration for drag-and-drop file uploads, file display with size formatting and download links, and proper ACL permissions for warehouse files
+- **Returns Management System**: Implemented complete returns management with AllReturns listing page featuring stats cards and Vietnamese search, AddReturn form with auto-generated return IDs, EditReturn form with prefilled data, ReturnDetails page showing return information/timeline/items, database schema with returns and returnItems tables, full CRUD APIs, and navigation integration
 
 # User Preferences
 Preferred communication style: Simple, everyday language.
@@ -72,7 +73,7 @@ The project is structured as a monorepo with shared TypeScript types and Zod sch
 - **Reusable Components**: Generic DataTable component with features like bulk selection, sorting, pagination, and bulk actions.
 - **Image Upload**: Image upload functionality for products via Multer, storing images locally.
 - **Reporting**: Comprehensive sales, inventory, customer, and financial reports with filtering capabilities.
-- **CRUD Operations**: Full CRUD functionality implemented for warehouses, customers, sales/discounts, and products/orders, with robust error handling and foreign key constraint validation.
+- **CRUD Operations**: Full CRUD functionality implemented for warehouses, customers, sales/discounts, products/orders, and returns, with robust error handling and foreign key constraint validation.
 - **Discount Management**: Advanced discount system with auto-generated IDs, percentage-based discounts, flexible application scopes (product/category/all products), and automatic integration with order creation to apply active discounts.
 
 # External Dependencies
