@@ -42,10 +42,14 @@ export default function SupplierDetails() {
   // Filter products by this supplier
   const supplierProducts = products.filter(p => p.supplierId === id && p.isActive);
   
-  // Filter purchases by this supplier
-  const supplierPurchases = purchases.filter(p => 
-    p.supplierName?.toLowerCase() === supplier?.name?.toLowerCase()
-  );
+  // Filter purchases by this supplier - only filter when supplier data is loaded
+  const supplierPurchases = supplier 
+    ? purchases.filter(p => {
+        const match = p.supplierName && supplier.name && 
+          p.supplierName.toLowerCase().trim() === supplier.name.toLowerCase().trim();
+        return match;
+      })
+    : [];
 
   if (isLoading) {
     return (
