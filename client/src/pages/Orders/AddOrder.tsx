@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +17,30 @@ import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { calculateShippingCost } from "@/lib/shippingCosts";
-import { Plus, Search, Trash2, ShoppingCart, X, CheckCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { 
+  Plus, 
+  Search, 
+  Trash2, 
+  ShoppingCart, 
+  X, 
+  CheckCircle,
+  ArrowLeft,
+  Save,
+  User,
+  Package,
+  Truck,
+  CreditCard,
+  DollarSign,
+  FileText,
+  AlertCircle,
+  MapPin,
+  Phone,
+  Mail,
+  Building,
+  Hash
+} from "lucide-react";
 
 const addOrderSchema = z.object({
   customerId: z.string().optional(),
@@ -553,105 +576,188 @@ export default function AddOrder() {
   }, [allCustomers, debouncedCustomerSearch]);
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 max-w-6xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">Add New Order</h1>
+      <div className="flex items-center justify-between border-b pb-4">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setLocation("/orders")}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Orders
+          </Button>
+        </div>
+        <Badge variant="outline" className="text-green-600 border-green-600">
+          <Plus className="h-3 w-3 mr-1" />
+          New Order
+        </Badge>
+      </div>
+
+      <div>
+        <h1 className="text-3xl font-bold text-slate-900">Create New Order</h1>
+        <p className="text-slate-600 mt-1">Add products, select customer, and configure order details</p>
       </div>
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        {/* Order Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Order Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="currency">Currency</Label>
-                <Select value={form.watch('currency')} onValueChange={(value) => form.setValue('currency', value as any)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="CZK">CZK</SelectItem>
-                    <SelectItem value="EUR">EUR</SelectItem>
-                    <SelectItem value="USD">USD</SelectItem>
-                    <SelectItem value="VND">VND</SelectItem>
-                    <SelectItem value="CNY">CNY</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Column - 2/3 width */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Order Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ShoppingCart className="h-5 w-5 text-blue-600" />
+                  Order Information
+                </CardTitle>
+                <CardDescription>Configure order status, payment, and shipping details</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="currency">Currency *</Label>
+                    <Select value={form.watch('currency')} onValueChange={(value) => form.setValue('currency', value as any)}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="CZK">CZK - Czech Koruna</SelectItem>
+                        <SelectItem value="EUR">EUR - Euro</SelectItem>
+                        <SelectItem value="USD">USD - US Dollar</SelectItem>
+                        <SelectItem value="VND">VND - Vietnamese Dong</SelectItem>
+                        <SelectItem value="CNY">CNY - Chinese Yuan</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <div>
-                <Label htmlFor="priority">Priority</Label>
-                <Select value={form.watch('priority')} onValueChange={(value) => form.setValue('priority', value as any)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                  <div>
+                    <Label htmlFor="priority">Priority Level</Label>
+                    <Select value={form.watch('priority')} onValueChange={(value) => form.setValue('priority', value as any)}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 bg-gray-500 rounded-full" />
+                            Low Priority
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="medium">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 bg-yellow-500 rounded-full" />
+                            Medium Priority
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="high">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 bg-red-500 rounded-full" />
+                            High Priority
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
-              <div>
-                <Label htmlFor="orderStatus">Order Status</Label>
-                <Select value={form.watch('orderStatus')} onValueChange={(value) => form.setValue('orderStatus', value as any)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="to_fulfill">To Fulfill</SelectItem>
-                    <SelectItem value="shipped">Shipped</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="orderStatus">Order Status</Label>
+                    <Select value={form.watch('orderStatus')} onValueChange={(value) => form.setValue('orderStatus', value as any)}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 bg-orange-500 rounded-full" />
+                            Pending
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="to_fulfill">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 bg-blue-500 rounded-full" />
+                            To Fulfill
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="shipped">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 bg-green-500 rounded-full" />
+                            Shipped
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="shippingMethod">Shipping Method</Label>
-                <Select value={form.watch('shippingMethod')} onValueChange={(value) => form.setValue('shippingMethod', value as any)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select shipping method" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="GLS">GLS</SelectItem>
-                    <SelectItem value="PPL">PPL</SelectItem>
-                    <SelectItem value="DHL">DHL</SelectItem>
-                    <SelectItem value="DPD">DPD</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                  <div>
+                    <Label htmlFor="paymentStatus">Payment Status</Label>
+                    <Select value={form.watch('paymentStatus')} onValueChange={(value) => form.setValue('paymentStatus', value as any)}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">Pending Payment</SelectItem>
+                        <SelectItem value="paid">Paid</SelectItem>
+                        <SelectItem value="pay_later">Pay Later</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
-              <div>
-                <Label htmlFor="paymentMethod">Payment Method</Label>
-                <Select value={form.watch('paymentMethod')} onValueChange={(value) => form.setValue('paymentMethod', value as any)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select payment method" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
-                    <SelectItem value="PayPal">PayPal</SelectItem>
-                    <SelectItem value="COD">COD</SelectItem>
-                    <SelectItem value="Cash">Cash</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+                <Separator />
 
-        {/* Customer Selection */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Customer Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="shippingMethod">Shipping Method</Label>
+                    <div className="relative mt-1">
+                      <Truck className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Select value={form.watch('shippingMethod')} onValueChange={(value) => form.setValue('shippingMethod', value as any)}>
+                        <SelectTrigger className="pl-10">
+                          <SelectValue placeholder="Select shipping method" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="GLS">GLS Express</SelectItem>
+                          <SelectItem value="PPL">PPL Standard</SelectItem>
+                          <SelectItem value="DHL">DHL International</SelectItem>
+                          <SelectItem value="DPD">DPD Europe</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="paymentMethod">Payment Method</Label>
+                    <div className="relative mt-1">
+                      <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Select value={form.watch('paymentMethod')} onValueChange={(value) => form.setValue('paymentMethod', value as any)}>
+                        <SelectTrigger className="pl-10">
+                          <SelectValue placeholder="Select payment method" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                          <SelectItem value="PayPal">PayPal</SelectItem>
+                          <SelectItem value="COD">Cash on Delivery</SelectItem>
+                          <SelectItem value="Cash">Cash Payment</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Customer Selection */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5 text-blue-600" />
+                  Customer Details
+                </CardTitle>
+                <CardDescription>Search and select a customer or create a new one</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
             <div className="relative customer-search-container">
               <Label htmlFor="customer">Search Customer</Label>
               <div className="relative">
@@ -1268,7 +1374,11 @@ export default function AddOrder() {
             </div>
           </CardContent>
         </Card>
+      </div>
+      {/* End of Main Column */}
 
+      {/* Right Column - 1/3 width */}
+      <div className="lg:col-span-1 space-y-6">
         {/* Order Summary */}
         <Card>
           <CardHeader>
@@ -1299,17 +1409,21 @@ export default function AddOrder() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Submit Button */}
-        <div className="flex items-center justify-end space-x-4">
-          <Button type="button" variant="outline" onClick={() => setLocation('/orders')}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={createOrderMutation.isPending || orderItems.length === 0}>
-            {createOrderMutation.isPending ? 'Creating...' : 'Create Order'}
-          </Button>
-        </div>
-      </form>
+      </div>
+      {/* End of Right Column */}
     </div>
+    {/* End of Grid */}
+
+    {/* Submit Button */}
+    <div className="flex items-center justify-end space-x-4">
+      <Button type="button" variant="outline" onClick={() => setLocation('/orders')}>
+        Cancel
+      </Button>
+      <Button type="submit" disabled={createOrderMutation.isPending || orderItems.length === 0}>
+        {createOrderMutation.isPending ? 'Creating...' : 'Create Order'}
+      </Button>
+    </div>
+  </form>
+</div>
   );
 }

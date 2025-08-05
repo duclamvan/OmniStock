@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,8 +15,28 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { Upload, Package, RotateCcw, Plus, Trash2, MoreHorizontal } from "lucide-react";
 import { formatCurrency, convertCurrency, type Currency } from "@/lib/currencyUtils";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { 
+  Upload, 
+  Package, 
+  RotateCcw, 
+  Plus, 
+  Trash2, 
+  MoreHorizontal,
+  ArrowLeft,
+  Save,
+  DollarSign,
+  Hash,
+  Building,
+  Users,
+  BarChart,
+  AlertCircle,
+  FileText,
+  Link,
+  Barcode
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -339,13 +359,34 @@ export default function AddProduct() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 max-w-6xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">Add New Product</h1>
+      <div className="flex items-center justify-between border-b pb-4">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setLocation("/inventory")}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Inventory
+          </Button>
+        </div>
+        <Badge variant="outline" className="text-green-600 border-green-600">
+          <Plus className="h-3 w-3 mr-1" />
+          New Product
+        </Badge>
+      </div>
+
+      <div>
+        <h1 className="text-3xl font-bold text-slate-900">Add New Product</h1>
+        <p className="text-slate-600 mt-1">Create a new product with variants and pricing information</p>
       </div>
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Column - 2/3 width */}
+          <div className="lg:col-span-2 space-y-6">
         {/* Basic Information */}
         <Card>
           <CardHeader>
@@ -863,17 +904,35 @@ export default function AddProduct() {
             )}
           </CardContent>
         </Card>
+      </div>
+      {/* End of Main Column */}
 
-        {/* Submit Button */}
-        <div className="flex items-center justify-end space-x-4">
-          <Button type="button" variant="outline" onClick={() => setLocation('/inventory')}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={createProductMutation.isPending}>
-            {createProductMutation.isPending ? 'Creating...' : 'Create Product'}
-          </Button>
-        </div>
-      </form>
+      {/* Right Column - 1/3 width */}
+      <div className="lg:col-span-1 space-y-6">
+        {/* Pricing Summary Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5 text-blue-600" />
+              Quick Actions
+            </CardTitle>
+            <CardDescription>Save or cancel your changes</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button type="submit" className="w-full" disabled={createProductMutation.isPending}>
+              <Save className="h-4 w-4 mr-2" />
+              {createProductMutation.isPending ? 'Creating...' : 'Create Product'}
+            </Button>
+            <Button type="button" variant="outline" className="w-full" onClick={() => setLocation('/inventory')}>
+              Cancel
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+      {/* End of Right Column */}
     </div>
+    {/* End of Grid */}
+  </form>
+</div>
   );
 }
