@@ -273,6 +273,7 @@ export default function AllExpenses() {
         <DataTable
           columns={columns}
           data={filteredExpenses}
+          getRowKey={(expense) => expense.id}
           selectable
           selectedRows={selectedExpenses}
           onSelectedRowsChange={setSelectedExpenses}

@@ -1798,6 +1798,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Reseed all data
+  app.post("/api/reseed-all", async (req, res) => {
+    try {
+      const { reseedAllData } = await import("./reseedAllData.js");
+      const result = await reseedAllData();
+      res.json({ 
+        message: "All data reseeded successfully",
+        counts: result
+      });
+    } catch (error) {
+      console.error("Error reseeding all data:", error);
+      res.status(500).json({ error: "Failed to reseed all data" });
+    }
+  });
+
   // Reports endpoints
   app.get('/api/reports/sales-summary', async (req, res) => {
     try {
