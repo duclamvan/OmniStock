@@ -75,9 +75,11 @@ export default function AllWarehouses() {
     const matcher = createVietnameseSearchMatcher(searchQuery);
     return (
       matcher(warehouse.name || '') ||
+      matcher(warehouse.location || '') ||
       matcher(warehouse.address || '') ||
       matcher(warehouse.city || '') ||
-      matcher(warehouse.manager || '')
+      matcher(warehouse.manager || '') ||
+      matcher(warehouse.notes || '')
     );
   });
 
@@ -99,15 +101,15 @@ export default function AllWarehouses() {
       ),
     },
     {
-      key: "address",
-      header: "Address",
+      key: "location",
+      header: "Location",
       sortable: true,
       cell: (warehouse) => (
         <div className="flex items-center gap-2">
           <MapPin className="h-4 w-4 text-gray-400" />
           <div>
-            <div>{warehouse.address}</div>
-            <div className="text-xs text-gray-500">{warehouse.city}, {warehouse.country}</div>
+            <div>{warehouse.location || warehouse.address}</div>
+            <div className="text-xs text-gray-500">{warehouse.city || ''}{warehouse.city && warehouse.country ? ', ' : ''}{warehouse.country || ''}</div>
           </div>
         </div>
       ),

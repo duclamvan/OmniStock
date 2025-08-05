@@ -66,7 +66,7 @@ function Router() {
         <Route path="/inventory/add" component={AddProduct} />
         <Route path="/inventory/:id/edit" component={EditProduct} />
         <Route path="/inventory/products/edit/:id" component={EditProduct} />
-        <Route path="/warehouse" component={AllWarehouses} />
+        <Route path="/warehouses" component={AllWarehouses} />
         <Route path="/warehouses/add">
           {() => <div>Add Warehouse page coming soon</div>}
         </Route>
