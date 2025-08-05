@@ -11,13 +11,29 @@ import {
   Users, 
   BarChart3, 
   ChevronDown,
-  Plus
+  Plus,
+  Search,
+  Bell,
+  Sun,
+  Moon,
+  User,
+  Settings,
+  LogOut
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import logoPath from '@assets/logo_1754349267160.png';
+import { Input } from '@/components/ui/input';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface MobileResponsiveLayoutProps {
   children: React.ReactNode;
@@ -27,6 +43,8 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [openItems, setOpenItems] = useState<string[]>([]);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const toggleItem = (itemName: string) => {
     setOpenItems(prev => 
@@ -201,6 +219,86 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
 
       {/* Main Content */}
       <main className="lg:ml-64">
+        {/* Top Navigation Bar - Desktop Only */}
+        <header className="hidden lg:block sticky top-0 z-30 bg-white border-b border-gray-200">
+          <div className="flex items-center justify-between px-6 py-3">
+            {/* Page Title and Search */}
+            <div className="flex items-center flex-1 gap-6">
+              <h2 className="text-xl font-semibold text-gray-900">
+                {location === '/' ? 'Dashboard' : 
+                 location.includes('/orders') ? 'Orders' :
+                 location.includes('/inventory') ? 'Inventory' :
+                 location.includes('/warehouses') ? 'Warehouses' :
+                 location.includes('/discounts') ? 'Discounts' :
+                 location.includes('/customers') ? 'Customers' :
+                 location.includes('/suppliers') ? 'Suppliers' :
+                 location.includes('/returns') ? 'Returns' :
+                 location.includes('/reports') ? 'Reports' : 'Dashboard'}
+              </h2>
+              <div className="relative max-w-md w-full">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  type="text"
+                  placeholder="Search..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 pr-4 py-2 w-full"
+                />
+              </div>
+            </div>
+
+            {/* Right Section */}
+            <div className="flex items-center gap-4">
+              {/* Notifications */}
+              <Button variant="ghost" size="icon" className="relative">
+                <Bell className="h-5 w-5" />
+                <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
+              </Button>
+
+              {/* Dark Mode Toggle */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsDarkMode(!isDarkMode)}
+              >
+                {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+              </Button>
+
+              {/* User Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-2 px-2">
+                    <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
+                      <User className="h-5 w-5 text-gray-600" />
+                    </div>
+                    <div className="text-left hidden xl:block">
+                      <p className="text-sm font-medium">ronak_03</p>
+                      <p className="text-xs text-gray-500">Admin</p>
+                    </div>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>
+                    <User className="mr-2 h-4 w-4" />
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Settings className="mr-2 h-4 w-4" />
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        </header>
+
         <div className="px-mobile py-mobile max-w-7xl mx-auto">
           {children}
         </div>
