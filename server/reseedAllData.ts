@@ -536,7 +536,7 @@ export async function reseedAllData() {
         grandTotal: '32912.00',
         notes: 'VIP customer - expedited shipping requested',
         shippingMethod: 'DHL',
-        paymentMethod: 'Credit Card',
+        paymentMethod: 'PayPal',
         createdAt: new Date('2025-08-04T10:00:00Z'),
         items: [
           {
@@ -599,7 +599,7 @@ export async function reseedAllData() {
         grandTotal: '3487.00',
         notes: 'Customer prefers weekend delivery',
         shippingMethod: 'PPL',
-        paymentMethod: 'Cash on Delivery',
+        paymentMethod: 'COD',
         createdAt: new Date('2025-08-04T16:45:00Z'),
         items: [
           {

@@ -1801,8 +1801,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Reseed all data
   app.post("/api/reseed-all", async (req, res) => {
     try {
-      const { reseedAllData } = await import("./reseedAllData.js");
-      const result = await reseedAllData();
+      const { reseedAllDataComprehensive } = await import("./reseedAllDataComprehensive.js");
+      const result = await reseedAllDataComprehensive();
       res.json({ 
         message: "All data reseeded successfully",
         counts: result
