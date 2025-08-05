@@ -72,6 +72,7 @@ export const warehouses = pgTable("warehouses", {
   email: varchar("email", { length: 255 }),
   manager: varchar("manager", { length: 255 }),
   capacity: integer("capacity").default(0),
+  floorArea: decimal("floor_area", { precision: 10, scale: 2 }), // in square meters
   type: varchar("type", { length: 50 }).default("branch"), // main, branch, temporary
   status: warehouseStatusEnum("status").default("active"),
   rentedFromDate: timestamp("rented_from_date"),

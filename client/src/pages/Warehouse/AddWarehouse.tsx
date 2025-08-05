@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
-import { useParams, useLocation } from "wouter";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useState } from "react";
+import { useLocation } from "wouter";
+import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -15,35 +15,23 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
   ArrowLeft, 
   Save, 
-  Trash2, 
   FileUp, 
   Calendar, 
   Building2, 
   MapPin, 
-  Package, 
   Phone,
   Mail,
   User,
-  AlertCircle,
   DollarSign,
   Settings,
   FileText,
   Hash,
-  Ruler
+  Ruler,
+  Plus
 } from "lucide-react";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 const warehouseSchema = z.object({
   name: z.string().min(1, "Warehouse name is required"),
@@ -67,17 +55,9 @@ const warehouseSchema = z.object({
 
 type WarehouseFormData = z.infer<typeof warehouseSchema>;
 
-export default function EditWarehouse() {
-  const { id } = useParams();
+export default function AddWarehouse() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-
-  const { data: warehouse, isLoading } = useQuery({
-    queryKey: ['/api/warehouses', id],
-    queryFn: () => apiRequest('GET', `/api/warehouses/${id}`),
-    enabled: !!id,
-  });
 
   const form = useForm<WarehouseFormData>({
     resolver: zodResolver(warehouseSchema),
@@ -102,66 +82,21 @@ export default function EditWarehouse() {
     },
   });
 
-  useEffect(() => {
-    if (warehouse) {
-      form.reset({
-        name: warehouse.name || "",
-        location: warehouse.location || "",
-        status: warehouse.status || "active",
-        rentedFromDate: warehouse.rentedFromDate ? new Date(warehouse.rentedFromDate).toISOString().split('T')[0] : "",
-        expenseId: warehouse.expenseId || "",
-        contact: warehouse.contact || "",
-        notes: warehouse.notes || "",
-        address: warehouse.address || "",
-        city: warehouse.city || "",
-        country: warehouse.country || "Czech Republic",
-        zipCode: warehouse.zipCode || "",
-        phone: warehouse.phone || "",
-        email: warehouse.email || "",
-        manager: warehouse.manager || "",
-        capacity: warehouse.capacity || 0,
-        type: warehouse.type || "branch",
-        floorArea: warehouse.floorArea || 0,
-      });
-    }
-  }, [warehouse, form]);
-
-  const updateWarehouseMutation = useMutation({
+  const createWarehouseMutation = useMutation({
     mutationFn: (data: WarehouseFormData) => 
-      apiRequest('PATCH', `/api/warehouses/${id}`, data),
+      apiRequest('POST', '/api/warehouses', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/warehouses'] });
       toast({
         title: "Success",
-        description: "Warehouse updated successfully",
+        description: "Warehouse created successfully",
       });
       navigate("/warehouses");
     },
     onError: (error: any) => {
       toast({
         title: "Error",
-        description: error.message || "Failed to update warehouse",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const deleteWarehouseMutation = useMutation({
-    mutationFn: () => apiRequest('DELETE', `/api/warehouses/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/warehouses'] });
-      toast({
-        title: "Success",
-        description: "Warehouse deleted successfully",
-      });
-      navigate("/warehouses");
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message.includes('referenced') || error.message.includes('constraint')
-          ? "Cannot delete warehouse - it's being used in existing records" 
-          : error.message || "Failed to delete warehouse",
+        description: error.message || "Failed to create warehouse",
         variant: "destructive",
       });
     },
@@ -185,36 +120,8 @@ export default function EditWarehouse() {
   };
 
   const onSubmit = (data: WarehouseFormData) => {
-    updateWarehouseMutation.mutate(data);
+    createWarehouseMutation.mutate(data);
   };
-
-  const handleDelete = () => {
-    setShowDeleteDialog(true);
-  };
-
-  const confirmDelete = () => {
-    deleteWarehouseMutation.mutate();
-    setShowDeleteDialog(false);
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
-  if (!warehouse) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-slate-600">Warehouse not found</p>
-        <Button className="mt-4" onClick={() => navigate("/warehouse")}>
-          Back to Warehouses
-        </Button>
-      </div>
-    );
-  }
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
@@ -230,19 +137,15 @@ export default function EditWarehouse() {
             Back to Warehouses
           </Button>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge variant={warehouse?.status === 'active' ? 'default' : 'secondary'}>
-            {warehouse?.status || 'active'}
-          </Badge>
-          <Badge variant="outline">
-            {warehouse?.type || 'branch'}
-          </Badge>
-        </div>
+        <Badge variant="outline" className="text-green-600 border-green-600">
+          <Plus className="h-3 w-3 mr-1" />
+          New Warehouse
+        </Badge>
       </div>
 
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">{warehouse?.name || 'Edit Warehouse'}</h1>
-        <p className="text-slate-600 mt-1">Update warehouse details and manage attachments</p>
+        <h1 className="text-3xl font-bold text-slate-900">Add New Warehouse</h1>
+        <p className="text-slate-600 mt-1">Create a new warehouse location and configure its details</p>
       </div>
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -323,18 +226,18 @@ export default function EditWarehouse() {
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
 
-                <div>
-                  <Label htmlFor="manager">Warehouse Manager</Label>
-                  <div className="relative mt-1">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input
-                      id="manager"
-                      {...form.register("manager")}
-                      placeholder="e.g., John Smith"
-                      className="pl-10"
-                    />
+                  <div>
+                    <Label htmlFor="manager">Warehouse Manager</Label>
+                    <div className="relative mt-1">
+                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Input
+                        id="manager"
+                        {...form.register("manager")}
+                        placeholder="e.g., John Smith"
+                        className="pl-10"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -566,10 +469,10 @@ export default function EditWarehouse() {
                 <Button 
                   type="submit" 
                   className="w-full"
-                  disabled={updateWarehouseMutation.isPending}
+                  disabled={createWarehouseMutation.isPending}
                 >
                   <Save className="h-4 w-4 mr-2" />
-                  {updateWarehouseMutation.isPending ? "Saving..." : "Save Changes"}
+                  {createWarehouseMutation.isPending ? "Creating..." : "Create Warehouse"}
                 </Button>
                 
                 <Button 
@@ -583,51 +486,21 @@ export default function EditWarehouse() {
 
                 <Separator />
 
-                <Button 
-                  type="button"
-                  variant="destructive" 
-                  className="w-full"
-                  onClick={handleDelete}
-                  disabled={deleteWarehouseMutation.isPending}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Warehouse
-                </Button>
-
-                {/* Status Info */}
+                {/* Tips */}
                 <div className="pt-3 space-y-2 text-sm text-slate-600">
-                  <div className="flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4" />
-                    <span>Last updated: {warehouse?.updatedAt ? new Date(warehouse.updatedAt).toLocaleDateString() : 'Never'}</span>
-                  </div>
+                  <h4 className="font-medium text-slate-700">Quick Tips:</h4>
+                  <ul className="space-y-1 text-xs">
+                    <li>• Fill in required fields marked with *</li>
+                    <li>• Floor area helps calculate storage density</li>
+                    <li>• Upload relevant documents for easy access</li>
+                    <li>• Set status to "Inactive" if not operational yet</li>
+                  </ul>
                 </div>
               </CardContent>
             </Card>
           </div>
         </div>
       </form>
-
-      {/* Delete Dialog */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Warehouse</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this warehouse? This action cannot be undone.
-              This will also remove all associated data.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={confirmDelete}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
