@@ -34,6 +34,10 @@ import AllReturns from "@/pages/Returns/AllReturns";
 import AddReturn from "@/pages/Returns/AddReturn";
 import EditReturn from "@/pages/Returns/EditReturn";
 import ReturnDetails from "@/pages/Returns/ReturnDetails";
+import AllExpenses from "@/pages/Expenses/AllExpenses";
+import AddExpense from "@/pages/Expenses/AddExpense";
+import EditExpense from "@/pages/Expenses/EditExpense";
+import ExpenseDetails from "@/pages/Expenses/ExpenseDetails";
 
 function Router() {
   return (
@@ -83,6 +87,10 @@ function Router() {
         <Route path="/returns/add" component={AddReturn} />
         <Route path="/returns/:id/edit" component={EditReturn} />
         <Route path="/returns/:id" component={ReturnDetails} />
+        <Route path="/expenses" component={AllExpenses} />
+        <Route path="/expenses/add" component={AddExpense} />
+        <Route path="/expenses/edit/:id" component={EditExpense} />
+        <Route path="/expenses/:id" component={ExpenseDetails} />
         <Route path="/reports">
           {() => <div>Reports page coming soon</div>}
         </Route>

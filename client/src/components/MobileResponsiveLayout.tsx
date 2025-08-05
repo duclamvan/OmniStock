@@ -18,7 +18,8 @@ import {
   Moon,
   User,
   Settings,
-  LogOut
+  LogOut,
+  Receipt
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -100,6 +101,11 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
       name: "Returns",
       href: "/returns",
       icon: Package,
+    },
+    {
+      name: "Expenses",
+      href: "/expenses",
+      icon: Receipt,
     },
     {
       name: "Reports",
@@ -233,6 +239,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                  location.includes('/customers') ? 'Customers' :
                  location.includes('/suppliers') ? 'Suppliers' :
                  location.includes('/returns') ? 'Returns' :
+                 location.includes('/expenses') ? 'Expenses' :
                  location.includes('/reports') ? 'Reports' : 'Dashboard'}
               </h2>
               <div className="relative max-w-md w-full">
