@@ -35,7 +35,8 @@ import {
   AlertCircle,
   FileText,
   Link,
-  Barcode
+  Barcode,
+  Tag
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -359,34 +360,37 @@ export default function AddProduct() {
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b pb-4">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setLocation("/inventory")}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Inventory
-          </Button>
+    <div className="min-h-screen bg-gray-50">
+      <div className="p-6 max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="bg-white rounded-lg shadow-sm mb-6 p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setLocation("/inventory")}
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Inventory
+              </Button>
+              <div className="h-6 w-px bg-gray-200" />
+              <div>
+                <h1 className="text-2xl font-bold text-slate-900">Add New Product</h1>
+                <p className="text-sm text-slate-600">Create a new product with variants and pricing</p>
+              </div>
+            </div>
+            <Badge variant="outline" className="text-green-600 border-green-600">
+              <Plus className="h-3 w-3 mr-1" />
+              New Product
+            </Badge>
+          </div>
         </div>
-        <Badge variant="outline" className="text-green-600 border-green-600">
-          <Plus className="h-3 w-3 mr-1" />
-          New Product
-        </Badge>
-      </div>
 
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">Add New Product</h1>
-        <p className="text-slate-600 mt-1">Create a new product with variants and pricing information</p>
-      </div>
-
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Column - 2/3 width */}
-          <div className="lg:col-span-2 space-y-6">
+        <form onSubmit={form.handleSubmit(onSubmit)}>
+          <div className="flex gap-6">
+            {/* Main Column - Scrollable */}
+            <div className="flex-1 space-y-6">
         {/* Basic Information */}
         <Card>
           <CardHeader>
@@ -904,35 +908,82 @@ export default function AddProduct() {
             )}
           </CardContent>
         </Card>
-      </div>
-      {/* End of Main Column */}
+            </div>
+            {/* End of Main Column */}
 
-      {/* Right Column - 1/3 width */}
-      <div className="lg:col-span-1 space-y-6">
-        {/* Pricing Summary Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-blue-600" />
-              Quick Actions
-            </CardTitle>
-            <CardDescription>Save or cancel your changes</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button type="submit" className="w-full" disabled={createProductMutation.isPending}>
-              <Save className="h-4 w-4 mr-2" />
-              {createProductMutation.isPending ? 'Creating...' : 'Create Product'}
-            </Button>
-            <Button type="button" variant="outline" className="w-full" onClick={() => setLocation('/inventory')}>
-              Cancel
-            </Button>
-          </CardContent>
-        </Card>
+            {/* Right Column - Sticky */}
+            <div className="w-full lg:w-96">
+              <div className="sticky top-6 space-y-6">
+                {/* Quick Actions Card */}
+                <Card className="shadow-lg">
+                  <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50">
+                    <CardTitle className="flex items-center gap-2">
+                      <Package className="h-5 w-5 text-green-600" />
+                      Quick Actions
+                    </CardTitle>
+                    <CardDescription>Save your product or cancel</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4 pt-6">
+                    <Button type="submit" className="w-full" size="lg" disabled={createProductMutation.isPending}>
+                      <Save className="h-4 w-4 mr-2" />
+                      {createProductMutation.isPending ? 'Creating...' : 'Create Product'}
+                    </Button>
+                    <Button type="button" variant="outline" className="w-full" onClick={() => setLocation('/inventory')}>
+                      Cancel
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Product Summary */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm font-medium text-gray-600">Product Summary</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Tag className="h-4 w-4 text-blue-500" />
+                      <span className="text-gray-600">Variants:</span>
+                      <span className="font-medium">{variants.length}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <BarChart className="h-4 w-4 text-green-500" />
+                      <span className="text-gray-600">Total Stock:</span>
+                      <span className="font-medium">
+                        {variants.reduce((sum, v) => sum + Number(v.stock), 0)}
+                      </span>
+                    </div>
+                    {variants.length > 0 && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <DollarSign className="h-4 w-4 text-orange-500" />
+                        <span className="text-gray-600">Price Range:</span>
+                        <span className="font-medium">
+                          {Math.min(...variants.map(v => Number(v.price)))} - {Math.max(...variants.map(v => Number(v.price)))}
+                        </span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Tips */}
+                <Card className="border-blue-200 bg-blue-50/50">
+                  <CardHeader>
+                    <CardTitle className="text-sm font-medium text-blue-900">
+                      <AlertCircle className="h-4 w-4 inline mr-2" />
+                      Tips
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-sm text-blue-800 space-y-2">
+                    <p>• Add at least one variant for your product</p>
+                    <p>• Use clear, descriptive names</p>
+                    <p>• Set realistic stock levels</p>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+            {/* End of Right Column */}
+          </div>
+        </form>
       </div>
-      {/* End of Right Column */}
     </div>
-    {/* End of Grid */}
-  </form>
-</div>
   );
 }

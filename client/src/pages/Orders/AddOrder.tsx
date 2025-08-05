@@ -39,7 +39,8 @@ import {
   Phone,
   Mail,
   Building,
-  Hash
+  Hash,
+  Calculator
 } from "lucide-react";
 
 const addOrderSchema = z.object({
@@ -576,34 +577,37 @@ export default function AddOrder() {
   }, [allCustomers, debouncedCustomerSearch]);
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b pb-4">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setLocation("/orders")}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Orders
-          </Button>
+    <div className="min-h-screen bg-gray-50">
+      <div className="p-6 max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="bg-white rounded-lg shadow-sm mb-6 p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setLocation("/orders")}
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Orders
+              </Button>
+              <div className="h-6 w-px bg-gray-200" />
+              <div>
+                <h1 className="text-2xl font-bold text-slate-900">Create New Order</h1>
+                <p className="text-sm text-slate-600">Add products, select customer, and configure order details</p>
+              </div>
+            </div>
+            <Badge variant="outline" className="text-green-600 border-green-600">
+              <Plus className="h-3 w-3 mr-1" />
+              New Order
+            </Badge>
+          </div>
         </div>
-        <Badge variant="outline" className="text-green-600 border-green-600">
-          <Plus className="h-3 w-3 mr-1" />
-          New Order
-        </Badge>
-      </div>
 
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">Create New Order</h1>
-        <p className="text-slate-600 mt-1">Add products, select customer, and configure order details</p>
-      </div>
-
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Column - 2/3 width */}
-          <div className="lg:col-span-2 space-y-6">
+        <form onSubmit={form.handleSubmit(onSubmit)}>
+          <div className="flex gap-6">
+            {/* Main Column - Scrollable */}
+            <div className="flex-1 space-y-6">
             {/* Order Information */}
             <Card>
               <CardHeader>
@@ -1374,56 +1378,82 @@ export default function AddOrder() {
             </div>
           </CardContent>
         </Card>
-      </div>
-      {/* End of Main Column */}
+            </div>
+            {/* End of Main Column */}
 
-      {/* Right Column - 1/3 width */}
-      <div className="lg:col-span-1 space-y-6">
-        {/* Order Summary */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Order Summary</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex justify-between">
-              <span>Subtotal:</span>
-              <span>{formatCurrency(calculateSubtotal(), form.watch('currency'))}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Tax ({form.watch('taxRate') || 0}%):</span>
-              <span>{formatCurrency(calculateTax(), form.watch('currency'))}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Shipping:</span>
-              <span>{formatCurrency(parseFloat(form.watch('shippingCost') || '0') || 0, form.watch('currency'))}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Discount:</span>
-              <span>-{formatCurrency(parseFloat(form.watch('discountValue') || '0') || 0, form.watch('currency'))}</span>
-            </div>
-            <div className="border-t pt-2">
-              <div className="flex justify-between font-bold text-lg">
-                <span>Grand Total:</span>
-                <span>{formatCurrency(calculateGrandTotal(), form.watch('currency'))}</span>
+            {/* Right Column - Sticky */}
+            <div className="w-full lg:w-96">
+              <div className="sticky top-6 space-y-6">
+                {/* Order Summary */}
+                <Card className="shadow-lg">
+                  <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
+                    <CardTitle className="flex items-center gap-2">
+                      <Calculator className="h-5 w-5 text-blue-600" />
+                      Order Summary
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3 pt-6">
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Subtotal:</span>
+                        <span className="font-medium">{formatCurrency(calculateSubtotal(), form.watch('currency'))}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Tax ({form.watch('taxRate') || 0}%):</span>
+                        <span className="font-medium">{formatCurrency(calculateTax(), form.watch('currency'))}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Shipping:</span>
+                        <span className="font-medium">{formatCurrency(Number(form.watch('shippingCost')) || 0, form.watch('currency'))}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Discount:</span>
+                        <span className="font-medium text-green-600">-{formatCurrency(Number(form.watch('discountValue')) || 0, form.watch('currency'))}</span>
+                      </div>
+                    </div>
+                    <div className="border-t pt-3">
+                      <div className="flex justify-between">
+                        <span className="text-lg font-semibold">Grand Total:</span>
+                        <span className="text-lg font-bold text-blue-600">{formatCurrency(calculateGrandTotal(), form.watch('currency'))}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="pt-4 space-y-3">
+                      <Button type="submit" className="w-full" size="lg" disabled={createOrderMutation.isPending || orderItems.length === 0}>
+                        <ShoppingCart className="h-4 w-4 mr-2" />
+                        {createOrderMutation.isPending ? 'Creating...' : 'Create Order'}
+                      </Button>
+                      <Button type="button" variant="outline" className="w-full" onClick={() => setLocation('/orders')}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Quick Stats */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm font-medium text-gray-600">Quick Info</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Package className="h-4 w-4 text-blue-500" />
+                      <span className="text-gray-600">Items:</span>
+                      <span className="font-medium">{orderItems.length}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <User className="h-4 w-4 text-green-500" />
+                      <span className="text-gray-600">Customer:</span>
+                      <span className="font-medium">{selectedCustomer ? selectedCustomer.name : 'Not selected'}</span>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             </div>
-          </CardContent>
-        </Card>
+            {/* End of Right Column */}
+          </div>
+        </form>
       </div>
-      {/* End of Right Column */}
     </div>
-    {/* End of Grid */}
-
-    {/* Submit Button */}
-    <div className="flex items-center justify-end space-x-4">
-      <Button type="button" variant="outline" onClick={() => setLocation('/orders')}>
-        Cancel
-      </Button>
-      <Button type="submit" disabled={createOrderMutation.isPending || orderItems.length === 0}>
-        {createOrderMutation.isPending ? 'Creating...' : 'Create Order'}
-      </Button>
-    </div>
-  </form>
-</div>
   );
 }
