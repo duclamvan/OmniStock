@@ -21,10 +21,20 @@ export function removeDiacritics(str: string): string {
 }
 
 export function createVietnameseSearchMatcher(searchTerm: string) {
-  const normalizedSearch = removeDiacritics(searchTerm.toLowerCase());
+  const normalizedSearch = removeDiacritics(searchTerm.toLowerCase()).trim();
   
   return (text: string): boolean => {
+    if (!normalizedSearch) return true;
+    
     const normalizedText = removeDiacritics(text.toLowerCase());
-    return normalizedText.includes(normalizedSearch);
+    const searchWords = normalizedSearch.split(/\s+/);
+    
+    // Check if all search words match word boundaries in the text
+    return searchWords.every(searchWord => {
+      // Create a regex pattern that matches the search word at word boundaries
+      // This ensures "bo" won't match "bao" (from "bào")
+      const pattern = new RegExp(`\\b${searchWord}`, 'i');
+      return pattern.test(normalizedText);
+    });
   };
 }
