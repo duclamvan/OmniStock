@@ -48,7 +48,7 @@ export default function OrderDetails() {
   // Fetch order data
   const { data: order, isLoading, isFetching } = useQuery<any>({
     queryKey: [`/api/orders/${id}`],
-    enabled: !!id,
+    enabled: !!id && !['add', 'to-fulfill', 'shipped', 'pay-later', 'pre-orders'].includes(id || ''),
     refetchInterval: 5000, // Refetch every 5 seconds for real-time updates
     refetchOnWindowFocus: true, // Refetch when user returns to the tab
   });
