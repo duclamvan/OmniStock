@@ -4,7 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,8 +12,27 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ArrowLeft, Save, Trash2, FileUp, Calendar } from "lucide-react";
+import { 
+  ArrowLeft, 
+  Save, 
+  Trash2, 
+  FileUp, 
+  Calendar, 
+  Building2, 
+  MapPin, 
+  Package, 
+  Phone,
+  Mail,
+  User,
+  AlertCircle,
+  DollarSign,
+  Settings,
+  FileText,
+  Hash
+} from "lucide-react";
 import { ObjectUploader } from "@/components/ObjectUploader";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -112,7 +131,7 @@ export default function EditWarehouse() {
         title: "Success",
         description: "Warehouse updated successfully",
       });
-      navigate("/warehouse");
+      navigate("/warehouses");
     },
     onError: (error: any) => {
       toast({
@@ -131,7 +150,7 @@ export default function EditWarehouse() {
         title: "Success",
         description: "Warehouse deleted successfully",
       });
-      navigate("/warehouse");
+      navigate("/warehouses");
     },
     onError: (error: any) => {
       toast({
@@ -194,171 +213,181 @@ export default function EditWarehouse() {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-6 max-w-6xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b pb-4">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => navigate("/warehouse")}
+            onClick={() => navigate("/warehouses")}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+            Back to Warehouses
           </Button>
-          <h1 className="text-2xl font-bold text-slate-900">Edit Warehouse</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant={warehouse?.status === 'active' ? 'default' : 'secondary'}>
+            {warehouse?.status || 'active'}
+          </Badge>
+          <Badge variant="outline">
+            {warehouse?.type || 'branch'}
+          </Badge>
         </div>
       </div>
 
+      <div>
+        <h1 className="text-3xl font-bold text-slate-900">{warehouse?.name || 'Edit Warehouse'}</h1>
+        <p className="text-slate-600 mt-1">Update warehouse details and manage attachments</p>
+      </div>
+
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Warehouse Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Top Row - Warehouse Name and Location */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="name">Warehouse Name</Label>
-                <Input
-                  id="name"
-                  {...form.register("name")}
-                  placeholder="Type here"
-                />
-                {form.formState.errors.name && (
-                  <p className="text-sm text-red-600 mt-1">{form.formState.errors.name.message}</p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="location">Location</Label>
-                <Select value={form.watch("location") || ""} onValueChange={(value) => form.setValue("location", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Please select" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="warehouse-a">Warehouse A</SelectItem>
-                    <SelectItem value="warehouse-b">Warehouse B</SelectItem>
-                    <SelectItem value="warehouse-c">Warehouse C</SelectItem>
-                    <SelectItem value="main-facility">Main Facility</SelectItem>
-                    <SelectItem value="branch-office">Branch Office</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Second Row - Status and Rented From Date */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="status">Status</Label>
-                <Select value={form.watch("status")} onValueChange={(value: any) => form.setValue("status", value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Please select" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                    <SelectItem value="maintenance">Maintenance</SelectItem>
-                    <SelectItem value="rented">Rented</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="rentedFromDate">Rented From Date</Label>
-                <div className="relative">
-                  <Input
-                    id="rentedFromDate"
-                    type="date"
-                    {...form.register("rentedFromDate")}
-                  />
-                  <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                </div>
-              </div>
-            </div>
-
-            {/* Third Row - Contact and Expense ID */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="contact">Contact</Label>
-                <Input
-                  id="contact"
-                  {...form.register("contact")}
-                  placeholder="Type here"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="expenseId">Expense ID</Label>
-                <Input
-                  id="expenseId"
-                  {...form.register("expenseId")}
-                  placeholder="Type here"
-                />
-              </div>
-            </div>
-
-            {/* Notes Section */}
-            <div>
-              <Label htmlFor="notes">Note</Label>
-              <Textarea
-                id="notes"
-                {...form.register("notes")}
-                placeholder="Type here..."
-                className="min-h-[100px]"
-              />
-            </div>
-
-            {/* File Upload Section */}
-            <div>
-              <Label>Add Attachments</Label>
-              <div className="mt-2">
-                <ObjectUploader
-                  maxNumberOfFiles={5}
-                  maxFileSize={50 * 1024 * 1024} // 50MB
-                  onGetUploadParameters={handleGetUploadParameters}
-                  onComplete={handleFileUploadComplete}
-                  buttonClassName="w-full border-2 border-dashed border-slate-300 hover:border-slate-400 transition-colors py-8"
-                >
-                  <div className="flex flex-col items-center gap-2 text-slate-600">
-                    <FileUp className="h-8 w-8" />
-                    <p className="text-sm">Drag & Drop or choose file to upload</p>
-                    <p className="text-xs text-slate-500">You can attach PDF, IMAGE, any file</p>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Column - 2/3 width */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Basic Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5 text-blue-600" />
+                  Basic Information
+                </CardTitle>
+                <CardDescription>Essential warehouse details and identification</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="name">Warehouse Name *</Label>
+                    <Input
+                      id="name"
+                      {...form.register("name")}
+                      placeholder="e.g., Berlin EU Distribution"
+                      className="mt-1"
+                    />
+                    {form.formState.errors.name && (
+                      <p className="text-sm text-red-600 mt-1">{form.formState.errors.name.message}</p>
+                    )}
                   </div>
-                </ObjectUploader>
-              </div>
-            </div>
 
-            {/* Legacy fields in collapsible section */}
-            <details className="mt-6">
-              <summary className="cursor-pointer text-sm font-medium text-slate-600 hover:text-slate-900">
-                Additional Information
-              </summary>
-              <div className="mt-4 space-y-4 pl-4 border-l-2 border-slate-200">
+                  <div>
+                    <Label htmlFor="type">Warehouse Type</Label>
+                    <Select value={form.watch("type")} onValueChange={(value: any) => form.setValue("type", value)}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="main">Main Hub</SelectItem>
+                        <SelectItem value="branch">Branch Location</SelectItem>
+                        <SelectItem value="temporary">Temporary Storage</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="status">Operating Status</Label>
+                    <Select value={form.watch("status")} onValueChange={(value: any) => form.setValue("status", value)}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 bg-green-500 rounded-full" />
+                            Active
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="inactive">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 bg-gray-500 rounded-full" />
+                            Inactive
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="maintenance">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 bg-yellow-500 rounded-full" />
+                            Maintenance
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="rented">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 bg-blue-500 rounded-full" />
+                            Rented
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="capacity">Storage Capacity (units)</Label>
+                    <div className="relative mt-1">
+                      <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Input
+                        id="capacity"
+                        type="number"
+                        {...form.register("capacity", { valueAsNumber: true })}
+                        placeholder="e.g., 5000"
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div>
-                  <Label htmlFor="address">Address</Label>
+                  <Label htmlFor="manager">Warehouse Manager</Label>
+                  <div className="relative mt-1">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input
+                      id="manager"
+                      {...form.register("manager")}
+                      placeholder="e.g., John Smith"
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Location Details */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-green-600" />
+                  Location & Address
+                </CardTitle>
+                <CardDescription>Physical location and contact information</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="address">Street Address</Label>
                   <Input
                     id="address"
                     {...form.register("address")}
-                    placeholder="123 Main Street"
+                    placeholder="e.g., 123 Industrial Park Road"
+                    className="mt-1"
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <div>
                     <Label htmlFor="city">City</Label>
                     <Input
                       id="city"
                       {...form.register("city")}
-                      placeholder="Prague"
+                      placeholder="e.g., Berlin"
+                      className="mt-1"
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="zipCode">ZIP Code</Label>
+                    <Label htmlFor="zipCode">ZIP/Postal Code</Label>
                     <Input
                       id="zipCode"
                       {...form.register("zipCode")}
-                      placeholder="10000"
+                      placeholder="e.g., 10115"
+                      className="mt-1"
                     />
                   </div>
 
@@ -367,92 +396,194 @@ export default function EditWarehouse() {
                     <Input
                       id="country"
                       {...form.register("country")}
-                      placeholder="Czech Republic"
+                      placeholder="e.g., Germany"
+                      className="mt-1"
                     />
                   </div>
                 </div>
 
+                <Separator />
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="phone">Phone</Label>
-                    <Input
-                      id="phone"
-                      {...form.register("phone")}
-                      placeholder="+420 123 456 789"
-                    />
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <div className="relative mt-1">
+                      <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Input
+                        id="phone"
+                        {...form.register("phone")}
+                        placeholder="e.g., +49 30 12345678"
+                        className="pl-10"
+                      />
+                    </div>
                   </div>
 
                   <div>
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      {...form.register("email")}
-                      placeholder="warehouse@company.com"
-                    />
+                    <Label htmlFor="email">Email Address</Label>
+                    <div className="relative mt-1">
+                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Input
+                        id="email"
+                        type="email"
+                        {...form.register("email")}
+                        placeholder="e.g., warehouse@company.com"
+                        className="pl-10"
+                      />
+                    </div>
                     {form.formState.errors.email && (
                       <p className="text-sm text-red-600 mt-1">{form.formState.errors.email.message}</p>
                     )}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="contact">Primary Contact Person</Label>
+                  <Input
+                    id="contact"
+                    {...form.register("contact")}
+                    placeholder="e.g., Jane Doe - Operations Manager"
+                    className="mt-1"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Financial & Notes */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5 text-orange-600" />
+                  Financial & Additional Info
+                </CardTitle>
+                <CardDescription>Rental details, expenses, and notes</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="manager">Manager</Label>
-                    <Input
-                      id="manager"
-                      {...form.register("manager")}
-                      placeholder="John Doe"
-                    />
+                    <Label htmlFor="rentedFromDate">Rental Start Date</Label>
+                    <div className="relative mt-1">
+                      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                      <Input
+                        id="rentedFromDate"
+                        type="date"
+                        {...form.register("rentedFromDate")}
+                        className="pl-10"
+                      />
+                    </div>
                   </div>
 
                   <div>
-                    <Label htmlFor="capacity">Capacity</Label>
+                    <Label htmlFor="expenseId">Expense Reference ID</Label>
                     <Input
-                      id="capacity"
-                      type="number"
-                      {...form.register("capacity", { valueAsNumber: true })}
-                      placeholder="1000"
+                      id="expenseId"
+                      {...form.register("expenseId")}
+                      placeholder="e.g., EXP-2025-001"
+                      className="mt-1"
                     />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="type">Type</Label>
-                    <Select value={form.watch("type")} onValueChange={(value: any) => form.setValue("type", value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="main">Main</SelectItem>
-                        <SelectItem value="branch">Branch</SelectItem>
-                        <SelectItem value="temporary">Temporary</SelectItem>
-                      </SelectContent>
-                    </Select>
                   </div>
                 </div>
-              </div>
-            </details>
-          </CardContent>
-        </Card>
 
-        <div className="flex items-center justify-between">
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={handleDelete}
-            disabled={deleteWarehouseMutation.isPending}
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete Warehouse
-          </Button>
+                <div>
+                  <Label htmlFor="location">Location Reference/Code</Label>
+                  <Input
+                    id="location"
+                    {...form.register("location")}
+                    placeholder="e.g., WH-BER-01"
+                    className="mt-1"
+                  />
+                </div>
 
-          <Button
-            type="submit"
-            disabled={updateWarehouseMutation.isPending}
-          >
-            <Save className="h-4 w-4 mr-2" />
-            {updateWarehouseMutation.isPending ? "Saving..." : "Save Changes"}
-          </Button>
+                <div>
+                  <Label htmlFor="notes">Internal Notes</Label>
+                  <Textarea
+                    id="notes"
+                    {...form.register("notes")}
+                    placeholder="Add any important notes about this warehouse..."
+                    className="min-h-[120px] mt-1"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Sidebar - 1/3 width */}
+          <div className="space-y-6">
+            {/* File Upload Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-purple-600" />
+                  Documents
+                </CardTitle>
+                <CardDescription>Upload contracts, photos, or documents</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ObjectUploader
+                  maxNumberOfFiles={10}
+                  maxFileSize={50 * 1024 * 1024} // 50MB
+                  onGetUploadParameters={handleGetUploadParameters}
+                  onComplete={handleFileUploadComplete}
+                  buttonClassName="w-full border-2 border-dashed border-slate-300 hover:border-blue-400 transition-all duration-200 py-8 bg-slate-50 hover:bg-blue-50"
+                >
+                  <div className="flex flex-col items-center gap-2 text-slate-600">
+                    <FileUp className="h-10 w-10 text-blue-500" />
+                    <p className="text-sm font-medium">Click or drag files</p>
+                    <p className="text-xs text-slate-500">PDF, Images, Documents (max 50MB)</p>
+                  </div>
+                </ObjectUploader>
+              </CardContent>
+            </Card>
+
+            {/* Quick Actions Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="h-5 w-5 text-gray-600" />
+                  Actions
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button 
+                  type="submit" 
+                  className="w-full"
+                  disabled={updateWarehouseMutation.isPending}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {updateWarehouseMutation.isPending ? "Saving..." : "Save Changes"}
+                </Button>
+                
+                <Button 
+                  type="button"
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => navigate("/warehouses")}
+                >
+                  Cancel
+                </Button>
+
+                <Separator />
+
+                <Button 
+                  type="button"
+                  variant="destructive" 
+                  className="w-full"
+                  onClick={handleDelete}
+                  disabled={deleteWarehouseMutation.isPending}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Warehouse
+                </Button>
+
+                {/* Status Info */}
+                <div className="pt-3 space-y-2 text-sm text-slate-600">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4" />
+                    <span>Last updated: {warehouse?.updatedAt ? new Date(warehouse.updatedAt).toLocaleDateString() : 'Never'}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </form>
 
