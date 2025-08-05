@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
+import logoPath from '@assets/logo_1754349267160.png';
 
 interface MobileResponsiveLayoutProps {
   children: React.ReactNode;
@@ -169,7 +170,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
       {/* Mobile Header */}
       <header className="lg:hidden sticky top-0 z-40 bg-white border-b border-gray-200">
         <div className="flex items-center justify-between px-4 py-3">
-          <h1 className="text-mobile-xl font-bold text-primary">Davie Supply</h1>
+          <img src={logoPath} alt="Davie Professional" className="h-8" />
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="touch-target">
@@ -191,7 +192,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
       {/* Desktop Sidebar */}
       <aside className="hidden lg:block fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-200">
         <div className="p-6 border-b">
-          <h1 className="text-2xl font-bold text-primary">Davie Supply</h1>
+          <img src={logoPath} alt="Davie Professional" className="h-10" />
         </div>
         <nav className="p-4 space-y-2">
           <NavLinks />
