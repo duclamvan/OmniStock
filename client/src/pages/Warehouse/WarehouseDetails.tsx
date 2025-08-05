@@ -23,7 +23,14 @@ import {
   FileUp,
   Download,
   Trash2,
-  RefreshCw
+  RefreshCw,
+  Search,
+  MoreVertical,
+  ArrowRight,
+  CheckSquare,
+  Square,
+  Truck,
+  Loader2
 } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -40,6 +47,31 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { normalizeVietnamese } from "@/lib/searchUtils";
 
 export default function WarehouseDetails() {
   const { id } = useParams();
@@ -47,6 +79,12 @@ export default function WarehouseDetails() {
   const { toast } = useToast();
   const [showDeleteFileDialog, setShowDeleteFileDialog] = useState(false);
   const [fileToDelete, setFileToDelete] = useState<WarehouseFile | null>(null);
+  
+  // Products section state
+  const [productSearch, setProductSearch] = useState("");
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [showMoveDialog, setShowMoveDialog] = useState(false);
+  const [targetWarehouseId, setTargetWarehouseId] = useState("");
 
   // Fetch warehouse data with real-time sync
   const { data: warehouse, isLoading, isFetching } = useQuery<Warehouse>({
@@ -66,6 +104,12 @@ export default function WarehouseDetails() {
   const { data: files = [], refetch: refetchFiles } = useQuery<WarehouseFile[]>({
     queryKey: [`/api/warehouses/${id}/files`],
     enabled: !!id,
+  });
+  
+  // Fetch all warehouses for the move dialog
+  const { data: allWarehouses = [] } = useQuery<Warehouse[]>({
+    queryKey: ['/api/warehouses'],
+    enabled: showMoveDialog,
   });
 
   const deleteFileMutation = useMutation({
@@ -135,6 +179,72 @@ export default function WarehouseDetails() {
     if (fileToDelete) {
       deleteFileMutation.mutate(fileToDelete.id);
     }
+  };
+  
+  // Filter products based on search
+  const filteredProducts = products.filter(product => {
+    if (!productSearch) return true;
+    const searchNormalized = normalizeVietnamese(productSearch.toLowerCase());
+    const nameNormalized = normalizeVietnamese(product.name.toLowerCase());
+    const skuNormalized = normalizeVietnamese(product.sku.toLowerCase());
+    return nameNormalized.includes(searchNormalized) || skuNormalized.includes(searchNormalized);
+  });
+  
+  // Handle product selection
+  const handleSelectProduct = (productId: string) => {
+    setSelectedProducts(prev => 
+      prev.includes(productId) 
+        ? prev.filter(id => id !== productId)
+        : [...prev, productId]
+    );
+  };
+  
+  const handleSelectAllProducts = () => {
+    if (selectedProducts.length === filteredProducts.length) {
+      setSelectedProducts([]);
+    } else {
+      setSelectedProducts(filteredProducts.map(p => p.id));
+    }
+  };
+  
+  // Move products mutation
+  const moveProductsMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest('POST', '/api/products/move-warehouse', {
+        productIds: selectedProducts,
+        targetWarehouseId,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/warehouses/${id}/products`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/warehouses/${targetWarehouseId}/products`] });
+      toast({
+        title: "Success",
+        description: `${selectedProducts.length} products moved successfully`,
+      });
+      setShowMoveDialog(false);
+      setSelectedProducts([]);
+      setTargetWarehouseId("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to move products",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  const handleMoveProducts = () => {
+    if (!targetWarehouseId || selectedProducts.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please select products and a target warehouse",
+        variant: "destructive",
+      });
+      return;
+    }
+    moveProductsMutation.mutate();
   };
 
   const getStatusBadge = (status: string) => {
@@ -373,36 +483,109 @@ export default function WarehouseDetails() {
           </Card>
 
           {/* Products */}
-          {products.length > 0 && (
-            <Card>
-              <CardHeader>
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <Package className="h-5 w-5" />
-                  Products ({products.length})
+                  Products ({filteredProducts.length})
                 </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {products.slice(0, 5).map((product) => (
-                    <div key={product.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex-1">
-                        <p className="font-medium text-slate-900">{product.name}</p>
+                {selectedProducts.length > 0 && (
+                  <Button
+                    size="sm"
+                    onClick={() => setShowMoveDialog(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <Truck className="h-4 w-4" />
+                    Move {selectedProducts.length} Product{selectedProducts.length !== 1 ? 's' : ''}
+                  </Button>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder="Search products by name or SKU..."
+                  value={productSearch}
+                  onChange={(e) => setProductSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              
+              {/* Select All Checkbox */}
+              {filteredProducts.length > 0 && (
+                <div className="flex items-center gap-2 pb-2 border-b">
+                  <Checkbox
+                    checked={selectedProducts.length === filteredProducts.length && filteredProducts.length > 0}
+                    onCheckedChange={handleSelectAllProducts}
+                  />
+                  <span className="text-sm text-slate-600">Select All</span>
+                </div>
+              )}
+              
+              {/* Products List */}
+              <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                {filteredProducts.length === 0 ? (
+                  <div className="text-center py-8 text-slate-500">
+                    {productSearch ? "No products match your search" : "No products in this warehouse"}
+                  </div>
+                ) : (
+                  filteredProducts.map((product) => (
+                    <div 
+                      key={product.id} 
+                      className="flex items-center gap-3 p-3 border rounded-lg hover:bg-slate-50 transition-colors"
+                    >
+                      <Checkbox
+                        checked={selectedProducts.includes(product.id)}
+                        onCheckedChange={() => handleSelectProduct(product.id)}
+                      />
+                      
+                      <div 
+                        className="flex-1 cursor-pointer"
+                        onClick={() => navigate(`/products/${product.id}`)}
+                      >
+                        <p className="font-medium text-slate-900 hover:text-blue-600">
+                          {product.name}
+                        </p>
                         <p className="text-sm text-slate-600">SKU: {product.sku}</p>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm text-slate-600">Qty: {product.quantity || 0}</p>
+                      
+                      <div className="text-right mr-2">
+                        <p className="text-sm font-medium text-slate-900">Qty: {product.quantity || 0}</p>
                       </div>
+                      
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => navigate(`/products/${product.id}`)}>
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => navigate(`/products/${product.id}/edit`)}>
+                            Edit Product
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => {
+                              setSelectedProducts([product.id]);
+                              setShowMoveDialog(true);
+                            }}
+                          >
+                            Move to Another Warehouse
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
-                  ))}
-                  {products.length > 5 && (
-                    <p className="text-sm text-slate-600 text-center py-2">
-                      ... and {products.length - 5} more products
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Right Column - Files */}
@@ -486,6 +669,84 @@ export default function WarehouseDetails() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      {/* Move Products Dialog */}
+      <Dialog open={showMoveDialog} onOpenChange={setShowMoveDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Move Products to Another Warehouse</DialogTitle>
+            <DialogDescription>
+              Select a target warehouse to move {selectedProducts.length} selected product{selectedProducts.length !== 1 ? 's' : ''}.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Target Warehouse</label>
+              <Select value={targetWarehouseId} onValueChange={setTargetWarehouseId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a warehouse" />
+                </SelectTrigger>
+                <SelectContent>
+                  {allWarehouses
+                    .filter(w => w.id !== id) // Exclude current warehouse
+                    .map(warehouse => (
+                      <SelectItem key={warehouse.id} value={warehouse.id}>
+                        <div className="flex items-center gap-2">
+                          <span>{warehouse.name}</span>
+                          {warehouse.location && (
+                            <span className="text-sm text-slate-500">({warehouse.location})</span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="rounded-lg border p-3 bg-slate-50">
+              <p className="text-sm font-medium mb-2">Products to Move:</p>
+              <div className="space-y-1">
+                {selectedProducts.slice(0, 3).map(productId => {
+                  const product = products.find(p => p.id === productId);
+                  return product ? (
+                    <div key={productId} className="text-sm text-slate-600">
+                      • {product.name} (SKU: {product.sku})
+                    </div>
+                  ) : null;
+                })}
+                {selectedProducts.length > 3 && (
+                  <div className="text-sm text-slate-500">
+                    ... and {selectedProducts.length - 3} more
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowMoveDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleMoveProducts}
+              disabled={!targetWarehouseId || moveProductsMutation.isPending}
+            >
+              {moveProductsMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Moving...
+                </>
+              ) : (
+                <>
+                  <Truck className="h-4 w-4 mr-2" />
+                  Move Products
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

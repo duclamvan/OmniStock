@@ -1017,6 +1017,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Move products to another warehouse
+  app.post('/api/products/move-warehouse', async (req: any, res) => {
+    try {
+      const { productIds, targetWarehouseId } = req.body;
+      
+      if (!Array.isArray(productIds) || productIds.length === 0) {
+        return res.status(400).json({ message: "Product IDs must be a non-empty array" });
+      }
+      
+      if (!targetWarehouseId) {
+        return res.status(400).json({ message: "Target warehouse ID is required" });
+      }
+      
+      // Verify target warehouse exists
+      const targetWarehouse = await storage.getWarehouseById(targetWarehouseId);
+      if (!targetWarehouse) {
+        return res.status(404).json({ message: "Target warehouse not found" });
+      }
+      
+      // Move products
+      await storage.moveProductsToWarehouse(productIds, targetWarehouseId);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'moved',
+        entityType: 'product',
+        entityId: targetWarehouseId,
+        description: `Moved ${productIds.length} products to ${targetWarehouse.name}`,
+      });
+      
+      res.json({ message: `Successfully moved ${productIds.length} products` });
+    } catch (error) {
+      console.error("Error moving products:", error);
+      res.status(500).json({ message: "Failed to move products" });
+    }
+  });
+
   // Bulk delete product variants
   app.post('/api/products/:productId/variants/bulk-delete', async (req: any, res) => {
     try {

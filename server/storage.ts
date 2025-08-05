@@ -112,6 +112,7 @@ export interface IStorage {
   searchProducts(query: string, includeInactive?: boolean): Promise<Product[]>;
   getProductOrderCount(productId: string): Promise<number>;
   getProductsOrderCounts(productIds: string[]): Promise<{ [productId: string]: number }>;
+  moveProductsToWarehouse(productIds: string[], targetWarehouseId: string): Promise<void>;
 
   // Product Variants
   getProductVariants(productId: string): Promise<ProductVariant[]>;
@@ -445,6 +446,18 @@ export class DatabaseStorage implements IStorage {
       .update(products)
       .set({ isActive: false, updatedAt: new Date() })
       .where(eq(products.id, id));
+  }
+
+  async moveProductsToWarehouse(productIds: string[], targetWarehouseId: string): Promise<void> {
+    if (productIds.length === 0) return;
+    
+    await db
+      .update(products)
+      .set({ 
+        warehouseId: targetWarehouseId,
+        updatedAt: new Date() 
+      })
+      .where(inArray(products.id, productIds));
   }
 
   async getProductOrderCount(productId: string): Promise<number> {
