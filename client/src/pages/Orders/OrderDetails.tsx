@@ -90,19 +90,7 @@ export default function OrderDetails() {
   }
 
   if (!order) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-slate-600">Order not found</p>
-        <Button
-          variant="outline"
-          onClick={() => navigate("/orders")}
-          className="mt-4"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Orders
-        </Button>
-      </div>
-    );
+    return null;
   }
 
   const statusVariant = 
