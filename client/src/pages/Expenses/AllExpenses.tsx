@@ -9,7 +9,18 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
-import { Plus, DollarSign, TrendingUp, Calendar, Search, Eye } from "lucide-react";
+import { 
+  Plus, 
+  DollarSign, 
+  TrendingUp, 
+  Calendar, 
+  Search, 
+  Eye, 
+  Receipt,
+  CreditCard,
+  Clock,
+  Filter
+} from "lucide-react";
 import { format } from "date-fns";
 import {
   AlertDialog,
@@ -115,6 +126,18 @@ export default function AllExpenses() {
     return sum + amount;
   }, 0);
 
+  const pendingExpenses = expenses.filter(e => e.status === 'pending');
+  const overdueExpenses = expenses.filter(expense => {
+    if (!expense.dueDate || expense.status === 'paid') return false;
+    try {
+      const dueDate = new Date(expense.dueDate);
+      if (isNaN(dueDate.getTime())) return false;
+      return dueDate < new Date();
+    } catch {
+      return false;
+    }
+  });
+
   const getCurrencySymbol = (expense: any) => {
     if (expense.amountUsd) return '$';
     if (expense.amountEur) return '€';
@@ -127,6 +150,17 @@ export default function AllExpenses() {
   const getAmount = (expense: any) => {
     return expense.amountUsd || expense.amountEur || expense.amountCzk || 
            expense.amountVnd || expense.amountCny || '0';
+  };
+
+  const formatDate = (dateStr: string | null | undefined) => {
+    if (!dateStr) return '-';
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return '-';
+      return format(date, 'dd/MM/yyyy');
+    } catch {
+      return '-';
+    }
   };
 
   const columns: DataTableColumn[] = [
@@ -144,26 +178,27 @@ export default function AllExpenses() {
     {
       header: "Date",
       accessorKey: "date",
-      cell: (row: any) => {
-        if (!row.date) return '-';
-        try {
-          const date = new Date(row.date);
-          if (isNaN(date.getTime())) return '-';
-          return format(date, 'dd/MM/yyyy');
-        } catch {
-          return '-';
-        }
-      },
+      cell: (row: any) => formatDate(row.date),
     },
     {
       header: "Vendor",
       accessorKey: "vendorName",
+      cell: (row: any) => (
+        <div>
+          <p className="font-medium">{row.vendorName}</p>
+          {row.category && (
+            <p className="text-xs text-slate-500">{row.category}</p>
+          )}
+        </div>
+      ),
     },
     {
-      header: "Category",
-      accessorKey: "category",
+      header: "Description",
+      accessorKey: "description",
       cell: (row: any) => (
-        <Badge variant="outline">{row.category}</Badge>
+        <span className="text-sm text-slate-600 line-clamp-2 max-w-xs">
+          {row.description || '-'}
+        </span>
       ),
     },
     {
@@ -176,17 +211,29 @@ export default function AllExpenses() {
       ),
     },
     {
+      header: "Payment",
+      accessorKey: "paymentMethod",
+      cell: (row: any) => (
+        <Badge variant="outline">
+          {row.paymentMethod || 'Cash'}
+        </Badge>
+      ),
+    },
+    {
       header: "Due Date",
       accessorKey: "dueDate",
       cell: (row: any) => {
-        if (!row.dueDate) return '-';
-        try {
-          const date = new Date(row.dueDate);
-          if (isNaN(date.getTime())) return '-';
-          return format(date, 'dd/MM/yyyy');
-        } catch {
-          return '-';
-        }
+        const dueDateStr = formatDate(row.dueDate);
+        if (dueDateStr === '-' || row.status === 'paid') return dueDateStr;
+        
+        const dueDate = new Date(row.dueDate);
+        const isOverdue = dueDate < new Date();
+        
+        return (
+          <span className={isOverdue ? 'text-red-600 font-medium' : ''}>
+            {dueDateStr}
+          </span>
+        );
       },
     },
     {
@@ -197,22 +244,17 @@ export default function AllExpenses() {
           variant={row.status === 'paid' ? 'default' : 
                   row.status === 'pending' ? 'secondary' : 'destructive'}
         >
-          {row.status}
+          {row.status || 'pending'}
         </Badge>
       ),
     },
     {
-      header: "Payment Method",
-      accessorKey: "paymentMethod",
-      cell: (row: any) => row.paymentMethod || '-',
-    },
-    {
       header: "Actions",
-      id: "actions",
+      accessorKey: "actions",
       cell: (row: any) => (
         <div className="flex gap-2">
           <Link href={`/expenses/${row.id}`}>
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="icon">
               <Eye className="h-4 w-4" />
             </Button>
           </Link>
@@ -221,12 +263,23 @@ export default function AllExpenses() {
     },
   ];
 
+  const bulkActions = [
+    {
+      label: "Delete Selected",
+      action: (selectedItems: any[]) => {
+        setSelectedExpenses(selectedItems);
+        setShowDeleteDialog(true);
+      },
+      variant: "destructive" as const,
+    },
+  ];
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Loading expenses...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading expenses...</p>
         </div>
       </div>
     );
@@ -234,21 +287,23 @@ export default function AllExpenses() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-mobile-2xl sm:text-3xl font-bold">All Expenses</h1>
-        <Link href="/expenses/add">
-          <Button className="touch-target">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Expense
-          </Button>
-        </Link>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Expenses</h1>
+          <p className="text-slate-600 mt-1">Manage and track all business expenses</p>
+        </div>
+        <Button onClick={() => navigate('/expenses/add')} size="lg">
+          <Plus className="mr-2 h-5 w-5" />
+          Add Expense
+        </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-mobile-sm font-medium">Total Expenses</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -259,8 +314,8 @@ export default function AllExpenses() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-mobile-sm font-medium">This Month</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">This Month</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">${thisMonthTotal.toFixed(2)}</div>
@@ -270,66 +325,66 @@ export default function AllExpenses() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-mobile-sm font-medium">Pending</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Pending</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {expenses.filter(e => e.status === 'pending').length}
-            </div>
-            <p className="text-xs text-muted-foreground">To be paid</p>
+            <div className="text-2xl font-bold">{pendingExpenses.length}</div>
+            <p className="text-xs text-muted-foreground">Awaiting payment</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Overdue</CardTitle>
+            <TrendingUp className="h-4 w-4 text-red-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">{overdueExpenses.length}</div>
+            <p className="text-xs text-muted-foreground">Need attention</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Search and Table */}
-      <div className="space-y-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            placeholder="Search expenses..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
+      {/* Expenses Table */}
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <CardTitle>All Expenses</CardTitle>
+            <div className="relative w-full sm:w-80">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search expenses..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <DataTable
+            columns={columns}
+            data={filteredExpenses}
+            searchPlaceholder="Search expenses..."
+            bulkActions={bulkActions}
           />
-        </div>
+        </CardContent>
+      </Card>
 
-        <DataTable
-          columns={columns}
-          data={filteredExpenses}
-          getRowKey={(expense) => expense.id}
-          selectable
-          selectedRows={selectedExpenses}
-          onSelectedRowsChange={setSelectedExpenses}
-          bulkActions={
-            selectedExpenses.length > 0 ? (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => setShowDeleteDialog(true)}
-              >
-                Delete ({selectedExpenses.length})
-              </Button>
-            ) : null
-          }
-        />
-      </div>
-
+      {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Expenses</AlertDialogTitle>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete {selectedExpenses.length} expense(s)? 
+              This will permanently delete {selectedExpenses.length} expense(s). 
               This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleBulkDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
+            <AlertDialogAction onClick={handleBulkDelete}>
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
