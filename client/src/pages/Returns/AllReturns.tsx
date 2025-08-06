@@ -85,29 +85,22 @@ export default function AllReturns() {
   // Define table columns
   const columns: DataTableColumn<any>[] = [
     {
-      key: "returnId",
-      header: "Return ID",
-      sortable: true,
-      cell: (returnItem) => (
-        <Link href={`/returns/${returnItem.id}`}>
-          <span className="font-mono text-sm text-blue-600 hover:text-blue-800 cursor-pointer">
-            {returnItem.returnId}
-          </span>
-        </Link>
-      ),
-    },
-    {
       key: "customerName",
       header: "Customer Name",
       sortable: true,
       cell: (returnItem) => (
-        <div>
+        <div className="flex flex-col">
           {returnItem.customer ? (
-            <Link href={`/customers/${returnItem.customerId}`}>
-              <span className="text-blue-600 hover:text-blue-800 cursor-pointer">
-                {returnItem.customer.name}
-              </span>
-            </Link>
+            <>
+              <Link href={`/customers/${returnItem.customerId}`}>
+                <span className="text-blue-600 hover:text-blue-800 cursor-pointer">
+                  {returnItem.customer.name}
+                </span>
+              </Link>
+              {returnItem.customer.fbName && (
+                <span className="text-xs text-gray-500">{returnItem.customer.fbName}</span>
+              )}
+            </>
           ) : (
             <span className="text-gray-400">-</span>
           )}
@@ -115,20 +108,14 @@ export default function AllReturns() {
       ),
     },
     {
-      key: "orderId",
-      header: "Order Number",
-      sortable: true,
+      key: "notes",
+      header: "Note",
+      sortable: false,
       cell: (returnItem) => (
-        <div>
-          {returnItem.order ? (
-            <Link href={`/orders/${returnItem.orderId}`}>
-              <span className="font-mono text-sm text-blue-600 hover:text-blue-800 cursor-pointer">
-                {returnItem.order.id.slice(0, 8).toUpperCase()}
-              </span>
-            </Link>
-          ) : (
-            <span className="text-gray-400">-</span>
-          )}
+        <div className="max-w-xs">
+          <span className="text-sm text-gray-700 truncate">
+            {returnItem.notes || '-'}
+          </span>
         </div>
       ),
     },
@@ -137,15 +124,6 @@ export default function AllReturns() {
       header: "Return Date",
       sortable: true,
       cell: (returnItem) => format(new Date(returnItem.returnDate), 'dd MMM yyyy'),
-    },
-    {
-      key: "itemsReturned",
-      header: "Items Returned",
-      sortable: true,
-      cell: (returnItem) => {
-        const totalItems = returnItem.items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0;
-        return <span className="font-medium">{totalItems}</span>;
-      },
     },
     {
       key: "returnType",
@@ -174,6 +152,17 @@ export default function AllReturns() {
         const status = statusMap[returnItem.status] || { label: returnItem.status, color: 'bg-gray-100 text-gray-800' };
         return <Badge className={status.color}>{status.label}</Badge>;
       },
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      cell: (returnItem) => (
+        <Link href={`/returns/${returnItem.id}`}>
+          <Button variant="ghost" size="icon">
+            <Eye className="h-4 w-4" />
+          </Button>
+        </Link>
+      ),
     },
     {
       key: "notes",
