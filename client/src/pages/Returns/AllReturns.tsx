@@ -112,8 +112,8 @@ export default function AllReturns() {
       header: "Note",
       sortable: false,
       cell: (returnItem) => (
-        <div className="max-w-xs">
-          <span className="text-sm text-gray-700 truncate">
+        <div className="max-w-[150px]">
+          <span className="text-sm text-gray-700 break-words line-clamp-2">
             {returnItem.notes || '-'}
           </span>
         </div>
@@ -156,26 +156,6 @@ export default function AllReturns() {
     {
       key: "actions",
       header: "Actions",
-      cell: (returnItem) => (
-        <Link href={`/returns/${returnItem.id}`}>
-          <Button variant="ghost" size="icon">
-            <Eye className="h-4 w-4" />
-          </Button>
-        </Link>
-      ),
-    },
-    {
-      key: "notes",
-      header: "Note",
-      cell: (returnItem) => (
-        <span className="text-sm text-gray-600 truncate max-w-xs block">
-          {returnItem.notes || '-'}
-        </span>
-      ),
-    },
-    {
-      key: "actions",
-      header: "",
       cell: (returnItem) => (
         <div className="flex gap-2 justify-end">
           <Link href={`/returns/${returnItem.id}/edit`}>
