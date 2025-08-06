@@ -50,6 +50,7 @@ import {
   MoreVertical,
   RotateCcw
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { useToast } from "@/hooks/use-toast";
 
@@ -62,6 +63,8 @@ export default function OrderDetails() {
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [returnQuantities, setReturnQuantities] = useState<Record<string, number>>({});
   const [returnReason, setReturnReason] = useState("");
+  const [pickedItems, setPickedItems] = useState<Set<string>>(new Set());
+  const [showPickingMode, setShowPickingMode] = useState(false);
 
   // Track where the user came from
   useEffect(() => {
@@ -324,44 +327,188 @@ export default function OrderDetails() {
           {/* Order Items */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                Order Items
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="h-5 w-5" />
+                  Order Items
+                </CardTitle>
+                {order.orderStatus === 'to_fulfill' && (
+                  <Button
+                    variant={showPickingMode ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setShowPickingMode(!showPickingMode)}
+                  >
+                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                    {showPickingMode ? "Exit Picking Mode" : "Start Picking"}
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {order.items?.map((item: any, index: number) => (
                   <div key={item.id || index}>
-                    <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-3">
+                      {showPickingMode && (
+                        <Checkbox
+                          checked={pickedItems.has(item.id)}
+                          onCheckedChange={(checked) => {
+                            const newPickedItems = new Set(pickedItems);
+                            if (checked) {
+                              newPickedItems.add(item.id);
+                            } else {
+                              newPickedItems.delete(item.id);
+                            }
+                            setPickedItems(newPickedItems);
+                          }}
+                          className="mt-1"
+                        />
+                      )}
                       <div className="flex-1">
-                        <p className="font-medium text-slate-900">{item.productName}</p>
-                        <div className="flex items-center gap-4 mt-1 text-sm text-slate-500">
-                          <span>SKU: {item.sku}</span>
-                          <span>•</span>
-                          <span>Qty: {item.quantity}</span>
-                          <span>•</span>
-                          <span>{formatCurrency(item.price || 0, order.currency || 'EUR')} each</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="text-right">
-                          <p className="font-semibold text-slate-900">
-                            {formatCurrency(item.total || 0, order.currency || 'EUR')}
-                          </p>
-                          {item.discount > 0 && (
-                            <p className="text-sm text-green-600">
-                              -{formatCurrency(item.discount || 0, order.currency || 'EUR')} discount
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <p className={cn(
+                              "font-medium text-slate-900",
+                              pickedItems.has(item.id) && "line-through text-slate-400"
+                            )}>
+                              {item.productName}
                             </p>
-                          )}
+                            <div className="flex items-center gap-4 mt-1 text-sm text-slate-500">
+                              <span>SKU: {item.sku}</span>
+                              <span>•</span>
+                              <span>Qty: {item.quantity}</span>
+                              <span>•</span>
+                              <span>{formatCurrency(item.price || 0, order.currency || 'EUR')} each</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="text-right">
+                              <p className="font-semibold text-slate-900">
+                                {formatCurrency(item.total || 0, order.currency || 'EUR')}
+                              </p>
+                              {item.discount > 0 && (
+                                <p className="text-sm text-green-600">
+                                  -{formatCurrency(item.discount || 0, order.currency || 'EUR')} discount
+                                </p>
+                              )}
+                            </div>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem 
+                                  onClick={() => {
+                                    // Set only this item for return
+                                    const newSelectedItems = new Set<string>([item.id]);
+                                    const newQuantities: Record<string, number> = {
+                                      [item.id]: item.quantity
+                                    };
+                                    setSelectedItems(newSelectedItems);
+                                    setReturnQuantities(newQuantities);
+                                    setShowReturnDialog(true);
+                                  }}
+                                >
+                                  <RotateCcw className="mr-2 h-4 w-4" />
+                                  Return this item
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </div>
-
                       </div>
                     </div>
                     {index < order.items.length - 1 && <Separator className="mt-4" />}
                   </div>
                 ))}
               </div>
+              
+              {/* Picking Progress */}
+              {showPickingMode && (
+                <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium text-blue-900">Picking Progress</p>
+                    <span className="text-sm text-blue-700">
+                      {pickedItems.size} of {order.items?.length || 0} items picked
+                    </span>
+                  </div>
+                  <div className="w-full bg-blue-200 rounded-full h-2">
+                    <div
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      style={{
+                        width: `${(pickedItems.size / (order.items?.length || 1)) * 100}%`
+                      }}
+                    />
+                  </div>
+                  {pickedItems.size === order.items?.length && order.items?.length > 0 && (
+                    <p className="text-sm text-green-600 font-medium mt-2 flex items-center">
+                      <CheckCircle2 className="mr-1 h-4 w-4" />
+                      All items picked! Ready to ship.
+                    </p>
+                  )}
+                  
+                  {/* Action Buttons */}
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        const allItems = new Set<string>();
+                        order.items?.forEach((item: any) => {
+                          allItems.add(item.id);
+                        });
+                        setPickedItems(allItems);
+                      }}
+                    >
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                      Mark All Picked
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setPickedItems(new Set())}
+                    >
+                      <XCircle className="mr-2 h-4 w-4" />
+                      Clear All
+                    </Button>
+                    {pickedItems.size > 0 && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          // Create return for unpicked items (items with issues)
+                          const unpickedItems = order.items?.filter((item: any) => 
+                            !pickedItems.has(item.id)
+                          );
+                          
+                          if (unpickedItems && unpickedItems.length > 0) {
+                            const newSelectedItems = new Set<string>();
+                            const newQuantities: Record<string, number> = {};
+                            unpickedItems.forEach((item: any) => {
+                              newSelectedItems.add(item.id);
+                              newQuantities[item.id] = item.quantity;
+                            });
+                            setSelectedItems(newSelectedItems);
+                            setReturnQuantities(newQuantities);
+                            setReturnReason("Items not available for fulfillment");
+                            setShowReturnDialog(true);
+                          } else {
+                            toast({
+                              title: "All items picked",
+                              description: "No items to return - all items have been picked successfully",
+                            });
+                          }
+                        }}
+                      >
+                        <RotateCcw className="mr-2 h-4 w-4" />
+                        Return Unpicked Items
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
