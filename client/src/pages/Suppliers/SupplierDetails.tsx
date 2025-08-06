@@ -279,7 +279,7 @@ export default function SupplierDetails() {
                     <div
                       key={product.id}
                       className="flex items-center justify-between p-2 border rounded hover:bg-slate-50 cursor-pointer text-sm"
-                      onClick={() => setLocation(`/inventory/${product.id}`)}
+                      onClick={() => setLocation(`/products/${product.id}`)}
                     >
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{product.name}</p>
