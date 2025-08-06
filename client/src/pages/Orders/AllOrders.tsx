@@ -32,7 +32,7 @@ interface AllOrdersProps {
 
 export default function AllOrders({ filter }: AllOrdersProps) {
   const { toast } = useToast();
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -439,7 +439,11 @@ export default function AllOrders({ filter }: AllOrdersProps) {
               getRowKey={(order) => order.id}
               itemsPerPageOptions={[10, 20, 50, 100]}
               defaultItemsPerPage={20}
-              onRowClick={(order) => navigate(`/orders/${order.id}`)}
+              onRowClick={(order) => {
+                // Store the current path before navigating
+                sessionStorage.setItem('orderDetailsReferrer', location);
+                navigate(`/orders/${order.id}`);
+              }}
               expandable={{
                 render: (order) => (
                   <div className="space-y-4">

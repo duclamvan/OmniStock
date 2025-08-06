@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "wouter";
+import { useEffect, useRef } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,8 +43,17 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function OrderDetails() {
   const { id } = useParams();
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const { toast } = useToast();
+  const previousPath = useRef<string>("/orders");
+
+  // Track where the user came from
+  useEffect(() => {
+    const referrer = sessionStorage.getItem('orderDetailsReferrer');
+    if (referrer) {
+      previousPath.current = referrer;
+    }
+  }, []);
 
   // Fetch order data
   const { data: order, isLoading, isFetching } = useQuery<any>({
@@ -132,7 +142,7 @@ export default function OrderDetails() {
           <Button
             variant="outline"
             size="icon"
-            onClick={() => navigate("/orders")}
+            onClick={() => navigate(previousPath.current)}
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
