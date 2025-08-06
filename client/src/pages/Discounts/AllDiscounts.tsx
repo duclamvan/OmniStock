@@ -115,24 +115,11 @@ export default function AllDiscounts() {
       sortable: true,
       cell: (sale) => {
         if (sale.discountType === 'percentage') {
-          return (
-            <div className="flex items-center gap-1">
-              <Percent className="h-4 w-4 text-gray-400" />
-              <span className="font-medium">{sale.percentage}%</span>
-            </div>
-          );
+          return <span className="font-medium">{sale.percentage}%</span>;
         } else if (sale.discountType === 'fixed_amount') {
-          return (
-            <div className="flex items-center gap-1">
-              <span className="font-medium">${sale.fixedAmount}</span>
-            </div>
-          );
+          return <span className="font-medium">${sale.fixedAmount}</span>;
         } else if (sale.discountType === 'buy_x_get_y') {
-          return (
-            <div className="flex items-center gap-1">
-              <span className="font-medium text-sm">Buy {sale.buyQuantity} Get {sale.getQuantity}</span>
-            </div>
-          );
+          return <span className="font-medium text-sm">Buy {sale.buyQuantity} Get {sale.getQuantity}</span>;
         }
         return <span className="text-gray-500">-</span>;
       },
