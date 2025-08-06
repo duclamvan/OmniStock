@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -94,6 +94,10 @@ export default function AddDiscount() {
   const [productSearchOpen, setProductSearchOpen] = useState(false);
   const [categorySearchOpen, setCategorySearchOpen] = useState(false);
   const [getProductSearchOpen, setGetProductSearchOpen] = useState(false);
+  
+  // Refs for debouncing currency conversion
+  const czkTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const eurTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch products
   const { data: products = [] } = useQuery<Product[]>({
@@ -424,12 +428,21 @@ export default function AddDiscount() {
                               const czkValue = parseFloat(e.target.value);
                               if (!isNaN(czkValue)) {
                                 form.setValue('fixedAmount', czkValue);
-                                // Auto-convert to EUR if EUR field is empty
-                                if (!form.watch('fixedAmountEur')) {
-                                  form.setValue('fixedAmountEur', parseFloat((czkValue / 25).toFixed(2)));
+                                
+                                // Clear any existing timeout
+                                if (czkTimeoutRef.current) {
+                                  clearTimeout(czkTimeoutRef.current);
                                 }
+                                
+                                // Set new timeout for auto-conversion
+                                czkTimeoutRef.current = setTimeout(() => {
+                                  form.setValue('fixedAmountEur', parseFloat((czkValue / 25).toFixed(2)));
+                                }, 1500);
                               } else {
                                 form.setValue('fixedAmount', undefined);
+                                if (czkTimeoutRef.current) {
+                                  clearTimeout(czkTimeoutRef.current);
+                                }
                               }
                             }}
                             placeholder="120.00"
@@ -445,17 +458,26 @@ export default function AddDiscount() {
                             type="number"
                             min="0.01"
                             step="0.01"
-                            value={form.watch('fixedAmountEur') || (form.watch('fixedAmount') ? (form.watch('fixedAmount') / 25).toFixed(2) : '')}
+                            value={form.watch('fixedAmountEur') || (form.watch('fixedAmount') && !czkTimeoutRef.current ? (form.watch('fixedAmount') / 25).toFixed(2) : '')}
                             onChange={(e) => {
                               const eurValue = parseFloat(e.target.value);
                               if (!isNaN(eurValue)) {
                                 form.setValue('fixedAmountEur', eurValue);
-                                // Auto-convert to CZK if CZK field is empty
-                                if (!form.watch('fixedAmount')) {
-                                  form.setValue('fixedAmount', parseFloat((eurValue * 25).toFixed(2)));
+                                
+                                // Clear any existing timeout
+                                if (eurTimeoutRef.current) {
+                                  clearTimeout(eurTimeoutRef.current);
                                 }
+                                
+                                // Set new timeout for auto-conversion
+                                eurTimeoutRef.current = setTimeout(() => {
+                                  form.setValue('fixedAmount', parseFloat((eurValue * 25).toFixed(2)));
+                                }, 1500);
                               } else {
                                 form.setValue('fixedAmountEur', undefined);
+                                if (eurTimeoutRef.current) {
+                                  clearTimeout(eurTimeoutRef.current);
+                                }
                               }
                             }}
                             placeholder="4.80"
