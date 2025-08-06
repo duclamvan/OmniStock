@@ -407,18 +407,35 @@ export default function AddDiscount() {
                 )}
 
                 {watchDiscountType === 'fixed_amount' && (
-                  <div>
+                  <div className="space-y-3">
                     <Label>Discount Amount *</Label>
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-600">$</span>
-                      <Input 
-                        type="number"
-                        min="0.01"
-                        step="0.01"
-                        {...form.register("fixedAmount", { valueAsNumber: true })}
-                        placeholder="5.00"
-                        className="max-w-[150px]"
-                      />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm text-gray-600">CZK</Label>
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-600">Kč</span>
+                          <Input 
+                            type="number"
+                            min="0.01"
+                            step="0.01"
+                            {...form.register("fixedAmount", { valueAsNumber: true })}
+                            placeholder="120.00"
+                            className="max-w-[150px]"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-sm text-gray-600">EUR (converted)</Label>
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-600">€</span>
+                          <Input 
+                            type="number"
+                            value={form.watch('fixedAmount') ? (form.watch('fixedAmount') / 25).toFixed(2) : ''}
+                            disabled
+                            className="max-w-[150px] bg-gray-50"
+                          />
+                        </div>
+                      </div>
                     </div>
                     {form.formState.errors.fixedAmount && (
                       <p className="text-sm text-red-500 mt-1">{form.formState.errors.fixedAmount.message}</p>
@@ -694,8 +711,8 @@ export default function AddDiscount() {
               </CardHeader>
               <CardContent className="pt-6 space-y-4">
                 <div>
-                  <p className="text-sm text-gray-600">Discount ID</p>
-                  <p className="font-semibold">{discountId || "Auto-generated"}</p>
+                  <p className="text-sm text-gray-600">Discount Name</p>
+                  <p className="font-semibold">{form.watch('name') || "Enter name..."}</p>
                 </div>
 
                 <Separator />
@@ -708,26 +725,66 @@ export default function AddDiscount() {
                 </div>
 
                 {watchDiscountType === 'percentage' && form.watch('percentage') > 0 && (
-                  <div>
-                    <p className="text-sm text-gray-600">Discount Value</p>
-                    <p className="font-semibold text-green-600">{form.watch('percentage')}% OFF</p>
-                  </div>
+                  <>
+                    <div>
+                      <p className="text-sm text-gray-600">Discount Value</p>
+                      <p className="font-semibold text-green-600 text-2xl">{form.watch('percentage')}% OFF</p>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <p className="text-xs text-gray-600">Example Calculation</p>
+                      <p className="text-sm">Item Price: Kč 500</p>
+                      <p className="text-sm text-green-600 font-semibold">
+                        You Save: Kč {(500 * form.watch('percentage') / 100).toFixed(0)}
+                      </p>
+                      <p className="text-sm font-semibold">
+                        Final Price: Kč {(500 - (500 * form.watch('percentage') / 100)).toFixed(0)}
+                      </p>
+                    </div>
+                  </>
                 )}
 
                 {watchDiscountType === 'fixed_amount' && form.watch('fixedAmount') > 0 && (
-                  <div>
-                    <p className="text-sm text-gray-600">Discount Value</p>
-                    <p className="font-semibold text-green-600">${form.watch('fixedAmount')} OFF</p>
-                  </div>
+                  <>
+                    <div>
+                      <p className="text-sm text-gray-600">Discount Value</p>
+                      <div className="space-y-1">
+                        <p className="font-semibold text-green-600 text-xl">Kč {form.watch('fixedAmount')} OFF</p>
+                        <p className="text-sm text-gray-600">≈ €{(form.watch('fixedAmount') / 25).toFixed(2)}</p>
+                      </div>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <p className="text-xs text-gray-600">Example Calculation</p>
+                      <p className="text-sm">Item Price: Kč 500</p>
+                      <p className="text-sm text-green-600 font-semibold">
+                        You Save: Kč {form.watch('fixedAmount')}
+                      </p>
+                      <p className="text-sm font-semibold">
+                        Final Price: Kč {Math.max(0, 500 - form.watch('fixedAmount')).toFixed(0)}
+                      </p>
+                    </div>
+                  </>
                 )}
 
                 {watchDiscountType === 'buy_x_get_y' && (
-                  <div>
-                    <p className="text-sm text-gray-600">Promotion</p>
-                    <p className="font-semibold text-green-600">
-                      Buy {form.watch('buyQuantity') || 0} Get {form.watch('getQuantity') || 0} Free
-                    </p>
-                  </div>
+                  <>
+                    <div>
+                      <p className="text-sm text-gray-600">Promotion</p>
+                      <p className="font-semibold text-green-600 text-lg">
+                        Buy {form.watch('buyQuantity') || 0} Get {form.watch('getQuantity') || 0} Free
+                      </p>
+                    </div>
+                    {form.watch('buyQuantity') > 0 && form.watch('getQuantity') > 0 && (
+                      <div className="bg-gray-50 rounded-lg p-3">
+                        <p className="text-xs text-gray-600">Effective Discount</p>
+                        <p className="text-sm font-semibold text-green-600">
+                          {((form.watch('getQuantity') / (form.watch('buyQuantity') + form.watch('getQuantity'))) * 100).toFixed(1)}% OFF
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          on total {form.watch('buyQuantity') + form.watch('getQuantity')} items
+                        </p>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 <Separator />
