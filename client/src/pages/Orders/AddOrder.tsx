@@ -1380,7 +1380,7 @@ export default function AddOrder() {
               </div>
 
               <div>
-                <Label htmlFor="actualShippingCost">Actual Shipping Cost (Auto-calculated)</Label>
+                <Label htmlFor="actualShippingCost">Actual Shipping Cost</Label>
                 <Input
                   type="number"
                   step="0.01"
