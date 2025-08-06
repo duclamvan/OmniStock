@@ -201,11 +201,11 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                 <Menu className="h-6 w-6" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-0">
-              <div className="p-4 border-b">
+            <SheetContent side="left" className="w-72 p-0 flex flex-col h-full">
+              <div className="p-4 border-b flex-shrink-0">
                 <h2 className="text-lg font-semibold">Menu</h2>
               </div>
-              <nav className="p-4 space-y-2">
+              <nav className="p-4 space-y-2 overflow-y-auto flex-1">
                 <NavLinks />
               </nav>
             </SheetContent>
@@ -214,11 +214,11 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
       </header>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:block fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-200">
-        <div className="p-6 border-b">
+      <aside className="hidden lg:block fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-200 flex flex-col">
+        <div className="p-6 border-b flex-shrink-0">
           <img src={logoPath} alt="Davie Professional" className="h-10" />
         </div>
-        <nav className="p-4 space-y-2">
+        <nav className="p-4 space-y-2 overflow-y-auto flex-1">
           <NavLinks />
         </nav>
       </aside>
