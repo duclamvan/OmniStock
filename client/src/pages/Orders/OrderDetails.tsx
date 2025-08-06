@@ -5,7 +5,19 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "wouter";
-import { useEffect, useRef, useMemo } from "react";
+import { useEffect, useRef, useMemo, useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,6 +58,10 @@ export default function OrderDetails() {
   const [location, navigate] = useLocation();
   const { toast } = useToast();
   const previousPath = useRef<string>("/orders");
+  const [showReturnDialog, setShowReturnDialog] = useState(false);
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+  const [returnQuantities, setReturnQuantities] = useState<Record<string, number>>({});
+  const [returnReason, setReturnReason] = useState("");
 
   // Track where the user came from
   useEffect(() => {
@@ -181,22 +197,43 @@ export default function OrderDetails() {
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handlePrint}>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handlePrint} className="hidden sm:flex">
             <Printer className="mr-2 h-4 w-4" />
             Print
           </Button>
-          <Button variant="outline" size="sm" onClick={handleShare}>
+          <Button variant="outline" size="sm" onClick={handleShare} className="hidden sm:flex">
             <Share2 className="mr-2 h-4 w-4" />
             Share
           </Button>
-          <Button variant="outline" size="sm" onClick={handleExport}>
+          <Button variant="outline" size="sm" onClick={handleExport} className="hidden sm:flex">
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
-          <Button onClick={() => navigate(`/orders/${id}/edit`)}>
+          <Button 
+            variant="outline"
+            size="sm" 
+            onClick={() => {
+              // Pre-select all items and set quantities
+              const newSelectedItems = new Set<string>();
+              const newQuantities: Record<string, number> = {};
+              order.items?.forEach((item: any) => {
+                newSelectedItems.add(item.id);
+                newQuantities[item.id] = item.quantity;
+              });
+              setSelectedItems(newSelectedItems);
+              setReturnQuantities(newQuantities);
+              setShowReturnDialog(true);
+            }}
+          >
+            <RotateCcw className="mr-2 h-4 w-4" />
+            <span className="hidden sm:inline">Create Return</span>
+            <span className="sm:hidden">Return</span>
+          </Button>
+          <Button size="sm" onClick={() => navigate(`/orders/${id}/edit`)}>
             <Edit className="mr-2 h-4 w-4" />
-            Edit Order
+            <span className="hidden sm:inline">Edit Order</span>
+            <span className="sm:hidden">Edit</span>
           </Button>
         </div>
       </div>
@@ -318,26 +355,7 @@ export default function OrderDetails() {
                             </p>
                           )}
                         </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem 
-                              onClick={() => {
-                                toast({
-                                  title: "Coming Soon",
-                                  description: "Return ticket functionality will be available soon",
-                                });
-                              }}
-                            >
-                              <RotateCcw className="mr-2 h-4 w-4" />
-                              Create Return ticket
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+
                       </div>
                     </div>
                     {index < order.items.length - 1 && <Separator className="mt-4" />}
@@ -615,6 +633,221 @@ export default function OrderDetails() {
         </div>
       </div>
 
+      {/* Create Return Dialog */}
+      <Dialog open={showReturnDialog} onOpenChange={setShowReturnDialog}>
+        <DialogContent className="max-w-3xl w-[95vw] sm:w-full max-h-[90vh] sm:max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create Return Ticket</DialogTitle>
+            <DialogDescription>
+              Select items to return from order {order?.orderId}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Order Info */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg">
+              <div>
+                <Label className="text-sm text-slate-600">Order ID</Label>
+                <p className="font-medium">{order?.orderId}</p>
+              </div>
+              <div>
+                <Label className="text-sm text-slate-600">Customer</Label>
+                <p className="font-medium">{order?.customer?.name}</p>
+              </div>
+              <div>
+                <Label className="text-sm text-slate-600">Order Date</Label>
+                <p className="font-medium">
+                  {order?.createdAt && new Date(order.createdAt).toLocaleDateString()}
+                </p>
+              </div>
+              <div>
+                <Label className="text-sm text-slate-600">Total Amount</Label>
+                <p className="font-medium">
+                  {formatCurrency(order?.grandTotal || 0, order?.currency || 'EUR')}
+                </p>
+              </div>
+            </div>
+
+            {/* Select All Checkbox */}
+            <div className="flex items-center space-x-2 pb-2">
+              <Checkbox
+                checked={selectedItems.size === order?.items?.length && order?.items?.length > 0}
+                onCheckedChange={(checked) => {
+                  if (checked) {
+                    const newSelectedItems = new Set<string>();
+                    const newQuantities: Record<string, number> = {};
+                    order.items?.forEach((item: any) => {
+                      newSelectedItems.add(item.id);
+                      newQuantities[item.id] = item.quantity;
+                    });
+                    setSelectedItems(newSelectedItems);
+                    setReturnQuantities(newQuantities);
+                  } else {
+                    setSelectedItems(new Set());
+                    setReturnQuantities({});
+                  }
+                }}
+              />
+              <Label className="font-medium">Select All Items</Label>
+            </div>
+
+            {/* Items to Return */}
+            <div className="space-y-3">
+              {order?.items?.map((item: any) => (
+                <div key={item.id} className="border rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      checked={selectedItems.has(item.id)}
+                      onCheckedChange={(checked) => {
+                        const newSelectedItems = new Set(selectedItems);
+                        if (checked) {
+                          newSelectedItems.add(item.id);
+                          setReturnQuantities({
+                            ...returnQuantities,
+                            [item.id]: item.quantity
+                          });
+                        } else {
+                          newSelectedItems.delete(item.id);
+                          const newQuantities = { ...returnQuantities };
+                          delete newQuantities[item.id];
+                          setReturnQuantities(newQuantities);
+                        }
+                        setSelectedItems(newSelectedItems);
+                      }}
+                    />
+                    <div className="flex-1">
+                      <div className="flex justify-between">
+                        <div>
+                          <p className="font-medium">{item.productName}</p>
+                          <p className="text-sm text-slate-500">SKU: {item.sku}</p>
+                          <p className="text-sm text-slate-500">
+                            Price: {formatCurrency(item.price || 0, order?.currency || 'EUR')} × {item.quantity}
+                          </p>
+                        </div>
+                        {selectedItems.has(item.id) && (
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2 sm:mt-0">
+                            <Label className="text-sm">Return Qty:</Label>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="number"
+                                min="1"
+                                max={item.quantity}
+                                value={returnQuantities[item.id] || 1}
+                                onChange={(e) => {
+                                  const value = Math.min(
+                                    Math.max(1, parseInt(e.target.value) || 1),
+                                    item.quantity
+                                  );
+                                  setReturnQuantities({
+                                    ...returnQuantities,
+                                    [item.id]: value
+                                  });
+                                }}
+                                className="w-20"
+                              />
+                              <span className="text-sm text-slate-500">of {item.quantity}</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Return Reason */}
+            <div className="space-y-2">
+              <Label htmlFor="return-reason">Return Reason</Label>
+              <Textarea
+                id="return-reason"
+                placeholder="Please provide a reason for the return..."
+                value={returnReason}
+                onChange={(e) => setReturnReason(e.target.value)}
+                className="min-h-[100px]"
+              />
+            </div>
+
+            {/* Return Summary */}
+            {selectedItems.size > 0 && (
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="font-medium text-amber-900 mb-2">Return Summary</p>
+                <p className="text-sm text-amber-700">
+                  Returning {selectedItems.size} item(s) with a total of{' '}
+                  {Object.values(returnQuantities).reduce((sum, qty) => sum + qty, 0)} unit(s)
+                </p>
+                <p className="text-sm text-amber-700 mt-1">
+                  Total Return Value:{' '}
+                  {formatCurrency(
+                    order?.items
+                      ?.filter((item: any) => selectedItems.has(item.id))
+                      .reduce((sum: number, item: any) => 
+                        sum + (item.price * (returnQuantities[item.id] || 0)), 0) || 0,
+                    order?.currency || 'EUR'
+                  )}
+                </p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowReturnDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                if (selectedItems.size === 0) {
+                  toast({
+                    title: "No items selected",
+                    description: "Please select at least one item to return",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                
+                if (!returnReason.trim()) {
+                  toast({
+                    title: "Reason required",
+                    description: "Please provide a reason for the return",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+
+                // Create return items array
+                const returnItems = order?.items
+                  ?.filter((item: any) => selectedItems.has(item.id))
+                  .map((item: any) => ({
+                    productId: item.productId,
+                    productName: item.productName,
+                    sku: item.sku,
+                    quantity: returnQuantities[item.id] || 1,
+                    price: item.price,
+                    total: item.price * (returnQuantities[item.id] || 1)
+                  }));
+
+                // Navigate to add return page with pre-filled data
+                const returnData = {
+                  orderId: order?.id,
+                  orderNumber: order?.orderId,
+                  customerId: order?.customerId,
+                  customerName: order?.customer?.name,
+                  items: returnItems,
+                  reason: returnReason,
+                  totalAmount: returnItems?.reduce((sum: number, item: any) => sum + item.total, 0) || 0
+                };
+
+                // Store in sessionStorage for the return form
+                sessionStorage.setItem('returnFormData', JSON.stringify(returnData));
+                navigate('/returns/add');
+              }}
+              disabled={selectedItems.size === 0}
+            >
+              Create Return Ticket
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </div>
   );

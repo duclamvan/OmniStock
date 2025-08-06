@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -57,17 +57,17 @@ export default function AddReturn() {
   const [productSearchOpen, setProductSearchOpen] = useState<number | null>(null);
 
   // Fetch customers
-  const { data: customers = [] } = useQuery({
+  const { data: customers = [] } = useQuery<any[]>({
     queryKey: ['/api/customers'],
   });
 
   // Fetch orders
-  const { data: orders = [] } = useQuery({
+  const { data: orders = [] } = useQuery<any[]>({
     queryKey: ['/api/orders'],
   });
 
   // Fetch products
-  const { data: products = [] } = useQuery({
+  const { data: products = [] } = useQuery<any[]>({
     queryKey: ['/api/products'],
   });
 
@@ -110,6 +110,51 @@ export default function AddReturn() {
   useState(() => {
     setReturnId(generateReturnId());
   });
+
+  // Check for pre-filled data from Order Details
+  useEffect(() => {
+    const returnFormData = sessionStorage.getItem('returnFormData');
+    if (returnFormData) {
+      try {
+        const data = JSON.parse(returnFormData);
+        
+        // Set form values with pre-filled data
+        if (data.customerId) {
+          form.setValue('customerId', data.customerId);
+        }
+        if (data.orderId) {
+          form.setValue('orderId', data.orderId);
+        }
+        if (data.reason) {
+          form.setValue('notes', data.reason);
+        }
+        
+        // Add items to the form
+        if (data.items && data.items.length > 0) {
+          data.items.forEach((item: any) => {
+            append({
+              productId: item.productId || '',
+              productName: item.productName || '',
+              sku: item.sku || '',
+              quantity: item.quantity || 1,
+              price: item.price || 0,
+            });
+          });
+        }
+        
+        // Clear the session storage after using the data
+        sessionStorage.removeItem('returnFormData');
+        
+        // Show success message
+        toast({
+          title: "Return Ticket Pre-filled",
+          description: `Pre-filled return data for order ${data.orderNumber}`,
+        });
+      } catch (error) {
+        console.error('Error parsing return form data:', error);
+      }
+    }
+  }, []);
 
   const createReturnMutation = useMutation({
     mutationFn: (data: any) => apiRequest('POST', '/api/returns', data),

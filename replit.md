@@ -37,6 +37,7 @@ Davie Supply is a comprehensive warehouse and order management system designed a
 - **Bidirectional Currency Conversion**: Implemented smart currency conversion for Fixed Amount discount type with 1.5-second debounce delay, allowing users to edit both CZK and EUR fields with automatic conversion (1 EUR = 25 CZK)
 - **Mobile-First Responsive Design**: Completely redesigned Add Order page with mobile-first approach, featuring responsive cards, collapsible sections on mobile, sticky order summary on desktop that moves to top on mobile
 - **Performance Optimization for Orders**: Added memoization for filtered orders, optimized query caching with staleTime and gcTime settings, reduced unnecessary re-renders and API calls, improved page load speed for all order pages
+- **Create Return Ticket from Order Details**: Implemented complete return ticket creation functionality directly from Order Details page - added Create Return button in header, modal dialog with bulk selectable items and adjustable quantities, pre-fills all order information (order ID, customer, items), seamlessly navigates to Add Return page with pre-populated data via sessionStorage, fully mobile-responsive with adaptive layouts
 
 # User Preferences
 Preferred communication style: Simple, everyday language.
