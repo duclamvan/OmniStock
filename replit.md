@@ -1,7 +1,7 @@
 # Overview
 Davie Supply is a comprehensive warehouse and order management system designed as a full-stack web application. Its primary purpose is to manage the complete order lifecycle from creation to fulfillment, track inventory, manage customers, and provide financial reporting with multi-currency support. Key capabilities include real-time Vietnamese diacritics search and integration with external shipping APIs for order tracking. The business vision is to provide a robust, efficient platform for streamlined supply chain operations.
 
-## Recent Changes (August 4-7, 2025)
+## Recent Changes (August 4-8, 2025)
 - **Performance Optimization**: Added bulk API endpoints for product variant operations to improve performance when creating series and deleting multiple variants
 - **Fixed TypeScript Errors**: Resolved type annotations in AddProduct and EditProduct components
 - **Query Optimization**: Added query configuration to prevent excessive re-fetching of product variants data
@@ -34,6 +34,9 @@ Davie Supply is a comprehensive warehouse and order management system designed a
 - **Add Order UI Reorganization**: Moved Payment Status field from Payment Details section to Order Information section next to Order Status for better logical grouping of status-related fields
 - **Enhanced Discount System**: Implemented three discount types (percentage, fixed amount, Buy X Get Y) with smart UI that dynamically shows/hides fields based on selection, including support for same/different product promotions
 - **Smart Discount Forms**: Redesigned AddDiscount and EditDiscount pages with professional flex layouts featuring sticky summary sidebars, conditional field display, and visual type selection with radio groups
+- **Bidirectional Currency Conversion**: Implemented smart currency conversion for Fixed Amount discount type with 1.5-second debounce delay, allowing users to edit both CZK and EUR fields with automatic conversion (1 EUR = 25 CZK)
+- **Mobile-First Responsive Design**: Completely redesigned Add Order page with mobile-first approach, featuring responsive cards, collapsible sections on mobile, sticky order summary on desktop that moves to top on mobile
+- **Performance Optimization for Orders**: Added memoization for filtered orders, optimized query caching with staleTime and gcTime settings, reduced unnecessary re-renders and API calls, improved page load speed for all order pages
 
 # User Preferences
 Preferred communication style: Simple, everyday language.

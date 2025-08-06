@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, memo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -49,6 +49,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     retry: false,
     refetchInterval: 10000, // Refetch every 10 seconds
     refetchOnWindowFocus: true, // Refetch when user returns to the tab
+    staleTime: 5000, // Consider data stale after 5 seconds
+    gcTime: 300000, // Keep in cache for 5 minutes (formerly cacheTime)
   });
 
   // Error handling
@@ -105,17 +107,18 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     },
   });
 
-  // Filter orders based on search query
-  const filteredOrders = orders?.filter((order: any) => {
-    if (!searchQuery) return true;
+  // Filter orders based on search query (memoized for performance)
+  const filteredOrders = useMemo(() => {
+    if (!orders) return [];
+    if (!searchQuery) return orders;
     
     const matcher = createVietnameseSearchMatcher(searchQuery);
-    return (
+    return orders.filter((order: any) => 
       matcher(order.orderId || '') ||
       matcher(order.customer?.name || '') ||
       matcher(order.customer?.facebookName || '')
     );
-  });
+  }, [orders, searchQuery]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {

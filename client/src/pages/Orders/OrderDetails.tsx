@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Link } from "wouter";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,12 +55,14 @@ export default function OrderDetails() {
     }
   }, []);
 
-  // Fetch order data
+  // Fetch order data with optimized caching
   const { data: order, isLoading, isFetching } = useQuery<any>({
     queryKey: [`/api/orders/${id}`],
     enabled: !!id && !['add', 'to-fulfill', 'shipped', 'pay-later', 'pre-orders'].includes(id || ''),
     refetchInterval: 5000, // Refetch every 5 seconds for real-time updates
     refetchOnWindowFocus: true, // Refetch when user returns to the tab
+    staleTime: 3000, // Consider data stale after 3 seconds
+    gcTime: 300000, // Keep in cache for 5 minutes
   });
 
   const copyToClipboard = (text: string, label: string) => {

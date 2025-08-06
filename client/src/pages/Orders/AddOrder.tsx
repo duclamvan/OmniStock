@@ -581,26 +581,28 @@ export default function AddOrder() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="p-6 max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm mb-6 p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+      <div className="p-3 sm:p-4 lg:p-6 max-w-7xl mx-auto">
+        {/* Header - Mobile Optimized */}
+        <div className="bg-white rounded-lg shadow-sm mb-4 lg:mb-6 p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setLocation("/orders")}
+                className="w-fit"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Orders
+                <span className="hidden sm:inline">Back to Orders</span>
+                <span className="sm:hidden">Back</span>
               </Button>
-              <div className="h-6 w-px bg-gray-200" />
+              <div className="hidden sm:block h-6 w-px bg-gray-200" />
               <div>
-                <h1 className="text-2xl font-bold text-slate-900">Create New Order</h1>
-                <p className="text-sm text-slate-600">Add products, select customer, and configure order details</p>
+                <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Create New Order</h1>
+                <p className="text-xs sm:text-sm text-slate-600 mt-1">Add products and configure details</p>
               </div>
             </div>
-            <Badge variant="outline" className="text-green-600 border-green-600">
+            <Badge variant="outline" className="text-green-600 border-green-600 w-fit">
               <Plus className="h-3 w-3 mr-1" />
               New Order
             </Badge>
@@ -608,20 +610,20 @@ export default function AddOrder() {
         </div>
 
         <form onSubmit={form.handleSubmit(onSubmit)}>
-          <div className="flex gap-6">
-            {/* Main Column - Scrollable */}
-            <div className="flex-1 space-y-6">
-            {/* Order Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ShoppingCart className="h-5 w-5 text-blue-600" />
+          <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+            {/* Main Column - Mobile First */}
+            <div className="w-full lg:flex-1 space-y-4 lg:space-y-6">
+            {/* Order Information - Mobile Optimized */}
+            <Card className="shadow-sm">
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                   Order Information
                 </CardTitle>
-                <CardDescription>Configure order status, payment, and shipping details</CardDescription>
+                <CardDescription className="text-xs sm:text-sm mt-1">Configure status, payment, and shipping</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
                     <Label htmlFor="currency">Currency *</Label>
                     <Select value={form.watch('currency')} onValueChange={(value) => form.setValue('currency', value as any)}>
@@ -668,9 +670,9 @@ export default function AddOrder() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <Label htmlFor="orderStatus">Order Status</Label>
+                    <Label htmlFor="orderStatus" className="text-sm">Order Status</Label>
                     <Select value={form.watch('orderStatus')} onValueChange={(value) => form.setValue('orderStatus', value as any)}>
                       <SelectTrigger className="mt-1">
                         <SelectValue />
@@ -699,7 +701,7 @@ export default function AddOrder() {
                   </div>
 
                   <div>
-                    <Label htmlFor="paymentStatus">Payment Status</Label>
+                    <Label htmlFor="paymentStatus" className="text-sm">Payment Status</Label>
                     <Select value={form.watch('paymentStatus')} onValueChange={(value) => form.setValue('paymentStatus', value as any)}>
                       <SelectTrigger className="mt-1">
                         <SelectValue />
@@ -730,9 +732,9 @@ export default function AddOrder() {
 
                 <Separator />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <Label htmlFor="shippingMethod">Shipping Method</Label>
+                    <Label htmlFor="shippingMethod" className="text-sm">Shipping Method</Label>
                     <div className="relative mt-1">
                       <Truck className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <Select value={form.watch('shippingMethod')} onValueChange={(value) => form.setValue('shippingMethod', value as any)}>
@@ -750,7 +752,7 @@ export default function AddOrder() {
                   </div>
 
                   <div>
-                    <Label htmlFor="paymentMethod">Payment Method</Label>
+                    <Label htmlFor="paymentMethod" className="text-sm">Payment Method</Label>
                     <div className="relative mt-1">
                       <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <Select value={form.watch('paymentMethod')} onValueChange={(value) => form.setValue('paymentMethod', value as any)}>
@@ -770,16 +772,16 @@ export default function AddOrder() {
               </CardContent>
             </Card>
 
-            {/* Customer Selection */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5 text-blue-600" />
+            {/* Customer Selection - Mobile Optimized */}
+            <Card className="shadow-sm">
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <User className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                   Customer Details
                 </CardTitle>
-                <CardDescription>Search and select a customer or create a new one</CardDescription>
+                <CardDescription className="text-xs sm:text-sm mt-1">Search and select or create new</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-4">
             <div className="relative customer-search-container">
               <Label htmlFor="customer">Search Customer</Label>
               <div className="relative">
@@ -1165,12 +1167,16 @@ export default function AddOrder() {
           </CardContent>
         </Card>
 
-        {/* Product Selection */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Add Products</CardTitle>
+        {/* Product Selection - Mobile Optimized */}
+        <Card className="shadow-sm">
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Package className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+              Add Products
+            </CardTitle>
+            <CardDescription className="text-xs sm:text-sm mt-1">Search and add products to order</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-4">
             <div className="relative product-search-container">
               <Label htmlFor="product">Search Products</Label>
               <div className="relative">
@@ -1264,12 +1270,18 @@ export default function AddOrder() {
           </CardContent>
         </Card>
 
-        {/* Order Items */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Order Items</CardTitle>
+        {/* Order Items - Mobile Optimized */}
+        <Card className="shadow-sm">
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+              Order Items
+            </CardTitle>
+            <CardDescription className="text-xs sm:text-sm mt-1">
+              {orderItems.length > 0 ? `${orderItems.length} item${orderItems.length !== 1 ? 's' : ''} added` : 'No items yet'}
+            </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
             {orderItems.length > 0 ? (
               <div className="overflow-x-auto">
                 <Table>
@@ -1344,13 +1356,17 @@ export default function AddOrder() {
           </CardContent>
         </Card>
 
-        {/* Payment Details */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Payment Details</CardTitle>
+        {/* Payment Details - Mobile Optimized */}
+        <Card className="shadow-sm">
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+              Payment Details
+            </CardTitle>
+            <CardDescription className="text-xs sm:text-sm mt-1">Configure pricing and notes</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <Label htmlFor="discountValue">Discount</Label>
                 <Input
@@ -1403,9 +1419,9 @@ export default function AddOrder() {
             </div>
             {/* End of Main Column */}
 
-            {/* Right Column - Sticky */}
-            <div className="w-full lg:w-96">
-              <div className="sticky top-20 space-y-6">
+            {/* Right Column - Mobile First (Bottom on Mobile, Sticky Sidebar on Desktop) */}
+            <div className="w-full lg:w-96 order-first lg:order-last">
+              <div className="lg:sticky lg:top-20 space-y-4 lg:space-y-6">
                 {/* Order Summary */}
                 <Card className="shadow-lg overflow-hidden">
                   <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-lg">
