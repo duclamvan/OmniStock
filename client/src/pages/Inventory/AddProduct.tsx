@@ -915,8 +915,8 @@ export default function AddProduct() {
             <div className="w-full lg:w-96">
               <div className="sticky top-20 space-y-6">
                 {/* Quick Actions Card */}
-                <Card className="shadow-lg">
-                  <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50">
+                <Card className="shadow-lg overflow-hidden">
+                  <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-t-lg">
                     <CardTitle className="flex items-center gap-2">
                       <Package className="h-5 w-5 text-green-600" />
                       Quick Actions

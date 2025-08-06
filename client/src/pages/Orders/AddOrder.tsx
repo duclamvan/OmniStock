@@ -1385,8 +1385,8 @@ export default function AddOrder() {
             <div className="w-full lg:w-96">
               <div className="sticky top-20 space-y-6">
                 {/* Order Summary */}
-                <Card className="shadow-lg">
-                  <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
+                <Card className="shadow-lg overflow-hidden">
+                  <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-lg">
                     <CardTitle className="flex items-center gap-2">
                       <Calculator className="h-5 w-5 text-blue-600" />
                       Order Summary
