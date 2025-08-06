@@ -1,7 +1,7 @@
 # Overview
 Davie Supply is a comprehensive warehouse and order management system designed as a full-stack web application. Its primary purpose is to manage the complete order lifecycle from creation to fulfillment, track inventory, manage customers, and provide financial reporting with multi-currency support. Key capabilities include real-time Vietnamese diacritics search and integration with external shipping APIs for order tracking. The business vision is to provide a robust, efficient platform for streamlined supply chain operations.
 
-## Recent Changes (August 4-6, 2025)
+## Recent Changes (August 4-7, 2025)
 - **Performance Optimization**: Added bulk API endpoints for product variant operations to improve performance when creating series and deleting multiple variants
 - **Fixed TypeScript Errors**: Resolved type annotations in AddProduct and EditProduct components
 - **Query Optimization**: Added query configuration to prevent excessive re-fetching of product variants data
@@ -32,6 +32,8 @@ Davie Supply is a comprehensive warehouse and order management system designed a
 - **Pay Later Customer Badge**: Implemented automatic Pay Later badge for customers who have 50% or more of their orders with Pay Later payment status (minimum 2 orders), displays badge in customer lists/details/order forms, automatically sets payment status to Pay Later when selecting such customers in Add Order page
 - **Navigation Fix for Orders Subpages**: Fixed navigation issue where back button from OrderDetails always returned to All Orders - now correctly returns to the same Orders subpage (To Fulfill, Shipped, Pay Later, Pre-Orders) using sessionStorage to track referrer
 - **Add Order UI Reorganization**: Moved Payment Status field from Payment Details section to Order Information section next to Order Status for better logical grouping of status-related fields
+- **Enhanced Discount System**: Implemented three discount types (percentage, fixed amount, Buy X Get Y) with smart UI that dynamically shows/hides fields based on selection, including support for same/different product promotions
+- **Smart Discount Forms**: Redesigned AddDiscount and EditDiscount pages with professional flex layouts featuring sticky summary sidebars, conditional field display, and visual type selection with radio groups
 
 # User Preferences
 Preferred communication style: Simple, everyday language.

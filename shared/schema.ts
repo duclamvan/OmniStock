@@ -265,7 +265,13 @@ export const sales = pgTable("sales", {
   discountId: varchar("discount_id", { length: 100 }).unique().notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
-  percentage: integer("percentage").notNull(), // Store as integer (e.g., 20 for 20%)
+  discountType: varchar("discount_type", { length: 20 }).notNull().default('percentage'), // percentage, fixed_amount, buy_x_get_y
+  percentage: integer("percentage"), // For percentage discount (e.g., 20 for 20%)
+  fixedAmount: decimal("fixed_amount", { precision: 12, scale: 2 }), // For fixed amount discount
+  buyQuantity: integer("buy_quantity"), // For Buy X Get Y - how many to buy
+  getQuantity: integer("get_quantity"), // For Buy X Get Y - how many free
+  getProductType: varchar("get_product_type", { length: 20 }), // same_product, different_product
+  getProductId: varchar("get_product_id").references(() => products.id), // For different_product in Buy X Get Y
   status: varchar("status", { length: 20 }).default('active'), // active, inactive, finished
   startDate: timestamp("start_date").notNull(),
   endDate: timestamp("end_date").notNull(),
@@ -488,7 +494,13 @@ export const insertOrderItemSchema = createInsertSchema(orderItems).omit({ id: t
 export const insertPurchaseSchema = createInsertSchema(purchases).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertIncomingShipmentSchema = createInsertSchema(incomingShipments).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertSaleSchema = createInsertSchema(sales).omit({ id: true, discountId: true, createdAt: true, updatedAt: true }).extend({
-  percentage: z.coerce.number().min(1).max(100),
+  discountType: z.enum(['percentage', 'fixed_amount', 'buy_x_get_y']),
+  percentage: z.coerce.number().min(1).max(100).optional(),
+  fixedAmount: z.coerce.string().optional(),
+  buyQuantity: z.coerce.number().min(1).optional(),
+  getQuantity: z.coerce.number().min(1).optional(),
+  getProductType: z.enum(['same_product', 'different_product']).optional(),
+  getProductId: z.string().optional(),
   applicationScope: z.enum(['specific_product', 'all_products', 'specific_category', 'selected_products']),
   productId: z.string().optional(),
   categoryId: z.string().optional(),
