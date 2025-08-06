@@ -1383,7 +1383,7 @@ export default function AddOrder() {
 
             {/* Right Column - Sticky */}
             <div className="w-full lg:w-96">
-              <div className="sticky top-6 space-y-6">
+              <div className="sticky top-20 space-y-6">
                 {/* Order Summary */}
                 <Card className="shadow-lg">
                   <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">

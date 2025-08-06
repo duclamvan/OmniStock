@@ -913,7 +913,7 @@ export default function AddProduct() {
 
             {/* Right Column - Sticky */}
             <div className="w-full lg:w-96">
-              <div className="sticky top-6 space-y-6">
+              <div className="sticky top-20 space-y-6">
                 {/* Quick Actions Card */}
                 <Card className="shadow-lg">
                   <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50">
