@@ -1658,6 +1658,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { items, ...returnData } = req.body;
       
+      // Convert date strings to Date objects
+      if (returnData.returnDate) {
+        returnData.returnDate = new Date(returnData.returnDate);
+      }
+      if (returnData.createdAt) {
+        returnData.createdAt = new Date(returnData.createdAt);
+      }
+      if (returnData.processedDate) {
+        returnData.processedDate = new Date(returnData.processedDate);
+      }
+      
       // Create the return
       const newReturn = await storage.createReturn(returnData);
       
@@ -1689,6 +1700,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/returns/:id', async (req: any, res) => {
     try {
       const { items, ...returnData } = req.body;
+      
+      // Convert date strings to Date objects
+      if (returnData.returnDate) {
+        returnData.returnDate = new Date(returnData.returnDate);
+      }
+      if (returnData.createdAt) {
+        returnData.createdAt = new Date(returnData.createdAt);
+      }
+      if (returnData.processedDate) {
+        returnData.processedDate = new Date(returnData.processedDate);
+      }
       
       // Update the return
       const updatedReturn = await storage.updateReturn(req.params.id, returnData);
