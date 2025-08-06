@@ -96,10 +96,16 @@ export default function AllExpenses() {
   }, 0);
 
   const thisMonthExpenses = expenses.filter(expense => {
-    const expenseDate = new Date(expense.date);
-    const now = new Date();
-    return expenseDate.getMonth() === now.getMonth() && 
-           expenseDate.getFullYear() === now.getFullYear();
+    if (!expense.date) return false;
+    try {
+      const expenseDate = new Date(expense.date);
+      if (isNaN(expenseDate.getTime())) return false;
+      const now = new Date();
+      return expenseDate.getMonth() === now.getMonth() && 
+             expenseDate.getFullYear() === now.getFullYear();
+    } catch {
+      return false;
+    }
   });
 
   const thisMonthTotal = thisMonthExpenses.reduce((sum, expense) => {
@@ -138,7 +144,16 @@ export default function AllExpenses() {
     {
       header: "Date",
       accessorKey: "date",
-      cell: (row: any) => format(new Date(row.date), 'dd/MM/yyyy'),
+      cell: (row: any) => {
+        if (!row.date) return '-';
+        try {
+          const date = new Date(row.date);
+          if (isNaN(date.getTime())) return '-';
+          return format(date, 'dd/MM/yyyy');
+        } catch {
+          return '-';
+        }
+      },
     },
     {
       header: "Vendor",
@@ -163,7 +178,16 @@ export default function AllExpenses() {
     {
       header: "Due Date",
       accessorKey: "dueDate",
-      cell: (row: any) => row.dueDate ? format(new Date(row.dueDate), 'dd/MM/yyyy') : '-',
+      cell: (row: any) => {
+        if (!row.dueDate) return '-';
+        try {
+          const date = new Date(row.dueDate);
+          if (isNaN(date.getTime())) return '-';
+          return format(date, 'dd/MM/yyyy');
+        } catch {
+          return '-';
+        }
+      },
     },
     {
       header: "Status",
