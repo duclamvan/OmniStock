@@ -38,6 +38,7 @@ const discountSchema = z.object({
   discountType: z.enum(['percentage', 'fixed_amount', 'buy_x_get_y']),
   percentage: z.coerce.number().min(1).max(100).optional(),
   fixedAmount: z.coerce.number().min(0.01).optional(),
+  fixedAmountEur: z.coerce.number().min(0.01).optional(),
   buyQuantity: z.coerce.number().min(1).optional(),
   getQuantity: z.coerce.number().min(1).optional(),
   getProductType: z.enum(['same_product', 'different_product']).optional(),
@@ -470,21 +471,47 @@ export default function EditDiscount() {
                             type="number"
                             min="0.01"
                             step="0.01"
-                            {...form.register("fixedAmount", { valueAsNumber: true })}
+                            value={form.watch('fixedAmount') || ''}
+                            onChange={(e) => {
+                              const czkValue = parseFloat(e.target.value);
+                              if (!isNaN(czkValue)) {
+                                form.setValue('fixedAmount', czkValue);
+                                // Auto-convert to EUR if EUR field is empty
+                                if (!form.watch('fixedAmountEur')) {
+                                  form.setValue('fixedAmountEur', parseFloat((czkValue / 25).toFixed(2)));
+                                }
+                              } else {
+                                form.setValue('fixedAmount', undefined);
+                              }
+                            }}
                             placeholder="120.00"
                             className="max-w-[150px]"
                           />
                         </div>
                       </div>
                       <div>
-                        <Label className="text-sm text-gray-600">EUR (converted)</Label>
+                        <Label className="text-sm text-gray-600">EUR</Label>
                         <div className="flex items-center gap-2">
                           <span className="text-gray-600">€</span>
                           <Input 
                             type="number"
-                            value={form.watch('fixedAmount') ? (form.watch('fixedAmount') / 25).toFixed(2) : ''}
-                            disabled
-                            className="max-w-[150px] bg-gray-50"
+                            min="0.01"
+                            step="0.01"
+                            value={form.watch('fixedAmountEur') || (form.watch('fixedAmount') ? (form.watch('fixedAmount') / 25).toFixed(2) : '')}
+                            onChange={(e) => {
+                              const eurValue = parseFloat(e.target.value);
+                              if (!isNaN(eurValue)) {
+                                form.setValue('fixedAmountEur', eurValue);
+                                // Auto-convert to CZK if CZK field is empty
+                                if (!form.watch('fixedAmount')) {
+                                  form.setValue('fixedAmount', parseFloat((eurValue * 25).toFixed(2)));
+                                }
+                              } else {
+                                form.setValue('fixedAmountEur', undefined);
+                              }
+                            }}
+                            placeholder="4.80"
+                            className="max-w-[150px]"
                           />
                         </div>
                       </div>
