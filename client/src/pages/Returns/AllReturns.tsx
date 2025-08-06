@@ -112,7 +112,7 @@ export default function AllReturns() {
       header: "Note",
       sortable: false,
       cell: (returnItem) => (
-        <div className="max-w-[150px]">
+        <div className="max-w-[175px]">
           <span className="text-sm text-gray-700 break-words line-clamp-2">
             {returnItem.notes || '-'}
           </span>
