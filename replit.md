@@ -1,7 +1,7 @@
 # Overview
 Davie Supply is a comprehensive warehouse and order management system designed as a full-stack web application. Its primary purpose is to manage the complete order lifecycle from creation to fulfillment, track inventory, manage customers, and provide financial reporting with multi-currency support. Key capabilities include real-time Vietnamese diacritics search and integration with external shipping APIs for order tracking. The business vision is to provide a robust, efficient platform for streamlined supply chain operations.
 
-## Recent Changes (August 4-5, 2025)
+## Recent Changes (August 4-6, 2025)
 - **Performance Optimization**: Added bulk API endpoints for product variant operations to improve performance when creating series and deleting multiple variants
 - **Fixed TypeScript Errors**: Resolved type annotations in AddProduct and EditProduct components
 - **Query Optimization**: Added query configuration to prevent excessive re-fetching of product variants data
@@ -30,6 +30,8 @@ Davie Supply is a comprehensive warehouse and order management system designed a
 - **Returns Management System**: Implemented complete returns management with AllReturns listing page featuring stats cards and Vietnamese search, AddReturn form with auto-generated return IDs, EditReturn form with prefilled data, ReturnDetails page showing return information/timeline/items, database schema with returns and returnItems tables, full CRUD APIs, and navigation integration
 - **Smart Layout Enhancements**: Redesigned Add Order and Add Product pages with modern flex layouts featuring sticky right columns that remain fixed while scrolling through main content, improved visual hierarchy with gradient headers, comprehensive summary cards with real-time calculations, and enhanced user experience with better spacing and typography
 - **Pay Later Customer Badge**: Implemented automatic Pay Later badge for customers who have 50% or more of their orders with Pay Later payment status (minimum 2 orders), displays badge in customer lists/details/order forms, automatically sets payment status to Pay Later when selecting such customers in Add Order page
+- **Navigation Fix for Orders Subpages**: Fixed navigation issue where back button from OrderDetails always returned to All Orders - now correctly returns to the same Orders subpage (To Fulfill, Shipped, Pay Later, Pre-Orders) using sessionStorage to track referrer
+- **Add Order UI Reorganization**: Moved Payment Status field from Payment Details section to Order Information section next to Order Status for better logical grouping of status-related fields
 
 # User Preferences
 Preferred communication style: Simple, everyday language.
