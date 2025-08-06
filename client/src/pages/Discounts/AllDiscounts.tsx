@@ -97,9 +97,10 @@ export default function AllDiscounts() {
       key: "name",
       header: "Discount Name",
       sortable: true,
+      width: "250px",
       cell: (sale) => (
-        <div className="flex items-center gap-2">
-          <Tag className="h-5 w-5 text-gray-400" />
+        <div className="flex items-center gap-2 min-w-[200px]">
+          <Tag className="h-5 w-5 text-gray-400 flex-shrink-0" />
           <Link href={`/discounts/${sale.id}/edit`}>
             <span className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer">
               {sale.name}
@@ -107,12 +108,6 @@ export default function AllDiscounts() {
           </Link>
         </div>
       ),
-    },
-    {
-      key: "discountId",
-      header: "Discount ID",
-      sortable: true,
-      cell: (sale) => <span className="font-mono text-sm">{sale.discountId}</span>,
     },
     {
       key: "discountType",
