@@ -64,6 +64,7 @@ function Router() {
         <Route path="/inventory" component={AllInventory} />
         <Route path="/inventory/products" component={AllInventory} />
         <Route path="/inventory/products/:id" component={ProductDetails} />
+        <Route path="/products/:id" component={ProductDetails} />
         <Route path="/inventory/add" component={AddProduct} />
         <Route path="/inventory/:id/edit" component={EditProduct} />
         <Route path="/inventory/products/edit/:id" component={EditProduct} />
