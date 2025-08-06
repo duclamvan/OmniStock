@@ -1101,7 +1101,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         customers = await storage.getCustomers();
       }
       
-      res.json(customers);
+      // Get all orders to calculate Pay Later badge
+      const allOrders = await storage.getOrders();
+      
+      // Calculate Pay Later preference for each customer
+      const customersWithPayLaterBadge = customers.map(customer => {
+        // Get orders for this customer
+        const customerOrders = allOrders.filter(order => order.customerId === customer.id);
+        
+        // Calculate Pay Later percentage
+        const payLaterOrders = customerOrders.filter(order => order.paymentStatus === 'pay_later');
+        const payLaterPercentage = customerOrders.length > 0 
+          ? (payLaterOrders.length / customerOrders.length) * 100 
+          : 0;
+        
+        // Add Pay Later badge if customer has >= 50% Pay Later orders and at least 2 orders
+        const hasPayLaterBadge = customerOrders.length >= 2 && payLaterPercentage >= 50;
+        
+        return {
+          ...customer,
+          hasPayLaterBadge,
+          payLaterPercentage: Math.round(payLaterPercentage),
+          totalOrders: customerOrders.length
+        };
+      });
+      
+      res.json(customersWithPayLaterBadge);
     } catch (error) {
       console.error("Error fetching customers:", error);
       res.status(500).json({ message: "Failed to fetch customers" });
@@ -1134,7 +1159,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!customer) {
         return res.status(404).json({ message: "Customer not found" });
       }
-      res.json(customer);
+      
+      // Get all orders for this customer to calculate Pay Later badge
+      const allOrders = await storage.getOrders();
+      const customerOrders = allOrders.filter(order => order.customerId === customer.id);
+      
+      // Calculate Pay Later percentage
+      const payLaterOrders = customerOrders.filter(order => order.paymentStatus === 'pay_later');
+      const payLaterPercentage = customerOrders.length > 0 
+        ? (payLaterOrders.length / customerOrders.length) * 100 
+        : 0;
+      
+      // Add Pay Later badge if customer has >= 50% Pay Later orders and at least 2 orders
+      const hasPayLaterBadge = customerOrders.length >= 2 && payLaterPercentage >= 50;
+      
+      const customerWithBadge = {
+        ...customer,
+        hasPayLaterBadge,
+        payLaterPercentage: Math.round(payLaterPercentage),
+        totalOrders: customerOrders.length
+      };
+      
+      res.json(customerWithBadge);
     } catch (error) {
       console.error("Error fetching customer:", error);
       res.status(500).json({ message: "Failed to fetch customer" });

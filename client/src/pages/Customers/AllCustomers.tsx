@@ -85,8 +85,13 @@ export default function AllCustomers() {
       cell: (customer) => (
         <div>
           <Link href={`/customers/${customer.id}`}>
-            <div className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer">
+            <div className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer flex items-center gap-2">
               {customer.name}
+              {customer.hasPayLaterBadge && (
+                <Badge variant="outline" className="text-xs bg-yellow-50 border-yellow-300 text-yellow-700">
+                  Pay Later
+                </Badge>
+              )}
             </div>
           </Link>
           {customer.facebookName && (

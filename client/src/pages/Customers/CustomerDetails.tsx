@@ -81,7 +81,14 @@ export default function CustomerDetails() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">{customer.name}</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-slate-900">{customer.name}</h1>
+              {customer.hasPayLaterBadge && (
+                <Badge variant="outline" className="bg-yellow-50 border-yellow-300 text-yellow-700">
+                  Pay Later
+                </Badge>
+              )}
+            </div>
             {customer.facebookName && (
               <p className="text-sm text-slate-500">Facebook: {customer.facebookName}</p>
             )}

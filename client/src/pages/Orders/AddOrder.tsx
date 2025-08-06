@@ -338,7 +338,7 @@ export default function AddOrder() {
 
     setOrderItems(items => 
       items.map(item => {
-        const product = allProducts.find((p: any) => p.id === item.productId);
+        const product = Array.isArray(allProducts) ? allProducts.find((p: any) => p.id === item.productId) : null;
         if (!product) return item;
 
         let newPrice = 0;
@@ -496,15 +496,18 @@ export default function AddOrder() {
 
   const calculateTax = () => {
     const subtotal = calculateSubtotal();
-    const taxRate = parseFloat(form.watch('taxRate') || '0') || 0;
+    const taxRateValue = form.watch('taxRate');
+    const taxRate = typeof taxRateValue === 'string' ? parseFloat(taxRateValue || '0') : (taxRateValue || 0);
     return (subtotal * taxRate) / 100;
   };
 
   const calculateGrandTotal = () => {
     const subtotal = calculateSubtotal();
     const tax = calculateTax();
-    const shipping = parseFloat(form.watch('shippingCost') || '0') || 0;
-    const discount = parseFloat(form.watch('discountValue') || '0') || 0;
+    const shippingValue = form.watch('shippingCost');
+    const discountValue = form.watch('discountValue');
+    const shipping = typeof shippingValue === 'string' ? parseFloat(shippingValue || '0') : (shippingValue || 0);
+    const discount = typeof discountValue === 'string' ? parseFloat(discountValue || '0') : (discountValue || 0);
     
     return subtotal + tax + shipping - discount;
   };
@@ -808,11 +811,22 @@ export default function AddOrder() {
                         setSelectedCustomer(customer);
                         setCustomerSearch(customer.name);
                         setShowCustomerDropdown(false);
+                        // Auto-set payment status to Pay Later if customer has Pay Later badge
+                        if (customer.hasPayLaterBadge) {
+                          form.setValue('paymentStatus', 'pay_later');
+                        }
                       }}
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="font-medium text-slate-900">{customer.name}</div>
+                          <div className="font-medium text-slate-900 flex items-center gap-2">
+                            {customer.name}
+                            {customer.hasPayLaterBadge && (
+                              <Badge variant="outline" className="text-xs bg-yellow-50 border-yellow-300 text-yellow-700">
+                                Pay Later
+                              </Badge>
+                            )}
+                          </div>
                           <div className="text-sm text-slate-500">{customer.email}</div>
                           {customer.facebookName && (
                             <div className="text-xs text-blue-600">FB: {customer.facebookName}</div>
@@ -861,7 +875,14 @@ export default function AddOrder() {
                   <div className="flex items-center space-x-2">
                     <CheckCircle className="h-5 w-5 text-green-600" />
                     <div>
-                      <div className="font-medium text-green-800">{selectedCustomer.name}</div>
+                      <div className="font-medium text-green-800 flex items-center gap-2">
+                        {selectedCustomer.name}
+                        {selectedCustomer.hasPayLaterBadge && (
+                          <Badge variant="outline" className="text-xs bg-yellow-50 border-yellow-300 text-yellow-700">
+                            Pay Later
+                          </Badge>
+                        )}
+                      </div>
                       <div className="text-sm text-green-600">{selectedCustomer.email}</div>
                     </div>
                   </div>
@@ -1444,7 +1465,14 @@ export default function AddOrder() {
                     <div className="flex items-center gap-2 text-sm">
                       <User className="h-4 w-4 text-green-500" />
                       <span className="text-gray-600">Customer:</span>
-                      <span className="font-medium">{selectedCustomer ? selectedCustomer.name : 'Not selected'}</span>
+                      <span className="font-medium flex items-center gap-1">
+                        {selectedCustomer ? selectedCustomer.name : 'Not selected'}
+                        {selectedCustomer?.hasPayLaterBadge && (
+                          <Badge variant="outline" className="text-xs bg-yellow-50 border-yellow-300 text-yellow-700 ml-1">
+                            Pay Later
+                          </Badge>
+                        )}
+                      </span>
                     </div>
                   </CardContent>
                 </Card>
