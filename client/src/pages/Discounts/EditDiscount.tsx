@@ -384,8 +384,8 @@ export default function EditDiscount() {
                       watchDiscountType === 'percentage' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
                     )}>
                       <label htmlFor="percentage" className="cursor-pointer">
-                        <div className="flex items-center gap-3">
-                          <RadioGroupItem value="percentage" id="percentage" />
+                        <div className="flex items-start gap-3">
+                          <RadioGroupItem value="percentage" id="percentage" className="mt-1" />
                           <div className="flex-1">
                             <div className="flex items-center gap-2 font-medium">
                               <Percent className="h-4 w-4" />
@@ -402,8 +402,8 @@ export default function EditDiscount() {
                       watchDiscountType === 'fixed_amount' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
                     )}>
                       <label htmlFor="fixed_amount" className="cursor-pointer">
-                        <div className="flex items-center gap-3">
-                          <RadioGroupItem value="fixed_amount" id="fixed_amount" />
+                        <div className="flex items-start gap-3">
+                          <RadioGroupItem value="fixed_amount" id="fixed_amount" className="mt-1" />
                           <div className="flex-1">
                             <div className="flex items-center gap-2 font-medium">
                               <DollarSign className="h-4 w-4" />
@@ -420,8 +420,8 @@ export default function EditDiscount() {
                       watchDiscountType === 'buy_x_get_y' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
                     )}>
                       <label htmlFor="buy_x_get_y" className="cursor-pointer">
-                        <div className="flex items-center gap-3">
-                          <RadioGroupItem value="buy_x_get_y" id="buy_x_get_y" />
+                        <div className="flex items-start gap-3">
+                          <RadioGroupItem value="buy_x_get_y" id="buy_x_get_y" className="mt-1" />
                           <div className="flex-1">
                             <div className="flex items-center gap-2 font-medium">
                               <Gift className="h-4 w-4" />
