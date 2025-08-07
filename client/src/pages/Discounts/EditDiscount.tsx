@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ArrowLeft, Save, Plus, X, Percent, DollarSign, ShoppingBag, Tag, Calendar, Info, Gift } from "lucide-react";
+import { ArrowLeft, Save, Plus, X, Percent, DollarSign, ShoppingBag, Tag, Calendar, Info, Gift, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import {
   Command,
@@ -207,6 +207,25 @@ export default function EditDiscount() {
       toast({
         title: "Error",
         description: error.message || "Failed to update discount",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteDiscountMutation = useMutation({
+    mutationFn: () => apiRequest('DELETE', `/api/discounts/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/discounts'] });
+      toast({
+        title: "Success",
+        description: "Discount deleted successfully",
+      });
+      navigate("/discounts");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete discount",
         variant: "destructive",
       });
     },
@@ -968,6 +987,23 @@ export default function EditDiscount() {
                 >
                   <Save className="h-4 w-4 mr-2" />
                   {updateDiscountMutation.isPending ? "Updating..." : "Update Discount"}
+                </Button>
+
+                <Separator />
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+                  onClick={() => {
+                    if (confirm("Are you sure you want to delete this discount?")) {
+                      deleteDiscountMutation.mutate();
+                    }
+                  }}
+                  disabled={deleteDiscountMutation.isPending}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  {deleteDiscountMutation.isPending ? "Deleting..." : "Delete Discount"}
                 </Button>
               </CardContent>
             </Card>
