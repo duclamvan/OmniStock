@@ -766,6 +766,19 @@ export default function AddDiscount() {
                   <p className="font-semibold">{displayName || "Enter name..."}</p>
                 </div>
 
+                {!(watchApplicationScope === 'specific_product' && form.watch('productId')) && (
+                  <>
+                    <Separator />
+
+                    <div>
+                      <p className="text-sm text-gray-600">Discount Type</p>
+                      <p className="font-semibold capitalize">
+                        {watchDiscountType === 'buy_x_get_y' ? 'Buy X Get Y' : watchDiscountType.replace('_', ' ')}
+                      </p>
+                    </div>
+                  </>
+                )}
+
                 {watchDiscountType === 'percentage' && form.watch('percentage') > 0 && (
                   <>
                     <div>
@@ -844,6 +857,40 @@ export default function AddDiscount() {
                         </p>
                       </div>
                     )}
+                  </>
+                )}
+
+                {!(watchApplicationScope === 'specific_product' && form.watch('productId')) && (
+                  <>
+                    <Separator />
+
+                    <div>
+                      <p className="text-sm text-gray-600">Application Scope</p>
+                      <p className="font-semibold">
+                        {watchApplicationScope === 'all_products' && 'All Products'}
+                        {watchApplicationScope === 'specific_product' && 'Specific Product (Not Selected)'}
+                        {watchApplicationScope === 'specific_category' && (
+                          <>
+                            Specific Category
+                            {form.watch('categoryId') && (
+                              <span className="block text-sm text-gray-600 font-normal mt-1">
+                                {categories.find(c => c.id === form.watch('categoryId'))?.name}
+                              </span>
+                            )}
+                          </>
+                        )}
+                        {watchApplicationScope === 'selected_products' && (
+                          <>
+                            Selected Products
+                            {form.watch('selectedProductIds')?.filter(item => item.productId).length > 0 && (
+                              <span className="block text-sm text-gray-600 font-normal mt-1">
+                                {form.watch('selectedProductIds').filter(item => item.productId).length} products selected
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </p>
+                    </div>
                   </>
                 )}
 
