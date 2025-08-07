@@ -92,7 +92,7 @@ export default function AllReturns() {
         <div className="flex flex-col">
           {returnItem.customer ? (
             <>
-              <Link href={`/customers/${returnItem.customerId}`}>
+              <Link href={`/returns/${returnItem.id}`}>
                 <span className="text-blue-600 hover:text-blue-800 cursor-pointer">
                   {returnItem.customer.name}
                 </span>

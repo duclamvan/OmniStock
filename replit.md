@@ -1,93 +1,39 @@
 # Overview
 Davie Supply is a comprehensive warehouse and order management system designed as a full-stack web application. Its primary purpose is to manage the complete order lifecycle from creation to fulfillment, track inventory, manage customers, and provide financial reporting with multi-currency support. Key capabilities include real-time Vietnamese diacritics search and integration with external shipping APIs for order tracking. The business vision is to provide a robust, efficient platform for streamlined supply chain operations.
 
-## Recent Changes (August 4-8, 2025)
-- **Performance Optimization**: Added bulk API endpoints for product variant operations to improve performance when creating series and deleting multiple variants
-- **Fixed TypeScript Errors**: Resolved type annotations in AddProduct and EditProduct components
-- **Query Optimization**: Added query configuration to prevent excessive re-fetching of product variants data
-- **Bulk Delete Fix**: Changed bulk delete endpoint from DELETE to POST method to ensure request body is properly handled
-- **Inventory UI Improvements**: Removed SKU column, made product names more visible with proper width constraints, and shortened quantity column header to "Qty"
-- **Soft Delete Implementation**: Converted product deletion to soft delete by adding isActive flag, preserving referential integrity with existing orders while hiding inactive products from inventory views
-- **Sales to Discounts Rename**: Renamed all "Sales" references to "Discounts" throughout the application including navigation, routes (/sales to /discounts), API endpoints (/api/sales to /api/discounts), and all UI components
-- **Discounts Data Reset**: Added /api/reseed-discounts endpoint to clear and repopulate discount data with fresh examples
-- **Discount System Overhaul**: Completely redesigned discount system removing "Code" field, implementing auto-generated discount IDs (#YEARNAME format), adding percentage-only discounts (integer field), dynamic application scopes (specific product, all products, specific category, selected products), and status management (active/inactive/finished)
-- **Customers Page Update**: Enhanced customers table with order statistics (total orders, total sales, last purchase date) and added Messenger integration with blacklist functionality placeholder
-- **Edit Customer Page**: Created comprehensive edit customer form with prefilled data, address lookup integration, organized sections for basic info, contact & address (combined), and notes
-- **Customer Details Page**: Added dedicated customer details view showing customer type, total orders, total spent, contact & address info, notes, and complete order history with clickable order links
-- **Order Details Page**: Created comprehensive order details page for viewing orders without editing functionality, with proper status formatting (e.g., "To Fulfill" instead of "to_fulfill") and color coding
-- **Enhanced Order Details Page**: Added comprehensive features including quick stats cards, order timeline, pricing breakdown, customer information, and action buttons for print/share/export
-- **Expandable Order Rows**: Modified DataTable component to support expandable rows and implemented expandable order rows in AllOrders table to quickly view order items, with click-to-view functionality for full order details
-- **Enhanced UI Separation**: Improved visual separation between expanded order rows with blue left borders, light gray backgrounds, gradient fade effects, and thicker bottom borders for better user experience
-- **Real-Time Sync Implementation**: Added automatic data refresh (5-second intervals for order details, 10-second intervals for order lists) with visual sync indicators showing when data is being updated
-- **Shipping Status Enhancement**: Updated shipping status display to properly sync with order status changes, showing green checkmark when shipped and automatically setting shippedAt timestamp when order status changes to "shipped"
-- **Suppliers Management**: Implemented complete Suppliers CRUD functionality with AllSuppliers table featuring Vietnamese search, AddSupplier/EditSupplier forms, comprehensive SupplierDetails page showing products and purchase history
-- **Supplier Detail Enhancements**: Added purchase history section to supplier details with compact product rows for better visibility, purchase statistics including total purchases count, and proper TypeScript error handling for date fields
-- **Purchase History API**: Added /api/purchases endpoint to server routes enabling frontend to fetch purchase history data for supplier details page
-- **Supplier Form Updates**: Removed duplicate "Supplier Link" field from Add/Edit Supplier forms (redundant with Website field) and replaced Country text input with searchable dropdown using Command component for better UX
-- **Supplier File Management**: Implemented complete file upload functionality for suppliers using object storage - added supplier_files table, ObjectUploader component with drag-and-drop support, file management APIs, and integrated file upload/display/delete features in both SupplierDetails and EditSupplier pages
-- **Warehouse Management System**: Completed comprehensive warehouse management with AllWarehouses listing page, WarehouseDetails with file management, EditWarehouse form with all required fields (status, rented from date, expense ID, notes, attachments), database schema updates with warehouseFiles table, and proper navigation between warehouse pages
-- **Warehouse File Management**: Integrated object storage for warehouse documents - added warehouse file upload/download/delete APIs, ObjectUploader integration for drag-and-drop file uploads, file display with size formatting and download links, and proper ACL permissions for warehouse files
-- **Returns Management System**: Implemented complete returns management with AllReturns listing page featuring stats cards and Vietnamese search, AddReturn form with auto-generated return IDs, EditReturn form with prefilled data, ReturnDetails page showing return information/timeline/items, database schema with returns and returnItems tables, full CRUD APIs, and navigation integration
-- **Smart Layout Enhancements**: Redesigned Add Order and Add Product pages with modern flex layouts featuring sticky right columns that remain fixed while scrolling through main content, improved visual hierarchy with gradient headers, comprehensive summary cards with real-time calculations, and enhanced user experience with better spacing and typography
-- **Pay Later Customer Badge**: Implemented automatic Pay Later badge for customers who have 50% or more of their orders with Pay Later payment status (minimum 2 orders), displays badge in customer lists/details/order forms, automatically sets payment status to Pay Later when selecting such customers in Add Order page
-- **Navigation Fix for Orders Subpages**: Fixed navigation issue where back button from OrderDetails always returned to All Orders - now correctly returns to the same Orders subpage (To Fulfill, Shipped, Pay Later, Pre-Orders) using sessionStorage to track referrer
-- **Add Order UI Reorganization**: Moved Payment Status field from Payment Details section to Order Information section next to Order Status for better logical grouping of status-related fields
-- **Enhanced Discount System**: Implemented three discount types (percentage, fixed amount, Buy X Get Y) with smart UI that dynamically shows/hides fields based on selection, including support for same/different product promotions
-- **Smart Discount Forms**: Redesigned AddDiscount and EditDiscount pages with professional flex layouts featuring sticky summary sidebars, conditional field display, and visual type selection with radio groups
-- **Bidirectional Currency Conversion**: Implemented smart currency conversion for Fixed Amount discount type with 1.5-second debounce delay, allowing users to edit both CZK and EUR fields with automatic conversion (1 EUR = 25 CZK)
-- **Mobile-First Responsive Design**: Completely redesigned Add Order page with mobile-first approach, featuring responsive cards, collapsible sections on mobile, sticky order summary on desktop that moves to top on mobile
-- **Performance Optimization for Orders**: Added memoization for filtered orders, optimized query caching with staleTime and gcTime settings, reduced unnecessary re-renders and API calls, improved page load speed for all order pages
-- **Create Return Ticket from Order Details**: Implemented complete return ticket creation functionality directly from Order Details page - added Create Return button in header, modal dialog with bulk selectable items and adjustable quantities, pre-fills all order information (order ID, customer, items), seamlessly navigates to Add Return page with pre-populated data via sessionStorage, fully mobile-responsive with adaptive layouts
-- **Expenses Page Remaster**: Completely redesigned AllExpenses page with modern card-based layout, enhanced stats cards (Total, This Month, Pending, Overdue), improved table with vendor/category grouping, visual status indicators with color coding for overdue dates, safe date handling to prevent "Invalid time value" errors
-- **Quick Add Expense**: Created streamlined AddExpense page with auto-generated expense IDs, quick amount buttons for fast entry, sticky summary sidebar showing real-time preview, organized sections (Basic Info, Payment Details, Notes), mobile-responsive three-column layout
-- **Pre-filled Edit Expense**: Redesigned EditExpense page with all fields automatically pre-filled from existing data, proper currency detection and amount conversion, last modified timestamp display, consistent design with Add page including sticky summary sidebar
-
 # User Preferences
 Preferred communication style: Simple, everyday language.
 
 # System Architecture
 
 ## Frontend
-The client-side uses React and TypeScript with Vite. It features a component-based architecture utilizing:
-- **UI Framework**: Shadcn/ui (Radix UI primitives)
-- **Styling**: Tailwind CSS with CSS variables
-- **State Management**: TanStack Query
-- **Routing**: Wouter
-- **Form Handling**: React Hook Form with Zod
+The client-side uses React and TypeScript with Vite. It features a component-based architecture utilizing Shadcn/ui (Radix UI primitives) for the UI, Tailwind CSS for styling, TanStack Query for state management, Wouter for routing, and React Hook Form with Zod for form handling. UI/UX decisions include a mobile-first responsive design, card-based layouts, sticky elements for enhanced navigation, and visual separation for improved user experience.
 
 ## Backend
-The server-side is built with Express.js and TypeScript (ESM modules). Key aspects include:
-- **API Design**: RESTful API endpoints with consistent error handling
-- **Database**: PostgreSQL with Neon serverless driver
-- **ORM**: Drizzle ORM for type-safe operations and migrations
-- **Session Management**: Express sessions with PostgreSQL storage
+The server-side is built with Express.js and TypeScript (ESM modules), featuring RESTful API endpoints with consistent error handling.
 
 ## Authentication System
 The application leverages Replit's OpenID Connect (OIDC) for user authentication, using PostgreSQL-backed sessions with HTTP-only cookies for security.
 
 ## Database Design
-The schema supports a comprehensive e-commerce workflow, including core entities like users, products, orders, customers, warehouses, and suppliers. It covers complete order lifecycle management, inventory tracking (product variants, stock), financial tracking (sales, expenses, purchases with multi-currency), and an audit trail for user activities.
-
-## Multi-Currency Support
-The system supports five currencies (CZK, EUR, USD, VND, CNY) with simplified exchange rate conversion and currency utility functions.
-
-## Search Functionality
-Includes real-time Vietnamese diacritics search with custom character normalization for accent-insensitive results across all entities.
-
-## Development Setup
-The project is structured as a monorepo with shared TypeScript types and Zod schemas. It uses path aliases and development tools like hot reload for efficient development.
+The schema supports a comprehensive e-commerce workflow, including core entities like users, products, orders, customers, warehouses, suppliers, and returns. It covers complete order lifecycle management, inventory tracking (product variants, stock), financial tracking (sales, expenses, purchases with multi-currency), and an audit trail for user activities. PostgreSQL with Neon serverless driver and Drizzle ORM are used for type-safe operations and migrations.
 
 ## Core Features
-- **Product Management**: Comprehensive product details page with key metrics, pricing, and location details.
-- **Order Management**: Enhanced order creation with shipping and payment method selection, automatic shipping cost calculation, and full CRUD operations.
-- **Responsive Design**: Mobile-first responsive design implemented across all pages, featuring clean, card-based layouts.
-- **Address Autocomplete**: Integration with OpenStreetMap's Nominatim API for real address geocoding in forms.
-- **Data Management**: Comprehensive mock data seeding system for testing and development.
-- **Reusable Components**: Generic DataTable component with features like bulk selection, sorting, pagination, and bulk actions.
-- **Image Upload**: Image upload functionality for products via Multer, storing images locally.
+- **Product Management**: Comprehensive product details, pricing, and location tracking.
+- **Order Management**: Enhanced order creation with shipping and payment method selection, automatic shipping cost calculation, full CRUD operations, and detailed order views with timelines and stats. Real-time sync for order data is implemented.
+- **Inventory Management**: Soft delete for products, optimized bulk operations for product variants, and detailed inventory UI.
+- **Customer Management**: Enhanced customer tables with order statistics, Messenger integration placeholders, and comprehensive add/edit/details forms with address lookup. Automatic "Pay Later" badge for qualifying customers.
+- **Discount Management**: Advanced discount system supporting percentage, fixed amount, and "Buy X Get Y" types, with auto-generated IDs, flexible application scopes (product/category/all products), and smart UI for dynamic field display and bidirectional currency conversion.
+- **Supplier Management**: Complete CRUD functionality for suppliers, including file upload/management using object storage, purchase history tracking, and improved form UX with searchable dropdowns.
+- **Warehouse Management**: Comprehensive warehouse management with details, file management via object storage, and proper navigation.
+- **Returns Management**: Complete returns management with listing, add/edit forms, details pages, and integration to create return tickets directly from order details.
+- **Expenses Management**: Redesigned expenses page with modern card layout, enhanced stats, visual status indicators, and streamlined add/edit expense forms with auto-generated IDs and real-time previews.
+- **Multi-Currency Support**: Supports five currencies (CZK, EUR, USD, VND, CNY) with simplified exchange rate conversion and utility functions.
+- **Search Functionality**: Real-time Vietnamese diacritics search with custom character normalization.
+- **Reusable Components**: Generic DataTable component with bulk selection, sorting, pagination, and bulk actions.
+- **Address Autocomplete**: Integration with OpenStreetMap's Nominatim API for real address geocoding.
+- **Image Upload**: Image upload functionality for products storing images locally.
 - **Reporting**: Comprehensive sales, inventory, customer, and financial reports with filtering capabilities.
-- **CRUD Operations**: Full CRUD functionality implemented for warehouses, customers, sales/discounts, products/orders, and returns, with robust error handling and foreign key constraint validation.
-- **Discount Management**: Advanced discount system with auto-generated IDs, percentage-based discounts, flexible application scopes (product/category/all products), and automatic integration with order creation to apply active discounts.
 
 # External Dependencies
 
@@ -103,11 +49,6 @@ The project is structured as a monorepo with shared TypeScript types and Zod sch
 - **Radix UI**: Headless UI component primitives.
 - **Tailwind CSS**: Utility-first CSS framework.
 - **Lucide React**: SVG icon library.
-
-## Development and Build Tools
-- **Vite**: Frontend build tool.
-- **ESBuild**: Fast JavaScript bundler.
-- **TypeScript**: Type safety across the application.
 
 ## Other APIs
 - **OpenStreetMap Nominatim API**: For address geocoding.
