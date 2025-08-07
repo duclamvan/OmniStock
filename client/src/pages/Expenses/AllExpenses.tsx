@@ -57,9 +57,7 @@ export default function AllExpenses() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return await apiRequest(`/api/expenses/${id}`, {
-        method: 'DELETE',
-      });
+      return await apiRequest(`/api/expenses/${id}`, 'DELETE');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/expenses'] });
@@ -366,7 +364,6 @@ export default function AllExpenses() {
           <DataTable
             columns={columns}
             data={filteredExpenses}
-            searchPlaceholder="Search expenses..."
             bulkActions={bulkActions}
             getRowKey={(expense) => expense.id}
           />
