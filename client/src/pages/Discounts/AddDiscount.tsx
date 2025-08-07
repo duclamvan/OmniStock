@@ -94,6 +94,7 @@ export default function AddDiscount() {
   const [productSearchOpen, setProductSearchOpen] = useState(false);
   const [categorySearchOpen, setCategorySearchOpen] = useState(false);
   const [getProductSearchOpen, setGetProductSearchOpen] = useState(false);
+  const [displayName, setDisplayName] = useState("");
   
   // Refs for debouncing currency conversion
   const czkTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -248,6 +249,7 @@ export default function AddDiscount() {
                     <Input 
                       {...form.register("name")}
                       placeholder="e.g., Summer Sale"
+                      onBlur={(e) => setDisplayName(e.target.value)}
                     />
                     {form.formState.errors.name && (
                       <p className="text-sm text-red-500 mt-1">{form.formState.errors.name.message}</p>
@@ -761,7 +763,7 @@ export default function AddDiscount() {
               <CardContent className="pt-6 space-y-4">
                 <div>
                   <p className="text-sm text-gray-600">Discount Name</p>
-                  <p className="font-semibold">{form.watch('name') || "Enter name..."}</p>
+                  <p className="font-semibold">{displayName || "Enter name..."}</p>
                 </div>
 
                 <Separator />
