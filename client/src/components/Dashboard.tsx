@@ -63,7 +63,7 @@ export function Dashboard() {
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <p className="text-mobile-sm font-medium text-slate-600">Total Orders Today</p>
+                <p className="text-mobile-sm font-medium text-slate-600">Total Orders</p>
                 <p className="text-mobile-2xl font-bold text-slate-900 mt-1">
                   {metrics?.totalOrdersToday || 0}+
                 </p>
