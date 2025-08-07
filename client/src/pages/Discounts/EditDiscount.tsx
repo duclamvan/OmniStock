@@ -831,17 +831,25 @@ export default function EditDiscount() {
                       <p className="text-sm text-gray-600">Discount Value</p>
                       <p className="font-semibold text-green-600 text-2xl">{form.watch('percentage')}% OFF</p>
                     </div>
-                    {watchApplicationScope === 'specific_product' && form.watch('productId') && (
-                      <div className="bg-gray-50 rounded-lg p-3">
-                        <p className="text-sm">Item Price: Kč 500</p>
-                        <p className="text-sm text-green-600 font-semibold">
-                          You Save: Kč {(500 * form.watch('percentage') / 100).toFixed(0)}
-                        </p>
-                        <p className="text-sm font-semibold">
-                          Final Price: Kč {(500 - (500 * form.watch('percentage') / 100)).toFixed(0)}
-                        </p>
-                      </div>
-                    )}
+                    {watchApplicationScope === 'specific_product' && form.watch('productId') && (() => {
+                      const selectedProduct = products.find(p => p.id === form.watch('productId'));
+                      const productPrice = selectedProduct?.priceCzk ? Number(selectedProduct.priceCzk) : 0;
+                      const discountAmount = productPrice * form.watch('percentage') / 100;
+                      const finalPrice = productPrice - discountAmount;
+                      
+                      return selectedProduct ? (
+                        <div className="bg-gray-50 rounded-lg p-3">
+                          <p className="text-sm font-medium">{selectedProduct.name}</p>
+                          <p className="text-sm mt-1">Item Price: Kč {productPrice.toFixed(0)}</p>
+                          <p className="text-sm text-green-600 font-semibold">
+                            You Save: Kč {discountAmount.toFixed(0)}
+                          </p>
+                          <p className="text-sm font-semibold">
+                            Final Price: Kč {finalPrice.toFixed(0)}
+                          </p>
+                        </div>
+                      ) : null;
+                    })()}
                   </>
                 )}
 
@@ -854,17 +862,25 @@ export default function EditDiscount() {
                         <p className="text-sm text-gray-600">≈ €{(form.watch('fixedAmount') / 25).toFixed(2)}</p>
                       </div>
                     </div>
-                    {watchApplicationScope === 'specific_product' && form.watch('productId') && (
-                      <div className="bg-gray-50 rounded-lg p-3">
-                        <p className="text-sm">Item Price: Kč 500</p>
-                        <p className="text-sm text-green-600 font-semibold">
-                          You Save: Kč {form.watch('fixedAmount')}
-                        </p>
-                        <p className="text-sm font-semibold">
-                          Final Price: Kč {Math.max(0, 500 - form.watch('fixedAmount')).toFixed(0)}
-                        </p>
-                      </div>
-                    )}
+                    {watchApplicationScope === 'specific_product' && form.watch('productId') && (() => {
+                      const selectedProduct = products.find(p => p.id === form.watch('productId'));
+                      const productPrice = selectedProduct?.priceCzk ? Number(selectedProduct.priceCzk) : 0;
+                      const discountAmount = form.watch('fixedAmount');
+                      const finalPrice = Math.max(0, productPrice - discountAmount);
+                      
+                      return selectedProduct ? (
+                        <div className="bg-gray-50 rounded-lg p-3">
+                          <p className="text-sm font-medium">{selectedProduct.name}</p>
+                          <p className="text-sm mt-1">Item Price: Kč {productPrice.toFixed(0)}</p>
+                          <p className="text-sm text-green-600 font-semibold">
+                            You Save: Kč {Math.min(discountAmount, productPrice).toFixed(0)}
+                          </p>
+                          <p className="text-sm font-semibold">
+                            Final Price: Kč {finalPrice.toFixed(0)}
+                          </p>
+                        </div>
+                      ) : null;
+                    })()}
                   </>
                 )}
 
