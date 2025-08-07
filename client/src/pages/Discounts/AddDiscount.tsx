@@ -779,15 +779,17 @@ export default function AddDiscount() {
                       <p className="text-sm text-gray-600">Discount Value</p>
                       <p className="font-semibold text-green-600 text-2xl">{form.watch('percentage')}% OFF</p>
                     </div>
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      <p className="text-sm">Item Price: Kč 500</p>
-                      <p className="text-sm text-green-600 font-semibold">
-                        You Save: Kč {(500 * form.watch('percentage') / 100).toFixed(0)}
-                      </p>
-                      <p className="text-sm font-semibold">
-                        Final Price: Kč {(500 - (500 * form.watch('percentage') / 100)).toFixed(0)}
-                      </p>
-                    </div>
+                    {watchApplicationScope === 'specific_product' && form.watch('productId') && (
+                      <div className="bg-gray-50 rounded-lg p-3">
+                        <p className="text-sm">Item Price: Kč 500</p>
+                        <p className="text-sm text-green-600 font-semibold">
+                          You Save: Kč {(500 * form.watch('percentage') / 100).toFixed(0)}
+                        </p>
+                        <p className="text-sm font-semibold">
+                          Final Price: Kč {(500 - (500 * form.watch('percentage') / 100)).toFixed(0)}
+                        </p>
+                      </div>
+                    )}
                   </>
                 )}
 
