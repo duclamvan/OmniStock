@@ -819,15 +819,6 @@ export default function EditDiscount() {
                   <p className="font-semibold">{displayName || "Enter name..."}</p>
                 </div>
 
-                <Separator />
-
-                <div>
-                  <p className="text-sm text-gray-600">Discount Type</p>
-                  <p className="font-semibold capitalize">
-                    {watchDiscountType === 'buy_x_get_y' ? 'Buy X Get Y' : watchDiscountType.replace('_', ' ')}
-                  </p>
-                </div>
-
                 {watchDiscountType === 'percentage' && form.watch('percentage') > 0 && (
                   <>
                     <div>
@@ -845,7 +836,7 @@ export default function EditDiscount() {
                           <p className="text-sm font-medium">{selectedProduct.name}</p>
                           <p className="text-sm mt-1">Item Price: Kč {productPrice.toFixed(0)}</p>
                           <p className="text-sm text-green-600 font-semibold">
-                            You Save: Kč {discountAmount.toFixed(0)}
+                            Discount: Kč {discountAmount.toFixed(0)}
                           </p>
                           <p className="text-sm font-semibold">
                             Final Price: Kč {finalPrice.toFixed(0)}
@@ -876,7 +867,7 @@ export default function EditDiscount() {
                           <p className="text-sm font-medium">{selectedProduct.name}</p>
                           <p className="text-sm mt-1">Item Price: Kč {productPrice.toFixed(0)}</p>
                           <p className="text-sm text-green-600 font-semibold">
-                            You Save: Kč {Math.min(discountAmount, productPrice).toFixed(0)}
+                            Discount: Kč {Math.min(discountAmount, productPrice).toFixed(0)}
                           </p>
                           <p className="text-sm font-semibold">
                             Final Price: Kč {finalPrice.toFixed(0)}
@@ -908,45 +899,6 @@ export default function EditDiscount() {
                     )}
                   </>
                 )}
-
-                <Separator />
-
-                <div>
-                  <p className="text-sm text-gray-600">Application Scope</p>
-                  <p className="font-semibold">
-                    {watchApplicationScope === 'all_products' && 'All Products'}
-                    {watchApplicationScope === 'specific_product' && (
-                      <>
-                        Specific Product
-                        {form.watch('productId') && (
-                          <span className="block text-sm text-gray-600 font-normal mt-1">
-                            {products.find(p => p.id === form.watch('productId'))?.name}
-                          </span>
-                        )}
-                      </>
-                    )}
-                    {watchApplicationScope === 'specific_category' && (
-                      <>
-                        Specific Category
-                        {form.watch('categoryId') && (
-                          <span className="block text-sm text-gray-600 font-normal mt-1">
-                            {categories.find(c => c.id === form.watch('categoryId'))?.name}
-                          </span>
-                        )}
-                      </>
-                    )}
-                    {watchApplicationScope === 'selected_products' && (
-                      <>
-                        Selected Products
-                        {form.watch('selectedProductIds')?.filter(item => item.productId).length > 0 && (
-                          <span className="block text-sm text-gray-600 font-normal mt-1">
-                            {form.watch('selectedProductIds').filter(item => item.productId).length} products selected
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </p>
-                </div>
 
                 <div>
                   <p className="text-sm text-gray-600">Status</p>
