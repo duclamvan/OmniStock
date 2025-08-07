@@ -187,8 +187,10 @@ export interface IStorage {
 
   // Expenses
   getExpenses(): Promise<Expense[]>;
+  getExpenseById(id: string): Promise<Expense | undefined>;
   createExpense(expense: InsertExpense): Promise<Expense>;
   updateExpense(id: string, expense: Partial<InsertExpense>): Promise<Expense>;
+  deleteExpense(id: string): Promise<void>;
 
   // Pre-orders
   getPreOrders(): Promise<PreOrder[]>;
@@ -1359,6 +1361,11 @@ export class DatabaseStorage implements IStorage {
     return newExpense;
   }
 
+  async getExpenseById(id: string): Promise<Expense | undefined> {
+    const [expense] = await db.select().from(expenses).where(eq(expenses.id, id));
+    return expense;
+  }
+
   async updateExpense(id: string, expense: Partial<InsertExpense>): Promise<Expense> {
     const [updatedExpense] = await db
       .update(expenses)
@@ -1366,6 +1373,10 @@ export class DatabaseStorage implements IStorage {
       .where(eq(expenses.id, id))
       .returning();
     return updatedExpense;
+  }
+
+  async deleteExpense(id: string): Promise<void> {
+    await db.delete(expenses).where(eq(expenses.id, id));
   }
 
   // Pre-orders

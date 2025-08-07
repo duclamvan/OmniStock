@@ -85,17 +85,21 @@ export default function ExpenseDetails() {
     );
   }
 
-  // Determine currency and amount
-  const getCurrencyAndAmount = () => {
-    if (expense.amountUsd) return { symbol: '$', amount: expense.amountUsd, currency: 'USD' };
-    if (expense.amountEur) return { symbol: '€', amount: expense.amountEur, currency: 'EUR' };
-    if (expense.amountCzk) return { symbol: 'Kč', amount: expense.amountCzk, currency: 'CZK' };
-    if (expense.amountVnd) return { symbol: '₫', amount: expense.amountVnd, currency: 'VND' };
-    if (expense.amountCny) return { symbol: '¥', amount: expense.amountCny, currency: 'CNY' };
-    return { symbol: '$', amount: '0', currency: 'USD' };
+  // Determine currency symbol
+  const getCurrencySymbol = (currency: string) => {
+    switch(currency) {
+      case 'USD': return '$';
+      case 'EUR': return '€';
+      case 'CZK': return 'Kč';
+      case 'VND': return '₫';
+      case 'CNY': return '¥';
+      default: return '';
+    }
   };
 
-  const { symbol, amount, currency } = getCurrencyAndAmount();
+  const symbol = getCurrencySymbol(expense.currency);
+  const amount = expense.amount;
+  const currency = expense.currency;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -177,8 +181,8 @@ export default function ExpenseDetails() {
               <div className="flex items-center gap-3">
                 <Building className="h-5 w-5 text-muted-foreground" />
                 <div>
-                  <p className="text-sm text-muted-foreground">Vendor</p>
-                  <p className="font-medium">{expense.vendorName}</p>
+                  <p className="text-sm text-muted-foreground">Name</p>
+                  <p className="font-medium">{expense.name}</p>
                 </div>
               </div>
 

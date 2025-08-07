@@ -1490,6 +1490,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/expenses/:id', async (req, res) => {
+    try {
+      const expense = await storage.getExpenseById(req.params.id);
+      if (!expense) {
+        return res.status(404).json({ message: "Expense not found" });
+      }
+      res.json(expense);
+    } catch (error) {
+      console.error("Error fetching expense:", error);
+      res.status(500).json({ message: "Failed to fetch expense" });
+    }
+  });
+
   app.post('/api/expenses', async (req: any, res) => {
     try {
       const data = insertExpenseSchema.parse(req.body);
@@ -1507,6 +1520,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error creating expense:", error);
       res.status(500).json({ message: "Failed to create expense" });
+    }
+  });
+
+  app.patch('/api/expenses/:id', async (req: any, res) => {
+    try {
+      const expense = await storage.updateExpense(req.params.id, req.body);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'update',
+        entityType: 'expense',
+        entityId: expense.id,
+        description: `Updated expense: ${expense.name}`,
+      });
+      
+      res.json(expense);
+    } catch (error) {
+      console.error("Error updating expense:", error);
+      res.status(500).json({ message: "Failed to update expense" });
+    }
+  });
+
+  app.delete('/api/expenses/:id', async (req: any, res) => {
+    try {
+      const expense = await storage.getExpenseById(req.params.id);
+      if (!expense) {
+        return res.status(404).json({ message: "Expense not found" });
+      }
+      
+      await storage.deleteExpense(req.params.id);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'delete',
+        entityType: 'expense',
+        entityId: req.params.id,
+        description: `Deleted expense: ${expense.name}`,
+      });
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting expense:", error);
+      res.status(500).json({ message: "Failed to delete expense" });
     }
   });
 

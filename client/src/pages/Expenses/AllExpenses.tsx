@@ -90,7 +90,7 @@ export default function AllExpenses() {
   const searchMatcher = createVietnameseSearchMatcher(searchQuery);
   const filteredExpenses = expenses.filter(expense => 
     searchMatcher(expense.expenseId || '') ||
-    searchMatcher(expense.vendorName || '') ||
+    searchMatcher(expense.name || '') ||
     searchMatcher(expense.category || '') ||
     searchMatcher(expense.description || '') ||
     searchMatcher(expense.paymentMethod || '')
@@ -98,9 +98,7 @@ export default function AllExpenses() {
 
   // Calculate stats
   const totalExpenses = expenses.reduce((sum, expense) => {
-    const amount = parseFloat(expense.amountUsd || '0') || 
-                  parseFloat(expense.amountCzk || '0') || 
-                  parseFloat(expense.amountEur || '0') || 0;
+    const amount = parseFloat(expense.amount || '0') || 0;
     return sum + amount;
   }, 0);
 
@@ -118,9 +116,7 @@ export default function AllExpenses() {
   });
 
   const thisMonthTotal = thisMonthExpenses.reduce((sum, expense) => {
-    const amount = parseFloat(expense.amountUsd || '0') || 
-                  parseFloat(expense.amountCzk || '0') || 
-                  parseFloat(expense.amountEur || '0') || 0;
+    const amount = parseFloat(expense.amount || '0') || 0;
     return sum + amount;
   }, 0);
 
@@ -136,18 +132,15 @@ export default function AllExpenses() {
     }
   });
 
-  const getCurrencySymbol = (expense: any) => {
-    if (expense.amountUsd) return '$';
-    if (expense.amountEur) return '€';
-    if (expense.amountCzk) return 'Kč';
-    if (expense.amountVnd) return '₫';
-    if (expense.amountCny) return '¥';
-    return '$';
-  };
-
-  const getAmount = (expense: any) => {
-    return expense.amountUsd || expense.amountEur || expense.amountCzk || 
-           expense.amountVnd || expense.amountCny || '0';
+  const getCurrencySymbol = (currency: string) => {
+    switch(currency) {
+      case 'USD': return '$';
+      case 'EUR': return '€';
+      case 'CZK': return 'Kč';
+      case 'VND': return '₫';
+      case 'CNY': return '¥';
+      default: return '';
+    }
   };
 
   const formatDate = (dateStr: string | null | undefined) => {
@@ -179,11 +172,11 @@ export default function AllExpenses() {
       cell: (row: any) => formatDate(row.date),
     },
     {
-      key: "vendorName",
-      header: "Vendor",
+      key: "name",
+      header: "Name",
       cell: (row: any) => (
         <div>
-          <p className="font-medium">{row.vendorName}</p>
+          <p className="font-medium">{row.name}</p>
           {row.category && (
             <p className="text-xs text-slate-500">{row.category}</p>
           )}
@@ -204,7 +197,7 @@ export default function AllExpenses() {
       header: "Amount",
       cell: (row: any) => (
         <span className="font-medium">
-          {getCurrencySymbol(row)}{parseFloat(getAmount(row)).toFixed(2)}
+          {getCurrencySymbol(row.currency)}{parseFloat(row.amount || '0').toFixed(2)}
         </span>
       ),
     },
