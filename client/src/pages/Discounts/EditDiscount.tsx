@@ -994,7 +994,7 @@ export default function EditDiscount() {
                 <Button
                   type="button"
                   variant="ghost"
-                  className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+                  className="w-full text-[#6e6e6e] hover:text-red-700 hover:bg-red-50"
                   onClick={() => {
                     if (confirm("Are you sure you want to delete this discount?")) {
                       deleteDiscountMutation.mutate();
