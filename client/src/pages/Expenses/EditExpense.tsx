@@ -39,19 +39,17 @@ import {
 import { cn } from "@/lib/utils";
 
 const expenseSchema = z.object({
-  vendorName: z.string().min(1, "Vendor name is required"),
+  name: z.string().min(1, "Name is required"),
   category: z.string().min(1, "Category is required"),
   amount: z.string().min(1, "Amount is required"),
   currency: z.enum(['USD', 'EUR', 'CZK', 'VND', 'CNY']),
   date: z.date({
     required_error: "Date is required",
   }),
-  dueDate: z.date().optional(),
   description: z.string().optional(),
-  invoiceNumber: z.string().optional(),
+  recurring: z.enum(['none', 'monthly', 'quarterly', 'yearly']).optional(),
   paymentMethod: z.enum(['cash', 'bank_transfer', 'credit_card', 'paypal', 'other']),
   status: z.enum(['pending', 'paid', 'overdue']),
-  notes: z.string().optional(),
 });
 
 type ExpenseFormData = z.infer<typeof expenseSchema>;
@@ -87,7 +85,7 @@ export default function EditExpense() {
   const form = useForm<ExpenseFormData>({
     resolver: zodResolver(expenseSchema),
     defaultValues: {
-      vendorName: '',
+      name: '',
       category: 'Office Supplies',
       amount: '',
       currency: 'CZK',
@@ -95,36 +93,25 @@ export default function EditExpense() {
       paymentMethod: 'bank_transfer',
       status: 'pending',
       description: '',
-      notes: '',
+      recurring: 'none',
     },
   });
 
-  // Determine currency and amount from expense data
-  const getCurrencyAndAmount = (expense: any) => {
-    if (expense.amountUsd) return { currency: 'USD', amount: expense.amountUsd };
-    if (expense.amountEur) return { currency: 'EUR', amount: expense.amountEur };
-    if (expense.amountCzk) return { currency: 'CZK', amount: expense.amountCzk };
-    if (expense.amountVnd) return { currency: 'VND', amount: expense.amountVnd };
-    if (expense.amountCny) return { currency: 'CNY', amount: expense.amountCny };
-    return { currency: 'CZK', amount: '0' };
-  };
+
 
   // Populate form with existing expense data
   useEffect(() => {
     if (expense) {
-      const { currency, amount } = getCurrencyAndAmount(expense);
       form.reset({
-        vendorName: expense.vendorName || '',
+        name: expense.name || '',
         category: expense.category || 'Office Supplies',
-        amount: amount.toString(),
-        currency: currency as any,
+        amount: expense.amount?.toString() || '',
+        currency: expense.currency as any || 'CZK',
         date: expense.date ? new Date(expense.date) : new Date(),
-        dueDate: expense.dueDate ? new Date(expense.dueDate) : undefined,
         description: expense.description || '',
-        invoiceNumber: expense.invoiceNumber || '',
+        recurring: expense.recurring || 'none',
         paymentMethod: expense.paymentMethod || 'bank_transfer',
         status: expense.status || 'pending',
-        notes: expense.notes || '',
       });
     }
   }, [expense, form]);
@@ -132,11 +119,8 @@ export default function EditExpense() {
   const updateExpenseMutation = useMutation({
     mutationFn: async (data: any) => {
       return await apiRequest(`/api/expenses/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
+        method: 'PATCH',
+        body: data,
       });
     },
     onSuccess: () => {
@@ -160,26 +144,17 @@ export default function EditExpense() {
   const onSubmit = async (data: ExpenseFormData) => {
     setIsSubmitting(true);
     
-    const amountField = `amount${data.currency.charAt(0).toUpperCase() + data.currency.slice(1).toLowerCase()}`;
-    
-    // Clear all amount fields and set only the selected currency
     const expenseData = {
       expenseId: expense?.expenseId,
-      vendorName: data.vendorName,
+      name: data.name,
       category: data.category,
-      amountUsd: null,
-      amountEur: null,
-      amountCzk: null,
-      amountVnd: null,
-      amountCny: null,
-      [amountField]: parseFloat(data.amount),
+      amount: data.amount,
+      currency: data.currency,
       date: data.date.toISOString(),
-      dueDate: data.dueDate?.toISOString(),
       description: data.description,
-      invoiceNumber: data.invoiceNumber,
+      recurring: data.recurring,
       paymentMethod: data.paymentMethod,
       status: data.status,
-      notes: data.notes,
     };
 
     await updateExpenseMutation.mutateAsync(expenseData);
@@ -246,16 +221,16 @@ export default function EditExpense() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="vendorName">Vendor Name *</Label>
+                  <Label htmlFor="name">Name *</Label>
                   <Input
-                    id="vendorName"
-                    placeholder="e.g., Office Depot, Amazon"
-                    {...form.register("vendorName")}
-                    className={form.formState.errors.vendorName ? "border-red-500" : ""}
+                    id="name"
+                    placeholder="e.g., Office Supplies, Monthly Rent"
+                    {...form.register("name")}
+                    className={form.formState.errors.name ? "border-red-500" : ""}
                   />
-                  {form.formState.errors.vendorName && (
+                  {form.formState.errors.name && (
                     <p className="text-sm text-red-500 mt-1">
-                      {form.formState.errors.vendorName.message}
+                      {form.formState.errors.name.message}
                     </p>
                   )}
                 </div>
@@ -281,12 +256,21 @@ export default function EditExpense() {
                   </div>
 
                   <div>
-                    <Label htmlFor="invoiceNumber">Invoice Number</Label>
-                    <Input
-                      id="invoiceNumber"
-                      placeholder="INV-2025-001"
-                      {...form.register("invoiceNumber")}
-                    />
+                    <Label htmlFor="recurring">Recurring</Label>
+                    <Select
+                      value={form.watch("recurring")}
+                      onValueChange={(value: any) => form.setValue("recurring", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select frequency" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                        <SelectItem value="quarterly">Quarterly</SelectItem>
+                        <SelectItem value="yearly">Yearly</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
@@ -395,24 +379,23 @@ export default function EditExpense() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Expense Date *</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !form.watch("date") && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {form.watch("date") ? format(form.watch("date"), "PPP") : "Select date"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
+                <div>
+                  <Label>Expense Date *</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !form.watch("date") && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {form.watch("date") ? format(form.watch("date"), "PPP") : "Select date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
                           mode="single"
                           selected={form.watch("date")}
                           onSelect={(date) => date && form.setValue("date", date)}
@@ -420,53 +403,11 @@ export default function EditExpense() {
                         />
                       </PopoverContent>
                     </Popover>
-                  </div>
-
-                  <div>
-                    <Label>Due Date</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !form.watch("dueDate") && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {form.watch("dueDate") ? format(form.watch("dueDate"), "PPP") : "Select date"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={form.watch("dueDate")}
-                          onSelect={(date) => date && form.setValue("dueDate", date)}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Additional Notes */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Additional Notes
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Textarea
-                  placeholder="Any additional notes or comments..."
-                  rows={4}
-                  {...form.register("notes")}
-                />
-              </CardContent>
-            </Card>
+
           </div>
 
           {/* Summary Sidebar */}
@@ -486,10 +427,10 @@ export default function EditExpense() {
                     <span className="font-mono font-medium">{expense.expenseId}</span>
                   </div>
                   
-                  {form.watch("vendorName") && (
+                  {form.watch("name") && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-slate-600">Vendor:</span>
-                      <span className="font-medium">{form.watch("vendorName")}</span>
+                      <span className="text-slate-600">Name:</span>
+                      <span className="font-medium">{form.watch("name")}</span>
                     </div>
                   )}
                   
@@ -497,6 +438,13 @@ export default function EditExpense() {
                     <span className="text-slate-600">Category:</span>
                     <span className="font-medium">{form.watch("category")}</span>
                   </div>
+                  
+                  {form.watch("recurring") !== 'none' && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-600">Recurring:</span>
+                      <span className="font-medium capitalize">{form.watch("recurring")}</span>
+                    </div>
+                  )}
                   
                   {form.watch("amount") && (
                     <div className="pt-3 border-t">
@@ -533,12 +481,7 @@ export default function EditExpense() {
                     </span>
                   </div>
                   
-                  <div className="pt-3 border-t">
-                    <p className="text-xs text-slate-500 mb-2">Last Modified</p>
-                    <p className="text-sm font-medium">
-                      {expense.updatedAt ? format(new Date(expense.updatedAt), 'PPP') : 'Never'}
-                    </p>
-                  </div>
+
                 </div>
 
                 <div className="pt-4 space-y-3">
