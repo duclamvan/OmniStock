@@ -163,10 +163,10 @@ export default function AllExpenses() {
     }
   };
 
-  const columns: DataTableColumn[] = [
+  const columns: DataTableColumn<any>[] = [
     {
+      key: "expenseId",
       header: "Expense ID",
-      accessorKey: "expenseId",
       cell: (row: any) => (
         <Link href={`/expenses/${row.id}`}>
           <span className="font-medium text-blue-600 hover:underline cursor-pointer">
@@ -176,13 +176,13 @@ export default function AllExpenses() {
       ),
     },
     {
+      key: "date",
       header: "Date",
-      accessorKey: "date",
       cell: (row: any) => formatDate(row.date),
     },
     {
+      key: "vendorName",
       header: "Vendor",
-      accessorKey: "vendorName",
       cell: (row: any) => (
         <div>
           <p className="font-medium">{row.vendorName}</p>
@@ -193,8 +193,8 @@ export default function AllExpenses() {
       ),
     },
     {
+      key: "description",
       header: "Description",
-      accessorKey: "description",
       cell: (row: any) => (
         <span className="text-sm text-slate-600 line-clamp-2 max-w-xs">
           {row.description || '-'}
@@ -202,8 +202,8 @@ export default function AllExpenses() {
       ),
     },
     {
+      key: "amount",
       header: "Amount",
-      accessorKey: "amount",
       cell: (row: any) => (
         <span className="font-medium">
           {getCurrencySymbol(row)}{parseFloat(getAmount(row)).toFixed(2)}
@@ -211,8 +211,8 @@ export default function AllExpenses() {
       ),
     },
     {
+      key: "paymentMethod",
       header: "Payment",
-      accessorKey: "paymentMethod",
       cell: (row: any) => (
         <Badge variant="outline">
           {row.paymentMethod || 'Cash'}
@@ -220,8 +220,8 @@ export default function AllExpenses() {
       ),
     },
     {
+      key: "dueDate",
       header: "Due Date",
-      accessorKey: "dueDate",
       cell: (row: any) => {
         const dueDateStr = formatDate(row.dueDate);
         if (dueDateStr === '-' || row.status === 'paid') return dueDateStr;
@@ -237,8 +237,8 @@ export default function AllExpenses() {
       },
     },
     {
+      key: "status",
       header: "Status",
-      accessorKey: "status",
       cell: (row: any) => (
         <Badge 
           variant={row.status === 'paid' ? 'default' : 
@@ -249,8 +249,8 @@ export default function AllExpenses() {
       ),
     },
     {
+      key: "actions",
       header: "Actions",
-      accessorKey: "actions",
       cell: (row: any) => (
         <div className="flex gap-2">
           <Link href={`/expenses/${row.id}`}>
@@ -368,6 +368,7 @@ export default function AllExpenses() {
             data={filteredExpenses}
             searchPlaceholder="Search expenses..."
             bulkActions={bulkActions}
+            getRowKey={(expense) => expense.id}
           />
         </CardContent>
       </Card>

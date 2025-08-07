@@ -45,7 +45,7 @@ export function Dashboard() {
           <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <p className="text-mobile-sm font-medium text-slate-600">Fulfill Orders Today</p>
+                <p className="text-mobile-sm font-medium text-slate-600">Orders to Fulfill</p>
                 <p className="text-mobile-2xl font-bold text-slate-900 mt-1">
                   {metrics?.fulfillOrdersToday || 0}+
                 </p>
@@ -112,7 +112,6 @@ export function Dashboard() {
           </CardContent>
         </Card>
       </div>
-
       {/* Monthly Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         <Card>
@@ -152,7 +151,6 @@ export function Dashboard() {
           </CardContent>
         </Card>
       </div>
-
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
@@ -182,7 +180,6 @@ export function Dashboard() {
           </CardContent>
         </Card>
       </div>
-
       {/* Yearly Report Chart */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
@@ -202,7 +199,6 @@ export function Dashboard() {
           <YearlyChart />
         </CardContent>
       </Card>
-
       {/* Data Tables Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Unpaid Orders */}
@@ -328,7 +324,6 @@ export function Dashboard() {
           </CardContent>
         </Card>
       </div>
-
       {/* Low in Stock Table */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
@@ -384,7 +379,6 @@ export function Dashboard() {
           </div>
         </CardContent>
       </Card>
-
       {/* Monthly Financial Summary Table */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
