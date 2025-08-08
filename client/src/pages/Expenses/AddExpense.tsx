@@ -97,6 +97,7 @@ export default function AddExpense() {
       amount: '',
       currency: 'CZK',
       date: new Date(),
+      dueDate: new Date(),
       paymentMethod: 'bank_transfer',
       status: 'pending',
       description: '',
