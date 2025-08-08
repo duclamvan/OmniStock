@@ -429,7 +429,7 @@ export default function AddOrder() {
     },
   });
 
-  const addProductToOrder = (product: any) => {
+  const addProductToOrder = async (product: any) => {
     const existingItem = orderItems.find(item => item.productId === product.id);
     
     if (existingItem) {
@@ -445,13 +445,49 @@ export default function AddOrder() {
       const selectedCurrency = form.watch('currency') || 'EUR';
       let productPrice = 0;
       
-      if (selectedCurrency === 'CZK' && product.priceCzk) {
-        productPrice = parseFloat(product.priceCzk);
-      } else if (selectedCurrency === 'EUR' && product.priceEur) {
-        productPrice = parseFloat(product.priceEur);
-      } else {
-        // Fallback to any available price if specific currency price is not available
-        productPrice = parseFloat(product.priceEur || product.priceCzk || '0');
+      // Check for customer-specific pricing if a customer is selected
+      if (selectedCustomer?.id) {
+        try {
+          const response = await fetch(`/api/customers/${selectedCustomer.id}/prices`);
+          if (response.ok) {
+            const customerPrices = await response.json();
+            const today = new Date();
+            
+            // Find applicable customer price for this product and currency
+            const applicablePrice = customerPrices.find((cp: any) => {
+              const validFrom = new Date(cp.validFrom);
+              const validTo = cp.validTo ? new Date(cp.validTo) : null;
+              
+              return cp.productId === product.id &&
+                     cp.currency === selectedCurrency &&
+                     cp.isActive &&
+                     validFrom <= today &&
+                     (!validTo || validTo >= today);
+            });
+            
+            if (applicablePrice) {
+              productPrice = parseFloat(applicablePrice.price);
+              toast({
+                title: "Customer Price Applied",
+                description: `Using customer-specific price: ${productPrice} ${selectedCurrency}`,
+              });
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching customer prices:', error);
+        }
+      }
+      
+      // If no customer price found, use default product price
+      if (productPrice === 0) {
+        if (selectedCurrency === 'CZK' && product.priceCzk) {
+          productPrice = parseFloat(product.priceCzk);
+        } else if (selectedCurrency === 'EUR' && product.priceEur) {
+          productPrice = parseFloat(product.priceEur);
+        } else {
+          // Fallback to any available price if specific currency price is not available
+          productPrice = parseFloat(product.priceEur || product.priceCzk || '0');
+        }
       }
       
       const newItem: OrderItem = {

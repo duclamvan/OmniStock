@@ -186,6 +186,22 @@ export const customers = pgTable("customers", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Customer-Specific Prices
+export const customerPrices = pgTable("customer_prices", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerId: varchar("customer_id").references(() => customers.id, { onDelete: 'cascade' }).notNull(),
+  productId: varchar("product_id").references(() => products.id, { onDelete: 'cascade' }),
+  variantId: varchar("variant_id").references(() => productVariants.id, { onDelete: 'cascade' }),
+  price: decimal("price", { precision: 12, scale: 2 }).notNull(),
+  currency: currencyEnum("currency").notNull(),
+  validFrom: timestamp("valid_from").notNull().defaultNow(),
+  validTo: timestamp("valid_to"),
+  isActive: boolean("is_active").default(true),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Orders
 export const orders = pgTable("orders", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -218,10 +234,15 @@ export const orderItems = pgTable("order_items", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   orderId: varchar("order_id").references(() => orders.id, { onDelete: 'cascade' }).notNull(),
   productId: varchar("product_id").references(() => products.id),
+  variantId: varchar("variant_id").references(() => productVariants.id),
   productName: varchar("product_name", { length: 255 }).notNull(),
   sku: varchar("sku", { length: 100 }),
   quantity: integer("quantity").notNull(),
-  price: decimal("price", { precision: 12, scale: 2 }).notNull(),
+  // Price snapshot fields
+  unitPrice: decimal("unit_price", { precision: 12, scale: 2 }).notNull(), // Original price at time of order
+  appliedPrice: decimal("applied_price", { precision: 12, scale: 2 }).notNull(), // Actual price used (customer price or default)
+  currency: currencyEnum("currency").notNull(), // Currency of the price
+  customerPriceId: varchar("customer_price_id").references(() => customerPrices.id), // Reference to customer price if used
   discount: decimal("discount", { precision: 12, scale: 2 }).default('0'),
   tax: decimal("tax", { precision: 12, scale: 2 }).default('0'),
   total: decimal("total", { precision: 12, scale: 2 }).notNull(),
@@ -397,6 +418,22 @@ export const productVariantsRelations = relations(productVariants, ({ one }) => 
 export const customersRelations = relations(customers, ({ many }) => ({
   orders: many(orders),
   returns: many(returns),
+  customerPrices: many(customerPrices),
+}));
+
+export const customerPricesRelations = relations(customerPrices, ({ one }) => ({
+  customer: one(customers, {
+    fields: [customerPrices.customerId],
+    references: [customers.id],
+  }),
+  product: one(products, {
+    fields: [customerPrices.productId],
+    references: [products.id],
+  }),
+  variant: one(productVariants, {
+    fields: [customerPrices.variantId],
+    references: [productVariants.id],
+  }),
 }));
 
 export const ordersRelations = relations(orders, ({ one, many }) => ({
@@ -420,6 +457,14 @@ export const orderItemsRelations = relations(orderItems, ({ one }) => ({
   product: one(products, {
     fields: [orderItems.productId],
     references: [products.id],
+  }),
+  variant: one(productVariants, {
+    fields: [orderItems.variantId],
+    references: [productVariants.id],
+  }),
+  customerPrice: one(customerPrices, {
+    fields: [orderItems.customerPriceId],
+    references: [customerPrices.id],
   }),
 }));
 
@@ -481,14 +526,22 @@ export const insertProductVariantSchema = createInsertSchema(productVariants).om
   importCostEur: z.coerce.string().optional(),
 });
 export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCustomerPriceSchema = createInsertSchema(customerPrices).omit({ id: true, createdAt: true, updatedAt: true }).extend({
+  price: z.coerce.string(),
+  validFrom: z.string().or(z.date()),
+  validTo: z.string().or(z.date()).optional(),
+});
 export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true, updatedAt: true, shippedAt: true }).extend({
   totalAmount: z.coerce.string().optional(),
   shippingCost: z.coerce.string().optional(),
   discountAmount: z.coerce.string().optional(),
 });
 export const insertOrderItemSchema = createInsertSchema(orderItems).omit({ id: true }).extend({
-  unitPrice: z.coerce.string().optional(),
-  totalPrice: z.coerce.string().optional(),
+  unitPrice: z.coerce.string(),
+  appliedPrice: z.coerce.string(),
+  discount: z.coerce.string().optional(),
+  tax: z.coerce.string().optional(),
+  total: z.coerce.string(),
   quantity: z.coerce.number().min(1),
 });
 export const insertPurchaseSchema = createInsertSchema(purchases).omit({ id: true, createdAt: true, updatedAt: true });
@@ -534,6 +587,8 @@ export type ProductVariant = typeof productVariants.$inferSelect;
 export type InsertProductVariant = z.infer<typeof insertProductVariantSchema>;
 export type Customer = typeof customers.$inferSelect;
 export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
+export type CustomerPrice = typeof customerPrices.$inferSelect;
+export type InsertCustomerPrice = z.infer<typeof insertCustomerPriceSchema>;
 export type Order = typeof orders.$inferSelect;
 export type InsertOrder = z.infer<typeof insertOrderSchema>;
 export type OrderItem = typeof orderItems.$inferSelect;

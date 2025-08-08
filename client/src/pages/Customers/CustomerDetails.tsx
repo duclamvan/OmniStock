@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link } from "wouter";
 import { 
   ArrowLeft, 
@@ -15,9 +16,11 @@ import {
   DollarSign,
   User,
   MessageCircle,
-  Star
+  Star,
+  Tag
 } from "lucide-react";
 import { formatCurrency } from "@/lib/currencyUtils";
+import { CustomerPrices } from "./CustomerPrices";
 
 export default function CustomerDetails() {
   const { id } = useParams();
@@ -102,49 +105,60 @@ export default function CustomerDetails() {
         </div>
       </div>
 
-      {/* Customer Info Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-slate-600">Customer Type</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              {customer.type === 'vip' ? (
-                <Star className="h-5 w-5 text-yellow-500" />
-              ) : (
-                <User className="h-5 w-5 text-slate-400" />
-              )}
-              <Badge variant={customer.type === 'vip' ? 'default' : 'secondary'}>
-                {customer.type?.toUpperCase() || 'REGULAR'}
-              </Badge>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Tabs */}
+      <Tabs defaultValue="details" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="details">Details</TabsTrigger>
+          <TabsTrigger value="prices">
+            <Tag className="mr-2 h-4 w-4" />
+            Custom Prices
+          </TabsTrigger>
+        </TabsList>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-slate-600">Total Orders</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-slate-900">{orders.length}</p>
-          </CardContent>
-        </Card>
+        <TabsContent value="details" className="space-y-6">
+          {/* Customer Info Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-slate-600">Customer Type</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2">
+                  {customer.type === 'vip' ? (
+                    <Star className="h-5 w-5 text-yellow-500" />
+                  ) : (
+                    <User className="h-5 w-5 text-slate-400" />
+                  )}
+                  <Badge variant={customer.type === 'vip' ? 'default' : 'secondary'}>
+                    {customer.type?.toUpperCase() || 'REGULAR'}
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-slate-600">Total Spent</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-slate-900">
-              {formatCurrency(totalSpent, customerCurrency)}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-slate-600">Total Orders</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold text-slate-900">{orders.length}</p>
+              </CardContent>
+            </Card>
 
-      {/* Contact & Address Information */}
-      <Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-slate-600">Total Spent</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold text-slate-900">
+                  {formatCurrency(totalSpent, customerCurrency)}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Contact & Address Information */}
+          <Card>
         <CardHeader>
           <CardTitle>Contact & Address Information</CardTitle>
         </CardHeader>
@@ -191,63 +205,69 @@ export default function CustomerDetails() {
         </Card>
       )}
 
-      {/* Order History */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Order History</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {orders.length === 0 ? (
-            <p className="text-sm text-slate-500">No orders found for this customer.</p>
-          ) : (
-            <div className="space-y-4">
-              {orders.map((order: any) => (
-                <Link key={order.id} href={`/orders/${order.id}`}>
-                  <div className="border rounded-lg p-4 hover:bg-slate-50 cursor-pointer transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <Package className="h-5 w-5 text-slate-400" />
-                      <div>
-                        <p className="font-medium text-sm">Order #{order.id.slice(0, 8)}</p>
-                        <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
-                          <Calendar className="h-3 w-3" />
-                          <span>{new Date(order.createdAt).toLocaleDateString()}</span>
+          {/* Order History */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Order History</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {orders.length === 0 ? (
+                <p className="text-sm text-slate-500">No orders found for this customer.</p>
+              ) : (
+                <div className="space-y-4">
+                  {orders.map((order: any) => (
+                    <Link key={order.id} href={`/orders/${order.id}`}>
+                      <div className="border rounded-lg p-4 hover:bg-slate-50 cursor-pointer transition-colors">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <Package className="h-5 w-5 text-slate-400" />
+                          <div>
+                            <p className="font-medium text-sm">Order #{order.id.slice(0, 8)}</p>
+                            <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
+                              <Calendar className="h-3 w-3" />
+                              <span>{new Date(order.createdAt).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium text-sm">{formatCurrency(order.total || 0, order.currency || 'EUR')}</p>
+                          <Badge 
+                            variant={
+                              order.status === 'delivered' ? 'default' :
+                              order.status === 'shipped' ? 'outline' :
+                              order.status === 'to_fulfill' ? 'secondary' :
+                              order.status === 'pending' ? 'secondary' :
+                              order.status === 'cancelled' ? 'destructive' :
+                              'secondary'
+                            }
+                            className="mt-1"
+                          >
+                            {order.status === 'to_fulfill' ? 'To Fulfill' :
+                             order.status === 'delivered' ? 'Delivered' :
+                             order.status === 'shipped' ? 'Shipped' :
+                             order.status === 'pending' ? 'Pending' :
+                             order.status === 'cancelled' ? 'Cancelled' :
+                             order.status}
+                          </Badge>
                         </div>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-medium text-sm">{formatCurrency(order.total || 0, order.currency || 'EUR')}</p>
-                      <Badge 
-                        variant={
-                          order.status === 'delivered' ? 'default' :
-                          order.status === 'shipped' ? 'outline' :
-                          order.status === 'to_fulfill' ? 'secondary' :
-                          order.status === 'pending' ? 'secondary' :
-                          order.status === 'cancelled' ? 'destructive' :
-                          'secondary'
-                        }
-                        className="mt-1"
-                      >
-                        {order.status === 'to_fulfill' ? 'To Fulfill' :
-                         order.status === 'delivered' ? 'Delivered' :
-                         order.status === 'shipped' ? 'Shipped' :
-                         order.status === 'pending' ? 'Pending' :
-                         order.status === 'cancelled' ? 'Cancelled' :
-                         order.status}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
-                    <span>{order.items?.length || 0} items</span>
-                    <span>Payment: {order.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}</span>
-                  </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                      <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
+                        <span>{order.items?.length || 0} items</span>
+                        <span>Payment: {order.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}</span>
+                      </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="prices">
+          <CustomerPrices customerId={id || ''} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

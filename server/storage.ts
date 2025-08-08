@@ -8,6 +8,7 @@ import {
   products,
   productVariants,
   customers,
+  customerPrices,
   orders,
   orderItems,
   purchases,
@@ -37,6 +38,8 @@ import {
   type InsertProductVariant,
   type Customer,
   type InsertCustomer,
+  type CustomerPrice,
+  type InsertCustomerPrice,
   type Order,
   type InsertOrder,
   type OrderItem,
@@ -127,6 +130,14 @@ export interface IStorage {
   updateCustomer(id: string, customer: Partial<InsertCustomer>): Promise<Customer>;
   deleteCustomer(id: string): Promise<void>;
   searchCustomers(query: string): Promise<Customer[]>;
+
+  // Customer Prices
+  getCustomerPrices(customerId: string): Promise<CustomerPrice[]>;
+  getActiveCustomerPrice(customerId: string, productId?: string, variantId?: string, currency?: string): Promise<CustomerPrice | undefined>;
+  createCustomerPrice(price: InsertCustomerPrice): Promise<CustomerPrice>;
+  updateCustomerPrice(id: string, price: Partial<InsertCustomerPrice>): Promise<CustomerPrice>;
+  deleteCustomerPrice(id: string): Promise<void>;
+  bulkCreateCustomerPrices(prices: InsertCustomerPrice[]): Promise<CustomerPrice[]>;
 
   // Orders
   getOrders(): Promise<Order[]>;
@@ -620,6 +631,69 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
+  // Customer Prices
+  async getCustomerPrices(customerId: string): Promise<CustomerPrice[]> {
+    return await db.select()
+      .from(customerPrices)
+      .where(eq(customerPrices.customerId, customerId))
+      .orderBy(desc(customerPrices.createdAt));
+  }
+
+  async getActiveCustomerPrice(customerId: string, productId?: string, variantId?: string, currency?: string): Promise<CustomerPrice | undefined> {
+    const now = new Date();
+    const conditions = [
+      eq(customerPrices.customerId, customerId),
+      eq(customerPrices.isActive, true),
+      lte(customerPrices.validFrom, now),
+    ];
+
+    if (productId) {
+      conditions.push(eq(customerPrices.productId, productId));
+    }
+    if (variantId) {
+      conditions.push(eq(customerPrices.variantId, variantId));
+    }
+    if (currency) {
+      conditions.push(eq(customerPrices.currency, currency));
+    }
+
+    const prices = await db.select()
+      .from(customerPrices)
+      .where(and(...conditions))
+      .orderBy(desc(customerPrices.validFrom));
+
+    // Filter out expired prices
+    const validPrices = prices.filter(price => 
+      !price.validTo || new Date(price.validTo) >= now
+    );
+
+    return validPrices[0];
+  }
+
+  async createCustomerPrice(price: InsertCustomerPrice): Promise<CustomerPrice> {
+    const [newPrice] = await db.insert(customerPrices).values(price).returning();
+    return newPrice;
+  }
+
+  async updateCustomerPrice(id: string, price: Partial<InsertCustomerPrice>): Promise<CustomerPrice> {
+    const [updatedPrice] = await db
+      .update(customerPrices)
+      .set({ ...price, updatedAt: new Date() })
+      .where(eq(customerPrices.id, id))
+      .returning();
+    return updatedPrice;
+  }
+
+  async deleteCustomerPrice(id: string): Promise<void> {
+    await db.delete(customerPrices).where(eq(customerPrices.id, id));
+  }
+
+  async bulkCreateCustomerPrices(prices: InsertCustomerPrice[]): Promise<CustomerPrice[]> {
+    if (prices.length === 0) return [];
+    const newPrices = await db.insert(customerPrices).values(prices).returning();
+    return newPrices;
+  }
+
   // Orders
   async getOrders(): Promise<Order[]> {
     const ordersWithCustomers = await db
@@ -645,13 +719,11 @@ export class DatabaseStorage implements IStorage {
         createdAt: orders.createdAt,
         updatedAt: orders.updatedAt,
         shippedAt: orders.shippedAt,
-        customer: {
-          id: customers.id,
-          name: customers.name,
-          facebookName: customers.facebookName,
-          email: customers.email,
-          phone: customers.phone,
-        }
+        customerId2: customers.id,
+        customerName: customers.name,
+        customerFacebookName: customers.facebookName,
+        customerEmail: customers.email,
+        customerPhone: customers.phone,
       })
       .from(orders)
       .leftJoin(customers, eq(orders.customerId, customers.id))
@@ -671,18 +743,47 @@ export class DatabaseStorage implements IStorage {
             discount: orderItems.discount,
             tax: orderItems.tax,
             total: orderItems.total,
-            product: {
-              id: products.id,
-              importCostCzk: products.importCostCzk,
-              importCostEur: products.importCostEur,
-              importCostUsd: products.importCostUsd,
-            }
+            productId2: products.id,
+            productImportCostCzk: products.importCostCzk,
+            productImportCostEur: products.importCostEur,
+            productImportCostUsd: products.importCostUsd
           })
           .from(orderItems)
           .leftJoin(products, eq(orderItems.productId, products.id))
           .where(eq(orderItems.orderId, order.id));
         
-        return { ...order, items };
+        // Transform items to include product object
+        const transformedItems = items.map(item => ({
+          ...item,
+          product: item.productId2 ? {
+            id: item.productId2,
+            importCostCzk: item.productImportCostCzk,
+            importCostEur: item.productImportCostEur,
+            importCostUsd: item.productImportCostUsd,
+          } : undefined
+        }));
+        
+        // Transform order to include customer object
+        const transformedOrder = {
+          ...order,
+          customer: order.customerId2 ? {
+            id: order.customerId2,
+            name: order.customerName,
+            facebookName: order.customerFacebookName,
+            email: order.customerEmail,
+            phone: order.customerPhone,
+          } : undefined,
+          items: transformedItems
+        };
+        
+        // Remove the flat customer fields
+        delete transformedOrder.customerId2;
+        delete transformedOrder.customerName;
+        delete transformedOrder.customerFacebookName;
+        delete transformedOrder.customerEmail;
+        delete transformedOrder.customerPhone;
+        
+        return transformedOrder;
       })
     );
     
@@ -713,13 +814,11 @@ export class DatabaseStorage implements IStorage {
         createdAt: orders.createdAt,
         updatedAt: orders.updatedAt,
         shippedAt: orders.shippedAt,
-        customer: {
-          id: customers.id,
-          name: customers.name,
-          facebookName: customers.facebookName,
-          email: customers.email,
-          phone: customers.phone,
-        }
+        customerId2: customers.id,
+        customerName: customers.name,
+        customerFacebookName: customers.facebookName,
+        customerEmail: customers.email,
+        customerPhone: customers.phone,
       })
       .from(orders)
       .leftJoin(customers, eq(orders.customerId, customers.id))
@@ -739,18 +838,47 @@ export class DatabaseStorage implements IStorage {
         discount: orderItems.discount,
         tax: orderItems.tax,
         total: orderItems.total,
-        product: {
-          id: products.id,
-          importCostCzk: products.importCostCzk,
-          importCostEur: products.importCostEur,
-          importCostUsd: products.importCostUsd,
-        }
+        productId2: products.id,
+        productImportCostCzk: products.importCostCzk,
+        productImportCostEur: products.importCostEur,
+        productImportCostUsd: products.importCostUsd
       })
       .from(orderItems)
       .leftJoin(products, eq(orderItems.productId, products.id))
       .where(eq(orderItems.orderId, id));
     
-    return { ...order, items } as any;
+    // Transform items to include product object
+    const transformedItems = items.map(item => ({
+      ...item,
+      product: item.productId2 ? {
+        id: item.productId2,
+        importCostCzk: item.productImportCostCzk,
+        importCostEur: item.productImportCostEur,
+        importCostUsd: item.productImportCostUsd,
+      } : undefined
+    }));
+    
+    // Transform order to include customer object
+    const transformedOrder = {
+      ...order,
+      customer: order.customerId2 ? {
+        id: order.customerId2,
+        name: order.customerName,
+        facebookName: order.customerFacebookName,
+        email: order.customerEmail,
+        phone: order.customerPhone,
+      } : undefined,
+      items: transformedItems
+    };
+    
+    // Remove the flat customer fields
+    delete transformedOrder.customerId2;
+    delete transformedOrder.customerName;
+    delete transformedOrder.customerFacebookName;
+    delete transformedOrder.customerEmail;
+    delete transformedOrder.customerPhone;
+    
+    return transformedOrder as any;
   }
 
   async getOrdersByStatus(status: string): Promise<Order[]> {
@@ -777,13 +905,11 @@ export class DatabaseStorage implements IStorage {
         createdAt: orders.createdAt,
         updatedAt: orders.updatedAt,
         shippedAt: orders.shippedAt,
-        customer: {
-          id: customers.id,
-          name: customers.name,
-          facebookName: customers.facebookName,
-          email: customers.email,
-          phone: customers.phone,
-        }
+        customerId2: customers.id,
+        customerName: customers.name,
+        customerFacebookName: customers.facebookName,
+        customerEmail: customers.email,
+        customerPhone: customers.phone,
       })
       .from(orders)
       .leftJoin(customers, eq(orders.customerId, customers.id))
@@ -804,18 +930,47 @@ export class DatabaseStorage implements IStorage {
             discount: orderItems.discount,
             tax: orderItems.tax,
             total: orderItems.total,
-            product: {
-              id: products.id,
-              importCostCzk: products.importCostCzk,
-              importCostEur: products.importCostEur,
-              importCostUsd: products.importCostUsd,
-            }
+            productId2: products.id,
+            productImportCostCzk: products.importCostCzk,
+            productImportCostEur: products.importCostEur,
+            productImportCostUsd: products.importCostUsd
           })
           .from(orderItems)
           .leftJoin(products, eq(orderItems.productId, products.id))
           .where(eq(orderItems.orderId, order.id));
         
-        return { ...order, items };
+        // Transform items to include product object
+        const transformedItems = items.map(item => ({
+          ...item,
+          product: item.productId2 ? {
+            id: item.productId2,
+            importCostCzk: item.productImportCostCzk,
+            importCostEur: item.productImportCostEur,
+            importCostUsd: item.productImportCostUsd,
+          } : undefined
+        }));
+        
+        // Transform order to include customer object
+        const transformedOrder = {
+          ...order,
+          customer: order.customerId2 ? {
+            id: order.customerId2,
+            name: order.customerName,
+            facebookName: order.customerFacebookName,
+            email: order.customerEmail,
+            phone: order.customerPhone,
+          } : undefined,
+          items: transformedItems
+        };
+        
+        // Remove the flat customer fields
+        delete transformedOrder.customerId2;
+        delete transformedOrder.customerName;
+        delete transformedOrder.customerFacebookName;
+        delete transformedOrder.customerEmail;
+        delete transformedOrder.customerPhone;
+        
+        return transformedOrder;
       })
     );
     
@@ -853,13 +1008,11 @@ export class DatabaseStorage implements IStorage {
         updatedAt: orders.updatedAt,
         shippedAt: orders.shippedAt,
         total: orders.grandTotal, // Add total field for the UI
-        customer: {
-          id: customers.id,
-          name: customers.name,
-          facebookName: customers.facebookName,
-          email: customers.email,
-          phone: customers.phone,
-        }
+        customerId2: customers.id,
+        customerName: customers.name,
+        customerFacebookName: customers.facebookName,
+        customerEmail: customers.email,
+        customerPhone: customers.phone,
       })
       .from(orders)
       .leftJoin(customers, eq(orders.customerId, customers.id))
@@ -874,11 +1027,28 @@ export class DatabaseStorage implements IStorage {
           .from(orderItems)
           .where(eq(orderItems.orderId, order.id));
         
-        return { 
-          ...order, 
+        // Transform order to include customer object
+        const transformedOrder = {
+          ...order,
+          customer: order.customerId2 ? {
+            id: order.customerId2,
+            name: order.customerName,
+            facebookName: order.customerFacebookName,
+            email: order.customerEmail,
+            phone: order.customerPhone,
+          } : undefined,
           items,
           status: order.orderStatus // Add status field for the UI
         };
+        
+        // Remove the flat customer fields
+        delete transformedOrder.customerId2;
+        delete transformedOrder.customerName;
+        delete transformedOrder.customerFacebookName;
+        delete transformedOrder.customerEmail;
+        delete transformedOrder.customerPhone;
+        
+        return transformedOrder;
       })
     );
     
@@ -1261,9 +1431,27 @@ export class DatabaseStorage implements IStorage {
   // Returns
   async getReturns(): Promise<Return[]> {
     const result = await db.select({
-      return: returns,
-      customer: customers,
-      order: orders,
+      // Return fields
+      id: returns.id,
+      orderId: returns.orderId,
+      customerId: returns.customerId,
+      reason: returns.reason,
+      status: returns.status,
+      notes: returns.notes,
+      totalAmount: returns.totalAmount,
+      createdAt: returns.createdAt,
+      processedAt: returns.processedAt,
+      // Customer fields
+      customerId2: customers.id,
+      customerName: customers.name,
+      customerFacebookName: customers.facebookName,
+      customerEmail: customers.email,
+      customerPhone: customers.phone,
+      // Order fields
+      orderId2: orders.id,
+      orderOrderId: orders.orderId,
+      orderGrandTotal: orders.grandTotal,
+      orderCreatedAt: orders.createdAt,
     })
     .from(returns)
     .leftJoin(customers, eq(returns.customerId, customers.id))
@@ -1272,11 +1460,32 @@ export class DatabaseStorage implements IStorage {
     
     // Get items for each return
     const returnsWithItems = await Promise.all(result.map(async (row) => {
-      const items = await this.getReturnItems(row.return.id);
+      const items = await this.getReturnItems(row.id);
+      
+      // Transform to recreate nested structure
       return {
-        ...row.return,
-        customer: row.customer,
-        order: row.order,
+        id: row.id,
+        orderId: row.orderId,
+        customerId: row.customerId,
+        reason: row.reason,
+        status: row.status,
+        notes: row.notes,
+        totalAmount: row.totalAmount,
+        createdAt: row.createdAt,
+        processedAt: row.processedAt,
+        customer: row.customerId2 ? {
+          id: row.customerId2,
+          name: row.customerName,
+          facebookName: row.customerFacebookName,
+          email: row.customerEmail,
+          phone: row.customerPhone,
+        } : undefined,
+        order: row.orderId2 ? {
+          id: row.orderId2,
+          orderId: row.orderOrderId,
+          grandTotal: row.orderGrandTotal,
+          createdAt: row.orderCreatedAt,
+        } : undefined,
         items,
       };
     }));
@@ -1286,9 +1495,27 @@ export class DatabaseStorage implements IStorage {
   
   async getReturnById(id: string): Promise<Return | undefined> {
     const result = await db.select({
-      return: returns,
-      customer: customers,
-      order: orders,
+      // Return fields
+      id: returns.id,
+      orderId: returns.orderId,
+      customerId: returns.customerId,
+      reason: returns.reason,
+      status: returns.status,
+      notes: returns.notes,
+      totalAmount: returns.totalAmount,
+      createdAt: returns.createdAt,
+      processedAt: returns.processedAt,
+      // Customer fields
+      customerId2: customers.id,
+      customerName: customers.name,
+      customerFacebookName: customers.facebookName,
+      customerEmail: customers.email,
+      customerPhone: customers.phone,
+      // Order fields
+      orderId2: orders.id,
+      orderOrderId: orders.orderId,
+      orderGrandTotal: orders.grandTotal,
+      orderCreatedAt: orders.createdAt,
     })
     .from(returns)
     .leftJoin(customers, eq(returns.customerId, customers.id))
@@ -1299,11 +1526,31 @@ export class DatabaseStorage implements IStorage {
     if (result.length === 0) return undefined;
     
     const items = await this.getReturnItems(id);
+    const row = result[0];
     
     return {
-      ...result[0].return,
-      customer: result[0].customer,
-      order: result[0].order,
+      id: row.id,
+      orderId: row.orderId,
+      customerId: row.customerId,
+      reason: row.reason,
+      status: row.status,
+      notes: row.notes,
+      totalAmount: row.totalAmount,
+      createdAt: row.createdAt,
+      processedAt: row.processedAt,
+      customer: row.customerId2 ? {
+        id: row.customerId2,
+        name: row.customerName,
+        facebookName: row.customerFacebookName,
+        email: row.customerEmail,
+        phone: row.customerPhone,
+      } : undefined,
+      order: row.orderId2 ? {
+        id: row.orderId2,
+        orderId: row.orderOrderId,
+        grandTotal: row.orderGrandTotal,
+        createdAt: row.orderCreatedAt,
+      } : undefined,
       items,
     };
   }
@@ -1329,16 +1576,48 @@ export class DatabaseStorage implements IStorage {
   // Return Items
   async getReturnItems(returnId: string): Promise<ReturnItem[]> {
     const items = await db.select({
-      returnItem: returnItems,
-      product: products,
+      // ReturnItem fields
+      id: returnItems.id,
+      returnId: returnItems.returnId,
+      productId: returnItems.productId,
+      productName: returnItems.productName,
+      sku: returnItems.sku,
+      quantity: returnItems.quantity,
+      reason: returnItems.reason,
+      condition: returnItems.condition,
+      refundAmount: returnItems.refundAmount,
+      notes: returnItems.notes,
+      // Product fields
+      productId2: products.id,
+      productName2: products.name,
+      productSku: products.sku,
+      productImportCostCzk: products.importCostCzk,
+      productImportCostEur: products.importCostEur,
+      productImportCostUsd: products.importCostUsd,
     })
     .from(returnItems)
     .leftJoin(products, eq(returnItems.productId, products.id))
     .where(eq(returnItems.returnId, returnId));
     
     return items.map(item => ({
-      ...item.returnItem,
-      product: item.product,
+      id: item.id,
+      returnId: item.returnId,
+      productId: item.productId,
+      productName: item.productName,
+      sku: item.sku,
+      quantity: item.quantity,
+      reason: item.reason,
+      condition: item.condition,
+      refundAmount: item.refundAmount,
+      notes: item.notes,
+      product: item.productId2 ? {
+        id: item.productId2,
+        name: item.productName2,
+        sku: item.productSku,
+        importCostCzk: item.productImportCostCzk,
+        importCostEur: item.productImportCostEur,
+        importCostUsd: item.productImportCostUsd,
+      } : undefined,
     }));
   }
   

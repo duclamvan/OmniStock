@@ -18,6 +18,7 @@ import {
   insertExpenseSchema,
   insertPreOrderSchema,
   insertSaleSchema,
+  insertCustomerPriceSchema,
 } from "@shared/schema";
 import { z } from "zod";
 import { nanoid } from "nanoid";
@@ -1236,6 +1237,145 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.status(500).json({ message: "Failed to delete customer" });
+    }
+  });
+
+  // Customer Prices endpoints
+  app.get('/api/customers/:customerId/prices', async (req, res) => {
+    try {
+      const prices = await storage.getCustomerPrices(req.params.customerId);
+      res.json(prices);
+    } catch (error) {
+      console.error("Error fetching customer prices:", error);
+      res.status(500).json({ message: "Failed to fetch customer prices" });
+    }
+  });
+
+  app.post('/api/customers/:customerId/prices', async (req: any, res) => {
+    try {
+      const data = insertCustomerPriceSchema.parse({
+        ...req.body,
+        customerId: req.params.customerId
+      });
+      
+      const price = await storage.createCustomerPrice(data);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'created',
+        entityType: 'customer_price',
+        entityId: price.id,
+        description: `Created custom price for customer ${req.params.customerId}`,
+      });
+      
+      res.json(price);
+    } catch (error) {
+      console.error("Error creating customer price:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create customer price" });
+    }
+  });
+
+  app.patch('/api/customer-prices/:id', async (req: any, res) => {
+    try {
+      const updates = req.body;
+      const price = await storage.updateCustomerPrice(req.params.id, updates);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'updated',
+        entityType: 'customer_price',
+        entityId: price.id,
+        description: `Updated customer price`,
+      });
+      
+      res.json(price);
+    } catch (error) {
+      console.error("Error updating customer price:", error);
+      res.status(500).json({ message: "Failed to update customer price" });
+    }
+  });
+
+  app.delete('/api/customer-prices/:id', async (req: any, res) => {
+    try {
+      await storage.deleteCustomerPrice(req.params.id);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'deleted',
+        entityType: 'customer_price',
+        entityId: req.params.id,
+        description: `Deleted customer price`,
+      });
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting customer price:", error);
+      res.status(500).json({ message: "Failed to delete customer price" });
+    }
+  });
+
+  // Bulk import customer prices
+  app.post('/api/customers/:customerId/prices/bulk', async (req: any, res) => {
+    try {
+      const { prices } = req.body;
+      if (!Array.isArray(prices)) {
+        return res.status(400).json({ message: "Prices must be an array" });
+      }
+
+      const validatedPrices = prices.map(priceData => 
+        insertCustomerPriceSchema.parse({
+          ...priceData,
+          customerId: req.params.customerId
+        })
+      );
+
+      const createdPrices = await storage.bulkCreateCustomerPrices(validatedPrices);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'created',
+        entityType: 'customer_price',
+        entityId: req.params.customerId,
+        description: `Bulk imported ${createdPrices.length} customer prices`,
+      });
+      
+      res.json(createdPrices);
+    } catch (error) {
+      console.error("Error bulk importing customer prices:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to bulk import customer prices" });
+    }
+  });
+
+  // Get active customer price for a specific product
+  app.get('/api/customers/:customerId/active-price', async (req, res) => {
+    try {
+      const { productId, variantId, currency } = req.query as { 
+        productId?: string; 
+        variantId?: string; 
+        currency?: string;
+      };
+      
+      const price = await storage.getActiveCustomerPrice(
+        req.params.customerId,
+        productId,
+        variantId,
+        currency
+      );
+      
+      if (!price) {
+        return res.status(404).json({ message: "No active price found" });
+      }
+      
+      res.json(price);
+    } catch (error) {
+      console.error("Error fetching active customer price:", error);
+      res.status(500).json({ message: "Failed to fetch active customer price" });
     }
   });
 
