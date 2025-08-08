@@ -53,6 +53,7 @@ import {
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export default function OrderDetails() {
   const { id } = useParams();
@@ -63,6 +64,11 @@ export default function OrderDetails() {
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [returnQuantities, setReturnQuantities] = useState<Record<string, number>>({});
   const [returnReason, setReturnReason] = useState("");
+  const [showCustomPriceDialog, setShowCustomPriceDialog] = useState(false);
+  const [selectedPriceItem, setSelectedPriceItem] = useState<any>(null);
+  const [customPrice, setCustomPrice] = useState("");
+  const [priceValidFrom, setPriceValidFrom] = useState("");
+  const [priceValidTo, setPriceValidTo] = useState("");
   const [pickedItems, setPickedItems] = useState<Set<string>>(new Set());
   const [showPickingMode, setShowPickingMode] = useState(false);
 
@@ -413,6 +419,16 @@ export default function OrderDetails() {
                                 >
                                   <RotateCcw className="mr-2 h-4 w-4" />
                                   Return this item
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => {
+                                    // Set the selected item for custom pricing
+                                    setSelectedPriceItem(item);
+                                    setShowCustomPriceDialog(true);
+                                  }}
+                                >
+                                  <DollarSign className="mr-2 h-4 w-4" />
+                                  Make custom price
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -991,6 +1007,154 @@ export default function OrderDetails() {
               disabled={selectedItems.size === 0}
             >
               Create Return Ticket
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Custom Price Dialog */}
+      <Dialog open={showCustomPriceDialog} onOpenChange={setShowCustomPriceDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create Custom Price</DialogTitle>
+            <DialogDescription>
+              Set a custom price for {selectedPriceItem?.productName} for {order?.customer?.name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            {/* Product Info */}
+            <div className="p-4 bg-slate-50 rounded-lg">
+              <p className="font-medium">{selectedPriceItem?.productName}</p>
+              <p className="text-sm text-slate-600">SKU: {selectedPriceItem?.sku}</p>
+              <p className="text-sm text-slate-600">
+                Current Price: {formatCurrency(selectedPriceItem?.price || 0, order?.currency || 'EUR')}
+              </p>
+            </div>
+
+            {/* Custom Price Input */}
+            <div className="space-y-2">
+              <Label htmlFor="customPrice">Custom Price ({order?.currency || 'EUR'})</Label>
+              <Input
+                id="customPrice"
+                type="number"
+                step="0.01"
+                min="0"
+                value={customPrice}
+                onChange={(e) => setCustomPrice(e.target.value)}
+                placeholder="Enter custom price"
+              />
+            </div>
+
+            {/* Valid From Date */}
+            <div className="space-y-2">
+              <Label htmlFor="validFrom">Valid From</Label>
+              <Input
+                id="validFrom"
+                type="date"
+                value={priceValidFrom}
+                onChange={(e) => setPriceValidFrom(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+              />
+            </div>
+
+            {/* Valid To Date */}
+            <div className="space-y-2">
+              <Label htmlFor="validTo">Valid To (Optional)</Label>
+              <Input
+                id="validTo"
+                type="date"
+                value={priceValidTo}
+                onChange={(e) => setPriceValidTo(e.target.value)}
+                min={priceValidFrom || new Date().toISOString().split('T')[0]}
+              />
+            </div>
+
+            {/* Price Comparison */}
+            {customPrice && (
+              <div className="p-4 bg-blue-50 rounded-lg">
+                <p className="text-sm font-medium text-blue-900">Price Comparison</p>
+                <div className="mt-2 space-y-1">
+                  <div className="flex justify-between text-sm">
+                    <span>Original Price:</span>
+                    <span>{formatCurrency(selectedPriceItem?.price || 0, order?.currency || 'EUR')}</span>
+                  </div>
+                  <div className="flex justify-between text-sm font-medium">
+                    <span>Custom Price:</span>
+                    <span className="text-blue-600">
+                      {formatCurrency(parseFloat(customPrice) || 0, order?.currency || 'EUR')}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Savings:</span>
+                    <span className={parseFloat(customPrice) < (selectedPriceItem?.price || 0) ? "text-green-600" : "text-red-600"}>
+                      {formatCurrency(Math.abs((selectedPriceItem?.price || 0) - parseFloat(customPrice)), order?.currency || 'EUR')}
+                      {parseFloat(customPrice) < (selectedPriceItem?.price || 0) ? " less" : " more"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowCustomPriceDialog(false);
+              setSelectedPriceItem(null);
+              setCustomPrice("");
+              setPriceValidFrom("");
+              setPriceValidTo("");
+            }}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={async () => {
+                if (!customPrice || !priceValidFrom) {
+                  toast({
+                    title: "Missing Information",
+                    description: "Please enter a custom price and valid from date",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+
+                try {
+                  // Create the custom price
+                  await apiRequest('POST', `/api/customers/${order?.customerId}/prices`, {
+                    productId: selectedPriceItem?.productId,
+                    price: parseFloat(customPrice),
+                    currency: order?.currency || 'EUR',
+                    validFrom: priceValidFrom,
+                    validTo: priceValidTo || null,
+                    isActive: true
+                  });
+
+                  toast({
+                    title: "Success",
+                    description: `Custom price created for ${selectedPriceItem?.productName}`,
+                  });
+
+                  // Reset and close
+                  setShowCustomPriceDialog(false);
+                  setSelectedPriceItem(null);
+                  setCustomPrice("");
+                  setPriceValidFrom("");
+                  setPriceValidTo("");
+
+                  // Refresh the page to show updated data
+                  queryClient.invalidateQueries({ queryKey: [`/api/orders/${id}`] });
+                } catch (error) {
+                  console.error('Error creating custom price:', error);
+                  toast({
+                    title: "Error",
+                    description: "Failed to create custom price",
+                    variant: "destructive",
+                  });
+                }
+              }}
+              disabled={!customPrice || !priceValidFrom}
+            >
+              Create Custom Price
             </Button>
           </DialogFooter>
         </DialogContent>
