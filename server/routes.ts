@@ -1253,10 +1253,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/customers/:customerId/prices', async (req: any, res) => {
     try {
-      // Convert date strings to Date objects
+      // Convert date strings to Date objects and handle empty variant_id
       const priceData = {
         ...req.body,
         customerId: req.params.customerId,
+        variantId: req.body.variantId && req.body.variantId !== '' ? req.body.variantId : undefined,
         validFrom: req.body.validFrom ? new Date(req.body.validFrom) : new Date(),
         validTo: req.body.validTo ? new Date(req.body.validTo) : undefined
       };
