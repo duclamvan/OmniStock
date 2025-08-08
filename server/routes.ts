@@ -1505,7 +1505,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/expenses', async (req: any, res) => {
     try {
-      const data = insertExpenseSchema.parse(req.body);
+      // Extract the amount from the currency-specific field
+      const amountFields = ['amountCzk', 'amountEur', 'amountUsd', 'amountVnd', 'amountCny'];
+      let amount = 0;
+      for (const field of amountFields) {
+        if (req.body[field]) {
+          amount = req.body[field];
+          break;
+        }
+      }
+      
+      // Convert date strings to Date objects and prepare data for parsing
+      const bodyWithDates = {
+        ...req.body,
+        amount: amount.toString(),
+        totalCost: amount.toString(), // Add totalCost field which is required by the schema
+        date: req.body.date ? new Date(req.body.date) : undefined,
+        dueDate: req.body.dueDate ? new Date(req.body.dueDate) : undefined,
+      };
+      
+      const data = insertExpenseSchema.parse(bodyWithDates);
       const expense = await storage.createExpense(data);
       
       await storage.createUserActivity({

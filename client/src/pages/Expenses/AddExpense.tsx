@@ -107,13 +107,7 @@ export default function AddExpense() {
 
   const createExpenseMutation = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest('/api/expenses', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
+      return await apiRequest('POST', '/api/expenses', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/expenses'] });
@@ -139,8 +133,10 @@ export default function AddExpense() {
     
     const expenseData = {
       expenseId,
+      name: data.vendorName, // Add name field
       vendorName: data.vendorName,
       category: data.category,
+      currency: data.currency, // Add currency field
       [amountField]: parseFloat(data.amount),
       date: data.date.toISOString(),
       dueDate: data.dueDate?.toISOString(),
