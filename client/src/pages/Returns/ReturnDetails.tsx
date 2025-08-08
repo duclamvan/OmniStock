@@ -29,20 +29,7 @@ export default function ReturnDetails() {
   }
 
   if (error || !returnData) {
-    return (
-      <div className="p-6">
-        <div className="text-center">
-          <p className="text-gray-500">Return not found</p>
-          <Button
-            variant="outline"
-            onClick={() => navigate("/returns")}
-            className="mt-4"
-          >
-            Back to Returns
-          </Button>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   const statusColors: Record<string, string> = {

@@ -42,16 +42,7 @@ export default function ProductDetails() {
   }
 
   if (!product) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen gap-4">
-        <AlertCircle className="h-12 w-12 text-red-500" />
-        <div className="text-lg">Product not found</div>
-        <Button onClick={() => navigate("/inventory/products")}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Products
-        </Button>
-      </div>
-    );
+    return null;
   }
 
   // Calculate product statistics

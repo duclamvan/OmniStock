@@ -49,19 +49,7 @@ export default function CustomerDetails() {
   }
 
   if (!customer) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-slate-600">Customer not found</p>
-        <Button
-          variant="outline"
-          onClick={() => navigate("/customers")}
-          className="mt-4"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Customers
-        </Button>
-      </div>
-    );
+    return null;
   }
 
   // Calculate total spent

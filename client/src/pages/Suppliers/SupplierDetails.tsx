@@ -143,7 +143,7 @@ export default function SupplierDetails() {
   }
 
   if (!supplier) {
-    return <div>Supplier not found</div>;
+    return null;
   }
 
   return (

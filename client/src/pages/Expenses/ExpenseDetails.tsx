@@ -101,14 +101,7 @@ export default function ExpenseDetails() {
   }
 
   if (error || !expense) {
-    return (
-      <div className="text-center">
-        <p>Expense not found</p>
-        <Button onClick={() => navigate('/expenses')} className="mt-4">
-          Back to Expenses
-        </Button>
-      </div>
-    );
+    return null;
   }
 
   // Determine currency symbol
