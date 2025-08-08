@@ -489,6 +489,7 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
           <DataTable
             columns={columns}
             data={prices}
+            getRowKey={(price) => price.id}
             searchKey="productId"
             searchPlaceholder="Search products..."
           />

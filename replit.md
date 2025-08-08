@@ -4,6 +4,9 @@ Davie Supply is a comprehensive warehouse and order management system designed a
 ## Recent Updates (Jan 9, 2025)
 - Fixed returns functionality by converting Drizzle queries to raw SQL due to internal Drizzle ORM errors with the returns table
 - Returns endpoints (/api/returns and /api/returns/:id) now working properly with complete data retrieval
+- Added expand/collapse all switch button for Orders table with localStorage persistence
+- Fixed customer price creation error by properly handling empty variant_id field
+- Fixed missing getRowKey prop in CustomerPrices DataTable component
 
 # User Preferences
 Preferred communication style: Simple, everyday language.
