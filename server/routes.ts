@@ -1525,6 +1525,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/expenses/:id', async (req: any, res) => {
     try {
+      // Get the existing expense first to preserve its name for the activity log
+      const existingExpense = await storage.getExpenseById(req.params.id);
+      if (!existingExpense) {
+        return res.status(404).json({ message: "Expense not found" });
+      }
+
       const expense = await storage.updateExpense(req.params.id, req.body);
       
       await storage.createUserActivity({

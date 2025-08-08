@@ -30,6 +30,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useState } from "react";
 
 export default function ExpenseDetails() {
@@ -61,6 +68,30 @@ export default function ExpenseDetails() {
       toast({
         title: "Error",
         description: "Failed to delete expense",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: async (newStatus: string) => {
+      return await apiRequest(`/api/expenses/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: newStatus }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/expenses/${id}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/expenses'] });
+      toast({
+        title: "Success",
+        description: "Expense status updated successfully",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update expense status",
         variant: "destructive",
       });
     },
@@ -159,9 +190,36 @@ export default function ExpenseDetails() {
                 Created on {format(new Date(expense.createdAt), 'PPP')}
               </CardDescription>
             </div>
-            <Badge variant={getStatusColor(expense.status)}>
-              {expense.status}
-            </Badge>
+            <Select
+              value={expense.status}
+              onValueChange={(value) => updateStatusMutation.mutate(value)}
+              disabled={updateStatusMutation.isPending}
+            >
+              <SelectTrigger className="w-[140px]">
+                <SelectValue>
+                  <Badge variant={getStatusColor(expense.status)} className="capitalize">
+                    {expense.status}
+                  </Badge>
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pending">
+                  <Badge variant="secondary" className="capitalize w-full">
+                    Pending
+                  </Badge>
+                </SelectItem>
+                <SelectItem value="paid">
+                  <Badge variant="default" className="capitalize w-full">
+                    Paid
+                  </Badge>
+                </SelectItem>
+                <SelectItem value="overdue">
+                  <Badge variant="destructive" className="capitalize w-full">
+                    Overdue
+                  </Badge>
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
