@@ -1469,18 +1469,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (items && items.length > 0) {
         for (const item of items) {
           // Map frontend price field to schema fields
+          const price = item.price || 0; // Default to 0 if price is undefined
           const orderItem = {
             orderId: order.id,
             productId: item.productId,
             productName: item.productName,
             sku: item.sku,
-            quantity: item.quantity,
-            unitPrice: item.price, // Original price
-            appliedPrice: item.price, // Applied price (same as original for now)
+            quantity: item.quantity || 1,
+            price: String(price), // Main price field (required)
+            unitPrice: String(price), // Original price
+            appliedPrice: String(price), // Applied price (same as original for now)
             currency: order.currency, // Use order's currency
-            discount: item.discount,
-            tax: item.tax,
-            total: item.total,
+            discount: String(item.discount || 0),
+            tax: String(item.tax || 0),
+            total: String(item.total || price),
           };
           await storage.createOrderItem(orderItem);
         }

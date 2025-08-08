@@ -238,10 +238,11 @@ export const orderItems = pgTable("order_items", {
   productName: varchar("product_name", { length: 255 }).notNull(),
   sku: varchar("sku", { length: 100 }),
   quantity: integer("quantity").notNull(),
+  price: decimal("price", { precision: 12, scale: 2 }).notNull(), // Main price field (legacy)
   // Price snapshot fields
-  unitPrice: decimal("unit_price", { precision: 12, scale: 2 }).notNull(), // Original price at time of order
-  appliedPrice: decimal("applied_price", { precision: 12, scale: 2 }).notNull(), // Actual price used (customer price or default)
-  currency: currencyEnum("currency").notNull(), // Currency of the price
+  unitPrice: decimal("unit_price", { precision: 12, scale: 2 }), // Original price at time of order
+  appliedPrice: decimal("applied_price", { precision: 12, scale: 2 }), // Actual price used (customer price or default)
+  currency: currencyEnum("currency"), // Currency of the price
   customerPriceId: varchar("customer_price_id").references(() => customerPrices.id), // Reference to customer price if used
   discount: decimal("discount", { precision: 12, scale: 2 }).default('0'),
   tax: decimal("tax", { precision: 12, scale: 2 }).default('0'),
@@ -537,8 +538,9 @@ export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, cre
   discountAmount: z.coerce.string().optional(),
 });
 export const insertOrderItemSchema = createInsertSchema(orderItems).omit({ id: true }).extend({
-  unitPrice: z.coerce.string(),
-  appliedPrice: z.coerce.string(),
+  price: z.coerce.string(), // Main price field
+  unitPrice: z.coerce.string().optional(),
+  appliedPrice: z.coerce.string().optional(),
   discount: z.coerce.string().optional(),
   tax: z.coerce.string().optional(),
   total: z.coerce.string(),
