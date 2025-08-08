@@ -99,7 +99,7 @@ export default function AddExpense() {
       date: new Date(),
       dueDate: new Date(),
       paymentMethod: 'bank_transfer',
-      status: 'pending',
+      status: 'paid',
       description: '',
       notes: '',
     },
