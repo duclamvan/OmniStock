@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -41,6 +41,7 @@ interface DataTableProps<T> {
     collapseIcon?: React.ReactNode;
   };
   onRowClick?: (item: T) => void;
+  defaultExpandAll?: boolean;
 }
 
 type SortDirection = "asc" | "desc" | null;
@@ -56,6 +57,7 @@ export function DataTable<T>({
   className,
   expandable,
   onRowClick,
+  defaultExpandAll = false,
 }: DataTableProps<T>) {
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
@@ -63,6 +65,20 @@ export function DataTable<T>({
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(defaultItemsPerPage);
+  
+  // Effect to handle external expand/collapse all
+  useEffect(() => {
+    if (expandable && defaultExpandAll !== undefined) {
+      if (defaultExpandAll) {
+        // Expand all rows
+        const allKeys = new Set(data.map(item => getRowKey(item)));
+        setExpandedRows(allKeys);
+      } else {
+        // Collapse all rows
+        setExpandedRows(new Set());
+      }
+    }
+  }, [defaultExpandAll, data, expandable, getRowKey]);
 
   // Sorting logic
   const sortedData = useMemo(() => {

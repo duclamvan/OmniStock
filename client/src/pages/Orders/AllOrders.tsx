@@ -8,12 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DataTable, DataTableColumn } from "@/components/ui/data-table";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { Plus, Search, Filter, Download, FileText, Edit, Trash2, Package, Eye } from "lucide-react";
+import { Plus, Search, Filter, Download, FileText, Edit, Trash2, Package, Eye, ChevronDown, ChevronUp } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,6 +39,18 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   const [statusFilter, setStatusFilter] = useState("all");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedOrders, setSelectedOrders] = useState<any[]>([]);
+  
+  // Load saved expand preference from localStorage
+  const [expandAll, setExpandAll] = useState(() => {
+    const saved = localStorage.getItem('ordersExpandAll');
+    return saved === 'true';
+  });
+  
+  // Save expand preference to localStorage
+  const handleExpandAllChange = (checked: boolean) => {
+    setExpandAll(checked);
+    localStorage.setItem('ordersExpandAll', checked.toString());
+  };
 
   const { data: orders = [], isLoading, error } = useQuery({
     queryKey: filter ? ['/api/orders', 'status', filter] : ['/api/orders'],
@@ -352,7 +366,20 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       {/* Orders Table */}
       <Card>
         <CardHeader className="p-4 sm:p-6">
-          <CardTitle className="text-mobile-lg">Orders ({filteredOrders?.length || 0})</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-mobile-lg">Orders ({filteredOrders?.length || 0})</CardTitle>
+            <div className="hidden sm:flex items-center gap-2">
+              <Label htmlFor="expand-all" className="text-sm text-slate-600 cursor-pointer">
+                {expandAll ? 'Collapse All' : 'Expand All'}
+              </Label>
+              <Switch
+                id="expand-all"
+                checked={expandAll}
+                onCheckedChange={handleExpandAllChange}
+                className="data-[state=checked]:bg-blue-600"
+              />
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="p-0 sm:p-6">
           {/* Mobile Card View */}
@@ -442,6 +469,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
               getRowKey={(order) => order.id}
               itemsPerPageOptions={[10, 20, 50, 100]}
               defaultItemsPerPage={20}
+              defaultExpandAll={expandAll}
               onRowClick={(order) => {
                 // Store the current path before navigating
                 sessionStorage.setItem('orderDetailsReferrer', location);
