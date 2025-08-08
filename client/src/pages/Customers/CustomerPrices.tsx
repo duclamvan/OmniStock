@@ -186,28 +186,28 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
       key: 'productId',
       header: 'Product',
       accessorKey: 'productId',
-      cell: ({ row }: any) => {
-        const product = products.find(p => p.id === row.original.productId);
-        return product?.name || row.original.productId;
+      cell: (row: any) => {
+        const product = products.find(p => p.id === row.productId);
+        return product?.name || row.productId;
       },
     },
     {
       key: 'variantId',
       header: 'Variant',
       accessorKey: 'variantId',
-      cell: ({ row }: any) => {
-        if (!row.original.variantId) return '-';
+      cell: (row: any) => {
+        if (!row.variantId) return '-';
         // Would need to fetch variant details here
-        return row.original.variantId;
+        return row.variantId;
       },
     },
     {
       key: 'price',
       header: 'Price',
       accessorKey: 'price',
-      cell: ({ row }: any) => (
+      cell: (row: any) => (
         <div className="font-medium">
-          {row.original.price} {row.original.currency}
+          {row.price} {row.currency}
         </div>
       ),
     },
@@ -215,22 +215,22 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
       key: 'validFrom',
       header: 'Valid From',
       accessorKey: 'validFrom',
-      cell: ({ row }: any) => format(new Date(row.original.validFrom), 'dd/MM/yyyy'),
+      cell: (row: any) => format(new Date(row.validFrom), 'dd/MM/yyyy'),
     },
     {
       key: 'validTo',
       header: 'Valid To',
       accessorKey: 'validTo',
-      cell: ({ row }: any) => 
-        row.original.validTo ? format(new Date(row.original.validTo), 'dd/MM/yyyy') : 'No expiry',
+      cell: (row: any) => 
+        row.validTo ? format(new Date(row.validTo), 'dd/MM/yyyy') : 'No expiry',
     },
     {
       key: 'isActive',
       header: 'Status',
       accessorKey: 'isActive',
-      cell: ({ row }: any) => (
-        <Badge variant={row.original.isActive ? 'default' : 'secondary'}>
-          {row.original.isActive ? 'Active' : 'Inactive'}
+      cell: (row: any) => (
+        <Badge variant={row.isActive ? 'default' : 'secondary'}>
+          {row.isActive ? 'Active' : 'Inactive'}
         </Badge>
       ),
     },
@@ -238,11 +238,11 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
       key: 'actions',
       header: 'Actions',
       id: 'actions',
-      cell: ({ row }: any) => (
+      cell: (row: any) => (
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => deletePriceMutation.mutate(row.original.id)}
+          onClick={() => deletePriceMutation.mutate(row.id)}
         >
           <Trash2 className="h-4 w-4" />
         </Button>
