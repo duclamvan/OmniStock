@@ -190,36 +190,40 @@ export default function ExpenseDetails() {
                 Created on {format(new Date(expense.createdAt), 'PPP')}
               </CardDescription>
             </div>
-            <Select
-              value={expense.status}
-              onValueChange={(value) => updateStatusMutation.mutate(value)}
-              disabled={updateStatusMutation.isPending}
-            >
-              <SelectTrigger className="w-[140px]">
-                <SelectValue>
-                  <Badge variant={getStatusColor(expense.status)} className="capitalize">
-                    {expense.status}
-                  </Badge>
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pending">
-                  <Badge variant="secondary" className="capitalize w-full">
-                    Pending
-                  </Badge>
-                </SelectItem>
-                <SelectItem value="paid">
-                  <Badge variant="default" className="capitalize w-full">
-                    Paid
-                  </Badge>
-                </SelectItem>
-                <SelectItem value="overdue">
-                  <Badge variant="destructive" className="capitalize w-full">
-                    Overdue
-                  </Badge>
-                </SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2">
+              <Select
+                value={expense.status}
+                onValueChange={(value) => updateStatusMutation.mutate(value)}
+                disabled={updateStatusMutation.isPending}
+              >
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                      Pending
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="paid">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-green-500" />
+                      Paid
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="overdue">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-red-500" />
+                      Overdue
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              {updateStatusMutation.isPending && (
+                <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
