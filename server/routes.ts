@@ -1447,10 +1447,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create order items
       if (items && items.length > 0) {
         for (const item of items) {
-          await storage.createOrderItem({
+          // Map frontend price field to schema fields
+          const orderItem = {
             orderId: order.id,
-            ...item,
-          });
+            productId: item.productId,
+            productName: item.productName,
+            sku: item.sku,
+            quantity: item.quantity,
+            unitPrice: item.price, // Original price
+            appliedPrice: item.price, // Applied price (same as original for now)
+            currency: order.currency, // Use order's currency
+            discount: item.discount,
+            tax: item.tax,
+            total: item.total,
+          };
+          await storage.createOrderItem(orderItem);
         }
       }
       
@@ -1500,13 +1511,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Add new items
         for (const item of items) {
+          const orderDetail = await storage.getOrderById(req.params.id);
           await storage.createOrderItem({
             orderId: req.params.id,
             productId: item.productId,
             productName: item.productName,
             sku: item.sku,
             quantity: item.quantity,
-            price: item.price.toString(),
+            unitPrice: item.price.toString(),
+            appliedPrice: item.price.toString(),
+            currency: orderDetail?.currency || 'CZK',
             discount: item.discount?.toString() || '0',
             tax: item.tax?.toString() || '0',
             total: item.total.toString(),
