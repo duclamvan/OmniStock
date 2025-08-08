@@ -156,31 +156,14 @@ export default function AllExpenses() {
 
   const columns: DataTableColumn<any>[] = [
     {
-      key: "expenseId",
-      header: "Expense ID",
-      cell: (row: any) => (
-        <Link href={`/expenses/${row.id}`}>
-          <span className="font-medium text-blue-600 hover:underline cursor-pointer">
-            {row.expenseId}
-          </span>
-        </Link>
-      ),
-    },
-    {
-      key: "date",
-      header: "Date",
-      cell: (row: any) => formatDate(row.date),
-    },
-    {
       key: "name",
       header: "Name",
       cell: (row: any) => (
-        <div>
-          <p className="font-medium">{row.name}</p>
-          {row.category && (
-            <p className="text-xs text-slate-500">{row.category}</p>
-          )}
-        </div>
+        <Link href={`/expenses/${row.id}`}>
+          <span className="font-medium text-blue-600 hover:underline cursor-pointer">
+            {row.name}
+          </span>
+        </Link>
       ),
     },
     {
@@ -193,39 +176,27 @@ export default function AllExpenses() {
       ),
     },
     {
-      key: "amount",
-      header: "Amount",
-      cell: (row: any) => (
-        <span className="font-medium">
-          {getCurrencySymbol(row.currency)}{parseFloat(row.amount || '0').toFixed(2)}
-        </span>
-      ),
+      key: "date",
+      header: "Date",
+      cell: (row: any) => formatDate(row.date),
     },
     {
-      key: "paymentMethod",
-      header: "Payment",
+      key: "category",
+      header: "Category",
       cell: (row: any) => (
         <Badge variant="outline">
-          {row.paymentMethod || 'Cash'}
+          {row.category || 'General'}
         </Badge>
       ),
     },
     {
-      key: "dueDate",
-      header: "Due Date",
-      cell: (row: any) => {
-        const dueDateStr = formatDate(row.dueDate);
-        if (dueDateStr === '-' || row.status === 'paid') return dueDateStr;
-        
-        const dueDate = new Date(row.dueDate);
-        const isOverdue = dueDate < new Date();
-        
-        return (
-          <span className={isOverdue ? 'text-red-600 font-medium' : ''}>
-            {dueDateStr}
-          </span>
-        );
-      },
+      key: "recurring",
+      header: "Recurring",
+      cell: (row: any) => (
+        <span className="text-sm capitalize">
+          {row.recurring && row.recurring !== 'none' ? row.recurring : '-'}
+        </span>
+      ),
     },
     {
       key: "status",
