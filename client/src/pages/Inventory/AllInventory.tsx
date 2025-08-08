@@ -180,9 +180,9 @@ export default function AllInventory() {
       key: "name",
       header: "Product",
       sortable: true,
-      className: "min-w-[150px] max-w-[200px]",
+      className: "min-w-[250px]",
       cell: (product) => (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {product.imageUrl ? (
             <img 
               src={product.imageUrl} 
@@ -197,16 +197,13 @@ export default function AllInventory() {
               <Package className="h-5 w-5 text-gray-400" />
             </div>
           )}
-          <div className="min-w-0 flex-1">
+          <div className="flex-1">
             <Link href={`/inventory/products/${product.id}`}>
-              <span className={`font-medium cursor-pointer block truncate ${product.isActive ? 'text-blue-600 hover:text-blue-800' : 'text-gray-400 line-through'}`} title={product.name}>
+              <span className={`font-medium cursor-pointer block ${product.isActive ? 'text-blue-600 hover:text-blue-800' : 'text-gray-400 line-through'}`}>
                 {product.name}
+                {!product.isActive && <span className="text-amber-600 font-medium ml-2">(Inactive)</span>}
               </span>
             </Link>
-            <div className="text-xs text-gray-500 truncate">
-              {product.description}
-              {!product.isActive && <span className="text-amber-600 font-medium ml-2">(Inactive)</span>}
-            </div>
           </div>
         </div>
       ),
