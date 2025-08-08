@@ -1385,7 +1385,11 @@ export default function AddOrder() {
                   {...form.register('taxRate', { valueAsNumber: true })}
                 />
               </div>
+            </div>
 
+            <Separator className="my-4" />
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <Label htmlFor="shippingCost">Shipping Cost</Label>
                 <Input
