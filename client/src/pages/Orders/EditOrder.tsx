@@ -348,27 +348,29 @@ export default function EditOrder() {
         currency: order.currency || 'EUR',
         priority: order.priority || 'medium',
         orderStatus: order.orderStatus || 'pending',
+        paymentStatus: order.paymentStatus || 'pending',
         paymentMethod: order.paymentMethod || '',
         shippingMethod: order.shippingMethod || '',
-        shippingCost: order.shippingCost ? order.shippingCost.toString() : '0',
-        deliveryDate: order.deliveryDate || '',
+        discountType: order.discountType || 'flat',
+        discountValue: order.discountValue ? parseFloat(order.discountValue) : 0,
+        taxRate: order.taxRate ? parseFloat(order.taxRate) : 0,
+        shippingCost: order.shippingCost ? parseFloat(order.shippingCost) : 0,
+        actualShippingCost: order.actualShippingCost ? parseFloat(order.actualShippingCost) : 0,
         notes: order.notes || '',
-        address: order.address || '',
-        city: order.city || '',
-        zip: order.zip || '',
-        country: order.country || '',
       });
 
       // Initialize order items
       if (order.orderItems && order.orderItems.length > 0) {
         setOrderItems(order.orderItems.map((item: any) => ({
+          id: item.id || Math.random().toString(36).substr(2, 9),
           productId: item.productId,
           productName: item.productName,
+          sku: item.sku || '',
           quantity: item.quantity,
-          price: item.price,
-          discount: item.discount || 0,
-          tax: item.tax || 0,
-          total: item.total || (item.quantity * item.price),
+          price: parseFloat(item.price) || 0,
+          discount: parseFloat(item.discount) || 0,
+          tax: parseFloat(item.tax) || 0,
+          total: parseFloat(item.total) || (item.quantity * parseFloat(item.price)),
         })));
       }
 
