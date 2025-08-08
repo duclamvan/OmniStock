@@ -171,8 +171,9 @@ export default function ExpenseDetails() {
             Edit
           </Button>
           <Button
-            variant="destructive"
+            variant="ghost"
             onClick={() => setShowDeleteDialog(true)}
+            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
           >
             <Trash2 className="mr-2 h-4 w-4" />
             Delete
