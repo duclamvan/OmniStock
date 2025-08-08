@@ -52,9 +52,7 @@ export default function ExpenseDetails() {
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest(`/api/expenses/${id}`, {
-        method: 'DELETE',
-      });
+      return await apiRequest('DELETE', `/api/expenses/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/expenses'] });
@@ -75,10 +73,7 @@ export default function ExpenseDetails() {
 
   const updateStatusMutation = useMutation({
     mutationFn: async (newStatus: string) => {
-      return await apiRequest(`/api/expenses/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status: newStatus }),
-      });
+      return await apiRequest('PATCH', `/api/expenses/${id}`, { status: newStatus });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/expenses/${id}`] });
