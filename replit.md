@@ -1,5 +1,9 @@
 # Overview
-Davie Supply is a comprehensive warehouse and order management system designed as a full-stack web application. Its primary purpose is to manage the complete order lifecycle from creation to fulfillment, track inventory, manage customers, and provide financial reporting with multi-currency support. Key capabilities include real-time Vietnamese diacritics search and integration with external shipping APIs for order tracking. The business vision is to provide a robust, efficient platform for streamlined supply chain operations.
+Davie Supply is a comprehensive warehouse and order management system designed as a full-stack web application. Its primary purpose is to manage the complete order lifecycle from creation to fulfillment, track inventory, manage customers, and provide financial reporting with multi-currency support. Key capabilities include real-time Vietnamese diacritics search, customer-specific pricing system, and integration with external shipping APIs for order tracking. The business vision is to provide a robust, efficient platform for streamlined supply chain operations.
+
+## Recent Updates (Jan 9, 2025)
+- Fixed returns functionality by converting Drizzle queries to raw SQL due to internal Drizzle ORM errors with the returns table
+- Returns endpoints (/api/returns and /api/returns/:id) now working properly with complete data retrieval
 
 # User Preferences
 Preferred communication style: Simple, everyday language.
@@ -24,6 +28,7 @@ The schema supports a comprehensive e-commerce workflow, including core entities
 - **Inventory Management**: Soft delete for products, optimized bulk operations for product variants, and detailed inventory UI.
 - **Customer Management**: Enhanced customer tables with order statistics, Messenger integration placeholders, and comprehensive add/edit/details forms with address lookup. Automatic "Pay Later" badge for qualifying customers.
 - **Discount Management**: Advanced discount system supporting percentage, fixed amount, and "Buy X Get Y" types, with auto-generated IDs, flexible application scopes (product/category/all products), and smart UI for dynamic field display and bidirectional currency conversion. Price previews show actual product prices and calculated discounts when specific product is selected.
+- **Customer-Specific Pricing**: Custom pricing per customer-product combination with date ranges for validity periods. Prices automatically apply when creating orders for specific customers. Includes bulk import capability and management interface in customer details page. Price snapshots are stored with orders for historical tracking.
 - **Supplier Management**: Complete CRUD functionality for suppliers, including file upload/management using object storage, purchase history tracking, and improved form UX with searchable dropdowns.
 - **Warehouse Management**: Comprehensive warehouse management with details, file management via object storage, and proper navigation.
 - **Returns Management**: Complete returns management with listing, add/edit forms, details pages, and integration to create return tickets directly from order details.

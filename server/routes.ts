@@ -1253,10 +1253,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/customers/:customerId/prices', async (req: any, res) => {
     try {
-      const data = insertCustomerPriceSchema.parse({
+      // Convert date strings to Date objects
+      const priceData = {
         ...req.body,
-        customerId: req.params.customerId
-      });
+        customerId: req.params.customerId,
+        validFrom: req.body.validFrom ? new Date(req.body.validFrom) : new Date(),
+        validTo: req.body.validTo ? new Date(req.body.validTo) : undefined
+      };
+      
+      const data = insertCustomerPriceSchema.parse(priceData);
       
       const price = await storage.createCustomerPrice(data);
       
@@ -1280,7 +1285,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/customer-prices/:id', async (req: any, res) => {
     try {
-      const updates = req.body;
+      // Convert date strings to Date objects if present
+      const updates = {
+        ...req.body,
+        validFrom: req.body.validFrom ? new Date(req.body.validFrom) : undefined,
+        validTo: req.body.validTo ? new Date(req.body.validTo) : undefined
+      };
+      
+      // Remove undefined values
+      Object.keys(updates).forEach(key => 
+        updates[key] === undefined && delete updates[key]
+      );
+      
       const price = await storage.updateCustomerPrice(req.params.id, updates);
       
       await storage.createUserActivity({
@@ -1325,12 +1341,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Prices must be an array" });
       }
 
-      const validatedPrices = prices.map(priceData => 
-        insertCustomerPriceSchema.parse({
+      const validatedPrices = prices.map(priceData => {
+        // Convert date strings to Date objects
+        const processedData = {
           ...priceData,
-          customerId: req.params.customerId
-        })
-      );
+          customerId: req.params.customerId,
+          validFrom: priceData.validFrom ? new Date(priceData.validFrom) : new Date(),
+          validTo: priceData.validTo ? new Date(priceData.validTo) : undefined
+        };
+        return insertCustomerPriceSchema.parse(processedData);
+      });
 
       const createdPrices = await storage.bulkCreateCustomerPrices(validatedPrices);
       

@@ -1430,127 +1430,112 @@ export class DatabaseStorage implements IStorage {
 
   // Returns
   async getReturns(): Promise<Return[]> {
-    const result = await db.select({
-      // Return fields
-      id: returns.id,
-      orderId: returns.orderId,
-      customerId: returns.customerId,
-      reason: returns.reason,
-      status: returns.status,
-      notes: returns.notes,
-      totalAmount: returns.totalAmount,
-      createdAt: returns.createdAt,
-      processedAt: returns.processedAt,
-      // Customer fields
-      customerId2: customers.id,
-      customerName: customers.name,
-      customerFacebookName: customers.facebookName,
-      customerEmail: customers.email,
-      customerPhone: customers.phone,
-      // Order fields
-      orderId2: orders.id,
-      orderOrderId: orders.orderId,
-      orderGrandTotal: orders.grandTotal,
-      orderCreatedAt: orders.createdAt,
-    })
-    .from(returns)
-    .leftJoin(customers, eq(returns.customerId, customers.id))
-    .leftJoin(orders, eq(returns.orderId, orders.id))
-    .orderBy(desc(returns.createdAt));
+    // Use raw SQL to avoid Drizzle query builder issue
+    const returnsData = await db.execute(sql`
+      SELECT * FROM returns 
+      ORDER BY created_at DESC
+    `);
     
-    // Get items for each return
-    const returnsWithItems = await Promise.all(result.map(async (row) => {
-      const items = await this.getReturnItems(row.id);
+    // Then get related data for each return
+    const returnsWithRelations = await Promise.all(returnsData.rows.map(async (returnData: any) => {
+      const items = await this.getReturnItems(returnData.id);
       
-      // Transform to recreate nested structure
+      // Get customer if exists
+      let customer = undefined;
+      if (returnData.customer_id) {
+        const customerResult = await db.select()
+          .from(customers)
+          .where(eq(customers.id, returnData.customer_id))
+          .limit(1);
+        if (customerResult.length > 0) {
+          customer = {
+            id: customerResult[0].id,
+            name: customerResult[0].name,
+            facebookName: customerResult[0].facebookName,
+            email: customerResult[0].email,
+            phone: customerResult[0].phone,
+          };
+        }
+      }
+      
+      // Get order if exists
+      let order = undefined;
+      if (returnData.order_id) {
+        const orderResult = await db.select()
+          .from(orders)
+          .where(eq(orders.id, returnData.order_id))
+          .limit(1);
+        if (orderResult.length > 0) {
+          order = {
+            id: orderResult[0].id,
+            orderId: orderResult[0].orderId,
+            grandTotal: orderResult[0].grandTotal,
+            createdAt: orderResult[0].createdAt,
+          };
+        }
+      }
+      
       return {
-        id: row.id,
-        orderId: row.orderId,
-        customerId: row.customerId,
-        reason: row.reason,
-        status: row.status,
-        notes: row.notes,
-        totalAmount: row.totalAmount,
-        createdAt: row.createdAt,
-        processedAt: row.processedAt,
-        customer: row.customerId2 ? {
-          id: row.customerId2,
-          name: row.customerName,
-          facebookName: row.customerFacebookName,
-          email: row.customerEmail,
-          phone: row.customerPhone,
-        } : undefined,
-        order: row.orderId2 ? {
-          id: row.orderId2,
-          orderId: row.orderOrderId,
-          grandTotal: row.orderGrandTotal,
-          createdAt: row.orderCreatedAt,
-        } : undefined,
+        ...returnData,
+        customer,
+        order,
         items,
       };
     }));
     
-    return returnsWithItems;
+    return returnsWithRelations;
   }
   
   async getReturnById(id: string): Promise<Return | undefined> {
-    const result = await db.select({
-      // Return fields
-      id: returns.id,
-      orderId: returns.orderId,
-      customerId: returns.customerId,
-      reason: returns.reason,
-      status: returns.status,
-      notes: returns.notes,
-      totalAmount: returns.totalAmount,
-      createdAt: returns.createdAt,
-      processedAt: returns.processedAt,
-      // Customer fields
-      customerId2: customers.id,
-      customerName: customers.name,
-      customerFacebookName: customers.facebookName,
-      customerEmail: customers.email,
-      customerPhone: customers.phone,
-      // Order fields
-      orderId2: orders.id,
-      orderOrderId: orders.orderId,
-      orderGrandTotal: orders.grandTotal,
-      orderCreatedAt: orders.createdAt,
-    })
-    .from(returns)
-    .leftJoin(customers, eq(returns.customerId, customers.id))
-    .leftJoin(orders, eq(returns.orderId, orders.id))
-    .where(eq(returns.id, id))
-    .limit(1);
+    // Use raw SQL to avoid Drizzle query builder issue
+    const result = await db.execute(sql`
+      SELECT * FROM returns WHERE id = ${id} LIMIT 1
+    `);
     
-    if (result.length === 0) return undefined;
+    if (result.rows.length === 0) return undefined;
     
+    const returnData = result.rows[0];
     const items = await this.getReturnItems(id);
-    const row = result[0];
+    
+    // Get customer if exists
+    let customer = undefined;
+    if (returnData.customer_id) {
+      const customerResult = await db.select()
+        .from(customers)
+        .where(eq(customers.id, returnData.customer_id))
+        .limit(1);
+      if (customerResult.length > 0) {
+        customer = {
+          id: customerResult[0].id,
+          name: customerResult[0].name,
+          facebookName: customerResult[0].facebookName,
+          email: customerResult[0].email,
+          phone: customerResult[0].phone,
+        };
+      }
+    }
+    
+    // Get order if exists
+    let order = undefined;
+    if (returnData.order_id) {
+      const orderResult = await db.select()
+        .from(orders)
+        .where(eq(orders.id, returnData.order_id))
+        .limit(1);
+      if (orderResult.length > 0) {
+        order = {
+          id: orderResult[0].id,
+          orderId: orderResult[0].orderId,
+          grandTotal: orderResult[0].grandTotal,
+          createdAt: orderResult[0].createdAt,
+        };
+      }
+    }
     
     return {
-      id: row.id,
-      orderId: row.orderId,
-      customerId: row.customerId,
-      reason: row.reason,
-      status: row.status,
-      notes: row.notes,
-      totalAmount: row.totalAmount,
-      createdAt: row.createdAt,
-      processedAt: row.processedAt,
-      customer: row.customerId2 ? {
-        id: row.customerId2,
-        name: row.customerName,
-        facebookName: row.customerFacebookName,
-        email: row.customerEmail,
-        phone: row.customerPhone,
-      } : undefined,
-      order: row.orderId2 ? {
-        id: row.orderId2,
-        orderId: row.orderOrderId,
-        grandTotal: row.orderGrandTotal,
-        createdAt: row.orderCreatedAt,
-      } : undefined,
+      ...returnData,
+      customer,
+      order,
       items,
     };
   }
@@ -1575,41 +1560,35 @@ export class DatabaseStorage implements IStorage {
   
   // Return Items
   async getReturnItems(returnId: string): Promise<ReturnItem[]> {
-    const items = await db.select({
-      // ReturnItem fields
-      id: returnItems.id,
-      returnId: returnItems.returnId,
-      productId: returnItems.productId,
-      productName: returnItems.productName,
-      sku: returnItems.sku,
-      quantity: returnItems.quantity,
-      reason: returnItems.reason,
-      condition: returnItems.condition,
-      refundAmount: returnItems.refundAmount,
-      notes: returnItems.notes,
-      // Product fields
-      productId2: products.id,
-      productName2: products.name,
-      productSku: products.sku,
-      productImportCostCzk: products.importCostCzk,
-      productImportCostEur: products.importCostEur,
-      productImportCostUsd: products.importCostUsd,
-    })
-    .from(returnItems)
-    .leftJoin(products, eq(returnItems.productId, products.id))
-    .where(eq(returnItems.returnId, returnId));
+    // Use raw SQL to avoid Drizzle query builder issue
+    const itemsResult = await db.execute(sql`
+      SELECT 
+        ri.id,
+        ri.return_id as "returnId",
+        ri.product_id as "productId",
+        ri.product_name as "productName",
+        ri.sku,
+        ri.quantity,
+        ri.price,
+        p.id as "productId2",
+        p.name as "productName2",
+        p.sku as "productSku",
+        p.import_cost_czk as "productImportCostCzk",
+        p.import_cost_eur as "productImportCostEur",
+        p.import_cost_usd as "productImportCostUsd"
+      FROM return_items ri
+      LEFT JOIN products p ON ri.product_id = p.id
+      WHERE ri.return_id = ${returnId}
+    `);
     
-    return items.map(item => ({
+    return itemsResult.rows.map((item: any) => ({
       id: item.id,
       returnId: item.returnId,
       productId: item.productId,
       productName: item.productName,
       sku: item.sku,
       quantity: item.quantity,
-      reason: item.reason,
-      condition: item.condition,
-      refundAmount: item.refundAmount,
-      notes: item.notes,
+      price: item.price,
       product: item.productId2 ? {
         id: item.productId2,
         name: item.productName2,
