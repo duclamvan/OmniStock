@@ -157,23 +157,13 @@ export default function ExpenseDetails() {
             <p className="text-muted-foreground">{expense.expenseId}</p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => navigate(`/expenses/edit/${id}`)}
-          >
-            <Edit className="mr-2 h-4 w-4" />
-            Edit
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={() => setShowDeleteDialog(true)}
-            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Delete
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          onClick={() => navigate(`/expenses/edit/${id}`)}
+        >
+          <Edit className="mr-2 h-4 w-4" />
+          Edit
+        </Button>
       </div>
 
       {/* Main Details Card */}
@@ -315,12 +305,24 @@ export default function ExpenseDetails() {
 
           {/* Audit Trail */}
           <div className="space-y-2 pt-4 border-t">
-            <h3 className="font-medium text-sm">Audit Trail</h3>
-            <div className="text-sm text-muted-foreground space-y-1">
-              <p>Created: {format(new Date(expense.createdAt), 'PPp')}</p>
-              {expense.updatedAt && expense.updatedAt !== expense.createdAt && (
-                <p>Last Updated: {format(new Date(expense.updatedAt), 'PPp')}</p>
-              )}
+            <div className="flex justify-between items-start">
+              <div className="flex-1">
+                <h3 className="font-medium text-sm">Audit Trail</h3>
+                <div className="text-sm text-muted-foreground space-y-1 mt-2">
+                  <p>Created: {format(new Date(expense.createdAt), 'PPp')}</p>
+                  {expense.updatedAt && expense.updatedAt !== expense.createdAt && (
+                    <p>Last Updated: {format(new Date(expense.updatedAt), 'PPp')}</p>
+                  )}
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowDeleteDialog(true)}
+                className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </CardContent>
