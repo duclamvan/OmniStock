@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Package, DollarSign, BarChart3, Calendar, MapPin, Edit, ShoppingCart, TrendingUp, AlertCircle } from "lucide-react";
+import { ArrowLeft, Package, Banknote, BarChart3, Calendar, MapPin, Edit, ShoppingCart, TrendingUp, AlertCircle } from "lucide-react";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { format } from "date-fns";
 
@@ -167,7 +167,7 @@ export default function ProductDetails() {
                 <div className="text-2xl font-bold">{formatCurrency(totalRevenue, "CZK")}</div>
                 <div className="text-xs text-slate-500">All time</div>
               </div>
-              <DollarSign className="h-8 w-8 text-slate-400" />
+              <Banknote className="h-8 w-8 text-slate-400" />
             </div>
           </CardContent>
         </Card>

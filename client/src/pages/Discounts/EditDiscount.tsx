@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ArrowLeft, Save, Plus, X, Percent, DollarSign, ShoppingBag, Tag, Calendar, Info, Gift, Trash2 } from "lucide-react";
+import { ArrowLeft, Save, Plus, X, Percent, Banknote, ShoppingBag, Tag, Calendar, Info, Gift, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import {
   Command,
@@ -433,7 +433,7 @@ export default function EditDiscount() {
                           <RadioGroupItem value="fixed_amount" id="fixed_amount" className="mt-1" />
                           <div className="flex-1">
                             <div className="flex items-center gap-2 font-medium">
-                              <DollarSign className="h-4 w-4" />
+                              <Banknote className="h-4 w-4" />
                               Fixed Amount
                             </div>
                             <p className="text-sm text-gray-600 mt-1">Fixed discount amount</p>

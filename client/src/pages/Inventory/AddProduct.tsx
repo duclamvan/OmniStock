@@ -27,7 +27,7 @@ import {
   MoreHorizontal,
   ArrowLeft,
   Save,
-  DollarSign,
+  Banknote,
   Hash,
   Building,
   Users,
@@ -954,7 +954,7 @@ export default function AddProduct() {
                     </div>
                     {variants.length > 0 && (
                       <div className="flex items-center gap-2 text-sm">
-                        <DollarSign className="h-4 w-4 text-orange-500" />
+                        <Banknote className="h-4 w-4 text-orange-500" />
                         <span className="text-gray-600">Price Range:</span>
                         <span className="font-medium">
                           {Math.min(...variants.map(v => Number(v.price)))} - {Math.max(...variants.map(v => Number(v.price)))}

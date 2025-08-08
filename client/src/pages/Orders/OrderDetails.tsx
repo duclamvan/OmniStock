@@ -33,7 +33,7 @@ import {
   MapPin,
   Phone,
   Mail,
-  DollarSign,
+  Banknote,
   Truck,
   Clock,
   CreditCard,
@@ -258,7 +258,7 @@ export default function OrderDetails() {
                   {formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}
                 </p>
               </div>
-              <DollarSign className="h-8 w-8 text-blue-500 opacity-20" />
+              <Banknote className="h-8 w-8 text-blue-500 opacity-20" />
             </div>
           </CardContent>
         </Card>
@@ -427,7 +427,7 @@ export default function OrderDetails() {
                                     setShowCustomPriceDialog(true);
                                   }}
                                 >
-                                  <DollarSign className="mr-2 h-4 w-4" />
+                                  <Banknote className="mr-2 h-4 w-4" />
                                   Make custom price
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
@@ -532,7 +532,7 @@ export default function OrderDetails() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
+                <Banknote className="h-5 w-5" />
                 Pricing Breakdown
               </CardTitle>
             </CardHeader>

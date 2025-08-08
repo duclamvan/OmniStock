@@ -12,7 +12,7 @@ import {
   Trash2, 
   Eye,
   Package,
-  DollarSign,
+  Banknote,
   TrendingUp,
   Calendar,
   Building2,

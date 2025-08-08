@@ -13,7 +13,7 @@ import {
   Phone, 
   Calendar, 
   Package, 
-  DollarSign,
+  Banknote,
   User,
   MessageCircle,
   Star,

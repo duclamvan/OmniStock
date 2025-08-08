@@ -22,7 +22,7 @@ import {
   Phone,
   Mail,
   User,
-  DollarSign,
+  Banknote,
   Settings,
   FileText,
   Hash,
@@ -375,7 +375,7 @@ export default function AddWarehouse() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5 text-orange-600" />
+                  <Banknote className="h-5 w-5 text-orange-600" />
                   Financial & Additional Info
                 </CardTitle>
                 <CardDescription>Rental details, expenses, and notes</CardDescription>

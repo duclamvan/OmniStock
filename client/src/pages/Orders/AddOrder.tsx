@@ -32,7 +32,7 @@ import {
   Package,
   Truck,
   CreditCard,
-  DollarSign,
+  Banknote,
   FileText,
   AlertCircle,
   MapPin,
