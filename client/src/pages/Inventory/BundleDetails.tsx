@@ -166,8 +166,8 @@ export default function BundleDetails() {
     let totalEur = 0;
 
     bundle.items.forEach(item => {
-      const basePriceCzk = item.product.priceCzk || 0;
-      const basePriceEur = item.product.priceEur || 0;
+      const basePriceCzk = parseFloat(item.product.priceCzk || '0');
+      const basePriceEur = parseFloat(item.product.priceEur || '0');
       
       totalCzk += basePriceCzk * item.quantity;
       totalEur += basePriceEur * item.quantity;
@@ -394,11 +394,11 @@ export default function BundleDetails() {
                         <div className="mt-2 grid grid-cols-2 gap-4">
                           <div>
                             <p className="text-xs text-muted-foreground">Unit Price CZK</p>
-                            <p className="font-medium">{item.product.priceCzk?.toFixed(2)} Kč</p>
+                            <p className="font-medium">{parseFloat(item.product.priceCzk || '0').toFixed(2)} Kč</p>
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground">Unit Price EUR</p>
-                            <p className="font-medium">€{item.product.priceEur?.toFixed(2)}</p>
+                            <p className="font-medium">€{parseFloat(item.product.priceEur || '0').toFixed(2)}</p>
                           </div>
                         </div>
                       </div>
@@ -406,10 +406,10 @@ export default function BundleDetails() {
                       <div className="text-right ml-4">
                         <p className="text-xs text-muted-foreground">Subtotal</p>
                         <p className="font-semibold">
-                          {((item.product.priceCzk || 0) * item.quantity).toFixed(2)} Kč
+                          {(parseFloat(item.product.priceCzk || '0') * item.quantity).toFixed(2)} Kč
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          €{((item.product.priceEur || 0) * item.quantity).toFixed(2)}
+                          €{(parseFloat(item.product.priceEur || '0') * item.quantity).toFixed(2)}
                         </p>
                       </div>
                     </div>
