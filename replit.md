@@ -27,6 +27,8 @@ Davie Supply is a comprehensive warehouse and order management system designed a
 - Created Bundle Edit page that mirrors Create Bundle page with data prefilling from existing bundle
 - Fixed stock availability to use Product.quantity instead of non-existent stock field
 - Fixed variant display to show barcode instead of non-existent SKU field
+- Added Profit Margin % and Net Profit calculations to Bundle Details statistics section using import costs
+- Improved bundles list UI by removing redundant Bundle badges and displaying full bundle names
 
 # User Preferences
 Preferred communication style: Simple, everyday language.

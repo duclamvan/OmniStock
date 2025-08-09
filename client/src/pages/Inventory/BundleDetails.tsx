@@ -615,9 +615,46 @@ export default function BundleDetails() {
               <Separator />
               
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Profit</p>
-                <p className="text-lg font-bold">0.00 Kč</p>
-                <p className="text-xs text-muted-foreground">€0.00</p>
+                <p className="text-sm font-medium text-muted-foreground">Profit Margin %</p>
+                <p className="text-2xl font-bold">
+                  {(() => {
+                    const totalImportCostCzk = bundle.items.reduce((sum, item) => 
+                      sum + (parseFloat(item.product.importCostCzk || '0') * item.quantity), 0
+                    );
+                    const bundlePriceCzk = parseFloat(bundle.priceCzk || '0');
+                    const profitMargin = totalImportCostCzk > 0 
+                      ? ((bundlePriceCzk - totalImportCostCzk) / bundlePriceCzk * 100)
+                      : 0;
+                    return profitMargin.toFixed(1);
+                  })()}%
+                </p>
+                <p className="text-xs text-muted-foreground">Based on import costs</p>
+              </div>
+              
+              <Separator />
+              
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Net Profit</p>
+                <p className="text-lg font-bold">
+                  {(() => {
+                    const totalImportCostCzk = bundle.items.reduce((sum, item) => 
+                      sum + (parseFloat(item.product.importCostCzk || '0') * item.quantity), 0
+                    );
+                    const bundlePriceCzk = parseFloat(bundle.priceCzk || '0');
+                    const netProfitCzk = bundlePriceCzk - totalImportCostCzk;
+                    return netProfitCzk.toFixed(2);
+                  })()} Kč
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  €{(() => {
+                    const totalImportCostEur = bundle.items.reduce((sum, item) => 
+                      sum + (parseFloat(item.product.importCostEur || '0') * item.quantity), 0
+                    );
+                    const bundlePriceEur = parseFloat(bundle.priceEur || '0');
+                    const netProfitEur = bundlePriceEur - totalImportCostEur;
+                    return netProfitEur.toFixed(2);
+                  })()}
+                </p>
               </div>
               
               <Separator />
