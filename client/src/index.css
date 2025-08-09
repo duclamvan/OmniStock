@@ -62,6 +62,19 @@
   }
 }
 
+/* Sticky table header styles */
+.sticky-table-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--background);
+}
+
+/* Ensure table headers have proper background in both light and dark modes */
+thead th {
+  background: var(--background);
+}
+
 /* Custom styles for the WMS application */
 .primary {
   color: hsl(142, 76%, 36%);
