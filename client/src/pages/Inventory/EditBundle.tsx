@@ -385,19 +385,20 @@ export default function EditBundle() {
         const variants = await response.json();
         setVariantsCache(prev => ({ ...prev, [productId]: variants }));
         
-        // Update variant names for items that have this product
+        // Update variant names for items that have this product and selected variants
         setFormData(prev => ({
           ...prev,
           items: prev.items.map(item => {
             if (item.productId === productId && item.variantIds && item.variantIds.length > 0) {
               // Update variant names based on the loaded variants
-              const variantNames = item.variantIds.map((variantId: string) => 
-                variants.find((v: any) => v.id === variantId)?.name || ''
-              ).filter(Boolean);
+              const variantNames = item.variantIds.map((variantId: string) => {
+                const variant = variants.find((v: any) => v.id === variantId);
+                return variant?.name || '';
+              }).filter(Boolean);
               
               return {
                 ...item,
-                variantNames: variantNames.length > 0 ? variantNames : item.variantNames
+                variantNames: variantNames
               };
             }
             return item;
