@@ -320,12 +320,10 @@ export default function BundleDetails() {
         </div>
       </div>
 
-      {/* Mobile-First Grid Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-        {/* Main Information - Full width on mobile, 2/3 on desktop */}
-        <div className="order-2 lg:order-1 lg:col-span-2 space-y-4 sm:space-y-6">
-          {/* Basic Info Card */}
-          <Card>
+      {/* Mobile-First Layout */}
+      <div className="space-y-4 sm:space-y-6">
+        {/* Bundle Information - Order 1 on mobile */}
+        <Card>
             <CardHeader className="pb-3 sm:pb-6">
               <CardTitle className="text-base sm:text-lg">Bundle Information</CardTitle>
             </CardHeader>
@@ -404,14 +402,14 @@ export default function BundleDetails() {
             </CardContent>
           </Card>
 
-          {/* Bundle Items Card */}
-          <Card>
-            <CardHeader className="pb-3 sm:pb-6">
-              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                <Box className="h-4 w-4 sm:h-5 sm:w-5" />
-                Bundle Items ({bundle.items.length})
-              </CardTitle>
-            </CardHeader>
+        {/* Bundle Items Card - Order 2 on mobile */}
+        <Card>
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+              <Box className="h-4 w-4 sm:h-5 sm:w-5" />
+              Bundle Items ({bundle.items.length})
+            </CardTitle>
+          </CardHeader>
             <CardContent className="p-3 sm:p-6">
               <div className="space-y-3 sm:space-y-4">
                 {bundle.items.map((item, index) => {
@@ -536,97 +534,33 @@ export default function BundleDetails() {
                 })}
               </div>
             </CardContent>
-          </Card>
-        </div>
+        </Card>
 
-        {/* Pricing Sidebar - Shows first on mobile, last on desktop */}
-        <div className="order-1 lg:order-2 space-y-4 sm:space-y-6">
-          {/* Pricing Card */}
-          <Card>
-            <CardHeader className="pb-3 sm:pb-6">
-              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                <DollarSign className="h-4 w-4 sm:h-5 sm:w-5" />
-                Pricing
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-3 sm:p-6 space-y-4">
-              {/* Base Price */}
-              <div>
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Base Price (Sum of Items)</p>
-                <p className="text-lg sm:text-2xl font-bold">{basePrice.totalCzk.toFixed(2)} Kč</p>
-                <p className="text-xs sm:text-sm text-muted-foreground">€{basePrice.totalEur.toFixed(2)}</p>
-              </div>
-              
-              <Separator />
-              
-              {/* Bundle Price */}
-              <div>
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Bundle Price</p>
-                <p className="text-lg sm:text-2xl font-bold text-green-600 dark:text-green-400">
-                  {parseFloat(bundle.priceCzk || '0').toFixed(2)} Kč
-                </p>
-                <p className="text-xs sm:text-sm text-green-600 dark:text-green-400">
-                  €{parseFloat(bundle.priceEur || '0').toFixed(2)}
-                </p>
-              </div>
-              
-              <Separator />
-              
-              {/* Savings */}
-              <div>
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Customer Savings</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <Badge variant="default" className="bg-green-500 text-xs sm:text-sm">
-                    {savingsPercentage}% OFF
-                  </Badge>
-                </div>
-                <p className="text-xs sm:text-sm mt-2">
-                  Save {savings.czk.toFixed(2)} Kč
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Save €{savings.eur.toFixed(2)}
-                </p>
-              </div>
-              
-              {bundle.discountPercentage && parseFloat(bundle.discountPercentage) > 0 && (
-                <>
-                  <Separator />
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">Discount Applied</p>
-                    <Badge variant="secondary">
-                      {bundle.discountPercentage}% Discount
-                    </Badge>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Statistics Card */}
-          <Card>
-            <CardHeader className="pb-3 sm:pb-6">
-              <CardTitle className="text-base sm:text-lg">Statistics</CardTitle>
-            </CardHeader>
-            <CardContent className="p-3 sm:p-6 space-y-4">
-              <div>
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Total Sold</p>
-                <p className="text-lg sm:text-2xl font-bold">0</p>
-                <p className="text-xs text-muted-foreground">All time</p>
-              </div>
-              
-              <Separator />
-              
-              <div>
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Total Revenue</p>
-                <p className="text-base sm:text-lg font-bold">0.00 Kč</p>
-                <p className="text-xs text-muted-foreground">€0.00</p>
-              </div>
-              
-              <Separator />
-              
-              <div>
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Profit Margin %</p>
-                <p className="text-lg sm:text-2xl font-bold">
+        {/* Statistics Card - Order 3 on mobile */}
+        <Card>
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="text-base sm:text-lg">Statistics</CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 sm:p-6 space-y-4">
+            <div>
+              <p className="text-xs sm:text-sm font-medium text-muted-foreground">Total Sold</p>
+              <p className="text-lg sm:text-2xl font-bold">0</p>
+              <p className="text-xs text-muted-foreground">All time</p>
+            </div>
+            
+            <Separator />
+            
+            <div>
+              <p className="text-xs sm:text-sm font-medium text-muted-foreground">Total Revenue</p>
+              <p className="text-base sm:text-lg font-bold">0.00 Kč</p>
+              <p className="text-xs text-muted-foreground">€0.00</p>
+            </div>
+            
+            <Separator />
+            
+            <div>
+              <p className="text-xs sm:text-sm font-medium text-muted-foreground">Profit Margin %</p>
+              <p className="text-lg sm:text-2xl font-bold">
                   {(() => {
                     const totalImportCostCzk = bundle.items.reduce((sum, item) => 
                       sum + (parseFloat(item.product.importCostCzk || '0') * item.quantity), 0
@@ -637,15 +571,15 @@ export default function BundleDetails() {
                       : 0;
                     return profitMargin.toFixed(1);
                   })()}%
-                </p>
-                <p className="text-xs text-muted-foreground">Based on import costs</p>
-              </div>
-              
-              <Separator />
-              
-              <div>
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Net Profit</p>
-                <p className="text-base sm:text-lg font-bold">
+              </p>
+              <p className="text-xs text-muted-foreground">Based on import costs</p>
+            </div>
+            
+            <Separator />
+            
+            <div>
+              <p className="text-xs sm:text-sm font-medium text-muted-foreground">Net Profit</p>
+              <p className="text-base sm:text-lg font-bold">
                   {(() => {
                     const totalImportCostCzk = bundle.items.reduce((sum, item) => 
                       sum + (parseFloat(item.product.importCostCzk || '0') * item.quantity), 0
@@ -664,19 +598,79 @@ export default function BundleDetails() {
                     const netProfitEur = bundlePriceEur - totalImportCostEur;
                     return netProfitEur.toFixed(2);
                   })()}
-                </p>
+              </p>
+            </div>
+            
+            <Separator />
+            
+            <div>
+              <p className="text-xs sm:text-sm font-medium text-muted-foreground">Bundle Items</p>
+              <p className="text-lg sm:text-2xl font-bold">{bundle.items.reduce((sum, item) => sum + item.quantity, 0)}</p>
+              <p className="text-xs text-muted-foreground">{bundle.items.length} unique products</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Pricing Card - Order 4 on mobile */}
+        <Card>
+          <CardHeader className="pb-3 sm:pb-6">
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+              <DollarSign className="h-4 w-4 sm:h-5 sm:w-5" />
+              Pricing
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 sm:p-6 space-y-4">
+            {/* Base Price */}
+            <div>
+              <p className="text-xs sm:text-sm font-medium text-muted-foreground">Base Price (Sum of Items)</p>
+              <p className="text-lg sm:text-2xl font-bold">{basePrice.totalCzk.toFixed(2)} Kč</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">€{basePrice.totalEur.toFixed(2)}</p>
+            </div>
+            
+            <Separator />
+            
+            {/* Bundle Price */}
+            <div>
+              <p className="text-xs sm:text-sm font-medium text-muted-foreground">Bundle Price</p>
+              <p className="text-lg sm:text-2xl font-bold text-green-600 dark:text-green-400">
+                {parseFloat(bundle.priceCzk || '0').toFixed(2)} Kč
+              </p>
+              <p className="text-xs sm:text-sm text-green-600 dark:text-green-400">
+                €{parseFloat(bundle.priceEur || '0').toFixed(2)}
+              </p>
+            </div>
+            
+            <Separator />
+            
+            {/* Savings */}
+            <div>
+              <p className="text-xs sm:text-sm font-medium text-muted-foreground">Customer Savings</p>
+              <div className="flex items-center gap-2 mt-1">
+                <Badge variant="default" className="bg-green-500 text-xs sm:text-sm">
+                  {savingsPercentage}% OFF
+                </Badge>
               </div>
-              
-              <Separator />
-              
-              <div>
-                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Bundle Items</p>
-                <p className="text-lg sm:text-2xl font-bold">{bundle.items.reduce((sum, item) => sum + item.quantity, 0)}</p>
-                <p className="text-xs text-muted-foreground">{bundle.items.length} unique products</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              <p className="text-xs sm:text-sm mt-2">
+                Save {savings.czk.toFixed(2)} Kč
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Save €{savings.eur.toFixed(2)}
+              </p>
+            </div>
+            
+            {bundle.discountPercentage && parseFloat(bundle.discountPercentage) > 0 && (
+              <>
+                <Separator />
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Discount Applied</p>
+                  <Badge variant="secondary">
+                    {bundle.discountPercentage}% Discount
+                  </Badge>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
