@@ -10,6 +10,8 @@ Davie Supply is a comprehensive warehouse and order management system designed a
 - Fixed Edit Order page product ID mapping issues and validation
 - Fixed order detail page to show base prices correctly with discounts shown separately
 - Database reseeded with proper pricing data (all products have priceCzk and priceEur)
+- Made shipping status and payment status changeable on order detail page with dropdown menus
+- Added real-time status update functionality with immediate UI feedback and toast notifications
 
 # User Preferences
 Preferred communication style: Simple, everyday language.

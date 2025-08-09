@@ -1,5 +1,5 @@
 import { useParams, useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +23,15 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { 
   ArrowLeft, 
   Edit, 
@@ -48,7 +56,8 @@ import {
   Download,
   Share2,
   MoreVertical,
-  RotateCcw
+  RotateCcw,
+  ChevronDown
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/currencyUtils";
@@ -71,6 +80,49 @@ export default function OrderDetails() {
   const [priceValidTo, setPriceValidTo] = useState("");
   const [pickedItems, setPickedItems] = useState<Set<string>>(new Set());
   const [showPickingMode, setShowPickingMode] = useState(false);
+
+  // Mutations for updating order status
+  const updateOrderStatusMutation = useMutation({
+    mutationFn: async (newStatus: string) => {
+      return apiRequest(`/api/orders/${id}`, 'PATCH', { orderStatus: newStatus });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/orders/${id}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      toast({
+        title: "Status Updated",
+        description: "Order status has been updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Update Failed",
+        description: error.message || "Failed to update order status",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updatePaymentStatusMutation = useMutation({
+    mutationFn: async (newStatus: string) => {
+      return apiRequest(`/api/orders/${id}`, 'PATCH', { paymentStatus: newStatus });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/orders/${id}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      toast({
+        title: "Payment Status Updated",
+        description: "Payment status has been updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Update Failed",
+        description: error.message || "Failed to update payment status",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Track where the user came from
   useEffect(() => {
@@ -192,8 +244,95 @@ export default function OrderDetails() {
               )}
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant={statusVariant}>{statusText}</Badge>
-              <Badge variant={paymentStatusVariant}>{paymentStatusText}</Badge>
+              {/* Order Status Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    className="h-auto p-0 hover:bg-transparent"
+                    disabled={updateOrderStatusMutation.isPending}
+                  >
+                    <Badge variant={statusVariant} className="cursor-pointer">
+                      {statusText}
+                      <ChevronDown className="ml-1 h-3 w-3" />
+                    </Badge>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem 
+                    onClick={() => updateOrderStatusMutation.mutate('pending')}
+                    className={order.orderStatus === 'pending' ? 'bg-accent' : ''}
+                  >
+                    <AlertCircle className="mr-2 h-4 w-4" />
+                    Pending
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => updateOrderStatusMutation.mutate('to_fulfill')}
+                    className={order.orderStatus === 'to_fulfill' ? 'bg-accent' : ''}
+                  >
+                    <Package className="mr-2 h-4 w-4" />
+                    To Fulfill
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => updateOrderStatusMutation.mutate('shipped')}
+                    className={order.orderStatus === 'shipped' ? 'bg-accent' : ''}
+                  >
+                    <Truck className="mr-2 h-4 w-4" />
+                    Shipped
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => updateOrderStatusMutation.mutate('cancelled')}
+                    className={cn(
+                      "text-destructive",
+                      order.orderStatus === 'cancelled' ? 'bg-accent' : ''
+                    )}
+                  >
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Cancelled
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Payment Status Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    className="h-auto p-0 hover:bg-transparent"
+                    disabled={updatePaymentStatusMutation.isPending}
+                  >
+                    <Badge variant={paymentStatusVariant} className="cursor-pointer">
+                      {paymentStatusText}
+                      <ChevronDown className="ml-1 h-3 w-3" />
+                    </Badge>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem 
+                    onClick={() => updatePaymentStatusMutation.mutate('pending')}
+                    className={order.paymentStatus === 'pending' ? 'bg-accent' : ''}
+                  >
+                    <Clock className="mr-2 h-4 w-4" />
+                    Payment Pending
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => updatePaymentStatusMutation.mutate('paid')}
+                    className={order.paymentStatus === 'paid' ? 'bg-accent' : ''}
+                  >
+                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                    Paid
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => updatePaymentStatusMutation.mutate('pay_later')}
+                    className={order.paymentStatus === 'pay_later' ? 'bg-accent' : ''}
+                  >
+                    <AlertCircle className="mr-2 h-4 w-4" />
+                    Pay Later
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
               {order.priority && order.priority !== 'low' && (
                 <Badge variant={priorityVariant}>
                   {order.priority === 'high' ? 'High Priority' : 'Medium Priority'}
