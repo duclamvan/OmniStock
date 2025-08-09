@@ -37,7 +37,8 @@ Davie Supply is a comprehensive warehouse and order management system designed a
   - Improved card padding and spacing for better mobile readability
 - Fixed Edit Bundle variant prefilling issue where variant names weren't displayed after loading
   - Updated loadVariants function to update variant names after fetching from API
-  - Ensures selected variants are properly displayed when editing existing bundles
+  - Fixed variant loading to trigger for all products in bundle, not just those with pre-selected variants
+  - Ensures variant selector shows available variants for all products when editing bundles
 
 # User Preferences
 Preferred communication style: Simple, everyday language.

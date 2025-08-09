@@ -335,9 +335,9 @@ export default function EditBundle() {
         items: transformedItems,
       });
 
-      // Load variants for items that have them
+      // Load variants for all items with products
       transformedItems.forEach(item => {
-        if (item.productId && item.variantIds && item.variantIds.length > 0) {
+        if (item.productId) {
           loadVariants(item.productId);
         }
       });
