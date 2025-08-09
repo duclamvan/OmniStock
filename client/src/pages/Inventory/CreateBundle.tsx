@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { ArrowLeft, Plus, X, Package, Save, AlertCircle, Check, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plus, X, Package, Save, AlertCircle, Check, Loader2, Search, CheckSquare, Square, Hash } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,29 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -25,10 +48,10 @@ import type { Product, ProductVariant, ProductBundle } from '@shared/schema';
 interface BundleItem {
   id: string; // Unique ID for React key
   productId: string;
-  variantId?: string;
+  variantIds?: string[]; // Support multiple variants
   quantity: number;
   productName?: string;
-  variantName?: string;
+  variantNames?: string[]; // Names of selected variants
   priceCzk: number;
   priceEur: number;
 }
@@ -42,6 +65,241 @@ interface BundleFormData {
   discountPercentage: string;
   notes: string;
   items: BundleItem[];
+}
+
+// Variant selector component
+interface VariantSelectorProps {
+  variants: ProductVariant[];
+  selectedIds: string[];
+  onChange: (ids: string[]) => void;
+}
+
+function VariantSelector({ variants, selectedIds, onChange }: VariantSelectorProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectionMode, setSelectionMode] = useState<'individual' | 'range' | 'custom'>('individual');
+  const [rangeFrom, setRangeFrom] = useState('');
+  const [rangeTo, setRangeTo] = useState('');
+  const [customInput, setCustomInput] = useState('');
+
+  const filteredVariants = variants.filter(v => 
+    v.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    v.sku?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleSelectAll = () => {
+    onChange(variants.map(v => v.id));
+  };
+
+  const handleClearAll = () => {
+    onChange([]);
+  };
+
+  const handleToggleVariant = (variantId: string) => {
+    if (selectedIds.includes(variantId)) {
+      onChange(selectedIds.filter(id => id !== variantId));
+    } else {
+      onChange([...selectedIds, variantId]);
+    }
+  };
+
+  const handleRangeSelection = () => {
+    const from = parseInt(rangeFrom);
+    const to = parseInt(rangeTo);
+    if (!isNaN(from) && !isNaN(to)) {
+      const selectedVariants = variants.filter(v => {
+        const match = v.name.match(/\d+/);
+        if (match) {
+          const num = parseInt(match[0]);
+          return num >= from && num <= to;
+        }
+        return false;
+      });
+      onChange(selectedVariants.map(v => v.id));
+    }
+  };
+
+  const handleCustomSelection = () => {
+    const numbers = customInput.split(',').map(n => n.trim());
+    const selectedVariants = variants.filter(v => {
+      const match = v.name.match(/\d+/);
+      if (match) {
+        return numbers.includes(match[0]);
+      }
+      return false;
+    });
+    onChange(selectedVariants.map(v => v.id));
+  };
+
+  const selectedNames = variants
+    .filter(v => selectedIds.includes(v.id))
+    .map(v => v.name)
+    .join(', ');
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" className="w-full justify-between">
+          <span className="truncate">
+            {selectedIds.length === 0 
+              ? 'Select variants' 
+              : selectedIds.length === 1
+              ? selectedNames
+              : `${selectedIds.length} variants selected`}
+          </span>
+          <Search className="ml-2 h-4 w-4 shrink-0" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl max-h-[80vh]">
+        <DialogHeader>
+          <DialogTitle>Select Variants</DialogTitle>
+          <DialogDescription>
+            Choose which variants to include in this bundle item
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          {/* Selection Mode Tabs */}
+          <Tabs value={selectionMode} onValueChange={(v) => setSelectionMode(v as any)}>
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="individual">Individual</TabsTrigger>
+              <TabsTrigger value="range">Range</TabsTrigger>
+              <TabsTrigger value="custom">Custom</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="individual" className="space-y-4">
+              {/* Search and Quick Actions */}
+              <div className="flex gap-2">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder="Search variants..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSelectAll}
+                >
+                  <CheckSquare className="mr-1 h-4 w-4" />
+                  All
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleClearAll}
+                >
+                  <Square className="mr-1 h-4 w-4" />
+                  None
+                </Button>
+              </div>
+
+              {/* Variant List */}
+              <div className="max-h-[300px] overflow-y-auto space-y-2 border rounded-lg p-2">
+                {filteredVariants.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-4">
+                    No variants found
+                  </p>
+                ) : (
+                  filteredVariants.map(variant => (
+                    <div
+                      key={variant.id}
+                      className="flex items-center space-x-2 p-2 hover:bg-muted rounded cursor-pointer"
+                      onClick={() => handleToggleVariant(variant.id)}
+                    >
+                      <Checkbox
+                        checked={selectedIds.includes(variant.id)}
+                        onCheckedChange={() => handleToggleVariant(variant.id)}
+                      />
+                      <div className="flex-1">
+                        <p className="font-medium">{variant.name}</p>
+                        {variant.sku && (
+                          <p className="text-xs text-muted-foreground">SKU: {variant.sku}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="range" className="space-y-4">
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Select variants by number range (e.g., variants with numbers 1-10)
+                </p>
+                <div className="flex gap-2 items-center">
+                  <div className="flex-1">
+                    <Label htmlFor="range-from">From</Label>
+                    <Input
+                      id="range-from"
+                      type="number"
+                      placeholder="1"
+                      value={rangeFrom}
+                      onChange={(e) => setRangeFrom(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <Label htmlFor="range-to">To</Label>
+                    <Input
+                      id="range-to"
+                      type="number"
+                      placeholder="10"
+                      value={rangeTo}
+                      onChange={(e) => setRangeTo(e.target.value)}
+                    />
+                  </div>
+                  <Button
+                    onClick={handleRangeSelection}
+                    className="mt-6"
+                  >
+                    Apply Range
+                  </Button>
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="custom" className="space-y-4">
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Enter variant numbers separated by commas (e.g., 1, 3, 5, 7)
+                </p>
+                <div className="space-y-2">
+                  <Label htmlFor="custom-numbers">Variant Numbers</Label>
+                  <Input
+                    id="custom-numbers"
+                    placeholder="1, 3, 5, 7, 10"
+                    value={customInput}
+                    onChange={(e) => setCustomInput(e.target.value)}
+                  />
+                  <Button
+                    onClick={handleCustomSelection}
+                    className="w-full"
+                  >
+                    <Hash className="mr-2 h-4 w-4" />
+                    Apply Custom Selection
+                  </Button>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+
+          {/* Selected Count */}
+          <div className="flex justify-between items-center pt-2 border-t">
+            <p className="text-sm text-muted-foreground">
+              {selectedIds.length} of {variants.length} variants selected
+            </p>
+            <Button onClick={() => setIsOpen(false)}>
+              Done
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 export default function CreateBundle() {
@@ -119,12 +377,24 @@ export default function CreateBundle() {
 
       // Create bundle items
       if (data.items.length > 0) {
-        const itemsData = data.items.map(item => ({
-          bundleId: bundle.id,
-          productId: item.productId,
-          variantId: item.variantId || null,
-          quantity: item.quantity
-        }));
+        const itemsData = data.items.flatMap(item => {
+          // If no variants selected, create one item without variant
+          if (!item.variantIds || item.variantIds.length === 0) {
+            return [{
+              bundleId: bundle.id,
+              productId: item.productId,
+              variantId: null,
+              quantity: item.quantity
+            }];
+          }
+          // Create an item for each selected variant
+          return item.variantIds.map(variantId => ({
+            bundleId: bundle.id,
+            productId: item.productId,
+            variantId: variantId,
+            quantity: item.quantity
+          }));
+        });
 
         await apiRequest(`/api/bundles/${bundle.id}/items`, {
           method: 'POST',
@@ -229,8 +499,8 @@ export default function CreateBundle() {
             const product = products.find(p => p.id === value);
             if (product) {
               updatedItem.productName = product.name;
-              updatedItem.variantId = undefined;
-              updatedItem.variantName = undefined;
+              updatedItem.variantIds = [];
+              updatedItem.variantNames = [];
               updatedItem.priceCzk = parseFloat(product.priceCzk || '0');
               updatedItem.priceEur = parseFloat(product.priceEur || '0');
               
@@ -239,16 +509,14 @@ export default function CreateBundle() {
             }
           }
           
-          // Update variant name when variant is selected
-          if (field === 'variantId' && item.productId) {
+          // Update variant names when variants are selected
+          if (field === 'variantIds' && item.productId) {
             const variants = variantsCache[item.productId];
             if (value && variants) {
-              const variant = variants.find(v => v.id === value);
-              if (variant) {
-                updatedItem.variantName = variant.name;
-              }
+              const selectedVariants = variants.filter(v => value.includes(v.id));
+              updatedItem.variantNames = selectedVariants.map(v => v.name);
             } else {
-              updatedItem.variantName = undefined;
+              updatedItem.variantNames = [];
             }
           }
           
@@ -480,25 +748,12 @@ export default function CreateBundle() {
 
                           {item.productId && variantsCache[item.productId]?.length > 0 && (
                             <div className="flex-1">
-                              <Label className="text-xs">Variant (Optional)</Label>
-                              <Select
-                                value={item.variantId || 'none'}
-                                onValueChange={(value) => 
-                                  handleItemChange(item.id, 'variantId', value === 'none' ? undefined : value)
-                                }
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="No variant" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="none">No variant</SelectItem>
-                                  {variantsCache[item.productId].map(variant => (
-                                    <SelectItem key={variant.id} value={variant.id}>
-                                      {variant.name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              <Label className="text-xs">Variants (Optional)</Label>
+                              <VariantSelector
+                                variants={variantsCache[item.productId]}
+                                selectedIds={item.variantIds || []}
+                                onChange={(ids) => handleItemChange(item.id, 'variantIds', ids)}
+                              />
                             </div>
                           )}
 
@@ -529,14 +784,22 @@ export default function CreateBundle() {
                         </div>
 
                         {item.productName && (
-                          <div className="flex items-center justify-between text-sm bg-muted px-3 py-2 rounded">
-                            <span className="font-medium">
-                              {item.productName}
-                              {item.variantName && ` - ${item.variantName}`}
-                            </span>
-                            <span className="text-muted-foreground">
-                              {item.quantity} × CZK {item.priceCzk.toFixed(2)} / EUR {item.priceEur.toFixed(2)}
-                            </span>
+                          <div className="text-sm bg-muted px-3 py-2 rounded space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium">
+                                {item.productName}
+                              </span>
+                              <span className="text-muted-foreground">
+                                {item.quantity} × CZK {item.priceCzk.toFixed(2)} / EUR {item.priceEur.toFixed(2)}
+                              </span>
+                            </div>
+                            {item.variantNames && item.variantNames.length > 0 && (
+                              <div className="text-xs text-muted-foreground">
+                                Variants: {item.variantNames.length > 3 
+                                  ? `${item.variantNames.slice(0, 3).join(', ')}... (+${item.variantNames.length - 3} more)`
+                                  : item.variantNames.join(', ')}
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
