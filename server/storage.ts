@@ -7,6 +7,8 @@ import {
   supplierFiles,
   products,
   productVariants,
+  productBundles,
+  bundleItems,
   customers,
   customerPrices,
   orders,
@@ -36,6 +38,10 @@ import {
   type InsertProduct,
   type ProductVariant,
   type InsertProductVariant,
+  type ProductBundle,
+  type InsertProductBundle,
+  type BundleItem,
+  type InsertBundleItem,
   type Customer,
   type InsertCustomer,
   type CustomerPrice,
@@ -214,6 +220,21 @@ export interface IStorage {
   createSale(sale: InsertSale): Promise<Sale>;
   updateSale(id: string, sale: Partial<InsertSale>): Promise<Sale>;
   deleteSale(id: string): Promise<void>;
+
+  // Product Bundles
+  getBundles(): Promise<ProductBundle[]>;
+  getBundleById(id: string): Promise<ProductBundle | undefined>;
+  createBundle(bundle: InsertProductBundle): Promise<ProductBundle>;
+  updateBundle(id: string, bundle: Partial<InsertProductBundle>): Promise<ProductBundle>;
+  deleteBundle(id: string): Promise<void>;
+  generateBundleId(): Promise<string>;
+
+  // Bundle Items
+  getBundleItems(bundleId: string): Promise<BundleItem[]>;
+  createBundleItem(item: InsertBundleItem): Promise<BundleItem>;
+  updateBundleItem(id: string, item: Partial<InsertBundleItem>): Promise<BundleItem>;
+  deleteBundleItem(id: string): Promise<void>;
+  deleteBundleItems(bundleId: string): Promise<void>;
 
   // Settings
   getSettings(): Promise<Setting[]>;
@@ -1695,6 +1716,89 @@ export class DatabaseStorage implements IStorage {
 
   async deleteAllSales(): Promise<void> {
     await db.delete(sales);
+  }
+
+  // Product Bundles
+  async getBundles(): Promise<ProductBundle[]> {
+    return await db.select().from(productBundles).where(eq(productBundles.isActive, true)).orderBy(desc(productBundles.createdAt));
+  }
+
+  async getBundleById(id: string): Promise<ProductBundle | undefined> {
+    const [bundle] = await db.select().from(productBundles).where(eq(productBundles.id, id));
+    return bundle;
+  }
+
+  async createBundle(bundle: InsertProductBundle): Promise<ProductBundle> {
+    const bundleId = await this.generateBundleId();
+    const [newBundle] = await db.insert(productBundles).values({
+      ...bundle,
+      bundleId
+    }).returning();
+    return newBundle;
+  }
+
+  async updateBundle(id: string, bundle: Partial<InsertProductBundle>): Promise<ProductBundle> {
+    const [updatedBundle] = await db
+      .update(productBundles)
+      .set({
+        ...bundle,
+        updatedAt: new Date()
+      })
+      .where(eq(productBundles.id, id))
+      .returning();
+    return updatedBundle;
+  }
+
+  async deleteBundle(id: string): Promise<void> {
+    await db.update(productBundles)
+      .set({ isActive: false })
+      .where(eq(productBundles.id, id));
+  }
+
+  async generateBundleId(): Promise<string> {
+    // Get the last bundle ID
+    const lastBundle = await db
+      .select()
+      .from(productBundles)
+      .orderBy(desc(productBundles.createdAt))
+      .limit(1);
+    
+    let nextNumber = 1;
+    if (lastBundle.length > 0 && lastBundle[0].bundleId) {
+      const match = lastBundle[0].bundleId.match(/BDL-(\d+)/);
+      if (match) {
+        nextNumber = parseInt(match[1]) + 1;
+      }
+    }
+    
+    return `BDL-${String(nextNumber).padStart(4, '0')}`;
+  }
+
+  // Bundle Items
+  async getBundleItems(bundleId: string): Promise<BundleItem[]> {
+    return await db.select().from(bundleItems).where(eq(bundleItems.bundleId, bundleId));
+  }
+
+  async createBundleItem(item: InsertBundleItem): Promise<BundleItem> {
+    const [newItem] = await db.insert(bundleItems).values(item).returning();
+    return newItem;
+  }
+
+  async updateBundleItem(id: string, item: Partial<InsertBundleItem>): Promise<BundleItem> {
+    const [updatedItem] = await db
+      .update(bundleItems)
+      .set(item)
+      .where(eq(bundleItems.id, id))
+      .returning();
+    return updatedItem;
+  }
+
+  async deleteBundleItem(id: string): Promise<void> {
+    await db.delete(bundleItems).where(eq(bundleItems.id, id));
+  }
+
+  async deleteBundleItems(bundleId: string): Promise<void> {
+    await db.delete(bundleItems).where(eq(bundleItems.bundleId, bundleId));
   }
 
   // Settings

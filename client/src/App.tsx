@@ -16,6 +16,7 @@ import AllInventory from "@/pages/Inventory/AllInventory";
 import AddProduct from "@/pages/Inventory/AddProduct";
 import EditProduct from "@/pages/Inventory/EditProduct";
 import ProductDetails from "@/pages/Products/ProductDetails";
+import Bundles from "@/pages/Inventory/Bundles";
 import AllWarehouses from "@/pages/Warehouse/AllWarehouses";
 import AddWarehouse from "@/pages/Warehouse/AddWarehouse";
 import EditWarehouse from "@/pages/Warehouse/EditWarehouse";
@@ -63,6 +64,7 @@ function Router() {
         <Route path="/orders/:id" component={OrderDetails} />
         <Route path="/inventory" component={AllInventory} />
         <Route path="/inventory/products" component={AllInventory} />
+        <Route path="/inventory/bundles" component={Bundles} />
         <Route path="/inventory/products/:id" component={ProductDetails} />
         <Route path="/products/:id" component={ProductDetails} />
         <Route path="/inventory/add" component={AddProduct} />

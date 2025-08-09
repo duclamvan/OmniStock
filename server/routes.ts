@@ -738,6 +738,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Product Bundles endpoints
+  app.get('/api/bundles', async (req, res) => {
+    try {
+      const bundles = await storage.getBundles();
+      res.json(bundles);
+    } catch (error) {
+      console.error("Error fetching bundles:", error);
+      res.status(500).json({ message: "Failed to fetch bundles" });
+    }
+  });
+
+  app.get('/api/bundles/:id', async (req, res) => {
+    try {
+      const bundle = await storage.getBundleById(req.params.id);
+      if (!bundle) {
+        return res.status(404).json({ message: "Bundle not found" });
+      }
+      res.json(bundle);
+    } catch (error) {
+      console.error("Error fetching bundle:", error);
+      res.status(500).json({ message: "Failed to fetch bundle" });
+    }
+  });
+
+  app.get('/api/bundles/:id/items', async (req, res) => {
+    try {
+      const items = await storage.getBundleItems(req.params.id);
+      res.json(items);
+    } catch (error) {
+      console.error("Error fetching bundle items:", error);
+      res.status(500).json({ message: "Failed to fetch bundle items" });
+    }
+  });
+
+  app.post('/api/bundles', async (req: any, res) => {
+    try {
+      const { items, ...bundleData } = req.body;
+      const bundle = await storage.createBundle(bundleData);
+      
+      // Create bundle items
+      if (items && Array.isArray(items)) {
+        for (const item of items) {
+          await storage.createBundleItem({
+            ...item,
+            bundleId: bundle.id
+          });
+        }
+      }
+      
+      res.json(bundle);
+    } catch (error) {
+      console.error("Error creating bundle:", error);
+      res.status(500).json({ message: "Failed to create bundle" });
+    }
+  });
+
+  app.put('/api/bundles/:id', async (req: any, res) => {
+    try {
+      const { items, ...bundleData } = req.body;
+      const updatedBundle = await storage.updateBundle(req.params.id, bundleData);
+      
+      // Update bundle items
+      if (items && Array.isArray(items)) {
+        // Delete existing items
+        await storage.deleteBundleItems(req.params.id);
+        
+        // Create new items
+        for (const item of items) {
+          await storage.createBundleItem({
+            ...item,
+            bundleId: req.params.id
+          });
+        }
+      }
+      
+      res.json(updatedBundle);
+    } catch (error) {
+      console.error("Error updating bundle:", error);
+      res.status(500).json({ message: "Failed to update bundle" });
+    }
+  });
+
+  app.delete('/api/bundles/:id', async (req, res) => {
+    try {
+      await storage.deleteBundle(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting bundle:", error);
+      res.status(500).json({ message: "Failed to delete bundle" });
+    }
+  });
+
   // Products endpoints
   app.get('/api/products', async (req, res) => {
     try {

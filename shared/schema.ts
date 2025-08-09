@@ -167,6 +167,34 @@ export const productVariants = pgTable("product_variants", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Product Bundles
+export const productBundles = pgTable("product_bundles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  bundleId: varchar("bundle_id", { length: 50 }).unique().notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  sku: varchar("sku", { length: 100 }).unique(),
+  isActive: boolean("is_active").default(true),
+  priceCzk: decimal("price_czk", { precision: 12, scale: 2 }),
+  priceEur: decimal("price_eur", { precision: 12, scale: 2 }),
+  discountPercentage: decimal("discount_percentage", { precision: 5, scale: 2 }).default('0'), // Discount from sum of components
+  imageUrl: varchar("image_url", { length: 500 }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Bundle Items (components of a bundle)
+export const bundleItems = pgTable("bundle_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  bundleId: varchar("bundle_id").references(() => productBundles.id, { onDelete: 'cascade' }).notNull(),
+  productId: varchar("product_id").references(() => products.id),
+  variantId: varchar("variant_id").references(() => productVariants.id),
+  quantity: integer("quantity").notNull().default(1),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Customers
 export const customers = pgTable("customers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -566,6 +594,8 @@ export const insertReturnItemSchema = createInsertSchema(returnItems).omit({ id:
 export const insertExpenseSchema = createInsertSchema(expenses).omit({ id: true, createdAt: true, updatedAt: true }).extend({
   totalCost: z.coerce.string(),
 });
+export const insertProductBundleSchema = createInsertSchema(productBundles).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertBundleItemSchema = createInsertSchema(bundleItems).omit({ id: true, createdAt: true });
 export const insertPreOrderSchema = createInsertSchema(preOrders).omit({ id: true, createdAt: true });
 export const insertUserActivitySchema = createInsertSchema(userActivities).omit({ id: true, createdAt: true });
 export const insertSettingSchema = createInsertSchema(settings).omit({ id: true, updatedAt: true });
@@ -607,6 +637,10 @@ export type ReturnItem = typeof returnItems.$inferSelect;
 export type InsertReturnItem = z.infer<typeof insertReturnItemSchema>;
 export type Expense = typeof expenses.$inferSelect;
 export type InsertExpense = z.infer<typeof insertExpenseSchema>;
+export type ProductBundle = typeof productBundles.$inferSelect;
+export type InsertProductBundle = z.infer<typeof insertProductBundleSchema>;
+export type BundleItem = typeof bundleItems.$inferSelect;
+export type InsertBundleItem = z.infer<typeof insertBundleItemSchema>;
 export type PreOrder = typeof preOrders.$inferSelect;
 export type InsertPreOrder = z.infer<typeof insertPreOrderSchema>;
 export type UserActivity = typeof userActivities.$inferSelect;
