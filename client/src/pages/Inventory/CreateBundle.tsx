@@ -60,12 +60,14 @@ interface BundleFormData {
   name: string;
   description: string;
   sku: string;
-  pricingMode: 'percentage' | 'fixed' | 'per_item' | 'manual';
+  pricingMode: 'percentage' | 'fixed' | 'per_item' | 'set_per_item' | 'manual';
   discountPercentage: string;
   discountFixedCzk: string;
   discountFixedEur: string;
   perItemDiscountCzk: string;
   perItemDiscountEur: string;
+  setPerItemPriceCzk: string;
+  setPerItemPriceEur: string;
   priceCzk: string;
   priceEur: string;
   notes: string;
@@ -325,6 +327,8 @@ export default function CreateBundle() {
     discountFixedEur: '',
     perItemDiscountCzk: '',
     perItemDiscountEur: '',
+    setPerItemPriceCzk: '',
+    setPerItemPriceEur: '',
     priceCzk: '',
     priceEur: '',
     notes: '',
@@ -635,6 +639,18 @@ export default function CreateBundle() {
         return {
           czk: Math.max(0, baseCzk - (perItemCzk * totalItems)),
           eur: Math.max(0, baseEur - (perItemEur * totalItems))
+        };
+      }
+      case 'set_per_item': {
+        const setPriceCzk = parseFloat(formData.setPerItemPriceCzk || '0');
+        const setPriceEur = parseFloat(formData.setPerItemPriceEur || '0');
+        const totalItems = formData.items.reduce((sum, item) => {
+          const variantCount = item.variantIds?.length || 1;
+          return sum + (item.quantity * variantCount);
+        }, 0);
+        return {
+          czk: setPriceCzk * totalItems,
+          eur: setPriceEur * totalItems
         };
       }
       case 'manual': {
@@ -1012,7 +1028,7 @@ export default function CreateBundle() {
                 <Label>Pricing Mode</Label>
                 <Select
                   value={formData.pricingMode}
-                  onValueChange={(value: 'percentage' | 'fixed' | 'per_item' | 'manual') => 
+                  onValueChange={(value: 'percentage' | 'fixed' | 'per_item' | 'set_per_item' | 'manual') => 
                     setFormData(prev => ({ ...prev, pricingMode: value }))
                   }
                 >
@@ -1023,6 +1039,7 @@ export default function CreateBundle() {
                     <SelectItem value="percentage">Percentage Discount</SelectItem>
                     <SelectItem value="fixed">Fixed Amount Discount</SelectItem>
                     <SelectItem value="per_item">Discount Per Item</SelectItem>
+                    <SelectItem value="set_per_item">Set Price Per Item</SelectItem>
                     <SelectItem value="manual">Set Manual Price</SelectItem>
                   </SelectContent>
                 </Select>
@@ -1112,6 +1129,48 @@ export default function CreateBundle() {
                 </div>
               )}
 
+              {formData.pricingMode === 'set_per_item' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="setPriceCzk">Price Per Item CZK</Label>
+                    <Input
+                      id="setPriceCzk"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.setPerItemPriceCzk}
+                      onChange={(e) => setFormData(prev => ({ ...prev, setPerItemPriceCzk: e.target.value }))}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="setPriceEur">Price Per Item EUR</Label>
+                    <Input
+                      id="setPriceEur"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.setPerItemPriceEur}
+                      onChange={(e) => setFormData(prev => ({ ...prev, setPerItemPriceEur: e.target.value }))}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="col-span-2 space-y-2">
+                    <p className="text-xs text-muted-foreground">
+                      Set a fixed price for each item unit (quantity × variants)
+                    </p>
+                    {formData.items.length > 0 && (
+                      <p className="text-xs text-green-600 dark:text-green-400">
+                        Total items: {formData.items.reduce((sum, item) => {
+                          const variantCount = item.variantIds?.length || 1;
+                          return sum + (item.quantity * variantCount);
+                        }, 0)} units
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {formData.pricingMode === 'manual' && (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -1156,6 +1215,7 @@ export default function CreateBundle() {
                         {formData.pricingMode === 'percentage' && `After ${formData.discountPercentage}% discount`}
                         {formData.pricingMode === 'fixed' && `After fixed discount`}
                         {formData.pricingMode === 'per_item' && `With per-item discount`}
+                        {formData.pricingMode === 'set_per_item' && `Fixed price per item`}
                         {formData.pricingMode === 'manual' && `Manual pricing`}
                       </p>
                     </div>
