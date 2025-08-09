@@ -247,16 +247,18 @@ export default function OrderDetails() {
               {/* Order Status Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    className="h-auto p-0 hover:bg-transparent"
+                  <button 
+                    className="inline-flex items-center focus:outline-none"
                     disabled={updateOrderStatusMutation.isPending}
                   >
-                    <Badge variant={statusVariant} className="cursor-pointer">
+                    <Badge 
+                      variant={statusVariant} 
+                      className="cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1"
+                    >
                       {statusText}
-                      <ChevronDown className="ml-1 h-3 w-3" />
+                      <ChevronDown className="h-3 w-3" />
                     </Badge>
-                  </Button>
+                  </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
                   <DropdownMenuItem 
@@ -297,16 +299,18 @@ export default function OrderDetails() {
               {/* Payment Status Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    className="h-auto p-0 hover:bg-transparent"
+                  <button 
+                    className="inline-flex items-center focus:outline-none"
                     disabled={updatePaymentStatusMutation.isPending}
                   >
-                    <Badge variant={paymentStatusVariant} className="cursor-pointer">
+                    <Badge 
+                      variant={paymentStatusVariant} 
+                      className="cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1"
+                    >
                       {paymentStatusText}
-                      <ChevronDown className="ml-1 h-3 w-3" />
+                      <ChevronDown className="h-3 w-3" />
                     </Badge>
-                  </Button>
+                  </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
                   <DropdownMenuItem 
