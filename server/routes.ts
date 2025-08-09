@@ -1541,12 +1541,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             productName: item.productName,
             sku: item.sku,
             quantity: item.quantity,
-            unitPrice: item.price.toString(),
-            appliedPrice: item.price.toString(),
+            unitPrice: String(item.price || 0),
+            appliedPrice: String(item.price || 0),
             currency: orderDetail?.currency || 'CZK',
-            discount: item.discount?.toString() || '0',
-            tax: item.tax?.toString() || '0',
-            total: item.total.toString(),
+            discount: String(item.discount || 0),
+            tax: String(item.tax || 0),
+            total: String(item.total || 0),
           });
         }
       }
