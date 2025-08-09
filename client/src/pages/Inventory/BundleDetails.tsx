@@ -22,10 +22,7 @@ import {
   Box,
   Hash,
   DollarSign,
-  Percent,
-  ChevronRight,
-  ChevronDown,
-  Info
+  Percent
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
@@ -49,163 +46,6 @@ interface BundleWithItems extends Bundle {
     product: Product;
     variant?: ProductVariant;
   })[];
-}
-
-// Separate component for bundle item to handle state properly
-function BundleItemCard({ item, index }: { item: any; index: number }) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const unitPriceCzk = parseFloat(item.product.priceCzk || '0');
-  const unitPriceEur = parseFloat(item.product.priceEur || '0');
-  const subtotalCzk = unitPriceCzk * item.quantity;
-  const subtotalEur = unitPriceEur * item.quantity;
-  
-  return (
-    <div className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
-      <div className="p-4">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              <button
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="p-1 hover:bg-muted rounded transition-colors"
-              >
-                {isExpanded ? (
-                  <ChevronDown className="h-4 w-4" />
-                ) : (
-                  <ChevronRight className="h-4 w-4" />
-                )}
-              </button>
-              <h4 className="font-semibold text-lg">{item.product.name}</h4>
-              <Badge variant="outline" className="ml-auto">
-                <Hash className="mr-1 h-3 w-3" />
-                Qty: {item.quantity}
-              </Badge>
-            </div>
-            
-            <div className="ml-7 space-y-1">
-              {item.product.sku && (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">SKU:</span>
-                  <code className="text-xs bg-muted px-2 py-0.5 rounded">
-                    {item.product.sku}
-                  </code>
-                </div>
-              )}
-              
-              {item.variant && (
-                <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-950 rounded-md border border-blue-200 dark:border-blue-800">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Tag className="h-3 w-3 text-blue-600 dark:text-blue-400" />
-                    <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                      Variant: {item.variant.name || item.variant.size || item.variant.color || 'Custom Variant'}
-                    </p>
-                  </div>
-                  {item.variant.sku && (
-                    <p className="text-xs text-blue-700 dark:text-blue-300 ml-5">
-                      Variant SKU: {item.variant.sku}
-                    </p>
-                  )}
-                  {(item.variant.size || item.variant.color) && (
-                    <div className="flex gap-4 mt-2 ml-5">
-                      {item.variant.size && (
-                        <span className="text-xs text-blue-700 dark:text-blue-300">
-                          Size: {item.variant.size}
-                        </span>
-                      )}
-                      {item.variant.color && (
-                        <span className="text-xs text-blue-700 dark:text-blue-300">
-                          Color: {item.variant.color}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              <div className="mt-3 grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs text-muted-foreground">Unit Price</p>
-                  <p className="font-medium">{unitPriceCzk.toFixed(2)} Kč</p>
-                  <p className="text-xs text-muted-foreground">€{unitPriceEur.toFixed(2)}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-muted-foreground">Line Total</p>
-                  <p className="font-semibold text-green-600 dark:text-green-400">
-                    {subtotalCzk.toFixed(2)} Kč
-                  </p>
-                  <p className="text-xs text-green-600 dark:text-green-400">
-                    €{subtotalEur.toFixed(2)}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {isExpanded && (
-          <div className="mt-4 pt-4 border-t ml-7 space-y-3">
-            {item.product.description && (
-              <div>
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Description</p>
-                <p className="text-sm mt-1">{item.product.description}</p>
-              </div>
-            )}
-            
-            {item.notes && (
-              <div>
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Bundle Notes</p>
-                <p className="text-sm mt-1 italic">{item.notes}</p>
-              </div>
-            )}
-            
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {item.product.categoryId && (
-                <div>
-                  <p className="text-xs text-muted-foreground">Category</p>
-                  <p className="text-sm font-medium">{item.product.categoryId}</p>
-                </div>
-              )}
-              {item.product.warehouseId && (
-                <div>
-                  <p className="text-xs text-muted-foreground">Warehouse</p>
-                  <p className="text-sm font-medium">{item.product.warehouseId}</p>
-                </div>
-              )}
-              {item.product.barcode && (
-                <div>
-                  <p className="text-xs text-muted-foreground">Barcode</p>
-                  <p className="text-sm font-mono">{item.product.barcode}</p>
-                </div>
-              )}
-              {item.product.weight && (
-                <div>
-                  <p className="text-xs text-muted-foreground">Weight</p>
-                  <p className="text-sm font-medium">{item.product.weight} kg</p>
-                </div>
-              )}
-            </div>
-            
-            {item.product.importCostCzk && (
-              <div className="flex items-center gap-4 p-3 bg-muted/50 rounded">
-                <Info className="h-4 w-4 text-muted-foreground" />
-                <div className="flex-1">
-                  <p className="text-xs text-muted-foreground">Import Cost</p>
-                  <p className="text-sm">
-                    {parseFloat(item.product.importCostCzk || '0').toFixed(2)} Kč
-                    {item.product.importCostEur && (
-                      <span className="ml-2 text-muted-foreground">
-                        (€{parseFloat(item.product.importCostEur).toFixed(2)})
-                      </span>
-                    )}
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
 }
 
 export default function BundleDetails() {
@@ -523,7 +363,57 @@ export default function BundleDetails() {
             <CardContent>
               <div className="space-y-4">
                 {bundle.items.map((item, index) => (
-                  <BundleItemCard key={index} item={item} index={index} />
+                  <div key={index} className="border rounded-lg p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h4 className="font-semibold">{item.product.name}</h4>
+                          <Badge variant="outline">
+                            <Hash className="mr-1 h-3 w-3" />
+                            Qty: {item.quantity}
+                          </Badge>
+                        </div>
+                        
+                        {item.product.sku && (
+                          <p className="text-sm text-muted-foreground">
+                            SKU: {item.product.sku}
+                          </p>
+                        )}
+                        
+                        {item.variant && (
+                          <div className="mt-2 p-2 bg-muted rounded">
+                            <p className="text-sm font-medium">Variant: {item.variant.name}</p>
+                            {item.variant.sku && (
+                              <p className="text-xs text-muted-foreground">
+                                Variant SKU: {item.variant.sku}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        
+                        <div className="mt-2 grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-xs text-muted-foreground">Unit Price CZK</p>
+                            <p className="font-medium">{parseFloat(item.product.priceCzk || '0').toFixed(2)} Kč</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Unit Price EUR</p>
+                            <p className="font-medium">€{parseFloat(item.product.priceEur || '0').toFixed(2)}</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="text-right ml-4">
+                        <p className="text-xs text-muted-foreground">Subtotal</p>
+                        <p className="font-semibold">
+                          {(parseFloat(item.product.priceCzk || '0') * item.quantity).toFixed(2)} Kč
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          €{(parseFloat(item.product.priceEur || '0') * item.quantity).toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
             </CardContent>
