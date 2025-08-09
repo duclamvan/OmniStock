@@ -19,6 +19,7 @@ import ProductDetails from "@/pages/Products/ProductDetails";
 import Bundles from "@/pages/Inventory/SimpleBundles";
 import CreateBundle from "@/pages/Inventory/CreateBundle";
 import BundleDetails from "@/pages/Inventory/BundleDetails";
+import EditBundle from "@/pages/Inventory/EditBundle";
 import AllWarehouses from "@/pages/Warehouse/AllWarehouses";
 import AddWarehouse from "@/pages/Warehouse/AddWarehouse";
 import EditWarehouse from "@/pages/Warehouse/EditWarehouse";
@@ -68,6 +69,7 @@ function Router() {
         <Route path="/inventory/products" component={AllInventory} />
         <Route path="/inventory/bundles" component={Bundles} />
         <Route path="/inventory/bundles/create" component={CreateBundle} />
+        <Route path="/inventory/bundles/:id/edit" component={EditBundle} />
         <Route path="/inventory/bundles/:id" component={BundleDetails} />
         <Route path="/inventory/products/:id" component={ProductDetails} />
         <Route path="/products/:id" component={ProductDetails} />
