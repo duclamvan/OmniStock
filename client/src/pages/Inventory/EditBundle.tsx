@@ -841,25 +841,6 @@ export default function EditBundle() {
                                   {errors[`item_${item.id}`] && (
                                     <p className="text-sm text-destructive mt-1">{errors[`item_${item.id}`]}</p>
                                   )}
-                                  
-                                  {/* Show selected variants immediately below product */}
-                                  {item.variantIds && item.variantIds.length > 0 && item.variantNames && (
-                                    <div className="mt-2">
-                                      <p className="text-xs text-muted-foreground mb-1">Selected Variants:</p>
-                                      <div className="flex flex-wrap gap-1">
-                                        {item.variantNames.slice(0, 3).map((name, idx) => (
-                                          <Badge key={idx} variant="outline" className="text-xs">
-                                            {name}
-                                          </Badge>
-                                        ))}
-                                        {item.variantNames.length > 3 && (
-                                          <Badge variant="outline" className="text-xs">
-                                            +{item.variantNames.length - 3} more
-                                          </Badge>
-                                        )}
-                                      </div>
-                                    </div>
-                                  )}
                                 </div>
 
                                 <div>
