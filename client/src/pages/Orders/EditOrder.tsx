@@ -459,7 +459,7 @@ export default function EditOrder() {
       }
       
       console.log('Updating order with customerId:', data.customerId);
-      await apiRequest('PUT', `/api/orders/${id}`, data);
+      await apiRequest('PATCH', `/api/orders/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
