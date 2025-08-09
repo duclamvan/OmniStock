@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { ArrowLeft, Plus, X, Package, Save, AlertCircle, Check, Loader2, Search, CheckSquare, Square, Hash } from 'lucide-react';
+import { ArrowLeft, Plus, X, Package, Save, AlertCircle, Check, Loader2, Search, CheckSquare, Square, Hash, ChevronDown, ChevronUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -308,6 +308,7 @@ export default function CreateBundle() {
   const [activeTab, setActiveTab] = useState('details');
   const [variantsCache, setVariantsCache] = useState<Record<string, ProductVariant[]>>({});
   const [loadingVariants, setLoadingVariants] = useState<Record<string, boolean>>({});
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
   
   const [formData, setFormData] = useState<BundleFormData>({
     name: '',
@@ -485,6 +486,41 @@ export default function CreateBundle() {
       ...prev,
       items: prev.items.filter(item => item.id !== itemId)
     }));
+    // Clean up expanded state
+    setExpandedItems(prev => {
+      const newExpanded = { ...prev };
+      delete newExpanded[itemId];
+      return newExpanded;
+    });
+  };
+
+  const handleRemoveVariant = (itemId: string, variantId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      items: prev.items.map(item => {
+        if (item.id === itemId && item.variantIds) {
+          const newVariantIds = item.variantIds.filter(id => id !== variantId);
+          const variants = variantsCache[item.productId];
+          const newVariantNames = variants
+            ?.filter(v => newVariantIds.includes(v.id))
+            .map(v => v.name) || [];
+          
+          return {
+            ...item,
+            variantIds: newVariantIds,
+            variantNames: newVariantNames
+          };
+        }
+        return item;
+      })
+    }));
+  };
+
+  const toggleItemExpanded = (itemId: string) => {
+    setExpandedItems(prev => ({
+      ...prev,
+      [itemId]: !prev[itemId]
+    }));
   };
 
   const handleItemChange = (itemId: string, field: keyof BundleItem, value: any) => {
@@ -542,8 +578,9 @@ export default function CreateBundle() {
     let totalEur = 0;
 
     formData.items.forEach(item => {
-      totalCzk += item.priceCzk * item.quantity;
-      totalEur += item.priceEur * item.quantity;
+      const variantMultiplier = item.variantIds?.length || 1;
+      totalCzk += item.priceCzk * item.quantity * variantMultiplier;
+      totalEur += item.priceEur * item.quantity * variantMultiplier;
     });
 
     return { totalCzk, totalEur };
@@ -784,7 +821,7 @@ export default function CreateBundle() {
                         </div>
 
                         {item.productName && (
-                          <div className="text-sm bg-muted px-3 py-2 rounded space-y-1">
+                          <div className="text-sm bg-muted px-3 py-2 rounded space-y-2">
                             <div className="flex items-center justify-between">
                               <span className="font-medium">
                                 {item.productName}
@@ -793,11 +830,62 @@ export default function CreateBundle() {
                                 {item.quantity} × CZK {item.priceCzk.toFixed(2)} / EUR {item.priceEur.toFixed(2)}
                               </span>
                             </div>
-                            {item.variantNames && item.variantNames.length > 0 && (
-                              <div className="text-xs text-muted-foreground">
-                                Variants: {item.variantNames.length > 3 
-                                  ? `${item.variantNames.slice(0, 3).join(', ')}... (+${item.variantNames.length - 3} more)`
-                                  : item.variantNames.join(', ')}
+                            {item.variantIds && item.variantIds.length > 0 && (
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs text-muted-foreground">
+                                    {item.variantIds.length} variant{item.variantIds.length !== 1 ? 's' : ''} selected
+                                  </span>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 px-2"
+                                    onClick={() => toggleItemExpanded(item.id)}
+                                  >
+                                    {expandedItems[item.id] ? (
+                                      <>
+                                        <ChevronUp className="h-3 w-3 mr-1" />
+                                        Hide
+                                      </>
+                                    ) : (
+                                      <>
+                                        <ChevronDown className="h-3 w-3 mr-1" />
+                                        Show
+                                      </>
+                                    )}
+                                  </Button>
+                                </div>
+                                
+                                {expandedItems[item.id] && (
+                                  <div className="space-y-1 pl-2 border-l-2 border-muted-foreground/20">
+                                    {item.variantIds.map((variantId, index) => {
+                                      const variant = variantsCache[item.productId]?.find(v => v.id === variantId);
+                                      return (
+                                        <div key={variantId} className="flex items-center justify-between py-1">
+                                          <span className="text-xs">
+                                            {variant?.name || `Variant ${index + 1}`}
+                                          </span>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-5 w-5 p-0"
+                                            onClick={() => handleRemoveVariant(item.id, variantId)}
+                                          >
+                                            <X className="h-3 w-3" />
+                                          </Button>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                                
+                                {!expandedItems[item.id] && item.variantNames && (
+                                  <div className="text-xs text-muted-foreground">
+                                    {item.variantNames.length > 3 
+                                      ? `${item.variantNames.slice(0, 3).join(', ')}... (+${item.variantNames.length - 3} more)`
+                                      : item.variantNames.join(', ')}
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
@@ -830,13 +918,13 @@ export default function CreateBundle() {
                         <div key={item.id} className="flex justify-between text-sm">
                           <span className="text-muted-foreground">
                             {item.productName}
-                            {item.variantName && ` - ${item.variantName}`}
+                            {item.variantIds && item.variantIds.length > 0 && ` (${item.variantIds.length} variants)`}
                             {' '}× {item.quantity}
                           </span>
                           <div className="text-right">
-                            <div>CZK {(item.priceCzk * item.quantity).toFixed(2)}</div>
+                            <div>CZK {(item.priceCzk * item.quantity * (item.variantIds?.length || 1)).toFixed(2)}</div>
                             <div className="text-xs text-muted-foreground">
-                              EUR {(item.priceEur * item.quantity).toFixed(2)}
+                              EUR {(item.priceEur * item.quantity * (item.variantIds?.length || 1)).toFixed(2)}
                             </div>
                           </div>
                         </div>
