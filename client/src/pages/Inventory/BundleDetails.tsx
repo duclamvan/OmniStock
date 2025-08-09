@@ -228,99 +228,109 @@ export default function BundleDetails() {
     : '0';
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <Link href="/inventory/bundles">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Package className="h-8 w-8" />
-              {bundle.name}
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Bundle Details
-            </p>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => duplicateMutation.mutate()}
-            disabled={duplicateMutation.isPending}
-          >
-            <Copy className="mr-2 h-4 w-4" />
-            Duplicate
-          </Button>
-          
-          <Link href={`/inventory/bundles/${id}/edit`}>
-            <Button variant="outline">
-              <Edit className="mr-2 h-4 w-4" />
-              Edit
-            </Button>
-          </Link>
-          
-          <Button
-            variant={bundle.isActive ? "secondary" : "default"}
-            onClick={() => toggleActiveMutation.mutate()}
-            disabled={toggleActiveMutation.isPending}
-          >
-            {bundle.isActive ? (
-              <>
-                <XCircle className="mr-2 h-4 w-4" />
-                Deactivate
-              </>
-            ) : (
-              <>
-                <CheckCircle className="mr-2 h-4 w-4" />
-                Activate
-              </>
-            )}
-          </Button>
-          
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive">
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete
+    <div className="container mx-auto p-4 sm:p-6 max-w-7xl">
+      {/* Mobile-First Header */}
+      <div className="mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          {/* Title Section */}
+          <div className="flex items-start sm:items-center gap-3">
+            <Link href="/inventory/bundles">
+              <Button variant="ghost" size="icon" className="shrink-0">
+                <ArrowLeft className="h-4 w-4" />
               </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete Bundle</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Are you sure you want to delete this bundle? This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => deleteMutation.mutate()}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+            </Link>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold flex items-center gap-2 flex-wrap">
+                <Package className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8 shrink-0" />
+                <span className="break-words">{bundle.name}</span>
+              </h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                Bundle Details
+              </p>
+            </div>
+          </div>
+          
+          {/* Action Buttons - Mobile Responsive */}
+          <div className="flex flex-wrap gap-2 ml-11 sm:ml-0">
+            {/* Mobile: Show icons only for secondary actions */}
+            <Button
+              variant="outline"
+              onClick={() => duplicateMutation.mutate()}
+              disabled={duplicateMutation.isPending}
+              size="sm"
+              className="sm:size-default"
+            >
+              <Copy className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Duplicate</span>
+            </Button>
+            
+            <Link href={`/inventory/bundles/${id}/edit`}>
+              <Button variant="outline" size="sm" className="sm:size-default">
+                <Edit className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Edit</span>
+              </Button>
+            </Link>
+            
+            <Button
+              variant={bundle.isActive ? "secondary" : "default"}
+              onClick={() => toggleActiveMutation.mutate()}
+              disabled={toggleActiveMutation.isPending}
+              size="sm"
+              className="sm:size-default"
+            >
+              {bundle.isActive ? (
+                <>
+                  <XCircle className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Deactivate</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Activate</span>
+                </>
+              )}
+            </Button>
+            
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm" className="sm:size-default">
+                  <Trash2 className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Delete</span>
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="max-w-[90vw] sm:max-w-lg">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Bundle</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete this bundle? This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+                  <AlertDialogCancel className="w-full sm:w-auto">Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => deleteMutation.mutate()}
+                    className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Information */}
-        <div className="lg:col-span-2 space-y-6">
+      {/* Mobile-First Grid Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        {/* Main Information - Full width on mobile, 2/3 on desktop */}
+        <div className="order-2 lg:order-1 lg:col-span-2 space-y-4 sm:space-y-6">
           {/* Basic Info Card */}
           <Card>
-            <CardHeader>
-              <CardTitle>Bundle Information</CardTitle>
+            <CardHeader className="pb-3 sm:pb-6">
+              <CardTitle className="text-base sm:text-lg">Bundle Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Status</p>
                   <Badge 
@@ -396,25 +406,25 @@ export default function BundleDetails() {
 
           {/* Bundle Items Card */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Box className="h-5 w-5" />
+            <CardHeader className="pb-3 sm:pb-6">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                <Box className="h-4 w-4 sm:h-5 sm:w-5" />
                 Bundle Items ({bundle.items.length})
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
+            <CardContent className="p-3 sm:p-6">
+              <div className="space-y-3 sm:space-y-4">
                 {bundle.items.map((item, index) => {
                   const isExpanded = expandedItems.has(index);
                   const productVariants = item.productId ? allVariants[item.productId] || [] : [];
                   
                   return (
-                    <div key={index} className="border rounded-lg p-4">
-                      <div className="flex items-start justify-between">
+                    <div key={index} className="border rounded-lg p-3 sm:p-4">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h4 className="font-semibold">{item.product.name}</h4>
-                            <Badge variant="outline">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                            <h4 className="font-semibold text-sm sm:text-base">{item.product.name}</h4>
+                            <Badge variant="outline" className="w-fit">
                               <Hash className="mr-1 h-3 w-3" />
                               Qty: {item.quantity}
                             </Badge>
@@ -452,14 +462,14 @@ export default function BundleDetails() {
                             </div>
                           )}
                           
-                          <div className="mt-2 grid grid-cols-2 gap-4">
+                          <div className="mt-2 grid grid-cols-2 gap-2 sm:gap-4">
                             <div>
                               <p className="text-xs text-muted-foreground">Unit Price CZK</p>
-                              <p className="font-medium">{parseFloat(item.product.priceCzk || '0').toFixed(2)} Kč</p>
+                              <p className="text-sm sm:text-base font-medium">{parseFloat(item.product.priceCzk || '0').toFixed(2)} Kč</p>
                             </div>
                             <div>
                               <p className="text-xs text-muted-foreground">Unit Price EUR</p>
-                              <p className="font-medium">€{parseFloat(item.product.priceEur || '0').toFixed(2)}</p>
+                              <p className="text-sm sm:text-base font-medium">€{parseFloat(item.product.priceEur || '0').toFixed(2)}</p>
                             </div>
                           </div>
                           
@@ -511,12 +521,12 @@ export default function BundleDetails() {
                           )}
                         </div>
                         
-                        <div className="text-right ml-4">
+                        <div className="text-right sm:ml-4">
                           <p className="text-xs text-muted-foreground">Subtotal</p>
-                          <p className="font-semibold">
+                          <p className="text-sm sm:text-base font-semibold">
                             {(parseFloat(item.product.priceCzk || '0') * item.quantity).toFixed(2)} Kč
                           </p>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-xs sm:text-sm text-muted-foreground">
                             €{(parseFloat(item.product.priceEur || '0') * item.quantity).toFixed(2)}
                           </p>
                         </div>
@@ -529,33 +539,33 @@ export default function BundleDetails() {
           </Card>
         </div>
 
-        {/* Pricing Sidebar */}
-        <div className="space-y-6">
+        {/* Pricing Sidebar - Shows first on mobile, last on desktop */}
+        <div className="order-1 lg:order-2 space-y-4 sm:space-y-6">
           {/* Pricing Card */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
+            <CardHeader className="pb-3 sm:pb-6">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                <DollarSign className="h-4 w-4 sm:h-5 sm:w-5" />
                 Pricing
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="p-3 sm:p-6 space-y-4">
               {/* Base Price */}
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Base Price (Sum of Items)</p>
-                <p className="text-2xl font-bold">{basePrice.totalCzk.toFixed(2)} Kč</p>
-                <p className="text-sm text-muted-foreground">€{basePrice.totalEur.toFixed(2)}</p>
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Base Price (Sum of Items)</p>
+                <p className="text-lg sm:text-2xl font-bold">{basePrice.totalCzk.toFixed(2)} Kč</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">€{basePrice.totalEur.toFixed(2)}</p>
               </div>
               
               <Separator />
               
               {/* Bundle Price */}
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Bundle Price</p>
-                <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Bundle Price</p>
+                <p className="text-lg sm:text-2xl font-bold text-green-600 dark:text-green-400">
                   {parseFloat(bundle.priceCzk || '0').toFixed(2)} Kč
                 </p>
-                <p className="text-sm text-green-600 dark:text-green-400">
+                <p className="text-xs sm:text-sm text-green-600 dark:text-green-400">
                   €{parseFloat(bundle.priceEur || '0').toFixed(2)}
                 </p>
               </div>
@@ -564,13 +574,13 @@ export default function BundleDetails() {
               
               {/* Savings */}
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Customer Savings</p>
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Customer Savings</p>
                 <div className="flex items-center gap-2 mt-1">
-                  <Badge variant="default" className="bg-green-500">
+                  <Badge variant="default" className="bg-green-500 text-xs sm:text-sm">
                     {savingsPercentage}% OFF
                   </Badge>
                 </div>
-                <p className="text-sm mt-2">
+                <p className="text-xs sm:text-sm mt-2">
                   Save {savings.czk.toFixed(2)} Kč
                 </p>
                 <p className="text-xs text-muted-foreground">
@@ -594,29 +604,29 @@ export default function BundleDetails() {
 
           {/* Statistics Card */}
           <Card>
-            <CardHeader>
-              <CardTitle>Statistics</CardTitle>
+            <CardHeader className="pb-3 sm:pb-6">
+              <CardTitle className="text-base sm:text-lg">Statistics</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="p-3 sm:p-6 space-y-4">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Sold</p>
-                <p className="text-2xl font-bold">0</p>
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Total Sold</p>
+                <p className="text-lg sm:text-2xl font-bold">0</p>
                 <p className="text-xs text-muted-foreground">All time</p>
               </div>
               
               <Separator />
               
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Revenue</p>
-                <p className="text-lg font-bold">0.00 Kč</p>
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Total Revenue</p>
+                <p className="text-base sm:text-lg font-bold">0.00 Kč</p>
                 <p className="text-xs text-muted-foreground">€0.00</p>
               </div>
               
               <Separator />
               
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Profit Margin %</p>
-                <p className="text-2xl font-bold">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Profit Margin %</p>
+                <p className="text-lg sm:text-2xl font-bold">
                   {(() => {
                     const totalImportCostCzk = bundle.items.reduce((sum, item) => 
                       sum + (parseFloat(item.product.importCostCzk || '0') * item.quantity), 0
@@ -634,8 +644,8 @@ export default function BundleDetails() {
               <Separator />
               
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Net Profit</p>
-                <p className="text-lg font-bold">
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Net Profit</p>
+                <p className="text-base sm:text-lg font-bold">
                   {(() => {
                     const totalImportCostCzk = bundle.items.reduce((sum, item) => 
                       sum + (parseFloat(item.product.importCostCzk || '0') * item.quantity), 0
@@ -660,8 +670,8 @@ export default function BundleDetails() {
               <Separator />
               
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Bundle Items</p>
-                <p className="text-2xl font-bold">{bundle.items.reduce((sum, item) => sum + item.quantity, 0)}</p>
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Bundle Items</p>
+                <p className="text-lg sm:text-2xl font-bold">{bundle.items.reduce((sum, item) => sum + item.quantity, 0)}</p>
                 <p className="text-xs text-muted-foreground">{bundle.items.length} unique products</p>
               </div>
             </CardContent>
