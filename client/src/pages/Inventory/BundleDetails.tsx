@@ -22,7 +22,10 @@ import {
   Box,
   Hash,
   DollarSign,
-  Percent
+  Percent,
+  ChevronDown,
+  ChevronUp,
+  Palette
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
@@ -51,12 +54,53 @@ interface BundleWithItems extends Bundle {
 export default function BundleDetails() {
   const { id } = useParams();
   const [, navigate] = useLocation();
+  const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
 
   // Fetch bundle details
   const { data: bundle, isLoading, error } = useQuery<BundleWithItems>({
     queryKey: ['/api/bundles', id],
     enabled: !!id
   });
+
+  // Fetch all product variants for expanded items
+  const { data: allVariants = {} } = useQuery({
+    queryKey: ['/api/products/variants-by-products', bundle?.items.map(i => i.productId)],
+    queryFn: async () => {
+      if (!bundle) return {};
+      
+      const variantsByProduct: Record<string, any[]> = {};
+      
+      // Fetch variants for each product
+      for (const item of bundle.items) {
+        if (item.productId) {
+          try {
+            const response = await fetch(`/api/products/${item.productId}/variants`);
+            if (response.ok) {
+              const variants = await response.json();
+              variantsByProduct[item.productId] = variants;
+            }
+          } catch (error) {
+            console.error(`Failed to fetch variants for product ${item.productId}:`, error);
+          }
+        }
+      }
+      
+      return variantsByProduct;
+    },
+    enabled: !!bundle && bundle.items.length > 0
+  });
+
+  const toggleExpanded = (index: number) => {
+    setExpandedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(index)) {
+        newSet.delete(index);
+      } else {
+        newSet.add(index);
+      }
+      return newSet;
+    });
+  };
 
   // Delete bundle mutation
   const deleteMutation = useMutation({
@@ -362,59 +406,106 @@ export default function BundleDetails() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {bundle.items.map((item, index) => (
-                  <div key={index} className="border rounded-lg p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h4 className="font-semibold">{item.product.name}</h4>
-                          <Badge variant="outline">
-                            <Hash className="mr-1 h-3 w-3" />
-                            Qty: {item.quantity}
-                          </Badge>
+                {bundle.items.map((item, index) => {
+                  const isExpanded = expandedItems.has(index);
+                  const productVariants = item.productId ? allVariants[item.productId] || [] : [];
+                  
+                  return (
+                    <div key={index} className="border rounded-lg p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="font-semibold">{item.product.name}</h4>
+                            <Badge variant="outline">
+                              <Hash className="mr-1 h-3 w-3" />
+                              Qty: {item.quantity}
+                            </Badge>
+                          </div>
+                          
+                          {item.product.sku && (
+                            <p className="text-sm text-muted-foreground">
+                              SKU: {item.product.sku}
+                            </p>
+                          )}
+                          
+                          {item.variant && (
+                            <div className="mt-2 p-2 bg-muted rounded">
+                              <p className="text-sm font-medium">Variant: {item.variant.name}</p>
+                              {item.variant.sku && (
+                                <p className="text-xs text-muted-foreground">
+                                  Variant SKU: {item.variant.sku}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                          
+                          <div className="mt-2 grid grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-xs text-muted-foreground">Unit Price CZK</p>
+                              <p className="font-medium">{parseFloat(item.product.priceCzk || '0').toFixed(2)} Kč</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">Unit Price EUR</p>
+                              <p className="font-medium">€{parseFloat(item.product.priceEur || '0').toFixed(2)}</p>
+                            </div>
+                          </div>
+                          
+                          {/* Color Variants Expandable Section */}
+                          {productVariants.length > 0 && (
+                            <div className="mt-3">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => toggleExpanded(index)}
+                                className="w-full justify-start text-sm"
+                              >
+                                <Palette className="mr-2 h-4 w-4" />
+                                View Color Variants ({productVariants.length})
+                                {isExpanded ? (
+                                  <ChevronUp className="ml-auto h-4 w-4" />
+                                ) : (
+                                  <ChevronDown className="ml-auto h-4 w-4" />
+                                )}
+                              </Button>
+                              
+                              {isExpanded && (
+                                <div className="mt-2 p-3 bg-muted/50 rounded-lg">
+                                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                                    {productVariants.map((variant: any, vIndex: number) => (
+                                      <div 
+                                        key={vIndex}
+                                        className="p-2 bg-background rounded border text-xs"
+                                      >
+                                        <p className="font-medium truncate" title={variant.name}>
+                                          {variant.name || `Color ${vIndex + 1}`}
+                                        </p>
+                                        {variant.sku && (
+                                          <p className="text-muted-foreground truncate" title={variant.sku}>
+                                            {variant.sku}
+                                          </p>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                         
-                        {item.product.sku && (
-                          <p className="text-sm text-muted-foreground">
-                            SKU: {item.product.sku}
+                        <div className="text-right ml-4">
+                          <p className="text-xs text-muted-foreground">Subtotal</p>
+                          <p className="font-semibold">
+                            {(parseFloat(item.product.priceCzk || '0') * item.quantity).toFixed(2)} Kč
                           </p>
-                        )}
-                        
-                        {item.variant && (
-                          <div className="mt-2 p-2 bg-muted rounded">
-                            <p className="text-sm font-medium">Variant: {item.variant.name}</p>
-                            {item.variant.sku && (
-                              <p className="text-xs text-muted-foreground">
-                                Variant SKU: {item.variant.sku}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                        
-                        <div className="mt-2 grid grid-cols-2 gap-4">
-                          <div>
-                            <p className="text-xs text-muted-foreground">Unit Price CZK</p>
-                            <p className="font-medium">{parseFloat(item.product.priceCzk || '0').toFixed(2)} Kč</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Unit Price EUR</p>
-                            <p className="font-medium">€{parseFloat(item.product.priceEur || '0').toFixed(2)}</p>
-                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            €{(parseFloat(item.product.priceEur || '0') * item.quantity).toFixed(2)}
+                          </p>
                         </div>
-                      </div>
-                      
-                      <div className="text-right ml-4">
-                        <p className="text-xs text-muted-foreground">Subtotal</p>
-                        <p className="font-semibold">
-                          {(parseFloat(item.product.priceCzk || '0') * item.quantity).toFixed(2)} Kč
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          €{(parseFloat(item.product.priceEur || '0') * item.quantity).toFixed(2)}
-                        </p>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
