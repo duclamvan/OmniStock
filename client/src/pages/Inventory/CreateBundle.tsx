@@ -60,9 +60,14 @@ interface BundleFormData {
   name: string;
   description: string;
   sku: string;
+  pricingMode: 'percentage' | 'fixed' | 'per_item' | 'manual';
+  discountPercentage: string;
+  discountFixedCzk: string;
+  discountFixedEur: string;
+  perItemDiscountCzk: string;
+  perItemDiscountEur: string;
   priceCzk: string;
   priceEur: string;
-  discountPercentage: string;
   notes: string;
   items: BundleItem[];
 }
@@ -314,9 +319,14 @@ export default function CreateBundle() {
     name: '',
     description: '',
     sku: '',
+    pricingMode: 'percentage',
+    discountPercentage: '0',
+    discountFixedCzk: '',
+    discountFixedEur: '',
+    perItemDiscountCzk: '',
+    perItemDiscountEur: '',
     priceCzk: '',
     priceEur: '',
-    discountPercentage: '0',
     notes: '',
     items: []
   });
@@ -359,14 +369,26 @@ export default function CreateBundle() {
   // Create bundle mutation
   const createBundleMutation = useMutation({
     mutationFn: async (data: BundleFormData) => {
+      // Calculate final prices based on pricing mode
+      const discountedPrices = calculateDiscountedPrice(
+        calculateTotalPrice().totalCzk, 
+        calculateTotalPrice().totalEur
+      );
+      
       // Create the bundle
       const bundleData = {
         name: data.name,
         description: data.description || null,
         sku: data.sku || null,
-        priceCzk: data.priceCzk ? parseFloat(data.priceCzk) : null,
-        priceEur: data.priceEur ? parseFloat(data.priceEur) : null,
-        discountPercentage: data.discountPercentage ? parseFloat(data.discountPercentage) : 0,
+        priceCzk: data.pricingMode === 'manual' && data.priceCzk 
+          ? parseFloat(data.priceCzk) 
+          : discountedPrices.czk,
+        priceEur: data.pricingMode === 'manual' && data.priceEur 
+          ? parseFloat(data.priceEur) 
+          : discountedPrices.eur,
+        discountPercentage: data.pricingMode === 'percentage' 
+          ? parseFloat(data.discountPercentage || '0') 
+          : 0,
         notes: data.notes || null,
         isActive: true
       };
@@ -586,9 +608,46 @@ export default function CreateBundle() {
     return { totalCzk, totalEur };
   };
 
-  const calculateDiscountedPrice = (price: number) => {
-    const discount = parseFloat(formData.discountPercentage || '0');
-    return price * (1 - discount / 100);
+  const calculateDiscountedPrice = (baseCzk: number, baseEur: number) => {
+    switch (formData.pricingMode) {
+      case 'percentage': {
+        const discount = parseFloat(formData.discountPercentage || '0');
+        return {
+          czk: baseCzk * (1 - discount / 100),
+          eur: baseEur * (1 - discount / 100)
+        };
+      }
+      case 'fixed': {
+        const fixedCzk = parseFloat(formData.discountFixedCzk || '0');
+        const fixedEur = parseFloat(formData.discountFixedEur || '0');
+        return {
+          czk: Math.max(0, baseCzk - fixedCzk),
+          eur: Math.max(0, baseEur - fixedEur)
+        };
+      }
+      case 'per_item': {
+        const perItemCzk = parseFloat(formData.perItemDiscountCzk || '0');
+        const perItemEur = parseFloat(formData.perItemDiscountEur || '0');
+        const totalItems = formData.items.reduce((sum, item) => {
+          const variantCount = item.variantIds?.length || 1;
+          return sum + (item.quantity * variantCount);
+        }, 0);
+        return {
+          czk: Math.max(0, baseCzk - (perItemCzk * totalItems)),
+          eur: Math.max(0, baseEur - (perItemEur * totalItems))
+        };
+      }
+      case 'manual': {
+        const manualCzk = parseFloat(formData.priceCzk || '0');
+        const manualEur = parseFloat(formData.priceEur || '0');
+        return {
+          czk: manualCzk || baseCzk,
+          eur: manualEur || baseEur
+        };
+      }
+      default:
+        return { czk: baseCzk, eur: baseEur };
+    }
   };
 
   const totals = calculateTotalPrice();
@@ -948,81 +1007,171 @@ export default function CreateBundle() {
 
               <Separator />
 
-              {/* Bundle Discount */}
+              {/* Pricing Mode Selection */}
               <div>
-                <Label htmlFor="discount">Bundle Discount (%)</Label>
-                <Input
-                  id="discount"
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  value={formData.discountPercentage}
-                  onChange={(e) => setFormData(prev => ({ ...prev, discountPercentage: e.target.value }))}
-                  placeholder="0"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Discount applied to the total component value
-                </p>
+                <Label>Pricing Mode</Label>
+                <Select
+                  value={formData.pricingMode}
+                  onValueChange={(value: 'percentage' | 'fixed' | 'per_item' | 'manual') => 
+                    setFormData(prev => ({ ...prev, pricingMode: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="percentage">Percentage Discount</SelectItem>
+                    <SelectItem value="fixed">Fixed Amount Discount</SelectItem>
+                    <SelectItem value="per_item">Discount Per Item</SelectItem>
+                    <SelectItem value="manual">Set Manual Price</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
+              {/* Dynamic Pricing Fields Based on Mode */}
+              {formData.pricingMode === 'percentage' && (
+                <div>
+                  <Label htmlFor="discount">Bundle Discount (%)</Label>
+                  <Input
+                    id="discount"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    value={formData.discountPercentage}
+                    onChange={(e) => setFormData(prev => ({ ...prev, discountPercentage: e.target.value }))}
+                    placeholder="0"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Percentage discount applied to the total component value
+                  </p>
+                </div>
+              )}
+
+              {formData.pricingMode === 'fixed' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="fixedCzk">Fixed Discount CZK</Label>
+                    <Input
+                      id="fixedCzk"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.discountFixedCzk}
+                      onChange={(e) => setFormData(prev => ({ ...prev, discountFixedCzk: e.target.value }))}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="fixedEur">Fixed Discount EUR</Label>
+                    <Input
+                      id="fixedEur"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.discountFixedEur}
+                      onChange={(e) => setFormData(prev => ({ ...prev, discountFixedEur: e.target.value }))}
+                      placeholder="0"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1 col-span-2">
+                    Fixed amount to subtract from the total component value
+                  </p>
+                </div>
+              )}
+
+              {formData.pricingMode === 'per_item' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="perItemCzk">Discount Per Item CZK</Label>
+                    <Input
+                      id="perItemCzk"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.perItemDiscountCzk}
+                      onChange={(e) => setFormData(prev => ({ ...prev, perItemDiscountCzk: e.target.value }))}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="perItemEur">Discount Per Item EUR</Label>
+                    <Input
+                      id="perItemEur"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.perItemDiscountEur}
+                      onChange={(e) => setFormData(prev => ({ ...prev, perItemDiscountEur: e.target.value }))}
+                      placeholder="0"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1 col-span-2">
+                    Discount applied for each item unit (quantity × variants)
+                  </p>
+                </div>
+              )}
+
+              {formData.pricingMode === 'manual' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="manualCzk">Bundle Price CZK</Label>
+                    <Input
+                      id="manualCzk"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.priceCzk}
+                      onChange={(e) => setFormData(prev => ({ ...prev, priceCzk: e.target.value }))}
+                      placeholder={totals.totalCzk.toFixed(2)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="manualEur">Bundle Price EUR</Label>
+                    <Input
+                      id="manualEur"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.priceEur}
+                      onChange={(e) => setFormData(prev => ({ ...prev, priceEur: e.target.value }))}
+                      placeholder={totals.totalEur.toFixed(2)}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1 col-span-2">
+                    Set a custom price for the bundle
+                  </p>
+                </div>
+              )}
+
               {/* Suggested Price */}
-              {formData.items.length > 0 && parseFloat(formData.discountPercentage || '0') > 0 && (
+              {formData.items.length > 0 && (
                 <div className="p-4 bg-green-50 dark:bg-green-950 rounded-lg">
                   <div className="flex justify-between items-center">
                     <div>
                       <p className="font-semibold text-green-900 dark:text-green-100">
-                        Suggested Bundle Price
+                        Calculated Bundle Price
                       </p>
                       <p className="text-sm text-green-700 dark:text-green-300">
-                        After {formData.discountPercentage}% discount
+                        {formData.pricingMode === 'percentage' && `After ${formData.discountPercentage}% discount`}
+                        {formData.pricingMode === 'fixed' && `After fixed discount`}
+                        {formData.pricingMode === 'per_item' && `With per-item discount`}
+                        {formData.pricingMode === 'manual' && `Manual pricing`}
                       </p>
                     </div>
                     <div className="text-right">
                       <div className="text-lg font-bold text-green-900 dark:text-green-100">
-                        CZK {calculateDiscountedPrice(totals.totalCzk).toFixed(2)}
+                        CZK {calculateDiscountedPrice(totals.totalCzk, totals.totalEur).czk.toFixed(2)}
                       </div>
                       <div className="text-sm text-green-700 dark:text-green-300">
-                        EUR {calculateDiscountedPrice(totals.totalEur).toFixed(2)}
+                        EUR {calculateDiscountedPrice(totals.totalCzk, totals.totalEur).eur.toFixed(2)}
                       </div>
                     </div>
                   </div>
                 </div>
               )}
 
-              <Separator />
 
-              {/* Manual Price Override */}
-              <div className="space-y-4">
-                <h4 className="font-semibold">Manual Bundle Price (Optional)</h4>
-                <p className="text-sm text-muted-foreground">
-                  Override the suggested price with a custom amount
-                </p>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="priceCzk">Price CZK</Label>
-                    <Input
-                      id="priceCzk"
-                      type="number"
-                      step="0.01"
-                      value={formData.priceCzk}
-                      onChange={(e) => setFormData(prev => ({ ...prev, priceCzk: e.target.value }))}
-                      placeholder={calculateDiscountedPrice(totals.totalCzk).toFixed(2)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="priceEur">Price EUR</Label>
-                    <Input
-                      id="priceEur"
-                      type="number"
-                      step="0.01"
-                      value={formData.priceEur}
-                      onChange={(e) => setFormData(prev => ({ ...prev, priceEur: e.target.value }))}
-                      placeholder={calculateDiscountedPrice(totals.totalEur).toFixed(2)}
-                    />
-                  </div>
-                </div>
-              </div>
             </CardContent>
           </Card>
         </TabsContent>
