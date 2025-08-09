@@ -1,7 +1,7 @@
 # Overview
 Davie Supply is a comprehensive warehouse and order management system designed as a full-stack web application. Its primary purpose is to manage the complete order lifecycle from creation to fulfillment, track inventory, manage customers, and provide financial reporting with multi-currency support. Key capabilities include real-time Vietnamese diacritics search, customer-specific pricing system, and integration with external shipping APIs for order tracking. The business vision is to provide a robust, efficient platform for streamlined supply chain operations.
 
-## Recent Updates (Jan 9, 2025)
+## Recent Updates (Jan 10, 2025)
 - Fixed returns functionality by converting Drizzle queries to raw SQL due to internal Drizzle ORM errors with the returns table
 - Returns endpoints (/api/returns and /api/returns/:id) now working properly with complete data retrieval
 - Added expand/collapse all switch button for Orders table with localStorage persistence
@@ -35,6 +35,9 @@ Davie Supply is a comprehensive warehouse and order management system designed a
   - Responsive typography with appropriate text sizes for all screen sizes
   - Touch-friendly interface with larger tap targets on mobile devices
   - Improved card padding and spacing for better mobile readability
+- Fixed Edit Bundle variant prefilling issue where variant names weren't displayed after loading
+  - Updated loadVariants function to update variant names after fetching from API
+  - Ensures selected variants are properly displayed when editing existing bundles
 
 # User Preferences
 Preferred communication style: Simple, everyday language.
