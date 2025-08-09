@@ -755,7 +755,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!bundle) {
         return res.status(404).json({ message: "Bundle not found" });
       }
-      res.json(bundle);
+      
+      // Fetch bundle items with product and variant details
+      const items = await storage.getBundleItems(req.params.id);
+      const itemsWithDetails = await Promise.all(items.map(async (item) => {
+        const product = await storage.getProductById(item.productId);
+        let variant = null;
+        if (item.variantId) {
+          const variants = await storage.getProductVariants(item.productId);
+          variant = variants.find(v => v.id === item.variantId);
+        }
+        return {
+          ...item,
+          product,
+          variant
+        };
+      }));
+      
+      res.json({
+        ...bundle,
+        items: itemsWithDetails
+      });
     } catch (error) {
       console.error("Error fetching bundle:", error);
       res.status(500).json({ message: "Failed to fetch bundle" });
@@ -827,6 +847,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting bundle:", error);
       res.status(500).json({ message: "Failed to delete bundle" });
+    }
+  });
+
+  // Add bundle items endpoint
+  app.post('/api/bundles/:id/items', async (req: any, res) => {
+    try {
+      const items = req.body;
+      const bundleId = req.params.id;
+      
+      if (!Array.isArray(items)) {
+        return res.status(400).json({ message: "Items must be an array" });
+      }
+      
+      for (const item of items) {
+        await storage.createBundleItem({
+          ...item,
+          bundleId
+        });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error adding bundle items:", error);
+      res.status(500).json({ message: "Failed to add bundle items" });
+    }
+  });
+
+  // Duplicate bundle endpoint
+  app.post('/api/bundles/:id/duplicate', async (req, res) => {
+    try {
+      const originalBundle = await storage.getBundleById(req.params.id);
+      if (!originalBundle) {
+        return res.status(404).json({ message: "Bundle not found" });
+      }
+      
+      // Create new bundle with duplicated data
+      const newBundleData = {
+        name: `${originalBundle.name} (Copy)`,
+        description: originalBundle.description,
+        sku: originalBundle.sku ? `${originalBundle.sku}-copy` : null,
+        priceCzk: originalBundle.priceCzk,
+        priceEur: originalBundle.priceEur,
+        discountPercentage: originalBundle.discountPercentage,
+        notes: originalBundle.notes,
+        isActive: false // Start as inactive
+      };
+      
+      const newBundle = await storage.createBundle(newBundleData);
+      
+      // Duplicate bundle items
+      const originalItems = await storage.getBundleItems(req.params.id);
+      for (const item of originalItems) {
+        await storage.createBundleItem({
+          bundleId: newBundle.id,
+          productId: item.productId,
+          variantId: item.variantId,
+          quantity: item.quantity
+        });
+      }
+      
+      res.json(newBundle);
+    } catch (error) {
+      console.error("Error duplicating bundle:", error);
+      res.status(500).json({ message: "Failed to duplicate bundle" });
+    }
+  });
+
+  // Update bundle status endpoint
+  app.patch('/api/bundles/:id', async (req: any, res) => {
+    try {
+      const updatedBundle = await storage.updateBundle(req.params.id, req.body);
+      res.json(updatedBundle);
+    } catch (error) {
+      console.error("Error updating bundle status:", error);
+      res.status(500).json({ message: "Failed to update bundle status" });
     }
   });
 

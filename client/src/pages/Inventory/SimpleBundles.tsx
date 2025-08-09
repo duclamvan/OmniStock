@@ -23,9 +23,7 @@ export default function SimpleBundles() {
   // Delete bundle mutation
   const deleteBundleMutation = useMutation({
     mutationFn: async (id: string) => {
-      await apiRequest(`/api/bundles/${id}`, {
-        method: 'DELETE'
-      });
+      await apiRequest('DELETE', `/api/bundles/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/bundles'] });
