@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Plus, Search, Edit, Trash2, Layers, Package, Eye } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Package, Eye } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -110,7 +110,7 @@ export default function SimpleBundles() {
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
-                    <CardTitle className="text-lg line-clamp-1">{bundle.name}</CardTitle>
+                    <CardTitle className="text-lg">{bundle.name}</CardTitle>
                     <div className="flex items-center gap-2 mt-1">
                       <p className="text-xs text-muted-foreground">{bundle.bundleId}</p>
                       {bundle.sku && (
@@ -121,10 +121,6 @@ export default function SimpleBundles() {
                       )}
                     </div>
                   </div>
-                  <Badge variant="secondary" className="ml-2">
-                    <Layers className="mr-1 h-3 w-3" />
-                    Bundle
-                  </Badge>
                 </div>
               </CardHeader>
               <CardContent>
