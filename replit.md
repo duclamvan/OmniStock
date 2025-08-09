@@ -12,6 +12,9 @@ Davie Supply is a comprehensive warehouse and order management system designed a
 - Database reseeded with proper pricing data (all products have priceCzk and priceEur)
 - Made shipping status and payment status changeable on order detail page with dropdown menus
 - Added real-time status update functionality with immediate UI feedback and toast notifications
+- Implemented comprehensive Product Bundles feature with standalone creation page
+- Added robust product variant support for bundles with dynamic loading
+- Created simplified bundle management UI with card-based layout and navigation to dedicated pages
 
 # User Preferences
 Preferred communication style: Simple, everyday language.
@@ -41,6 +44,7 @@ The schema supports a comprehensive e-commerce workflow, including core entities
 - **Warehouse Management**: Comprehensive warehouse management with details, file management via object storage, and proper navigation.
 - **Returns Management**: Complete returns management with listing, add/edit forms, details pages, and integration to create return tickets directly from order details.
 - **Expenses Management**: Redesigned expenses page with modern card layout, enhanced stats, visual status indicators, and streamlined add/edit expense forms with auto-generated IDs and real-time previews.
+- **Product Bundles**: Comprehensive bundle management system with standalone creation page, robust product variant support, dynamic pricing calculations with discount preview, and simplified card-based UI for managing bundled product offerings.
 - **Multi-Currency Support**: Supports five currencies (CZK, EUR, USD, VND, CNY) with simplified exchange rate conversion and utility functions.
 - **Search Functionality**: Real-time Vietnamese diacritics search with custom character normalization.
 - **Reusable Components**: Generic DataTable component with bulk selection, sorting, pagination, and bulk actions.
