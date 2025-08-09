@@ -397,10 +397,8 @@ export default function CreateBundle() {
         isActive: true
       };
       
-      const bundle = await apiRequest('/api/bundles', {
-        method: 'POST',
-        body: JSON.stringify(bundleData)
-      });
+      const bundleResponse = await apiRequest('POST', '/api/bundles', bundleData);
+      const bundle = await bundleResponse.json();
 
       // Create bundle items
       if (data.items.length > 0) {
@@ -423,10 +421,7 @@ export default function CreateBundle() {
           }));
         });
 
-        await apiRequest(`/api/bundles/${bundle.id}/items`, {
-          method: 'POST',
-          body: JSON.stringify(itemsData)
-        });
+        await apiRequest('POST', `/api/bundles/${bundle.id}/items`, itemsData);
       }
 
       return bundle;
