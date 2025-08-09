@@ -470,17 +470,22 @@ export default function BundleDetails() {
                               
                               {isExpanded && (
                                 <div className="mt-2 p-3 bg-muted/50 rounded-lg">
-                                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                                  <div className="max-h-48 overflow-y-auto space-y-1 pr-2">
                                     {productVariants.map((variant: any, vIndex: number) => (
                                       <div 
                                         key={vIndex}
-                                        className="p-2 bg-background rounded border text-xs"
+                                        className="flex items-center justify-between p-2 bg-background rounded border hover:bg-muted/50 transition-colors"
                                       >
-                                        <p className="font-medium truncate" title={variant.name}>
-                                          {variant.name || `Color ${vIndex + 1}`}
-                                        </p>
+                                        <div className="flex items-center gap-3">
+                                          <span className="text-xs font-medium text-muted-foreground w-8">
+                                            #{vIndex + 1}
+                                          </span>
+                                          <p className="text-sm font-medium">
+                                            {variant.name || `Color ${vIndex + 1}`}
+                                          </p>
+                                        </div>
                                         {variant.sku && (
-                                          <p className="text-muted-foreground truncate" title={variant.sku}>
+                                          <p className="text-xs text-muted-foreground">
                                             {variant.sku}
                                           </p>
                                         )}
