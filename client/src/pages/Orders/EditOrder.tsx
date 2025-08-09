@@ -349,8 +349,8 @@ export default function EditOrder() {
         priority: order.priority || 'medium',
         orderStatus: order.orderStatus || 'pending',
         paymentStatus: order.paymentStatus || 'pending',
-        paymentMethod: order.paymentMethod || '',
-        shippingMethod: order.shippingMethod || '',
+        paymentMethod: order.paymentMethod || undefined,
+        shippingMethod: order.shippingMethod || undefined,
         discountType: order.discountType || 'flat',
         discountValue: order.discountValue ? parseFloat(order.discountValue) : 0,
         taxRate: order.taxRate ? parseFloat(order.taxRate) : 0,
@@ -359,18 +359,19 @@ export default function EditOrder() {
         notes: order.notes || '',
       });
 
-      // Initialize order items
-      if (order.orderItems && order.orderItems.length > 0) {
-        setOrderItems(order.orderItems.map((item: any) => ({
+      // Initialize order items - check both 'items' and 'orderItems' for compatibility
+      const orderItems = order.items || order.orderItems;
+      if (orderItems && orderItems.length > 0) {
+        setOrderItems(orderItems.map((item: any) => ({
           id: item.id || Math.random().toString(36).substr(2, 9),
-          productId: item.productId,
-          productName: item.productName,
+          productId: item.productId || item.productId2 || '',
+          productName: item.productName || '',
           sku: item.sku || '',
-          quantity: item.quantity,
+          quantity: parseInt(item.quantity) || 1,
           price: parseFloat(item.price) || 0,
           discount: parseFloat(item.discount) || 0,
           tax: parseFloat(item.tax) || 0,
-          total: parseFloat(item.total) || (item.quantity * parseFloat(item.price)),
+          total: parseFloat(item.total) || (parseInt(item.quantity) * parseFloat(item.price)),
         })));
       }
 
