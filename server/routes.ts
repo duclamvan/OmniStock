@@ -801,8 +801,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (items && Array.isArray(items)) {
         for (const item of items) {
           await storage.createBundleItem({
-            ...item,
-            bundleId: bundle.id
+            bundleId: bundle.id,
+            productId: item.productId || null,
+            variantId: item.productVariantId || item.variantId || null,
+            quantity: item.quantity || 1,
+            notes: item.notes || null
           });
         }
       }
@@ -827,8 +830,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Create new items
         for (const item of items) {
           await storage.createBundleItem({
-            ...item,
-            bundleId: req.params.id
+            bundleId: req.params.id,
+            productId: item.productId || null,
+            variantId: item.productVariantId || item.variantId || null,
+            quantity: item.quantity || 1,
+            notes: item.notes || null
           });
         }
       }
@@ -862,8 +868,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       for (const item of items) {
         await storage.createBundleItem({
-          ...item,
-          bundleId
+          bundleId,
+          productId: item.productId || null,
+          variantId: item.productVariantId || item.variantId || null,
+          quantity: item.quantity || 1,
+          notes: item.notes || null
         });
       }
       

@@ -178,8 +178,8 @@ export default function BundleDetails() {
 
   const basePrice = calculateTotalBasePrice();
   const savings = {
-    czk: basePrice.totalCzk - (bundle.priceCzk || 0),
-    eur: basePrice.totalEur - (bundle.priceEur || 0)
+    czk: basePrice.totalCzk - parseFloat(bundle.priceCzk || '0'),
+    eur: basePrice.totalEur - parseFloat(bundle.priceEur || '0')
   };
   const savingsPercentage = basePrice.totalCzk > 0 
     ? ((savings.czk / basePrice.totalCzk) * 100).toFixed(1)
@@ -444,10 +444,10 @@ export default function BundleDetails() {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Bundle Price</p>
                 <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                  {bundle.priceCzk?.toFixed(2)} Kč
+                  {parseFloat(bundle.priceCzk || '0').toFixed(2)} Kč
                 </p>
                 <p className="text-sm text-green-600 dark:text-green-400">
-                  €{bundle.priceEur?.toFixed(2)}
+                  €{parseFloat(bundle.priceEur || '0').toFixed(2)}
                 </p>
               </div>
               
@@ -470,7 +470,7 @@ export default function BundleDetails() {
                 </p>
               </div>
               
-              {bundle.discountPercentage && bundle.discountPercentage > 0 && (
+              {bundle.discountPercentage && parseFloat(bundle.discountPercentage) > 0 && (
                 <>
                   <Separator />
                   <div>
