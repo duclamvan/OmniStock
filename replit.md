@@ -7,6 +7,9 @@ Davie Supply is a comprehensive warehouse and order management system designed a
 - Added expand/collapse all switch button for Orders table with localStorage persistence
 - Fixed customer price creation error by properly handling empty variant_id field
 - Fixed missing getRowKey prop in CustomerPrices DataTable component
+- Fixed Edit Order page product ID mapping issues and validation
+- Fixed order detail page to show base prices correctly with discounts shown separately
+- Database reseeded with proper pricing data (all products have priceCzk and priceEur)
 
 # User Preferences
 Preferred communication style: Simple, everyday language.

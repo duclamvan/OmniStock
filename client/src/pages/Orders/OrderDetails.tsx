@@ -384,13 +384,13 @@ export default function OrderDetails() {
                               <span>•</span>
                               <span>Qty: {item.quantity}</span>
                               <span>•</span>
-                              <span>{formatCurrency(item.price || 0, order.currency || 'EUR')} each</span>
+                              <span>{formatCurrency(item.unitPrice || item.price || 0, order.currency || 'EUR')} each</span>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
                             <div className="text-right">
                               <p className="font-semibold text-slate-900">
-                                {formatCurrency(item.total || 0, order.currency || 'EUR')}
+                                {formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}
                               </p>
                               {item.discount > 0 && (
                                 <p className="text-sm text-green-600">
