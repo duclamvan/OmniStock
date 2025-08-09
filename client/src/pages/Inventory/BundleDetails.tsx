@@ -12,7 +12,6 @@ import {
   Edit, 
   Trash2, 
   Copy,
-  ShoppingCart,
   Tag,
   Calendar,
   FileText,
@@ -22,7 +21,6 @@ import {
   Box,
   Hash,
   DollarSign,
-  Percent,
   ChevronDown,
   ChevronUp,
   Palette
@@ -42,9 +40,9 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useState } from 'react';
 import { useLocation } from 'wouter';
-import type { Bundle, BundleItem, Product, ProductVariant } from '@shared/schema';
+import type { ProductBundle, BundleItem, Product, ProductVariant } from '@shared/schema';
 
-interface BundleWithItems extends Bundle {
+interface BundleWithItems extends ProductBundle {
   items: (BundleItem & {
     product: Product;
     variant?: ProductVariant;
@@ -114,7 +112,7 @@ export default function BundleDetails() {
         description: 'The bundle has been successfully deleted.'
       });
       // @ts-ignore
-      navigate('/inventory');
+      navigate('/inventory/bundles');
     },
     onError: (error) => {
       toast({
@@ -234,7 +232,7 @@ export default function BundleDetails() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
-          <Link href="/inventory">
+          <Link href="/inventory/bundles">
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-4 w-4" />
             </Button>
@@ -422,6 +420,21 @@ export default function BundleDetails() {
                             </Badge>
                           </div>
                           
+                          {/* Stock Availability */}
+                          <div className="mb-2">
+                            {(() => {
+                              const stock = item.variant?.quantity ?? item.product.quantity ?? 0;
+                              const required = item.quantity;
+                              const isInStock = stock >= required;
+                              
+                              return (
+                                <p className={`text-sm font-medium ${isInStock ? 'text-green-600' : 'text-red-600'}`}>
+                                  {stock}/{required} in stock
+                                </p>
+                              );
+                            })()}
+                          </div>
+                          
                           {item.product.sku && (
                             <p className="text-sm text-muted-foreground">
                               SKU: {item.product.sku}
@@ -431,9 +444,9 @@ export default function BundleDetails() {
                           {item.variant && (
                             <div className="mt-2 p-2 bg-muted rounded">
                               <p className="text-sm font-medium">Variant: {item.variant.name}</p>
-                              {item.variant.sku && (
+                              {item.variant.barcode && (
                                 <p className="text-xs text-muted-foreground">
-                                  Variant SKU: {item.variant.sku}
+                                  Variant Barcode: {item.variant.barcode}
                                 </p>
                               )}
                             </div>
@@ -554,7 +567,6 @@ export default function BundleDetails() {
                 <p className="text-sm font-medium text-muted-foreground">Customer Savings</p>
                 <div className="flex items-center gap-2 mt-1">
                   <Badge variant="default" className="bg-green-500">
-                    <Percent className="mr-1 h-3 w-3" />
                     {savingsPercentage}% OFF
                   </Badge>
                 </div>
@@ -580,65 +592,40 @@ export default function BundleDetails() {
             </CardContent>
           </Card>
 
-          {/* Quick Actions Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Link href={`/orders/new?bundle=${id}`}>
-                <Button className="w-full" variant="outline">
-                  <ShoppingCart className="mr-2 h-4 w-4" />
-                  Create Order with Bundle
-                </Button>
-              </Link>
-              
-              <Button 
-                className="w-full" 
-                variant="outline"
-                onClick={() => {
-                  // Copy bundle details to clipboard
-                  const bundleText = `Bundle: ${bundle.name}\nPrice: ${bundle.priceCzk} Kč / €${bundle.priceEur}\nItems: ${bundle.items.length}`;
-                  navigator.clipboard.writeText(bundleText);
-                  toast({
-                    title: 'Copied to clipboard',
-                    description: 'Bundle details have been copied.'
-                  });
-                }}
-              >
-                <Copy className="mr-2 h-4 w-4" />
-                Copy Bundle Details
-              </Button>
-            </CardContent>
-          </Card>
-
           {/* Statistics Card */}
           <Card>
             <CardHeader>
               <CardTitle>Statistics</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Total Items</span>
-                <span className="font-medium">{bundle.items.length}</span>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Sold</p>
+                <p className="text-2xl font-bold">0</p>
+                <p className="text-xs text-muted-foreground">All time</p>
               </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Total Quantity</span>
-                <span className="font-medium">
-                  {bundle.items.reduce((sum, item) => sum + item.quantity, 0)}
-                </span>
+              
+              <Separator />
+              
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Revenue</p>
+                <p className="text-lg font-bold">0.00 Kč</p>
+                <p className="text-xs text-muted-foreground">€0.00</p>
               </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Unique Products</span>
-                <span className="font-medium">
-                  {new Set(bundle.items.map(item => item.productId)).size}
-                </span>
+              
+              <Separator />
+              
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Profit</p>
+                <p className="text-lg font-bold">0.00 Kč</p>
+                <p className="text-xs text-muted-foreground">€0.00</p>
               </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">With Variants</span>
-                <span className="font-medium">
-                  {bundle.items.filter(item => item.variantId).length}
-                </span>
+              
+              <Separator />
+              
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Bundle Items</p>
+                <p className="text-2xl font-bold">{bundle.items.reduce((sum, item) => sum + item.quantity, 0)}</p>
+                <p className="text-xs text-muted-foreground">{bundle.items.length} unique products</p>
               </div>
             </CardContent>
           </Card>

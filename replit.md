@@ -19,6 +19,11 @@ Davie Supply is a comprehensive warehouse and order management system designed a
 - Corrected bundle item creation API to properly map productVariantId to variantId column
 - Added expandable color variant view in Bundle Details with scrollable list display
 - Created 144 test color variants for SORAH Gel Polish product as demonstration data
+- Fixed Bundle Details back button navigation to redirect to Product Bundles instead of all Products
+- Removed double percentage symbol in pricing section discount display
+- Deleted Quick Actions section from Bundle Details page
+- Updated Statistics section to show Total Sold, Total Revenue, Total Profit metrics
+- Added stock availability indicator to bundle items (green when in stock, red when insufficient)
 
 # User Preferences
 Preferred communication style: Simple, everyday language.
