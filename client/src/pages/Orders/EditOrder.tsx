@@ -364,14 +364,14 @@ export default function EditOrder() {
       if (orderItems && orderItems.length > 0) {
         setOrderItems(orderItems.map((item: any) => ({
           id: item.id || Math.random().toString(36).substr(2, 9),
-          productId: item.productId || item.productId2 || '',
-          productName: item.productName || '',
+          productId: item.productId || item.product_id || '',
+          productName: item.productName || item.product_name || '',
           sku: item.sku || '',
           quantity: parseInt(item.quantity) || 1,
-          price: parseFloat(item.price) || 0,
-          discount: parseFloat(item.discount) || 0,
-          tax: parseFloat(item.tax) || 0,
-          total: parseFloat(item.total) || (parseInt(item.quantity) * parseFloat(item.price)),
+          price: parseFloat(item.price || item.unitPrice || item.unit_price || 0),
+          discount: parseFloat(item.discount || 0),
+          tax: parseFloat(item.tax || 0),
+          total: parseFloat(item.total || 0) || (parseInt(item.quantity || 1) * parseFloat(item.price || item.unitPrice || item.unit_price || 0)),
         })));
       }
 
@@ -604,6 +604,17 @@ export default function EditOrder() {
       toast({
         title: "Error",
         description: "Please add at least one item to the order",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate that all items have a productId
+    const invalidItems = orderItems.filter(item => !item.productId);
+    if (invalidItems.length > 0) {
+      toast({
+        title: "Error",
+        description: "Some items are missing product information. Please remove and re-add them.",
         variant: "destructive",
       });
       return;
