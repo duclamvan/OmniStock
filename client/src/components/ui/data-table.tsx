@@ -207,17 +207,17 @@ export function DataTable<T>({
       )}
 
       {/* Table */}
-      <div className="rounded-md border overflow-auto max-h-[calc(100vh-300px)]">
+      <div className="rounded-md border">
         <Table>
-          <TableHeader className="sticky top-0 z-10 bg-background border-b">
+          <TableHeader>
             <TableRow>
               {expandable && (
-                <TableHead className="w-12 bg-background">
+                <TableHead className="w-12">
                   {/* Empty header for expand column */}
                 </TableHead>
               )}
               {bulkActions && (
-                <TableHead className="w-12 bg-background">
+                <TableHead className="w-12">
                   <Checkbox
                     checked={isAllSelected}
                     onCheckedChange={handleSelectAll}
@@ -230,7 +230,6 @@ export function DataTable<T>({
                 <TableHead
                   key={column.key}
                   className={cn(
-                    "bg-background",
                     column.sortable && "cursor-pointer select-none",
                     column.className
                   )}
