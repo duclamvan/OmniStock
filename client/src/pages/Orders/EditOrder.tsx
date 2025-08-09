@@ -471,7 +471,7 @@ export default function EditOrder() {
       setLocation('/orders');
     },
     onError: (error) => {
-      console.error("Order creation error:", error);
+      console.error("Order update error:", error);
       toast({
         title: "Error",
         description: "Failed to update order",
