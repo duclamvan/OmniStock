@@ -87,6 +87,10 @@ export default function AddProduct() {
   }>>([]);
   const [selectedVariants, setSelectedVariants] = useState<string[]>([]);
   const [seriesInput, setSeriesInput] = useState("");
+  const [seriesQuantity, setSeriesQuantity] = useState(0);
+  const [seriesImportCostUsd, setSeriesImportCostUsd] = useState("");
+  const [seriesImportCostCzk, setSeriesImportCostCzk] = useState("");
+  const [seriesImportCostEur, setSeriesImportCostEur] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newVariant, setNewVariant] = useState({
     name: "",
@@ -99,6 +103,7 @@ export default function AddProduct() {
   
   // Auto-conversion state
   const conversionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const seriesConversionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Get categoryId from URL query parameters
   const searchParams = new URLSearchParams(window.location.search);
@@ -173,6 +178,62 @@ export default function AddProduct() {
       }
     };
   }, [importCostUsd, importCostCzk, importCostEur, form]);
+
+  // Auto-convert series import costs after 1 second
+  useEffect(() => {
+    if (seriesConversionTimeoutRef.current) {
+      clearTimeout(seriesConversionTimeoutRef.current);
+    }
+
+    seriesConversionTimeoutRef.current = setTimeout(() => {
+      // Count how many fields have values
+      const filledFields = [
+        seriesImportCostUsd ? 'USD' : null,
+        seriesImportCostCzk ? 'CZK' : null,
+        seriesImportCostEur ? 'EUR' : null,
+      ].filter(Boolean);
+
+      // Only convert if exactly one field has a value
+      if (filledFields.length === 1) {
+        const sourceCurrency = filledFields[0] as Currency;
+        let sourceValue = 0;
+
+        switch (sourceCurrency) {
+          case 'USD':
+            sourceValue = parseFloat(seriesImportCostUsd) || 0;
+            break;
+          case 'CZK':
+            sourceValue = parseFloat(seriesImportCostCzk) || 0;
+            break;
+          case 'EUR':
+            sourceValue = parseFloat(seriesImportCostEur) || 0;
+            break;
+        }
+
+        if (sourceValue > 0) {
+          // Convert to other currencies
+          if (sourceCurrency !== 'USD' && !seriesImportCostUsd) {
+            const usdValue = convertCurrency(sourceValue, sourceCurrency, 'USD');
+            setSeriesImportCostUsd(usdValue.toFixed(2));
+          }
+          if (sourceCurrency !== 'CZK' && !seriesImportCostCzk) {
+            const czkValue = convertCurrency(sourceValue, sourceCurrency, 'CZK');
+            setSeriesImportCostCzk(czkValue.toFixed(2));
+          }
+          if (sourceCurrency !== 'EUR' && !seriesImportCostEur) {
+            const eurValue = convertCurrency(sourceValue, sourceCurrency, 'EUR');
+            setSeriesImportCostEur(eurValue.toFixed(2));
+          }
+        }
+      }
+    }, 1000);
+
+    return () => {
+      if (seriesConversionTimeoutRef.current) {
+        clearTimeout(seriesConversionTimeoutRef.current);
+      }
+    };
+  }, [seriesImportCostUsd, seriesImportCostCzk, seriesImportCostEur]);
 
   // Fetch categories, warehouses, and suppliers
   const { data: categories = [] } = useQuery<any[]>({
@@ -300,15 +361,20 @@ export default function AddProduct() {
           id: `temp-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 9)}`,
           name: `${baseName} ${i}`,
           barcode: "",
-          quantity: 0,
-          importCostUsd: "",
-          importCostCzk: "",
-          importCostEur: "",
+          quantity: seriesQuantity,
+          importCostUsd: seriesImportCostUsd,
+          importCostCzk: seriesImportCostCzk,
+          importCostEur: seriesImportCostEur,
         });
       }
       
       setVariants([...variants, ...newVariants]);
+      // Reset series fields
       setSeriesInput("");
+      setSeriesQuantity(0);
+      setSeriesImportCostUsd("");
+      setSeriesImportCostCzk("");
+      setSeriesImportCostEur("");
       setIsAddDialogOpen(false);
       toast({
         title: "Success",
@@ -664,25 +730,73 @@ export default function AddProduct() {
                   <div className="space-y-4 border-b pb-4">
                     <div className="space-y-2">
                       <Label htmlFor="series-input">Create Series</Label>
-                      <div className="flex gap-2">
+                      <div className="space-y-3">
                         <Input
                           id="series-input"
                           value={seriesInput}
                           onChange={(e) => setSeriesInput(e.target.value)}
                           placeholder='e.g., "Gel Polish <1-100>"'
-                          className="flex-1"
                         />
+                        <p className="text-xs text-slate-500">
+                          Use format like "Gel Polish &lt;1-100&gt;" to automatically create 100 variants
+                        </p>
+                        
+                        <div>
+                          <Label htmlFor="series-quantity">Quantity (each variant)</Label>
+                          <Input
+                            id="series-quantity"
+                            type="number"
+                            value={seriesQuantity}
+                            onChange={(e) => setSeriesQuantity(parseInt(e.target.value) || 0)}
+                            placeholder="0"
+                          />
+                        </div>
+                        
+                        <div>
+                          <Label>Import Cost (each variant)</Label>
+                          <div className="grid grid-cols-3 gap-2 mt-2">
+                            <div>
+                              <Label htmlFor="series-cost-usd" className="text-xs text-slate-500">USD</Label>
+                              <Input
+                                id="series-cost-usd"
+                                value={seriesImportCostUsd}
+                                onChange={(e) => setSeriesImportCostUsd(e.target.value)}
+                                placeholder="0.00"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="series-cost-czk" className="text-xs text-slate-500">CZK</Label>
+                              <Input
+                                id="series-cost-czk"
+                                value={seriesImportCostCzk}
+                                onChange={(e) => setSeriesImportCostCzk(e.target.value)}
+                                placeholder="0.00"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="series-cost-eur" className="text-xs text-slate-500">EUR</Label>
+                              <Input
+                                id="series-cost-eur"
+                                value={seriesImportCostEur}
+                                onChange={(e) => setSeriesImportCostEur(e.target.value)}
+                                placeholder="0.00"
+                              />
+                            </div>
+                          </div>
+                          <p className="text-xs text-slate-500 mt-1">
+                            Enter cost in one currency, others will auto-convert
+                          </p>
+                        </div>
+                        
                         <Button 
                           onClick={addVariantSeries}
                           disabled={!seriesInput}
                           type="button"
+                          className="w-full"
                         >
                           Add Series
                         </Button>
                       </div>
-                      <p className="text-xs text-slate-500">
-                        For series: Use format like "Gel Polish &lt;1-100&gt;" to automatically create 100 variants
-                      </p>
                     </div>
                   </div>
 
