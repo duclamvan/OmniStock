@@ -386,138 +386,159 @@ export default function BundleDetails() {
           <CardHeader className="p-4 sm:p-6">
             <CardTitle className="text-base sm:text-lg flex items-center gap-2">
               <Box className="h-4 w-4 sm:h-5 sm:w-5" />
-              Bundle Items ({bundle.items.length})
+              Bundle Items ({(() => {
+                const uniqueProducts = new Set(bundle.items.map(item => item.productId));
+                const totalItems = bundle.items.length;
+                return uniqueProducts.size === totalItems 
+                  ? `${totalItems}` 
+                  : `${uniqueProducts.size} products, ${totalItems} variants`;
+              })()})
             </CardTitle>
           </CardHeader>
             <CardContent className="px-4 pb-4 sm:px-6 sm:pb-6">
               <div className="space-y-3 sm:space-y-4">
-                {bundle.items.map((item, index) => {
-                  const isExpanded = expandedItems.has(index);
+                {(() => {
+                  // Group bundle items by product
+                  const groupedItems = bundle.items.reduce((acc: any, item) => {
+                    if (!acc[item.productId]) {
+                      acc[item.productId] = {
+                        product: item.product,
+                        items: []
+                      };
+                    }
+                    acc[item.productId].items.push(item);
+                    return acc;
+                  }, {});
                   
-                  // Group bundle items by product to find all variants for this product in the bundle
-                  const bundleVariantsForProduct = bundle.items
-                    .filter(bundleItem => bundleItem.productId === item.productId && bundleItem.variant)
-                    .map(bundleItem => bundleItem.variant);
-                  
-                  // Only show variants section if there are multiple variants in the bundle for this product
-                  const showVariantsSection = bundleVariantsForProduct.length > 1;
-                  
-                  return (
-                    <div key={index} className="border rounded-lg p-4 sm:p-5">
-                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                        <div className="flex-1">
-                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
-                            <h4 className="font-semibold text-sm sm:text-base">{item.product.name}</h4>
-                            <Badge variant="outline" className="w-fit">
-                              <Hash className="mr-1 h-3 w-3" />
-                              Qty: {item.quantity}
-                            </Badge>
-                          </div>
-                          
-                          {/* Stock Availability */}
-                          <div className="mb-2">
-                            {(() => {
-                              const stock = item.variant?.quantity ?? item.product.quantity ?? 0;
-                              const required = item.quantity;
-                              const isInStock = stock >= required;
-                              
-                              return (
-                                <p className={`text-sm font-medium ${isInStock ? 'text-green-600' : 'text-red-600'}`}>
-                                  {stock}/{required} in stock
-                                </p>
-                              );
-                            })()}
-                          </div>
-                          
-                          {item.product.sku && (
-                            <p className="text-sm text-muted-foreground">
-                              SKU: {item.product.sku}
-                            </p>
-                          )}
-                          
-                          {item.variant && (
-                            <div className="mt-2 p-2 bg-muted rounded">
-                              <p className="text-sm font-medium">Variant: {item.variant.name}</p>
-                              {item.variant.barcode && (
-                                <p className="text-xs text-muted-foreground">
-                                  Variant Barcode: {item.variant.barcode}
-                                </p>
-                              )}
+                  return Object.entries(groupedItems).map(([productId, group]: any, groupIndex) => {
+                    const isExpanded = expandedItems.has(groupIndex);
+                    const totalQuantity = group.items.reduce((sum: number, item: any) => sum + item.quantity, 0);
+                    const hasMultipleVariants = group.items.length > 1;
+                    
+                    return (
+                      <div key={productId} className="border rounded-lg p-4 sm:p-5">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                          <div className="flex-1">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                              <h4 className="font-semibold text-sm sm:text-base">{group.product.name}</h4>
+                              <Badge variant="outline" className="w-fit">
+                                <Hash className="mr-1 h-3 w-3" />
+                                Total Qty: {totalQuantity}
+                              </Badge>
                             </div>
-                          )}
-                          
-                          <div className="mt-2 grid grid-cols-2 gap-2 sm:gap-4">
-                            <div>
-                              <p className="text-xs text-muted-foreground">Unit Price CZK</p>
-                              <p className="text-sm sm:text-base font-medium">{parseFloat(item.product.priceCzk || '0').toFixed(2)} Kč</p>
+                            
+                            {/* Stock Availability - Show overall stock status */}
+                            <div className="mb-2">
+                              {(() => {
+                                const totalStock = group.items.reduce((sum: number, item: any) => 
+                                  sum + (item.variant?.quantity ?? item.product.quantity ?? 0), 0
+                                );
+                                const isInStock = totalStock >= totalQuantity;
+                                
+                                return (
+                                  <p className={`text-sm font-medium ${isInStock ? 'text-green-600' : 'text-red-600'}`}>
+                                    {totalStock}/{totalQuantity} in stock
+                                  </p>
+                                );
+                              })()}
                             </div>
-                            <div>
-                              <p className="text-xs text-muted-foreground">Unit Price EUR</p>
-                              <p className="text-sm sm:text-base font-medium">€{parseFloat(item.product.priceEur || '0').toFixed(2)}</p>
+                            
+                            {group.product.sku && (
+                              <p className="text-sm text-muted-foreground">
+                                SKU: {group.product.sku}
+                              </p>
+                            )}
+                            
+                            <div className="mt-2 grid grid-cols-2 gap-2 sm:gap-4">
+                              <div>
+                                <p className="text-xs text-muted-foreground">Unit Price CZK</p>
+                                <p className="text-sm sm:text-base font-medium">{parseFloat(group.product.priceCzk || '0').toFixed(2)} Kč</p>
+                              </div>
+                              <div>
+                                <p className="text-xs text-muted-foreground">Unit Price EUR</p>
+                                <p className="text-sm sm:text-base font-medium">€{parseFloat(group.product.priceEur || '0').toFixed(2)}</p>
+                              </div>
                             </div>
-                          </div>
-                          
-                          {/* Color Variants Expandable Section - Only show if multiple variants in bundle */}
-                          {showVariantsSection && (
-                            <div className="mt-3">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => toggleExpanded(index)}
-                                className="w-full justify-start text-sm"
-                              >
-                                <Palette className="mr-2 h-4 w-4" />
-                                Bundle Variants ({bundleVariantsForProduct.length})
-                                {isExpanded ? (
-                                  <ChevronUp className="ml-auto h-4 w-4" />
-                                ) : (
-                                  <ChevronDown className="ml-auto h-4 w-4" />
-                                )}
-                              </Button>
-                              
-                              {isExpanded && (
-                                <div className="mt-2 p-3 bg-muted/50 rounded-lg">
-                                  <div className="max-h-48 overflow-y-auto space-y-1 pr-2">
-                                    {bundleVariantsForProduct.map((variant: any, vIndex: number) => (
-                                      <div 
-                                        key={variant.id}
-                                        className="flex items-center justify-between p-2 bg-background rounded border hover:bg-muted/50 transition-colors"
-                                      >
-                                        <div className="flex items-center gap-3">
-                                          <span className="text-xs font-medium text-muted-foreground w-8">
-                                            #{vIndex + 1}
-                                          </span>
-                                          <p className="text-sm font-medium">
-                                            {variant.name || `Color ${vIndex + 1}`}
-                                          </p>
+                            
+                            {/* Show variants if there are multiple */}
+                            {hasMultipleVariants && (
+                              <div className="mt-3">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => toggleExpanded(groupIndex)}
+                                  className="w-full justify-start text-sm"
+                                >
+                                  <Palette className="mr-2 h-4 w-4" />
+                                  View Bundle Variants ({group.items.length})
+                                  {isExpanded ? (
+                                    <ChevronUp className="ml-auto h-4 w-4" />
+                                  ) : (
+                                    <ChevronDown className="ml-auto h-4 w-4" />
+                                  )}
+                                </Button>
+                                
+                                {isExpanded && (
+                                  <div className="mt-2 p-3 bg-muted/50 rounded-lg">
+                                    <div className="max-h-48 overflow-y-auto space-y-1 pr-2">
+                                      {group.items.map((item: any, vIndex: number) => (
+                                        <div 
+                                          key={item.variant?.id || vIndex}
+                                          className="flex items-center justify-between p-2 bg-background rounded border hover:bg-muted/50 transition-colors"
+                                        >
+                                          <div className="flex items-center gap-3">
+                                            <span className="text-xs font-medium text-muted-foreground w-8">
+                                              #{vIndex + 1}
+                                            </span>
+                                            <div>
+                                              <p className="text-sm font-medium">
+                                                {item.variant?.name || `Variant ${vIndex + 1}`}
+                                              </p>
+                                              <p className="text-xs text-muted-foreground">
+                                                Qty: {item.quantity}
+                                              </p>
+                                            </div>
+                                          </div>
+                                          {item.variant?.barcode && (
+                                            <p className="text-xs text-muted-foreground">
+                                              {item.variant.barcode}
+                                            </p>
+                                          )}
                                         </div>
-                                        {variant.barcode && (
-                                          <p className="text-xs text-muted-foreground">
-                                            Barcode: {variant.barcode}
-                                          </p>
-                                        )}
-                                      </div>
-                                    ))}
+                                      ))}
+                                    </div>
                                   </div>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div className="text-right sm:ml-4">
-                          <p className="text-xs text-muted-foreground">Subtotal</p>
-                          <p className="text-sm sm:text-base font-semibold">
-                            {(parseFloat(item.product.priceCzk || '0') * item.quantity).toFixed(2)} Kč
-                          </p>
-                          <p className="text-xs sm:text-sm text-muted-foreground">
-                            €{(parseFloat(item.product.priceEur || '0') * item.quantity).toFixed(2)}
-                          </p>
+                                )}
+                              </div>
+                            )}
+                            
+                            {/* Show single variant info if only one */}
+                            {!hasMultipleVariants && group.items[0].variant && (
+                              <div className="mt-2 p-2 bg-muted rounded">
+                                <p className="text-sm font-medium">Variant: {group.items[0].variant.name}</p>
+                                {group.items[0].variant.barcode && (
+                                  <p className="text-xs text-muted-foreground">
+                                    Barcode: {group.items[0].variant.barcode}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="text-right sm:ml-4">
+                            <p className="text-xs text-muted-foreground">Subtotal</p>
+                            <p className="text-sm sm:text-base font-semibold">
+                              {(parseFloat(group.product.priceCzk || '0') * totalQuantity).toFixed(2)} Kč
+                            </p>
+                            <p className="text-xs sm:text-sm text-muted-foreground">
+                              €{(parseFloat(group.product.priceEur || '0') * totalQuantity).toFixed(2)}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  });
+                })()}
               </div>
             </CardContent>
         </Card>
