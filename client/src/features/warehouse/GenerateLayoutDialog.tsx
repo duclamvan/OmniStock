@@ -184,8 +184,8 @@ export function GenerateLayoutDialog({ warehouseCode }: GenerateLayoutDialogProp
         }
       }
 
-      // Create locations in bulk
-      return apiRequest("POST", `/api/warehouses/${warehouseCode}/locations/bulk`, { locations });
+      // Create locations in bulk (clear existing locations first)
+      return apiRequest("POST", `/api/warehouses/${warehouseCode}/locations/bulk`, { locations, clearExisting: true });
     },
     onSuccess: () => {
       toast({

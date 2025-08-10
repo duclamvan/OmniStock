@@ -80,7 +80,7 @@ locationsRouter.post("/locations", async (req, res) => {
 locationsRouter.post("/warehouses/:code/locations/bulk", async (req, res) => {
   try {
     const { code } = req.params;
-    const { locations } = req.body;
+    const { locations, clearExisting = true } = req.body;
     
     if (!Array.isArray(locations)) {
       return res.status(400).json({ error: "Locations must be an array" });
@@ -92,6 +92,11 @@ locationsRouter.post("/warehouses/:code/locations/bulk", async (req, res) => {
     
     if (!warehouse) {
       return res.status(404).json({ error: "Warehouse not found" });
+    }
+    
+    // Clear existing locations if requested
+    if (clearExisting) {
+      await storage.clearWarehouseLocations(warehouse.id);
     }
     
     // Add warehouse ID to each location

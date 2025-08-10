@@ -2018,6 +2018,10 @@ export class DatabaseStorage implements IStorage {
     await db.delete(warehouseLocations).where(eq(warehouseLocations.id, id));
   }
 
+  async clearWarehouseLocations(warehouseId: string): Promise<void> {
+    await db.delete(warehouseLocations).where(eq(warehouseLocations.warehouseId, warehouseId));
+  }
+
   async getLocationChildren(parentId: string): Promise<WarehouseLocation[]> {
     return await db.select()
       .from(warehouseLocations)
