@@ -67,34 +67,6 @@ export default function BundleDetails() {
     queryKey: ['/api/orders'],
   });
 
-  // Fetch all product variants for expanded items
-  const { data: allVariants = {} } = useQuery({
-    queryKey: ['/api/products/variants-by-products', bundle?.items.map(i => i.productId)],
-    queryFn: async () => {
-      if (!bundle) return {};
-      
-      const variantsByProduct: Record<string, any[]> = {};
-      
-      // Fetch variants for each product
-      for (const item of bundle.items) {
-        if (item.productId) {
-          try {
-            const response = await fetch(`/api/products/${item.productId}/variants`);
-            if (response.ok) {
-              const variants = await response.json();
-              variantsByProduct[item.productId] = variants;
-            }
-          } catch (error) {
-            console.error(`Failed to fetch variants for product ${item.productId}:`, error);
-          }
-        }
-      }
-      
-      return variantsByProduct;
-    },
-    enabled: !!bundle && bundle.items.length > 0
-  });
-
   const toggleExpanded = (index: number) => {
     setExpandedItems(prev => {
       const newSet = new Set(prev);
@@ -421,7 +393,14 @@ export default function BundleDetails() {
               <div className="space-y-3 sm:space-y-4">
                 {bundle.items.map((item, index) => {
                   const isExpanded = expandedItems.has(index);
-                  const productVariants = item.productId ? allVariants[item.productId] || [] : [];
+                  
+                  // Group bundle items by product to find all variants for this product in the bundle
+                  const bundleVariantsForProduct = bundle.items
+                    .filter(bundleItem => bundleItem.productId === item.productId && bundleItem.variant)
+                    .map(bundleItem => bundleItem.variant);
+                  
+                  // Only show variants section if there are multiple variants in the bundle for this product
+                  const showVariantsSection = bundleVariantsForProduct.length > 1;
                   
                   return (
                     <div key={index} className="border rounded-lg p-4 sm:p-5">
@@ -478,8 +457,8 @@ export default function BundleDetails() {
                             </div>
                           </div>
                           
-                          {/* Color Variants Expandable Section */}
-                          {productVariants.length > 0 && (
+                          {/* Color Variants Expandable Section - Only show if multiple variants in bundle */}
+                          {showVariantsSection && (
                             <div className="mt-3">
                               <Button
                                 variant="ghost"
@@ -488,7 +467,7 @@ export default function BundleDetails() {
                                 className="w-full justify-start text-sm"
                               >
                                 <Palette className="mr-2 h-4 w-4" />
-                                View Color Variants ({productVariants.length})
+                                Bundle Variants ({bundleVariantsForProduct.length})
                                 {isExpanded ? (
                                   <ChevronUp className="ml-auto h-4 w-4" />
                                 ) : (
@@ -499,9 +478,9 @@ export default function BundleDetails() {
                               {isExpanded && (
                                 <div className="mt-2 p-3 bg-muted/50 rounded-lg">
                                   <div className="max-h-48 overflow-y-auto space-y-1 pr-2">
-                                    {productVariants.map((variant: any, vIndex: number) => (
+                                    {bundleVariantsForProduct.map((variant: any, vIndex: number) => (
                                       <div 
-                                        key={vIndex}
+                                        key={variant.id}
                                         className="flex items-center justify-between p-2 bg-background rounded border hover:bg-muted/50 transition-colors"
                                       >
                                         <div className="flex items-center gap-3">
@@ -512,9 +491,9 @@ export default function BundleDetails() {
                                             {variant.name || `Color ${vIndex + 1}`}
                                           </p>
                                         </div>
-                                        {variant.sku && (
+                                        {variant.barcode && (
                                           <p className="text-xs text-muted-foreground">
-                                            {variant.sku}
+                                            Barcode: {variant.barcode}
                                           </p>
                                         )}
                                       </div>
