@@ -48,8 +48,8 @@ export default function WarehouseMap() {
   useEffect(() => {
     if (id) {
       setSelectedWarehouse(id);
-    } else if (warehouses && warehouses.length > 0 && !selectedWarehouse) {
-      setSelectedWarehouse(warehouses[0].code || warehouses[0].id);
+    } else if (warehouses && Array.isArray(warehouses) && warehouses.length > 0 && !selectedWarehouse) {
+      setSelectedWarehouse((warehouses as any[])[0]?.code || (warehouses as any[])[0]?.id);
     }
   }, [id, warehouses]);
 
@@ -105,7 +105,7 @@ export default function WarehouseMap() {
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
               <Map className="h-8 w-8" />
-              {isSubpage && currentWarehouse ? `${currentWarehouse.name} - Mapping` : 'Warehouse Mapping'}
+              {isSubpage && currentWarehouse ? `${(currentWarehouse as any)?.name} - Mapping` : 'Warehouse Mapping'}
             </h1>
             <p className="text-gray-500 mt-1">Interactive warehouse location management</p>
           </div>
@@ -124,7 +124,7 @@ export default function WarehouseMap() {
       {/* Warehouse Selector */}
       <div className="mb-4">
         <div className="flex gap-2">
-          {warehouses?.map((warehouse: any) => (
+          {(warehouses as any[])?.map((warehouse: any) => (
             <Button
               key={warehouse.id}
               variant={selectedWarehouse === (warehouse.code || warehouse.id) ? "default" : "outline"}
@@ -238,7 +238,7 @@ export default function WarehouseMap() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {locations?.filter(loc => loc.type === "BIN").map((location) => (
+                {(locations as any[])?.filter((loc: any) => loc.type === "BIN").map((location: any) => (
                   <div key={location.id} className="flex items-center justify-between p-3 border rounded">
                     <div>
                       <div className="font-medium">{location.address}</div>

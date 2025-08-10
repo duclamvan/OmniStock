@@ -63,7 +63,8 @@ export function GenerateLayoutDialog({ warehouseCode }: GenerateLayoutDialogProp
       let sortKey = 0;
 
       // Get warehouse ID
-      const warehouses = await apiRequest("/api/warehouses");
+      const response = await fetch("/api/warehouses");
+      const warehouses = await response.json();
       const warehouse = warehouses.find((w: any) => w.code === warehouseCode || w.id === warehouseCode);
       if (!warehouse) throw new Error("Warehouse not found");
 
@@ -79,8 +80,9 @@ export function GenerateLayoutDialog({ warehouseCode }: GenerateLayoutDialogProp
           type: "ZONE" as any,
           code: zone,
           address: `${warehouseCode}-${zone}`,
-          sortKey: sortKey++,
+          sortKey,
         });
+        sortKey++;
       }
 
       // Generate aisles
@@ -98,8 +100,9 @@ export function GenerateLayoutDialog({ warehouseCode }: GenerateLayoutDialogProp
             type: "AISLE" as any,
             code: `A${aisle}`,
             address: `${warehouseCode}-${zone}-A${aisle}`,
-            sortKey: sortKey++,
+            sortKey,
           });
+          sortKey++;
         }
       }
 
@@ -120,8 +123,9 @@ export function GenerateLayoutDialog({ warehouseCode }: GenerateLayoutDialogProp
               type: "RACK" as any,
               code: `R${rack}`,
               address: `${warehouseCode}-${zone}-A${aisle}-R${rack}`,
-              sortKey: sortKey++,
+              sortKey,
             });
+            sortKey++;
           }
         }
       }
@@ -145,8 +149,9 @@ export function GenerateLayoutDialog({ warehouseCode }: GenerateLayoutDialogProp
                 type: "SHELF" as any,
                 code: `S${shelf}`,
                 address: `${warehouseCode}-${zone}-A${aisle}-R${rack}-S${shelf}`,
-                sortKey: sortKey++,
+                sortKey,
               });
+              sortKey++;
             }
           }
         }
@@ -170,8 +175,9 @@ export function GenerateLayoutDialog({ warehouseCode }: GenerateLayoutDialogProp
                   type: "BIN" as any,
                   code: `B${bin}`,
                   address: `${warehouseCode}-${zone}-A${aisle}-R${rack}-S${shelf}-B${bin}`,
-                  sortKey: sortKey++,
+                  sortKey,
                 });
+                sortKey++;
               }
             }
           }
@@ -179,10 +185,7 @@ export function GenerateLayoutDialog({ warehouseCode }: GenerateLayoutDialogProp
       }
 
       // Create locations in bulk
-      return apiRequest(`/api/warehouses/${warehouseCode}/locations/bulk`, {
-        method: "POST",
-        body: JSON.stringify({ locations }),
-      });
+      return apiRequest("POST", `/api/warehouses/${warehouseCode}/locations/bulk`, { locations });
     },
     onSuccess: () => {
       toast({
