@@ -80,6 +80,147 @@ export function LayoutDesigner({ warehouseCode }: { warehouseCode: string }) {
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [zoom, setZoom] = useState(1);
   const [showProperties, setShowProperties] = useState(false);
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
+
+  // Auto-save with debounce
+  useEffect(() => {
+    if (!autoSaveEnabled || elements.length === 0) return;
+    
+    const timeoutId = setTimeout(() => {
+      saveLayoutMutation.mutate();
+    }, 2000); // Auto-save 2 seconds after last edit
+
+    return () => clearTimeout(timeoutId);
+  }, [elements, autoSaveEnabled]);
+
+  // Initialize with sample layout
+  useEffect(() => {
+    if (elements.length === 0) {
+      const sampleElements: DesignElement[] = [
+        // Zone A
+        {
+          id: "zone-a",
+          type: "ZONE",
+          x: 100,
+          y: 100,
+          width: 300,
+          height: 200,
+          code: "A",
+          color: COLORS.ZONE,
+          rotation: 0,
+          children: ["aisle-a1", "aisle-a2"]
+        },
+        // Aisle A1 in Zone A
+        {
+          id: "aisle-a1",
+          type: "AISLE",
+          x: 120,
+          y: 120,
+          width: 60,
+          height: 160,
+          code: "A01",
+          color: COLORS.AISLE,
+          rotation: 0,
+          parentId: "zone-a",
+          children: ["rack-a1-1", "rack-a1-2"]
+        },
+        // Rack A1-1
+        {
+          id: "rack-a1-1",
+          type: "RACK",
+          x: 130,
+          y: 130,
+          width: 40,
+          height: 60,
+          code: "R01",
+          color: COLORS.RACK,
+          rotation: 0,
+          parentId: "aisle-a1",
+          children: ["shelf-a1-1-1", "shelf-a1-1-2"]
+        },
+        // Shelf A1-1-1
+        {
+          id: "shelf-a1-1-1",
+          type: "SHELF",
+          x: 135,
+          y: 135,
+          width: 30,
+          height: 15,
+          code: "S01",
+          color: COLORS.SHELF,
+          rotation: 0,
+          parentId: "rack-a1-1",
+          children: ["bin-a1-1-1-1", "bin-a1-1-1-2"]
+        },
+        // Bins
+        {
+          id: "bin-a1-1-1-1",
+          type: "BIN",
+          x: 140,
+          y: 140,
+          width: 8,
+          height: 8,
+          code: "B01",
+          color: COLORS.BIN,
+          rotation: 0,
+          parentId: "shelf-a1-1-1"
+        },
+        {
+          id: "bin-a1-1-1-2",
+          type: "BIN",
+          x: 152,
+          y: 140,
+          width: 8,
+          height: 8,
+          code: "B02",
+          color: COLORS.BIN,
+          rotation: 0,
+          parentId: "shelf-a1-1-1"
+        },
+        // Zone B
+        {
+          id: "zone-b",
+          type: "ZONE",
+          x: 500,
+          y: 100,
+          width: 250,
+          height: 180,
+          code: "B",
+          color: COLORS.ZONE,
+          rotation: 0,
+          children: ["aisle-b1"]
+        },
+        // Aisle B1 in Zone B
+        {
+          id: "aisle-b1",
+          type: "AISLE",
+          x: 520,
+          y: 120,
+          width: 50,
+          height: 140,
+          code: "B01",
+          color: COLORS.AISLE,
+          rotation: 0,
+          parentId: "zone-b",
+          children: ["rack-b1-1"]
+        },
+        // Rack B1-1
+        {
+          id: "rack-b1-1",
+          type: "RACK",
+          x: 530,
+          y: 130,
+          width: 30,
+          height: 80,
+          code: "R01",
+          color: COLORS.RACK,
+          rotation: 0,
+          parentId: "aisle-b1"
+        }
+      ];
+      setElements(sampleElements);
+    }
+  }, []);
 
   // Save layout mutation
   const saveLayoutMutation = useMutation({
@@ -193,16 +334,19 @@ export function LayoutDesigner({ warehouseCode }: { warehouseCode: string }) {
     const y = (e.clientY - rect.top) / zoom;
     
     if (dragState.isDragging && dragState.elementId) {
-      // Move existing element
-      setElements(prev => prev.map(el => 
-        el.id === dragState.elementId
-          ? {
-              ...el,
-              x: snapToGridPosition(x - dragState.offsetX),
-              y: snapToGridPosition(y - dragState.offsetY)
-            }
-          : el
-      ));
+      // Move existing element with instant save trigger
+      setElements(prev => {
+        const updated = prev.map(el => 
+          el.id === dragState.elementId
+            ? {
+                ...el,
+                x: snapToGridPosition(x - dragState.offsetX),
+                y: snapToGridPosition(y - dragState.offsetY)
+              }
+            : el
+        );
+        return updated;
+      });
     } else if (dragState.isCreating && dragState.createType) {
       // Preview new element being created
       const width = Math.abs(x - dragState.startX);
@@ -387,6 +531,22 @@ export function LayoutDesigner({ warehouseCode }: { warehouseCode: string }) {
           </div>
           
           <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 px-3 py-1 rounded border">
+              <Label htmlFor="auto-save" className="text-xs">Auto-save</Label>
+              <input
+                id="auto-save"
+                type="checkbox"
+                checked={autoSaveEnabled}
+                onChange={(e) => setAutoSaveEnabled(e.target.checked)}
+                className="w-3 h-3"
+              />
+              {saveLayoutMutation.isPending && (
+                <div className="text-xs text-blue-500">Saving...</div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
             {selectedElement && (
               <>
                 <Button
@@ -514,12 +674,13 @@ export function LayoutDesigner({ warehouseCode }: { warehouseCode: string }) {
                   id="element-code"
                   value={selectedElement.code}
                   onChange={(e) => {
+                    const newCode = e.target.value;
                     setElements(prev => prev.map(el =>
                       el.id === selectedElement.id
-                        ? { ...el, code: e.target.value }
+                        ? { ...el, code: newCode }
                         : el
                     ));
-                    setSelectedElement({ ...selectedElement, code: e.target.value });
+                    setSelectedElement({ ...selectedElement, code: newCode });
                   }}
                 />
               </div>

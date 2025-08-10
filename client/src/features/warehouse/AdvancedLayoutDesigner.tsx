@@ -141,6 +141,298 @@ export function AdvancedLayoutDesigner({ warehouseCode }: { warehouseCode: strin
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [showProperties, setShowProperties] = useState(true);
   const [showLayers, setShowLayers] = useState(true);
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
+
+  // Auto-save with debounce
+  useEffect(() => {
+    if (!autoSaveEnabled || state.elements.length === 0) return;
+    
+    const timeoutId = setTimeout(() => {
+      saveLayoutMutation.mutate();
+    }, 3000); // Auto-save 3 seconds after last edit
+
+    return () => clearTimeout(timeoutId);
+  }, [state.elements, autoSaveEnabled]);
+
+  // Initialize with sample layout
+  useEffect(() => {
+    if (state.elements.length === 0) {
+      const sampleElements: DesignElement[] = [
+        // Receiving Zone
+        {
+          id: "receiving-zone",
+          type: "ZONE",
+          x: 50,
+          y: 50,
+          width: 200,
+          height: 150,
+          code: "RECV",
+          color: "#10b981",
+          rotation: 0,
+          scaleX: 1,
+          scaleY: 1,
+          locked: false,
+          visible: true,
+          opacity: 0.8,
+          metadata: {
+            temperature: "Ambient",
+            hazmat: false,
+            maxWeight: 10000,
+            pickable: false,
+            putawayAllowed: true,
+            notes: "Receiving area for incoming goods"
+          }
+        },
+        // Storage Zone A
+        {
+          id: "storage-zone-a",
+          type: "ZONE",
+          x: 300,
+          y: 50,
+          width: 400,
+          height: 300,
+          code: "A",
+          color: "#10b981",
+          rotation: 0,
+          scaleX: 1,
+          scaleY: 1,
+          locked: false,
+          visible: true,
+          opacity: 0.8,
+          metadata: {
+            temperature: "Ambient",
+            hazmat: false,
+            maxWeight: 5000,
+            pickable: true,
+            putawayAllowed: true,
+            notes: "Main storage area"
+          }
+        },
+        // Aisle A01
+        {
+          id: "aisle-a01",
+          type: "AISLE",
+          x: 320,
+          y: 70,
+          width: 80,
+          height: 260,
+          code: "A01",
+          color: "#3b82f6",
+          rotation: 0,
+          scaleX: 1,
+          scaleY: 1,
+          locked: false,
+          visible: true,
+          opacity: 0.7,
+          parentId: "storage-zone-a",
+          metadata: {
+            pickable: true,
+            putawayAllowed: true
+          }
+        },
+        // Aisle A02
+        {
+          id: "aisle-a02",
+          type: "AISLE",
+          x: 420,
+          y: 70,
+          width: 80,
+          height: 260,
+          code: "A02",
+          color: "#3b82f6",
+          rotation: 0,
+          scaleX: 1,
+          scaleY: 1,
+          locked: false,
+          visible: true,
+          opacity: 0.7,
+          parentId: "storage-zone-a",
+          metadata: {
+            pickable: true,
+            putawayAllowed: true
+          }
+        },
+        // Racks in A01
+        {
+          id: "rack-a01-r01",
+          type: "RACK",
+          x: 330,
+          y: 80,
+          width: 60,
+          height: 100,
+          code: "R01",
+          color: "#f59e0b",
+          rotation: 0,
+          scaleX: 1,
+          scaleY: 1,
+          locked: false,
+          visible: true,
+          opacity: 0.9,
+          parentId: "aisle-a01",
+          metadata: {
+            maxWeight: 2000,
+            pickable: true,
+            putawayAllowed: true,
+            notes: "Heavy duty rack"
+          }
+        },
+        {
+          id: "rack-a01-r02",
+          type: "RACK",
+          x: 330,
+          y: 200,
+          width: 60,
+          height: 100,
+          code: "R02",
+          color: "#f59e0b",
+          rotation: 0,
+          scaleX: 1,
+          scaleY: 1,
+          locked: false,
+          visible: true,
+          opacity: 0.9,
+          parentId: "aisle-a01"
+        },
+        // Shelves in Rack R01
+        {
+          id: "shelf-a01-r01-s01",
+          type: "SHELF",
+          x: 340,
+          y: 90,
+          width: 40,
+          height: 20,
+          code: "S01",
+          color: "#8b5cf6",
+          rotation: 0,
+          scaleX: 1,
+          scaleY: 1,
+          locked: false,
+          visible: true,
+          opacity: 0.8,
+          parentId: "rack-a01-r01",
+          metadata: {
+            maxWeight: 500,
+            pickable: true,
+            putawayAllowed: true
+          }
+        },
+        {
+          id: "shelf-a01-r01-s02",
+          type: "SHELF",
+          x: 340,
+          y: 120,
+          width: 40,
+          height: 20,
+          code: "S02",
+          color: "#8b5cf6",
+          rotation: 0,
+          scaleX: 1,
+          scaleY: 1,
+          locked: false,
+          visible: true,
+          opacity: 0.8,
+          parentId: "rack-a01-r01"
+        },
+        // Bins in Shelf S01
+        {
+          id: "bin-a01-r01-s01-b01",
+          type: "BIN",
+          x: 345,
+          y: 95,
+          width: 12,
+          height: 10,
+          code: "B01",
+          color: "#ec4899",
+          rotation: 0,
+          scaleX: 1,
+          scaleY: 1,
+          locked: false,
+          visible: true,
+          opacity: 1,
+          parentId: "shelf-a01-r01-s01",
+          metadata: {
+            maxWeight: 50,
+            pickable: true,
+            putawayAllowed: true
+          }
+        },
+        {
+          id: "bin-a01-r01-s01-b02",
+          type: "BIN",
+          x: 362,
+          y: 95,
+          width: 12,
+          height: 10,
+          code: "B02",
+          color: "#ec4899",
+          rotation: 0,
+          scaleX: 1,
+          scaleY: 1,
+          locked: false,
+          visible: true,
+          opacity: 1,
+          parentId: "shelf-a01-r01-s01"
+        },
+        // Cold Storage Zone
+        {
+          id: "cold-zone",
+          type: "ZONE",
+          x: 750,
+          y: 50,
+          width: 180,
+          height: 120,
+          code: "COLD",
+          color: "#06b6d4",
+          rotation: 0,
+          scaleX: 1,
+          scaleY: 1,
+          locked: false,
+          visible: true,
+          opacity: 0.8,
+          metadata: {
+            temperature: "-18°C",
+            hazmat: false,
+            maxWeight: 3000,
+            pickable: true,
+            putawayAllowed: true,
+            notes: "Frozen goods storage"
+          }
+        },
+        // Shipping Zone
+        {
+          id: "shipping-zone",
+          type: "ZONE",
+          x: 50,
+          y: 250,
+          width: 200,
+          height: 100,
+          code: "SHIP",
+          color: "#84cc16",
+          rotation: 0,
+          scaleX: 1,
+          scaleY: 1,
+          locked: false,
+          visible: true,
+          opacity: 0.8,
+          metadata: {
+            temperature: "Ambient",
+            hazmat: false,
+            maxWeight: 8000,
+            pickable: true,
+            putawayAllowed: false,
+            notes: "Outbound staging area"
+          }
+        }
+      ];
+
+      setState(prev => ({
+        ...prev,
+        elements: sampleElements,
+        history: [sampleElements],
+        historyIndex: 0
+      }));
+    }
+  }, []);
 
   // Save layout mutation
   const saveLayoutMutation = useMutation({
@@ -792,6 +1084,20 @@ export function AdvancedLayoutDesigner({ warehouseCode }: { warehouseCode: strin
               <Save className="h-4 w-4 mr-2" />
               Save
             </Button>
+            
+            <div className="flex items-center gap-2 px-3 py-1 rounded border">
+              <Label htmlFor="auto-save-advanced" className="text-xs">Auto-save</Label>
+              <input
+                id="auto-save-advanced"
+                type="checkbox"
+                checked={autoSaveEnabled}
+                onChange={(e) => setAutoSaveEnabled(e.target.checked)}
+                className="w-3 h-3"
+              />
+              {saveLayoutMutation.isPending && (
+                <div className="text-xs text-blue-500">Saving...</div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -818,12 +1124,15 @@ export function AdvancedLayoutDesigner({ warehouseCode }: { warehouseCode: strin
                       className="h-6 w-6"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setState(prev => ({
-                          ...prev,
-                          elements: prev.elements.map(el =>
-                            el.id === element.id ? { ...el, visible: !el.visible } : el
-                          )
-                        }));
+                        setState(prev => {
+                          const updated = {
+                            ...prev,
+                            elements: prev.elements.map(el =>
+                              el.id === element.id ? { ...el, visible: !el.visible } : el
+                            )
+                          };
+                          return updated;
+                        });
                       }}
                     >
                       {element.visible ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
@@ -834,12 +1143,15 @@ export function AdvancedLayoutDesigner({ warehouseCode }: { warehouseCode: strin
                       className="h-6 w-6"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setState(prev => ({
-                          ...prev,
-                          elements: prev.elements.map(el =>
-                            el.id === element.id ? { ...el, locked: !el.locked } : el
-                          )
-                        }));
+                        setState(prev => {
+                          const updated = {
+                            ...prev,
+                            elements: prev.elements.map(el =>
+                              el.id === element.id ? { ...el, locked: !el.locked } : el
+                            )
+                          };
+                          return updated;
+                        });
                       }}
                     >
                       {element.locked ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
