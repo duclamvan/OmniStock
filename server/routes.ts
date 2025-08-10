@@ -371,6 +371,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/categories/:id', async (req, res) => {
+    try {
+      const category = await storage.getCategoryById(req.params.id);
+      if (!category) {
+        return res.status(404).json({ message: "Category not found" });
+      }
+      res.json(category);
+    } catch (error) {
+      console.error("Error fetching category:", error);
+      res.status(500).json({ message: "Failed to fetch category" });
+    }
+  });
+
+  app.patch('/api/categories/:id', async (req: any, res) => {
+    try {
+      const updates = req.body;
+      const category = await storage.updateCategory(req.params.id, updates);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'updated',
+        entityType: 'category',
+        entityId: category.id,
+        description: `Updated category: ${category.name}`,
+      });
+      
+      res.json(category);
+    } catch (error) {
+      console.error("Error updating category:", error);
+      res.status(500).json({ message: "Failed to update category" });
+    }
+  });
+
+  app.delete('/api/categories/:id', async (req: any, res) => {
+    try {
+      const category = await storage.getCategoryById(req.params.id);
+      if (!category) {
+        return res.status(404).json({ message: "Category not found" });
+      }
+      
+      // Check if category has products
+      const products = await storage.getProducts();
+      const hasProducts = products.some(p => p.categoryId === req.params.id);
+      
+      if (hasProducts) {
+        return res.status(409).json({ 
+          message: "Cannot delete category - it contains products" 
+        });
+      }
+      
+      await storage.deleteCategory(req.params.id);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'deleted',
+        entityType: 'category',
+        entityId: req.params.id,
+        description: `Deleted category: ${category.name}`,
+      });
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting category:", error);
+      res.status(500).json({ message: "Failed to delete category" });
+    }
+  });
+
   // Warehouses endpoints
   app.get('/api/warehouses', async (req, res) => {
     try {
