@@ -17,6 +17,7 @@ import { BinDetails } from "@/features/warehouse/BinDetails";
 import { GenerateLayoutDialog } from "@/features/warehouse/GenerateLayoutDialog";
 import { PrintLabelsDialog } from "@/features/warehouse/PrintLabelsDialog";
 import { PutawayMini } from "@/features/putaway/PutawayMini";
+import { LayoutDesigner } from "@/features/warehouse/LayoutDesigner";
 
 export default function WarehouseMap() {
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>("WH1");
@@ -123,6 +124,7 @@ export default function WarehouseMap() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-4">
           <TabsTrigger value="map">Map View</TabsTrigger>
+          <TabsTrigger value="designer">Layout Designer</TabsTrigger>
           <TabsTrigger value="putaway">Putaway</TabsTrigger>
           <TabsTrigger value="inventory">Inventory</TabsTrigger>
         </TabsList>
@@ -171,6 +173,12 @@ export default function WarehouseMap() {
 
         <TabsContent value="putaway">
           <PutawayMini />
+        </TabsContent>
+
+        <TabsContent value="designer">
+          <Card className="p-0">
+            <LayoutDesigner warehouseCode={selectedWarehouse} />
+          </Card>
         </TabsContent>
 
         <TabsContent value="inventory">
