@@ -420,26 +420,28 @@ export default function CategoryDetails() {
 
       {/* Move Products Dialog */}
       <Dialog open={showMoveDialog} onOpenChange={setShowMoveDialog}>
-        <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
-          <DialogHeader>
+        <DialogContent className="max-w-3xl h-[80vh] flex flex-col p-0">
+          <div className="px-6 py-4 border-b">
             <DialogTitle>Move Products to {category?.name}</DialogTitle>
             <DialogDescription>
               Select products from other categories to move to this category.
             </DialogDescription>
-          </DialogHeader>
+          </div>
           
-          <div className="flex-1 flex flex-col min-h-0 space-y-4">
+          <div className="flex-1 flex flex-col overflow-hidden px-6">
             {/* Search Input */}
-            <Input
-              placeholder="Search products..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full"
-            />
+            <div className="py-4">
+              <Input
+                placeholder="Search products..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full"
+              />
+            </div>
             
             {/* Select All Checkbox */}
             {filteredOtherProducts.length > 0 && (
-              <div className="flex items-center gap-2 pb-2 border-b">
+              <div className="flex items-center gap-2 pb-3 border-b mb-3">
                 <Checkbox
                   id="select-all"
                   checked={selectedProducts.length === filteredOtherProducts.length && filteredOtherProducts.length > 0}
@@ -451,51 +453,47 @@ export default function CategoryDetails() {
               </div>
             )}
             
-            {/* Products List */}
-            <div className="flex-1 min-h-0 overflow-hidden border rounded-lg">
-              <ScrollArea className="h-full">
-                <div className="p-2">
-                  {filteredOtherProducts.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      {searchQuery ? 'No products found matching your search.' : 'No products available to move.'}
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {filteredOtherProducts.map((product) => (
-                        <div
-                          key={product.id}
-                          className="flex items-start gap-3 p-4 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
-                          onClick={() => toggleProductSelection(product.id)}
-                        >
-                          <div className="pt-0.5">
-                            <Checkbox
-                              checked={selectedProducts.includes(product.id)}
-                              onCheckedChange={() => toggleProductSelection(product.id)}
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-sm">{product.name}</div>
-                            <div className="text-xs text-muted-foreground mt-1">
-                              SKU: {product.sku || 'N/A'} | Stock: {product.quantity}
-                            </div>
-                          </div>
-                          <div className="text-right flex-shrink-0">
-                            <div className="font-semibold text-sm">€{parseFloat(product.priceEur).toFixed(2)}</div>
-                            <div className="text-xs text-muted-foreground">
-                              CZK {parseFloat(product.priceCzk).toFixed(2)}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+            {/* Products List - Fixed height scrollable area */}
+            <div className="flex-1 overflow-y-auto mb-4" style={{ maxHeight: 'calc(100% - 120px)' }}>
+              {filteredOtherProducts.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  {searchQuery ? 'No products found matching your search.' : 'No products available to move.'}
                 </div>
-              </ScrollArea>
+              ) : (
+                <div className="space-y-2 pr-2">
+                  {filteredOtherProducts.map((product) => (
+                    <div
+                      key={product.id}
+                      className="flex items-start gap-3 p-4 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
+                      onClick={() => toggleProductSelection(product.id)}
+                    >
+                      <div className="pt-0.5">
+                        <Checkbox
+                          checked={selectedProducts.includes(product.id)}
+                          onCheckedChange={() => toggleProductSelection(product.id)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm">{product.name}</div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          SKU: {product.sku || 'N/A'} | Stock: {product.quantity}
+                        </div>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <div className="font-semibold text-sm">€{parseFloat(product.priceEur).toFixed(2)}</div>
+                        <div className="text-xs text-muted-foreground">
+                          CZK {parseFloat(product.priceCzk).toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
           
-          <DialogFooter className="border-t pt-4">
+          <div className="border-t px-6 py-4 flex justify-end gap-2">
             <Button variant="outline" onClick={() => setShowMoveDialog(false)}>
               Cancel
             </Button>
@@ -515,7 +513,7 @@ export default function CategoryDetails() {
                 </>
               )}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
