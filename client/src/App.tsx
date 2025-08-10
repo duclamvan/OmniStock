@@ -48,6 +48,7 @@ import Categories from "@/pages/Inventory/Categories";
 import AddCategory from "@/pages/Inventory/AddCategory";
 import EditCategory from "@/pages/Inventory/EditCategory";
 import CategoryDetails from "@/pages/Inventory/CategoryDetails";
+import WarehouseMap from "@/pages/WarehouseMap";
 
 function Router() {
   return (
@@ -87,6 +88,7 @@ function Router() {
         <Route path="/inventory/products/edit/:id" component={EditProduct} />
         <Route path="/warehouses" component={AllWarehouses} />
         <Route path="/warehouses/add" component={AddWarehouse} />
+        <Route path="/warehouses/map" component={WarehouseMap} />
         <Route path="/warehouses/:id/edit" component={EditWarehouse} />
         <Route path="/warehouses/:id" component={WarehouseDetails} />
         <Route path="/discounts" component={AllDiscounts} />

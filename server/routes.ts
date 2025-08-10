@@ -27,6 +27,8 @@ import {
   ObjectNotFoundError,
 } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
+import { locationsRouter } from "./routes/locations";
+import { putawayRouter } from "./routes/putaway";
 
 // Configure multer for image uploads
 const storage_disk = multer.diskStorage({
@@ -2421,6 +2423,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to reseed all data" });
     }
   });
+
+  // Register warehouse location routes
+  app.use('/api', locationsRouter);
+  app.use('/api', putawayRouter);
 
   // Reports endpoints
   app.get('/api/reports/sales-summary', async (req, res) => {

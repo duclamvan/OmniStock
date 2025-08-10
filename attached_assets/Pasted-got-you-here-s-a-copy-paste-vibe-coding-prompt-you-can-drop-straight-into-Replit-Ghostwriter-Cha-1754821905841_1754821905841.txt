@@ -1,0 +1,112 @@
+got you — here’s a copy-paste “vibe coding” prompt you can drop straight into Replit Ghostwriter/Chat to spin up an interactive warehouse mapping UI + minimal backend hooks that fit Davie Supply.
+
+⸻
+
+prompt to paste into replit chat
+
+You are a senior TypeScript full-stack engineer working inside my Replit. Build an interactive Warehouse Mapping feature for my app “Davie Supply”.
+
+Tech + constraints
+	•	Frontend: React + TypeScript + Vite, Tailwind, shadcn/ui, Radix, TanStack Query, React Hook Form + Zod, Wouter.
+	•	Backend: Express + TypeScript (ESM), Drizzle ORM (Postgres/Neon). Provide minimal endpoints + mocked data if DB not ready.
+	•	Style: clean, mobile-first, card/grid layout, sticky headers, rounded-2xl, soft shadows.
+	•	Barcodes: locations use Code 128 or QR encoding the address string (e.g., WH1-A01-R02-S03-B04).
+
+Warehouse model (single table, hierarchical)
+
+Location = { id, warehouseId, parentId?, type: 'ZONE'|'AISLE'|'RACK'|'SHELF'|'BIN'|'STAGE'|'DOCK', code, address, pickable:boolean, putawayAllowed:boolean, sortKey:number, attrs?:{temp?:'ambient'|'cool'|'warm', hazmat?:boolean, heightCm?:number, widthCm?:number, depthCm?:number} }
+
+Address format: ${WH}-${ZONE}-${AISLE}-${RACK}-${SHELF}-${BIN} (levels omitted for non-BIN types). Must be unique.
+
+What to deliver
+	1.	Pages & components
+
+	•	/warehouse/map main screen with:
+	•	Left: Zone/Aisle tree (Accordion).
+	•	Center: interactive Rack→Shelf→Bin grid editor.
+	•	Right drawer (Sheet): Bin details (current SKUs, lots, capacity bar, toggles: pickable/putawayAllowed, inputs for attrs, sortKey).
+	•	Generate Layout Wizard (Dialog):
+	•	Inputs: zones range (A..D), aisles/zone (1..10), racks/aisle (1..4), shelves/rack (1..4), bins/shelf (1..6), warehouse code (default WH1).
+	•	Preview of addresses; on submit, bulk create Locations.
+	•	Label Print (Dialog):
+	•	Select scope (All, by Zone/Aisle/Rack).
+	•	Render printable QR/Code128 labels with human text (address + short name), page breaks for 80mm and A4.
+	•	Scanner-first Putaway mini-screen:
+	•	Inputs: scan Variant barcode (simulate), qty, “Suggest Bin” button → show top 3 suggestions (by sortKey, capacity, same-SKU consolidation), scan/choose TO location → confirm.
+
+	2.	Data hooks & endpoints
+
+	•	GET /api/warehouses/:code/locations?type=BIN|...&q=...
+	•	POST /api/warehouses/:code/locations/bulk (from wizard)
+	•	PUT /api/locations/:id (attrs/sortKey/toggles)
+	•	POST /api/putaway/suggest → { suggestions:[{locationId,address,score,reasons: string[]}] }
+	•	Stub an inventory_balances read for Bin details (mock if DB not ready).
+
+	3.	Client code
+
+	•	TanStack Query hooks: useLocationsTree(wh), useLocation(id), usePutawaySuggest(variantId, qty).
+	•	Grid editor:
+	•	Zoomable/pannable area.
+	•	Click Rack → shows Shelf cards → click Shelf → shows Bin matrix (editable).
+	•	Drag-to-reorder sets sortKey (persist).
+	•	Inline edit code, pickable, attrs.*.
+	•	Validation: ensure unique address and valid code patterns with Zod.
+
+	4.	UX polish
+
+	•	Keyboard shortcuts: / to search location, P to toggle pickable.
+	•	Capacity bar (fake meter now), hazard/temp chips.
+	•	Empty states + skeletons.
+	•	Toasts for save/suggest/print.
+
+	5.	Dev ergonomics
+
+	•	Provide a seed script to create: WH1, Zones A..B, basic layout.
+	•	Feature-flag mock mode if no DB: keep the same hooks API using in-memory arrays.
+
+	6.	Printing
+
+	•	80mm thermal friendly page (CSS for continuous paper).
+	•	A4 print sheet with 3 columns.
+	•	Include a Print button that opens a clean print view.
+
+	7.	Nice-to-have (if time)
+
+	•	Export/Import locations as CSV.
+	•	Mini-heatmap overlay: color Bins by sortKey or by “qty for SKU” (mock).
+
+Acceptance criteria
+	•	I can generate a full layout for WH1 with a wizard, see it as a tree and grid, edit bins inline, drag to change route order, and print labels.
+	•	PUT updates persist (mock/store if DB missing).
+	•	Putaway Suggest returns 3 candidates with human “reasons”.
+	•	Clean, responsive UI that works on mobile.
+
+File plan (suggest)
+	•	src/pages/WarehouseMap.tsx
+	•	src/features/warehouse/LocationTree.tsx
+	•	src/features/warehouse/RackGrid.tsx
+	•	src/features/warehouse/BinMatrix.tsx
+	•	src/features/warehouse/GenerateLayoutDialog.tsx
+	•	src/features/warehouse/PrintLabelsDialog.tsx
+	•	src/features/putaway/PutawayMini.tsx
+	•	src/api/locations.ts (client)
+	•	server/routes/locations.ts
+	•	server/routes/putaway.ts
+	•	server/db/schema/locations.ts (Drizzle)
+
+Implementation notes
+	•	Build a tiny address composer/parser util. Ensure check for uniqueness.
+	•	sortKey: lower = closer to dock; use it to sort pick route.
+	•	Use lucide-react icons: Boxes, Map, Barcode, ScanLine, Printer, Thermometer.
+	•	For QR/Code128, use a lightweight lib or canvas; fall back to text if unavailable.
+
+Create the whole feature now. If a detail is ambiguous, make a sensible default and keep moving.
+
+⸻
+
+follow-up micro-prompts (optional)
+	•	“Add CSV import/export for locations with validation and dry-run preview.”
+	•	“Make the Bin matrix drag-select to toggle pickable in bulk.”
+	•	“Add search box that jumps/focuses the matched Bin and opens its drawer.”
+	•	“Enforce address immutability after creation; allow code edits that auto-recompose child addresses.”
+	•	“Add A/B/C velocity heatmap mock and a legend toggle.”

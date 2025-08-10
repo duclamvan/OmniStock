@@ -3,6 +3,8 @@ import {
   categories,
   warehouses,
   warehouseFiles,
+  warehouseLocations,
+  inventoryBalances,
   suppliers,
   supplierFiles,
   products,
@@ -68,6 +70,10 @@ import {
   type InsertUserActivity,
   type Setting,
   type InsertSetting,
+  type WarehouseLocation,
+  type InsertWarehouseLocation,
+  type InventoryBalance,
+  type InsertInventoryBalance,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, and, or, like, sql, gte, lte, count, inArray, isNotNull } from "drizzle-orm";
@@ -241,6 +247,25 @@ export interface IStorage {
   getSetting(key: string): Promise<Setting | undefined>;
   setSetting(setting: InsertSetting): Promise<Setting>;
   
+  // Warehouse Locations
+  getWarehouseLocations(warehouseId: string, type?: string, q?: string): Promise<WarehouseLocation[]>;
+  getWarehouseLocationById(id: string): Promise<WarehouseLocation | undefined>;
+  createWarehouseLocation(location: InsertWarehouseLocation): Promise<WarehouseLocation>;
+  createWarehouseLocationsBulk(locations: InsertWarehouseLocation[]): Promise<WarehouseLocation[]>;
+  updateWarehouseLocation(id: string, location: Partial<InsertWarehouseLocation>): Promise<WarehouseLocation>;
+  deleteWarehouseLocation(id: string): Promise<void>;
+  getLocationChildren(parentId: string): Promise<WarehouseLocation[]>;
+  
+  // Inventory Balances
+  getInventoryBalances(locationId: string): Promise<InventoryBalance[]>;
+  getInventoryBalanceById(id: string): Promise<InventoryBalance | undefined>;
+  createInventoryBalance(balance: InsertInventoryBalance): Promise<InventoryBalance>;
+  updateInventoryBalance(id: string, balance: Partial<InsertInventoryBalance>): Promise<InventoryBalance>;
+  deleteInventoryBalance(id: string): Promise<void>;
+  
+  // Putaway Suggestions
+  suggestPutawayLocations(variantId: string, quantity: number): Promise<{ locationId: string; address: string; score: number; reasons: string[] }[]>;
+
   // Utility Functions
   generateSKU(categoryName: string, productName: string): Promise<string>;
   calculateAverageImportCost(existingProduct: Product, newQuantity: number, newImportCost: number, currency: string): Promise<{ importCostUsd?: string; importCostCzk?: string; importCostEur?: string }>;
@@ -1943,6 +1968,155 @@ export class DatabaseStorage implements IStorage {
     
     // Format: #YEARNAME (e.g., #2024BLACKFRIDAY20)
     return `#${year}${cleanName}`;
+  }
+
+  // Warehouse Locations
+  async getWarehouseLocations(warehouseId: string, type?: string, q?: string): Promise<WarehouseLocation[]> {
+    let query = db.select().from(warehouseLocations);
+    
+    const conditions = [eq(warehouseLocations.warehouseId, warehouseId)];
+    if (type) {
+      conditions.push(eq(warehouseLocations.type, type as any));
+    }
+    if (q) {
+      conditions.push(or(
+        like(warehouseLocations.code, `%${q}%`),
+        like(warehouseLocations.address, `%${q}%`)
+      )!);
+    }
+    
+    query = query.where(and(...conditions)) as any;
+    
+    return await query.orderBy(asc(warehouseLocations.sortKey), asc(warehouseLocations.address));
+  }
+
+  async getWarehouseLocationById(id: string): Promise<WarehouseLocation | undefined> {
+    const [location] = await db.select().from(warehouseLocations).where(eq(warehouseLocations.id, id));
+    return location;
+  }
+
+  async createWarehouseLocation(location: InsertWarehouseLocation): Promise<WarehouseLocation> {
+    const [newLocation] = await db.insert(warehouseLocations).values(location).returning();
+    return newLocation;
+  }
+
+  async createWarehouseLocationsBulk(locations: InsertWarehouseLocation[]): Promise<WarehouseLocation[]> {
+    if (locations.length === 0) return [];
+    return await db.insert(warehouseLocations).values(locations).returning();
+  }
+
+  async updateWarehouseLocation(id: string, location: Partial<InsertWarehouseLocation>): Promise<WarehouseLocation> {
+    const [updatedLocation] = await db
+      .update(warehouseLocations)
+      .set({ ...location, updatedAt: new Date() })
+      .where(eq(warehouseLocations.id, id))
+      .returning();
+    return updatedLocation;
+  }
+
+  async deleteWarehouseLocation(id: string): Promise<void> {
+    await db.delete(warehouseLocations).where(eq(warehouseLocations.id, id));
+  }
+
+  async getLocationChildren(parentId: string): Promise<WarehouseLocation[]> {
+    return await db.select()
+      .from(warehouseLocations)
+      .where(eq(warehouseLocations.parentId, parentId))
+      .orderBy(asc(warehouseLocations.sortKey), asc(warehouseLocations.code));
+  }
+
+  // Inventory Balances
+  async getInventoryBalances(locationId: string): Promise<InventoryBalance[]> {
+    return await db.select()
+      .from(inventoryBalances)
+      .where(eq(inventoryBalances.locationId, locationId))
+      .orderBy(desc(inventoryBalances.quantity));
+  }
+
+  async getInventoryBalanceById(id: string): Promise<InventoryBalance | undefined> {
+    const [balance] = await db.select().from(inventoryBalances).where(eq(inventoryBalances.id, id));
+    return balance;
+  }
+
+  async createInventoryBalance(balance: InsertInventoryBalance): Promise<InventoryBalance> {
+    const [newBalance] = await db.insert(inventoryBalances).values(balance).returning();
+    return newBalance;
+  }
+
+  async updateInventoryBalance(id: string, balance: Partial<InsertInventoryBalance>): Promise<InventoryBalance> {
+    const [updatedBalance] = await db
+      .update(inventoryBalances)
+      .set({ ...balance, updatedAt: new Date() })
+      .where(eq(inventoryBalances.id, id))
+      .returning();
+    return updatedBalance;
+  }
+
+  async deleteInventoryBalance(id: string): Promise<void> {
+    await db.delete(inventoryBalances).where(eq(inventoryBalances.id, id));
+  }
+
+  // Putaway Suggestions
+  async suggestPutawayLocations(variantId: string, quantity: number): Promise<{ locationId: string; address: string; score: number; reasons: string[] }[]> {
+    // Get all BIN locations that allow putaway
+    const bins = await db.select()
+      .from(warehouseLocations)
+      .where(and(
+        eq(warehouseLocations.type, 'BIN' as any),
+        eq(warehouseLocations.putawayAllowed, true)
+      ))
+      .orderBy(asc(warehouseLocations.sortKey));
+
+    // Get existing balances for this variant
+    const existingBalances = await db.select()
+      .from(inventoryBalances)
+      .where(eq(inventoryBalances.variantId, variantId));
+
+    const suggestions = [];
+    
+    for (const bin of bins) {
+      let score = 100;
+      const reasons: string[] = [];
+      
+      // Check if bin already has this variant (consolidation)
+      const existingInBin = existingBalances.find(b => b.locationId === bin.id);
+      if (existingInBin) {
+        score += 20;
+        reasons.push('Same SKU consolidation');
+      }
+      
+      // Score based on occupancy
+      if (bin.currentOccupancy < 30) {
+        score += 15;
+        reasons.push('Low occupancy');
+      } else if (bin.currentOccupancy > 80) {
+        score -= 20;
+        reasons.push('High occupancy');
+      }
+      
+      // Score based on sort key (lower is closer to dock)
+      if (bin.sortKey <= 10) {
+        score += 10;
+        reasons.push('Near dock');
+      }
+      
+      // Check hazmat compatibility
+      if (bin.hazmat) {
+        reasons.push('Hazmat area');
+      }
+      
+      suggestions.push({
+        locationId: bin.id,
+        address: bin.address,
+        score,
+        reasons
+      });
+    }
+    
+    // Sort by score and return top 3
+    return suggestions
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3);
   }
 }
 

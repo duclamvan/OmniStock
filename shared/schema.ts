@@ -62,6 +62,7 @@ export const categories = pgTable("categories", {
 // Warehouses
 export const warehouses = pgTable("warehouses", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  code: varchar("code", { length: 20 }).unique(), // e.g., WH1, WH2, etc.
   name: varchar("name", { length: 255 }).notNull(),
   location: varchar("location", { length: 255 }),
   address: text("address"),
@@ -92,6 +93,61 @@ export const warehouseFiles = pgTable("warehouse_files", {
   fileSize: integer("file_size"),
   uploadedBy: varchar("uploaded_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Location type enum
+export const locationTypeEnum = pgEnum("location_type", [
+  'ZONE',
+  'AISLE', 
+  'RACK',
+  'SHELF',
+  'BIN',
+  'STAGE',
+  'DOCK'
+]);
+
+// Temperature type enum
+export const temperatureTypeEnum = pgEnum("temperature_type", [
+  'ambient',
+  'cool', 
+  'warm'
+]);
+
+// Warehouse Locations (hierarchical)
+export const warehouseLocations: any = pgTable("warehouse_locations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  warehouseId: varchar("warehouse_id").references(() => warehouses.id, { onDelete: 'cascade' }).notNull(),
+  parentId: varchar("parent_id"),
+  type: locationTypeEnum("type").notNull(),
+  code: varchar("code", { length: 50 }).notNull(),
+  address: varchar("address", { length: 255 }).notNull().unique(),
+  pickable: boolean("pickable").default(true),
+  putawayAllowed: boolean("putaway_allowed").default(true),
+  sortKey: integer("sort_key").default(0),
+  // Attributes stored as individual columns for better querying
+  temperature: temperatureTypeEnum("temperature"),
+  hazmat: boolean("hazmat").default(false),
+  heightCm: integer("height_cm"),
+  widthCm: integer("width_cm"),
+  depthCm: integer("depth_cm"),
+  maxWeight: integer("max_weight"), // in kg
+  currentOccupancy: integer("current_occupancy").default(0), // percentage
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Inventory Balances (tracks what's in each location)
+export const inventoryBalances = pgTable("inventory_balances", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  locationId: varchar("location_id").references(() => warehouseLocations.id, { onDelete: 'cascade' }).notNull(),
+  productId: varchar("product_id").references(() => products.id),
+  variantId: varchar("variant_id").references(() => productVariants.id),
+  quantity: integer("quantity").notNull().default(0),
+  lotNumber: varchar("lot_number", { length: 100 }),
+  expiryDate: timestamp("expiry_date"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Suppliers
@@ -648,3 +704,21 @@ export type UserActivity = typeof userActivities.$inferSelect;
 export type InsertUserActivity = z.infer<typeof insertUserActivitySchema>;
 export type Setting = typeof settings.$inferSelect;
 export type InsertSetting = z.infer<typeof insertSettingSchema>;
+
+// Warehouse Location schemas
+export const insertWarehouseLocationSchema = createInsertSchema(warehouseLocations).omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true 
+});
+export const insertInventoryBalanceSchema = createInsertSchema(inventoryBalances).omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true 
+});
+
+// Warehouse Location types
+export type WarehouseLocation = typeof warehouseLocations.$inferSelect;
+export type InsertWarehouseLocation = z.infer<typeof insertWarehouseLocationSchema>;
+export type InventoryBalance = typeof inventoryBalances.$inferSelect;
+export type InsertInventoryBalance = z.infer<typeof insertInventoryBalanceSchema>;
