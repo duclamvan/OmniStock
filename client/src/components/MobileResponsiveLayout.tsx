@@ -19,7 +19,8 @@ import {
   User,
   Settings,
   LogOut,
-  Receipt
+  Receipt,
+  CreditCard
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -110,6 +111,11 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
       name: "Expenses",
       href: "/expenses",
       icon: Receipt,
+    },
+    {
+      name: "POS",
+      href: "/pos",
+      icon: CreditCard,
     },
     {
       name: "Reports",
@@ -244,6 +250,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                  location.includes('/suppliers') ? 'Suppliers' :
                  location.includes('/returns') ? 'Returns' :
                  location.includes('/expenses') ? 'Expenses' :
+                 location.includes('/pos') ? 'Point of Sale' :
                  location.includes('/reports') ? 'Reports' : 'Dashboard'}
               </h2>
               <div className="relative max-w-md w-full">

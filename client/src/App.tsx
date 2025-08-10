@@ -43,6 +43,7 @@ import AllExpenses from "@/pages/Expenses/AllExpenses";
 import AddExpense from "@/pages/Expenses/AddExpense";
 import EditExpense from "@/pages/Expenses/EditExpense";
 import ExpenseDetails from "@/pages/Expenses/ExpenseDetails";
+import POS from "@/pages/POS/POS";
 
 function Router() {
   return (
@@ -99,6 +100,7 @@ function Router() {
         <Route path="/expenses/add" component={AddExpense} />
         <Route path="/expenses/edit/:id" component={EditExpense} />
         <Route path="/expenses/:id" component={ExpenseDetails} />
+        <Route path="/pos" component={POS} />
         <Route path="/reports">
           {() => <div>Reports page coming soon</div>}
         </Route>
