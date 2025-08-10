@@ -78,6 +78,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
       icon: Package,
       children: [
         { name: "All Products", href: "/inventory" },
+        { name: "Categories", href: "/inventory/categories" },
         { name: "Product Bundles", href: "/inventory/bundles" },
         { name: "Add Product", href: "/inventory/add" },
       ],

@@ -44,6 +44,10 @@ import AddExpense from "@/pages/Expenses/AddExpense";
 import EditExpense from "@/pages/Expenses/EditExpense";
 import ExpenseDetails from "@/pages/Expenses/ExpenseDetails";
 import POS from "@/pages/POS/POS";
+import Categories from "@/pages/Inventory/Categories";
+import AddCategory from "@/pages/Inventory/AddCategory";
+import EditCategory from "@/pages/Inventory/EditCategory";
+import CategoryDetails from "@/pages/Inventory/CategoryDetails";
 
 function Router() {
   return (
@@ -68,6 +72,10 @@ function Router() {
         <Route path="/orders/:id" component={OrderDetails} />
         <Route path="/inventory" component={AllInventory} />
         <Route path="/inventory/products" component={AllInventory} />
+        <Route path="/inventory/categories" component={Categories} />
+        <Route path="/inventory/categories/add" component={AddCategory} />
+        <Route path="/inventory/categories/:id/edit" component={EditCategory} />
+        <Route path="/inventory/categories/:id" component={CategoryDetails} />
         <Route path="/inventory/bundles" component={Bundles} />
         <Route path="/inventory/bundles/create" component={CreateBundle} />
         <Route path="/inventory/bundles/:id/edit" component={EditBundle} />
