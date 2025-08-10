@@ -13,7 +13,9 @@ import {
   Calendar,
   FolderOpen,
   Loader2,
-  Eye
+  Eye,
+  MoveRight,
+  Check
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -28,6 +30,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Category {
   id: string;
@@ -51,6 +64,9 @@ export default function CategoryDetails() {
   const [, navigate] = useLocation();
   const { id } = useParams<{ id: string }>();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showMoveDialog, setShowMoveDialog] = useState(false);
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch category data
   const { data: category, isLoading: categoryLoading } = useQuery<Category>({
@@ -64,6 +80,40 @@ export default function CategoryDetails() {
   });
 
   const categoryProducts = allProducts.filter(p => p.categoryId === id);
+  const otherProducts = allProducts.filter(p => p.categoryId !== id);
+
+  // Filter products based on search
+  const filteredOtherProducts = otherProducts.filter(product =>
+    product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (product.sku && product.sku.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  // Move products mutation
+  const moveProductsMutation = useMutation({
+    mutationFn: async (productIds: string[]) => {
+      const promises = productIds.map(productId =>
+        apiRequest('PATCH', `/api/products/${productId}`, { categoryId: id })
+      );
+      return Promise.all(promises);
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Success',
+        description: `${selectedProducts.length} products moved to this category`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      setShowMoveDialog(false);
+      setSelectedProducts([]);
+      setSearchQuery('');
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to move products',
+        variant: 'destructive',
+      });
+    },
+  });
 
   // Delete mutation
   const deleteMutation = useMutation({
@@ -102,6 +152,34 @@ export default function CategoryDetails() {
   const confirmDelete = () => {
     deleteMutation.mutate();
     setShowDeleteDialog(false);
+  };
+
+  const handleMoveProducts = () => {
+    if (selectedProducts.length === 0) {
+      toast({
+        title: 'No products selected',
+        description: 'Please select at least one product to move',
+        variant: 'destructive',
+      });
+      return;
+    }
+    moveProductsMutation.mutate(selectedProducts);
+  };
+
+  const toggleProductSelection = (productId: string) => {
+    setSelectedProducts(prev =>
+      prev.includes(productId)
+        ? prev.filter(id => id !== productId)
+        : [...prev, productId]
+    );
+  };
+
+  const selectAllProducts = () => {
+    if (selectedProducts.length === filteredOtherProducts.length) {
+      setSelectedProducts([]);
+    } else {
+      setSelectedProducts(filteredOtherProducts.map(p => p.id));
+    }
   };
 
   const productColumns: DataTableColumn<Product>[] = [
@@ -215,6 +293,14 @@ export default function CategoryDetails() {
         </div>
         
         <div className="flex gap-2">
+          <Button 
+            variant="outline"
+            onClick={() => setShowMoveDialog(true)}
+            disabled={otherProducts.length === 0}
+          >
+            <MoveRight className="mr-2 h-4 w-4" />
+            Move Products Here
+          </Button>
           <Link href={`/inventory/categories/${id}/edit`}>
             <Button variant="outline">
               <Edit className="mr-2 h-4 w-4" />
@@ -331,6 +417,98 @@ export default function CategoryDetails() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Move Products Dialog */}
+      <Dialog open={showMoveDialog} onOpenChange={setShowMoveDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>Move Products to {category?.name}</DialogTitle>
+            <DialogDescription>
+              Select products from other categories to move to this category.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Search Input */}
+            <Input
+              placeholder="Search products..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            
+            {/* Select All Checkbox */}
+            {filteredOtherProducts.length > 0 && (
+              <div className="flex items-center gap-2 pb-2 border-b">
+                <Checkbox
+                  checked={selectedProducts.length === filteredOtherProducts.length && filteredOtherProducts.length > 0}
+                  onCheckedChange={selectAllProducts}
+                />
+                <label className="text-sm font-medium">
+                  Select All ({filteredOtherProducts.length} products)
+                </label>
+              </div>
+            )}
+            
+            {/* Products List */}
+            <ScrollArea className="h-[400px]">
+              {filteredOtherProducts.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  {searchQuery ? 'No products found matching your search.' : 'No products available to move.'}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {filteredOtherProducts.map((product) => (
+                    <div
+                      key={product.id}
+                      className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer"
+                      onClick={() => toggleProductSelection(product.id)}
+                    >
+                      <Checkbox
+                        checked={selectedProducts.includes(product.id)}
+                        onCheckedChange={() => toggleProductSelection(product.id)}
+                      />
+                      <div className="flex-1">
+                        <div className="font-medium">{product.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          SKU: {product.sku || 'N/A'} | Stock: {product.quantity}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-medium">€{parseFloat(product.priceEur).toFixed(2)}</div>
+                        <div className="text-sm text-muted-foreground">
+                          CZK {parseFloat(product.priceCzk).toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowMoveDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleMoveProducts}
+              disabled={selectedProducts.length === 0 || moveProductsMutation.isPending}
+            >
+              {moveProductsMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Moving...
+                </>
+              ) : (
+                <>
+                  <Check className="mr-2 h-4 w-4" />
+                  Move {selectedProducts.length} Product{selectedProducts.length !== 1 ? 's' : ''}
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
