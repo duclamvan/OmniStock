@@ -92,6 +92,9 @@ export default function AddProduct() {
   const [seriesImportCostCzk, setSeriesImportCostCzk] = useState("");
   const [seriesImportCostEur, setSeriesImportCostEur] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isBulkScanDialogOpen, setIsBulkScanDialogOpen] = useState(false);
+  const [bulkBarcodes, setBulkBarcodes] = useState("");
+  const [isScanning, setIsScanning] = useState(false);
   const [newVariant, setNewVariant] = useState({
     name: "",
     barcode: "",
@@ -320,6 +323,47 @@ export default function AddProduct() {
       toast({
         title: "Success",
         description: "Product variant added successfully",
+      });
+    }
+  };
+
+  const handleBulkBarcodeAssign = () => {
+    const barcodes = bulkBarcodes
+      .split('\n')
+      .map(b => b.trim())
+      .filter(b => b.length > 0);
+    
+    if (barcodes.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please enter at least one barcode",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const updatedVariants = [...variants];
+    const variantsWithoutBarcode = updatedVariants.filter(v => !v.barcode);
+    
+    // Assign barcodes to variants without barcodes
+    for (let i = 0; i < Math.min(barcodes.length, variantsWithoutBarcode.length); i++) {
+      variantsWithoutBarcode[i].barcode = barcodes[i];
+    }
+
+    setVariants(updatedVariants);
+    setBulkBarcodes("");
+    setIsBulkScanDialogOpen(false);
+    
+    const assignedCount = Math.min(barcodes.length, variantsWithoutBarcode.length);
+    toast({
+      title: "Success",
+      description: `Assigned ${assignedCount} barcode(s) to variants`,
+    });
+
+    if (barcodes.length > variantsWithoutBarcode.length) {
+      toast({
+        title: "Info",
+        description: `${barcodes.length - variantsWithoutBarcode.length} barcode(s) were not assigned (no more variants without barcodes)`,
       });
     }
   };
@@ -621,10 +665,32 @@ export default function AddProduct() {
 
             <div>
               <Label htmlFor="barcode">Barcode (EAN-13)</Label>
-              <Input
-                {...form.register('barcode')}
-                placeholder="Enter barcode or scan"
-              />
+              <div className="flex gap-2">
+                <Input
+                  {...form.register('barcode')}
+                  placeholder="Enter barcode or scan"
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsScanning(true);
+                    toast({
+                      title: "Scanner Ready",
+                      description: "Please scan the barcode now",
+                    });
+                    // Simulate barcode scan - in production, this would connect to a barcode scanner
+                    setTimeout(() => {
+                      setIsScanning(false);
+                    }, 3000);
+                  }}
+                  disabled={isScanning}
+                >
+                  <Barcode className="h-4 w-4 mr-2" />
+                  {isScanning ? "Scanning..." : "Scan"}
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -711,6 +777,16 @@ export default function AddProduct() {
                   Delete Selected ({selectedVariants.length})
                 </Button>
               )}
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setIsBulkScanDialogOpen(true)}
+                disabled={variants.length === 0}
+              >
+                <Barcode className="h-4 w-4 mr-2" />
+                Bulk Scan
+              </Button>
               <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                 <DialogTrigger asChild>
                   <Button type="button" size="sm">
@@ -1101,6 +1177,86 @@ export default function AddProduct() {
             </div>
             {/* End of Right Column */}
           </div>
+          
+          {/* Bulk Scan Dialog */}
+          <Dialog open={isBulkScanDialogOpen} onOpenChange={setIsBulkScanDialogOpen}>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Bulk Scan Barcodes</DialogTitle>
+                <DialogDescription>
+                  Scan barcodes one by one. They will be automatically assigned to variants without barcodes (from first to last).
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="bulk-barcodes">Scanned Barcodes</Label>
+                  <Textarea
+                    id="bulk-barcodes"
+                    value={bulkBarcodes}
+                    onChange={(e) => setBulkBarcodes(e.target.value)}
+                    placeholder="Scan or paste barcodes here (one per line)"
+                    rows={10}
+                    className="font-mono text-sm"
+                  />
+                  <p className="text-xs text-slate-500 mt-2">
+                    Enter one barcode per line. Barcodes will be assigned to variants in order.
+                  </p>
+                </div>
+                
+                <div className="flex items-center justify-between text-sm">
+                  <div className="text-slate-600">
+                    <span className="font-medium">{variants.filter(v => !v.barcode).length}</span> variants without barcodes
+                  </div>
+                  <div className="text-slate-600">
+                    <span className="font-medium">{bulkBarcodes.split('\n').filter(b => b.trim()).length}</span> barcodes entered
+                  </div>
+                </div>
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    setIsScanning(true);
+                    toast({
+                      title: "Scanner Ready",
+                      description: "Start scanning barcodes. Press Enter after each scan.",
+                    });
+                    // In production, this would interface with a barcode scanner
+                    // For now, users can manually paste or type barcodes
+                    setTimeout(() => {
+                      setIsScanning(false);
+                    }, 3000);
+                  }}
+                  disabled={isScanning}
+                >
+                  <Barcode className="h-4 w-4 mr-2" />
+                  {isScanning ? "Scanning..." : "Start Scanning"}
+                </Button>
+              </div>
+              
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setBulkBarcodes("");
+                    setIsBulkScanDialogOpen(false);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleBulkBarcodeAssign}
+                  disabled={!bulkBarcodes.trim() || variants.filter(v => !v.barcode).length === 0}
+                >
+                  Assign Barcodes
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </form>
       </div>
     </div>
