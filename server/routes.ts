@@ -471,6 +471,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add warehouse map files route (must be before :id route)
+  app.get('/api/warehouses/map/files', async (req, res) => {
+    try {
+      // Return empty array for now as warehouse maps are stored elsewhere
+      res.json([]);
+    } catch (error) {
+      console.error("Error fetching warehouse map files:", error);
+      res.status(500).json({ message: "Failed to fetch warehouse map files" });
+    }
+  });
+
   app.get('/api/warehouses/:id', async (req, res) => {
     try {
       const warehouse = await storage.getWarehouseById(req.params.id);

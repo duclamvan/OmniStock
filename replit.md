@@ -2,14 +2,25 @@
 Davie Supply is a comprehensive warehouse and order management system designed as a full-stack web application. Its primary purpose is to manage the complete order lifecycle from creation to fulfillment, track inventory, manage customers, and provide financial reporting with multi-currency support. Key capabilities include real-time Vietnamese diacritics search, customer-specific pricing system, and integration with external shipping APIs for order tracking. The business vision is to provide a robust, efficient platform for streamlined supply chain operations.
 
 ## Recent Updates (Jan 10, 2025)
-- Added comprehensive Warehouse Mapping feature accessible via Warehouse > Warehouse Map:
+- Enhanced Warehouse Mapping feature with subpage routing and advanced designer:
+  - Warehouse mapping now accessible as both standalone page (Warehouse > Warehouse Map) and as subpage from individual warehouse details
+  - Added "Warehouse Mapping" button on each warehouse details page for context-specific mapping
+  - Created Advanced Layout Designer with professional CAD-like features:
+    - Scalable shapes with 8-point resize handles
+    - Multi-element selection and editing
+    - Alignment tools (left, center, right, top, middle, bottom)
+    - Undo/redo with 50-state history
+    - Copy/paste/duplicate functionality
+    - Lock/unlock and show/hide elements
+    - Properties panel with detailed element configuration
+    - Layers panel for element management
+    - Metadata support (temperature zones, hazmat areas, weight limits)
+    - Keyboard shortcuts (Ctrl+Z, Ctrl+C, Ctrl+V, Delete, etc.)
+    - Professional toolbar with zoom controls (25% to 300%)
+    - Grid snap and rulers for precise positioning
   - Interactive map view showing hierarchical warehouse structure (zones, aisles, racks, shelves, bins)
-  - Drag-and-drop Layout Designer for visual warehouse layout creation
-  - Grid snap, zoom controls, and element properties editor
+  - 3D warehouse visualization with rotation and zoom
   - Import/export functionality for warehouse layouts (JSON format)
-  - Visual elements with color coding for different location types
-  - Real-time search and filtering of warehouse locations
-  - Putaway suggestions and inventory views
   - Sample warehouse data with 20 locations demonstrating full hierarchy
 
 ## Previous Updates (Jan 10, 2025)

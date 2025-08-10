@@ -192,12 +192,20 @@ export default function WarehouseDetails() {
             {isFetching && <RefreshCw className="h-4 w-4 animate-spin text-blue-600" />}
           </div>
         </div>
-        <Link href={`/warehouses/${warehouse.id}/edit`}>
-          <Button>
-            <Edit className="h-4 w-4 mr-2" />
-            Edit Warehouse
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href={`/warehouses/${warehouse.id}/mapping`}>
+            <Button variant="outline">
+              <MapPin className="h-4 w-4 mr-2" />
+              Warehouse Mapping
+            </Button>
+          </Link>
+          <Link href={`/warehouses/${warehouse.id}/edit`}>
+            <Button>
+              <Edit className="h-4 w-4 mr-2" />
+              Edit Warehouse
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Quick Stats */}

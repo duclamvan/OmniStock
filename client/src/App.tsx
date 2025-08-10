@@ -89,6 +89,7 @@ function Router() {
         <Route path="/warehouses" component={AllWarehouses} />
         <Route path="/warehouses/add" component={AddWarehouse} />
         <Route path="/warehouses/map" component={WarehouseMap} />
+        <Route path="/warehouses/:id/mapping" component={WarehouseMap} />
         <Route path="/warehouses/:id/edit" component={EditWarehouse} />
         <Route path="/warehouses/:id" component={WarehouseDetails} />
         <Route path="/discounts" component={AllDiscounts} />

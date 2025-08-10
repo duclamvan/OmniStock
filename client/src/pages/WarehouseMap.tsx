@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useParams, useLocation, Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { Search, Map, Boxes, Printer, Plus, ScanLine, Package, Thermometer, AlertTriangle } from "lucide-react";
+import { Search, Map, Boxes, Printer, Plus, ScanLine, Package, Thermometer, AlertTriangle, ArrowLeft } from "lucide-react";
 import type { WarehouseLocation, InventoryBalance } from "@shared/schema";
 import { LocationTree } from "@/features/warehouse/LocationTree";
 import { RackGrid } from "@/features/warehouse/RackGrid";
@@ -18,26 +19,38 @@ import { GenerateLayoutDialog } from "@/features/warehouse/GenerateLayoutDialog"
 import { PrintLabelsDialog } from "@/features/warehouse/PrintLabelsDialog";
 import { PutawayMini } from "@/features/putaway/PutawayMini";
 import { LayoutDesigner } from "@/features/warehouse/LayoutDesigner";
+import { AdvancedLayoutDesigner } from "@/features/warehouse/AdvancedLayoutDesigner";
 import { Warehouse3DView } from "@/features/warehouse/Warehouse3DView";
 
 export default function WarehouseMap() {
-  const [selectedWarehouse, setSelectedWarehouse] = useState<string>("WH1");
+  const { id } = useParams();
+  const [, navigate] = useLocation();
+  const [selectedWarehouse, setSelectedWarehouse] = useState<string>(id || "WH1");
   const [selectedLocation, setSelectedLocation] = useState<WarehouseLocation | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("map");
+  const isSubpage = !!id;
 
   // Fetch warehouses
   const { data: warehouses } = useQuery({
     queryKey: ["/api/warehouses"],
   });
 
-  // Use first warehouse code if available
+  // Fetch specific warehouse if on subpage
+  const { data: currentWarehouse } = useQuery({
+    queryKey: [`/api/warehouses/${id}`],
+    enabled: !!id,
+  });
+
+  // Use warehouse from params or first available
   useEffect(() => {
-    if (warehouses && warehouses.length > 0 && !selectedWarehouse) {
+    if (id) {
+      setSelectedWarehouse(id);
+    } else if (warehouses && warehouses.length > 0 && !selectedWarehouse) {
       setSelectedWarehouse(warehouses[0].code || warehouses[0].id);
     }
-  }, [warehouses]);
+  }, [id, warehouses]);
 
   // Fetch locations for selected warehouse
   const { data: locations, isLoading } = useQuery({
@@ -77,12 +90,24 @@ export default function WarehouseMap() {
     <div className="container mx-auto p-4">
       {/* Header */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Map className="h-8 w-8" />
-            Warehouse Mapping
-          </h1>
-          <p className="text-gray-500 mt-1">Interactive warehouse location management</p>
+        <div className="flex items-center gap-4">
+          {isSubpage && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(`/warehouses/${id}`)}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </Button>
+          )}
+          <div>
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <Map className="h-8 w-8" />
+              {isSubpage && currentWarehouse ? `${currentWarehouse.name} - Mapping` : 'Warehouse Mapping'}
+            </h1>
+            <p className="text-gray-500 mt-1">Interactive warehouse location management</p>
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -129,6 +154,7 @@ export default function WarehouseMap() {
           <TabsTrigger value="map">Map View</TabsTrigger>
           <TabsTrigger value="3d">3D View</TabsTrigger>
           <TabsTrigger value="designer">Layout Designer</TabsTrigger>
+          <TabsTrigger value="advanced-designer">Advanced Designer</TabsTrigger>
           <TabsTrigger value="putaway">Putaway</TabsTrigger>
           <TabsTrigger value="inventory">Inventory</TabsTrigger>
         </TabsList>
@@ -191,6 +217,12 @@ export default function WarehouseMap() {
           <Card className="p-0">
             <LayoutDesigner warehouseCode={selectedWarehouse} />
           </Card>
+        </TabsContent>
+
+        <TabsContent value="advanced-designer">
+          <div className="h-[800px]">
+            <AdvancedLayoutDesigner warehouseCode={selectedWarehouse} />
+          </div>
         </TabsContent>
 
         <TabsContent value="inventory">
