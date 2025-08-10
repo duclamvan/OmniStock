@@ -305,17 +305,43 @@ export default function EditBundle() {
         pricingMode = 'manual';
       }
 
-      // Transform items to match our form structure
-      const transformedItems: BundleItem[] = bundleData.items?.map((item: any) => ({
-        id: Math.random().toString(36).substr(2, 9),
-        productId: item.productId || item.product?.id,
-        variantIds: item.variants?.map((v: any) => v.id) || (item.variantId ? [item.variantId] : []),
-        quantity: item.quantity || 1,
-        productName: item.product?.name,
-        variantNames: item.variants?.map((v: any) => v.name),
-        priceCzk: parseFloat(item.product?.priceCzk || 0),
-        priceEur: parseFloat(item.product?.priceEur || 0),
-      })) || [];
+      // Group bundle items by product to consolidate variants
+      const groupedItems: Record<string, any> = {};
+      
+      bundleData.items?.forEach((item: any) => {
+        const productId = item.productId || item.product?.id;
+        if (!productId) return;
+        
+        if (!groupedItems[productId]) {
+          groupedItems[productId] = {
+            id: Math.random().toString(36).substr(2, 9),
+            productId,
+            variantIds: [],
+            variantNames: [],
+            quantity: item.quantity || 1,
+            productName: item.product?.name,
+            priceCzk: parseFloat(item.product?.priceCzk || 0),
+            priceEur: parseFloat(item.product?.priceEur || 0),
+          };
+        }
+        
+        // Add variant if present
+        if (item.variantId && item.variant) {
+          groupedItems[productId].variantIds.push(item.variantId);
+          groupedItems[productId].variantNames.push(item.variant.name);
+        } else if (item.variantId) {
+          // If we have variantId but no variant object, just add the ID
+          groupedItems[productId].variantIds.push(item.variantId);
+        }
+        
+        // If this is a duplicate product with different quantity, take the max
+        groupedItems[productId].quantity = Math.max(
+          groupedItems[productId].quantity,
+          item.quantity || 1
+        );
+      });
+      
+      const transformedItems: BundleItem[] = Object.values(groupedItems);
 
       setFormData({
         name: bundleData.name || '',
