@@ -299,8 +299,8 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
         isCollapsed ? "w-16" : "w-64"
       )}>
         <div className={cn(
-          "border-b flex-shrink-0 flex items-center justify-between",
-          isCollapsed ? "p-3" : "p-6"
+          "border-b flex-shrink-0 flex items-center justify-between h-[65px]",
+          isCollapsed ? "px-3" : "px-6"
         )}>
           {!isCollapsed && (
             <img src={logoPath} alt="Davie Professional" className="h-10" />
@@ -309,7 +309,10 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
             variant="ghost"
             size="icon"
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="ml-auto"
+            className={cn(
+              "shrink-0",
+              !isCollapsed && "ml-auto"
+            )}
           >
             {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           </Button>
