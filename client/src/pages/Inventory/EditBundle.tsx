@@ -308,17 +308,9 @@ export default function EditBundle() {
       // Group bundle items by product to consolidate variants
       const groupedItems: Record<string, any> = {};
       
-      console.log('Raw bundle items:', bundleData.items);
-      
       bundleData.items?.forEach((item: any) => {
         const productId = item.productId || item.product?.id;
         if (!productId) return;
-        
-        console.log('Processing item:', {
-          productId,
-          variantId: item.variantId,
-          variantName: item.variant?.name
-        });
         
         if (!groupedItems[productId]) {
           groupedItems[productId] = {
@@ -350,13 +342,6 @@ export default function EditBundle() {
       });
       
       const transformedItems: BundleItem[] = Object.values(groupedItems);
-      
-      console.log('EditBundle - Grouped items with variants:', transformedItems.map(item => ({
-        productId: item.productId,
-        productName: item.productName,
-        variantIds: item.variantIds,
-        variantNames: item.variantNames
-      })));
 
       setFormData({
         name: bundleData.name || '',
@@ -393,7 +378,7 @@ export default function EditBundle() {
   // Update bundle mutation
   const updateBundleMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest(`/api/bundles/${id}`, 'PUT', data);
+      return apiRequest('PUT', `/api/bundles/${id}`, data);
     },
     onSuccess: () => {
       toast({
