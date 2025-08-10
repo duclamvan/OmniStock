@@ -181,7 +181,7 @@ export default function BundleDetails() {
 
   if (error || !bundle) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-6 sm:p-8">
         <Card className="border-destructive">
           <CardHeader>
             <CardTitle className="text-destructive">Error Loading Bundle</CardTitle>
@@ -228,9 +228,9 @@ export default function BundleDetails() {
     : '0';
 
   return (
-    <div className="container mx-auto p-4 sm:p-6 max-w-7xl">
+    <div className="container mx-auto p-6 sm:p-8 max-w-7xl">
       {/* Mobile-First Header */}
-      <div className="mb-6">
+      <div className="mb-6 sm:mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           {/* Title Section */}
           <div className="flex items-start sm:items-center gap-3">
@@ -251,7 +251,7 @@ export default function BundleDetails() {
           </div>
           
           {/* Action Buttons - Mobile Responsive */}
-          <div className="flex flex-wrap gap-2 ml-11 sm:ml-0">
+          <div className="flex flex-wrap gap-3 ml-11 sm:ml-0">
             {/* Mobile: Show icons only for secondary actions */}
             <Button
               variant="outline"
@@ -324,10 +324,10 @@ export default function BundleDetails() {
       <div className="space-y-4 sm:space-y-6">
         {/* Bundle Information - Order 1 on mobile */}
         <Card>
-            <CardHeader className="pb-3 sm:pb-6">
+            <CardHeader className="p-4 sm:p-6">
               <CardTitle className="text-base sm:text-lg">Bundle Information</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="px-4 pb-4 sm:px-6 sm:pb-6 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Status</p>
@@ -404,20 +404,20 @@ export default function BundleDetails() {
 
         {/* Bundle Items Card - Order 2 on mobile */}
         <Card>
-          <CardHeader className="pb-3 sm:pb-6">
+          <CardHeader className="p-4 sm:p-6">
             <CardTitle className="text-base sm:text-lg flex items-center gap-2">
               <Box className="h-4 w-4 sm:h-5 sm:w-5" />
               Bundle Items ({bundle.items.length})
             </CardTitle>
           </CardHeader>
-            <CardContent className="p-3 sm:p-6">
+            <CardContent className="px-4 pb-4 sm:px-6 sm:pb-6">
               <div className="space-y-3 sm:space-y-4">
                 {bundle.items.map((item, index) => {
                   const isExpanded = expandedItems.has(index);
                   const productVariants = item.productId ? allVariants[item.productId] || [] : [];
                   
                   return (
-                    <div key={index} className="border rounded-lg p-3 sm:p-4">
+                    <div key={index} className="border rounded-lg p-4 sm:p-5">
                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                         <div className="flex-1">
                           <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
@@ -538,10 +538,10 @@ export default function BundleDetails() {
 
         {/* Statistics Card - Order 3 on mobile */}
         <Card>
-          <CardHeader className="pb-3 sm:pb-6">
+          <CardHeader className="p-4 sm:p-6">
             <CardTitle className="text-base sm:text-lg">Statistics</CardTitle>
           </CardHeader>
-          <CardContent className="p-3 sm:p-6 space-y-4">
+          <CardContent className="px-4 pb-4 sm:px-6 sm:pb-6 space-y-4">
             <div>
               <p className="text-xs sm:text-sm font-medium text-muted-foreground">Total Sold</p>
               <p className="text-lg sm:text-2xl font-bold">0</p>
@@ -613,13 +613,13 @@ export default function BundleDetails() {
 
         {/* Pricing Card - Order 4 on mobile */}
         <Card>
-          <CardHeader className="pb-3 sm:pb-6">
+          <CardHeader className="p-4 sm:p-6">
             <CardTitle className="text-base sm:text-lg flex items-center gap-2">
               <DollarSign className="h-4 w-4 sm:h-5 sm:w-5" />
               Pricing
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-3 sm:p-6 space-y-4">
+          <CardContent className="px-4 pb-4 sm:px-6 sm:pb-6 space-y-4">
             {/* Base Price */}
             <div>
               <p className="text-xs sm:text-sm font-medium text-muted-foreground">Base Price (Sum of Items)</p>
