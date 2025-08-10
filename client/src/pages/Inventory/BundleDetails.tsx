@@ -23,9 +23,11 @@ import {
   DollarSign,
   ChevronDown,
   ChevronUp,
-  Palette
+  Palette,
+  ShoppingCart
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { formatCurrency } from '@/lib/currencyUtils';
 import { toast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -58,6 +60,11 @@ export default function BundleDetails() {
   const { data: bundle, isLoading, error } = useQuery<BundleWithItems>({
     queryKey: ['/api/bundles', id],
     enabled: !!id
+  });
+
+  // Fetch orders
+  const { data: orders } = useQuery<any[]>({
+    queryKey: ['/api/orders'],
   });
 
   // Fetch all product variants for expanded items
@@ -669,6 +676,89 @@ export default function BundleDetails() {
                 </div>
               </>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Order History Card */}
+        <Card>
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+              <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
+              Order History
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4 sm:px-6 sm:pb-6">
+            {(() => {
+              // Filter orders that contain this bundle
+              const bundleOrders = orders?.filter(order => 
+                order.items?.some((item: any) => item.bundleId === bundle.id)
+              ) || [];
+
+              if (bundleOrders.length === 0) {
+                return (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No orders found for this bundle
+                  </div>
+                );
+              }
+
+              return (
+                <div className="space-y-4">
+                  {bundleOrders.slice(0, 5).map((order: any) => {
+                    const bundleItems = order.items?.filter((item: any) => item.bundleId === bundle.id) || [];
+                    const totalQuantity = bundleItems.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0);
+                    const totalAmount = bundleItems.reduce((sum: number, item: any) => 
+                      sum + ((item.price || 0) * (item.quantity || 0)), 0
+                    );
+
+                    return (
+                      <div key={order.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                        <div className="flex-1">
+                          <div className="font-medium text-sm sm:text-base">
+                            Order #{order.orderId} - {order.customer?.name || "Unknown Customer"}
+                          </div>
+                          <div className="text-xs sm:text-sm text-muted-foreground mt-1">
+                            {order.createdAt ? format(new Date(order.createdAt), "PPP") : "N/A"}
+                          </div>
+                          <div className="text-xs sm:text-sm text-muted-foreground mt-1">
+                            Status: <Badge variant={order.orderStatus === 'delivered' ? 'default' : 'outline'} className="ml-1">
+                              {order.orderStatus}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="text-right mt-3 sm:mt-0">
+                          <div className="font-medium text-sm sm:text-base">
+                            {totalQuantity} {totalQuantity === 1 ? 'bundle' : 'bundles'}
+                          </div>
+                          <div className="text-xs sm:text-sm text-muted-foreground">
+                            {formatCurrency(totalAmount, order.currency || 'CZK')}
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="mt-2"
+                            onClick={() => navigate(`/orders/${order.id}`)}
+                          >
+                            View Order →
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {bundleOrders.length > 5 && (
+                    <div className="text-center pt-4">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => navigate(`/orders?bundle=${bundle.id}`)}
+                      >
+                        View all {bundleOrders.length} orders
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </CardContent>
         </Card>
       </div>
