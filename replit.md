@@ -1,7 +1,29 @@
 # Overview
 Davie Supply is a comprehensive warehouse and order management system designed as a full-stack web application. Its primary purpose is to manage the complete order lifecycle from creation to fulfillment, track inventory, manage customers, and provide financial reporting with multi-currency support. Key capabilities include real-time Vietnamese diacritics search, customer-specific pricing system, and integration with external shipping APIs for order tracking. The business vision is to provide a robust, efficient platform for streamlined supply chain operations.
 
-## Recent Updates (Jan 10, 2025)
+## Recent Updates (Jan 10, 2025 - Latest)
+- Enhanced sidebar navigation with collapsible functionality:
+  - Desktop sidebar can now collapse to icon-only mode with toggle button
+  - Collapsed state persists in localStorage for user preference
+  - Icon tooltips show on hover when sidebar is collapsed
+  - Dropdown menus for nested items work in collapsed mode
+  - Smooth transition animations for sidebar width changes
+- Refined all sidebar icons with more appropriate visual representations:
+  - Dashboard: LayoutDashboard icon
+  - Discounts: Tag icon
+  - Suppliers: Truck icon
+  - Returns: RotateCcw icon
+  - Expenses: DollarSign icon
+  - POS: Store icon
+- Created comprehensive MockupWarehouseLayout component demonstrating warehouse mapping features:
+  - Interactive 2D floor plan with distinct zones (receiving, storage, picking, shipping, returns, quarantine)
+  - Zone utilization visualization with color-coded indicators
+  - Utilization heatmap showing rack capacity across warehouse
+  - Zone details panel with statistics and metrics
+  - Sample data showing 388 locations, 76.5% utilization, 13,491 items
+- Fixed Warehouses navigation to show as dropdown menu with Warehouse Map option
+
+## Previous Updates (Jan 10, 2025)
 - Enhanced Warehouse Mapping feature with subpage routing and advanced designer:
   - Warehouse mapping now accessible as both standalone page (Warehouse > Warehouse Map) and as subpage from individual warehouse details
   - Added "Warehouse Mapping" button on each warehouse details page for context-specific mapping

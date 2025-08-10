@@ -1,16 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
 import { 
   Menu, 
   X, 
-  ChartLine, 
+  LayoutDashboard, 
   ShoppingCart, 
   Package, 
   Warehouse, 
-  Percent, 
+  Tag, 
   Users, 
   BarChart3, 
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Plus,
   Search,
   Bell,
@@ -20,7 +22,11 @@ import {
   Settings,
   LogOut,
   Receipt,
-  CreditCard
+  CreditCard,
+  Truck,
+  RotateCcw,
+  DollarSign,
+  Store
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -47,6 +53,14 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
   const [openItems, setOpenItems] = useState<string[]>([]);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    const saved = localStorage.getItem('sidebarCollapsed');
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('sidebarCollapsed', JSON.stringify(isCollapsed));
+  }, [isCollapsed]);
 
   const toggleItem = (itemName: string) => {
     setOpenItems(prev => 
@@ -60,7 +74,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
     {
       name: "Dashboard",
       href: "/",
-      icon: ChartLine,
+      icon: LayoutDashboard,
     },
     {
       name: "Orders",
@@ -95,7 +109,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
     {
       name: "Discounts",
       href: "/discounts",
-      icon: Percent,
+      icon: Tag,
     },
     {
       name: "Customers",
@@ -105,22 +119,22 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
     {
       name: "Suppliers",
       href: "/suppliers",
-      icon: Package,
+      icon: Truck,
     },
     {
       name: "Returns",
       href: "/returns",
-      icon: Package,
+      icon: RotateCcw,
     },
     {
       name: "Expenses",
       href: "/expenses",
-      icon: Receipt,
+      icon: DollarSign,
     },
     {
       name: "POS",
       href: "/pos",
-      icon: CreditCard,
+      icon: Store,
     },
     {
       name: "Reports",
@@ -129,12 +143,43 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
     },
   ];
 
-  const NavLinks = () => (
+  const NavLinks = ({ collapsed = false }: { collapsed?: boolean }) => (
     <>
       {navigation.map((item) => {
         if (item.children) {
           const isOpen = openItems.includes(item.name);
           const isActive = item.children.some(child => location === child.href);
+          
+          if (collapsed) {
+            return (
+              <DropdownMenu key={item.name}>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className={cn(
+                      "w-full justify-center p-2 rounded-md",
+                      isActive && "bg-emerald-50 text-primary"
+                    )}
+                  >
+                    <item.icon className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent side="right" align="start" className="w-48">
+                  <DropdownMenuLabel>{item.name}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {item.children.map((child) => (
+                    <Link key={child.href} href={child.href}>
+                      <DropdownMenuItem className={cn(
+                        location === child.href && "bg-slate-100"
+                      )}>
+                        {child.name}
+                      </DropdownMenuItem>
+                    </Link>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            );
+          }
           
           return (
             <Collapsible
@@ -152,10 +197,10 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                 >
                   <div className="flex items-center">
                     <item.icon className="mr-3 h-5 w-5" />
-                    {item.name}
+                    <span className="truncate">{item.name}</span>
                   </div>
                   <ChevronDown className={cn(
-                    "h-4 w-4 transition-transform",
+                    "h-4 w-4 transition-transform shrink-0",
                     isOpen && "rotate-180"
                   )} />
                 </Button>
@@ -185,6 +230,26 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
 
         const isActive = location === item.href;
         
+        if (collapsed) {
+          return (
+            <Link key={item.name} href={item.href}>
+              <Button
+                variant="ghost"
+                className={cn(
+                  "w-full justify-center p-2 rounded-md relative group",
+                  isActive && "bg-emerald-50 text-primary"
+                )}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <item.icon className="h-5 w-5" />
+                <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
+                  {item.name}
+                </div>
+              </Button>
+            </Link>
+          );
+        }
+        
         return (
           <Link key={item.name} href={item.href}>
             <Button
@@ -195,8 +260,8 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
               )}
               onClick={() => setIsMobileMenuOpen(false)}
             >
-              <item.icon className="mr-3 h-5 w-5" />
-              {item.name}
+              <item.icon className="mr-3 h-5 w-5 shrink-0" />
+              <span className="truncate">{item.name}</span>
             </Button>
           </Link>
         );
@@ -229,17 +294,39 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
       </header>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:block fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-200 flex flex-col">
-        <div className="p-6 border-b flex-shrink-0">
-          <img src={logoPath} alt="Davie Professional" className="h-10" />
+      <aside className={cn(
+        "hidden lg:flex fixed inset-y-0 left-0 bg-white border-r border-gray-200 flex-col transition-all duration-300",
+        isCollapsed ? "w-16" : "w-64"
+      )}>
+        <div className={cn(
+          "border-b flex-shrink-0 flex items-center justify-between",
+          isCollapsed ? "p-3" : "p-6"
+        )}>
+          {!isCollapsed && (
+            <img src={logoPath} alt="Davie Professional" className="h-10" />
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="ml-auto"
+          >
+            {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </Button>
         </div>
-        <nav className="p-4 space-y-2 overflow-y-auto flex-1">
-          <NavLinks />
+        <nav className={cn(
+          "space-y-2 overflow-y-auto flex-1",
+          isCollapsed ? "p-2" : "p-4"
+        )}>
+          <NavLinks collapsed={isCollapsed} />
         </nav>
       </aside>
 
       {/* Main Content */}
-      <main className="lg:ml-64">
+      <main className={cn(
+        "transition-all duration-300",
+        isCollapsed ? "lg:ml-16" : "lg:ml-64"
+      )}>
         {/* Top Navigation Bar - Desktop Only */}
         <header className="hidden lg:block sticky top-0 z-30 bg-white border-b border-gray-200">
           <div className="flex items-center justify-between px-6 py-3">

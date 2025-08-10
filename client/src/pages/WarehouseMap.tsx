@@ -21,6 +21,7 @@ import { PutawayMini } from "@/features/putaway/PutawayMini";
 import { LayoutDesigner } from "@/features/warehouse/LayoutDesigner";
 import { AdvancedLayoutDesigner } from "@/features/warehouse/AdvancedLayoutDesigner";
 import { Warehouse3DView } from "@/features/warehouse/Warehouse3DView";
+import { MockupWarehouseLayout } from "@/features/warehouse/MockupWarehouseLayout";
 
 export default function WarehouseMap() {
   const { id } = useParams();
@@ -29,7 +30,7 @@ export default function WarehouseMap() {
   const [selectedLocation, setSelectedLocation] = useState<WarehouseLocation | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("map");
+  const [activeTab, setActiveTab] = useState("mockup");
   const isSubpage = !!id;
 
   // Fetch warehouses
@@ -151,6 +152,7 @@ export default function WarehouseMap() {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-4">
+          <TabsTrigger value="mockup">Sample Layout</TabsTrigger>
           <TabsTrigger value="map">Map View</TabsTrigger>
           <TabsTrigger value="3d">3D View</TabsTrigger>
           <TabsTrigger value="designer">Layout Designer</TabsTrigger>
@@ -158,6 +160,10 @@ export default function WarehouseMap() {
           <TabsTrigger value="putaway">Putaway</TabsTrigger>
           <TabsTrigger value="inventory">Inventory</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="mockup">
+          <MockupWarehouseLayout />
+        </TabsContent>
 
         <TabsContent value="map">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
