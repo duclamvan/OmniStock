@@ -113,7 +113,7 @@ function VariantSelector({ variants, selectedIds, onChange }: VariantSelectorPro
   const handleRangeSelection = () => {
     const from = parseInt(rangeFrom);
     const to = parseInt(rangeTo);
-    if (!isNaN(from) && !isNaN(to)) {
+    if (!isNaN(from) && !isNaN(to) && from <= to) {
       const selectedVariants = variants.filter(v => {
         const match = v.name.match(/\d+/);
         if (match) {
@@ -123,15 +123,22 @@ function VariantSelector({ variants, selectedIds, onChange }: VariantSelectorPro
         return false;
       });
       onChange(selectedVariants.map(v => v.id));
+      // Clear the inputs after selection
+      setRangeFrom('');
+      setRangeTo('');
     }
   };
 
   const handleCustomInput = () => {
-    const numbers = customInput.split(',').map(s => s.trim());
-    const selectedVariants = variants.filter(v => {
-      return numbers.some(num => v.name.includes(num));
-    });
-    onChange(selectedVariants.map(v => v.id));
+    const numbers = customInput.split(',').map(s => s.trim()).filter(s => s);
+    if (numbers.length > 0) {
+      const selectedVariants = variants.filter(v => {
+        return numbers.some(num => v.name.includes(num));
+      });
+      onChange(selectedVariants.map(v => v.id));
+      // Clear the input after selection
+      setCustomInput('');
+    }
   };
 
   return (
@@ -160,6 +167,9 @@ function VariantSelector({ variants, selectedIds, onChange }: VariantSelectorPro
             </div>
           </div>
 
+          <div className="text-xs text-muted-foreground mb-2">
+            Choose one selection method:
+          </div>
           <Tabs value={selectionMode} onValueChange={(v) => setSelectionMode(v as any)}>
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="individual">Individual</TabsTrigger>
