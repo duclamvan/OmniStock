@@ -73,7 +73,7 @@ const navigation = [
 
 export function Sidebar() {
   const [location] = useLocation();
-  const [openItems, setOpenItems] = useState<string[]>(["Orders"]);
+  const [openItems, setOpenItems] = useState<string[]>(["Orders", "Warehouse"]);
 
   const toggleItem = (name: string) => {
     setOpenItems(prev => 
