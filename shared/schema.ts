@@ -131,6 +131,7 @@ export const products = pgTable("products", {
   sku: varchar("sku", { length: 100 }).unique().notNull(),
   categoryId: varchar("category_id").references(() => categories.id),
   warehouseId: varchar("warehouse_id").references(() => warehouses.id),
+  warehouseLocation: varchar("warehouse_location", { length: 100 }),
   supplierId: varchar("supplier_id").references(() => suppliers.id),
   description: text("description"),
   quantity: integer("quantity").default(0),

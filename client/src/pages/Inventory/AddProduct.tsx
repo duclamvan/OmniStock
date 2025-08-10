@@ -59,6 +59,7 @@ const addProductSchema = z.object({
   sku: z.string().min(1, "SKU is required"),
   categoryId: z.string().optional(),
   warehouseId: z.string().optional(),
+  warehouseLocation: z.string().optional(),
   supplierId: z.string().optional(),
   description: z.string().optional(),
   quantity: z.coerce.number().min(0).default(0),
@@ -624,6 +625,17 @@ export default function AddProduct() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            <div>
+              <Label htmlFor="warehouseLocation">Warehouse Location Code</Label>
+              <Input
+                {...form.register('warehouseLocation')}
+                placeholder="e.g., A1-B2-C3 or RACK-01-SHELF-05"
+              />
+              <p className="text-sm text-slate-500 mt-1">
+                Specify the exact location within the warehouse (aisle, rack, shelf, bin, etc.)
+              </p>
             </div>
 
             <div>

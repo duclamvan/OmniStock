@@ -2,6 +2,10 @@
 Davie Supply is a comprehensive warehouse and order management system designed as a full-stack web application. Its primary purpose is to manage the complete order lifecycle from creation to fulfillment, track inventory, manage customers, and provide financial reporting with multi-currency support. Key capabilities include real-time Vietnamese diacritics search, customer-specific pricing system, and integration with external shipping APIs for order tracking. The business vision is to provide a robust, efficient platform for streamlined supply chain operations.
 
 ## Recent Updates (Jan 10, 2025)
+- Added Warehouse Location Code field to inventory management:
+  - New field in Add Product page to specify exact location within warehouse
+  - Supports location codes like "A1-B2-C3" or "RACK-01-SHELF-05"
+  - Helps track precise product placement (aisle, rack, shelf, bin)
 - Added barcode scanning capabilities to Add Product page:
   - Individual barcode scan button in Stock Information section
   - Bulk Scan feature for Product Variants to assign multiple barcodes at once
