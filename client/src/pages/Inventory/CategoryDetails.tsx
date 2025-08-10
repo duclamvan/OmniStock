@@ -371,7 +371,7 @@ export default function CategoryDetails() {
         <CardHeader>
           <div className="flex justify-between items-center">
             <CardTitle>Products in this Category</CardTitle>
-            <Link href="/inventory/add">
+            <Link href={`/inventory/add?categoryId=${id}`}>
               <Button size="sm">
                 <Package className="mr-2 h-4 w-4" />
                 Add Product
@@ -384,7 +384,7 @@ export default function CategoryDetails() {
             <div className="text-center py-12 text-muted-foreground">
               <Package className="mx-auto h-12 w-12 mb-2" />
               <p>No products in this category yet</p>
-              <Link href="/inventory/add">
+              <Link href={`/inventory/add?categoryId=${id}`}>
                 <Button className="mt-4" variant="outline">
                   Add First Product
                 </Button>

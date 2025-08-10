@@ -100,11 +100,16 @@ export default function AddProduct() {
   // Auto-conversion state
   const conversionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Get categoryId from URL query parameters
+  const searchParams = new URLSearchParams(window.location.search);
+  const categoryIdFromUrl = searchParams.get('categoryId');
+
   const form = useForm<z.infer<typeof addProductSchema>>({
     resolver: zodResolver(addProductSchema),
     defaultValues: {
       quantity: 0,
       lowStockAlert: 5,
+      categoryId: categoryIdFromUrl || undefined,
     },
   });
 
