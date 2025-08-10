@@ -452,43 +452,47 @@ export default function CategoryDetails() {
             )}
             
             {/* Products List */}
-            <ScrollArea className="flex-1 pr-4">
-              {filteredOtherProducts.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  {searchQuery ? 'No products found matching your search.' : 'No products available to move.'}
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {filteredOtherProducts.map((product) => (
-                    <div
-                      key={product.id}
-                      className="flex items-start gap-3 p-4 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
-                      onClick={() => toggleProductSelection(product.id)}
-                    >
-                      <div className="pt-0.5">
-                        <Checkbox
-                          checked={selectedProducts.includes(product.id)}
-                          onCheckedChange={() => toggleProductSelection(product.id)}
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm">{product.name}</div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          SKU: {product.sku || 'N/A'} | Stock: {product.quantity}
-                        </div>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <div className="font-semibold text-sm">€{parseFloat(product.priceEur).toFixed(2)}</div>
-                        <div className="text-xs text-muted-foreground">
-                          CZK {parseFloat(product.priceCzk).toFixed(2)}
-                        </div>
-                      </div>
+            <div className="flex-1 min-h-0 overflow-hidden border rounded-lg">
+              <ScrollArea className="h-full">
+                <div className="p-2">
+                  {filteredOtherProducts.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      {searchQuery ? 'No products found matching your search.' : 'No products available to move.'}
                     </div>
-                  ))}
+                  ) : (
+                    <div className="space-y-2">
+                      {filteredOtherProducts.map((product) => (
+                        <div
+                          key={product.id}
+                          className="flex items-start gap-3 p-4 rounded-lg border hover:bg-muted/50 cursor-pointer transition-colors"
+                          onClick={() => toggleProductSelection(product.id)}
+                        >
+                          <div className="pt-0.5">
+                            <Checkbox
+                              checked={selectedProducts.includes(product.id)}
+                              onCheckedChange={() => toggleProductSelection(product.id)}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm">{product.name}</div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              SKU: {product.sku || 'N/A'} | Stock: {product.quantity}
+                            </div>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <div className="font-semibold text-sm">€{parseFloat(product.priceEur).toFixed(2)}</div>
+                            <div className="text-xs text-muted-foreground">
+                              CZK {parseFloat(product.priceCzk).toFixed(2)}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
-            </ScrollArea>
+              </ScrollArea>
+            </div>
           </div>
           
           <DialogFooter className="border-t pt-4">
