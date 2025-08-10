@@ -18,6 +18,7 @@ import { GenerateLayoutDialog } from "@/features/warehouse/GenerateLayoutDialog"
 import { PrintLabelsDialog } from "@/features/warehouse/PrintLabelsDialog";
 import { PutawayMini } from "@/features/putaway/PutawayMini";
 import { LayoutDesigner } from "@/features/warehouse/LayoutDesigner";
+import { Warehouse3DView } from "@/features/warehouse/Warehouse3DView";
 
 export default function WarehouseMap() {
   const [selectedWarehouse, setSelectedWarehouse] = useState<string>("WH1");
@@ -44,7 +45,9 @@ export default function WarehouseMap() {
     queryFn: async () => {
       const params = new URLSearchParams();
       if (searchQuery) params.append("q", searchQuery);
-      return apiRequest(`/api/warehouses/${selectedWarehouse}/locations?${params}`);
+      const response = await fetch(`/api/warehouses/${selectedWarehouse}/locations?${params}`);
+      if (!response.ok) throw new Error("Failed to fetch locations");
+      return response.json();
     },
     enabled: !!selectedWarehouse,
   });
@@ -124,6 +127,7 @@ export default function WarehouseMap() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-4">
           <TabsTrigger value="map">Map View</TabsTrigger>
+          <TabsTrigger value="3d">3D View</TabsTrigger>
           <TabsTrigger value="designer">Layout Designer</TabsTrigger>
           <TabsTrigger value="putaway">Putaway</TabsTrigger>
           <TabsTrigger value="inventory">Inventory</TabsTrigger>
@@ -169,6 +173,14 @@ export default function WarehouseMap() {
               </Card>
             </div>
           </div>
+        </TabsContent>
+
+        <TabsContent value="3d">
+          <Warehouse3DView 
+            locations={locations || []} 
+            selectedLocation={selectedLocation}
+            onLocationSelect={handleLocationSelect}
+          />
         </TabsContent>
 
         <TabsContent value="putaway">
