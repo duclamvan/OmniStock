@@ -85,8 +85,12 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
     },
     {
       name: "Warehouses",
-      href: "/warehouses",
       icon: Warehouse,
+      children: [
+        { name: "All Warehouses", href: "/warehouses" },
+        { name: "Warehouse Map", href: "/warehouses/map" },
+        { name: "Add Warehouse", href: "/warehouses/add" },
+      ],
     },
     {
       name: "Discounts",
