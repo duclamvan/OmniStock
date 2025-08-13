@@ -1471,8 +1471,6 @@ export default function AddOrder() {
                   type="number"
                   step="0.01"
                   {...form.register('actualShippingCost', { valueAsNumber: true })}
-                  className="bg-slate-50"
-                  readOnly
                 />
               </div>
             </div>
