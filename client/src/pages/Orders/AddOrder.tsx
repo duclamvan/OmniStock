@@ -1437,7 +1437,7 @@ export default function AddOrder() {
                 <div className="mt-2">
                   <div className="text-xs text-gray-500 mb-1">Quick select:</div>
                   <div className="flex flex-wrap gap-1">
-                    {form.watch('currency') === 'CZK' && [100, 150, 250].map(amount => (
+                    {form.watch('currency') === 'CZK' && [0, 100, 150, 250].map(amount => (
                       <Button
                         key={amount}
                         type="button"
