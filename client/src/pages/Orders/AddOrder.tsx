@@ -40,7 +40,11 @@ import {
   Mail,
   Building,
   Hash,
-  Calculator
+  Calculator,
+  Percent,
+  Copy,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 
 const addOrderSchema = z.object({
@@ -51,9 +55,18 @@ const addOrderSchema = z.object({
   paymentStatus: z.enum(['pending', 'paid', 'pay_later']).default('pending'),
   shippingMethod: z.enum(['GLS', 'PPL', 'DHL', 'DPD']).optional(),
   paymentMethod: z.enum(['Bank Transfer', 'PayPal', 'COD', 'Cash']).optional(),
-  discountType: z.enum(['flat', 'rate']).optional(),
+  discountType: z.enum(['amount', 'percentage']).default('amount'),
   discountValue: z.coerce.number().min(0).default(0),
+  // Tax Invoice fields
+  taxInvoiceEnabled: z.boolean().default(false),
+  // CZK fields
+  ico: z.string().optional(),
+  dic: z.string().optional(),
+  nameAndAddress: z.string().optional(),
   taxRate: z.coerce.number().min(0).max(100).default(0),
+  // EUR fields
+  vatId: z.string().optional(),
+  country: z.string().optional(),
   shippingCost: z.coerce.number().min(0).default(0),
   actualShippingCost: z.coerce.number().min(0).default(0),
   notes: z.string().optional(),
@@ -73,6 +86,7 @@ interface OrderItem {
 
 export default function AddOrder() {
   const [, setLocation] = useLocation();
+  const [showTaxInvoice, setShowTaxInvoice] = useState(false);
   const { toast } = useToast();
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [productSearch, setProductSearch] = useState("");
@@ -1402,24 +1416,80 @@ export default function AddOrder() {
             <CardDescription className="text-xs sm:text-sm mt-1">Configure pricing and notes</CardDescription>
           </CardHeader>
           <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div className="space-y-4">
+              {/* Enhanced Discount Section */}
               <div>
-                <Label htmlFor="discountValue">Discount</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  {...form.register('discountValue', { valueAsNumber: true })}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="taxRate">Tax Rate (%)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  max="100"
-                  {...form.register('taxRate', { valueAsNumber: true })}
-                />
+                <Label className="text-sm font-medium">Discount</Label>
+                <div className="flex gap-2 mt-1">
+                  <Select 
+                    value={form.watch('discountType')} 
+                    onValueChange={(value) => form.setValue('discountType', value as 'amount' | 'percentage')}
+                  >
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="amount">Amount</SelectItem>
+                      <SelectItem value="percentage">Percentage</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder={form.watch('discountType') === 'percentage' ? '0-100' : '0'}
+                    {...form.register('discountValue', { valueAsNumber: true })}
+                    className="flex-1"
+                  />
+                  {form.watch('discountType') === 'percentage' && (
+                    <div className="flex items-center px-3 text-gray-500">
+                      <Percent className="h-4 w-4" />
+                    </div>
+                  )}
+                </div>
+                
+                {/* Quick discount buttons */}
+                <div className="mt-2">
+                  <div className="text-xs text-gray-500 mb-1">Quick select:</div>
+                  <div className="flex flex-wrap gap-1">
+                    {form.watch('discountType') === 'percentage' && [5, 10, 15, 20, 25].map(amount => (
+                      <Button
+                        key={amount}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => form.setValue('discountValue', amount)}
+                      >
+                        {amount}%
+                      </Button>
+                    ))}
+                    {form.watch('discountType') === 'amount' && form.watch('currency') === 'CZK' && [50, 100, 200, 500].map(amount => (
+                      <Button
+                        key={amount}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => form.setValue('discountValue', amount)}
+                      >
+                        {amount} CZK
+                      </Button>
+                    ))}
+                    {form.watch('discountType') === 'amount' && form.watch('currency') === 'EUR' && [5, 10, 20, 50].map(amount => (
+                      <Button
+                        key={amount}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => form.setValue('discountValue', amount)}
+                      >
+                        {amount} EUR
+                      </Button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1481,6 +1551,183 @@ export default function AddOrder() {
                 {...form.register('notes')}
                 placeholder="Additional order notes..."
               />
+            </div>
+
+            {/* Tax Invoice Toggle Button */}
+            <div className="pt-4 border-t">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full h-12 border-2 border-dashed border-blue-200 hover:border-blue-300 bg-blue-50 hover:bg-blue-100 text-blue-600 transition-all duration-300"
+                onClick={() => {
+                  setShowTaxInvoice(!showTaxInvoice);
+                  form.setValue('taxInvoiceEnabled', !showTaxInvoice);
+                }}
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                Add Tax Invoice Section
+                {showTaxInvoice ? <ChevronUp className="h-4 w-4 ml-2" /> : <ChevronDown className="h-4 w-4 ml-2" />}
+              </Button>
+            </div>
+
+            {/* Tax Invoice Section with smooth transition */}
+            <div className={`overflow-hidden transition-all duration-500 ease-in-out ${
+              showTaxInvoice ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+            }`}>
+              {showTaxInvoice && (
+                <div className="mt-4 p-4 border-2 border-blue-100 rounded-lg bg-blue-50/30 space-y-4">
+                  <div className="flex items-center gap-2 mb-4">
+                    <FileText className="h-5 w-5 text-blue-600" />
+                    <h3 className="font-semibold text-blue-900">Tax Invoice Information</h3>
+                  </div>
+
+                  {form.watch('currency') === 'CZK' && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="relative">
+                        <Label htmlFor="ico">IČO</Label>
+                        <div className="relative">
+                          <Input
+                            {...form.register('ico')}
+                            placeholder="Company identification number"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-1 top-1 h-8 w-8 p-0"
+                            onClick={() => navigator.clipboard.readText().then(text => form.setValue('ico', text))}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="relative">
+                        <Label htmlFor="dic">DIČ</Label>
+                        <div className="relative">
+                          <Input
+                            {...form.register('dic')}
+                            placeholder="Tax identification number"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-1 top-1 h-8 w-8 p-0"
+                            onClick={() => navigator.clipboard.readText().then(text => form.setValue('dic', text))}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="sm:col-span-2 relative">
+                        <Label htmlFor="nameAndAddress">Jméno a Adresa</Label>
+                        <div className="relative">
+                          <Textarea
+                            {...form.register('nameAndAddress')}
+                            placeholder="Company name and address"
+                            rows={3}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-1 top-1 h-8 w-8 p-0"
+                            onClick={() => navigator.clipboard.readText().then(text => form.setValue('nameAndAddress', text))}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="taxRate">Tax Rate (%)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          max="100"
+                          {...form.register('taxRate', { valueAsNumber: true })}
+                          placeholder="21"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {form.watch('currency') === 'EUR' && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="relative">
+                        <Label htmlFor="vatId">VAT ID (optional)</Label>
+                        <div className="relative">
+                          <Input
+                            {...form.register('vatId')}
+                            placeholder="EU VAT identification number"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-1 top-1 h-8 w-8 p-0"
+                            onClick={() => navigator.clipboard.readText().then(text => form.setValue('vatId', text))}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="relative">
+                        <Label htmlFor="country">Country</Label>
+                        <div className="relative">
+                          <Input
+                            {...form.register('country')}
+                            placeholder="Country name"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-1 top-1 h-8 w-8 p-0"
+                            onClick={() => navigator.clipboard.readText().then(text => form.setValue('country', text))}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="sm:col-span-2 relative">
+                        <Label htmlFor="nameAndAddress">Name and Address</Label>
+                        <div className="relative">
+                          <Textarea
+                            {...form.register('nameAndAddress')}
+                            placeholder="Company name and address"
+                            rows={3}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-1 top-1 h-8 w-8 p-0"
+                            onClick={() => navigator.clipboard.readText().then(text => form.setValue('nameAndAddress', text))}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="taxRate">Tax Rate (%)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          max="100"
+                          {...form.register('taxRate', { valueAsNumber: true })}
+                          placeholder="20"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
