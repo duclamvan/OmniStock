@@ -553,13 +553,22 @@ export default function AddOrder() {
 
   const calculateGrandTotal = () => {
     const subtotal = calculateSubtotal();
-    const tax = calculateTax();
+    const tax = showTaxInvoice ? calculateTax() : 0; // Only include tax if Tax Invoice is enabled
     const shippingValue = form.watch('shippingCost');
     const discountValue = form.watch('discountValue');
+    const discountType = form.watch('discountType');
     const shipping = typeof shippingValue === 'string' ? parseFloat(shippingValue || '0') : (shippingValue || 0);
-    const discount = typeof discountValue === 'string' ? parseFloat(discountValue || '0') : (discountValue || 0);
+    const discountAmount = typeof discountValue === 'string' ? parseFloat(discountValue || '0') : (discountValue || 0);
     
-    return subtotal + tax + shipping - discount;
+    // Calculate actual discount based on type
+    let actualDiscount = 0;
+    if (discountType === 'percentage') {
+      actualDiscount = (subtotal * discountAmount) / 100;
+    } else {
+      actualDiscount = discountAmount;
+    }
+    
+    return subtotal + tax + shipping - actualDiscount;
   };
 
   const onSubmit = (data: z.infer<typeof addOrderSchema>) => {
@@ -576,10 +585,10 @@ export default function AddOrder() {
       ...data,
       // Don't override customerId - it's set in createOrderMutation if a new customer is created
       subtotal: calculateSubtotal().toFixed(2),
-      taxAmount: calculateTax().toFixed(2),
+      taxAmount: (showTaxInvoice ? calculateTax() : 0).toFixed(2),
       grandTotal: calculateGrandTotal().toFixed(2),
       discountValue: (data.discountValue || 0).toString(),
-      taxRate: (data.taxRate || 0).toString(),
+      taxRate: (showTaxInvoice ? (data.taxRate || 0) : 0).toString(),
       shippingCost: (data.shippingCost || 0).toString(),
       actualShippingCost: (data.actualShippingCost || 0).toString(),
       items: orderItems.map(item => ({
@@ -1751,17 +1760,28 @@ export default function AddOrder() {
                         <span className="text-gray-600">Subtotal:</span>
                         <span className="font-medium">{formatCurrency(calculateSubtotal(), form.watch('currency'))}</span>
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Tax ({form.watch('taxRate') || 0}%):</span>
-                        <span className="font-medium">{formatCurrency(calculateTax(), form.watch('currency'))}</span>
-                      </div>
+                      {showTaxInvoice && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Tax ({form.watch('taxRate') || 0}%):</span>
+                          <span className="font-medium">{formatCurrency(calculateTax(), form.watch('currency'))}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Shipping:</span>
                         <span className="font-medium">{formatCurrency(Number(form.watch('shippingCost')) || 0, form.watch('currency'))}</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Discount:</span>
-                        <span className="font-medium text-green-600">-{formatCurrency(Number(form.watch('discountValue')) || 0, form.watch('currency'))}</span>
+                        <span className="text-gray-600">
+                          Discount{form.watch('discountType') === 'percentage' && ` (${form.watch('discountValue') || 0}%)`}:
+                        </span>
+                        <span className="font-medium text-green-600">
+                          -{formatCurrency(
+                            form.watch('discountType') === 'percentage' 
+                              ? (calculateSubtotal() * (Number(form.watch('discountValue')) || 0)) / 100
+                              : Number(form.watch('discountValue')) || 0, 
+                            form.watch('currency')
+                          )}
+                        </span>
                       </div>
                     </div>
                     <div className="border-t pt-3">
