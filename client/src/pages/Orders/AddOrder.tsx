@@ -1433,6 +1433,36 @@ export default function AddOrder() {
                   step="0.01"
                   {...form.register('shippingCost', { valueAsNumber: true })}
                 />
+                {/* Quick shipping cost buttons */}
+                <div className="mt-2">
+                  <div className="text-xs text-gray-500 mb-1">Quick select:</div>
+                  <div className="flex flex-wrap gap-1">
+                    {form.watch('currency') === 'CZK' && [100, 150, 250].map(amount => (
+                      <Button
+                        key={amount}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => form.setValue('shippingCost', amount)}
+                      >
+                        {amount} CZK
+                      </Button>
+                    ))}
+                    {form.watch('currency') === 'EUR' && [0, 5, 10, 13, 15, 20].map(amount => (
+                      <Button
+                        key={amount}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => form.setValue('shippingCost', amount)}
+                      >
+                        {amount} EUR
+                      </Button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               <div>
