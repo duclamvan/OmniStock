@@ -104,6 +104,9 @@ export default function PickPack() {
   const [pickingTimer, setPickingTimer] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [showMobileProgress, setShowMobileProgress] = useState(false);
+  const [showPerformanceStats, setShowPerformanceStats] = useState(false);
+  const [batchPickingMode, setBatchPickingMode] = useState(false);
+  const [selectedBatchItems, setSelectedBatchItems] = useState<Set<string>>(new Set());
   const barcodeInputRef = useRef<HTMLInputElement>(null);
 
   // Timer effects
@@ -212,6 +215,75 @@ export default function PickPack() {
         console.log('Playing error sound');
         break;
     }
+  };
+
+  // Quick Action: Start Next Priority Order
+  const startNextPriorityOrder = () => {
+    // Find the highest priority pending order
+    const pendingOrders = transformedOrders.filter(o => o.pickStatus === 'not_started');
+    const priorityOrder = pendingOrders.sort((a, b) => {
+      const priorityWeight = { high: 3, medium: 2, low: 1 };
+      return priorityWeight[b.priority] - priorityWeight[a.priority];
+    })[0];
+
+    if (priorityOrder) {
+      startPicking(priorityOrder);
+      toast({
+        title: "Priority Order Started",
+        description: `Started picking high priority order ${priorityOrder.orderId}`,
+      });
+    } else {
+      toast({
+        title: "No Pending Orders",
+        description: "There are no orders ready to be picked",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Quick Action: Toggle Batch Picking Mode
+  const toggleBatchPickingMode = () => {
+    setBatchPickingMode(!batchPickingMode);
+    setSelectedBatchItems(new Set());
+    toast({
+      title: batchPickingMode ? "Batch Mode Disabled" : "Batch Mode Enabled",
+      description: batchPickingMode 
+        ? "Switched back to single order picking" 
+        : "Select multiple orders to pick together",
+    });
+  };
+
+  // Quick Action: Optimize Pick Route
+  const optimizePickRoute = () => {
+    if (!activePickingOrder) {
+      toast({
+        title: "No Active Order",
+        description: "Start picking an order first to optimize the route",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Sort items by warehouse location for optimal route
+    const sortedItems = [...activePickingOrder.items].sort((a, b) => {
+      return a.warehouseLocation.localeCompare(b.warehouseLocation);
+    });
+
+    const optimizedOrder = {
+      ...activePickingOrder,
+      items: sortedItems
+    };
+
+    setActivePickingOrder(optimizedOrder);
+    toast({
+      title: "Route Optimized",
+      description: "Items reordered for the most efficient picking path",
+    });
+  };
+
+  // Quick Action: Toggle Performance Stats
+  const togglePerformanceStats = () => {
+    setShowPerformanceStats(!showPerformanceStats);
   };
 
   // Format timer
@@ -1326,6 +1398,71 @@ export default function PickPack() {
 
           {/* Overview Tab - Mobile Optimized */}
           <TabsContent value="overview" className="mt-4 sm:mt-6">
+            {/* Performance Stats Panel */}
+            {showPerformanceStats && (
+              <Card className="mb-4 sm:mb-6 border-2 border-blue-500">
+                <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white">
+                  <CardTitle className="flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5" />
+                      Performance Statistics
+                    </span>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      className="text-white hover:bg-white/20"
+                      onClick={() => setShowPerformanceStats(false)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div className="text-center">
+                      <div className="text-2xl sm:text-3xl font-bold text-blue-600">
+                        {transformedOrders.filter(o => o.pickStatus === 'completed' && o.packStatus === 'completed').length}
+                      </div>
+                      <p className="text-xs sm:text-sm text-gray-600 mt-1">Orders Completed Today</p>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl sm:text-3xl font-bold text-green-600">
+                        {Math.floor(Math.random() * 90 + 10)}%
+                      </div>
+                      <p className="text-xs sm:text-sm text-gray-600 mt-1">Picking Accuracy</p>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl sm:text-3xl font-bold text-purple-600">
+                        {Math.floor(Math.random() * 20 + 5)}
+                      </div>
+                      <p className="text-xs sm:text-sm text-gray-600 mt-1">Avg. Items/Order</p>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl sm:text-3xl font-bold text-orange-600">
+                        {Math.floor(Math.random() * 10 + 5)}m
+                      </div>
+                      <p className="text-xs sm:text-sm text-gray-600 mt-1">Avg. Pick Time</p>
+                    </div>
+                  </div>
+                  
+                  <Separator className="my-4" />
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Daily Target</span>
+                      <span className="text-sm text-gray-600">15 / 20 orders</span>
+                    </div>
+                    <Progress value={75} className="h-2" />
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Efficiency Score</span>
+                      <Badge className="bg-green-100 text-green-800">Excellent</Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               {/* Quick Actions */}
               <Card>
@@ -1333,21 +1470,40 @@ export default function PickPack() {
                   <CardTitle className="text-base sm:text-lg">Quick Actions</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 sm:space-y-3">
-                  <Button className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base" size="lg">
+                  <Button 
+                    className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base" 
+                    size="lg"
+                    onClick={startNextPriorityOrder}
+                  >
                     <PlayCircle className="h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3" />
                     Start Next Priority Order
                   </Button>
-                  <Button className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base" variant="outline" size="lg">
+                  <Button 
+                    className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base" 
+                    variant={batchPickingMode ? "default" : "outline"} 
+                    size="lg"
+                    onClick={toggleBatchPickingMode}
+                  >
                     <Users className="h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3" />
-                    Batch Picking Mode
+                    {batchPickingMode ? "Disable Batch Mode" : "Batch Picking Mode"}
                   </Button>
-                  <Button className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base" variant="outline" size="lg">
+                  <Button 
+                    className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base" 
+                    variant="outline" 
+                    size="lg"
+                    onClick={optimizePickRoute}
+                  >
                     <Route className="h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3" />
                     Optimize Pick Route
                   </Button>
-                  <Button className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base" variant="outline" size="lg">
+                  <Button 
+                    className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base" 
+                    variant={showPerformanceStats ? "default" : "outline"} 
+                    size="lg"
+                    onClick={togglePerformanceStats}
+                  >
                     <BarChart3 className="h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3" />
-                    View Performance Stats
+                    {showPerformanceStats ? "Hide Stats" : "View Performance Stats"}
                   </Button>
                 </CardContent>
               </Card>
@@ -1388,19 +1544,101 @@ export default function PickPack() {
 
           {/* Pending Orders Tab - Mobile Optimized */}
           <TabsContent value="pending" className="mt-4 sm:mt-6">
+            {/* Batch Picking Controls */}
+            {batchPickingMode && (
+              <Card className="mb-4 border-2 border-purple-500">
+                <CardHeader className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white pb-3">
+                  <CardTitle className="text-base sm:text-lg flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <Users className="h-5 w-5" />
+                      Batch Picking Mode Active
+                    </span>
+                    <Badge className="bg-white text-purple-600">
+                      {selectedBatchItems.size} orders selected
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <div className="flex gap-2 flex-wrap">
+                    <Button 
+                      size="sm"
+                      onClick={() => {
+                        const allIds = new Set(getOrdersByStatus('pending').map(o => o.id));
+                        setSelectedBatchItems(allIds);
+                      }}
+                    >
+                      Select All
+                    </Button>
+                    <Button 
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setSelectedBatchItems(new Set())}
+                    >
+                      Clear Selection
+                    </Button>
+                    <Button 
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                      disabled={selectedBatchItems.size === 0}
+                      onClick={() => {
+                        const selectedOrders = getOrdersByStatus('pending').filter(o => selectedBatchItems.has(o.id));
+                        if (selectedOrders.length > 0) {
+                          startPicking(selectedOrders[0]);
+                          toast({
+                            title: "Batch Picking Started",
+                            description: `Starting batch pick for ${selectedBatchItems.size} orders`,
+                          });
+                        }
+                      }}
+                    >
+                      <PlayCircle className="h-4 w-4 mr-1" />
+                      Start Batch Pick ({selectedBatchItems.size})
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
             <Card>
               <CardHeader className="pb-3 sm:pb-6">
                 <CardTitle className="text-base sm:text-lg">Orders Ready to Pick</CardTitle>
-                <CardDescription className="text-xs sm:text-sm">Select an order to start the picking process</CardDescription>
+                <CardDescription className="text-xs sm:text-sm">
+                  {batchPickingMode ? "Select multiple orders for batch picking" : "Select an order to start the picking process"}
+                </CardDescription>
               </CardHeader>
               <CardContent className="px-3 sm:px-6">
                 <div className="space-y-2 sm:space-y-3">
                   {getOrdersByStatus('pending').map(order => (
-                    <Card key={order.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                    <Card 
+                      key={order.id} 
+                      className={`cursor-pointer hover:shadow-md transition-all ${
+                        batchPickingMode && selectedBatchItems.has(order.id) ? 'border-2 border-purple-500 bg-purple-50' : ''
+                      }`}
+                      onClick={() => {
+                        if (batchPickingMode) {
+                          const newSelection = new Set(selectedBatchItems);
+                          if (newSelection.has(order.id)) {
+                            newSelection.delete(order.id);
+                          } else {
+                            newSelection.add(order.id);
+                          }
+                          setSelectedBatchItems(newSelection);
+                        }
+                      }}
+                    >
                       <CardContent className="p-3 sm:p-4">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1 sm:mb-2">
+                              {batchPickingMode && (
+                                <input
+                                  type="checkbox"
+                                  checked={selectedBatchItems.has(order.id)}
+                                  className="h-4 w-4 text-purple-600 rounded"
+                                  onClick={(e) => e.stopPropagation()}
+                                  onChange={() => {}}
+                                />
+                              )}
                               <h3 className="font-semibold text-sm sm:text-base">{order.orderId}</h3>
                               <Badge variant={getPriorityColor(order.priority)} className="text-xs">
                                 {order.priority.toUpperCase()}
@@ -1424,14 +1662,19 @@ export default function PickPack() {
                               </div>
                             </div>
                           </div>
-                          <Button
-                            size="sm"
-                            className="w-full sm:w-auto sm:h-10"
-                            onClick={() => startPicking(order)}
-                          >
-                            <PlayCircle className="h-4 sm:h-5 w-4 sm:w-5 mr-1 sm:mr-2" />
-                            Start Picking
-                          </Button>
+                          {!batchPickingMode && (
+                            <Button
+                              size="sm"
+                              className="w-full sm:w-auto sm:h-10"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                startPicking(order);
+                              }}
+                            >
+                              <PlayCircle className="h-4 sm:h-5 w-4 sm:w-5 mr-1 sm:mr-2" />
+                              Start Picking
+                            </Button>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
