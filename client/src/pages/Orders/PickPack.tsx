@@ -356,76 +356,75 @@ export default function PickPack() {
         {/* Header - Optimized for Mobile */}
         <div className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-lg sticky top-0 z-10">
           <div className="px-3 lg:px-4 py-2 lg:py-3">
-            {/* Mobile Layout */}
+            {/* Mobile Layout - Clean and Organized */}
             <div className="lg:hidden">
-              {/* Top Row - Order Info and Timer */}
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 px-2 bg-white/20 hover:bg-white/30 text-white"
-                    onClick={() => {
-                      setActivePickingOrder(null);
-                      setIsTimerRunning(false);
-                    }}
+              {/* Row 1: Exit Button and Order Info */}
+              <div className="flex items-center justify-between mb-3">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-3 bg-white/20 hover:bg-white/30 text-white flex items-center gap-1"
+                  onClick={() => {
+                    setActivePickingOrder(null);
+                    setIsTimerRunning(false);
+                  }}
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Exit
+                </Button>
+                
+                <div className="text-center flex-1">
+                  <div className="text-sm font-medium">Order</div>
+                  <div className="text-lg font-bold">{activePickingOrder.orderId}</div>
+                  <Badge 
+                    className={`text-xs px-3 py-0.5 mt-1 ${
+                      activePickingOrder.priority === 'high' ? 'bg-red-500 text-white' : 
+                      activePickingOrder.priority === 'medium' ? 'bg-amber-500 text-white' : 
+                      'bg-green-500 text-white'
+                    }`}
                   >
-                    <ArrowLeft className="h-4 w-4" />
-                    <span className="ml-1 text-sm">Exit</span>
-                  </Button>
-                  <div className="flex flex-col">
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm font-bold">Order</span>
-                      <span className="text-sm font-bold">{activePickingOrder.orderId}</span>
-                    </div>
-                    <Badge 
-                      className={`text-xs px-2 py-0 ${
-                        activePickingOrder.priority === 'high' ? 'bg-red-500 text-white' : 
-                        activePickingOrder.priority === 'medium' ? 'bg-amber-500 text-white' : 
-                        'bg-green-500 text-white'
-                      }`}
-                    >
-                      {activePickingOrder.priority.toUpperCase()}
-                    </Badge>
-                  </div>
+                    {activePickingOrder.priority.toUpperCase()}
+                  </Badge>
                 </div>
                 
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="icon"
-                    className="h-8 w-8 bg-white/20 hover:bg-white/30"
-                    onClick={() => setIsTimerRunning(!isTimerRunning)}
-                  >
-                    {isTimerRunning ? (
-                      <PauseCircle className="h-4 w-4" />
-                    ) : (
-                      <PlayCircle className="h-4 w-4" />
-                    )}
-                  </Button>
-                  <div className="text-right">
-                    <div className="font-mono text-lg font-bold">{formatTimer(pickingTimer)}</div>
-                    <p className="text-xs text-blue-100">Elapsed Time</p>
+                <div className="flex flex-col items-center">
+                  <div className="font-mono text-xl font-bold">{formatTimer(pickingTimer)}</div>
+                  <div className="text-xs text-blue-100">Elapsed</div>
+                  <div className="flex gap-1 mt-1">
+                    <Button
+                      size="icon"
+                      className="h-6 w-6 bg-white/20 hover:bg-white/30"
+                      onClick={() => setIsTimerRunning(!isTimerRunning)}
+                    >
+                      {isTimerRunning ? (
+                        <PauseCircle className="h-3 w-3" />
+                      ) : (
+                        <PlayCircle className="h-3 w-3" />
+                      )}
+                    </Button>
+                    <Button
+                      size="icon"
+                      className="h-6 w-6 bg-white/20 hover:bg-white/30"
+                      onClick={() => setAudioEnabled(!audioEnabled)}
+                    >
+                      <Volume2 className={`h-3 w-3 ${audioEnabled ? 'text-yellow-300' : 'text-white/50'}`} />
+                    </Button>
                   </div>
-                  <Button
-                    size="icon"
-                    className="h-8 w-8 bg-white/20 hover:bg-white/30"
-                    onClick={() => setAudioEnabled(!audioEnabled)}
-                  >
-                    <Volume2 className={`h-4 w-4 ${audioEnabled ? 'text-yellow-300' : 'text-white/50'}`} />
-                  </Button>
                 </div>
               </div>
               
-              {/* Customer Name */}
-              <p className="text-xs text-blue-100 mb-2 truncate">{activePickingOrder.customerName}</p>
+              {/* Row 2: Customer Name */}
+              <div className="text-center mb-2">
+                <p className="text-xs text-blue-100">{activePickingOrder.customerName}</p>
+              </div>
               
-              {/* Progress Bar */}
+              {/* Row 3: Progress Bar */}
               <div>
                 <div className="flex justify-between text-xs mb-1">
                   <span className="text-blue-100">Progress</span>
-                  <span className="font-medium text-white">{activePickingOrder.pickedItems}/{activePickingOrder.totalItems} items</span>
+                  <span className="font-bold text-white">{activePickingOrder.pickedItems}/{activePickingOrder.totalItems} items</span>
                 </div>
-                <div className="w-full bg-white/20 rounded-full h-2 overflow-hidden">
+                <div className="w-full bg-white/20 rounded-full h-2.5 overflow-hidden">
                   <div 
                     className="h-full bg-gradient-to-r from-green-400 to-emerald-400 transition-all duration-500 ease-out rounded-full"
                     style={{ width: `${progress}%` }}
