@@ -1868,7 +1868,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const order = await storage.updateOrder(req.params.id, updates);
       
       await storage.createUserActivity({
-        userId: pickedBy || packedBy || "test-user",
+        userId: "test-user",
         action: 'update',
         entityType: 'order',
         entityId: order.id,

@@ -158,10 +158,7 @@ export default function PickPack() {
   // Transform real orders to PickPackOrder format - Only include "To Fulfill" status orders
   const transformedOrders: PickPackOrder[] = allOrders
     .filter((order: any) => 
-      order.orderStatus === 'to_fulfill' || 
-      order.orderStatus === 'picking' || 
-      order.orderStatus === 'packing' || 
-      order.orderStatus === 'ready_to_ship'
+      order.orderStatus === 'to_fulfill'
     )
     .map((order: any) => ({
       id: order.id,
@@ -171,11 +168,8 @@ export default function PickPack() {
       shippingAddress: order.shippingAddress,
       priority: order.priority || 'medium',
       status: order.orderStatus || 'to_fulfill',
-      pickStatus: order.pickStatus || (order.orderStatus === 'to_fulfill' ? 'not_started' : 
-                   order.orderStatus === 'picking' ? 'in_progress' : 
-                   order.orderStatus === 'packing' ? 'completed' : 'completed'),
-      packStatus: order.packStatus || (order.orderStatus === 'packing' ? 'in_progress' : 
-                  order.orderStatus === 'ready_to_ship' ? 'completed' : 'not_started'),
+      pickStatus: order.pickStatus || 'not_started',
+      packStatus: order.packStatus || 'not_started',
       items: order.items?.map((item: any) => ({
         id: item.id,
         productId: item.productId,
@@ -245,17 +239,17 @@ export default function PickPack() {
 
   // Start picking an order
   const startPicking = async (order: PickPackOrder) => {
-    // Update order status to "picking"
+    // Keep order status as "to_fulfill" but update pick status
     await updateOrderStatusMutation.mutateAsync({
       orderId: order.id,
-      status: 'picking',
+      status: 'to_fulfill',
       pickStatus: 'in_progress',
       pickedBy: currentEmployee
     });
 
     const updatedOrder = {
       ...order,
-      status: 'picking' as const,
+      status: 'to_fulfill' as const,
       pickStatus: 'in_progress' as const,
       pickStartTime: new Date().toISOString(),
       pickedBy: currentEmployee
@@ -304,10 +298,10 @@ export default function PickPack() {
   const completePicking = async () => {
     if (!activePickingOrder) return;
 
-    // Update order status to "packing"
+    // Keep order status as "to_fulfill" but update pick status
     await updateOrderStatusMutation.mutateAsync({
       orderId: activePickingOrder.id,
-      status: 'packing',
+      status: 'to_fulfill',
       pickStatus: 'completed',
       packStatus: 'not_started'
     });
@@ -316,7 +310,7 @@ export default function PickPack() {
       ...activePickingOrder,
       pickStatus: 'completed' as const,
       pickEndTime: new Date().toISOString(),
-      status: 'packing' as const
+      status: 'to_fulfill' as const
     };
 
     setIsTimerRunning(false);
@@ -332,11 +326,11 @@ export default function PickPack() {
 
   // Start packing an order
   const startPacking = async (order: PickPackOrder) => {
-    // Update order status to "packing" if not already
+    // Keep order status as "to_fulfill" but update pack status
     if (order.packStatus !== 'in_progress') {
       await updateOrderStatusMutation.mutateAsync({
         orderId: order.id,
-        status: 'packing',
+        status: 'to_fulfill',
         packStatus: 'in_progress',
         packedBy: currentEmployee
       });
@@ -362,10 +356,10 @@ export default function PickPack() {
   const completePacking = async () => {
     if (!activePackingOrder) return;
 
-    // Update order status to "ready_to_ship"
+    // Update order status to "shipped" when packing is complete
     await updateOrderStatusMutation.mutateAsync({
       orderId: activePackingOrder.id,
-      status: 'ready_to_ship',
+      status: 'shipped',
       packStatus: 'completed'
     });
 
@@ -373,7 +367,7 @@ export default function PickPack() {
       ...activePackingOrder,
       packStatus: 'completed' as const,
       packEndTime: new Date().toISOString(),
-      status: 'ready_to_ship' as const
+      status: 'shipped' as const
     };
 
     setIsPackingTimerRunning(false);
