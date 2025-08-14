@@ -1496,69 +1496,72 @@ export default function PickPack() {
 
           {/* Overview Tab - Mobile Optimized */}
           <TabsContent value="overview" className="mt-4 sm:mt-6">
-            {/* Performance Stats Panel */}
+            {/* Performance Stats Modal */}
             {showPerformanceStats && (
-              <Card className="mb-4 sm:mb-6 border-2 border-blue-500">
-                <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white">
-                  <CardTitle className="flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <TrendingUp className="h-5 w-5" />
-                      Performance Statistics
-                    </span>
-                    <Button 
-                      size="sm" 
-                      variant="ghost" 
-                      className="text-white hover:bg-white/20"
-                      onClick={() => setShowPerformanceStats(false)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    <div className="text-center">
-                      <div className="text-2xl sm:text-3xl font-bold text-blue-600">
-                        {transformedOrders.filter(o => o.pickStatus === 'completed' && o.packStatus === 'completed').length}
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+                  <div className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white p-4 sm:p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="h-5 w-5" />
+                        <h2 className="text-lg sm:text-xl font-bold">Performance Statistics</h2>
                       </div>
-                      <p className="text-xs sm:text-sm text-gray-600 mt-1">Orders Completed Today</p>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl sm:text-3xl font-bold text-green-600">
-                        {Math.floor(Math.random() * 90 + 10)}%
-                      </div>
-                      <p className="text-xs sm:text-sm text-gray-600 mt-1">Picking Accuracy</p>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl sm:text-3xl font-bold text-purple-600">
-                        {Math.floor(Math.random() * 20 + 5)}
-                      </div>
-                      <p className="text-xs sm:text-sm text-gray-600 mt-1">Avg. Items/Order</p>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl sm:text-3xl font-bold text-orange-600">
-                        {Math.floor(Math.random() * 10 + 5)}m
-                      </div>
-                      <p className="text-xs sm:text-sm text-gray-600 mt-1">Avg. Pick Time</p>
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="text-white hover:bg-white/20"
+                        onClick={() => setShowPerformanceStats(false)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                   
-                  <Separator className="my-4" />
-                  
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">Daily Target</span>
-                      <span className="text-sm text-gray-600">15 / 20 orders</span>
+                  <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-100px)]">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      <div className="text-center">
+                        <div className="text-2xl sm:text-3xl font-bold text-blue-600">
+                          {transformedOrders.filter(o => o.pickStatus === 'completed' && o.packStatus === 'completed').length}
+                        </div>
+                        <p className="text-xs sm:text-sm text-gray-600 mt-1">Orders Completed Today</p>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl sm:text-3xl font-bold text-green-600">
+                          {Math.floor(Math.random() * 90 + 10)}%
+                        </div>
+                        <p className="text-xs sm:text-sm text-gray-600 mt-1">Picking Accuracy</p>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl sm:text-3xl font-bold text-purple-600">
+                          {Math.floor(Math.random() * 20 + 5)}
+                        </div>
+                        <p className="text-xs sm:text-sm text-gray-600 mt-1">Avg. Items/Order</p>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl sm:text-3xl font-bold text-orange-600">
+                          {Math.floor(Math.random() * 10 + 5)}m
+                        </div>
+                        <p className="text-xs sm:text-sm text-gray-600 mt-1">Avg. Pick Time</p>
+                      </div>
                     </div>
-                    <Progress value={75} className="h-2" />
                     
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">Efficiency Score</span>
-                      <Badge className="bg-green-100 text-green-800">Excellent</Badge>
+                    <div className="my-6 border-t border-gray-200"></div>
+                    
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">Daily Target</span>
+                        <span className="text-sm text-gray-600">15 / 20 orders</span>
+                      </div>
+                      <Progress value={75} className="h-2" />
+                      
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">Efficiency Score</span>
+                        <Badge className="bg-green-100 text-green-800">Excellent</Badge>
+                      </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
