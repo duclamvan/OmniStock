@@ -1018,34 +1018,34 @@ export default function PickPack() {
                         <p className="text-xs text-orange-600 mt-1">Navigate to this location</p>
                       </div>
 
-                      {/* Quantity Picker - Mobile Optimized */}
-                      <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl lg:rounded-2xl p-3 lg:p-6 border-2 border-green-300">
-                        <p className="text-center text-sm lg:text-lg font-semibold text-green-800 mb-3">Pick Quantity</p>
-                        <div className="flex items-center justify-center gap-2 sm:gap-3 lg:gap-6">
+                      {/* Quantity Picker - Enhanced Visibility */}
+                      <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl lg:rounded-2xl p-4 lg:p-8 border-3 border-green-400 shadow-xl">
+                        <p className="text-center text-base lg:text-xl font-black text-green-800 mb-4 uppercase tracking-wider">Pick Quantity</p>
+                        <div className="flex items-center justify-center gap-3 sm:gap-4 lg:gap-8">
                           <Button
                             size="lg"
-                            className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-xl lg:rounded-2xl bg-red-500 hover:bg-red-600 active:bg-red-700 text-white shadow-lg touch-manipulation"
+                            className="w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-xl lg:rounded-2xl bg-red-500 hover:bg-red-600 active:bg-red-700 text-white shadow-xl touch-manipulation transform hover:scale-110 transition-transform"
                             onClick={() => updatePickedItem(currentItem.id, Math.max(0, currentItem.pickedQuantity - 1))}
                             disabled={currentItem.pickedQuantity === 0}
                           >
-                            <Minus className="h-5 lg:h-6 w-5 lg:w-6" />
+                            <Minus className="h-6 lg:h-8 w-6 lg:w-8" />
                           </Button>
                           
-                          <div className="text-center bg-white rounded-xl lg:rounded-2xl px-4 sm:px-6 lg:px-10 py-2 sm:py-3 lg:py-5 shadow-lg min-w-[100px]">
-                            <div className="text-2xl sm:text-3xl lg:text-5xl font-black text-gray-800">
+                          <div className="text-center bg-white rounded-2xl px-6 sm:px-8 lg:px-12 py-3 sm:py-4 lg:py-6 shadow-2xl min-w-[140px] border-2 border-gray-300">
+                            <div className="text-4xl sm:text-5xl lg:text-7xl font-black text-gray-900">
                               {currentItem.pickedQuantity}
-                              <span className="text-xl sm:text-2xl lg:text-3xl text-gray-400">/{currentItem.quantity}</span>
+                              <span className="text-2xl sm:text-3xl lg:text-4xl text-gray-500 ml-1">/{currentItem.quantity}</span>
                             </div>
-                            <p className="text-xs lg:text-sm font-semibold text-gray-600 uppercase tracking-wide">Items</p>
+                            <p className="text-sm lg:text-base font-bold text-gray-700 uppercase tracking-wider mt-1">Items</p>
                           </div>
                           
                           <Button
                             size="lg"
-                            className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-xl lg:rounded-2xl bg-green-500 hover:bg-green-600 active:bg-green-700 text-white shadow-lg touch-manipulation"
+                            className="w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-xl lg:rounded-2xl bg-green-500 hover:bg-green-600 active:bg-green-700 text-white shadow-xl touch-manipulation transform hover:scale-110 transition-transform"
                             onClick={() => updatePickedItem(currentItem.id, Math.min(currentItem.quantity, currentItem.pickedQuantity + 1))}
                             disabled={currentItem.pickedQuantity >= currentItem.quantity}
                           >
-                            <Plus className="h-5 lg:h-6 w-5 lg:w-6" />
+                            <Plus className="h-6 lg:h-8 w-6 lg:w-8" />
                           </Button>
                         </div>
                         
