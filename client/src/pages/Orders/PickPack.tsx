@@ -52,6 +52,15 @@ import {
   TrendingUp
 } from "lucide-react";
 
+interface BundleItem {
+  id: string;
+  name: string;
+  colorNumber?: string;
+  quantity: number;
+  picked: boolean;
+  location?: string;
+}
+
 interface OrderItem {
   id: string;
   productId: string;
@@ -63,6 +72,8 @@ interface OrderItem {
   warehouseLocation?: string;
   barcode?: string;
   image?: string;
+  isBundle?: boolean;
+  bundleItems?: BundleItem[];
 }
 
 interface PickPackOrder {
@@ -119,6 +130,8 @@ export default function PickPack() {
   const [selectedBoxSize, setSelectedBoxSize] = useState<string>('');
   const [packageWeight, setPackageWeight] = useState<string>('');
   const [verifiedItems, setVerifiedItems] = useState<Set<string>>(new Set());
+  const [expandedBundles, setExpandedBundles] = useState<Set<string>>(new Set());
+  const [bundlePickedItems, setBundlePickedItems] = useState<Record<string, Set<string>>>({}); // itemId -> Set of picked bundle item ids
 
   // Timer effects
   useEffect(() => {
@@ -169,6 +182,68 @@ export default function PickPack() {
     return `https://picsum.photos/seed/${seed}/400/400`;
   };
 
+  // Generate bundle items for gel polish products
+  const generateBundleItems = (productName: string, location: string): BundleItem[] | undefined => {
+    const lowerName = productName.toLowerCase();
+    
+    // Check if it's a gel polish set or color collection
+    if (lowerName.includes('gel polish') || lowerName.includes('nail polish') || lowerName.includes('color set')) {
+      const colors = [
+        { name: 'Ruby Red', colorNumber: '001' },
+        { name: 'Ocean Blue', colorNumber: '002' },
+        { name: 'Forest Green', colorNumber: '003' },
+        { name: 'Sunset Orange', colorNumber: '004' },
+        { name: 'Lavender Purple', colorNumber: '005' },
+        { name: 'Midnight Black', colorNumber: '006' },
+        { name: 'Pearl White', colorNumber: '007' },
+        { name: 'Rose Gold', colorNumber: '008' },
+        { name: 'Teal Turquoise', colorNumber: '009' },
+        { name: 'Coral Pink', colorNumber: '010' },
+        { name: 'Silver Shimmer', colorNumber: '011' },
+        { name: 'Golden Yellow', colorNumber: '012' }
+      ];
+      
+      // Determine number of colors based on product name
+      const numColors = lowerName.match(/(\d+)\s*color/)?.[1] ? 
+        Math.min(parseInt(lowerName.match(/(\d+)\s*color/)?.[1] || '6'), 12) : 6;
+      
+      return colors.slice(0, numColors).map((color, index) => ({
+        id: `bundle-${Math.random().toString(36).substr(2, 9)}`,
+        name: color.name,
+        colorNumber: color.colorNumber,
+        quantity: 1,
+        picked: false,
+        location: `${location}-${index + 1}`
+      }));
+    }
+    
+    // Check if it's a brush set or tool kit
+    if (lowerName.includes('brush set') || lowerName.includes('tool kit')) {
+      const tools = [
+        { name: 'Fine Detail Brush' },
+        { name: 'Flat Brush' },
+        { name: 'Dotting Tool' },
+        { name: 'Striping Brush' },
+        { name: 'Fan Brush' },
+        { name: 'Cleanup Brush' },
+        { name: 'Ombre Brush' }
+      ];
+      
+      const numTools = lowerName.match(/(\d+)\s*(pc|piece|pcs)/)?.[1] ? 
+        Math.min(parseInt(lowerName.match(/(\d+)\s*(pc|piece|pcs)/)?.[1] || '5'), 7) : 5;
+      
+      return tools.slice(0, numTools).map((tool, index) => ({
+        id: `bundle-${Math.random().toString(36).substr(2, 9)}`,
+        name: tool.name,
+        quantity: 1,
+        picked: false,
+        location: `${location}-${String.fromCharCode(65 + index)}`
+      }));
+    }
+    
+    return undefined;
+  };
+
   // Transform real orders to PickPackOrder format - Only include "To Fulfill" status orders
   const transformedOrders: PickPackOrder[] = (allOrders as any[] || [])
     .filter((order: any) => 
@@ -184,18 +259,25 @@ export default function PickPack() {
       status: order.orderStatus || 'to_fulfill',
       pickStatus: order.pickStatus || 'not_started',
       packStatus: order.packStatus || 'not_started',
-      items: order.items?.map((item: any) => ({
-        id: item.id,
-        productId: item.productId,
-        productName: item.productName,
-        sku: item.sku,
-        quantity: item.quantity,
-        pickedQuantity: item.pickedQuantity || 0,
-        packedQuantity: item.packedQuantity || 0,
-        warehouseLocation: item.warehouseLocation || generateMockLocation(),
-        barcode: item.barcode || generateMockBarcode(item.sku),
-        image: item.image || generateMockImage(item.productName)
-      })) || [],
+      items: order.items?.map((item: any) => {
+        const warehouseLocation = item.warehouseLocation || generateMockLocation();
+        const bundleItems = generateBundleItems(item.productName, warehouseLocation);
+        
+        return {
+          id: item.id,
+          productId: item.productId,
+          productName: item.productName,
+          sku: item.sku,
+          quantity: item.quantity,
+          pickedQuantity: item.pickedQuantity || 0,
+          packedQuantity: item.packedQuantity || 0,
+          warehouseLocation: warehouseLocation,
+          barcode: item.barcode || generateMockBarcode(item.sku),
+          image: item.image || generateMockImage(item.productName),
+          isBundle: !!bundleItems,
+          bundleItems: bundleItems
+        };
+      }) || [],
       totalItems: order.items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0,
       pickedItems: order.items?.reduce((sum: number, item: any) => sum + (item.pickedQuantity || 0), 0) || 0,
       packedItems: order.items?.reduce((sum: number, item: any) => sum + (item.packedQuantity || 0), 0) || 0,
@@ -1286,58 +1368,172 @@ export default function PickPack() {
                         <p className="text-xs text-orange-600 mt-1">Navigate to this location</p>
                       </div>
 
-                      {/* Quantity Picker - Enhanced Visibility */}
-                      <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl lg:rounded-2xl p-4 lg:p-8 border-3 border-green-400 shadow-xl">
-                        <p className="text-center text-base lg:text-xl font-black text-green-800 mb-4 uppercase tracking-wider">Pick Quantity</p>
-                        <div className="flex items-center justify-center gap-3 sm:gap-4 lg:gap-8">
-                          <Button
-                            size="lg"
-                            className="w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-xl lg:rounded-2xl bg-red-500 hover:bg-red-600 active:bg-red-700 text-white shadow-xl touch-manipulation transform hover:scale-110 transition-transform"
-                            onClick={() => updatePickedItem(currentItem.id, Math.max(0, currentItem.pickedQuantity - 1))}
-                            disabled={currentItem.pickedQuantity === 0}
-                          >
-                            <Minus className="h-6 lg:h-8 w-6 lg:w-8" />
-                          </Button>
-                          
-                          <div className="text-center bg-white rounded-2xl px-6 sm:px-8 lg:px-12 py-3 sm:py-4 lg:py-6 shadow-2xl min-w-[140px] border-2 border-gray-300">
-                            <div className="text-4xl sm:text-5xl lg:text-7xl font-black text-gray-900">
-                              {currentItem.pickedQuantity}
-                              <span className="text-2xl sm:text-3xl lg:text-4xl text-gray-500 ml-1">/{currentItem.quantity}</span>
-                            </div>
-                            <p className="text-sm lg:text-base font-bold text-gray-700 uppercase tracking-wider mt-1">Items</p>
+                      {/* Bundle Items Picker - For gel polish colors etc */}
+                      {currentItem.isBundle && currentItem.bundleItems && currentItem.bundleItems.length > 0 ? (
+                        <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl lg:rounded-2xl p-4 lg:p-8 border-3 border-purple-400 shadow-xl">
+                          <div className="flex items-center justify-between mb-4">
+                            <p className="text-base lg:text-xl font-black text-purple-800 uppercase tracking-wider">Bundle Items</p>
+                            <Badge className="bg-purple-600 text-white px-3 py-1">
+                              {bundlePickedItems[currentItem.id]?.size || 0} / {currentItem.bundleItems.length} picked
+                            </Badge>
                           </div>
                           
-                          <Button
-                            size="lg"
-                            className="w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-xl lg:rounded-2xl bg-green-500 hover:bg-green-600 active:bg-green-700 text-white shadow-xl touch-manipulation transform hover:scale-110 transition-transform"
-                            onClick={() => updatePickedItem(currentItem.id, Math.min(currentItem.quantity, currentItem.pickedQuantity + 1))}
-                            disabled={currentItem.pickedQuantity >= currentItem.quantity}
-                          >
-                            <Plus className="h-6 lg:h-8 w-6 lg:w-8" />
-                          </Button>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+                            {currentItem.bundleItems.map((bundleItem) => {
+                              const isPicked = bundlePickedItems[currentItem.id]?.has(bundleItem.id) || false;
+                              
+                              return (
+                                <div
+                                  key={bundleItem.id}
+                                  className={`border-2 rounded-lg p-3 cursor-pointer transition-all ${
+                                    isPicked 
+                                      ? 'bg-green-100 border-green-500 shadow-lg' 
+                                      : 'bg-white border-gray-300 hover:border-purple-400 hover:shadow-md'
+                                  }`}
+                                  onClick={() => {
+                                    const currentPicked = bundlePickedItems[currentItem.id] || new Set();
+                                    const newPicked = new Set(currentPicked);
+                                    
+                                    if (isPicked) {
+                                      newPicked.delete(bundleItem.id);
+                                    } else {
+                                      newPicked.add(bundleItem.id);
+                                      // Play success sound if enabled
+                                      if (audioEnabled) {
+                                        const audio = new Audio('/success.mp3');
+                                        audio.play().catch(() => {});
+                                      }
+                                    }
+                                    
+                                    setBundlePickedItems({
+                                      ...bundlePickedItems,
+                                      [currentItem.id]: newPicked
+                                    });
+                                    
+                                    // Update the picked quantity based on bundle completion
+                                    const allPicked = newPicked.size === currentItem.bundleItems.length;
+                                    updatePickedItem(currentItem.id, allPicked ? currentItem.quantity : 0);
+                                  }}
+                                >
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                      {bundleItem.colorNumber && (
+                                        <div className="text-xl font-bold text-purple-700 mb-1">
+                                          #{bundleItem.colorNumber}
+                                        </div>
+                                      )}
+                                      <div className="text-sm font-medium text-gray-800">
+                                        {bundleItem.name}
+                                      </div>
+                                      {bundleItem.location && (
+                                        <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                                          <MapPin className="h-3 w-3" />
+                                          {bundleItem.location}
+                                        </div>
+                                      )}
+                                      <div className="text-xs text-gray-600 mt-1">
+                                        Qty: {bundleItem.quantity}
+                                      </div>
+                                    </div>
+                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                                      isPicked 
+                                        ? 'bg-green-500 border-green-600' 
+                                        : 'bg-white border-gray-400'
+                                    }`}>
+                                      {isPicked && <CheckCircle className="h-4 w-4 text-white" />}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          
+                          {bundlePickedItems[currentItem.id]?.size === currentItem.bundleItems.length && (
+                            <Alert className="mt-4 bg-green-100 border-2 border-green-400 shadow-md">
+                              <CheckCircle className="h-4 lg:h-5 w-4 lg:w-5 text-green-700" />
+                              <AlertDescription className="text-green-800 font-semibold text-sm lg:text-base">
+                                ✓ All bundle items picked! Ready for next item.
+                              </AlertDescription>
+                            </Alert>
+                          )}
+                          
+                          {/* Quick Pick All Bundle Items */}
+                          {(!bundlePickedItems[currentItem.id] || bundlePickedItems[currentItem.id].size < currentItem.bundleItems.length) && (
+                            <Button 
+                              size="lg" 
+                              className="w-full mt-4 h-11 sm:h-12 lg:h-14 text-sm sm:text-base lg:text-lg font-bold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg"
+                              onClick={() => {
+                                const allIds = new Set(currentItem.bundleItems.map(item => item.id));
+                                setBundlePickedItems({
+                                  ...bundlePickedItems,
+                                  [currentItem.id]: allIds
+                                });
+                                updatePickedItem(currentItem.id, currentItem.quantity);
+                                if (audioEnabled) {
+                                  const audio = new Audio('/success.mp3');
+                                  audio.play().catch(() => {});
+                                }
+                              }}
+                            >
+                              <CheckCircle2 className="h-4 sm:h-5 lg:h-6 w-4 sm:w-5 lg:w-6 mr-2 lg:mr-3" />
+                              Quick Pick All Bundle Items
+                            </Button>
+                          )}
                         </div>
-                        
-                        {currentItem.pickedQuantity >= currentItem.quantity && (
-                          <Alert className="mt-3 lg:mt-4 bg-green-100 border-2 border-green-400 shadow-md">
-                            <CheckCircle className="h-4 lg:h-5 w-4 lg:w-5 text-green-700" />
-                            <AlertDescription className="text-green-800 font-semibold text-sm lg:text-base">
-                              ✓ Item fully picked! Ready for next item.
-                            </AlertDescription>
-                          </Alert>
-                        )}
+                      ) : (
+                        /* Regular Quantity Picker - Enhanced Visibility */
+                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl lg:rounded-2xl p-4 lg:p-8 border-3 border-green-400 shadow-xl">
+                          <p className="text-center text-base lg:text-xl font-black text-green-800 mb-4 uppercase tracking-wider">Pick Quantity</p>
+                          <div className="flex items-center justify-center gap-3 sm:gap-4 lg:gap-8">
+                            <Button
+                              size="lg"
+                              className="w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-xl lg:rounded-2xl bg-red-500 hover:bg-red-600 active:bg-red-700 text-white shadow-xl touch-manipulation transform hover:scale-110 transition-transform"
+                              onClick={() => updatePickedItem(currentItem.id, Math.max(0, currentItem.pickedQuantity - 1))}
+                              disabled={currentItem.pickedQuantity === 0}
+                            >
+                              <Minus className="h-6 lg:h-8 w-6 lg:w-8" />
+                            </Button>
+                            
+                            <div className="text-center bg-white rounded-2xl px-6 sm:px-8 lg:px-12 py-3 sm:py-4 lg:py-6 shadow-2xl min-w-[140px] border-2 border-gray-300">
+                              <div className="text-4xl sm:text-5xl lg:text-7xl font-black text-gray-900">
+                                {currentItem.pickedQuantity}
+                                <span className="text-2xl sm:text-3xl lg:text-4xl text-gray-500 ml-1">/{currentItem.quantity}</span>
+                              </div>
+                              <p className="text-sm lg:text-base font-bold text-gray-700 uppercase tracking-wider mt-1">Items</p>
+                            </div>
+                            
+                            <Button
+                              size="lg"
+                              className="w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-xl lg:rounded-2xl bg-green-500 hover:bg-green-600 active:bg-green-700 text-white shadow-xl touch-manipulation transform hover:scale-110 transition-transform"
+                              onClick={() => updatePickedItem(currentItem.id, Math.min(currentItem.quantity, currentItem.pickedQuantity + 1))}
+                              disabled={currentItem.pickedQuantity >= currentItem.quantity}
+                            >
+                              <Plus className="h-6 lg:h-8 w-6 lg:w-8" />
+                            </Button>
+                          </div>
+                          
+                          {currentItem.pickedQuantity >= currentItem.quantity && (
+                            <Alert className="mt-3 lg:mt-4 bg-green-100 border-2 border-green-400 shadow-md">
+                              <CheckCircle className="h-4 lg:h-5 w-4 lg:w-5 text-green-700" />
+                              <AlertDescription className="text-green-800 font-semibold text-sm lg:text-base">
+                                ✓ Item fully picked! Ready for next item.
+                              </AlertDescription>
+                            </Alert>
+                          )}
 
-                        {/* Quick Pick Button - Mobile Optimized */}
-                        {currentItem.pickedQuantity < currentItem.quantity && (
-                          <Button 
-                            size="lg" 
-                            className="w-full mt-3 lg:mt-4 h-11 sm:h-12 lg:h-14 text-sm sm:text-base lg:text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 active:from-blue-800 active:to-indigo-800 text-white shadow-lg touch-manipulation"
-                            onClick={() => updatePickedItem(currentItem.id, currentItem.quantity)}
-                          >
-                            <CheckCircle2 className="h-4 sm:h-5 lg:h-6 w-4 sm:w-5 lg:w-6 mr-2 lg:mr-3" />
-                            Quick Pick All ({currentItem.quantity} items)
-                          </Button>
-                        )}
-                      </div>
+                          {/* Quick Pick Button - Mobile Optimized */}
+                          {currentItem.pickedQuantity < currentItem.quantity && (
+                            <Button 
+                              size="lg" 
+                              className="w-full mt-3 lg:mt-4 h-11 sm:h-12 lg:h-14 text-sm sm:text-base lg:text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 active:from-blue-800 active:to-indigo-800 text-white shadow-lg touch-manipulation"
+                              onClick={() => updatePickedItem(currentItem.id, currentItem.quantity)}
+                            >
+                              <CheckCircle2 className="h-4 sm:h-5 lg:h-6 w-4 sm:w-5 lg:w-6 mr-2 lg:mr-3" />
+                              Quick Pick All ({currentItem.quantity} items)
+                            </Button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
