@@ -1,7 +1,24 @@
 # Overview
 Davie Supply is a comprehensive warehouse and order management system designed as a full-stack web application. Its primary purpose is to manage the complete order lifecycle from creation to fulfillment, track inventory, manage customers, and provide financial reporting with multi-currency support. Key capabilities include real-time Vietnamese diacritics search, customer-specific pricing system, and integration with external shipping APIs for order tracking. The business vision is to provide a robust, efficient platform for streamlined supply chain operations.
 
-## Recent Updates (Jan 10, 2025 - Latest)
+## Recent Updates (Jan 14, 2025 - Latest)
+- Created comprehensive Pick & Pack page for warehouse fulfillment operations:
+  - Added new "Pick & Pack" menu item above "To Fulfill" in Orders section
+  - Real-time order fetching from database with automatic transformation to pick/pack workflow format
+  - Interactive picking dialog with item-level tracking and barcode scanning simulation
+  - Progress bars showing both picking and packing progress for each order
+  - Warehouse location display for each item (auto-generated for demo purposes)
+  - Employee identification and audio feedback toggles (success/error/scan sounds)
+  - Quick Actions section with buttons for Quick Pick, Pick Route optimization, Reports, and Issues
+  - Status cards with color-coded borders showing pending, picking, packing, and ready orders
+  - Tabbed interface with icons and counts for each fulfillment stage
+  - Mobile-responsive design optimized for warehouse handheld devices
+  - Start/Continue/Pause picking workflows with real-time status updates
+  - Batch picking support placeholder for multi-order fulfillment
+  - Empty state alerts for each tab when no orders are present
+  - Sound on/off toggle for warehouse environment preferences
+
+## Previous Updates (Jan 10, 2025)
 - Enhanced sidebar navigation with collapsible functionality:
   - Desktop sidebar can now collapse to icon-only mode with toggle button
   - Collapsed state persists in localStorage for user preference
