@@ -436,110 +436,111 @@ export default function PickPack() {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 flex">
+        <div className="flex-1 flex flex-col lg:flex-row">
           {/* Left Panel - Current Item Focus */}
-          <div className="flex-1 p-6">
+          <div className="flex-1 p-3 lg:p-6">
             {currentItem ? (
-              <div className="max-w-3xl mx-auto">
-                <Card className="mb-6 shadow-xl border-0 overflow-hidden">
-                  <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white">
+              <div className="max-w-4xl mx-auto">
+                <Card className="mb-4 lg:mb-6 shadow-xl border-0 overflow-hidden">
+                  <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white p-3 lg:p-4">
                     <CardTitle className="flex items-center justify-between">
-                      <span className="text-xl flex items-center gap-2">
-                        <Package className="h-6 w-6" />
-                        Current Item to Pick
+                      <span className="text-base lg:text-lg flex items-center gap-2">
+                        <Package className="h-5 w-5" />
+                        <span className="hidden sm:inline">Current Item to Pick</span>
+                        <span className="sm:hidden">Pick Item</span>
                       </span>
-                      <Badge className="bg-white text-blue-600 text-lg px-4 py-1 font-bold">
+                      <Badge className="bg-white text-blue-600 text-sm lg:text-base px-2 lg:px-3 py-1 font-bold">
                         {currentItemIndex + 1} / {activePickingOrder.items.length}
                       </Badge>
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="p-8 bg-white">
-                    <div className="space-y-8">
-                      {/* Product Image and Info */}
-                      <div className="flex gap-8">
+                  <CardContent className="p-4 lg:p-6 bg-white">
+                    <div className="space-y-4 lg:space-y-6">
+                      {/* Product Image and Info - Responsive Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:gap-6 gap-4">
                         {/* Product Image */}
-                        <div className="relative">
-                          <div className="w-56 h-56 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg border-4 border-white">
+                        <div className="relative mx-auto sm:mx-0">
+                          <div className="w-32 h-32 lg:w-40 lg:h-40 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg border-2 lg:border-4 border-white">
                             {currentItem.image ? (
                               <img 
                                 src={currentItem.image} 
                                 alt={currentItem.productName}
-                                className="w-full h-full object-contain rounded-xl p-2"
+                                className="w-full h-full object-contain rounded-lg p-1 lg:p-2"
                               />
                             ) : (
-                              <Package className="h-20 w-20 text-gray-300" />
+                              <Package className="h-12 lg:h-16 w-12 lg:w-16 text-gray-300" />
                             )}
                           </div>
-                          <div className="absolute -top-2 -right-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full w-12 h-12 flex items-center justify-center font-bold text-lg shadow-lg">
+                          <div className="absolute -top-1 -right-1 lg:-top-2 lg:-right-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center font-bold text-sm lg:text-base shadow-lg">
                             {currentItemIndex + 1}
                           </div>
                         </div>
                         
                         {/* Product Details */}
-                        <div className="flex-1 space-y-4">
-                          <h3 className="text-3xl font-bold text-gray-800">{currentItem.productName}</h3>
+                        <div className="flex-1 space-y-2 lg:space-y-3">
+                          <h3 className="text-lg lg:text-2xl font-bold text-gray-800 line-clamp-2">{currentItem.productName}</h3>
                           
-                          <div className="space-y-3">
-                            <div className="bg-gray-50 rounded-lg p-3 flex items-center gap-3">
-                              <Hash className="h-5 w-5 text-blue-500" />
-                              <span className="text-gray-600 font-medium">SKU:</span>
-                              <span className="font-mono font-bold text-xl text-gray-800">{currentItem.sku}</span>
+                          <div className="space-y-2">
+                            <div className="bg-gray-50 rounded-lg p-2 lg:p-3 flex items-center gap-2">
+                              <Hash className="h-4 lg:h-5 w-4 lg:w-5 text-blue-500 flex-shrink-0" />
+                              <span className="text-xs lg:text-sm text-gray-600 font-medium">SKU:</span>
+                              <span className="font-mono font-bold text-sm lg:text-base text-gray-800 truncate">{currentItem.sku}</span>
                             </div>
                             
-                            <div className="bg-gray-50 rounded-lg p-3 flex items-center gap-3">
-                              <ScanLine className="h-5 w-5 text-purple-500" />
-                              <span className="text-gray-600 font-medium">Barcode:</span>
-                              <span className="font-mono font-bold text-xl text-gray-800">{currentItem.barcode}</span>
+                            <div className="bg-gray-50 rounded-lg p-2 lg:p-3 flex items-center gap-2">
+                              <ScanLine className="h-4 lg:h-5 w-4 lg:w-5 text-purple-500 flex-shrink-0" />
+                              <span className="text-xs lg:text-sm text-gray-600 font-medium">Barcode:</span>
+                              <span className="font-mono font-bold text-sm lg:text-base text-gray-800 truncate">{currentItem.barcode}</span>
                             </div>
                           </div>
                         </div>
                       </div>
 
                       {/* Location - Emphasized with Psychology */}
-                      <div className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-300 rounded-2xl p-8 text-center shadow-lg">
-                        <div className="bg-white rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center shadow-md">
-                          <MapPin className="h-10 w-10 text-orange-500" />
+                      <div className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl lg:rounded-2xl p-4 lg:p-6 text-center shadow-lg">
+                        <div className="bg-white rounded-full w-12 h-12 lg:w-14 lg:h-14 mx-auto mb-2 lg:mb-3 flex items-center justify-center shadow-md">
+                          <MapPin className="h-6 lg:h-8 w-6 lg:w-8 text-orange-500" />
                         </div>
-                        <p className="text-sm font-semibold text-orange-700 mb-2 uppercase tracking-wide">Go to Location</p>
-                        <p className="text-6xl font-black text-orange-600 font-mono tracking-wider">{currentItem.warehouseLocation}</p>
-                        <p className="text-sm text-orange-600 mt-2">Navigate to this warehouse location</p>
+                        <p className="text-xs lg:text-sm font-semibold text-orange-700 mb-1 uppercase tracking-wide">Go to Location</p>
+                        <p className="text-3xl sm:text-4xl lg:text-5xl font-black text-orange-600 font-mono tracking-wider">{currentItem.warehouseLocation}</p>
+                        <p className="text-xs lg:text-sm text-orange-600 mt-1 lg:mt-2">Navigate to this warehouse location</p>
                       </div>
 
                       {/* Quantity Picker - Action Area */}
-                      <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-8 border-2 border-green-300">
-                        <p className="text-center text-lg font-semibold text-green-800 mb-6">Pick Quantity</p>
-                        <div className="flex items-center justify-center gap-6">
+                      <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl lg:rounded-2xl p-4 lg:p-6 border-2 border-green-300">
+                        <p className="text-center text-base lg:text-lg font-semibold text-green-800 mb-4">Pick Quantity</p>
+                        <div className="flex items-center justify-center gap-3 lg:gap-6">
                           <Button
                             size="lg"
-                            className="w-20 h-20 rounded-2xl bg-red-500 hover:bg-red-600 text-white shadow-lg"
+                            className="w-14 h-14 lg:w-16 lg:h-16 rounded-xl lg:rounded-2xl bg-red-500 hover:bg-red-600 text-white shadow-lg"
                             onClick={() => updatePickedItem(currentItem.id, Math.max(0, currentItem.pickedQuantity - 1))}
                             disabled={currentItem.pickedQuantity === 0}
                           >
-                            <Minus className="h-8 w-8" />
+                            <Minus className="h-5 lg:h-6 w-5 lg:w-6" />
                           </Button>
                           
-                          <div className="text-center bg-white rounded-2xl px-12 py-6 shadow-lg">
-                            <div className="text-6xl font-black text-gray-800">
+                          <div className="text-center bg-white rounded-xl lg:rounded-2xl px-6 lg:px-10 py-3 lg:py-5 shadow-lg">
+                            <div className="text-3xl lg:text-5xl font-black text-gray-800">
                               {currentItem.pickedQuantity}
-                              <span className="text-4xl text-gray-400">/{currentItem.quantity}</span>
+                              <span className="text-2xl lg:text-3xl text-gray-400">/{currentItem.quantity}</span>
                             </div>
-                            <p className="text-sm font-semibold text-gray-600 mt-2 uppercase tracking-wide">Items Picked</p>
+                            <p className="text-xs lg:text-sm font-semibold text-gray-600 mt-1 uppercase tracking-wide">Items Picked</p>
                           </div>
                           
                           <Button
                             size="lg"
-                            className="w-20 h-20 rounded-2xl bg-green-500 hover:bg-green-600 text-white shadow-lg"
+                            className="w-14 h-14 lg:w-16 lg:h-16 rounded-xl lg:rounded-2xl bg-green-500 hover:bg-green-600 text-white shadow-lg"
                             onClick={() => updatePickedItem(currentItem.id, Math.min(currentItem.quantity, currentItem.pickedQuantity + 1))}
                             disabled={currentItem.pickedQuantity >= currentItem.quantity}
                           >
-                            <Plus className="h-8 w-8" />
+                            <Plus className="h-5 lg:h-6 w-5 lg:w-6" />
                           </Button>
                         </div>
                         
                         {currentItem.pickedQuantity >= currentItem.quantity && (
-                          <Alert className="mt-6 bg-green-100 border-2 border-green-400 shadow-md">
-                            <CheckCircle className="h-5 w-5 text-green-700" />
-                            <AlertDescription className="text-green-800 font-semibold text-lg">
+                          <Alert className="mt-3 lg:mt-4 bg-green-100 border-2 border-green-400 shadow-md">
+                            <CheckCircle className="h-4 lg:h-5 w-4 lg:w-5 text-green-700" />
+                            <AlertDescription className="text-green-800 font-semibold text-sm lg:text-base">
                               ✓ Item fully picked! Ready for next item.
                             </AlertDescription>
                           </Alert>
@@ -549,10 +550,10 @@ export default function PickPack() {
                         {currentItem.pickedQuantity < currentItem.quantity && (
                           <Button 
                             size="lg" 
-                            className="w-full mt-6 h-14 text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg"
+                            className="w-full mt-3 lg:mt-4 h-12 lg:h-14 text-base lg:text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg"
                             onClick={() => updatePickedItem(currentItem.id, currentItem.quantity)}
                           >
-                            <CheckCircle2 className="h-6 w-6 mr-3" />
+                            <CheckCircle2 className="h-5 lg:h-6 w-5 lg:w-6 mr-2 lg:mr-3" />
                             Quick Pick All ({currentItem.quantity} items)
                           </Button>
                         )}
@@ -563,60 +564,61 @@ export default function PickPack() {
 
                 {/* Barcode Scanner */}
                 <Card className="shadow-xl border-0 bg-gradient-to-r from-purple-500 to-indigo-500">
-                  <CardContent className="p-6">
-                    <div className="flex gap-3">
+                  <CardContent className="p-3 lg:p-5">
+                    <div className="flex flex-col sm:flex-row gap-2 lg:gap-3">
                       <div className="relative flex-1">
-                        <ScanLine className="absolute left-4 top-4 h-6 w-6 text-white/70" />
+                        <ScanLine className="absolute left-3 lg:left-4 top-3 lg:top-4 h-5 lg:h-6 w-5 lg:w-6 text-white/70" />
                         <Input
                           ref={barcodeInputRef}
-                          placeholder="Scan or enter barcode/SKU..."
+                          placeholder="Scan or enter barcode..."
                           value={barcodeInput}
                           onChange={(e) => setBarcodeInput(e.target.value)}
                           onKeyPress={(e) => e.key === 'Enter' && handleBarcodeScan()}
-                          className="pl-12 text-lg h-14 bg-white/95 border-white/30 placeholder:text-gray-500 font-mono"
+                          className="pl-10 lg:pl-12 text-base lg:text-lg h-12 lg:h-14 bg-white/95 border-white/30 placeholder:text-gray-500 font-mono"
                           autoFocus
                         />
                       </div>
                       <Button 
                         size="lg" 
                         onClick={handleBarcodeScan}
-                        className="h-14 px-8 bg-white text-purple-600 hover:bg-gray-100 font-bold shadow-lg"
+                        className="h-12 lg:h-14 px-6 lg:px-8 bg-white text-purple-600 hover:bg-gray-100 font-bold shadow-lg"
                       >
-                        <ScanLine className="h-5 w-5 mr-2" />
-                        SCAN
+                        <ScanLine className="h-4 lg:h-5 w-4 lg:w-5 mr-2" />
+                        <span className="hidden sm:inline">SCAN</span>
+                        <span className="sm:hidden">GO</span>
                       </Button>
                     </div>
                   </CardContent>
                 </Card>
               </div>
             ) : (
-              <div className="max-w-3xl mx-auto">
+              <div className="max-w-3xl mx-auto px-3 lg:px-0">
                 <Card className="shadow-2xl border-0 overflow-hidden bg-gradient-to-br from-green-50 to-emerald-50">
-                  <div className="bg-gradient-to-r from-green-500 to-emerald-500 p-2"></div>
-                  <CardContent className="p-16 text-center">
-                    <div className="bg-gradient-to-br from-green-400 to-emerald-400 rounded-full w-32 h-32 mx-auto mb-8 flex items-center justify-center shadow-xl animate-bounce">
-                      <CheckCircle className="h-20 w-20 text-white" />
+                  <div className="bg-gradient-to-r from-green-500 to-emerald-500 p-1 lg:p-2"></div>
+                  <CardContent className="p-6 sm:p-10 lg:p-16 text-center">
+                    <div className="bg-gradient-to-br from-green-400 to-emerald-400 rounded-full w-20 h-20 sm:w-24 sm:h-24 lg:w-32 lg:h-32 mx-auto mb-4 lg:mb-8 flex items-center justify-center shadow-xl animate-bounce">
+                      <CheckCircle className="h-12 w-12 sm:h-16 sm:w-16 lg:h-20 lg:w-20 text-white" />
                     </div>
-                    <h2 className="text-4xl font-black mb-4 text-gray-800">
+                    <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black mb-2 lg:mb-4 text-gray-800">
                       🎉 All Items Picked!
                     </h2>
-                    <p className="text-xl text-gray-600 mb-8">
+                    <p className="text-base sm:text-lg lg:text-xl text-gray-600 mb-4 lg:mb-8">
                       Excellent work! You've successfully picked all {activePickingOrder.totalItems} items for order {activePickingOrder.orderId}
                     </p>
                     
-                    <div className="bg-white rounded-xl p-6 mb-8 shadow-inner">
-                      <div className="grid grid-cols-3 gap-4">
+                    <div className="bg-white rounded-xl p-4 lg:p-6 mb-4 lg:mb-8 shadow-inner">
+                      <div className="grid grid-cols-3 gap-2 lg:gap-4">
                         <div>
-                          <p className="text-sm text-gray-500">Time Taken</p>
-                          <p className="text-2xl font-bold text-blue-600">{formatTimer(pickingTimer)}</p>
+                          <p className="text-xs lg:text-sm text-gray-500">Time</p>
+                          <p className="text-lg sm:text-xl lg:text-2xl font-bold text-blue-600">{formatTimer(pickingTimer)}</p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-500">Items Picked</p>
-                          <p className="text-2xl font-bold text-green-600">{activePickingOrder.totalItems}</p>
+                          <p className="text-xs lg:text-sm text-gray-500">Items</p>
+                          <p className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600">{activePickingOrder.totalItems}</p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-500">Efficiency</p>
-                          <p className="text-2xl font-bold text-purple-600">100%</p>
+                          <p className="text-xs lg:text-sm text-gray-500">Score</p>
+                          <p className="text-lg sm:text-xl lg:text-2xl font-bold text-purple-600">100%</p>
                         </div>
                       </div>
                     </div>
@@ -624,9 +626,9 @@ export default function PickPack() {
                     <Button 
                       size="lg" 
                       onClick={completePicking}
-                      className="w-full h-16 text-xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-xl transform hover:scale-105 transition-all"
+                      className="w-full h-12 sm:h-14 lg:h-16 text-base sm:text-lg lg:text-xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-xl transform hover:scale-105 transition-all"
                     >
-                      <PackageCheck className="h-7 w-7 mr-3" />
+                      <PackageCheck className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 mr-2 lg:mr-3" />
                       PROCEED TO PACKING
                     </Button>
                   </CardContent>
@@ -635,22 +637,22 @@ export default function PickPack() {
             )}
           </div>
 
-          {/* Right Panel - Items List */}
-          <div className="w-96 bg-gradient-to-b from-white to-gray-50 border-l-4 border-gray-200 p-6 overflow-y-auto">
-            <div className="bg-gradient-to-r from-gray-700 to-gray-800 text-white rounded-xl p-4 mb-6 shadow-lg">
-              <h3 className="font-bold text-lg mb-2 flex items-center justify-between">
+          {/* Right Panel - Items List - Hidden on mobile, visible on desktop */}
+          <div className="hidden lg:block w-80 xl:w-96 bg-gradient-to-b from-white to-gray-50 border-l-4 border-gray-200 p-4 xl:p-6 overflow-y-auto">
+            <div className="bg-gradient-to-r from-gray-700 to-gray-800 text-white rounded-xl p-3 xl:p-4 mb-4 xl:mb-6 shadow-lg">
+              <h3 className="font-bold text-base xl:text-lg mb-2 flex items-center justify-between">
                 <span className="flex items-center gap-2">
-                  <ClipboardList className="h-5 w-5" />
+                  <ClipboardList className="h-4 xl:h-5 w-4 xl:w-5" />
                   Order Items
                 </span>
-                <Badge className="bg-white text-gray-800 font-bold px-3 py-1">
+                <Badge className="bg-white text-gray-800 font-bold px-2 xl:px-3 py-1 text-sm">
                   {activePickingOrder.pickedItems}/{activePickingOrder.totalItems}
                 </Badge>
               </h3>
-              <div className="text-sm text-gray-200">Track your picking progress</div>
+              <div className="text-xs xl:text-sm text-gray-200">Track your picking progress</div>
             </div>
             
-            <div className="space-y-3">
+            <div className="space-y-2 xl:space-y-3">
               {activePickingOrder.items.map((item, index) => {
                 const isPicked = item.pickedQuantity >= item.quantity;
                 const isCurrent = currentItem?.id === item.id;
@@ -669,25 +671,25 @@ export default function PickPack() {
                       }
                     }}
                   >
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-3">
+                    <CardContent className="p-3 xl:p-4">
+                      <div className="flex items-start gap-2 xl:gap-3">
                         <div className="mt-1">
                           {isPicked ? (
                             <div className="bg-green-500 rounded-full p-1">
-                              <CheckCircle className="h-6 w-6 text-white" />
+                              <CheckCircle className="h-5 xl:h-6 w-5 xl:w-6 text-white" />
                             </div>
                           ) : isCurrent ? (
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold animate-pulse">
+                            <div className="w-7 h-7 xl:w-8 xl:h-8 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold animate-pulse text-sm">
                               {index + 1}
                             </div>
                           ) : (
-                            <div className="w-8 h-8 rounded-full border-3 border-gray-300 flex items-center justify-center text-sm font-bold text-gray-600">
+                            <div className="w-7 h-7 xl:w-8 xl:h-8 rounded-full border-2 xl:border-3 border-gray-300 flex items-center justify-center text-xs xl:text-sm font-bold text-gray-600">
                               {index + 1}
                             </div>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className={`font-semibold text-sm truncate ${
+                          <p className={`font-semibold text-xs xl:text-sm truncate ${
                             isPicked ? 'text-green-700 line-through' : 
                             isCurrent ? 'text-blue-700' : 'text-gray-800'
                           }`}>
@@ -695,12 +697,12 @@ export default function PickPack() {
                           </p>
                           <p className="text-xs text-gray-500 mt-1">SKU: {item.sku}</p>
                           <div className="flex items-center justify-between mt-2">
-                            <span className={`text-xs font-mono px-2 py-1 rounded-lg font-bold ${
+                            <span className={`text-xs font-mono px-1 xl:px-2 py-1 rounded-lg font-bold ${
                               isCurrent ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600'
                             }`}>
                               📍 {item.warehouseLocation}
                             </span>
-                            <span className={`text-sm font-bold ${
+                            <span className={`text-xs xl:text-sm font-bold ${
                               isPicked ? 'text-green-600' : 
                               isCurrent ? 'text-blue-600' : 'text-gray-600'
                             }`}>
@@ -715,24 +717,67 @@ export default function PickPack() {
               })}
             </div>
           </div>
+          
+          {/* Mobile Items Drawer - Visible on mobile only */}
+          <div className="lg:hidden fixed bottom-20 left-0 right-0 bg-white border-t-2 border-gray-300 max-h-48 overflow-y-auto p-3 shadow-2xl">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-bold text-sm">Order Progress</span>
+              <Badge className="bg-gray-800 text-white text-xs px-2">
+                {activePickingOrder.pickedItems}/{activePickingOrder.totalItems}
+              </Badge>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              {activePickingOrder.items.map((item, index) => {
+                const isPicked = item.pickedQuantity >= item.quantity;
+                const isCurrent = currentItem?.id === item.id;
+                
+                return (
+                  <div
+                    key={item.id}
+                    className={`flex-shrink-0 w-32 p-2 rounded-lg border-2 ${
+                      isPicked ? 'bg-green-50 border-green-400' :
+                      isCurrent ? 'bg-blue-50 border-blue-500 shadow-lg' :
+                      'bg-white border-gray-200'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1 mb-1">
+                      {isPicked ? (
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
+                          isCurrent ? 'bg-blue-500 text-white' : 'border-2 border-gray-300 text-gray-600'
+                        }`}>
+                          {index + 1}
+                        </div>
+                      )}
+                      <span className="text-xs font-mono font-bold">{item.warehouseLocation}</span>
+                    </div>
+                    <p className="text-xs font-medium truncate">{item.productName}</p>
+                    <p className="text-xs text-gray-500">{item.pickedQuantity}/{item.quantity}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
-        {/* Action Bar */}
-        <div className="bg-gradient-to-t from-gray-900 to-gray-800 border-t-4 border-gray-700 p-6">
-          <div className="max-w-5xl mx-auto flex gap-6">
+        {/* Action Bar - Fixed at bottom on mobile */}
+        <div className="lg:relative fixed bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 to-gray-800 border-t-4 border-gray-700 p-3 lg:p-6 z-20">
+          <div className="max-w-5xl mx-auto flex gap-3 lg:gap-6">
             <Button
               variant="secondary"
-              className="flex-1 h-16 text-lg font-bold bg-orange-500 hover:bg-orange-600 text-white shadow-lg"
+              className="flex-1 h-12 lg:h-16 text-sm lg:text-lg font-bold bg-orange-500 hover:bg-orange-600 text-white shadow-lg"
               onClick={() => {
                 setActivePickingOrder(null);
                 setIsTimerRunning(false);
               }}
             >
-              <PauseCircle className="h-6 w-6 mr-3" />
-              PAUSE PICKING
+              <PauseCircle className="h-5 lg:h-6 w-5 lg:w-6 mr-2 lg:mr-3" />
+              <span className="hidden sm:inline">PAUSE PICKING</span>
+              <span className="sm:hidden">PAUSE</span>
             </Button>
             <Button
-              className={`flex-1 h-16 text-lg font-bold shadow-lg transition-all ${
+              className={`flex-1 h-12 lg:h-16 text-sm lg:text-lg font-bold shadow-lg transition-all ${
                 activePickingOrder.pickedItems >= activePickingOrder.totalItems
                   ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white animate-pulse'
                   : 'bg-gray-400 text-gray-200 cursor-not-allowed'
@@ -740,8 +785,9 @@ export default function PickPack() {
               disabled={activePickingOrder.pickedItems < activePickingOrder.totalItems}
               onClick={completePicking}
             >
-              <CheckCircle2 className="h-6 w-6 mr-3" />
-              COMPLETE ORDER ({activePickingOrder.pickedItems}/{activePickingOrder.totalItems})
+              <CheckCircle2 className="h-5 lg:h-6 w-5 lg:w-6 mr-2 lg:mr-3" />
+              <span className="hidden sm:inline">COMPLETE ORDER ({activePickingOrder.pickedItems}/{activePickingOrder.totalItems})</span>
+              <span className="sm:hidden">COMPLETE ({activePickingOrder.pickedItems}/{activePickingOrder.totalItems})</span>
             </Button>
           </div>
         </div>
