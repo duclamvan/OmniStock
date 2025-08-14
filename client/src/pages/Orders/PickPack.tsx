@@ -286,6 +286,104 @@ export default function PickPack() {
     setShowPerformanceStats(!showPerformanceStats);
   };
 
+  // Recent Activity Component
+  const RecentActivityList = ({ orders }: { orders: PickPackOrder[] }) => {
+    // Generate today's activities based on order data
+    const todayActivities = [];
+    const now = new Date();
+    const today = now.toDateString();
+    
+    // Add completed orders
+    const completedToday = orders.filter(o => 
+      o.pickStatus === 'completed' && o.packStatus === 'completed'
+    );
+    
+    completedToday.forEach(order => {
+      todayActivities.push({
+        type: 'completed',
+        orderId: order.orderId,
+        time: '2h ago',
+        user: order.packedBy || 'Employee',
+        icon: CheckCircle,
+        color: 'text-green-600'
+      });
+    });
+    
+    // Add orders currently being picked
+    const pickingOrders = orders.filter(o => o.pickStatus === 'in_progress');
+    pickingOrders.forEach(order => {
+      todayActivities.push({
+        type: 'picking',
+        orderId: order.orderId,
+        time: '30m ago',
+        user: order.pickedBy || 'Employee',
+        icon: Package,
+        color: 'text-blue-600'
+      });
+    });
+    
+    // Add orders being packed
+    const packingOrders = orders.filter(o => o.packStatus === 'in_progress');
+    packingOrders.forEach(order => {
+      todayActivities.push({
+        type: 'packing',
+        orderId: order.orderId,
+        time: '15m ago',
+        user: order.packedBy || 'Employee',
+        icon: Box,
+        color: 'text-purple-600'
+      });
+    });
+    
+    // If we have some activities today, add a summary
+    if (completedToday.length > 2) {
+      todayActivities.push({
+        type: 'summary',
+        orderId: '',
+        time: '3h ago',
+        user: '',
+        icon: Truck,
+        color: 'text-orange-600',
+        summary: `${completedToday.length} orders shipped today`
+      });
+    }
+    
+    // Limit to 5 most recent activities
+    const displayActivities = todayActivities.slice(0, 5);
+    
+    if (displayActivities.length === 0) {
+      return (
+        <div className="text-center py-6">
+          <Clock className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+          <p className="text-sm text-gray-500">No activity today yet</p>
+          <p className="text-xs text-gray-400 mt-1">Activities will appear as orders are processed</p>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="space-y-3">
+        {displayActivities.map((activity, index) => {
+          const Icon = activity.icon;
+          return (
+            <div key={index} className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-xs sm:text-sm">
+              <div className="flex items-center gap-2">
+                <Icon className={`h-3 sm:h-4 w-3 sm:w-4 ${activity.color} flex-shrink-0`} />
+                <span className="truncate">
+                  {activity.type === 'completed' && `${activity.orderId} completed by ${activity.user}`}
+                  {activity.type === 'picking' && `${activity.orderId} being picked by ${activity.user}`}
+                  {activity.type === 'packing' && `${activity.orderId} being packed by ${activity.user}`}
+                  {activity.type === 'summary' && activity.summary}
+                </span>
+              </div>
+              <span className="text-gray-500 sm:ml-auto pl-5 sm:pl-0">{activity.time}</span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   // Format timer
   const formatTimer = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -1511,32 +1609,15 @@ export default function PickPack() {
               {/* Recent Activity - Mobile Optimized */}
               <Card>
                 <CardHeader className="pb-3 sm:pb-6">
-                  <CardTitle className="text-base sm:text-lg">Recent Activity</CardTitle>
+                  <CardTitle className="text-base sm:text-lg flex items-center justify-between">
+                    <span>Today's Activity</span>
+                    <Badge variant="outline" className="text-xs">
+                      {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </Badge>
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-xs sm:text-sm">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle className="h-3 sm:h-4 w-3 sm:w-4 text-green-600 flex-shrink-0" />
-                        <span className="truncate">Order #ORD-2025-001 completed by John</span>
-                      </div>
-                      <span className="text-gray-500 sm:ml-auto pl-5 sm:pl-0">5m ago</span>
-                    </div>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-xs sm:text-sm">
-                      <div className="flex items-center gap-2">
-                        <Package className="h-3 sm:h-4 w-3 sm:w-4 text-blue-600 flex-shrink-0" />
-                        <span className="truncate">Order #ORD-2025-002 started picking</span>
-                      </div>
-                      <span className="text-gray-500 sm:ml-auto pl-5 sm:pl-0">12m ago</span>
-                    </div>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-xs sm:text-sm">
-                      <div className="flex items-center gap-2">
-                        <Truck className="h-3 sm:h-4 w-3 sm:w-4 text-purple-600 flex-shrink-0" />
-                        <span className="truncate">5 orders shipped</span>
-                      </div>
-                      <span className="text-gray-500 sm:ml-auto pl-5 sm:pl-0">1h ago</span>
-                    </div>
-                  </div>
+                  <RecentActivityList orders={transformedOrders} />
                 </CardContent>
               </Card>
             </div>
