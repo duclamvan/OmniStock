@@ -458,6 +458,7 @@ export default function PickPack() {
     // Check if all items are picked
     const allPicked = updatedItems.every(item => item.pickedQuantity >= item.quantity);
     if (allPicked) {
+      setIsTimerRunning(false); // Stop the timer when all items are picked
       playSound('success');
       toast({
         title: "All Items Picked!",
