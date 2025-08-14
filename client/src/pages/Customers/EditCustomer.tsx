@@ -145,7 +145,7 @@ export default function EditCustomer() {
       const query = [address, city, country].filter(Boolean).join(", ");
       const response = await apiRequest('GET', `/api/geocode?address=${encodeURIComponent(query)}`);
       
-      if (response && response.length > 0) {
+      if (response && Array.isArray(response) && response.length > 0) {
         const result = response[0];
         
         // Extract components from the result
@@ -206,7 +206,7 @@ export default function EditCustomer() {
       <div className="flex items-center justify-center min-h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading customer...</p>
+          <p className="text-slate-600">Customer not found</p>
         </div>
       </div>
     );

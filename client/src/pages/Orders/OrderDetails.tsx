@@ -133,7 +133,7 @@ export default function OrderDetails() {
   }, []);
 
   // Fetch order data with optimized caching
-  const { data: order, isLoading, isFetching } = useQuery<any>({
+  const { data: order, isLoading } = useQuery<any>({
     queryKey: [`/api/orders/${id}`],
     enabled: !!id && !['add', 'to-fulfill', 'shipped', 'pay-later', 'pre-orders'].includes(id || ''),
     refetchInterval: 5000, // Refetch every 5 seconds for real-time updates
@@ -167,16 +167,7 @@ export default function OrderDetails() {
     });
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading order details...</p>
-        </div>
-      </div>
-    );
-  }
+  // Remove loading state to prevent UI refresh indicators
 
   if (!order) {
     return null;
@@ -236,12 +227,7 @@ export default function OrderDetails() {
               >
                 <Copy className="h-3 w-3" />
               </Button>
-              {isFetching && !isLoading && (
-                <div className="flex items-center gap-1 text-xs text-slate-500">
-                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-slate-500"></div>
-                  <span>Syncing...</span>
-                </div>
-              )}
+
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {/* Order Status Dropdown */}

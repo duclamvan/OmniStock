@@ -250,9 +250,7 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
     },
   ] as any;
 
-  if (isLoading) {
-    return <div>Loading...</div>;
-  }
+  // Remove loading state to prevent UI refresh indicators
 
   return (
     <div className="space-y-4">

@@ -212,7 +212,7 @@ export default function EditProduct() {
   if (productLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-slate-500">Loading product details...</div>
+        <div className="text-slate-500">Product not found</div>
       </div>
     );
   }

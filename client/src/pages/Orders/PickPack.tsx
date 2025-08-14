@@ -552,7 +552,7 @@ export default function PickPack() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <Package className="h-12 w-12 mx-auto mb-4 text-gray-400 animate-pulse" />
-          <p className="text-gray-500">Loading orders...</p>
+          <p className="text-gray-500">No orders to pick</p>
         </div>
       </div>
     );
