@@ -1249,7 +1249,7 @@ export default function OrderDetails() {
 
                 try {
                   // Create the custom price
-                  await apiRequest('POST', `/api/customers/${order?.customerId}/prices`, {
+                  await apiRequest(`/api/customers/${order?.customerId}/prices`, 'POST', {
                     productId: selectedPriceItem?.productId,
                     price: parseFloat(customPrice),
                     currency: order?.currency || 'EUR',

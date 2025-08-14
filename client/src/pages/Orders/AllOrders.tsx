@@ -80,7 +80,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
 
   const updateOrderMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
-      await apiRequest('PATCH', `/api/orders/${id}`, updates);
+      await apiRequest(`/api/orders/${id}`, 'PATCH', updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
@@ -101,7 +101,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
 
   const deleteOrderMutation = useMutation({
     mutationFn: async (ids: string[]) => {
-      await Promise.all(ids.map(id => apiRequest('DELETE', `/api/orders/${id}`)));
+      await Promise.all(ids.map(id => apiRequest(`/api/orders/${id}`, 'DELETE')));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
