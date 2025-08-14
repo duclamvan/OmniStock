@@ -945,173 +945,181 @@ export default function PickPack() {
   // Main Dashboard View
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+      {/* Header - Mobile Optimized */}
       <div className="bg-white border-b sticky top-0 z-10">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
+        <div className="px-3 sm:px-6 py-3 sm:py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>
-              <h1 className="text-2xl font-bold">Pick & Pack Center</h1>
-              <p className="text-sm text-gray-500">Warehouse Operations Dashboard</p>
+              <h1 className="text-lg sm:text-2xl font-bold">Pick & Pack Center</h1>
+              <p className="text-xs sm:text-sm text-gray-500">Warehouse Operations Dashboard</p>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className="text-sm text-gray-500">Logged in as</p>
-                <p className="font-medium">{currentEmployee}</p>
+            <div className="flex items-center justify-between sm:gap-4">
+              <div className="text-left sm:text-right">
+                <p className="text-xs sm:text-sm text-gray-500">Logged in as</p>
+                <p className="text-sm sm:text-base font-medium">{currentEmployee}</p>
               </div>
-              <Button variant="outline" size="sm">
-                <Home className="h-4 w-4 mr-2" />
-                Main Dashboard
+              <Button variant="outline" size="sm" className="h-8 px-2 sm:px-3">
+                <Home className="h-3 sm:h-4 w-3 sm:w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Main Dashboard</span>
               </Button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Stats Overview */}
-      <div className="px-6 py-4">
-        <div className="grid grid-cols-6 gap-4">
+      {/* Stats Overview - Mobile Optimized */}
+      <div className="px-3 sm:px-6 py-3 sm:py-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4">
           <Card>
-            <CardContent className="p-4">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Pending</p>
-                  <p className="text-2xl font-bold">{stats.pending}</p>
+                  <p className="text-xs sm:text-sm text-gray-500">Pending</p>
+                  <p className="text-xl sm:text-2xl font-bold">{stats.pending}</p>
                 </div>
-                <Clock className="h-8 w-8 text-yellow-500" />
+                <Clock className="h-6 sm:h-8 w-6 sm:w-8 text-yellow-500" />
               </div>
             </CardContent>
           </Card>
           
           <Card>
-            <CardContent className="p-4">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Picking</p>
-                  <p className="text-2xl font-bold">{stats.picking}</p>
+                  <p className="text-xs sm:text-sm text-gray-500">Picking</p>
+                  <p className="text-xl sm:text-2xl font-bold">{stats.picking}</p>
                 </div>
-                <Package className="h-8 w-8 text-blue-500" />
+                <Package className="h-6 sm:h-8 w-6 sm:w-8 text-blue-500" />
               </div>
             </CardContent>
           </Card>
           
           <Card>
-            <CardContent className="p-4">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Packing</p>
-                  <p className="text-2xl font-bold">{stats.packing}</p>
+                  <p className="text-xs sm:text-sm text-gray-500">Packing</p>
+                  <p className="text-xl sm:text-2xl font-bold">{stats.packing}</p>
                 </div>
-                <Box className="h-8 w-8 text-purple-500" />
+                <Box className="h-6 sm:h-8 w-6 sm:w-8 text-purple-500" />
               </div>
             </CardContent>
           </Card>
           
           <Card>
-            <CardContent className="p-4">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Ready</p>
-                  <p className="text-2xl font-bold">{stats.ready}</p>
+                  <p className="text-xs sm:text-sm text-gray-500">Ready</p>
+                  <p className="text-xl sm:text-2xl font-bold">{stats.ready}</p>
                 </div>
-                <Truck className="h-8 w-8 text-green-500" />
+                <Truck className="h-6 sm:h-8 w-6 sm:w-8 text-green-500" />
               </div>
             </CardContent>
           </Card>
           
           <Card>
-            <CardContent className="p-4">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Today Picked</p>
-                  <p className="text-2xl font-bold">{stats.todayPicked}</p>
+                  <p className="text-xs sm:text-sm text-gray-500">Today Picked</p>
+                  <p className="text-xl sm:text-2xl font-bold">{stats.todayPicked}</p>
                 </div>
-                <TrendingUp className="h-8 w-8 text-teal-500" />
+                <TrendingUp className="h-6 sm:h-8 w-6 sm:w-8 text-teal-500" />
               </div>
             </CardContent>
           </Card>
           
           <Card>
-            <CardContent className="p-4">
+            <CardContent className="p-3 sm:p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Avg Time</p>
-                  <p className="text-2xl font-bold">{stats.avgPickTime}</p>
+                  <p className="text-xs sm:text-sm text-gray-500">Avg Time</p>
+                  <p className="text-xl sm:text-2xl font-bold">{stats.avgPickTime}</p>
                 </div>
-                <Timer className="h-8 w-8 text-orange-500" />
+                <Timer className="h-6 sm:h-8 w-6 sm:w-8 text-orange-500" />
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="px-6 pb-6">
+      {/* Main Content - Mobile Optimized */}
+      <div className="px-3 sm:px-6 pb-6">
         <Tabs value={selectedTab} onValueChange={(v) => setSelectedTab(v as any)}>
-          <TabsList className="grid grid-cols-5 w-full max-w-2xl">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="pending">
-              Pending ({stats.pending})
-            </TabsTrigger>
-            <TabsTrigger value="picking">
-              Picking ({stats.picking})
-            </TabsTrigger>
-            <TabsTrigger value="packing">
-              Packing ({stats.packing})
-            </TabsTrigger>
-            <TabsTrigger value="ready">
-              Ready ({stats.ready})
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-0">
+            <TabsList className="grid grid-cols-5 w-full min-w-[400px] sm:max-w-2xl">
+              <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
+              <TabsTrigger value="pending" className="text-xs sm:text-sm">
+                Pending ({stats.pending})
+              </TabsTrigger>
+              <TabsTrigger value="picking" className="text-xs sm:text-sm">
+                Picking ({stats.picking})
+              </TabsTrigger>
+              <TabsTrigger value="packing" className="text-xs sm:text-sm">
+                Packing ({stats.packing})
+              </TabsTrigger>
+              <TabsTrigger value="ready" className="text-xs sm:text-sm">
+                Ready ({stats.ready})
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-          {/* Overview Tab */}
-          <TabsContent value="overview" className="mt-6">
-            <div className="grid grid-cols-2 gap-6">
+          {/* Overview Tab - Mobile Optimized */}
+          <TabsContent value="overview" className="mt-4 sm:mt-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               {/* Quick Actions */}
               <Card>
-                <CardHeader>
-                  <CardTitle>Quick Actions</CardTitle>
+                <CardHeader className="pb-3 sm:pb-6">
+                  <CardTitle className="text-base sm:text-lg">Quick Actions</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  <Button className="w-full justify-start" size="lg">
-                    <PlayCircle className="h-5 w-5 mr-3" />
+                <CardContent className="space-y-2 sm:space-y-3">
+                  <Button className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base" size="lg">
+                    <PlayCircle className="h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3" />
                     Start Next Priority Order
                   </Button>
-                  <Button className="w-full justify-start" variant="outline" size="lg">
-                    <Users className="h-5 w-5 mr-3" />
+                  <Button className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base" variant="outline" size="lg">
+                    <Users className="h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3" />
                     Batch Picking Mode
                   </Button>
-                  <Button className="w-full justify-start" variant="outline" size="lg">
-                    <Route className="h-5 w-5 mr-3" />
+                  <Button className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base" variant="outline" size="lg">
+                    <Route className="h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3" />
                     Optimize Pick Route
                   </Button>
-                  <Button className="w-full justify-start" variant="outline" size="lg">
-                    <BarChart3 className="h-5 w-5 mr-3" />
+                  <Button className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base" variant="outline" size="lg">
+                    <BarChart3 className="h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3" />
                     View Performance Stats
                   </Button>
                 </CardContent>
               </Card>
 
-              {/* Recent Activity */}
+              {/* Recent Activity - Mobile Optimized */}
               <Card>
-                <CardHeader>
-                  <CardTitle>Recent Activity</CardTitle>
+                <CardHeader className="pb-3 sm:pb-6">
+                  <CardTitle className="text-base sm:text-lg">Recent Activity</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    <div className="flex items-center gap-3 text-sm">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      <span>Order #ORD-2025-001 completed by John</span>
-                      <span className="text-gray-500 ml-auto">5m ago</span>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-xs sm:text-sm">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle className="h-3 sm:h-4 w-3 sm:w-4 text-green-600 flex-shrink-0" />
+                        <span className="truncate">Order #ORD-2025-001 completed by John</span>
+                      </div>
+                      <span className="text-gray-500 sm:ml-auto pl-5 sm:pl-0">5m ago</span>
                     </div>
-                    <div className="flex items-center gap-3 text-sm">
-                      <Package className="h-4 w-4 text-blue-600" />
-                      <span>Order #ORD-2025-002 started picking</span>
-                      <span className="text-gray-500 ml-auto">12m ago</span>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-xs sm:text-sm">
+                      <div className="flex items-center gap-2">
+                        <Package className="h-3 sm:h-4 w-3 sm:w-4 text-blue-600 flex-shrink-0" />
+                        <span className="truncate">Order #ORD-2025-002 started picking</span>
+                      </div>
+                      <span className="text-gray-500 sm:ml-auto pl-5 sm:pl-0">12m ago</span>
                     </div>
-                    <div className="flex items-center gap-3 text-sm">
-                      <Truck className="h-4 w-4 text-purple-600" />
-                      <span>5 orders shipped</span>
-                      <span className="text-gray-500 ml-auto">1h ago</span>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-xs sm:text-sm">
+                      <div className="flex items-center gap-2">
+                        <Truck className="h-3 sm:h-4 w-3 sm:w-4 text-purple-600 flex-shrink-0" />
+                        <span className="truncate">5 orders shipped</span>
+                      </div>
+                      <span className="text-gray-500 sm:ml-auto pl-5 sm:pl-0">1h ago</span>
                     </div>
                   </div>
                 </CardContent>
@@ -1119,49 +1127,50 @@ export default function PickPack() {
             </div>
           </TabsContent>
 
-          {/* Pending Orders Tab */}
-          <TabsContent value="pending" className="mt-6">
+          {/* Pending Orders Tab - Mobile Optimized */}
+          <TabsContent value="pending" className="mt-4 sm:mt-6">
             <Card>
-              <CardHeader>
-                <CardTitle>Orders Ready to Pick</CardTitle>
-                <CardDescription>Select an order to start the picking process</CardDescription>
+              <CardHeader className="pb-3 sm:pb-6">
+                <CardTitle className="text-base sm:text-lg">Orders Ready to Pick</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">Select an order to start the picking process</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
+              <CardContent className="px-3 sm:px-6">
+                <div className="space-y-2 sm:space-y-3">
                   {getOrdersByStatus('pending').map(order => (
                     <Card key={order.id} className="cursor-pointer hover:shadow-md transition-shadow">
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
+                      <CardContent className="p-3 sm:p-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                           <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <h3 className="font-semibold">{order.orderId}</h3>
-                              <Badge variant={getPriorityColor(order.priority)}>
+                            <div className="flex items-center gap-2 mb-1 sm:mb-2">
+                              <h3 className="font-semibold text-sm sm:text-base">{order.orderId}</h3>
+                              <Badge variant={getPriorityColor(order.priority)} className="text-xs">
                                 {order.priority.toUpperCase()}
                               </Badge>
                               {order.priority === 'high' && (
-                                <Zap className="h-4 w-4 text-red-500" />
+                                <Zap className="h-3 sm:h-4 w-3 sm:w-4 text-red-500" />
                               )}
                             </div>
-                            <div className="grid grid-cols-3 gap-4 text-sm text-gray-600">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
                               <div className="flex items-center gap-1">
-                                <User className="h-4 w-4" />
-                                <span>{order.customerName}</span>
+                                <User className="h-3 sm:h-4 w-3 sm:w-4" />
+                                <span className="truncate">{order.customerName}</span>
                               </div>
                               <div className="flex items-center gap-1">
-                                <Package className="h-4 w-4" />
+                                <Package className="h-3 sm:h-4 w-3 sm:w-4" />
                                 <span>{order.totalItems} items</span>
                               </div>
-                              <div className="flex items-center gap-1">
-                                <Truck className="h-4 w-4" />
-                                <span>{order.shippingMethod}</span>
+                              <div className="flex items-center gap-1 col-span-2 sm:col-span-1">
+                                <Truck className="h-3 sm:h-4 w-3 sm:w-4" />
+                                <span className="truncate">{order.shippingMethod}</span>
                               </div>
                             </div>
                           </div>
                           <Button
-                            size="lg"
+                            size="sm"
+                            className="w-full sm:w-auto sm:h-10"
                             onClick={() => startPicking(order)}
                           >
-                            <PlayCircle className="h-5 w-5 mr-2" />
+                            <PlayCircle className="h-4 sm:h-5 w-4 sm:w-5 mr-1 sm:mr-2" />
                             Start Picking
                           </Button>
                         </div>
@@ -1180,29 +1189,29 @@ export default function PickPack() {
             </Card>
           </TabsContent>
 
-          {/* Other tabs remain similar but simplified */}
-          <TabsContent value="picking" className="mt-6">
+          {/* Other tabs - Mobile Optimized */}
+          <TabsContent value="picking" className="mt-4 sm:mt-6">
             <Card>
-              <CardHeader>
-                <CardTitle>Orders Being Picked</CardTitle>
+              <CardHeader className="pb-3 sm:pb-6">
+                <CardTitle className="text-base sm:text-lg">Orders Being Picked</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-3 sm:px-6">
                 {getOrdersByStatus('picking').length === 0 ? (
-                  <div className="text-center py-12">
-                    <Package className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500">No orders currently being picked</p>
+                  <div className="text-center py-8 sm:py-12">
+                    <Package className="h-10 sm:h-12 w-10 sm:w-12 text-gray-300 mx-auto mb-3 sm:mb-4" />
+                    <p className="text-sm sm:text-base text-gray-500">No orders currently being picked</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-2 sm:space-y-3">
                     {getOrdersByStatus('picking').map(order => (
                       <Card key={order.id}>
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between">
+                        <CardContent className="p-3 sm:p-4">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                             <div>
-                              <h3 className="font-semibold">{order.orderId}</h3>
-                              <p className="text-sm text-gray-600">Picked by: {order.pickedBy}</p>
+                              <h3 className="font-semibold text-sm sm:text-base">{order.orderId}</h3>
+                              <p className="text-xs sm:text-sm text-gray-600">Picked by: {order.pickedBy}</p>
                             </div>
-                            <Button variant="outline">Resume Picking</Button>
+                            <Button variant="outline" size="sm" className="w-full sm:w-auto">Resume Picking</Button>
                           </div>
                         </CardContent>
                       </Card>
@@ -1213,29 +1222,29 @@ export default function PickPack() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="packing" className="mt-6">
+          <TabsContent value="packing" className="mt-4 sm:mt-6">
             <Card>
-              <CardHeader>
-                <CardTitle>Ready for Packing</CardTitle>
+              <CardHeader className="pb-3 sm:pb-6">
+                <CardTitle className="text-base sm:text-lg">Ready for Packing</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-center py-12">
-                  <Box className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500">Packing station functionality coming soon</p>
+              <CardContent className="px-3 sm:px-6">
+                <div className="text-center py-8 sm:py-12">
+                  <Box className="h-10 sm:h-12 w-10 sm:w-12 text-gray-300 mx-auto mb-3 sm:mb-4" />
+                  <p className="text-sm sm:text-base text-gray-500">Packing station functionality coming soon</p>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="ready" className="mt-6">
+          <TabsContent value="ready" className="mt-4 sm:mt-6">
             <Card>
-              <CardHeader>
-                <CardTitle>Ready to Ship</CardTitle>
+              <CardHeader className="pb-3 sm:pb-6">
+                <CardTitle className="text-base sm:text-lg">Ready to Ship</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-center py-12">
-                  <Truck className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500">No orders ready to ship</p>
+              <CardContent className="px-3 sm:px-6">
+                <div className="text-center py-8 sm:py-12">
+                  <Truck className="h-10 sm:h-12 w-10 sm:w-12 text-gray-300 mx-auto mb-3 sm:mb-4" />
+                  <p className="text-sm sm:text-base text-gray-500">No orders ready to ship</p>
                 </div>
               </CardContent>
             </Card>
