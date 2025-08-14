@@ -1135,14 +1135,40 @@ export default function PickPack() {
                       </div>
                     </div>
                     
-                    <Button 
-                      size="lg" 
-                      onClick={completePicking}
-                      className="w-full h-12 sm:h-14 lg:h-16 text-base sm:text-lg lg:text-xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-xl transform hover:scale-105 transition-all"
-                    >
-                      <PackageCheck className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 mr-2 lg:mr-3" />
-                      PROCEED TO PACKING
-                    </Button>
+                    <div className="space-y-3">
+                      <Button 
+                        size="lg" 
+                        onClick={completePicking}
+                        className="w-full h-12 sm:h-14 lg:h-16 text-base sm:text-lg lg:text-xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-xl transform hover:scale-105 transition-all"
+                      >
+                        <PackageCheck className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 mr-2 lg:mr-3" />
+                        PROCEED TO PACKING
+                      </Button>
+                      
+                      <Button 
+                        size="lg" 
+                        variant="outline"
+                        onClick={() => {
+                          completePicking();
+                          // After completing, immediately start the next priority order
+                          setTimeout(() => {
+                            const nextOrder = getOrdersByStatus('pending')[0];
+                            if (nextOrder) {
+                              startPicking(nextOrder);
+                            } else {
+                              toast({
+                                title: "No More Orders",
+                                description: "All orders have been picked!",
+                              });
+                            }
+                          }, 500);
+                        }}
+                        className="w-full h-12 sm:h-14 lg:h-16 text-base sm:text-lg lg:text-xl font-bold border-2 border-blue-600 text-blue-600 hover:bg-blue-50 shadow-lg"
+                      >
+                        <PlayCircle className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 mr-2 lg:mr-3" />
+                        PICK NEXT ORDER
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               </div>
@@ -1307,65 +1333,7 @@ export default function PickPack() {
               </Button>
             )}
             
-            {/* Action Bar - Scrollable on mobile, fixed on desktop */}
-            <div className="lg:hidden mt-auto bg-gradient-to-t from-gray-900 to-gray-800 border-t-4 border-gray-700 p-3">
-              <div className="max-w-5xl mx-auto flex gap-3">
-                <Button
-                  variant="secondary"
-                  className="flex-1 h-12 text-sm font-bold bg-orange-500 hover:bg-orange-600 text-white shadow-lg"
-                  onClick={() => {
-                    setActivePickingOrder(null);
-                    setIsTimerRunning(false);
-                  }}
-                >
-                  <PauseCircle className="h-5 w-5 mr-2" />
-                  <span className="hidden sm:inline">PAUSE PICKING</span>
-                  <span className="sm:hidden">PAUSE</span>
-                </Button>
-                <Button
-                  className={`flex-1 h-12 text-sm font-bold shadow-lg transition-all ${
-                    activePickingOrder.pickedItems >= activePickingOrder.totalItems
-                      ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white animate-pulse'
-                      : 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                  }`}
-                  disabled={activePickingOrder.pickedItems < activePickingOrder.totalItems}
-                  onClick={completePicking}
-                >
-                  <CheckCircle2 className="h-5 w-5 mr-2" />
-                  <span className="hidden sm:inline">COMPLETE ORDER ({activePickingOrder.pickedItems}/{activePickingOrder.totalItems})</span>
-                  <span className="sm:hidden">COMPLETE ({activePickingOrder.pickedItems}/{activePickingOrder.totalItems})</span>
-                </Button>
-              </div>
-            </div>
-            
-            {/* Desktop Action Bar - Fixed at bottom */}
-            <div className="hidden lg:block fixed bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 to-gray-800 border-t-4 border-gray-700 p-6 z-20">
-              <div className="max-w-5xl mx-auto flex gap-6">
-                <Button
-                  variant="secondary"
-                  className="flex-1 h-16 text-lg font-bold bg-orange-500 hover:bg-orange-600 text-white shadow-lg"
-                  onClick={() => {
-                    setActivePickingOrder(null);
-                    setIsTimerRunning(false);
-                  }}
-                >
-                  <PauseCircle className="h-6 w-6 mr-3" />
-                  PAUSE PICKING
-                </Button>
-                <Button
-                  className={`flex-1 h-16 text-lg font-bold shadow-lg transition-all ${
-                    activePickingOrder.pickedItems >= activePickingOrder.totalItems
-                      ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white animate-pulse'
-                      : 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                  }`}
-                  disabled={activePickingOrder.pickedItems < activePickingOrder.totalItems}
-                  onClick={completePicking}
-                >
-                  <CheckCircle2 className="h-6 w-6 mr-3" />
-                  COMPLETE ORDER ({activePickingOrder.pickedItems}/{activePickingOrder.totalItems})
-                </Button>
-              </div>
-            </div>
+
           </div>
         </div>
       </div>
