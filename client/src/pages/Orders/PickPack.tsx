@@ -108,6 +108,17 @@ export default function PickPack() {
   const [batchPickingMode, setBatchPickingMode] = useState(false);
   const [selectedBatchItems, setSelectedBatchItems] = useState<Set<string>>(new Set());
   const barcodeInputRef = useRef<HTMLInputElement>(null);
+  
+  // State for packing process
+  const [packingChecklist, setPackingChecklist] = useState({
+    itemsVerified: false,
+    packingSlipIncluded: false,
+    boxSealed: false,
+    weightRecorded: false
+  });
+  const [selectedBoxSize, setSelectedBoxSize] = useState<string>('');
+  const [packageWeight, setPackageWeight] = useState<string>('');
+  const [verifiedItems, setVerifiedItems] = useState<Set<string>>(new Set());
 
   // Timer effects
   useEffect(() => {
@@ -640,9 +651,19 @@ export default function PickPack() {
     );
   }
 
+
+
   // Active Packing View - Full Screen
   if (activePackingOrder) {
     const progress = (activePackingOrder.packedItems / activePackingOrder.totalItems) * 100;
+    const allItemsVerified = verifiedItems.size === activePackingOrder.items.length;
+    const allChecklistComplete = Object.values(packingChecklist).every(v => v === true);
+    const canCompletePacking = allItemsVerified && allChecklistComplete && selectedBoxSize && packageWeight;
+    
+    // Stop timer when packing is complete
+    if (canCompletePacking && isPackingTimerRunning) {
+      setIsPackingTimerRunning(false);
+    }
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex flex-col">
@@ -657,6 +678,15 @@ export default function PickPack() {
                 onClick={() => {
                   setActivePackingOrder(null);
                   setIsPackingTimerRunning(false);
+                  setPackingChecklist({
+                    itemsVerified: false,
+                    packingSlipIncluded: false,
+                    boxSealed: false,
+                    weightRecorded: false
+                  });
+                  setSelectedBoxSize('');
+                  setPackageWeight('');
+                  setVerifiedItems(new Set());
                 }}
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
@@ -675,6 +705,17 @@ export default function PickPack() {
                   <div className="font-mono text-sm font-bold">{formatTimer(packingTimer)}</div>
                   <div className="text-[10px] text-purple-100">Time</div>
                 </div>
+                <Button
+                  size="icon"
+                  className="h-6 w-6 bg-white/20 hover:bg-white/30"
+                  onClick={() => setIsPackingTimerRunning(!isPackingTimerRunning)}
+                >
+                  {isPackingTimerRunning ? (
+                    <PauseCircle className="h-3 w-3 text-orange-300" />
+                  ) : (
+                    <PlayCircle className="h-3 w-3 text-green-300" />
+                  )}
+                </Button>
               </div>
             </div>
 
@@ -682,12 +723,12 @@ export default function PickPack() {
             <div className="mt-2">
               <div className="flex justify-between text-xs mb-1">
                 <span className="text-purple-100">Packing Progress</span>
-                <span className="font-bold text-white">{activePackingOrder.packedItems}/{activePackingOrder.totalItems} items</span>
+                <span className="font-bold text-white">{verifiedItems.size}/{activePackingOrder.totalItems} items verified</span>
               </div>
               <div className="w-full bg-white/20 rounded-full h-2 overflow-hidden">
                 <div 
                   className="h-full bg-gradient-to-r from-pink-400 to-purple-400 transition-all duration-500"
-                  style={{ width: `${progress}%` }}
+                  style={{ width: `${(verifiedItems.size / activePackingOrder.totalItems) * 100}%` }}
                 />
               </div>
             </div>
@@ -695,83 +736,309 @@ export default function PickPack() {
         </div>
 
         {/* Main Content */}
-        <div className="flex-1 p-4">
-          <div className="max-w-4xl mx-auto">
-            <Card className="shadow-xl border-0">
-              <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-                <CardTitle className="flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <Box className="h-5 w-5" />
-                    Packing Station
-                  </span>
-                  <Badge className="bg-white text-purple-600">
-                    {activePackingOrder.customerName}
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  {/* Order Items List */}
-                  <div className="space-y-2">
-                    <h3 className="font-semibold text-lg mb-3">Order Items</h3>
-                    {activePackingOrder.items.map((item, index) => (
-                      <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center font-bold text-purple-600">
-                            {index + 1}
-                          </div>
-                          <div>
-                            <p className="font-medium">{item.productName}</p>
-                            <p className="text-sm text-gray-500">SKU: {item.sku}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <span className="font-medium">Qty: {item.quantity}</span>
-                          {item.pickedQuantity >= item.quantity ? (
-                            <CheckCircle className="h-5 w-5 text-green-500" />
-                          ) : (
-                            <AlertCircle className="h-5 w-5 text-yellow-500" />
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Packing Actions */}
-                  <div className="border-t pt-4">
-                    <h3 className="font-semibold text-lg mb-3">Packing Checklist</h3>
-                    <div className="space-y-2">
-                      <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
-                        <Checkbox />
-                        <span>All items verified and placed in box</span>
-                      </label>
-                      <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
-                        <Checkbox />
-                        <span>Packing slip included</span>
-                      </label>
-                      <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
-                        <Checkbox />
-                        <span>Box sealed and labeled</span>
-                      </label>
-                      <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
-                        <Checkbox />
-                        <span>Weight recorded</span>
-                      </label>
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-2 sm:p-4 max-w-6xl mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+              {/* Left Column - Items Verification */}
+              <Card className="shadow-xl border-0">
+                <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+                  <CardTitle className="flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <ScanLine className="h-5 w-5" />
+                      Item Verification
+                    </span>
+                    <Badge className="bg-white text-purple-600">
+                      {verifiedItems.size}/{activePackingOrder.items.length}
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4">
+                  {/* Barcode Scanner Input */}
+                  <div className="mb-4">
+                    <div className="flex gap-2">
+                      <Input
+                        ref={barcodeInputRef}
+                        type="text"
+                        placeholder="Scan item barcode..."
+                        value={barcodeInput}
+                        onChange={(e) => setBarcodeInput(e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            // Find matching item
+                            const matchingItem = activePackingOrder.items.find(
+                              item => item.barcode === barcodeInput || item.sku === barcodeInput
+                            );
+                            if (matchingItem) {
+                              setVerifiedItems(new Set([...verifiedItems, matchingItem.id]));
+                              playSound('scan');
+                              toast({
+                                title: "Item Verified",
+                                description: matchingItem.productName,
+                              });
+                            } else {
+                              playSound('error');
+                              toast({
+                                title: "Item Not Found",
+                                description: "This item is not in the current order",
+                                variant: "destructive"
+                              });
+                            }
+                            setBarcodeInput('');
+                          }
+                        }}
+                        className="text-lg font-mono"
+                      />
+                      <Button variant="outline" size="icon">
+                        <ScanLine className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
 
-                  {/* Complete Packing Button */}
+                  {/* Order Items List */}
+                  <ScrollArea className="h-[300px]">
+                    <div className="space-y-2">
+                      {activePackingOrder.items.map((item, index) => {
+                        const isVerified = verifiedItems.has(item.id);
+                        return (
+                          <div 
+                            key={item.id} 
+                            className={`flex items-center justify-between p-3 rounded-lg border-2 transition-all ${
+                              isVerified 
+                                ? 'bg-green-50 border-green-300' 
+                                : 'bg-gray-50 border-gray-200'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
+                                isVerified 
+                                  ? 'bg-green-500 text-white' 
+                                  : 'bg-purple-100 text-purple-600'
+                              }`}>
+                                {isVerified ? <CheckCircle className="h-5 w-5" /> : index + 1}
+                              </div>
+                              <div>
+                                <p className="font-medium">{item.productName}</p>
+                                <p className="text-sm text-gray-500">SKU: {item.sku} | Qty: {item.quantity}</p>
+                              </div>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant={isVerified ? "default" : "outline"}
+                              onClick={() => {
+                                if (isVerified) {
+                                  setVerifiedItems(new Set([...verifiedItems].filter(id => id !== item.id)));
+                                } else {
+                                  setVerifiedItems(new Set([...verifiedItems, item.id]));
+                                  playSound('scan');
+                                }
+                              }}
+                            >
+                              {isVerified ? 'Verified' : 'Verify'}
+                            </Button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+
+              {/* Right Column - Packing Details */}
+              <div className="space-y-4">
+                {/* Box Selection */}
+                <Card className="shadow-xl border-0">
+                  <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+                    <CardTitle className="text-base">Box Selection</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4">
+                    <div className="grid grid-cols-2 gap-2">
+                      {['Small (10x10x10)', 'Medium (15x15x15)', 'Large (20x20x20)', 'X-Large (25x25x25)'].map(size => (
+                        <Button
+                          key={size}
+                          variant={selectedBoxSize === size ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setSelectedBoxSize(size)}
+                          className="text-xs"
+                        >
+                          {size.split(' ')[0]}
+                        </Button>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Weight Input */}
+                <Card className="shadow-xl border-0">
+                  <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+                    <CardTitle className="text-base">Package Weight</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4">
+                    <div className="flex gap-2">
+                      <Input
+                        type="number"
+                        placeholder="Enter weight..."
+                        value={packageWeight}
+                        onChange={(e) => {
+                          setPackageWeight(e.target.value);
+                          if (e.target.value) {
+                            setPackingChecklist({...packingChecklist, weightRecorded: true});
+                          }
+                        }}
+                        className="text-lg"
+                      />
+                      <span className="flex items-center px-3 text-sm font-medium">kg</span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Packing Checklist */}
+                <Card className="shadow-xl border-0">
+                  <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+                    <CardTitle className="text-base">Packing Checklist</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4">
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
+                        <Checkbox 
+                          checked={allItemsVerified}
+                          onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, itemsVerified: !!checked})}
+                        />
+                        <span className={allItemsVerified ? 'text-green-600 font-medium' : ''}>
+                          All items verified and placed in box
+                        </span>
+                      </label>
+                      <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
+                        <Checkbox 
+                          checked={packingChecklist.packingSlipIncluded}
+                          onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, packingSlipIncluded: !!checked})}
+                        />
+                        <span className={packingChecklist.packingSlipIncluded ? 'text-green-600 font-medium' : ''}>
+                          Packing slip included
+                        </span>
+                      </label>
+                      <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
+                        <Checkbox 
+                          checked={packingChecklist.boxSealed}
+                          onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, boxSealed: !!checked})}
+                        />
+                        <span className={packingChecklist.boxSealed ? 'text-green-600 font-medium' : ''}>
+                          Box sealed and labeled
+                        </span>
+                      </label>
+                      <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
+                        <Checkbox 
+                          checked={packingChecklist.weightRecorded}
+                          onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, weightRecorded: !!checked})}
+                        />
+                        <span className={packingChecklist.weightRecorded ? 'text-green-600 font-medium' : ''}>
+                          Weight recorded
+                        </span>
+                      </label>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Complete Packing Button */}
+                {canCompletePacking ? (
+                  <Card className="shadow-2xl border-0 overflow-hidden bg-gradient-to-br from-purple-50 to-pink-50">
+                    <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-1"></div>
+                    <CardContent className="p-4 text-center">
+                      <div className="bg-gradient-to-br from-purple-400 to-pink-400 rounded-full w-16 h-16 mx-auto mb-3 flex items-center justify-center shadow-xl animate-bounce">
+                        <CheckCircle className="h-10 w-10 text-white" />
+                      </div>
+                      <h3 className="text-xl font-black mb-2 text-gray-800">Ready to Ship!</h3>
+                      <p className="text-sm text-gray-600 mb-4">
+                        All items verified and packed
+                      </p>
+                      
+                      <div className="bg-white rounded-lg p-3 mb-4 shadow-inner">
+                        <div className="grid grid-cols-3 gap-2 text-xs">
+                          <div>
+                            <p className="text-gray-500">Time</p>
+                            <p className="font-bold text-purple-600">{formatTimer(packingTimer)}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Box</p>
+                            <p className="font-bold text-pink-600">{selectedBoxSize.split(' ')[0]}</p>
+                          </div>
+                          <div>
+                            <p className="text-gray-500">Weight</p>
+                            <p className="font-bold text-purple-600">{packageWeight} kg</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Button 
+                          size="lg" 
+                          onClick={() => {
+                            completePacking();
+                            // Reset states
+                            setPackingChecklist({
+                              itemsVerified: false,
+                              packingSlipIncluded: false,
+                              boxSealed: false,
+                              weightRecorded: false
+                            });
+                            setSelectedBoxSize('');
+                            setPackageWeight('');
+                            setVerifiedItems(new Set());
+                          }}
+                          className="w-full h-12 text-base font-bold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-xl"
+                        >
+                          <Printer className="h-5 w-5 mr-2" />
+                          PRINT LABEL & COMPLETE
+                        </Button>
+                        
+                        <Button 
+                          size="lg" 
+                          variant="outline"
+                          onClick={() => {
+                            completePacking();
+                            // Reset states and start next order
+                            setPackingChecklist({
+                              itemsVerified: false,
+                              packingSlipIncluded: false,
+                              boxSealed: false,
+                              weightRecorded: false
+                            });
+                            setSelectedBoxSize('');
+                            setPackageWeight('');
+                            setVerifiedItems(new Set());
+                            
+                            // Find next order to pack
+                            setTimeout(() => {
+                              const nextOrder = getOrdersByStatus('packing')[0];
+                              if (nextOrder) {
+                                startPacking(nextOrder);
+                              } else {
+                                toast({
+                                  title: "No More Orders",
+                                  description: "All orders have been packed!",
+                                });
+                              }
+                            }, 500);
+                          }}
+                          className="w-full h-12 text-base font-bold border-2 border-purple-600 text-purple-600 hover:bg-purple-50"
+                        >
+                          <PlayCircle className="h-5 w-5 mr-2" />
+                          PACK NEXT ORDER
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
                   <Button 
                     size="lg" 
-                    onClick={completePacking}
-                    className="w-full h-14 text-lg font-bold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                    disabled={true}
+                    className="w-full h-14 text-lg font-bold bg-gray-300 text-gray-500 cursor-not-allowed"
                   >
                     <PackageCheck className="h-6 w-6 mr-3" />
-                    COMPLETE PACKING
+                    Complete Checklist ({verifiedItems.size}/{activePackingOrder.items.length} items)
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
