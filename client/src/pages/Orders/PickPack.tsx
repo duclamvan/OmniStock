@@ -134,6 +134,14 @@ export default function PickPack() {
     return `BAR${sku}${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
   };
 
+  // Mock product image generator for demo
+  const generateMockImage = (productName: string) => {
+    // Generate a placeholder image URL based on product name
+    // In a real app, this would come from your database
+    const seed = productName.toLowerCase().replace(/\s+/g, '-');
+    return `https://picsum.photos/seed/${seed}/400/400`;
+  };
+
   // Transform real orders to PickPackOrder format
   const transformedOrders: PickPackOrder[] = allOrders.map((order: any) => ({
     id: order.id,
@@ -154,7 +162,8 @@ export default function PickPack() {
       pickedQuantity: item.pickedQuantity || 0,
       packedQuantity: item.packedQuantity || 0,
       warehouseLocation: item.warehouseLocation || generateMockLocation(),
-      barcode: item.barcode || generateMockBarcode(item.sku)
+      barcode: item.barcode || generateMockBarcode(item.sku),
+      image: item.image || generateMockImage(item.productName)
     })) || [],
     totalItems: order.items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0,
     pickedItems: order.items?.reduce((sum: number, item: any) => sum + (item.pickedQuantity || 0), 0) || 0,
@@ -431,12 +440,34 @@ export default function PickPack() {
                   </CardHeader>
                   <CardContent className="p-6">
                     <div className="space-y-6">
-                      {/* Product Info */}
-                      <div>
-                        <h3 className="text-2xl font-bold mb-2">{currentItem.productName}</h3>
-                        <div className="flex gap-4 text-sm text-gray-600">
-                          <span>SKU: <span className="font-mono font-bold">{currentItem.sku}</span></span>
-                          <span>Barcode: <span className="font-mono font-bold">{currentItem.barcode}</span></span>
+                      {/* Product Image and Info */}
+                      <div className="flex gap-6">
+                        {/* Product Image */}
+                        <div className="w-48 h-48 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0 border-2 border-gray-200">
+                          {currentItem.image ? (
+                            <img 
+                              src={currentItem.image} 
+                              alt={currentItem.productName}
+                              className="w-full h-full object-contain rounded-lg"
+                            />
+                          ) : (
+                            <Package className="h-16 w-16 text-gray-400" />
+                          )}
+                        </div>
+                        
+                        {/* Product Details */}
+                        <div className="flex-1">
+                          <h3 className="text-2xl font-bold mb-2">{currentItem.productName}</h3>
+                          <div className="space-y-2">
+                            <div className="flex gap-4 text-sm">
+                              <span className="text-gray-600">SKU:</span>
+                              <span className="font-mono font-bold text-lg">{currentItem.sku}</span>
+                            </div>
+                            <div className="flex gap-4 text-sm">
+                              <span className="text-gray-600">Barcode:</span>
+                              <span className="font-mono font-bold text-lg">{currentItem.barcode}</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
 
