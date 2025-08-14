@@ -159,7 +159,7 @@ export default function PickPack() {
   };
 
   // Transform real orders to PickPackOrder format - Only include "To Fulfill" status orders
-  const transformedOrders: PickPackOrder[] = allOrders
+  const transformedOrders: PickPackOrder[] = (allOrders as any[] || [])
     .filter((order: any) => 
       order.orderStatus === 'to_fulfill'
     )
@@ -266,7 +266,9 @@ export default function PickPack() {
 
     // Sort items by warehouse location for optimal route
     const sortedItems = [...activePickingOrder.items].sort((a, b) => {
-      return a.warehouseLocation.localeCompare(b.warehouseLocation);
+      const locA = a.warehouseLocation || '';
+      const locB = b.warehouseLocation || '';
+      return locA.localeCompare(locB);
     });
 
     const optimizedOrder = {
@@ -1265,12 +1267,10 @@ export default function PickPack() {
                           }`}
                           onClick={() => {
                             if (!isPicked) {
-                              // Jump to item
-                              const itemIndex = activePickingOrder.items.findIndex(i => i.id === item.id);
-                              if (itemIndex >= 0) {
-                                setCurrentItemIndex(itemIndex);
-                                barcodeInputRef.current?.focus();
-                              }
+                              // Jump to item by focusing on barcode input
+                              // The current item is determined by the first unpicked item
+                              barcodeInputRef.current?.focus();
+                              playSound('scan');
                             }
                           }}
                         >
