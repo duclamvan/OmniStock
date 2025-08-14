@@ -355,7 +355,7 @@ export default function PickPack() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex flex-col">
         {/* Header - Optimized for Mobile */}
-        <div className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-lg sticky top-0 z-10">
+        <div className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-lg sticky top-0 z-20">
           <div className="px-3 lg:px-4 py-2 lg:py-3">
             {/* Mobile Layout - Clean and Organized */}
             <div className="lg:hidden">
@@ -516,10 +516,11 @@ export default function PickPack() {
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="flex-1 flex flex-col lg:flex-row">
-          {/* Left Panel - Current Item Focus */}
-          <div className="flex-1 p-3 lg:p-6">
+        {/* Main Content - Scrollable container */}
+        <div className="flex-1 overflow-auto">
+          <div className="flex flex-col lg:flex-row min-h-full">
+            {/* Left Panel - Current Item Focus */}
+            <div className="flex-1 p-3 lg:p-6">
             {currentItem ? (
               <div className="max-w-4xl mx-auto">
                 <Card className="mb-4 lg:mb-6 shadow-xl border-0 overflow-hidden">
@@ -799,110 +800,140 @@ export default function PickPack() {
             </div>
           </div>
           
-          {/* Mobile Items Drawer - Collapsible */}
-          {showMobileProgress && (
-            <div className="lg:hidden fixed bottom-20 left-0 right-0 bg-white border-t-2 border-gray-300 max-h-48 overflow-y-auto shadow-2xl z-10">
-              <div className="p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-bold text-sm">Order Progress</span>
-                  <div className="flex items-center gap-2">
-                    <Badge className="bg-gray-800 text-white text-xs px-2">
-                      {activePickingOrder.pickedItems}/{activePickingOrder.totalItems}
-                    </Badge>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-6 w-6"
-                      onClick={() => setShowMobileProgress(false)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+            {/* Mobile Items Drawer - Collapsible */}
+            {showMobileProgress && (
+              <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-300 max-h-48 overflow-y-auto shadow-2xl z-30">
+                <div className="p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-bold text-sm">Order Progress</span>
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-gray-800 text-white text-xs px-2">
+                        {activePickingOrder.pickedItems}/{activePickingOrder.totalItems}
+                      </Badge>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6"
+                        onClick={() => setShowMobileProgress(false)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 overflow-x-auto pb-2">
+                    {activePickingOrder.items.map((item, index) => {
+                      const isPicked = item.pickedQuantity >= item.quantity;
+                      const isCurrent = currentItem?.id === item.id;
+                      
+                      return (
+                        <div
+                          key={item.id}
+                          className={`flex-shrink-0 w-32 p-2 rounded-lg border-2 ${
+                            isPicked ? 'bg-green-50 border-green-400' :
+                            isCurrent ? 'bg-blue-50 border-blue-500 shadow-lg' :
+                            'bg-white border-gray-200'
+                          }`}
+                          onClick={() => {
+                            if (!isPicked) {
+                              // Jump to item
+                              const itemIndex = activePickingOrder.items.findIndex(i => i.id === item.id);
+                              if (itemIndex >= 0) {
+                                barcodeInputRef.current?.focus();
+                              }
+                            }
+                          }}
+                        >
+                          <div className="flex items-center gap-1 mb-1">
+                            {isPicked ? (
+                              <CheckCircle className="h-4 w-4 text-green-600" />
+                            ) : (
+                              <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
+                                isCurrent ? 'bg-blue-500 text-white' : 'border-2 border-gray-300 text-gray-600'
+                              }`}>
+                                {index + 1}
+                              </div>
+                            )}
+                            <span className="text-xs font-mono font-bold">{item.warehouseLocation}</span>
+                          </div>
+                          <p className="text-xs font-medium truncate">{item.productName}</p>
+                          <p className="text-xs text-gray-500">{item.pickedQuantity}/{item.quantity}</p>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
-                <div className="flex gap-2 overflow-x-auto pb-2">
-                  {activePickingOrder.items.map((item, index) => {
-                    const isPicked = item.pickedQuantity >= item.quantity;
-                    const isCurrent = currentItem?.id === item.id;
-                    
-                    return (
-                      <div
-                        key={item.id}
-                        className={`flex-shrink-0 w-32 p-2 rounded-lg border-2 ${
-                          isPicked ? 'bg-green-50 border-green-400' :
-                          isCurrent ? 'bg-blue-50 border-blue-500 shadow-lg' :
-                          'bg-white border-gray-200'
-                        }`}
-                        onClick={() => {
-                          if (!isPicked) {
-                            // Jump to item
-                            const itemIndex = activePickingOrder.items.findIndex(i => i.id === item.id);
-                            if (itemIndex >= 0) {
-                              barcodeInputRef.current?.focus();
-                            }
-                          }
-                        }}
-                      >
-                        <div className="flex items-center gap-1 mb-1">
-                          {isPicked ? (
-                            <CheckCircle className="h-4 w-4 text-green-600" />
-                          ) : (
-                            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
-                              isCurrent ? 'bg-blue-500 text-white' : 'border-2 border-gray-300 text-gray-600'
-                            }`}>
-                              {index + 1}
-                            </div>
-                          )}
-                          <span className="text-xs font-mono font-bold">{item.warehouseLocation}</span>
-                        </div>
-                        <p className="text-xs font-medium truncate">{item.productName}</p>
-                        <p className="text-xs text-gray-500">{item.pickedQuantity}/{item.quantity}</p>
-                      </div>
-                    );
-                  })}
-                </div>
+              </div>
+            )}
+            
+            {/* Mobile Progress Toggle Button */}
+            {!showMobileProgress && (
+              <Button
+                className="lg:hidden fixed bottom-4 right-4 h-12 w-12 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg z-30"
+                onClick={() => setShowMobileProgress(true)}
+              >
+                <ClipboardList className="h-5 w-5" />
+              </Button>
+            )}
+            
+            {/* Action Bar - Scrollable on mobile, fixed on desktop */}
+            <div className="lg:hidden mt-auto bg-gradient-to-t from-gray-900 to-gray-800 border-t-4 border-gray-700 p-3">
+              <div className="max-w-5xl mx-auto flex gap-3">
+                <Button
+                  variant="secondary"
+                  className="flex-1 h-12 text-sm font-bold bg-orange-500 hover:bg-orange-600 text-white shadow-lg"
+                  onClick={() => {
+                    setActivePickingOrder(null);
+                    setIsTimerRunning(false);
+                  }}
+                >
+                  <PauseCircle className="h-5 w-5 mr-2" />
+                  <span className="hidden sm:inline">PAUSE PICKING</span>
+                  <span className="sm:hidden">PAUSE</span>
+                </Button>
+                <Button
+                  className={`flex-1 h-12 text-sm font-bold shadow-lg transition-all ${
+                    activePickingOrder.pickedItems >= activePickingOrder.totalItems
+                      ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white animate-pulse'
+                      : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                  }`}
+                  disabled={activePickingOrder.pickedItems < activePickingOrder.totalItems}
+                  onClick={completePicking}
+                >
+                  <CheckCircle2 className="h-5 w-5 mr-2" />
+                  <span className="hidden sm:inline">COMPLETE ORDER ({activePickingOrder.pickedItems}/{activePickingOrder.totalItems})</span>
+                  <span className="sm:hidden">COMPLETE ({activePickingOrder.pickedItems}/{activePickingOrder.totalItems})</span>
+                </Button>
               </div>
             </div>
-          )}
-          
-          {/* Mobile Progress Toggle Button */}
-          {!showMobileProgress && (
-            <Button
-              className="lg:hidden fixed bottom-24 right-4 h-12 w-12 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg z-10"
-              onClick={() => setShowMobileProgress(true)}
-            >
-              <ClipboardList className="h-5 w-5" />
-            </Button>
-          )}
-        </div>
-
-        {/* Action Bar - Fixed at bottom on mobile */}
-        <div className="lg:relative fixed bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 to-gray-800 border-t-4 border-gray-700 p-3 lg:p-6 z-20">
-          <div className="max-w-5xl mx-auto flex gap-3 lg:gap-6">
-            <Button
-              variant="secondary"
-              className="flex-1 h-12 lg:h-16 text-sm lg:text-lg font-bold bg-orange-500 hover:bg-orange-600 text-white shadow-lg"
-              onClick={() => {
-                setActivePickingOrder(null);
-                setIsTimerRunning(false);
-              }}
-            >
-              <PauseCircle className="h-5 lg:h-6 w-5 lg:w-6 mr-2 lg:mr-3" />
-              <span className="hidden sm:inline">PAUSE PICKING</span>
-              <span className="sm:hidden">PAUSE</span>
-            </Button>
-            <Button
-              className={`flex-1 h-12 lg:h-16 text-sm lg:text-lg font-bold shadow-lg transition-all ${
-                activePickingOrder.pickedItems >= activePickingOrder.totalItems
-                  ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white animate-pulse'
-                  : 'bg-gray-400 text-gray-200 cursor-not-allowed'
-              }`}
-              disabled={activePickingOrder.pickedItems < activePickingOrder.totalItems}
-              onClick={completePicking}
-            >
-              <CheckCircle2 className="h-5 lg:h-6 w-5 lg:w-6 mr-2 lg:mr-3" />
-              <span className="hidden sm:inline">COMPLETE ORDER ({activePickingOrder.pickedItems}/{activePickingOrder.totalItems})</span>
-              <span className="sm:hidden">COMPLETE ({activePickingOrder.pickedItems}/{activePickingOrder.totalItems})</span>
-            </Button>
+            
+            {/* Desktop Action Bar - Fixed at bottom */}
+            <div className="hidden lg:block fixed bottom-0 left-0 right-0 bg-gradient-to-t from-gray-900 to-gray-800 border-t-4 border-gray-700 p-6 z-20">
+              <div className="max-w-5xl mx-auto flex gap-6">
+                <Button
+                  variant="secondary"
+                  className="flex-1 h-16 text-lg font-bold bg-orange-500 hover:bg-orange-600 text-white shadow-lg"
+                  onClick={() => {
+                    setActivePickingOrder(null);
+                    setIsTimerRunning(false);
+                  }}
+                >
+                  <PauseCircle className="h-6 w-6 mr-3" />
+                  PAUSE PICKING
+                </Button>
+                <Button
+                  className={`flex-1 h-16 text-lg font-bold shadow-lg transition-all ${
+                    activePickingOrder.pickedItems >= activePickingOrder.totalItems
+                      ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white animate-pulse'
+                      : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                  }`}
+                  disabled={activePickingOrder.pickedItems < activePickingOrder.totalItems}
+                  onClick={completePicking}
+                >
+                  <CheckCircle2 className="h-6 w-6 mr-3" />
+                  COMPLETE ORDER ({activePickingOrder.pickedItems}/{activePickingOrder.totalItems})
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
