@@ -82,6 +82,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
       children: [
         { name: "All Orders", href: "/orders" },
         { name: "Add Order", href: "/orders/add" },
+        { name: "Pick & Pack", href: "/orders/pick-pack" },
         { name: "To Fulfill", href: "/orders/to-fulfill" },
         { name: "Shipped", href: "/orders/shipped" },
         { name: "Pre-Orders", href: "/orders/pre-orders" },
