@@ -309,6 +309,15 @@ export const orders = pgTable("orders", {
   grandTotal: decimal("grand_total", { precision: 12, scale: 2 }).notNull(),
   notes: text("notes"),
   attachmentUrl: varchar("attachment_url", { length: 500 }),
+  // Pick & Pack fields
+  pickStatus: varchar("pick_status", { length: 50 }).default('not_started'), // not_started, in_progress, completed
+  packStatus: varchar("pack_status", { length: 50 }).default('not_started'), // not_started, in_progress, completed
+  pickedBy: varchar("picked_by", { length: 255 }),
+  packedBy: varchar("packed_by", { length: 255 }),
+  pickStartTime: timestamp("pick_start_time"),
+  pickEndTime: timestamp("pick_end_time"),
+  packStartTime: timestamp("pack_start_time"),
+  packEndTime: timestamp("pack_end_time"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   shippedAt: timestamp("shipped_at"),
@@ -332,6 +341,12 @@ export const orderItems = pgTable("order_items", {
   discount: decimal("discount", { precision: 12, scale: 2 }).default('0'),
   tax: decimal("tax", { precision: 12, scale: 2 }).default('0'),
   total: decimal("total", { precision: 12, scale: 2 }).notNull(),
+  // Pick & Pack fields
+  pickedQuantity: integer("picked_quantity").default(0),
+  packedQuantity: integer("packed_quantity").default(0),
+  warehouseLocation: varchar("warehouse_location", { length: 100 }),
+  barcode: varchar("barcode", { length: 50 }),
+  image: varchar("image", { length: 500 }),
 });
 
 // Purchases

@@ -1836,6 +1836,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update order status for Pick & Pack workflow
+  app.patch('/api/orders/:id/status', async (req: any, res) => {
+    try {
+      const { orderStatus, pickStatus, packStatus, pickedBy, packedBy } = req.body;
+      
+      const updates: any = {};
+      if (orderStatus) updates.orderStatus = orderStatus;
+      if (pickStatus) updates.pickStatus = pickStatus;
+      if (packStatus) updates.packStatus = packStatus;
+      if (pickedBy) updates.pickedBy = pickedBy;
+      if (packedBy) updates.packedBy = packedBy;
+
+      // Add timestamps for status changes
+      if (orderStatus === 'picking' && pickStatus === 'in_progress') {
+        updates.pickStartTime = new Date();
+      }
+      if (orderStatus === 'packing' && pickStatus === 'completed') {
+        updates.pickEndTime = new Date();
+      }
+      if (orderStatus === 'packing' && packStatus === 'in_progress') {
+        updates.packStartTime = new Date();
+      }
+      if (orderStatus === 'ready_to_ship' && packStatus === 'completed') {
+        updates.packEndTime = new Date();
+      }
+      if (orderStatus === 'shipped') {
+        updates.shippedAt = new Date();
+      }
+      
+      const order = await storage.updateOrder(req.params.id, updates);
+      
+      await storage.createUserActivity({
+        userId: pickedBy || packedBy || "test-user",
+        action: 'update',
+        entityType: 'order',
+        entityId: order.id,
+        description: `Updated order status to ${orderStatus}: ${order.orderId}`,
+      });
+      
+      res.json(order);
+    } catch (error) {
+      console.error("Error updating order status:", error);
+      res.status(500).json({ message: "Failed to update order status" });
+    }
+  });
+
   app.delete('/api/orders/:id', async (req: any, res) => {
     try {
       const order = await storage.getOrderById(req.params.id);

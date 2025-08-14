@@ -97,6 +97,8 @@ export default function PickPack() {
   const [activePackingOrder, setActivePackingOrder] = useState<PickPackOrder | null>(null);
   const [barcodeInput, setBarcodeInput] = useState('');
   const [selectedBatchOrders, setSelectedBatchOrders] = useState<string[]>([]);
+  const [packingTimer, setPackingTimer] = useState(0);
+  const [isPackingTimerRunning, setIsPackingTimerRunning] = useState(false);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [currentEmployee] = useState('Employee #001');
   const [pickingTimer, setPickingTimer] = useState(0);
@@ -104,7 +106,7 @@ export default function PickPack() {
   const [showMobileProgress, setShowMobileProgress] = useState(false);
   const barcodeInputRef = useRef<HTMLInputElement>(null);
 
-  // Timer effect
+  // Timer effects
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isTimerRunning) {
@@ -114,6 +116,16 @@ export default function PickPack() {
     }
     return () => clearInterval(interval);
   }, [isTimerRunning]);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isPackingTimerRunning) {
+      interval = setInterval(() => {
+        setPackingTimer(prev => prev + 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isPackingTimerRunning]);
 
   // Fetch real orders from the API
   const { data: allOrders = [], isLoading } = useQuery({
@@ -143,41 +155,51 @@ export default function PickPack() {
     return `https://picsum.photos/seed/${seed}/400/400`;
   };
 
-  // Transform real orders to PickPackOrder format
-  const transformedOrders: PickPackOrder[] = allOrders.map((order: any) => ({
-    id: order.id,
-    orderId: order.orderId,
-    customerName: order.customerName || 'Walk-in Customer',
-    shippingMethod: order.shippingMethod || 'Standard',
-    shippingAddress: order.shippingAddress,
-    priority: order.priority || 'medium',
-    status: order.orderStatus || 'pending',
-    pickStatus: order.pickStatus || 'not_started',
-    packStatus: order.packStatus || 'not_started',
-    items: order.items?.map((item: any) => ({
-      id: item.id,
-      productId: item.productId,
-      productName: item.productName,
-      sku: item.sku,
-      quantity: item.quantity,
-      pickedQuantity: item.pickedQuantity || 0,
-      packedQuantity: item.packedQuantity || 0,
-      warehouseLocation: item.warehouseLocation || generateMockLocation(),
-      barcode: item.barcode || generateMockBarcode(item.sku),
-      image: item.image || generateMockImage(item.productName)
-    })) || [],
-    totalItems: order.items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0,
-    pickedItems: order.items?.reduce((sum: number, item: any) => sum + (item.pickedQuantity || 0), 0) || 0,
-    packedItems: order.items?.reduce((sum: number, item: any) => sum + (item.packedQuantity || 0), 0) || 0,
-    createdAt: order.createdAt,
-    pickStartTime: order.pickStartTime,
-    pickEndTime: order.pickEndTime,
-    packStartTime: order.packStartTime,
-    packEndTime: order.packEndTime,
-    pickedBy: order.pickedBy,
-    packedBy: order.packedBy,
-    notes: order.notes
-  }));
+  // Transform real orders to PickPackOrder format - Only include "To Fulfill" status orders
+  const transformedOrders: PickPackOrder[] = allOrders
+    .filter((order: any) => 
+      order.orderStatus === 'to_fulfill' || 
+      order.orderStatus === 'picking' || 
+      order.orderStatus === 'packing' || 
+      order.orderStatus === 'ready_to_ship'
+    )
+    .map((order: any) => ({
+      id: order.id,
+      orderId: order.orderId,
+      customerName: order.customerName || 'Walk-in Customer',
+      shippingMethod: order.shippingMethod || 'Standard',
+      shippingAddress: order.shippingAddress,
+      priority: order.priority || 'medium',
+      status: order.orderStatus || 'to_fulfill',
+      pickStatus: order.pickStatus || (order.orderStatus === 'to_fulfill' ? 'not_started' : 
+                   order.orderStatus === 'picking' ? 'in_progress' : 
+                   order.orderStatus === 'packing' ? 'completed' : 'completed'),
+      packStatus: order.packStatus || (order.orderStatus === 'packing' ? 'in_progress' : 
+                  order.orderStatus === 'ready_to_ship' ? 'completed' : 'not_started'),
+      items: order.items?.map((item: any) => ({
+        id: item.id,
+        productId: item.productId,
+        productName: item.productName,
+        sku: item.sku,
+        quantity: item.quantity,
+        pickedQuantity: item.pickedQuantity || 0,
+        packedQuantity: item.packedQuantity || 0,
+        warehouseLocation: item.warehouseLocation || generateMockLocation(),
+        barcode: item.barcode || generateMockBarcode(item.sku),
+        image: item.image || generateMockImage(item.productName)
+      })) || [],
+      totalItems: order.items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0,
+      pickedItems: order.items?.reduce((sum: number, item: any) => sum + (item.pickedQuantity || 0), 0) || 0,
+      packedItems: order.items?.reduce((sum: number, item: any) => sum + (item.packedQuantity || 0), 0) || 0,
+      createdAt: order.createdAt,
+      pickStartTime: order.pickStartTime,
+      pickEndTime: order.pickEndTime,
+      packStartTime: order.packStartTime,
+      packEndTime: order.packEndTime,
+      pickedBy: order.pickedBy,
+      packedBy: order.packedBy,
+      notes: order.notes
+    }));
 
   // Play sound effect
   const playSound = (type: 'scan' | 'success' | 'error') => {
@@ -205,10 +227,38 @@ export default function PickPack() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Mutation to update order status
+  const updateOrderStatusMutation = useMutation({
+    mutationFn: async ({ orderId, status, pickStatus, packStatus, pickedBy, packedBy }: any) => {
+      return apiRequest(`/api/orders/${orderId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ 
+          orderStatus: status, 
+          pickStatus, 
+          packStatus,
+          pickedBy,
+          packedBy
+        })
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+    }
+  });
+
   // Start picking an order
-  const startPicking = (order: PickPackOrder) => {
+  const startPicking = async (order: PickPackOrder) => {
+    // Update order status to "picking"
+    await updateOrderStatusMutation.mutateAsync({
+      orderId: order.id,
+      status: 'picking',
+      pickStatus: 'in_progress',
+      pickedBy: currentEmployee
+    });
+
     const updatedOrder = {
       ...order,
+      status: 'picking' as const,
       pickStatus: 'in_progress' as const,
       pickStartTime: new Date().toISOString(),
       pickedBy: currentEmployee
@@ -254,8 +304,16 @@ export default function PickPack() {
   };
 
   // Complete picking
-  const completePicking = () => {
+  const completePicking = async () => {
     if (!activePickingOrder) return;
+
+    // Update order status to "packing"
+    await updateOrderStatusMutation.mutateAsync({
+      orderId: activePickingOrder.id,
+      status: 'packing',
+      pickStatus: 'completed',
+      packStatus: 'not_started'
+    });
 
     const updatedOrder = {
       ...activePickingOrder,
@@ -273,6 +331,78 @@ export default function PickPack() {
     playSound('success');
     setActivePickingOrder(null);
     setSelectedTab('packing');
+  };
+
+  // Start packing an order
+  const startPacking = async (order: PickPackOrder) => {
+    // Update order status to "packing" if not already
+    if (order.packStatus !== 'in_progress') {
+      await updateOrderStatusMutation.mutateAsync({
+        orderId: order.id,
+        status: 'packing',
+        packStatus: 'in_progress',
+        packedBy: currentEmployee
+      });
+    }
+
+    const updatedOrder = {
+      ...order,
+      packStatus: 'in_progress' as const,
+      packStartTime: new Date().toISOString(),
+      packedBy: currentEmployee
+    };
+    setActivePackingOrder(updatedOrder);
+    setPackingTimer(0);
+    setIsPackingTimerRunning(true);
+    playSound('success');
+    toast({
+      title: "Packing Started",
+      description: `Started packing order ${order.orderId}`,
+    });
+  };
+
+  // Complete packing
+  const completePacking = async () => {
+    if (!activePackingOrder) return;
+
+    // Update order status to "ready_to_ship"
+    await updateOrderStatusMutation.mutateAsync({
+      orderId: activePackingOrder.id,
+      status: 'ready_to_ship',
+      packStatus: 'completed'
+    });
+
+    const updatedOrder = {
+      ...activePackingOrder,
+      packStatus: 'completed' as const,
+      packEndTime: new Date().toISOString(),
+      status: 'ready_to_ship' as const
+    };
+
+    setIsPackingTimerRunning(false);
+    queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+    toast({
+      title: "Packing Completed",
+      description: `Order ${updatedOrder.orderId} is ready to ship`,
+    });
+    playSound('success');
+    setActivePackingOrder(null);
+    setSelectedTab('ready');
+  };
+
+  // Mark order as shipped
+  const markAsShipped = async (order: PickPackOrder) => {
+    await updateOrderStatusMutation.mutateAsync({
+      orderId: order.id,
+      status: 'shipped'
+    });
+
+    toast({
+      title: "Order Shipped",
+      description: `Order ${order.orderId} has been marked as shipped`,
+    });
+    playSound('success');
+    queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
   };
 
   // Handle barcode scanning
@@ -303,13 +433,13 @@ export default function PickPack() {
     barcodeInputRef.current?.focus();
   };
 
-  // Filter orders by status
+  // Filter orders by status - Updated to work with "to_fulfill" orders
   const getOrdersByStatus = (status: string) => {
     return transformedOrders.filter(order => {
-      if (status === 'pending') return order.pickStatus === 'not_started' && order.status !== 'shipped';
-      if (status === 'picking') return order.pickStatus === 'in_progress';
-      if (status === 'packing') return order.pickStatus === 'completed' && order.packStatus !== 'completed';
-      if (status === 'ready') return order.packStatus === 'completed' && order.status !== 'shipped';
+      if (status === 'pending') return order.status === 'to_fulfill' && order.pickStatus === 'not_started';
+      if (status === 'picking') return order.status === 'picking' || order.pickStatus === 'in_progress';
+      if (status === 'packing') return order.status === 'packing' || (order.pickStatus === 'completed' && order.packStatus !== 'completed');
+      if (status === 'ready') return order.status === 'ready_to_ship' || order.packStatus === 'completed';
       return false;
     });
   };
@@ -341,6 +471,144 @@ export default function PickPack() {
         <div className="text-center">
           <Package className="h-12 w-12 mx-auto mb-4 text-gray-400 animate-pulse" />
           <p className="text-gray-500">No orders to pick</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Active Packing View - Full Screen
+  if (activePackingOrder) {
+    const progress = (activePackingOrder.packedItems / activePackingOrder.totalItems) * 100;
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex flex-col">
+        {/* Header - Packing Mode */}
+        <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg sticky top-0 z-20">
+          <div className="px-3 lg:px-4 py-2 lg:py-3">
+            <div className="flex items-center justify-between gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 bg-white/20 hover:bg-white/30 text-white"
+                onClick={() => {
+                  setActivePackingOrder(null);
+                  setIsPackingTimerRunning(false);
+                }}
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+                <span className="ml-1 text-xs">Exit</span>
+              </Button>
+              
+              <div className="flex-1 text-center">
+                <div className="text-base font-bold">{activePackingOrder.orderId}</div>
+                <Badge className="text-[10px] px-2 py-0 bg-purple-500 text-white">
+                  PACKING MODE
+                </Badge>
+              </div>
+              
+              <div className="flex items-center gap-1">
+                <div className="text-right">
+                  <div className="font-mono text-sm font-bold">{formatTimer(packingTimer)}</div>
+                  <div className="text-[10px] text-purple-100">Time</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="mt-2">
+              <div className="flex justify-between text-xs mb-1">
+                <span className="text-purple-100">Packing Progress</span>
+                <span className="font-bold text-white">{activePackingOrder.packedItems}/{activePackingOrder.totalItems} items</span>
+              </div>
+              <div className="w-full bg-white/20 rounded-full h-2 overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-pink-400 to-purple-400 transition-all duration-500"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 p-4">
+          <div className="max-w-4xl mx-auto">
+            <Card className="shadow-xl border-0">
+              <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+                <CardTitle className="flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Box className="h-5 w-5" />
+                    Packing Station
+                  </span>
+                  <Badge className="bg-white text-purple-600">
+                    {activePackingOrder.customerName}
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  {/* Order Items List */}
+                  <div className="space-y-2">
+                    <h3 className="font-semibold text-lg mb-3">Order Items</h3>
+                    {activePackingOrder.items.map((item, index) => (
+                      <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center font-bold text-purple-600">
+                            {index + 1}
+                          </div>
+                          <div>
+                            <p className="font-medium">{item.productName}</p>
+                            <p className="text-sm text-gray-500">SKU: {item.sku}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <span className="font-medium">Qty: {item.quantity}</span>
+                          {item.pickedQuantity >= item.quantity ? (
+                            <CheckCircle className="h-5 w-5 text-green-500" />
+                          ) : (
+                            <AlertCircle className="h-5 w-5 text-yellow-500" />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Packing Actions */}
+                  <div className="border-t pt-4">
+                    <h3 className="font-semibold text-lg mb-3">Packing Checklist</h3>
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
+                        <Checkbox />
+                        <span>All items verified and placed in box</span>
+                      </label>
+                      <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
+                        <Checkbox />
+                        <span>Packing slip included</span>
+                      </label>
+                      <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
+                        <Checkbox />
+                        <span>Box sealed and labeled</span>
+                      </label>
+                      <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
+                        <Checkbox />
+                        <span>Weight recorded</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Complete Packing Button */}
+                  <Button 
+                    size="lg" 
+                    onClick={completePacking}
+                    className="w-full h-14 text-lg font-bold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                  >
+                    <PackageCheck className="h-6 w-6 mr-3" />
+                    COMPLETE PACKING
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     );
@@ -1226,12 +1494,56 @@ export default function PickPack() {
             <Card>
               <CardHeader className="pb-3 sm:pb-6">
                 <CardTitle className="text-base sm:text-lg">Ready for Packing</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">Orders that have been picked and ready to pack</CardDescription>
               </CardHeader>
               <CardContent className="px-3 sm:px-6">
-                <div className="text-center py-8 sm:py-12">
-                  <Box className="h-10 sm:h-12 w-10 sm:w-12 text-gray-300 mx-auto mb-3 sm:mb-4" />
-                  <p className="text-sm sm:text-base text-gray-500">Packing station functionality coming soon</p>
-                </div>
+                {getOrdersByStatus('packing').length === 0 ? (
+                  <div className="text-center py-8 sm:py-12">
+                    <Box className="h-10 sm:h-12 w-10 sm:w-12 text-gray-300 mx-auto mb-3 sm:mb-4" />
+                    <p className="text-sm sm:text-base text-gray-500">No orders ready for packing</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2 sm:space-y-3">
+                    {getOrdersByStatus('packing').map(order => (
+                      <Card key={order.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                        <CardContent className="p-3 sm:p-4">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1 sm:mb-2">
+                                <h3 className="font-semibold text-sm sm:text-base">{order.orderId}</h3>
+                                <Badge variant="default" className="text-xs bg-purple-500">
+                                  READY TO PACK
+                                </Badge>
+                              </div>
+                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
+                                <div className="flex items-center gap-1">
+                                  <User className="h-3 sm:h-4 w-3 sm:w-4" />
+                                  <span className="truncate">{order.customerName}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Package className="h-3 sm:h-4 w-3 sm:w-4" />
+                                  <span>{order.totalItems} items</span>
+                                </div>
+                                <div className="flex items-center gap-1 col-span-2 sm:col-span-1">
+                                  <CheckCircle className="h-3 sm:h-4 w-3 sm:w-4 text-green-500" />
+                                  <span className="text-green-600">Picked by {order.pickedBy}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <Button
+                              size="sm"
+                              className="w-full sm:w-auto sm:h-10 bg-purple-600 hover:bg-purple-700"
+                              onClick={() => startPacking(order)}
+                            >
+                              <Box className="h-4 sm:h-5 w-4 sm:w-5 mr-1 sm:mr-2" />
+                              Start Packing
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -1240,12 +1552,73 @@ export default function PickPack() {
             <Card>
               <CardHeader className="pb-3 sm:pb-6">
                 <CardTitle className="text-base sm:text-lg">Ready to Ship</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">Orders fully packed and ready for shipping</CardDescription>
               </CardHeader>
               <CardContent className="px-3 sm:px-6">
-                <div className="text-center py-8 sm:py-12">
-                  <Truck className="h-10 sm:h-12 w-10 sm:w-12 text-gray-300 mx-auto mb-3 sm:mb-4" />
-                  <p className="text-sm sm:text-base text-gray-500">No orders ready to ship</p>
-                </div>
+                {getOrdersByStatus('ready').length === 0 ? (
+                  <div className="text-center py-8 sm:py-12">
+                    <Truck className="h-10 sm:h-12 w-10 sm:w-12 text-gray-300 mx-auto mb-3 sm:mb-4" />
+                    <p className="text-sm sm:text-base text-gray-500">No orders ready to ship</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2 sm:space-y-3">
+                    {getOrdersByStatus('ready').map(order => (
+                      <Card key={order.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                        <CardContent className="p-3 sm:p-4">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1 sm:mb-2">
+                                <h3 className="font-semibold text-sm sm:text-base">{order.orderId}</h3>
+                                <Badge variant="default" className="text-xs bg-green-500">
+                                  READY TO SHIP
+                                </Badge>
+                              </div>
+                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
+                                <div className="flex items-center gap-1">
+                                  <User className="h-3 sm:h-4 w-3 sm:w-4" />
+                                  <span className="truncate">{order.customerName}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Truck className="h-3 sm:h-4 w-3 sm:w-4" />
+                                  <span>{order.shippingMethod}</span>
+                                </div>
+                                <div className="flex items-center gap-1 col-span-2 sm:col-span-1">
+                                  <PackageCheck className="h-3 sm:h-4 w-3 sm:w-4 text-green-500" />
+                                  <span className="text-green-600">Packed by {order.packedBy}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="w-full sm:w-auto"
+                                onClick={() => {
+                                  // Print shipping label
+                                  toast({
+                                    title: "Printing Label",
+                                    description: `Printing shipping label for ${order.orderId}`,
+                                  });
+                                }}
+                              >
+                                <Printer className="h-4 sm:h-5 w-4 sm:w-5 mr-1 sm:mr-2" />
+                                Print Label
+                              </Button>
+                              <Button
+                                size="sm"
+                                className="w-full sm:w-auto sm:h-10 bg-green-600 hover:bg-green-700"
+                                onClick={() => markAsShipped(order)}
+                              >
+                                <Truck className="h-4 sm:h-5 w-4 sm:w-5 mr-1 sm:mr-2" />
+                                Mark Shipped
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
