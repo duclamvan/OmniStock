@@ -352,61 +352,68 @@ export default function PickPack() {
     const currentItem = currentItemIndex >= 0 ? activePickingOrder.items[currentItemIndex] : null;
 
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex flex-col">
         {/* Header */}
-        <div className="bg-white border-b sticky top-0 z-10">
+        <div className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-lg sticky top-0 z-10">
           <div className="px-4 py-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <Button
-                  variant="ghost"
+                  variant="secondary"
                   size="sm"
+                  className="bg-white/20 hover:bg-white/30 text-white border-white/30"
                   onClick={() => {
                     setActivePickingOrder(null);
                     setIsTimerRunning(false);
                   }}
                 >
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back
+                  Exit
                 </Button>
-                <Separator orientation="vertical" className="h-6" />
+                <Separator orientation="vertical" className="h-6 bg-white/30" />
                 <div>
                   <div className="flex items-center gap-2">
                     <h1 className="text-lg font-bold">Order {activePickingOrder.orderId}</h1>
-                    <Badge variant={getPriorityColor(activePickingOrder.priority)}>
+                    <Badge 
+                      className={`
+                        ${activePickingOrder.priority === 'high' ? 'bg-red-500 text-white' : ''}
+                        ${activePickingOrder.priority === 'medium' ? 'bg-amber-500 text-white' : ''}
+                        ${activePickingOrder.priority === 'low' ? 'bg-green-500 text-white' : ''}
+                      `}
+                    >
                       {activePickingOrder.priority.toUpperCase()}
                     </Badge>
                   </div>
-                  <p className="text-sm text-gray-500">{activePickingOrder.customerName}</p>
+                  <p className="text-sm text-blue-100">{activePickingOrder.customerName}</p>
                 </div>
               </div>
               
               <div className="flex items-center gap-4">
                 <div className="text-right">
                   <div className="flex items-center gap-2">
-                    <Timer className="h-4 w-4 text-gray-400" />
-                    <span className="font-mono text-lg font-bold">{formatTimer(pickingTimer)}</span>
+                    <Timer className="h-4 w-4 text-blue-200" />
+                    <span className="font-mono text-xl font-bold">{formatTimer(pickingTimer)}</span>
                   </div>
-                  <p className="text-xs text-gray-500">Elapsed Time</p>
+                  <p className="text-xs text-blue-100">Elapsed Time</p>
                 </div>
                 
                 <Button
                   size="sm"
-                  variant="outline"
+                  className="bg-white/20 hover:bg-white/30 text-white border-white/30"
                   onClick={() => setAudioEnabled(!audioEnabled)}
                 >
-                  <Volume2 className={`h-4 w-4 ${audioEnabled ? 'text-blue-600' : 'text-gray-400'}`} />
+                  <Volume2 className={`h-4 w-4 ${audioEnabled ? 'text-yellow-300' : 'text-white/50'}`} />
                 </Button>
                 
                 <Button
                   size="sm"
-                  variant="outline"
+                  className="bg-white/20 hover:bg-white/30 text-white border-white/30"
                   onClick={() => setIsTimerRunning(!isTimerRunning)}
                 >
                   {isTimerRunning ? (
-                    <PauseCircle className="h-4 w-4 text-orange-600" />
+                    <PauseCircle className="h-4 w-4 text-orange-300" />
                   ) : (
-                    <PlayCircle className="h-4 w-4 text-green-600" />
+                    <PlayCircle className="h-4 w-4 text-green-300" />
                   )}
                 </Button>
               </div>
@@ -415,10 +422,15 @@ export default function PickPack() {
             {/* Progress Bar */}
             <div className="mt-3">
               <div className="flex justify-between text-sm mb-1">
-                <span>Progress</span>
-                <span className="font-medium">{activePickingOrder.pickedItems}/{activePickingOrder.totalItems} items</span>
+                <span className="text-blue-100">Progress</span>
+                <span className="font-medium text-white">{activePickingOrder.pickedItems}/{activePickingOrder.totalItems} items</span>
               </div>
-              <Progress value={progress} className="h-2" />
+              <div className="w-full bg-white/20 rounded-full h-3 overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-green-400 to-emerald-400 transition-all duration-500 ease-out rounded-full"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -428,145 +440,194 @@ export default function PickPack() {
           {/* Left Panel - Current Item Focus */}
           <div className="flex-1 p-6">
             {currentItem ? (
-              <div className="max-w-2xl mx-auto">
-                <Card className="mb-6">
-                  <CardHeader className="bg-blue-50 border-b">
+              <div className="max-w-3xl mx-auto">
+                <Card className="mb-6 shadow-xl border-0 overflow-hidden">
+                  <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white">
                     <CardTitle className="flex items-center justify-between">
-                      <span>Current Item to Pick</span>
-                      <Badge variant="outline" className="text-lg px-3 py-1">
-                        Item {currentItemIndex + 1} of {activePickingOrder.items.length}
+                      <span className="text-xl flex items-center gap-2">
+                        <Package className="h-6 w-6" />
+                        Current Item to Pick
+                      </span>
+                      <Badge className="bg-white text-blue-600 text-lg px-4 py-1 font-bold">
+                        {currentItemIndex + 1} / {activePickingOrder.items.length}
                       </Badge>
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="p-6">
-                    <div className="space-y-6">
+                  <CardContent className="p-8 bg-white">
+                    <div className="space-y-8">
                       {/* Product Image and Info */}
-                      <div className="flex gap-6">
+                      <div className="flex gap-8">
                         {/* Product Image */}
-                        <div className="w-48 h-48 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0 border-2 border-gray-200">
-                          {currentItem.image ? (
-                            <img 
-                              src={currentItem.image} 
-                              alt={currentItem.productName}
-                              className="w-full h-full object-contain rounded-lg"
-                            />
-                          ) : (
-                            <Package className="h-16 w-16 text-gray-400" />
-                          )}
+                        <div className="relative">
+                          <div className="w-56 h-56 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg border-4 border-white">
+                            {currentItem.image ? (
+                              <img 
+                                src={currentItem.image} 
+                                alt={currentItem.productName}
+                                className="w-full h-full object-contain rounded-xl p-2"
+                              />
+                            ) : (
+                              <Package className="h-20 w-20 text-gray-300" />
+                            )}
+                          </div>
+                          <div className="absolute -top-2 -right-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full w-12 h-12 flex items-center justify-center font-bold text-lg shadow-lg">
+                            {currentItemIndex + 1}
+                          </div>
                         </div>
                         
                         {/* Product Details */}
-                        <div className="flex-1">
-                          <h3 className="text-2xl font-bold mb-2">{currentItem.productName}</h3>
-                          <div className="space-y-2">
-                            <div className="flex gap-4 text-sm">
-                              <span className="text-gray-600">SKU:</span>
-                              <span className="font-mono font-bold text-lg">{currentItem.sku}</span>
+                        <div className="flex-1 space-y-4">
+                          <h3 className="text-3xl font-bold text-gray-800">{currentItem.productName}</h3>
+                          
+                          <div className="space-y-3">
+                            <div className="bg-gray-50 rounded-lg p-3 flex items-center gap-3">
+                              <Hash className="h-5 w-5 text-blue-500" />
+                              <span className="text-gray-600 font-medium">SKU:</span>
+                              <span className="font-mono font-bold text-xl text-gray-800">{currentItem.sku}</span>
                             </div>
-                            <div className="flex gap-4 text-sm">
-                              <span className="text-gray-600">Barcode:</span>
-                              <span className="font-mono font-bold text-lg">{currentItem.barcode}</span>
+                            
+                            <div className="bg-gray-50 rounded-lg p-3 flex items-center gap-3">
+                              <ScanLine className="h-5 w-5 text-purple-500" />
+                              <span className="text-gray-600 font-medium">Barcode:</span>
+                              <span className="font-mono font-bold text-xl text-gray-800">{currentItem.barcode}</span>
                             </div>
                           </div>
                         </div>
                       </div>
 
-                      {/* Location */}
-                      <div className="bg-blue-100 rounded-lg p-6 text-center">
-                        <MapPin className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-                        <p className="text-sm text-blue-600 mb-1">Warehouse Location</p>
-                        <p className="text-4xl font-bold font-mono text-blue-900">{currentItem.warehouseLocation}</p>
+                      {/* Location - Emphasized with Psychology */}
+                      <div className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-300 rounded-2xl p-8 text-center shadow-lg">
+                        <div className="bg-white rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center shadow-md">
+                          <MapPin className="h-10 w-10 text-orange-500" />
+                        </div>
+                        <p className="text-sm font-semibold text-orange-700 mb-2 uppercase tracking-wide">Go to Location</p>
+                        <p className="text-6xl font-black text-orange-600 font-mono tracking-wider">{currentItem.warehouseLocation}</p>
+                        <p className="text-sm text-orange-600 mt-2">Navigate to this warehouse location</p>
                       </div>
 
-                      {/* Quantity Picker */}
-                      <div className="bg-gray-50 rounded-lg p-6">
-                        <p className="text-center text-sm text-gray-600 mb-4">Quantity to Pick</p>
-                        <div className="flex items-center justify-center gap-4">
+                      {/* Quantity Picker - Action Area */}
+                      <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-8 border-2 border-green-300">
+                        <p className="text-center text-lg font-semibold text-green-800 mb-6">Pick Quantity</p>
+                        <div className="flex items-center justify-center gap-6">
                           <Button
                             size="lg"
-                            variant="outline"
+                            className="w-20 h-20 rounded-2xl bg-red-500 hover:bg-red-600 text-white shadow-lg"
                             onClick={() => updatePickedItem(currentItem.id, Math.max(0, currentItem.pickedQuantity - 1))}
                             disabled={currentItem.pickedQuantity === 0}
                           >
-                            <Minus className="h-6 w-6" />
+                            <Minus className="h-8 w-8" />
                           </Button>
                           
-                          <div className="text-center">
-                            <div className="text-5xl font-bold">
+                          <div className="text-center bg-white rounded-2xl px-12 py-6 shadow-lg">
+                            <div className="text-6xl font-black text-gray-800">
                               {currentItem.pickedQuantity}
-                              <span className="text-3xl text-gray-400">/{currentItem.quantity}</span>
+                              <span className="text-4xl text-gray-400">/{currentItem.quantity}</span>
                             </div>
-                            <p className="text-sm text-gray-500 mt-1">Picked</p>
+                            <p className="text-sm font-semibold text-gray-600 mt-2 uppercase tracking-wide">Items Picked</p>
                           </div>
                           
                           <Button
                             size="lg"
-                            variant="outline"
+                            className="w-20 h-20 rounded-2xl bg-green-500 hover:bg-green-600 text-white shadow-lg"
                             onClick={() => updatePickedItem(currentItem.id, Math.min(currentItem.quantity, currentItem.pickedQuantity + 1))}
                             disabled={currentItem.pickedQuantity >= currentItem.quantity}
                           >
-                            <Plus className="h-6 w-6" />
+                            <Plus className="h-8 w-8" />
                           </Button>
                         </div>
                         
                         {currentItem.pickedQuantity >= currentItem.quantity && (
-                          <Alert className="mt-4 bg-green-50 border-green-200">
-                            <CheckCircle className="h-4 w-4 text-green-600" />
-                            <AlertDescription className="text-green-800">
-                              Item fully picked! Move to the next item.
+                          <Alert className="mt-6 bg-green-100 border-2 border-green-400 shadow-md">
+                            <CheckCircle className="h-5 w-5 text-green-700" />
+                            <AlertDescription className="text-green-800 font-semibold text-lg">
+                              ✓ Item fully picked! Ready for next item.
                             </AlertDescription>
                           </Alert>
                         )}
-                      </div>
 
-                      {/* Quick Pick Button */}
-                      {currentItem.pickedQuantity < currentItem.quantity && (
-                        <Button 
-                          size="lg" 
-                          className="w-full"
-                          onClick={() => updatePickedItem(currentItem.id, currentItem.quantity)}
-                        >
-                          <CheckCircle2 className="h-5 w-5 mr-2" />
-                          Mark as Fully Picked
-                        </Button>
-                      )}
+                        {/* Quick Pick Button */}
+                        {currentItem.pickedQuantity < currentItem.quantity && (
+                          <Button 
+                            size="lg" 
+                            className="w-full mt-6 h-14 text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg"
+                            onClick={() => updatePickedItem(currentItem.id, currentItem.quantity)}
+                          >
+                            <CheckCircle2 className="h-6 w-6 mr-3" />
+                            Quick Pick All ({currentItem.quantity} items)
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
 
                 {/* Barcode Scanner */}
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="flex gap-2">
+                <Card className="shadow-xl border-0 bg-gradient-to-r from-purple-500 to-indigo-500">
+                  <CardContent className="p-6">
+                    <div className="flex gap-3">
                       <div className="relative flex-1">
-                        <ScanLine className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                        <ScanLine className="absolute left-4 top-4 h-6 w-6 text-white/70" />
                         <Input
                           ref={barcodeInputRef}
                           placeholder="Scan or enter barcode/SKU..."
                           value={barcodeInput}
                           onChange={(e) => setBarcodeInput(e.target.value)}
                           onKeyPress={(e) => e.key === 'Enter' && handleBarcodeScan()}
-                          className="pl-10 text-lg"
+                          className="pl-12 text-lg h-14 bg-white/95 border-white/30 placeholder:text-gray-500 font-mono"
                           autoFocus
                         />
                       </div>
-                      <Button size="lg" onClick={handleBarcodeScan}>
-                        Scan
+                      <Button 
+                        size="lg" 
+                        onClick={handleBarcodeScan}
+                        className="h-14 px-8 bg-white text-purple-600 hover:bg-gray-100 font-bold shadow-lg"
+                      >
+                        <ScanLine className="h-5 w-5 mr-2" />
+                        SCAN
                       </Button>
                     </div>
                   </CardContent>
                 </Card>
               </div>
             ) : (
-              <div className="max-w-2xl mx-auto">
-                <Card>
-                  <CardContent className="p-12 text-center">
-                    <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
-                    <h2 className="text-2xl font-bold mb-2">All Items Picked!</h2>
-                    <p className="text-gray-600 mb-6">You have successfully picked all items for this order.</p>
-                    <Button size="lg" onClick={completePicking}>
-                      <PackageCheck className="h-5 w-5 mr-2" />
-                      Complete Picking
+              <div className="max-w-3xl mx-auto">
+                <Card className="shadow-2xl border-0 overflow-hidden bg-gradient-to-br from-green-50 to-emerald-50">
+                  <div className="bg-gradient-to-r from-green-500 to-emerald-500 p-2"></div>
+                  <CardContent className="p-16 text-center">
+                    <div className="bg-gradient-to-br from-green-400 to-emerald-400 rounded-full w-32 h-32 mx-auto mb-8 flex items-center justify-center shadow-xl animate-bounce">
+                      <CheckCircle className="h-20 w-20 text-white" />
+                    </div>
+                    <h2 className="text-4xl font-black mb-4 text-gray-800">
+                      🎉 All Items Picked!
+                    </h2>
+                    <p className="text-xl text-gray-600 mb-8">
+                      Excellent work! You've successfully picked all {activePickingOrder.totalItems} items for order {activePickingOrder.orderId}
+                    </p>
+                    
+                    <div className="bg-white rounded-xl p-6 mb-8 shadow-inner">
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <p className="text-sm text-gray-500">Time Taken</p>
+                          <p className="text-2xl font-bold text-blue-600">{formatTimer(pickingTimer)}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">Items Picked</p>
+                          <p className="text-2xl font-bold text-green-600">{activePickingOrder.totalItems}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500">Efficiency</p>
+                          <p className="text-2xl font-bold text-purple-600">100%</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <Button 
+                      size="lg" 
+                      onClick={completePicking}
+                      className="w-full h-16 text-xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-xl transform hover:scale-105 transition-all"
+                    >
+                      <PackageCheck className="h-7 w-7 mr-3" />
+                      PROCEED TO PACKING
                     </Button>
                   </CardContent>
                 </Card>
@@ -575,12 +636,21 @@ export default function PickPack() {
           </div>
 
           {/* Right Panel - Items List */}
-          <div className="w-96 bg-white border-l p-4 overflow-y-auto">
-            <h3 className="font-semibold mb-4 flex items-center justify-between">
-              <span>All Items</span>
-              <Badge variant="outline">{activePickingOrder.pickedItems}/{activePickingOrder.totalItems}</Badge>
-            </h3>
-            <div className="space-y-2">
+          <div className="w-96 bg-gradient-to-b from-white to-gray-50 border-l-4 border-gray-200 p-6 overflow-y-auto">
+            <div className="bg-gradient-to-r from-gray-700 to-gray-800 text-white rounded-xl p-4 mb-6 shadow-lg">
+              <h3 className="font-bold text-lg mb-2 flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <ClipboardList className="h-5 w-5" />
+                  Order Items
+                </span>
+                <Badge className="bg-white text-gray-800 font-bold px-3 py-1">
+                  {activePickingOrder.pickedItems}/{activePickingOrder.totalItems}
+                </Badge>
+              </h3>
+              <div className="text-sm text-gray-200">Track your picking progress</div>
+            </div>
+            
+            <div className="space-y-3">
               {activePickingOrder.items.map((item, index) => {
                 const isPicked = item.pickedQuantity >= item.quantity;
                 const isCurrent = currentItem?.id === item.id;
@@ -588,39 +658,52 @@ export default function PickPack() {
                 return (
                   <Card 
                     key={item.id} 
-                    className={`cursor-pointer transition-all ${
-                      isPicked ? 'bg-green-50 border-green-200' : 
-                      isCurrent ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-400' : ''
+                    className={`cursor-pointer transition-all transform hover:scale-105 ${
+                      isPicked ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-400 shadow-md' : 
+                      isCurrent ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-500 shadow-xl ring-4 ring-blue-300' : 
+                      'bg-white hover:shadow-lg border-2 border-gray-200'
                     }`}
                     onClick={() => {
                       if (!isPicked) {
-                        const itemIndex = activePickingOrder.items.findIndex(i => i.id === item.id);
-                        if (itemIndex >= 0) {
-                          // Scroll to this item
-                          barcodeInputRef.current?.focus();
-                        }
+                        barcodeInputRef.current?.focus();
                       }
                     }}
                   >
-                    <CardContent className="p-3">
+                    <CardContent className="p-4">
                       <div className="flex items-start gap-3">
                         <div className="mt-1">
                           {isPicked ? (
-                            <CheckCircle className="h-5 w-5 text-green-600" />
+                            <div className="bg-green-500 rounded-full p-1">
+                              <CheckCircle className="h-6 w-6 text-white" />
+                            </div>
+                          ) : isCurrent ? (
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold animate-pulse">
+                              {index + 1}
+                            </div>
                           ) : (
-                            <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center text-xs font-bold">
+                            <div className="w-8 h-8 rounded-full border-3 border-gray-300 flex items-center justify-center text-sm font-bold text-gray-600">
                               {index + 1}
                             </div>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">{item.productName}</p>
-                          <p className="text-xs text-gray-500">SKU: {item.sku}</p>
-                          <div className="flex items-center justify-between mt-1">
-                            <span className="text-xs font-mono bg-gray-100 px-1 rounded">
-                              {item.warehouseLocation}
+                          <p className={`font-semibold text-sm truncate ${
+                            isPicked ? 'text-green-700 line-through' : 
+                            isCurrent ? 'text-blue-700' : 'text-gray-800'
+                          }`}>
+                            {item.productName}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">SKU: {item.sku}</p>
+                          <div className="flex items-center justify-between mt-2">
+                            <span className={`text-xs font-mono px-2 py-1 rounded-lg font-bold ${
+                              isCurrent ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600'
+                            }`}>
+                              📍 {item.warehouseLocation}
                             </span>
-                            <span className="text-xs font-medium">
+                            <span className={`text-sm font-bold ${
+                              isPicked ? 'text-green-600' : 
+                              isCurrent ? 'text-blue-600' : 'text-gray-600'
+                            }`}>
                               {item.pickedQuantity}/{item.quantity}
                             </span>
                           </div>
@@ -635,26 +718,30 @@ export default function PickPack() {
         </div>
 
         {/* Action Bar */}
-        <div className="bg-white border-t p-4">
-          <div className="max-w-4xl mx-auto flex gap-4">
+        <div className="bg-gradient-to-t from-gray-900 to-gray-800 border-t-4 border-gray-700 p-6">
+          <div className="max-w-5xl mx-auto flex gap-6">
             <Button
-              variant="outline"
-              className="flex-1"
+              variant="secondary"
+              className="flex-1 h-16 text-lg font-bold bg-orange-500 hover:bg-orange-600 text-white shadow-lg"
               onClick={() => {
                 setActivePickingOrder(null);
                 setIsTimerRunning(false);
               }}
             >
-              <PauseCircle className="h-4 w-4 mr-2" />
-              Pause Picking
+              <PauseCircle className="h-6 w-6 mr-3" />
+              PAUSE PICKING
             </Button>
             <Button
-              className="flex-1"
+              className={`flex-1 h-16 text-lg font-bold shadow-lg transition-all ${
+                activePickingOrder.pickedItems >= activePickingOrder.totalItems
+                  ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white animate-pulse'
+                  : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+              }`}
               disabled={activePickingOrder.pickedItems < activePickingOrder.totalItems}
               onClick={completePicking}
             >
-              <CheckCircle2 className="h-4 w-4 mr-2" />
-              Complete Picking ({activePickingOrder.pickedItems}/{activePickingOrder.totalItems})
+              <CheckCircle2 className="h-6 w-6 mr-3" />
+              COMPLETE ORDER ({activePickingOrder.pickedItems}/{activePickingOrder.totalItems})
             </Button>
           </div>
         </div>
