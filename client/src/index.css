@@ -75,6 +75,26 @@
   border-color: hsl(142, 76%, 36%);
 }
 
+/* Mobile Optimized Animations for Pick & Pack */
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+/* Touch optimization for mobile */
+.touch-manipulation {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .text-primary {
   color: hsl(142, 76%, 36%);
 }
