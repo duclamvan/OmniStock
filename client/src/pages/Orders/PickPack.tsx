@@ -101,6 +101,7 @@ export default function PickPack() {
   const [currentEmployee] = useState('Employee #001');
   const [pickingTimer, setPickingTimer] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [showMobileProgress, setShowMobileProgress] = useState(false);
   const barcodeInputRef = useRef<HTMLInputElement>(null);
 
   // Timer effect
@@ -798,47 +799,80 @@ export default function PickPack() {
             </div>
           </div>
           
-          {/* Mobile Items Drawer - Visible on mobile only */}
-          <div className="lg:hidden fixed bottom-20 left-0 right-0 bg-white border-t-2 border-gray-300 max-h-48 overflow-y-auto p-3 shadow-2xl">
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-bold text-sm">Order Progress</span>
-              <Badge className="bg-gray-800 text-white text-xs px-2">
-                {activePickingOrder.pickedItems}/{activePickingOrder.totalItems}
-              </Badge>
-            </div>
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {activePickingOrder.items.map((item, index) => {
-                const isPicked = item.pickedQuantity >= item.quantity;
-                const isCurrent = currentItem?.id === item.id;
-                
-                return (
-                  <div
-                    key={item.id}
-                    className={`flex-shrink-0 w-32 p-2 rounded-lg border-2 ${
-                      isPicked ? 'bg-green-50 border-green-400' :
-                      isCurrent ? 'bg-blue-50 border-blue-500 shadow-lg' :
-                      'bg-white border-gray-200'
-                    }`}
-                  >
-                    <div className="flex items-center gap-1 mb-1">
-                      {isPicked ? (
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                      ) : (
-                        <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
-                          isCurrent ? 'bg-blue-500 text-white' : 'border-2 border-gray-300 text-gray-600'
-                        }`}>
-                          {index + 1}
-                        </div>
-                      )}
-                      <span className="text-xs font-mono font-bold">{item.warehouseLocation}</span>
-                    </div>
-                    <p className="text-xs font-medium truncate">{item.productName}</p>
-                    <p className="text-xs text-gray-500">{item.pickedQuantity}/{item.quantity}</p>
+          {/* Mobile Items Drawer - Collapsible */}
+          {showMobileProgress && (
+            <div className="lg:hidden fixed bottom-20 left-0 right-0 bg-white border-t-2 border-gray-300 max-h-48 overflow-y-auto shadow-2xl z-10">
+              <div className="p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-bold text-sm">Order Progress</span>
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-gray-800 text-white text-xs px-2">
+                      {activePickingOrder.pickedItems}/{activePickingOrder.totalItems}
+                    </Badge>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-6 w-6"
+                      onClick={() => setShowMobileProgress(false)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
-                );
-              })}
+                </div>
+                <div className="flex gap-2 overflow-x-auto pb-2">
+                  {activePickingOrder.items.map((item, index) => {
+                    const isPicked = item.pickedQuantity >= item.quantity;
+                    const isCurrent = currentItem?.id === item.id;
+                    
+                    return (
+                      <div
+                        key={item.id}
+                        className={`flex-shrink-0 w-32 p-2 rounded-lg border-2 ${
+                          isPicked ? 'bg-green-50 border-green-400' :
+                          isCurrent ? 'bg-blue-50 border-blue-500 shadow-lg' :
+                          'bg-white border-gray-200'
+                        }`}
+                        onClick={() => {
+                          if (!isPicked) {
+                            // Jump to item
+                            const itemIndex = activePickingOrder.items.findIndex(i => i.id === item.id);
+                            if (itemIndex >= 0) {
+                              barcodeInputRef.current?.focus();
+                            }
+                          }
+                        }}
+                      >
+                        <div className="flex items-center gap-1 mb-1">
+                          {isPicked ? (
+                            <CheckCircle className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold ${
+                              isCurrent ? 'bg-blue-500 text-white' : 'border-2 border-gray-300 text-gray-600'
+                            }`}>
+                              {index + 1}
+                            </div>
+                          )}
+                          <span className="text-xs font-mono font-bold">{item.warehouseLocation}</span>
+                        </div>
+                        <p className="text-xs font-medium truncate">{item.productName}</p>
+                        <p className="text-xs text-gray-500">{item.pickedQuantity}/{item.quantity}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
-          </div>
+          )}
+          
+          {/* Mobile Progress Toggle Button */}
+          {!showMobileProgress && (
+            <Button
+              className="lg:hidden fixed bottom-24 right-4 h-12 w-12 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg z-10"
+              onClick={() => setShowMobileProgress(true)}
+            >
+              <ClipboardList className="h-5 w-5" />
+            </Button>
+          )}
         </div>
 
         {/* Action Bar - Fixed at bottom on mobile */}
