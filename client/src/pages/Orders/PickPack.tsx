@@ -230,15 +230,12 @@ export default function PickPack() {
   // Mutation to update order status
   const updateOrderStatusMutation = useMutation({
     mutationFn: async ({ orderId, status, pickStatus, packStatus, pickedBy, packedBy }: any) => {
-      return apiRequest(`/api/orders/${orderId}/status`, {
-        method: 'PATCH',
-        body: JSON.stringify({ 
-          orderStatus: status, 
-          pickStatus, 
-          packStatus,
-          pickedBy,
-          packedBy
-        })
+      return apiRequest(`/api/orders/${orderId}/status`, 'PATCH', { 
+        orderStatus: status, 
+        pickStatus, 
+        packStatus,
+        pickedBy,
+        packedBy
       });
     },
     onSuccess: () => {
