@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
@@ -40,7 +39,17 @@ import {
   ArrowRight,
   Volume2,
   CheckCircle2,
-  Info
+  Info,
+  ArrowLeft,
+  Home,
+  Hash,
+  Calendar,
+  ChevronLeft,
+  X,
+  Plus,
+  Minus,
+  BarChart3,
+  TrendingUp
 } from "lucide-react";
 
 interface OrderItem {
@@ -53,6 +62,7 @@ interface OrderItem {
   packedQuantity: number;
   warehouseLocation?: string;
   barcode?: string;
+  image?: string;
 }
 
 interface PickPackOrder {
@@ -81,20 +91,48 @@ interface PickPackOrder {
 
 export default function PickPack() {
   const { toast } = useToast();
-  const [selectedTab, setSelectedTab] = useState<'pending' | 'picking' | 'packing' | 'ready'>('pending');
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'pending' | 'picking' | 'packing' | 'ready'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedOrder, setSelectedOrder] = useState<PickPackOrder | null>(null);
-  const [pickingOrder, setPickingOrder] = useState<PickPackOrder | null>(null);
+  const [activePickingOrder, setActivePickingOrder] = useState<PickPackOrder | null>(null);
+  const [activePackingOrder, setActivePackingOrder] = useState<PickPackOrder | null>(null);
   const [barcodeInput, setBarcodeInput] = useState('');
-  const [showBatchPicking, setShowBatchPicking] = useState(false);
   const [selectedBatchOrders, setSelectedBatchOrders] = useState<string[]>([]);
   const [audioEnabled, setAudioEnabled] = useState(true);
-  const [currentEmployee] = useState('Employee #001'); // In real app, get from auth
+  const [currentEmployee] = useState('Employee #001');
+  const [pickingTimer, setPickingTimer] = useState(0);
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const barcodeInputRef = useRef<HTMLInputElement>(null);
+
+  // Timer effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isTimerRunning) {
+      interval = setInterval(() => {
+        setPickingTimer(prev => prev + 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isTimerRunning]);
 
   // Fetch real orders from the API
   const { data: allOrders = [], isLoading } = useQuery({
     queryKey: ['/api/orders'],
+    refetchInterval: 10000, // Refresh every 10 seconds
   });
+
+  // Mock location generator for demo
+  const generateMockLocation = () => {
+    const zones = ['A', 'B', 'C', 'D', 'E'];
+    const zone = zones[Math.floor(Math.random() * zones.length)];
+    const row = Math.floor(Math.random() * 20) + 1;
+    const shelf = Math.floor(Math.random() * 5) + 1;
+    return `${zone}${row}-${shelf}`;
+  };
+
+  // Mock barcode generator for demo
+  const generateMockBarcode = (sku: string) => {
+    return `BAR${sku}${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+  };
 
   // Transform real orders to PickPackOrder format
   const transformedOrders: PickPackOrder[] = allOrders.map((order: any) => ({
@@ -131,107 +169,107 @@ export default function PickPack() {
     notes: order.notes
   }));
 
-  // Helper functions for mock data
-  function generateMockLocation() {
-    const zones = ['A', 'B', 'C', 'D'];
-    const aisles = ['1', '2', '3', '4', '5'];
-    const shelves = ['A', 'B', 'C', 'D', 'E'];
-    const bins = ['1', '2', '3', '4'];
-    return `${zones[Math.floor(Math.random() * zones.length)]}${aisles[Math.floor(Math.random() * aisles.length)]}-${shelves[Math.floor(Math.random() * shelves.length)]}${bins[Math.floor(Math.random() * bins.length)]}`;
-  }
-
-  function generateMockBarcode(sku: string) {
-    return `${sku}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-  }
-
-  // Play sound for feedback
-  const playSound = (type: 'success' | 'error' | 'scan') => {
+  // Play sound effect
+  const playSound = (type: 'scan' | 'success' | 'error') => {
     if (!audioEnabled) return;
-    // In real app, play actual sound files
-    console.log(`Playing ${type} sound`);
+    
+    // In a real app, you would play actual sound files
+    const audio = new Audio();
+    switch (type) {
+      case 'scan':
+        console.log('Playing scan sound');
+        break;
+      case 'success':
+        console.log('Playing success sound');
+        break;
+      case 'error':
+        console.log('Playing error sound');
+        break;
+    }
+  };
+
+  // Format timer
+  const formatTimer = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   // Start picking an order
-  const startPickingMutation = useMutation({
-    mutationFn: async (orderId: string) => {
-      const order = transformedOrders.find(o => o.id === orderId);
-      if (!order) throw new Error('Order not found');
-      
-      // Update order status to picking
-      return {
-        ...order,
-        pickStatus: 'in_progress' as const,
-        pickStartTime: new Date().toISOString(),
-        pickedBy: currentEmployee
-      };
-    },
-    onSuccess: (updatedOrder) => {
-      setPickingOrder(updatedOrder);
-      toast({
-        title: "Picking Started",
-        description: `Started picking order ${updatedOrder.orderId}`,
-      });
-      playSound('success');
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to start picking",
-        variant: "destructive",
-      });
-      playSound('error');
-    }
-  });
+  const startPicking = (order: PickPackOrder) => {
+    const updatedOrder = {
+      ...order,
+      pickStatus: 'in_progress' as const,
+      pickStartTime: new Date().toISOString(),
+      pickedBy: currentEmployee
+    };
+    setActivePickingOrder(updatedOrder);
+    setSelectedTab('picking');
+    setPickingTimer(0);
+    setIsTimerRunning(true);
+    playSound('success');
+    toast({
+      title: "Picking Started",
+      description: `Started picking order ${order.orderId}`,
+    });
+    // Focus barcode input
+    setTimeout(() => barcodeInputRef.current?.focus(), 100);
+  };
 
   // Update item picked quantity
   const updatePickedItem = (itemId: string, pickedQty: number) => {
-    if (!pickingOrder) return;
+    if (!activePickingOrder) return;
 
-    const updatedItems = pickingOrder.items.map(item =>
+    const updatedItems = activePickingOrder.items.map(item =>
       item.id === itemId ? { ...item, pickedQuantity: pickedQty } : item
     );
 
     const updatedOrder = {
-      ...pickingOrder,
+      ...activePickingOrder,
       items: updatedItems,
       pickedItems: updatedItems.reduce((sum, item) => sum + item.pickedQuantity, 0)
     };
 
-    setPickingOrder(updatedOrder);
+    setActivePickingOrder(updatedOrder);
 
     // Check if all items are picked
     const allPicked = updatedItems.every(item => item.pickedQuantity >= item.quantity);
     if (allPicked) {
-      completePickingMutation.mutate(updatedOrder);
+      playSound('success');
+      toast({
+        title: "All Items Picked!",
+        description: "You can now complete the picking process",
+      });
     }
   };
 
   // Complete picking
-  const completePickingMutation = useMutation({
-    mutationFn: async (order: PickPackOrder) => {
-      return {
-        ...order,
-        pickStatus: 'completed' as const,
-        pickEndTime: new Date().toISOString(),
-        status: 'packing' as const
-      };
-    },
-    onSuccess: (updatedOrder) => {
-      setPickingOrder(null);
-      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
-      toast({
-        title: "Picking Completed",
-        description: `Order ${updatedOrder.orderId} is ready for packing`,
-      });
-      playSound('success');
-    }
-  });
+  const completePicking = () => {
+    if (!activePickingOrder) return;
+
+    const updatedOrder = {
+      ...activePickingOrder,
+      pickStatus: 'completed' as const,
+      pickEndTime: new Date().toISOString(),
+      status: 'packing' as const
+    };
+
+    setIsTimerRunning(false);
+    queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+    toast({
+      title: "Picking Completed",
+      description: `Order ${updatedOrder.orderId} is ready for packing`,
+    });
+    playSound('success');
+    setActivePickingOrder(null);
+    setSelectedTab('packing');
+  };
 
   // Handle barcode scanning
   const handleBarcodeScan = () => {
-    if (!barcodeInput || !pickingOrder) return;
+    if (!barcodeInput || !activePickingOrder) return;
 
-    const item = pickingOrder.items.find(i => 
+    const item = activePickingOrder.items.find(i => 
       i.barcode === barcodeInput || i.sku === barcodeInput
     );
 
@@ -240,7 +278,7 @@ export default function PickPack() {
       updatePickedItem(item.id, newQty);
       toast({
         title: "Item Scanned",
-        description: `${item.productName} (${item.pickedQuantity + 1}/${item.quantity})`,
+        description: `${item.productName} (${newQty}/${item.quantity})`,
       });
       playSound('scan');
     } else {
@@ -252,9 +290,10 @@ export default function PickPack() {
       playSound('error');
     }
     setBarcodeInput('');
+    barcodeInputRef.current?.focus();
   };
 
-  // Filter orders by pick/pack status
+  // Filter orders by status
   const getOrdersByStatus = (status: string) => {
     return transformedOrders.filter(order => {
       if (status === 'pending') return order.pickStatus === 'not_started' && order.status !== 'shipped';
@@ -274,280 +313,19 @@ export default function PickPack() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'not_started':
-        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">Pending</Badge>;
-      case 'in_progress':
-        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">In Progress</Badge>;
-      case 'completed':
-        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">Completed</Badge>;
-      default:
-        return null;
-    }
+  // Statistics
+  const stats = {
+    pending: getOrdersByStatus('pending').length,
+    picking: getOrdersByStatus('picking').length,
+    packing: getOrdersByStatus('packing').length,
+    ready: getOrdersByStatus('ready').length,
+    todayPicked: transformedOrders.filter(o => 
+      o.pickEndTime && new Date(o.pickEndTime).toDateString() === new Date().toDateString()
+    ).length,
+    avgPickTime: '15:30' // Mock average
   };
 
-  // Picking Dialog Component
-  const PickingDialog = () => {
-    if (!pickingOrder) return null;
-    
-    const progress = (pickingOrder.pickedItems / pickingOrder.totalItems) * 100;
-    
-    return (
-      <Dialog open={!!pickingOrder} onOpenChange={() => setPickingOrder(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
-          <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
-              <span>Picking Order {pickingOrder.orderId}</span>
-              <div className="flex gap-2">
-                <Badge variant={getPriorityColor(pickingOrder.priority)}>
-                  {pickingOrder.priority.toUpperCase()}
-                </Badge>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setAudioEnabled(!audioEnabled)}
-                >
-                  <Volume2 className={`h-4 w-4 ${audioEnabled ? 'text-blue-600' : 'text-gray-400'}`} />
-                </Button>
-              </div>
-            </DialogTitle>
-            <DialogDescription>
-              {pickingOrder.customerName} • {pickingOrder.shippingMethod}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            {/* Progress */}
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Overall Progress</span>
-                <span className="font-medium">{pickingOrder.pickedItems}/{pickingOrder.totalItems} items</span>
-              </div>
-              <Progress value={progress} className="h-3" />
-            </div>
-            
-            {/* Barcode Scanner */}
-            <div className="flex gap-2">
-              <Input
-                placeholder="Scan or enter barcode/SKU..."
-                value={barcodeInput}
-                onChange={(e) => setBarcodeInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleBarcodeScan()}
-                className="flex-1"
-                autoFocus
-              />
-              <Button onClick={handleBarcodeScan}>
-                <ScanLine className="h-4 w-4 mr-2" />
-                Scan
-              </Button>
-            </div>
-            
-            <Separator />
-            
-            {/* Items List */}
-            <ScrollArea className="h-[400px] pr-4">
-              <div className="space-y-3">
-                {pickingOrder.items.map((item) => {
-                  const isPicked = item.pickedQuantity >= item.quantity;
-                  return (
-                    <Card key={item.id} className={isPicked ? 'bg-green-50 border-green-200' : ''}>
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3">
-                              <Checkbox
-                                checked={isPicked}
-                                onCheckedChange={(checked) => {
-                                  updatePickedItem(item.id, checked ? item.quantity : 0);
-                                }}
-                              />
-                              <div>
-                                <div className="font-medium">{item.productName}</div>
-                                <div className="text-sm text-gray-500">
-                                  SKU: {item.sku} • Barcode: {item.barcode}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center gap-4">
-                            <div className="text-center">
-                              <div className="flex items-center gap-1 text-blue-600">
-                                <MapPin className="h-4 w-4" />
-                                <span className="font-mono font-bold">{item.warehouseLocation}</span>
-                              </div>
-                              <div className="text-xs text-gray-500">Location</div>
-                            </div>
-                            
-                            <div className="flex items-center gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => updatePickedItem(item.id, Math.max(0, item.pickedQuantity - 1))}
-                                disabled={item.pickedQuantity === 0}
-                              >
-                                -
-                              </Button>
-                              <div className="text-center min-w-[60px]">
-                                <div className="font-bold">{item.pickedQuantity}/{item.quantity}</div>
-                                <div className="text-xs text-gray-500">Picked</div>
-                              </div>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => updatePickedItem(item.id, Math.min(item.quantity, item.pickedQuantity + 1))}
-                                disabled={item.pickedQuantity >= item.quantity}
-                              >
-                                +
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            </ScrollArea>
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPickingOrder(null)}>
-              <PauseCircle className="h-4 w-4 mr-2" />
-              Pause Picking
-            </Button>
-            <Button 
-              onClick={() => completePickingMutation.mutate(pickingOrder)}
-              disabled={pickingOrder.pickedItems < pickingOrder.totalItems}
-            >
-              <CheckCircle2 className="h-4 w-4 mr-2" />
-              Complete Picking
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    );
-  };
-
-  const OrderCard = ({ order }: { order: PickPackOrder }) => {
-    const pickProgress = (order.pickedItems / order.totalItems) * 100;
-    const packProgress = (order.packedItems / order.totalItems) * 100;
-    
-    return (
-      <Card className="hover:shadow-lg transition-shadow">
-        <CardHeader className="pb-3">
-          <div className="flex justify-between items-start">
-            <div>
-              <CardTitle className="text-lg">{order.orderId}</CardTitle>
-              <CardDescription className="mt-1">
-                <div className="flex items-center gap-2 text-sm">
-                  <User className="h-3 w-3" />
-                  {order.customerName}
-                </div>
-              </CardDescription>
-            </div>
-            <div className="flex flex-col gap-2 items-end">
-              {order.pickStatus && getStatusBadge(order.pickStatus)}
-              <Badge variant={getPriorityColor(order.priority)} className="text-xs">
-                {order.priority.toUpperCase()}
-              </Badge>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <div className="flex items-center gap-4 text-sm">
-              <div className="flex items-center gap-1">
-                <Truck className="h-4 w-4 text-gray-500" />
-                <span>{order.shippingMethod}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Package className="h-4 w-4 text-gray-500" />
-                <span>{order.totalItems} items</span>
-              </div>
-              {order.pickStartTime && (
-                <div className="flex items-center gap-1">
-                  <Timer className="h-4 w-4 text-gray-500" />
-                  <span>{new Date(order.pickStartTime).toLocaleTimeString()}</span>
-                </div>
-              )}
-            </div>
-            
-            {/* Progress Bars */}
-            <div className="space-y-2">
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs text-gray-600">
-                  <span>Pick Progress</span>
-                  <span>{order.pickedItems}/{order.totalItems}</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${pickProgress}%` }}
-                  />
-                </div>
-              </div>
-              
-              {order.pickStatus === 'completed' && (
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs text-gray-600">
-                    <span>Pack Progress</span>
-                    <span>{order.packedItems}/{order.totalItems}</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-purple-600 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${packProgress}%` }}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-2 pt-2">
-              {order.pickStatus === 'not_started' && (
-                <Button 
-                  size="sm" 
-                  className="flex-1"
-                  onClick={() => startPickingMutation.mutate(order.id)}
-                >
-                  <PlayCircle className="h-4 w-4 mr-1" />
-                  Start Picking
-                </Button>
-              )}
-              {order.pickStatus === 'in_progress' && (
-                <Button 
-                  size="sm" 
-                  className="flex-1" 
-                  variant="outline"
-                  onClick={() => setPickingOrder(order)}
-                >
-                  <ScanLine className="h-4 w-4 mr-1" />
-                  Continue Picking
-                </Button>
-              )}
-              {order.pickStatus === 'completed' && order.packStatus !== 'completed' && (
-                <Button size="sm" className="flex-1" variant="outline">
-                  <Box className="h-4 w-4 mr-1" />
-                  Start Packing
-                </Button>
-              )}
-              {order.packStatus === 'completed' && (
-                <Button size="sm" className="flex-1" variant="secondary">
-                  <Printer className="h-4 w-4 mr-1" />
-                  Print Label
-                </Button>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  };
-
-  if (isLoading) {
+  if (isLoading && transformedOrders.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -558,253 +336,601 @@ export default function PickPack() {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="p-4 lg:p-6 max-w-7xl mx-auto">
+  // Active Picking View - Full Screen
+  if (activePickingOrder) {
+    const progress = (activePickingOrder.pickedItems / activePickingOrder.totalItems) * 100;
+    const currentItemIndex = activePickingOrder.items.findIndex(item => item.pickedQuantity < item.quantity);
+    const currentItem = currentItemIndex >= 0 ? activePickingOrder.items[currentItemIndex] : null;
+
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm mb-6 p-4">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                <Package className="h-6 w-6 text-blue-600" />
-                Pick & Pack
-              </h1>
-              <p className="text-sm text-slate-600 mt-1">Manage warehouse fulfillment operations</p>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <User className="h-4 w-4" />
-                <span>{currentEmployee}</span>
-              </div>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Search orders..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 w-full sm:w-64"
-                />
-              </div>
-              <Button 
-                onClick={() => setShowBatchPicking(true)}
-                variant="outline"
-              >
-                <Users className="h-4 w-4 mr-2" />
-                Batch Pick
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-          <Button 
-            variant="outline" 
-            className="h-auto flex flex-col items-center py-4 hover:bg-blue-50 hover:border-blue-300"
-            onClick={() => setSelectedTab('pending')}
-          >
-            <Zap className="h-8 w-8 mb-2 text-blue-600" />
-            <span className="text-sm font-medium">Quick Pick</span>
-            <span className="text-xs text-gray-500 mt-1">Start next order</span>
-          </Button>
-          <Button 
-            variant="outline" 
-            className="h-auto flex flex-col items-center py-4 hover:bg-purple-50 hover:border-purple-300"
-          >
-            <Route className="h-8 w-8 mb-2 text-purple-600" />
-            <span className="text-sm font-medium">Pick Route</span>
-            <span className="text-xs text-gray-500 mt-1">Optimize path</span>
-          </Button>
-          <Button 
-            variant="outline" 
-            className="h-auto flex flex-col items-center py-4 hover:bg-green-50 hover:border-green-300"
-          >
-            <FileText className="h-8 w-8 mb-2 text-green-600" />
-            <span className="text-sm font-medium">Reports</span>
-            <span className="text-xs text-gray-500 mt-1">View metrics</span>
-          </Button>
-          <Button 
-            variant="outline" 
-            className="h-auto flex flex-col items-center py-4 hover:bg-orange-50 hover:border-orange-300"
-          >
-            <AlertCircle className="h-8 w-8 mb-2 text-orange-600" />
-            <span className="text-sm font-medium">Issues</span>
-            <span className="text-xs text-gray-500 mt-1">3 pending</span>
-          </Button>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <Card className="border-l-4 border-l-yellow-500">
-            <CardHeader className="pb-2">
-              <CardDescription>Pending Pick</CardDescription>
-              <CardTitle className="text-3xl font-bold">{getOrdersByStatus('pending').length}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <Clock className="h-5 w-5 text-yellow-500" />
-                <span className="text-xs text-gray-500">Avg: 15 min</span>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border-l-4 border-l-blue-500">
-            <CardHeader className="pb-2">
-              <CardDescription>In Picking</CardDescription>
-              <CardTitle className="text-3xl font-bold">{getOrdersByStatus('picking').length}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <Package className="h-5 w-5 text-blue-500" />
-                <span className="text-xs text-gray-500">2 employees</span>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border-l-4 border-l-purple-500">
-            <CardHeader className="pb-2">
-              <CardDescription>In Packing</CardDescription>
-              <CardTitle className="text-3xl font-bold">{getOrdersByStatus('packing').length}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <Box className="h-5 w-5 text-purple-500" />
-                <span className="text-xs text-gray-500">1 station</span>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border-l-4 border-l-green-500">
-            <CardHeader className="pb-2">
-              <CardDescription>Ready to Ship</CardDescription>
-              <CardTitle className="text-3xl font-bold">{getOrdersByStatus('ready').length}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <CheckCircle className="h-5 w-5 text-green-500" />
-                <span className="text-xs text-gray-500">Next: 2PM</span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Orders Tabs */}
-        <Card>
-          <CardHeader>
+        <div className="bg-white border-b sticky top-0 z-10">
+          <div className="px-4 py-3">
             <div className="flex items-center justify-between">
-              <CardTitle>Orders Queue</CardTitle>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setActivePickingOrder(null);
+                    setIsTimerRunning(false);
+                  }}
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back
+                </Button>
+                <Separator orientation="vertical" className="h-6" />
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-lg font-bold">Order {activePickingOrder.orderId}</h1>
+                    <Badge variant={getPriorityColor(activePickingOrder.priority)}>
+                      {activePickingOrder.priority.toUpperCase()}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-gray-500">{activePickingOrder.customerName}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <div className="flex items-center gap-2">
+                    <Timer className="h-4 w-4 text-gray-400" />
+                    <span className="font-mono text-lg font-bold">{formatTimer(pickingTimer)}</span>
+                  </div>
+                  <p className="text-xs text-gray-500">Elapsed Time</p>
+                </div>
+                
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => setAudioEnabled(!audioEnabled)}
                 >
                   <Volume2 className={`h-4 w-4 ${audioEnabled ? 'text-blue-600' : 'text-gray-400'}`} />
-                  <span className="ml-2">Sound {audioEnabled ? 'On' : 'Off'}</span>
+                </Button>
+                
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsTimerRunning(!isTimerRunning)}
+                >
+                  {isTimerRunning ? (
+                    <PauseCircle className="h-4 w-4 text-orange-600" />
+                  ) : (
+                    <PlayCircle className="h-4 w-4 text-green-600" />
+                  )}
                 </Button>
               </div>
             </div>
-          </CardHeader>
-          <CardContent>
-            <Tabs value={selectedTab} onValueChange={(value) => setSelectedTab(value as any)}>
-              <TabsList className="grid grid-cols-4 w-full">
-                <TabsTrigger value="pending">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    Pending ({getOrdersByStatus('pending').length})
-                  </div>
-                </TabsTrigger>
-                <TabsTrigger value="picking">
-                  <div className="flex items-center gap-2">
-                    <Package className="h-4 w-4" />
-                    Picking ({getOrdersByStatus('picking').length})
-                  </div>
-                </TabsTrigger>
-                <TabsTrigger value="packing">
-                  <div className="flex items-center gap-2">
-                    <Box className="h-4 w-4" />
-                    Packing ({getOrdersByStatus('packing').length})
-                  </div>
-                </TabsTrigger>
-                <TabsTrigger value="ready">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4" />
-                    Ready ({getOrdersByStatus('ready').length})
-                  </div>
-                </TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="pending" className="mt-6">
-                {getOrdersByStatus('pending').length === 0 ? (
-                  <Alert>
-                    <Info className="h-4 w-4" />
-                    <AlertDescription>
-                      No orders pending to pick. All caught up!
-                    </AlertDescription>
-                  </Alert>
-                ) : (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {getOrdersByStatus('pending').map(order => (
-                      <OrderCard key={order.id} order={order} />
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-              
-              <TabsContent value="picking" className="mt-6">
-                {getOrdersByStatus('picking').length === 0 ? (
-                  <Alert>
-                    <Info className="h-4 w-4" />
-                    <AlertDescription>
-                      No orders currently being picked.
-                    </AlertDescription>
-                  </Alert>
-                ) : (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {getOrdersByStatus('picking').map(order => (
-                      <OrderCard key={order.id} order={order} />
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-              
-              <TabsContent value="packing" className="mt-6">
-                {getOrdersByStatus('packing').length === 0 ? (
-                  <Alert>
-                    <Info className="h-4 w-4" />
-                    <AlertDescription>
-                      No orders in packing station.
-                    </AlertDescription>
-                  </Alert>
-                ) : (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {getOrdersByStatus('packing').map(order => (
-                      <OrderCard key={order.id} order={order} />
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-              
-              <TabsContent value="ready" className="mt-6">
-                {getOrdersByStatus('ready').length === 0 ? (
-                  <Alert className="border-green-200 bg-green-50">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    <AlertDescription className="text-green-800">
-                      All orders have been shipped! Great work!
-                    </AlertDescription>
-                  </Alert>
-                ) : (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {getOrdersByStatus('ready').map(order => (
-                      <OrderCard key={order.id} order={order} />
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+            
+            {/* Progress Bar */}
+            <div className="mt-3">
+              <div className="flex justify-between text-sm mb-1">
+                <span>Progress</span>
+                <span className="font-medium">{activePickingOrder.pickedItems}/{activePickingOrder.totalItems} items</span>
+              </div>
+              <Progress value={progress} className="h-2" />
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 flex">
+          {/* Left Panel - Current Item Focus */}
+          <div className="flex-1 p-6">
+            {currentItem ? (
+              <div className="max-w-2xl mx-auto">
+                <Card className="mb-6">
+                  <CardHeader className="bg-blue-50 border-b">
+                    <CardTitle className="flex items-center justify-between">
+                      <span>Current Item to Pick</span>
+                      <Badge variant="outline" className="text-lg px-3 py-1">
+                        Item {currentItemIndex + 1} of {activePickingOrder.items.length}
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <div className="space-y-6">
+                      {/* Product Info */}
+                      <div>
+                        <h3 className="text-2xl font-bold mb-2">{currentItem.productName}</h3>
+                        <div className="flex gap-4 text-sm text-gray-600">
+                          <span>SKU: <span className="font-mono font-bold">{currentItem.sku}</span></span>
+                          <span>Barcode: <span className="font-mono font-bold">{currentItem.barcode}</span></span>
+                        </div>
+                      </div>
+
+                      {/* Location */}
+                      <div className="bg-blue-100 rounded-lg p-6 text-center">
+                        <MapPin className="h-8 w-8 text-blue-600 mx-auto mb-2" />
+                        <p className="text-sm text-blue-600 mb-1">Warehouse Location</p>
+                        <p className="text-4xl font-bold font-mono text-blue-900">{currentItem.warehouseLocation}</p>
+                      </div>
+
+                      {/* Quantity Picker */}
+                      <div className="bg-gray-50 rounded-lg p-6">
+                        <p className="text-center text-sm text-gray-600 mb-4">Quantity to Pick</p>
+                        <div className="flex items-center justify-center gap-4">
+                          <Button
+                            size="lg"
+                            variant="outline"
+                            onClick={() => updatePickedItem(currentItem.id, Math.max(0, currentItem.pickedQuantity - 1))}
+                            disabled={currentItem.pickedQuantity === 0}
+                          >
+                            <Minus className="h-6 w-6" />
+                          </Button>
+                          
+                          <div className="text-center">
+                            <div className="text-5xl font-bold">
+                              {currentItem.pickedQuantity}
+                              <span className="text-3xl text-gray-400">/{currentItem.quantity}</span>
+                            </div>
+                            <p className="text-sm text-gray-500 mt-1">Picked</p>
+                          </div>
+                          
+                          <Button
+                            size="lg"
+                            variant="outline"
+                            onClick={() => updatePickedItem(currentItem.id, Math.min(currentItem.quantity, currentItem.pickedQuantity + 1))}
+                            disabled={currentItem.pickedQuantity >= currentItem.quantity}
+                          >
+                            <Plus className="h-6 w-6" />
+                          </Button>
+                        </div>
+                        
+                        {currentItem.pickedQuantity >= currentItem.quantity && (
+                          <Alert className="mt-4 bg-green-50 border-green-200">
+                            <CheckCircle className="h-4 w-4 text-green-600" />
+                            <AlertDescription className="text-green-800">
+                              Item fully picked! Move to the next item.
+                            </AlertDescription>
+                          </Alert>
+                        )}
+                      </div>
+
+                      {/* Quick Pick Button */}
+                      {currentItem.pickedQuantity < currentItem.quantity && (
+                        <Button 
+                          size="lg" 
+                          className="w-full"
+                          onClick={() => updatePickedItem(currentItem.id, currentItem.quantity)}
+                        >
+                          <CheckCircle2 className="h-5 w-5 mr-2" />
+                          Mark as Fully Picked
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Barcode Scanner */}
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <ScanLine className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                        <Input
+                          ref={barcodeInputRef}
+                          placeholder="Scan or enter barcode/SKU..."
+                          value={barcodeInput}
+                          onChange={(e) => setBarcodeInput(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && handleBarcodeScan()}
+                          className="pl-10 text-lg"
+                          autoFocus
+                        />
+                      </div>
+                      <Button size="lg" onClick={handleBarcodeScan}>
+                        Scan
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            ) : (
+              <div className="max-w-2xl mx-auto">
+                <Card>
+                  <CardContent className="p-12 text-center">
+                    <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
+                    <h2 className="text-2xl font-bold mb-2">All Items Picked!</h2>
+                    <p className="text-gray-600 mb-6">You have successfully picked all items for this order.</p>
+                    <Button size="lg" onClick={completePicking}>
+                      <PackageCheck className="h-5 w-5 mr-2" />
+                      Complete Picking
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </div>
+
+          {/* Right Panel - Items List */}
+          <div className="w-96 bg-white border-l p-4 overflow-y-auto">
+            <h3 className="font-semibold mb-4 flex items-center justify-between">
+              <span>All Items</span>
+              <Badge variant="outline">{activePickingOrder.pickedItems}/{activePickingOrder.totalItems}</Badge>
+            </h3>
+            <div className="space-y-2">
+              {activePickingOrder.items.map((item, index) => {
+                const isPicked = item.pickedQuantity >= item.quantity;
+                const isCurrent = currentItem?.id === item.id;
+                
+                return (
+                  <Card 
+                    key={item.id} 
+                    className={`cursor-pointer transition-all ${
+                      isPicked ? 'bg-green-50 border-green-200' : 
+                      isCurrent ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-400' : ''
+                    }`}
+                    onClick={() => {
+                      if (!isPicked) {
+                        const itemIndex = activePickingOrder.items.findIndex(i => i.id === item.id);
+                        if (itemIndex >= 0) {
+                          // Scroll to this item
+                          barcodeInputRef.current?.focus();
+                        }
+                      }
+                    }}
+                  >
+                    <CardContent className="p-3">
+                      <div className="flex items-start gap-3">
+                        <div className="mt-1">
+                          {isPicked ? (
+                            <CheckCircle className="h-5 w-5 text-green-600" />
+                          ) : (
+                            <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex items-center justify-center text-xs font-bold">
+                              {index + 1}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{item.productName}</p>
+                          <p className="text-xs text-gray-500">SKU: {item.sku}</p>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="text-xs font-mono bg-gray-100 px-1 rounded">
+                              {item.warehouseLocation}
+                            </span>
+                            <span className="text-xs font-medium">
+                              {item.pickedQuantity}/{item.quantity}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Action Bar */}
+        <div className="bg-white border-t p-4">
+          <div className="max-w-4xl mx-auto flex gap-4">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => {
+                setActivePickingOrder(null);
+                setIsTimerRunning(false);
+              }}
+            >
+              <PauseCircle className="h-4 w-4 mr-2" />
+              Pause Picking
+            </Button>
+            <Button
+              className="flex-1"
+              disabled={activePickingOrder.pickedItems < activePickingOrder.totalItems}
+              onClick={completePicking}
+            >
+              <CheckCircle2 className="h-4 w-4 mr-2" />
+              Complete Picking ({activePickingOrder.pickedItems}/{activePickingOrder.totalItems})
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Main Dashboard View
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b sticky top-0 z-10">
+        <div className="px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold">Pick & Pack Center</h1>
+              <p className="text-sm text-gray-500">Warehouse Operations Dashboard</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <p className="text-sm text-gray-500">Logged in as</p>
+                <p className="font-medium">{currentEmployee}</p>
+              </div>
+              <Button variant="outline" size="sm">
+                <Home className="h-4 w-4 mr-2" />
+                Main Dashboard
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Picking Dialog */}
-      <PickingDialog />
+      {/* Stats Overview */}
+      <div className="px-6 py-4">
+        <div className="grid grid-cols-6 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500">Pending</p>
+                  <p className="text-2xl font-bold">{stats.pending}</p>
+                </div>
+                <Clock className="h-8 w-8 text-yellow-500" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500">Picking</p>
+                  <p className="text-2xl font-bold">{stats.picking}</p>
+                </div>
+                <Package className="h-8 w-8 text-blue-500" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500">Packing</p>
+                  <p className="text-2xl font-bold">{stats.packing}</p>
+                </div>
+                <Box className="h-8 w-8 text-purple-500" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500">Ready</p>
+                  <p className="text-2xl font-bold">{stats.ready}</p>
+                </div>
+                <Truck className="h-8 w-8 text-green-500" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500">Today Picked</p>
+                  <p className="text-2xl font-bold">{stats.todayPicked}</p>
+                </div>
+                <TrendingUp className="h-8 w-8 text-teal-500" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500">Avg Time</p>
+                  <p className="text-2xl font-bold">{stats.avgPickTime}</p>
+                </div>
+                <Timer className="h-8 w-8 text-orange-500" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="px-6 pb-6">
+        <Tabs value={selectedTab} onValueChange={(v) => setSelectedTab(v as any)}>
+          <TabsList className="grid grid-cols-5 w-full max-w-2xl">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="pending">
+              Pending ({stats.pending})
+            </TabsTrigger>
+            <TabsTrigger value="picking">
+              Picking ({stats.picking})
+            </TabsTrigger>
+            <TabsTrigger value="packing">
+              Packing ({stats.packing})
+            </TabsTrigger>
+            <TabsTrigger value="ready">
+              Ready ({stats.ready})
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="mt-6">
+            <div className="grid grid-cols-2 gap-6">
+              {/* Quick Actions */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Quick Actions</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Button className="w-full justify-start" size="lg">
+                    <PlayCircle className="h-5 w-5 mr-3" />
+                    Start Next Priority Order
+                  </Button>
+                  <Button className="w-full justify-start" variant="outline" size="lg">
+                    <Users className="h-5 w-5 mr-3" />
+                    Batch Picking Mode
+                  </Button>
+                  <Button className="w-full justify-start" variant="outline" size="lg">
+                    <Route className="h-5 w-5 mr-3" />
+                    Optimize Pick Route
+                  </Button>
+                  <Button className="w-full justify-start" variant="outline" size="lg">
+                    <BarChart3 className="h-5 w-5 mr-3" />
+                    View Performance Stats
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Recent Activity */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Recent Activity</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 text-sm">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <span>Order #ORD-2025-001 completed by John</span>
+                      <span className="text-gray-500 ml-auto">5m ago</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm">
+                      <Package className="h-4 w-4 text-blue-600" />
+                      <span>Order #ORD-2025-002 started picking</span>
+                      <span className="text-gray-500 ml-auto">12m ago</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm">
+                      <Truck className="h-4 w-4 text-purple-600" />
+                      <span>5 orders shipped</span>
+                      <span className="text-gray-500 ml-auto">1h ago</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Pending Orders Tab */}
+          <TabsContent value="pending" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Orders Ready to Pick</CardTitle>
+                <CardDescription>Select an order to start the picking process</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {getOrdersByStatus('pending').map(order => (
+                    <Card key={order.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="font-semibold">{order.orderId}</h3>
+                              <Badge variant={getPriorityColor(order.priority)}>
+                                {order.priority.toUpperCase()}
+                              </Badge>
+                              {order.priority === 'high' && (
+                                <Zap className="h-4 w-4 text-red-500" />
+                              )}
+                            </div>
+                            <div className="grid grid-cols-3 gap-4 text-sm text-gray-600">
+                              <div className="flex items-center gap-1">
+                                <User className="h-4 w-4" />
+                                <span>{order.customerName}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Package className="h-4 w-4" />
+                                <span>{order.totalItems} items</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Truck className="h-4 w-4" />
+                                <span>{order.shippingMethod}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <Button
+                            size="lg"
+                            onClick={() => startPicking(order)}
+                          >
+                            <PlayCircle className="h-5 w-5 mr-2" />
+                            Start Picking
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                  
+                  {getOrdersByStatus('pending').length === 0 && (
+                    <div className="text-center py-12">
+                      <Package className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                      <p className="text-gray-500">No pending orders to pick</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Other tabs remain similar but simplified */}
+          <TabsContent value="picking" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Orders Being Picked</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {getOrdersByStatus('picking').length === 0 ? (
+                  <div className="text-center py-12">
+                    <Package className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <p className="text-gray-500">No orders currently being picked</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {getOrdersByStatus('picking').map(order => (
+                      <Card key={order.id}>
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="font-semibold">{order.orderId}</h3>
+                              <p className="text-sm text-gray-600">Picked by: {order.pickedBy}</p>
+                            </div>
+                            <Button variant="outline">Resume Picking</Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="packing" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Ready for Packing</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-12">
+                  <Box className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">Packing station functionality coming soon</p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="ready" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Ready to Ship</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-12">
+                  <Truck className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">No orders ready to ship</p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }
