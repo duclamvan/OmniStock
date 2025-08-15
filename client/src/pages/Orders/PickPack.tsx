@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useSwipeable } from 'react-swipeable';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -101,6 +101,87 @@ interface PickPackOrder {
   notes?: string;
 }
 
+// Helper functions moved outside component to prevent recreation on each render
+const generateMockLocation = () => {
+  const zones = ['A', 'B', 'C', 'D', 'E'];
+  const zone = zones[Math.floor(Math.random() * zones.length)];
+  const row = Math.floor(Math.random() * 20) + 1;
+  const shelf = Math.floor(Math.random() * 5) + 1;
+  return `${zone}${row}-${shelf}`;
+};
+
+const generateMockBarcode = (sku: string) => {
+  return `BAR${sku}${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+};
+
+const generateMockImage = (productName: string) => {
+  // Generate a placeholder image URL based on product name
+  // In a real app, this would come from your database
+  const seed = productName.toLowerCase().replace(/\s+/g, '-');
+  return `https://picsum.photos/seed/${seed}/400/400`;
+};
+
+const generateBundleItems = (productName: string, location: string): BundleItem[] | undefined => {
+  const lowerName = productName.toLowerCase();
+  
+  // Check if it's a gel polish set or color collection
+  if (lowerName.includes('gel polish') || lowerName.includes('nail polish') || lowerName.includes('color set')) {
+    const colors = [
+      { name: 'Ruby Red', colorNumber: '001' },
+      { name: 'Ocean Blue', colorNumber: '002' },
+      { name: 'Forest Green', colorNumber: '003' },
+      { name: 'Sunset Orange', colorNumber: '004' },
+      { name: 'Lavender Purple', colorNumber: '005' },
+      { name: 'Midnight Black', colorNumber: '006' },
+      { name: 'Pearl White', colorNumber: '007' },
+      { name: 'Rose Gold', colorNumber: '008' },
+      { name: 'Teal Turquoise', colorNumber: '009' },
+      { name: 'Coral Pink', colorNumber: '010' },
+      { name: 'Silver Shimmer', colorNumber: '011' },
+      { name: 'Golden Yellow', colorNumber: '012' }
+    ];
+    
+    // Determine number of colors based on product name
+    const numColors = lowerName.match(/(\d+)\s*color/)?.[1] ? 
+      Math.min(parseInt(lowerName.match(/(\d+)\s*color/)?.[1] || '6'), 12) : 6;
+    
+    return colors.slice(0, numColors).map((color, index) => ({
+      id: `bundle-${Math.random().toString(36).substr(2, 9)}`,
+      name: color.name,
+      colorNumber: color.colorNumber,
+      quantity: 1,
+      picked: false,
+      location: `${location}-${index + 1}`
+    }));
+  }
+  
+  // Check if it's a nail art brush set
+  if (lowerName.includes('brush') || lowerName.includes('tool')) {
+    const tools = [
+      'Fine Detail Brush',
+      'Flat Brush',
+      'Dotting Tool',
+      'Striping Brush',
+      'Fan Brush',
+      'Clean-up Brush',
+      'Angular Brush'
+    ];
+    
+    const numTools = lowerName.match(/(\d+)\s*pc/)?.[1] ? 
+      Math.min(parseInt(lowerName.match(/(\d+)\s*pc/)?.[1] || '5'), 7) : 5;
+    
+    return tools.slice(0, numTools).map((tool, index) => ({
+      id: `bundle-${Math.random().toString(36).substr(2, 9)}`,
+      name: tool,
+      quantity: 1,
+      picked: false,
+      location: `${location}-${String.fromCharCode(65 + index)}`
+    }));
+  }
+  
+  return undefined;
+};
+
 export default function PickPack() {
   const { toast } = useToast();
   const [selectedTab, setSelectedTab] = useState<'overview' | 'pending' | 'picking' | 'packing' | 'ready'>('overview');
@@ -157,94 +238,17 @@ export default function PickPack() {
   }, [isPackingTimerRunning]);
 
   // Fetch real orders from the API
-  const { data: allOrders = [], isLoading } = useQuery({
+  const { data: allOrders, isLoading } = useQuery({
     queryKey: ['/api/orders'],
+    queryFn: async () => {
+      const result = await apiRequest('/api/orders', 'GET');
+      return result || [];
+    },
     refetchInterval: 10000, // Refresh every 10 seconds
+    staleTime: 5000,
   });
 
-  // Mock location generator for demo
-  const generateMockLocation = () => {
-    const zones = ['A', 'B', 'C', 'D', 'E'];
-    const zone = zones[Math.floor(Math.random() * zones.length)];
-    const row = Math.floor(Math.random() * 20) + 1;
-    const shelf = Math.floor(Math.random() * 5) + 1;
-    return `${zone}${row}-${shelf}`;
-  };
-
-  // Mock barcode generator for demo
-  const generateMockBarcode = (sku: string) => {
-    return `BAR${sku}${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
-  };
-
-  // Mock product image generator for demo
-  const generateMockImage = (productName: string) => {
-    // Generate a placeholder image URL based on product name
-    // In a real app, this would come from your database
-    const seed = productName.toLowerCase().replace(/\s+/g, '-');
-    return `https://picsum.photos/seed/${seed}/400/400`;
-  };
-
-  // Generate bundle items for gel polish products
-  const generateBundleItems = (productName: string, location: string): BundleItem[] | undefined => {
-    const lowerName = productName.toLowerCase();
-    
-    // Check if it's a gel polish set or color collection
-    if (lowerName.includes('gel polish') || lowerName.includes('nail polish') || lowerName.includes('color set')) {
-      const colors = [
-        { name: 'Ruby Red', colorNumber: '001' },
-        { name: 'Ocean Blue', colorNumber: '002' },
-        { name: 'Forest Green', colorNumber: '003' },
-        { name: 'Sunset Orange', colorNumber: '004' },
-        { name: 'Lavender Purple', colorNumber: '005' },
-        { name: 'Midnight Black', colorNumber: '006' },
-        { name: 'Pearl White', colorNumber: '007' },
-        { name: 'Rose Gold', colorNumber: '008' },
-        { name: 'Teal Turquoise', colorNumber: '009' },
-        { name: 'Coral Pink', colorNumber: '010' },
-        { name: 'Silver Shimmer', colorNumber: '011' },
-        { name: 'Golden Yellow', colorNumber: '012' }
-      ];
-      
-      // Determine number of colors based on product name
-      const numColors = lowerName.match(/(\d+)\s*color/)?.[1] ? 
-        Math.min(parseInt(lowerName.match(/(\d+)\s*color/)?.[1] || '6'), 12) : 6;
-      
-      return colors.slice(0, numColors).map((color, index) => ({
-        id: `bundle-${Math.random().toString(36).substr(2, 9)}`,
-        name: color.name,
-        colorNumber: color.colorNumber,
-        quantity: 1,
-        picked: false,
-        location: `${location}-${index + 1}`
-      }));
-    }
-    
-    // Check if it's a brush set or tool kit
-    if (lowerName.includes('brush set') || lowerName.includes('tool kit')) {
-      const tools = [
-        { name: 'Fine Detail Brush' },
-        { name: 'Flat Brush' },
-        { name: 'Dotting Tool' },
-        { name: 'Striping Brush' },
-        { name: 'Fan Brush' },
-        { name: 'Cleanup Brush' },
-        { name: 'Ombre Brush' }
-      ];
-      
-      const numTools = lowerName.match(/(\d+)\s*(pc|piece|pcs)/)?.[1] ? 
-        Math.min(parseInt(lowerName.match(/(\d+)\s*(pc|piece|pcs)/)?.[1] || '5'), 7) : 5;
-      
-      return tools.slice(0, numTools).map((tool, index) => ({
-        id: `bundle-${Math.random().toString(36).substr(2, 9)}`,
-        name: tool.name,
-        quantity: 1,
-        picked: false,
-        location: `${location}-${String.fromCharCode(65 + index)}`
-      }));
-    }
-    
-    return undefined;
-  };
+  // Note: Helper functions have been moved outside the component to prevent recreation on each render
 
   // Mock orders for testing different statuses
   const mockOrders: PickPackOrder[] = [
@@ -484,7 +488,7 @@ export default function PickPack() {
   ];
 
   // Transform real orders to PickPackOrder format - Only include "To Fulfill" status orders
-  const transformedOrders: PickPackOrder[] = [
+  const transformedOrders: PickPackOrder[] = useMemo(() => [
     ...mockOrders,
     ...((allOrders as any[] || [])
     .filter((order: any) => 
@@ -531,7 +535,7 @@ export default function PickPack() {
       packedBy: order.packedBy,
       notes: order.notes
     }))
-  )];
+  )], [allOrders]); // Only recalculate when allOrders changes
 
   // Play sound effect
   const playSound = (type: 'scan' | 'success' | 'error') => {
