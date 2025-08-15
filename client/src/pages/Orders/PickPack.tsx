@@ -135,6 +135,57 @@ export default function PickPack() {
   const [bundlePickedItems, setBundlePickedItems] = useState<Record<string, Set<string>>>({}); // itemId -> Set of picked bundle item ids
   const [currentItemIndexState, setCurrentItemIndexState] = useState(0);
   const [swipeAnimation, setSwipeAnimation] = useState('');
+  
+  // Swipe handlers for mobile - defined at top level
+  const swipeHandlers = useSwipeable({
+    onSwipedLeft: () => {
+      if (!activePickingOrder) return;
+      
+      const autoCurrentIndex = activePickingOrder.items.findIndex(item => item.pickedQuantity < item.quantity);
+      const currentItemIndex = currentItemIndexState >= 0 && currentItemIndexState < activePickingOrder.items.length 
+        ? currentItemIndexState 
+        : autoCurrentIndex;
+      const currentItem = currentItemIndex >= 0 ? activePickingOrder.items[currentItemIndex] : null;
+      
+      if (currentItem && currentItemIndex < activePickingOrder.items.length - 1) {
+        // Check if current item is picked before allowing swipe to next
+        if (currentItem.pickedQuantity >= currentItem.quantity) {
+          setSwipeAnimation('slide-left');
+          setTimeout(() => {
+            setCurrentItemIndexState(currentItemIndex + 1);
+            setSwipeAnimation('');
+            playSound('scan');
+          }, 300);
+        } else {
+          // Show warning that current item must be picked first
+          toast({
+            title: "Complete Current Item",
+            description: "Please pick the current item before moving to the next",
+            variant: "destructive"
+          });
+        }
+      }
+    },
+    onSwipedRight: () => {
+      if (!activePickingOrder) return;
+      
+      const autoCurrentIndex = activePickingOrder.items.findIndex(item => item.pickedQuantity < item.quantity);
+      const currentItemIndex = currentItemIndexState >= 0 && currentItemIndexState < activePickingOrder.items.length 
+        ? currentItemIndexState 
+        : autoCurrentIndex;
+        
+      if (currentItemIndex > 0) {
+        setSwipeAnimation('slide-right');
+        setTimeout(() => {
+          setCurrentItemIndexState(currentItemIndex - 1);
+          setSwipeAnimation('');
+          playSound('scan');
+        }, 300);
+      }
+    },
+    preventScrollOnSwipe: true,
+    trackMouse: false
+  });
 
   // Timer effects
   useEffect(() => {
@@ -1411,42 +1462,6 @@ export default function PickPack() {
       ? currentItemIndexState 
       : autoCurrentIndex;
     const currentItem = currentItemIndex >= 0 ? activePickingOrder.items[currentItemIndex] : null;
-    
-    // Swipe handlers for mobile
-    const swipeHandlers = useSwipeable({
-      onSwipedLeft: () => {
-        if (currentItem && currentItemIndex < activePickingOrder.items.length - 1) {
-          // Check if current item is picked before allowing swipe to next
-          if (currentItem.pickedQuantity >= currentItem.quantity) {
-            setSwipeAnimation('slide-left');
-            setTimeout(() => {
-              setCurrentItemIndexState(currentItemIndex + 1);
-              setSwipeAnimation('');
-              playSound('scan');
-            }, 300);
-          } else {
-            // Show warning that current item must be picked first
-            toast({
-              title: "Complete Current Item",
-              description: "Please pick the current item before moving to the next",
-              variant: "destructive"
-            });
-          }
-        }
-      },
-      onSwipedRight: () => {
-        if (currentItemIndex > 0) {
-          setSwipeAnimation('slide-right');
-          setTimeout(() => {
-            setCurrentItemIndexState(currentItemIndex - 1);
-            setSwipeAnimation('');
-            playSound('scan');
-          }, 300);
-        }
-      },
-      preventScrollOnSwipe: true,
-      trackMouse: false
-    });
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex flex-col">
