@@ -1119,7 +1119,7 @@ export default function PickPack() {
                               item => item.barcode === barcodeInput || item.sku === barcodeInput
                             );
                             if (matchingItem) {
-                              setVerifiedItems(new Set([...verifiedItems, matchingItem.id]));
+                              setVerifiedItems(new Set([...Array.from(verifiedItems), matchingItem.id]));
                               playSound('scan');
                               toast({
                                 title: "Item Verified",
@@ -1176,9 +1176,9 @@ export default function PickPack() {
                               variant={isVerified ? "default" : "outline"}
                               onClick={() => {
                                 if (isVerified) {
-                                  setVerifiedItems(new Set([...verifiedItems].filter(id => id !== item.id)));
+                                  setVerifiedItems(new Set(Array.from(verifiedItems).filter(id => id !== item.id)));
                                 } else {
-                                  setVerifiedItems(new Set([...verifiedItems, item.id]));
+                                  setVerifiedItems(new Set([...Array.from(verifiedItems), item.id]));
                                   playSound('scan');
                                 }
                               }}
@@ -1687,7 +1687,7 @@ export default function PickPack() {
                                     });
                                     
                                     // Update the picked quantity based on bundle completion
-                                    const allPicked = newPicked.size === currentItem.bundleItems.length;
+                                    const allPicked = newPicked.size === (currentItem.bundleItems?.length || 0);
                                     updatePickedItem(currentItem.id, allPicked ? currentItem.quantity : 0);
                                   }}
                                 >
@@ -1739,7 +1739,7 @@ export default function PickPack() {
                               size="lg" 
                               className="w-full mt-4 h-11 sm:h-12 lg:h-14 text-sm sm:text-base lg:text-lg font-bold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg"
                               onClick={() => {
-                                const allIds = new Set(currentItem.bundleItems.map(item => item.id));
+                                const allIds = new Set(currentItem.bundleItems?.map(item => item.id) || []);
                                 setBundlePickedItems({
                                   ...bundlePickedItems,
                                   [currentItem.id]: allIds
@@ -1911,6 +1911,7 @@ export default function PickPack() {
               </div>
             )}
             </div>
+            </div>
             
             {activePickingOrder ? (
               <div className="hidden lg:block w-80 xl:w-96 bg-gradient-to-b from-white to-gray-50 border-l-4 border-gray-200 p-4 xl:p-6 overflow-y-auto">
@@ -1993,6 +1994,8 @@ export default function PickPack() {
             </div>
           </div>
             ) : null}
+          </div>
+          </div>
           
             {/* Mobile Items Drawer - Collapsible with Swipe Hint */}
             {showMobileProgress && (
@@ -2072,7 +2075,6 @@ export default function PickPack() {
             )}
             
 
-          </div>
         </div>
       </div>
     );
