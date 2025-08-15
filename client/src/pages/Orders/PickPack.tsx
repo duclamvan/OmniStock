@@ -949,6 +949,70 @@ export default function PickPack() {
     }
   };
 
+  // Global barcode scanner listener for continuous scanning
+  useEffect(() => {
+    if (!activePickingOrder) return;
+
+    let scanBuffer = '';
+    let scanTimeout: NodeJS.Timeout;
+
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Only process if we're in picking mode and have an active order
+      if (selectedTab !== 'picking' || !activePickingOrder) return;
+
+      // Ignore if target is an input field that's not read-only
+      if (e.target instanceof HTMLInputElement && !e.target.readOnly) return;
+
+      // Clear buffer on Enter (barcode scanners typically end with Enter)
+      if (e.key === 'Enter') {
+        if (scanBuffer.length > 0) {
+          processBarcodeInput(scanBuffer);
+          scanBuffer = '';
+        }
+        clearTimeout(scanTimeout);
+        return;
+      }
+
+      // Add character to buffer
+      if (e.key.length === 1) { // Only single characters
+        scanBuffer += e.key;
+        setBarcodeInput(scanBuffer);
+
+        // Clear buffer after timeout (in case Enter is missed)
+        clearTimeout(scanTimeout);
+        scanTimeout = setTimeout(() => {
+          scanBuffer = '';
+          setBarcodeInput('');
+        }, 1000);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyPress);
+    return () => {
+      document.removeEventListener('keydown', handleKeyPress);
+      clearTimeout(scanTimeout);
+    };
+  }, [activePickingOrder, selectedTab]);
+
+  // Process barcode input from continuous scanner
+  const processBarcodeInput = (barcode: string) => {
+    if (!activePickingOrder || !barcode.trim()) return;
+
+    const item = activePickingOrder.items.find(i => 
+      i.barcode === barcode || i.sku === barcode
+    );
+
+    if (item) {
+      const newQty = Math.min(item.pickedQuantity + 1, item.quantity);
+      updatePickedItem(item.id, newQty);
+      playSound('scan');
+    } else {
+      playSound('error');
+    }
+
+    setBarcodeInput('');
+  };
+
   // Quick Action: Start Next Priority Order
   const startNextPriorityOrder = () => {
     // Find the highest priority pending order
@@ -1141,8 +1205,6 @@ export default function PickPack() {
     setPickingTimer(0);
     setIsTimerRunning(true);
     playSound('success');
-    // Focus barcode input
-    setTimeout(() => barcodeInputRef.current?.focus(), 100);
   };
 
   // Update item picked quantity
@@ -1452,9 +1514,9 @@ export default function PickPack() {
                       <Input
                         ref={barcodeInputRef}
                         type="text"
-                        placeholder="Scan item barcode..."
-                        value={barcodeInput}
-                        onChange={(e) => setBarcodeInput(e.target.value)}
+                        placeholder="Continuous scan mode - Point scanner at item"
+                        value={barcodeInput || "🎯 Ready to scan..."}
+                        readOnly
                         onKeyPress={(e) => {
                           if (e.key === 'Enter') {
                             // Find matching item
@@ -1470,7 +1532,7 @@ export default function PickPack() {
                             setBarcodeInput('');
                           }
                         }}
-                        className="text-lg font-mono"
+                        className="text-lg font-mono cursor-default"
                       />
                       <Button variant="outline" size="icon">
                         <ScanLine className="h-4 w-4" />
@@ -2464,12 +2526,10 @@ export default function PickPack() {
                         <ScanLine className="absolute left-2 sm:left-3 lg:left-4 top-1/2 -translate-y-1/2 h-4 sm:h-5 lg:h-6 w-4 sm:w-5 lg:w-6 text-white/70" />
                         <Input
                           ref={barcodeInputRef}
-                          placeholder="Scan or enter barcode..."
-                          value={barcodeInput}
-                          onChange={(e) => setBarcodeInput(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && handleBarcodeScan()}
-                          className="pl-8 sm:pl-10 lg:pl-12 text-sm sm:text-base lg:text-lg h-10 sm:h-12 lg:h-14 bg-white/95 border-white/30 placeholder:text-gray-500 font-mono"
-                          autoFocus
+                          placeholder="Continuous scan mode - Point scanner at item"
+                          value={barcodeInput || "🎯 Ready to scan..."}
+                          className="pl-8 sm:pl-10 lg:pl-12 text-sm sm:text-base lg:text-lg h-10 sm:h-12 lg:h-14 bg-white/95 border-white/30 placeholder:text-gray-500 font-mono cursor-default"
+                          readOnly
                         />
                       </div>
                       <Button 
