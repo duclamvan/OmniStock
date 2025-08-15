@@ -1677,6 +1677,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Orders endpoints
+  // Get pick-pack dashboard data (must be before dynamic routes)
+  app.get('/api/orders/pick-pack', async (req: any, res) => {
+    try {
+      const orders = await storage.getOrders();
+      const pickPackOrders = orders.filter(order => 
+        order.orderStatus === 'to_fulfill' || 
+        order.orderStatus === 'picking' || 
+        order.orderStatus === 'packing' ||
+        order.orderStatus === 'ready_to_ship'
+      );
+      res.json(pickPackOrders);
+    } catch (error) {
+      console.error("Error fetching pick-pack orders:", error);
+      res.status(500).json({ message: "Failed to fetch pick-pack orders" });
+    }
+  });
+
   app.get('/api/orders', async (req, res) => {
     try {
       const status = req.query.status as string;
@@ -1711,6 +1728,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Dynamic routes must be last
   app.get('/api/orders/:id', async (req, res) => {
     try {
       const order = await storage.getOrderById(req.params.id);
@@ -1882,22 +1900,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get pick-pack dashboard data
-  app.get('/api/orders/pick-pack', async (req: any, res) => {
-    try {
-      const orders = await storage.getOrders();
-      const pickPackOrders = orders.filter(order => 
-        order.orderStatus === 'to_fulfill' || 
-        order.orderStatus === 'picking' || 
-        order.orderStatus === 'packing' ||
-        order.orderStatus === 'ready_to_ship'
-      );
-      res.json(pickPackOrders);
-    } catch (error) {
-      console.error("Error fetching pick-pack orders:", error);
-      res.status(500).json({ message: "Failed to fetch pick-pack orders" });
-    }
-  });
 
   // Update item picked/packed quantity
   app.patch('/api/orders/:orderId/items/:itemId', async (req: any, res) => {
