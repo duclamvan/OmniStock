@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useSwipeable } from 'react-swipeable';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -132,6 +133,8 @@ export default function PickPack() {
   const [verifiedItems, setVerifiedItems] = useState<Set<string>>(new Set());
   const [expandedBundles, setExpandedBundles] = useState<Set<string>>(new Set());
   const [bundlePickedItems, setBundlePickedItems] = useState<Record<string, Set<string>>>({}); // itemId -> Set of picked bundle item ids
+  const [currentItemIndexState, setCurrentItemIndexState] = useState(0);
+  const [swipeAnimation, setSwipeAnimation] = useState('');
 
   // Timer effects
   useEffect(() => {
@@ -800,6 +803,25 @@ export default function PickPack() {
         title: "All Items Picked!",
         description: "You can now complete the picking process",
       });
+    } else {
+      // Check if current item is fully picked and auto-move to next on mobile
+      const currentItemPicked = updatedItems.find(item => item.id === itemId);
+      if (currentItemPicked && currentItemPicked.pickedQuantity >= currentItemPicked.quantity) {
+        const nextUnpickedIndex = updatedItems.findIndex(item => item.pickedQuantity < item.quantity);
+        
+        // Only auto-advance on mobile devices
+        if (window.innerWidth < 1024 && nextUnpickedIndex >= 0) {
+          // Show slide animation
+          setSwipeAnimation('slide-left');
+          setTimeout(() => {
+            setCurrentItemIndexState(nextUnpickedIndex);
+            setSwipeAnimation('');
+            playSound('success');
+            // Focus barcode input for next item
+            setTimeout(() => barcodeInputRef.current?.focus(), 100);
+          }, 300);
+        }
+      }
     }
   };
 
@@ -1382,8 +1404,49 @@ export default function PickPack() {
   // Active Picking View - Full Screen
   if (activePickingOrder) {
     const progress = (activePickingOrder.pickedItems / activePickingOrder.totalItems) * 100;
-    const currentItemIndex = activePickingOrder.items.findIndex(item => item.pickedQuantity < item.quantity);
+    
+    // Calculate current item - prefer state if viewing specific item, otherwise find first unpicked
+    const autoCurrentIndex = activePickingOrder.items.findIndex(item => item.pickedQuantity < item.quantity);
+    const currentItemIndex = currentItemIndexState >= 0 && currentItemIndexState < activePickingOrder.items.length 
+      ? currentItemIndexState 
+      : autoCurrentIndex;
     const currentItem = currentItemIndex >= 0 ? activePickingOrder.items[currentItemIndex] : null;
+    
+    // Swipe handlers for mobile
+    const swipeHandlers = useSwipeable({
+      onSwipedLeft: () => {
+        if (currentItem && currentItemIndex < activePickingOrder.items.length - 1) {
+          // Check if current item is picked before allowing swipe to next
+          if (currentItem.pickedQuantity >= currentItem.quantity) {
+            setSwipeAnimation('slide-left');
+            setTimeout(() => {
+              setCurrentItemIndexState(currentItemIndex + 1);
+              setSwipeAnimation('');
+              playSound('scan');
+            }, 300);
+          } else {
+            // Show warning that current item must be picked first
+            toast({
+              title: "Complete Current Item",
+              description: "Please pick the current item before moving to the next",
+              variant: "destructive"
+            });
+          }
+        }
+      },
+      onSwipedRight: () => {
+        if (currentItemIndex > 0) {
+          setSwipeAnimation('slide-right');
+          setTimeout(() => {
+            setCurrentItemIndexState(currentItemIndex - 1);
+            setSwipeAnimation('');
+            playSound('scan');
+          }, 300);
+        }
+      },
+      preventScrollOnSwipe: true,
+      trackMouse: false
+    });
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex flex-col">
@@ -1555,7 +1618,12 @@ export default function PickPack() {
             <div className="flex-1 p-3 lg:p-6">
             {currentItem ? (
               <div className="max-w-4xl mx-auto">
-                <Card className="mb-4 lg:mb-6 shadow-xl border-0 overflow-hidden">
+                <Card 
+                  {...(window.innerWidth < 1024 ? swipeHandlers : {})}
+                  className={`mb-4 lg:mb-6 shadow-xl border-0 overflow-hidden transition-transform duration-300 ${
+                    swipeAnimation === 'slide-left' ? '-translate-x-full opacity-0' : 
+                    swipeAnimation === 'slide-right' ? 'translate-x-full opacity-0' : ''
+                  }`}>
                   <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white p-3 lg:p-4">
                     <CardTitle className="flex items-center justify-between">
                       <span className="text-base lg:text-lg flex items-center gap-2">
@@ -1567,6 +1635,24 @@ export default function PickPack() {
                         {currentItemIndex + 1} / {activePickingOrder.items.length}
                       </Badge>
                     </CardTitle>
+                    {/* Mobile swipe indicator */}
+                    {window.innerWidth < 1024 && (
+                      <div className="flex items-center justify-center mt-2 text-xs text-blue-100">
+                        {currentItemIndex > 0 && (
+                          <span className="flex items-center gap-1">
+                            <ChevronLeft className="h-3 w-3" />
+                            Previous
+                          </span>
+                        )}
+                        <span className="mx-4">Swipe to navigate</span>
+                        {currentItemIndex < activePickingOrder.items.length - 1 && (
+                          <span className="flex items-center gap-1">
+                            Next
+                            <ChevronRight className="h-3 w-3" />
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </CardHeader>
                   <CardContent className="p-3 lg:p-6 bg-white">
                     <div className="space-y-3 lg:space-y-6">
