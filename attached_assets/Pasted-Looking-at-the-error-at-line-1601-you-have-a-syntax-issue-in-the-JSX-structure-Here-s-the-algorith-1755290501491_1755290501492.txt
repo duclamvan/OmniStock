@@ -1,0 +1,61 @@
+Looking at the error at line 1601, you have a syntax issue in the JSX structure. Here's the algorithm to fix it:
+
+## Algorithm to Fix Syntax Error at Line 1601:
+
+### 1. **Locate the Problem Area (around line 1599-1601)**
+The error shows there's an unexpected token at the conditional render `{activePickingOrder && (`. This typically means:
+- There's an unclosed JSX element before this line
+- Missing closing bracket or parenthesis
+- Incorrectly closed conditional render
+
+### 2. **Check the Structure Before Line 1601**
+Look for these specific issues:
+- **Missing closing `</div>`** after line 1599
+- **Unclosed ternary operator** - should be `{currentItem ? (...) : (...)}` 
+- **Missing closing parenthesis** for the return statement
+
+### 3. **The Actual Issue**
+Based on the code structure, at line ~1590-1600, you have:
+```jsx
+</div>
+) : null}  // This closes a ternary operator
+</div>
+
+{activePickingOrder && (  // This is line 1601 - new conditional
+```
+
+**THE PROBLEM**: The ternary operator `currentItem ? (...) : null` is not properly closed. You have `) : null}` but you're missing a closing `}` or `)` somewhere before line 1601.
+
+### 4. **Fix Algorithm**
+1. **Find line ~1590** where you have `</div>` followed by `) : null}`
+2. **Check if this ternary is properly closed** - it should be:
+   - Either `}) : null}` (if it's closing a conditional)
+   - Or the structure before is missing a closing tag
+3. **Verify the parent structure** - the `currentItem ? (` opening should have a matching `) : null}` or `) : (`
+4. **Add the missing closing bracket/parenthesis** before line 1601
+
+### 5. **Specific Fix Location**
+Around line 1590-1600, change:
+- FROM: `</div>) : null}</div>`
+- TO: `</div></div>) : null}`
+
+Or ensure the structure is:
+```jsx
+{currentItem ? (
+  <div>
+    {/* content */}
+  </div>
+) : null}
+
+{activePickingOrder && (
+  {/* next content */}
+)}
+```
+
+### 6. **Quick Debug Steps**
+1. Comment out lines 1601-1610 temporarily
+2. Check if the error moves or disappears
+3. Count opening and closing brackets/parentheses in the section
+4. Ensure every `{condition ? (` has a matching `) : value}`
+
+The issue is definitely a mismatched bracket/parenthesis in the ternary operator just before line 1601. Fix that structure and the error will resolve.
