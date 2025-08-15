@@ -134,12 +134,13 @@ export default function PickPack() {
   const [expandedBundles, setExpandedBundles] = useState<Set<string>>(new Set());
   const [bundlePickedItems, setBundlePickedItems] = useState<Record<string, Set<string>>>({}); // itemId -> Set of picked bundle item ids
   const [currentItemIndexState, setCurrentItemIndexState] = useState(0);
-  const [swipeAnimation, setSwipeAnimation] = useState('');
+  const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
+  const [isAnimating, setIsAnimating] = useState(false);
   
   // Swipe handlers for mobile - defined at top level
   const swipeHandlers = useSwipeable({
     onSwipedLeft: () => {
-      if (!activePickingOrder) return;
+      if (!activePickingOrder || isAnimating) return;
       
       const autoCurrentIndex = activePickingOrder.items.findIndex(item => item.pickedQuantity < item.quantity);
       const currentItemIndex = currentItemIndexState >= 0 && currentItemIndexState < activePickingOrder.items.length 
@@ -150,24 +151,26 @@ export default function PickPack() {
       if (currentItem && currentItemIndex < activePickingOrder.items.length - 1) {
         // Check if current item is picked before allowing swipe to next
         if (currentItem.pickedQuantity >= currentItem.quantity) {
-          setSwipeAnimation('slide-left');
+          setIsAnimating(true);
+          setSwipeDirection('left');
           setTimeout(() => {
             setCurrentItemIndexState(currentItemIndex + 1);
-            setSwipeAnimation('');
+            setSwipeDirection(null);
             playSound('scan');
-          }, 300);
+            setTimeout(() => setIsAnimating(false), 100);
+          }, 400);
         } else {
-          // Show warning that current item must be picked first
-          toast({
-            title: "Complete Current Item",
-            description: "Please pick the current item before moving to the next",
-            variant: "destructive"
-          });
+          // Show a subtle shake animation instead of toast on mobile
+          const card = document.querySelector('.picking-card');
+          if (card) {
+            card.classList.add('shake-animation');
+            setTimeout(() => card.classList.remove('shake-animation'), 500);
+          }
         }
       }
     },
     onSwipedRight: () => {
-      if (!activePickingOrder) return;
+      if (!activePickingOrder || isAnimating) return;
       
       const autoCurrentIndex = activePickingOrder.items.findIndex(item => item.pickedQuantity < item.quantity);
       const currentItemIndex = currentItemIndexState >= 0 && currentItemIndexState < activePickingOrder.items.length 
@@ -175,12 +178,14 @@ export default function PickPack() {
         : autoCurrentIndex;
         
       if (currentItemIndex > 0) {
-        setSwipeAnimation('slide-right');
+        setIsAnimating(true);
+        setSwipeDirection('right');
         setTimeout(() => {
           setCurrentItemIndexState(currentItemIndex - 1);
-          setSwipeAnimation('');
+          setSwipeDirection(null);
           playSound('scan');
-        }, 300);
+          setTimeout(() => setIsAnimating(false), 100);
+        }, 400);
       }
     },
     preventScrollOnSwipe: true,
@@ -862,15 +867,19 @@ export default function PickPack() {
         
         // Only auto-advance on mobile devices
         if (window.innerWidth < 1024 && nextUnpickedIndex >= 0) {
-          // Show slide animation
-          setSwipeAnimation('slide-left');
+          // Show smooth slide animation
+          setIsAnimating(true);
+          setSwipeDirection('left');
           setTimeout(() => {
             setCurrentItemIndexState(nextUnpickedIndex);
-            setSwipeAnimation('');
+            setSwipeDirection(null);
             playSound('success');
             // Focus barcode input for next item
-            setTimeout(() => barcodeInputRef.current?.focus(), 100);
-          }, 300);
+            setTimeout(() => {
+              barcodeInputRef.current?.focus();
+              setIsAnimating(false);
+            }, 100);
+          }, 400);
         }
       }
     }
@@ -1635,9 +1644,10 @@ export default function PickPack() {
               <div className="max-w-4xl mx-auto">
                 <Card 
                   {...(window.innerWidth < 1024 ? swipeHandlers : {})}
-                  className={`mb-4 lg:mb-6 shadow-xl border-0 overflow-hidden transition-transform duration-300 ${
-                    swipeAnimation === 'slide-left' ? '-translate-x-full opacity-0' : 
-                    swipeAnimation === 'slide-right' ? 'translate-x-full opacity-0' : ''
+                  className={`picking-card mb-4 lg:mb-6 shadow-xl border-0 overflow-hidden transition-all duration-500 ease-out ${
+                    swipeDirection === 'left' ? '-translate-x-full opacity-0 scale-95' : 
+                    swipeDirection === 'right' ? 'translate-x-full opacity-0 scale-95' : 
+                    'translate-x-0 opacity-100 scale-100'
                   }`}>
                   <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white p-3 lg:p-4">
                     <CardTitle className="flex items-center justify-between">
@@ -1650,22 +1660,32 @@ export default function PickPack() {
                         {currentItemIndex + 1} / {activePickingOrder.items.length}
                       </Badge>
                     </CardTitle>
-                    {/* Mobile swipe indicator */}
+                    {/* Mobile swipe indicator with dots */}
                     {window.innerWidth < 1024 && (
-                      <div className="flex items-center justify-center mt-2 text-xs text-blue-100">
-                        {currentItemIndex > 0 && (
-                          <span className="flex items-center gap-1">
-                            <ChevronLeft className="h-3 w-3" />
-                            Previous
-                          </span>
-                        )}
-                        <span className="mx-4">Swipe to navigate</span>
-                        {currentItemIndex < activePickingOrder.items.length - 1 && (
-                          <span className="flex items-center gap-1">
-                            Next
-                            <ChevronRight className="h-3 w-3" />
-                          </span>
-                        )}
+                      <div className="flex flex-col items-center mt-3 gap-2">
+                        <div className="flex items-center gap-2">
+                          {activePickingOrder.items.map((_, index) => (
+                            <div
+                              key={index}
+                              className={`h-1.5 rounded-full transition-all duration-300 ${
+                                index === currentItemIndex 
+                                  ? 'w-6 bg-white' 
+                                  : index < currentItemIndex 
+                                  ? 'w-1.5 bg-green-300' 
+                                  : 'w-1.5 bg-blue-200/50'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <div className="flex items-center text-xs text-blue-100/80">
+                          {currentItemIndex > 0 && (
+                            <ChevronLeft className="h-3 w-3 animate-pulse" />
+                          )}
+                          <span className="mx-2 text-[10px] uppercase tracking-wider">Swipe</span>
+                          {currentItemIndex < activePickingOrder.items.length - 1 && (
+                            <ChevronRight className="h-3 w-3 animate-pulse" />
+                          )}
+                        </div>
                       </div>
                     )}
                   </CardHeader>
