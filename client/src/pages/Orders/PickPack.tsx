@@ -134,63 +134,6 @@ export default function PickPack() {
   const [expandedBundles, setExpandedBundles] = useState<Set<string>>(new Set());
   const [bundlePickedItems, setBundlePickedItems] = useState<Record<string, Set<string>>>({}); // itemId -> Set of picked bundle item ids
   const [currentItemIndexState, setCurrentItemIndexState] = useState(0);
-  const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
-  const [isAnimating, setIsAnimating] = useState(false);
-  
-  // Swipe handlers for mobile - defined at top level
-  const swipeHandlers = useSwipeable({
-    onSwipedLeft: () => {
-      if (!activePickingOrder || isAnimating) return;
-      
-      const autoCurrentIndex = activePickingOrder.items.findIndex(item => item.pickedQuantity < item.quantity);
-      const currentItemIndex = currentItemIndexState >= 0 && currentItemIndexState < activePickingOrder.items.length 
-        ? currentItemIndexState 
-        : autoCurrentIndex;
-      const currentItem = currentItemIndex >= 0 ? activePickingOrder.items[currentItemIndex] : null;
-      
-      if (currentItem && currentItemIndex < activePickingOrder.items.length - 1) {
-        // Check if current item is picked before allowing swipe to next
-        if (currentItem.pickedQuantity >= currentItem.quantity) {
-          setIsAnimating(true);
-          setSwipeDirection('left');
-          setTimeout(() => {
-            setCurrentItemIndexState(currentItemIndex + 1);
-            setSwipeDirection(null);
-            playSound('scan');
-            setTimeout(() => setIsAnimating(false), 100);
-          }, 400);
-        } else {
-          // Show a subtle shake animation instead of toast on mobile
-          const card = document.querySelector('.picking-card');
-          if (card) {
-            card.classList.add('shake-animation');
-            setTimeout(() => card.classList.remove('shake-animation'), 500);
-          }
-        }
-      }
-    },
-    onSwipedRight: () => {
-      if (!activePickingOrder || isAnimating) return;
-      
-      const autoCurrentIndex = activePickingOrder.items.findIndex(item => item.pickedQuantity < item.quantity);
-      const currentItemIndex = currentItemIndexState >= 0 && currentItemIndexState < activePickingOrder.items.length 
-        ? currentItemIndexState 
-        : autoCurrentIndex;
-        
-      if (currentItemIndex > 0) {
-        setIsAnimating(true);
-        setSwipeDirection('right');
-        setTimeout(() => {
-          setCurrentItemIndexState(currentItemIndex - 1);
-          setSwipeDirection(null);
-          playSound('scan');
-          setTimeout(() => setIsAnimating(false), 100);
-        }, 400);
-      }
-    },
-    preventScrollOnSwipe: true,
-    trackMouse: false
-  });
 
   // Timer effects
   useEffect(() => {
@@ -865,21 +808,12 @@ export default function PickPack() {
       if (currentItemPicked && currentItemPicked.pickedQuantity >= currentItemPicked.quantity) {
         const nextUnpickedIndex = updatedItems.findIndex(item => item.pickedQuantity < item.quantity);
         
-        // Only auto-advance on mobile devices
+        // Auto-advance to next item on mobile devices
         if (window.innerWidth < 1024 && nextUnpickedIndex >= 0) {
-          // Show smooth slide animation
-          setIsAnimating(true);
-          setSwipeDirection('left');
-          setTimeout(() => {
-            setCurrentItemIndexState(nextUnpickedIndex);
-            setSwipeDirection(null);
-            playSound('success');
-            // Focus barcode input for next item
-            setTimeout(() => {
-              barcodeInputRef.current?.focus();
-              setIsAnimating(false);
-            }, 100);
-          }, 400);
+          setCurrentItemIndexState(nextUnpickedIndex);
+          playSound('success');
+          // Focus barcode input for next item
+          setTimeout(() => barcodeInputRef.current?.focus(), 100);
         }
       }
     }
@@ -1635,110 +1569,79 @@ export default function PickPack() {
           </div>
         </div>
 
-        {/* Main Content - Scrollable container */}
-        <div className="flex-1 overflow-auto">
-          <div className="flex flex-col lg:flex-row min-h-full">
-            {/* Left Panel - Current Item Focus */}
-            <div className="flex-1 p-3 lg:p-6">
+        {/* Main Content - Full Screen Mobile Optimized */}
+        <div className="flex-1 overflow-hidden flex flex-col">
+          <div className="flex-1 flex flex-col lg:flex-row">
+            {/* Mobile Full Screen Pick View */}
+            <div className="flex-1 flex flex-col h-full bg-gray-50">
             {currentItem ? (
-              <div className="max-w-4xl mx-auto">
-                <Card 
-                  {...(window.innerWidth < 1024 ? swipeHandlers : {})}
-                  className={`picking-card mb-4 lg:mb-6 shadow-xl border-0 overflow-hidden transition-all duration-500 ease-out ${
-                    swipeDirection === 'left' ? '-translate-x-full opacity-0 scale-95' : 
-                    swipeDirection === 'right' ? 'translate-x-full opacity-0 scale-95' : 
-                    'translate-x-0 opacity-100 scale-100'
-                  }`}>
-                  <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white p-3 lg:p-4">
-                    <CardTitle className="flex items-center justify-between">
-                      <span className="text-base lg:text-lg flex items-center gap-2">
-                        <Package className="h-5 w-5" />
-                        <span className="hidden sm:inline">Current Item to Pick</span>
-                        <span className="sm:hidden">Pick Item</span>
-                      </span>
-                      <Badge className="bg-white text-blue-600 text-sm lg:text-base px-2 lg:px-3 py-1 font-bold">
-                        {currentItemIndex + 1} / {activePickingOrder.items.length}
+              <div className="h-full flex flex-col">
+                {/* Compact Header Bar */}
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-2 shadow-md">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Package className="h-4 w-4 text-white/80" />
+                      <span className="text-white font-medium text-sm">Pick Item</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-white/20 backdrop-blur text-white text-xs px-2 py-0.5 font-semibold">
+                        {currentItemIndex + 1} of {activePickingOrder.items.length}
                       </Badge>
-                    </CardTitle>
-                    {/* Mobile swipe indicator with dots */}
-                    {window.innerWidth < 1024 && (
-                      <div className="flex flex-col items-center mt-3 gap-2">
-                        <div className="flex items-center gap-2">
-                          {activePickingOrder.items.map((_, index) => (
-                            <div
-                              key={index}
-                              className={`h-1.5 rounded-full transition-all duration-300 ${
-                                index === currentItemIndex 
-                                  ? 'w-6 bg-white' 
-                                  : index < currentItemIndex 
-                                  ? 'w-1.5 bg-green-300' 
-                                  : 'w-1.5 bg-blue-200/50'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                        <div className="flex items-center text-xs text-blue-100/80">
-                          {currentItemIndex > 0 && (
-                            <ChevronLeft className="h-3 w-3 animate-pulse" />
-                          )}
-                          <span className="mx-2 text-[10px] uppercase tracking-wider">Swipe</span>
-                          {currentItemIndex < activePickingOrder.items.length - 1 && (
-                            <ChevronRight className="h-3 w-3 animate-pulse" />
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </CardHeader>
-                  <CardContent className="p-3 lg:p-6 bg-white">
-                    <div className="space-y-3 lg:space-y-6">
-                      {/* Mobile Optimized Product Layout */}
-                      <div className="flex flex-col sm:grid sm:grid-cols-2 lg:flex lg:flex-row lg:gap-6 gap-3">
-                        {/* Product Image - Smaller on mobile */}
-                        <div className="relative mx-auto sm:mx-0">
-                          <div className="w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg border-2 lg:border-4 border-white">
-                            {currentItem.image ? (
-                              <img 
-                                src={currentItem.image} 
-                                alt={currentItem.productName}
-                                className="w-full h-full object-contain rounded-lg p-1 lg:p-2"
-                              />
-                            ) : (
-                              <Package className="h-12 lg:h-16 w-12 lg:w-16 text-gray-300" />
-                            )}
-                          </div>
-                          <div className="absolute -top-1 -right-1 lg:-top-2 lg:-right-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center font-bold text-sm lg:text-base shadow-lg">
-                            {currentItemIndex + 1}
-                          </div>
-                        </div>
-                        
-                        {/* Product Details */}
-                        <div className="flex-1 space-y-2 lg:space-y-3">
-                          <h3 className="text-lg lg:text-2xl font-bold text-gray-800 line-clamp-2">{currentItem.productName}</h3>
-                          
-                          <div className="space-y-2">
-                            <div className="bg-gray-50 rounded-lg p-2 lg:p-3 flex items-center gap-2">
-                              <Hash className="h-4 lg:h-5 w-4 lg:w-5 text-blue-500 flex-shrink-0" />
-                              <span className="text-xs lg:text-sm text-gray-600 font-medium">SKU:</span>
-                              <span className="font-mono font-bold text-sm lg:text-base text-gray-800 truncate">{currentItem.sku}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Content Area */}
+                <div className="flex-1 overflow-y-auto p-3">
+                    <div className="space-y-3 max-w-lg mx-auto w-full">
+                      {/* Compact Product Card */}
+                      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+                        <div className="flex gap-3">
+                          {/* Product Image */}
+                          <div className="relative flex-shrink-0">
+                            <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center">
+                              {currentItem.image ? (
+                                <img 
+                                  src={currentItem.image} 
+                                  alt={currentItem.productName}
+                                  className="w-full h-full object-contain rounded-lg p-1"
+                                />
+                              ) : (
+                                <Package className="h-10 w-10 text-gray-400" />
+                              )}
                             </div>
-                            
-                            <div className="bg-gray-50 rounded-lg p-2 lg:p-3 flex items-center gap-2">
-                              <ScanLine className="h-4 lg:h-5 w-4 lg:w-5 text-purple-500 flex-shrink-0" />
-                              <span className="text-xs lg:text-sm text-gray-600 font-medium">Barcode:</span>
-                              <span className="font-mono font-bold text-sm lg:text-base text-gray-800 truncate">{currentItem.barcode}</span>
+                          </div>
+                          
+                          {/* Product Info */}
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-gray-900 text-sm line-clamp-2 mb-1">
+                              {currentItem.productName}
+                            </h3>
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1 text-xs">
+                                <Hash className="h-3 w-3 text-gray-400" />
+                                <span className="text-gray-500">SKU:</span>
+                                <span className="font-mono font-medium text-gray-700">{currentItem.sku}</span>
+                              </div>
+                              <div className="flex items-center gap-1 text-xs">
+                                <ScanLine className="h-3 w-3 text-gray-400" />
+                                <span className="text-gray-500">Barcode:</span>
+                                <span className="font-mono font-medium text-gray-700">{currentItem.barcode}</span>
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
 
-                      {/* Location - Mobile Optimized */}
-                      <div className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl lg:rounded-2xl p-3 lg:p-6 text-center shadow-lg">
-                        <div className="flex items-center justify-center gap-2 mb-2">
-                          <MapPin className="h-5 lg:h-8 w-5 lg:w-8 text-orange-500" />
-                          <p className="text-xs lg:text-sm font-semibold text-orange-700 uppercase tracking-wide">Warehouse Location</p>
+                      {/* Location Card - Prominent */}
+                      <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg p-4 text-white shadow-lg">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-5 w-5" />
+                            <span className="text-xs font-medium uppercase tracking-wide opacity-90">Location</span>
+                          </div>
+                          <span className="text-2xl font-bold font-mono">{currentItem.warehouseLocation}</span>
                         </div>
-                        <p className="text-2xl sm:text-3xl lg:text-5xl font-black text-orange-600 font-mono tracking-wider">{currentItem.warehouseLocation}</p>
-                        <p className="text-xs text-orange-600 mt-1">Navigate to this location</p>
                       </div>
 
                       {/* Bundle Items Picker - For gel polish colors etc */}
@@ -1908,12 +1811,10 @@ export default function PickPack() {
                         </div>
                       )}
                     </div>
-                  </CardContent>
-                </Card>
-
-                {/* Barcode Scanner - Mobile Optimized */}
-                <Card className="shadow-xl border-0 bg-gradient-to-r from-purple-500 to-indigo-500">
-                  <CardContent className="p-2 sm:p-3 lg:p-5">
+                  </div>
+                  
+                  {/* Barcode Scanner - Mobile Optimized */}
+                  <div className="bg-gradient-to-r from-purple-500 to-indigo-500 rounded-lg p-3 shadow-lg mt-3">
                     <div className="flex gap-2 lg:gap-3">
                       <div className="relative flex-1">
                         <ScanLine className="absolute left-2 sm:left-3 lg:left-4 top-1/2 -translate-y-1/2 h-4 sm:h-5 lg:h-6 w-4 sm:w-5 lg:w-6 text-white/70" />
@@ -1936,14 +1837,14 @@ export default function PickPack() {
                         <span className="hidden sm:inline">SCAN</span>
                       </Button>
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
+                  </div>
+                </div>
             ) : (
-              <div className="max-w-3xl mx-auto px-3 lg:px-0">
-                <Card className="shadow-2xl border-0 overflow-hidden bg-gradient-to-br from-green-50 to-emerald-50">
-                  <div className="bg-gradient-to-r from-green-500 to-emerald-500 p-1 lg:p-2"></div>
-                  <CardContent className="p-6 sm:p-10 lg:p-16 text-center">
+              <div className="h-full flex items-center justify-center p-3">
+                <div className="max-w-lg mx-auto w-full">
+                  <div className="bg-white rounded-lg shadow-xl overflow-hidden">
+                    <div className="bg-gradient-to-r from-green-500 to-emerald-500 p-1"></div>
+                    <div className="p-6 text-center">
                     <div className="bg-gradient-to-br from-green-400 to-emerald-400 rounded-full w-20 h-20 sm:w-24 sm:h-24 lg:w-32 lg:h-32 mx-auto mb-4 lg:mb-8 flex items-center justify-center shadow-xl animate-bounce">
                       <CheckCircle className="h-12 w-12 sm:h-16 sm:w-16 lg:h-20 lg:w-20 text-white" />
                     </div>
@@ -2005,15 +1906,15 @@ export default function PickPack() {
                         PICK NEXT ORDER
                       </Button>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               </div>
             )}
-          </div>
-
-          {/* Right Panel - Items List - Hidden on mobile, visible on desktop */}
-          <div className="hidden lg:block w-80 xl:w-96 bg-gradient-to-b from-white to-gray-50 border-l-4 border-gray-200 p-4 xl:p-6 overflow-y-auto">
-            <div className="bg-gradient-to-r from-gray-700 to-gray-800 text-white rounded-xl p-3 xl:p-4 mb-4 xl:mb-6 shadow-lg">
+            </div>
+            
+            {activePickingOrder ? (
+              <div className="hidden lg:block w-80 xl:w-96 bg-gradient-to-b from-white to-gray-50 border-l-4 border-gray-200 p-4 xl:p-6 overflow-y-auto">
+                <div className="bg-gradient-to-r from-gray-700 to-gray-800 text-white rounded-xl p-3 xl:p-4 mb-4 xl:mb-6 shadow-lg">
               <h3 className="font-bold text-base xl:text-lg mb-2 flex items-center justify-between">
                 <span className="flex items-center gap-2">
                   <ClipboardList className="h-4 xl:h-5 w-4 xl:w-5" />
@@ -2091,6 +1992,7 @@ export default function PickPack() {
               })}
             </div>
           </div>
+            ) : null}
           
             {/* Mobile Items Drawer - Collapsible with Swipe Hint */}
             {showMobileProgress && (
