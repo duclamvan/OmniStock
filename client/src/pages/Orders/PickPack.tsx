@@ -221,11 +221,11 @@ export default function PickPack() {
     return `https://picsum.photos/seed/${seed}/400/400`;
   };
 
-  // Available box sizes for AI-powered selection
+  // Available box sizes for AI-powered selection with code names and visual representations
   const availableBoxSizes: BoxSize[] = [
     {
       id: 'small-envelope',
-      name: 'Small Envelope',
+      name: 'E1 - Small Envelope',
       dimensions: { length: 22, width: 16, height: 2, weight: 0.05 },
       maxWeight: 0.5,
       cost: 0.80,
@@ -233,7 +233,7 @@ export default function PickPack() {
     },
     {
       id: 'medium-envelope',
-      name: 'Medium Envelope',
+      name: 'E2 - Medium Envelope',
       dimensions: { length: 35, width: 25, height: 3, weight: 0.08 },
       maxWeight: 1.0,
       cost: 1.20,
@@ -241,7 +241,7 @@ export default function PickPack() {
     },
     {
       id: 'small-box',
-      name: 'Small Box',
+      name: 'K1 - Small Carton',
       dimensions: { length: 20, width: 15, height: 10, weight: 0.15 },
       maxWeight: 2.0,
       cost: 1.50,
@@ -249,7 +249,7 @@ export default function PickPack() {
     },
     {
       id: 'medium-box',
-      name: 'Medium Box',
+      name: 'K2 - Medium Carton',
       dimensions: { length: 30, width: 20, height: 15, weight: 0.25 },
       maxWeight: 5.0,
       cost: 2.20,
@@ -257,7 +257,7 @@ export default function PickPack() {
     },
     {
       id: 'large-box',
-      name: 'Large Box',
+      name: 'K3 - Large Carton',
       dimensions: { length: 40, width: 30, height: 20, weight: 0.35 },
       maxWeight: 10.0,
       cost: 3.50,
@@ -265,7 +265,7 @@ export default function PickPack() {
     },
     {
       id: 'fragile-box',
-      name: 'Fragile Protection Box',
+      name: 'F1 - Fragile Protection Carton',
       dimensions: { length: 35, width: 25, height: 18, weight: 0.40 },
       maxWeight: 7.0,
       cost: 4.20,
@@ -274,13 +274,112 @@ export default function PickPack() {
     },
     {
       id: 'wine-box',
-      name: 'Bottle Protection Box',
+      name: 'B1 - Bottle Protection Carton',
       dimensions: { length: 38, width: 28, height: 35, weight: 0.50 },
       maxWeight: 15.0,
       cost: 5.80,
       material: 'Reinforced Cardboard'
     }
   ];
+
+  // Get carton type info
+  const getCartonTypeInfo = (boxSize: BoxSize) => {
+    const codeName = boxSize.name.split(' - ')[0];
+    
+    if (codeName.startsWith('E')) {
+      return { type: 'envelope', color: '#f59e0b', description: 'Lightweight Items' };
+    } else if (codeName.startsWith('K')) {
+      return { type: 'standard', color: '#3b82f6', description: 'Standard Items' };
+    } else if (codeName.startsWith('F')) {
+      return { type: 'fragile', color: '#ef4444', description: 'Fragile Protection' };
+    } else if (codeName.startsWith('B')) {
+      return { type: 'bottle', color: '#8b5cf6', description: 'Bottle/Liquid Items' };
+    }
+    return { type: 'standard', color: '#6b7280', description: 'General Purpose' };
+  };
+
+  // Generate carton visual representation
+  const generateCartonSVG = (boxSize: BoxSize, isSelected: boolean = false) => {
+    const { length, width, height } = boxSize.dimensions;
+    const typeInfo = getCartonTypeInfo(boxSize);
+    const scale = 0.8; // Scale factor for display
+    const baseWidth = Math.min(length * scale, 80);
+    const baseHeight = Math.min(width * scale, 60);
+    const depth = Math.min(height * scale, 40);
+    
+    const selectedColor = isSelected ? '#10b981' : typeInfo.color;
+    
+    return (
+      <svg width="100" height="80" viewBox="0 0 100 80" className="mx-auto">
+        <defs>
+          <linearGradient id={`gradient-${boxSize.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor={selectedColor} stopOpacity="0.3"/>
+            <stop offset="100%" stopColor={selectedColor} stopOpacity="0.7"/>
+          </linearGradient>
+          <pattern id={`lines-${boxSize.id}`} patternUnits="userSpaceOnUse" width="4" height="4">
+            <path d="M 0,4 l 4,-4 M -1,1 l 2,-2 M 3,5 l 2,-2" stroke={selectedColor} strokeWidth="0.5" opacity="0.3"/>
+          </pattern>
+        </defs>
+        
+        {/* Main box face */}
+        <rect 
+          x={20} 
+          y={20} 
+          width={baseWidth} 
+          height={baseHeight} 
+          fill={typeInfo.type === 'envelope' ? `url(#lines-${boxSize.id})` : `url(#gradient-${boxSize.id})`}
+          stroke={selectedColor}
+          strokeWidth={isSelected ? "3" : "2"}
+          rx={typeInfo.type === 'envelope' ? "4" : "2"}
+        />
+        
+        {/* Top face for 3D effect - only for boxes, not envelopes */}
+        {typeInfo.type !== 'envelope' && (
+          <polygon 
+            points={`20,20 ${20 + depth/2},${20 - depth/2} ${20 + baseWidth + depth/2},${20 - depth/2} ${20 + baseWidth},20`}
+            fill={selectedColor}
+            opacity="0.6"
+            stroke={selectedColor}
+            strokeWidth={isSelected ? "2" : "1"}
+          />
+        )}
+        
+        {/* Right face for 3D effect - only for boxes, not envelopes */}
+        {typeInfo.type !== 'envelope' && (
+          <polygon 
+            points={`${20 + baseWidth},20 ${20 + baseWidth + depth/2},${20 - depth/2} ${20 + baseWidth + depth/2},${20 + baseHeight - depth/2} ${20 + baseWidth},${20 + baseHeight}`}
+            fill={selectedColor}
+            opacity="0.4"
+            stroke={selectedColor}
+            strokeWidth={isSelected ? "2" : "1"}
+          />
+        )}
+        
+        {/* Special indicators */}
+        {typeInfo.type === 'fragile' && (
+          <text x="50" y="35" textAnchor="middle" fontSize="6" fill="#dc2626" fontWeight="bold">
+            FRAGILE
+          </text>
+        )}
+        
+        {typeInfo.type === 'bottle' && (
+          <circle cx="50" cy="35" r="8" fill="none" stroke={selectedColor} strokeWidth="1.5" opacity="0.7"/>
+        )}
+        
+        {/* Code name */}
+        <text x="50" y={typeInfo.type === 'envelope' ? "70" : "75"} textAnchor="middle" fontSize="12" fill="#374151" fontWeight="bold">
+          {boxSize.name.split(' - ')[0]}
+        </text>
+        
+        {/* Selection indicator */}
+        {isSelected && (
+          <circle cx="85" cy="15" r="6" fill="#10b981" stroke="white" strokeWidth="2">
+            <animate attributeName="r" values="4;6;4" dur="1s" repeatCount="indefinite"/>
+          </circle>
+        )}
+      </svg>
+    );
+  };
 
   // Generate realistic item dimensions based on product type
   const generateItemDimensions = (productName: string, quantity: number): ItemDimensions => {
@@ -1515,12 +1614,35 @@ export default function PickPack() {
                             <Badge variant="secondary">{packingRecommendation.cartons.length}</Badge>
                           </div>
                           <div className="flex justify-between items-center mb-2">
-                            <span className="text-sm font-medium">Total Cost:</span>
-                            <span className="text-sm font-bold">${packingRecommendation.totalCost.toFixed(2)}</span>
+                            <span className="text-sm font-medium">Total Weight:</span>
+                            <span className="text-sm font-bold">{packingRecommendation.totalWeight.toFixed(2)}kg</span>
                           </div>
                           <div className="flex justify-between items-center">
-                            <span className="text-sm font-medium">Efficiency:</span>
+                            <span className="text-sm font-medium">Packing Efficiency:</span>
                             <span className="text-sm">{packingRecommendation.efficiency.toFixed(1)}%</span>
+                          </div>
+                        </div>
+
+                        {/* Carton Type Legend */}
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                          <div className="text-sm font-medium mb-2">Carton Types:</div>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 rounded" style={{ backgroundColor: '#f59e0b' }}></div>
+                              <span>E-Series: Envelopes</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 rounded" style={{ backgroundColor: '#3b82f6' }}></div>
+                              <span>K-Series: Standard</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 rounded" style={{ backgroundColor: '#ef4444' }}></div>
+                              <span>F-Series: Fragile</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 rounded" style={{ backgroundColor: '#8b5cf6' }}></div>
+                              <span>B-Series: Bottles</span>
+                            </div>
                           </div>
                         </div>
 
@@ -1528,41 +1650,101 @@ export default function PickPack() {
                         <div className="bg-green-50 p-3 rounded-lg">
                           <div className="flex items-start gap-2">
                             <Info className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                            <p className="text-xs text-green-800">{packingRecommendation.reasoning}</p>
+                            <div className="flex-1">
+                              <div className="text-xs font-medium text-green-800 mb-1">AI Recommendation:</div>
+                              <p className="text-xs text-green-700">{packingRecommendation.reasoning}</p>
+                            </div>
                           </div>
                         </div>
 
-                        {/* Carton Selection */}
-                        <div className="space-y-2">
+                        {/* Carton Selection with Visual Representations */}
+                        <div className="space-y-3">
                           <label className="text-sm font-medium">Select Carton to Pack:</label>
-                          <div className="grid gap-2">
+                          <div className="grid gap-3">
                             {packingRecommendation.cartons.map((carton, index) => (
-                              <Button
+                              <div
                                 key={carton.id}
-                                variant={selectedCarton === carton.id ? "default" : "outline"}
-                                size="sm"
+                                className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                                  selectedCarton === carton.id 
+                                    ? 'border-blue-500 bg-blue-50' 
+                                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                                }`}
                                 onClick={() => {
                                   setSelectedCarton(carton.id);
                                   setSelectedBoxSize(carton.boxSize.name);
                                   setPackageWeight(carton.totalWeight.toFixed(2));
                                   setPackingChecklist({...packingChecklist, weightRecorded: true});
                                 }}
-                                className="justify-between p-3 h-auto"
                               >
-                                <div className="text-left">
-                                  <div className="font-medium">Carton {index + 1}: {carton.boxSize.name}</div>
-                                  <div className="text-xs opacity-75">
-                                    {carton.items.length} items • {carton.totalWeight.toFixed(2)}kg • {carton.utilization.toFixed(0)}% full
+                                <div className="flex items-center gap-4">
+                                  {/* Carton Visual */}
+                                  <div className="flex-shrink-0">
+                                    {generateCartonSVG(carton.boxSize, selectedCarton === carton.id)}
                                   </div>
-                                  {carton.isFragile && (
-                                    <Badge variant="destructive" className="text-xs mt-1">Fragile</Badge>
+                                  
+                                  {/* Carton Details */}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="font-bold text-lg text-blue-600">
+                                        {carton.boxSize.name.split(' - ')[0]}
+                                      </span>
+                                      <Badge variant="outline" className="text-xs">
+                                        #{index + 1}
+                                      </Badge>
+                                      {carton.isFragile && (
+                                        <Badge variant="destructive" className="text-xs">Fragile</Badge>
+                                      )}
+                                    </div>
+                                    
+                                    <div className="text-sm text-gray-600 mb-2">
+                                      {carton.boxSize.name.split(' - ')[1]}
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-500">
+                                      <div>
+                                        <span className="font-medium">Items:</span> {carton.items.length}
+                                      </div>
+                                      <div>
+                                        <span className="font-medium">Weight:</span> {carton.totalWeight.toFixed(2)}kg
+                                      </div>
+                                      <div>
+                                        <span className="font-medium">Size:</span> {carton.boxSize.dimensions.length}×{carton.boxSize.dimensions.width}×{carton.boxSize.dimensions.height}cm
+                                      </div>
+                                      <div>
+                                        <span className="font-medium">Fill:</span> {carton.utilization.toFixed(0)}%
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="mt-2 text-xs text-gray-600">
+                                      <span className="font-medium">Material:</span> {carton.boxSize.material}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Selection Indicator */}
+                                  {selectedCarton === carton.id && (
+                                    <div className="flex-shrink-0">
+                                      <CheckCircle className="h-6 w-6 text-blue-600" />
+                                    </div>
                                   )}
                                 </div>
-                                <div className="text-right">
-                                  <div className="text-sm font-bold">${carton.boxSize.cost.toFixed(2)}</div>
-                                  <div className="text-xs">{carton.boxSize.material}</div>
+                                
+                                {/* Utilization Bar */}
+                                <div className="mt-3">
+                                  <div className="flex justify-between text-xs text-gray-500 mb-1">
+                                    <span>Space Utilization</span>
+                                    <span>{carton.utilization.toFixed(1)}%</span>
+                                  </div>
+                                  <div className="w-full bg-gray-200 rounded-full h-2">
+                                    <div 
+                                      className={`h-2 rounded-full transition-all ${
+                                        carton.utilization > 80 ? 'bg-red-500' :
+                                        carton.utilization > 60 ? 'bg-yellow-500' : 'bg-green-500'
+                                      }`}
+                                      style={{ width: `${Math.min(carton.utilization, 100)}%` }}
+                                    ></div>
+                                  </div>
                                 </div>
-                              </Button>
+                              </div>
                             ))}
                           </div>
                         </div>
