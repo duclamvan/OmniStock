@@ -1911,7 +1911,6 @@ export default function PickPack() {
               </div>
             )}
             </div>
-            </div>
             
             {activePickingOrder ? (
               <div className="hidden lg:block w-80 xl:w-96 bg-gradient-to-b from-white to-gray-50 border-l-4 border-gray-200 p-4 xl:p-6 overflow-y-auto">
