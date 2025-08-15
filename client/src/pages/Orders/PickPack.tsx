@@ -1992,8 +1992,7 @@ export default function PickPack() {
             </div>
           </div>
             ) : null}
-          </div>
-          
+            
             {/* Mobile Items Drawer - Collapsible with Swipe Hint */}
             {showMobileProgress && (
               <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-300 max-h-56 overflow-y-auto shadow-2xl z-30 animate-slide-up">
@@ -2070,8 +2069,12 @@ export default function PickPack() {
                 <ClipboardList className="h-5 w-5" />
               </Button>
             )}
-            
-
+          </div>
+          </div>
+          </div>
+          </div>
+          </div>
+          </div>
         </div>
       </div>
     );
