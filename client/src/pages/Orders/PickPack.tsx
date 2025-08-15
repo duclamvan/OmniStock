@@ -1598,9 +1598,7 @@ export default function PickPack() {
               ) : null}
             </div>
             
-            {/* Desktop Sidebar - inside flex row */}
-            <>
-            {activePickingOrder ? (
+            {activePickingOrder && (
               <div className="hidden lg:block w-80 xl:w-96 bg-gradient-to-b from-white to-gray-50 border-l-4 border-gray-200 p-4 xl:p-6 overflow-y-auto">
                 <div className="bg-gradient-to-r from-gray-700 to-gray-800 text-white rounded-xl p-3 xl:p-4 mb-4 xl:mb-6 shadow-lg">
               <h3 className="font-bold text-base xl:text-lg mb-2 flex items-center justify-between">
@@ -1680,9 +1678,8 @@ export default function PickPack() {
               })}
             </div>
           </div>
-            ) : null}
+            )}
             
-            {/* Mobile Items Drawer */}
             {showMobileProgress && activePickingOrder && (
               <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-300 max-h-56 overflow-y-auto shadow-2xl z-30 animate-slide-up">
                 <div className="p-3">
@@ -1749,7 +1746,6 @@ export default function PickPack() {
               </div>
             )}
             
-            {/* Mobile Progress Toggle Button */}
             {!showMobileProgress && activePickingOrder && (
               <Button
                 className="lg:hidden fixed bottom-4 right-4 h-12 w-12 rounded-full bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white shadow-lg z-30 touch-manipulation animate-pulse"
@@ -1758,7 +1754,6 @@ export default function PickPack() {
                 <ClipboardList className="h-5 w-5" />
               </Button>
             )}
-            </>
           </div>
         </div>
       </div>
