@@ -49,7 +49,7 @@ import AddCategory from "@/pages/Inventory/AddCategory";
 import EditCategory from "@/pages/Inventory/EditCategory";
 import CategoryDetails from "@/pages/Inventory/CategoryDetails";
 import WarehouseMap from "@/pages/WarehouseMap";
-import PickPack from "@/pages/Orders/PickPack";
+import PickPackEnhanced from "@/pages/Orders/PickPackEnhanced";
 
 function Router() {
   return (
@@ -58,7 +58,7 @@ function Router() {
         <Route path="/" component={Home} />
         <Route path="/orders" component={AllOrders} />
         <Route path="/orders/add" component={AddOrder} />
-        <Route path="/orders/pick-pack" component={PickPack} />
+        <Route path="/orders/pick-pack" component={PickPackEnhanced} />
         <Route path="/orders/to-fulfill">
           {() => <AllOrders filter="to_fulfill" />}
         </Route>
