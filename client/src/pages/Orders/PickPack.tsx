@@ -1993,7 +1993,6 @@ export default function PickPack() {
           </div>
             ) : null}
           </div>
-          </div>
           
             {/* Mobile Items Drawer - Collapsible with Swipe Hint */}
             {showMobileProgress && (
