@@ -591,7 +591,8 @@ async function seedPickPackData() {
         pickedQuantity: 0,
         packedQuantity: 0,
         warehouseLocation: 'A1-01-03',
-        barcode: '8901234567890'
+        barcode: '8901234567890',
+        image: 'https://via.placeholder.com/400x300/4F46E5/FFFFFF?text=ProBook+Laptop'
       },
       {
         orderId: 'ord-pick-001',
@@ -608,7 +609,8 @@ async function seedPickPackData() {
         pickedQuantity: 0,
         packedQuantity: 0,
         warehouseLocation: 'A1-02-05',
-        barcode: '8901234567897'
+        barcode: '8901234567897',
+        image: 'https://via.placeholder.com/400x300/059669/FFFFFF?text=iPhone+15+Pro'
       },
       {
         orderId: 'ord-pick-001',
@@ -625,7 +627,8 @@ async function seedPickPackData() {
         pickedQuantity: 0,
         packedQuantity: 0,
         warehouseLocation: 'A1-03-02',
-        barcode: '8901234567892'
+        barcode: '8901234567892',
+        image: 'https://via.placeholder.com/400x300/DC2626/FFFFFF?text=Headphones+Pro'
       },
       // Items for ord-pick-002 (Regular order)
       {
@@ -642,7 +645,8 @@ async function seedPickPackData() {
         pickedQuantity: 0,
         packedQuantity: 0,
         warehouseLocation: 'A1-03-02',
-        barcode: '8901234567892'
+        barcode: '8901234567892',
+        image: 'https://via.placeholder.com/400x300/DC2626/FFFFFF?text=Headphones+Pro'
       },
       {
         orderId: 'ord-pick-002',
@@ -658,7 +662,8 @@ async function seedPickPackData() {
         pickedQuantity: 0,
         packedQuantity: 0,
         warehouseLocation: 'C3-02-08',
-        barcode: '8901234567896'
+        barcode: '8901234567896',
+        image: 'https://via.placeholder.com/400x300/EA580C/FFFFFF?text=Cushion'
       },
       // Items for ord-picking-001 (Currently picking)
       {

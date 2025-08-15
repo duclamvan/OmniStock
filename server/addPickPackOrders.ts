@@ -180,6 +180,18 @@ async function addPickPackOrders() {
         const isBundle = order.id === 'ord-pp-bundle';
         const quantity = isBundle ? 1 : Math.ceil(Math.random() * 3);
         
+        // Generate placeholder images based on product type
+        const placeholderImages = [
+          'https://via.placeholder.com/400x300/4F46E5/FFFFFF?text=Laptop',
+          'https://via.placeholder.com/400x300/059669/FFFFFF?text=Phone',
+          'https://via.placeholder.com/400x300/DC2626/FFFFFF?text=Headphones',
+          'https://via.placeholder.com/400x300/7C3AED/FFFFFF?text=T-Shirt',
+          'https://via.placeholder.com/400x300/2563EB/FFFFFF?text=Jeans',
+          'https://via.placeholder.com/400x300/DB2777/FFFFFF?text=Lamp',
+          'https://via.placeholder.com/400x300/EA580C/FFFFFF?text=Cushion',
+          'https://via.placeholder.com/400x300/16A34A/FFFFFF?text=Product'
+        ];
+        
         orderItemsData.push({
           orderId: order.id,
           productId: product.id,
@@ -199,7 +211,8 @@ async function addPickPackOrders() {
           packedQuantity: order.packStatus === 'completed' ? quantity :
                          order.packStatus === 'in_progress' ? Math.floor(quantity / 3) : 0,
           warehouseLocation: product.warehouseLocation || `A${j+1}-0${j+1}`,
-          barcode: product.barcode || `89012345678${90 + j}`
+          barcode: product.barcode || `89012345678${90 + j}`,
+          image: placeholderImages[j % placeholderImages.length]
         });
       }
     }
