@@ -71,6 +71,7 @@ function Router() {
         <Route path="/orders/pre-orders">
           {() => <div>Pre-orders page coming soon</div>}
         </Route>
+        {/* Dynamic routes must come last */}
         <Route path="/orders/:id/edit" component={EditOrder} />
         <Route path="/orders/:id" component={OrderDetails} />
         <Route path="/inventory" component={AllInventory} />
