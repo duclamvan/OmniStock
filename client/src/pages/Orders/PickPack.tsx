@@ -1675,24 +1675,14 @@ export default function PickPack() {
                 </div>
 
                 {/* Mobile Carousel Container */}
-                <div className="lg:hidden relative overflow-hidden -mx-3">
-                  {/* Left edge preview */}
-                  {currentItemIndex > 0 && (
-                    <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white via-gray-100 to-transparent z-10 pointer-events-none" />
-                  )}
-                  
-                  {/* Right edge preview */}
-                  {currentItemIndex < activePickingOrder.items.length - 1 && (
-                    <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white via-gray-100 to-transparent z-10 pointer-events-none" />
-                  )}
-                  
-                  {/* Carousel Track */}
+                <div className="lg:hidden relative overflow-hidden px-8" {...swipeHandlers}>
+                  {/* Carousel Track with visible edges */}
                   <div 
-                    className="carousel-container"
+                    className="flex transition-transform duration-300 ease-out gap-4"
                     style={{
-                      transform: `translateX(calc(-${currentItemIndex * 100}% + ${currentItemIndex > 0 ? '20px' : '0px'} - ${currentItemIndex < activePickingOrder.items.length - 1 ? '20px' : '0px'}))`
+                      transform: `translateX(calc(-${currentItemIndex * (100 - 15)}% - ${currentItemIndex * 16}px))`,
+                      marginLeft: '-7.5%'
                     }}
-                    {...swipeHandlers}
                   >
                     {activePickingOrder.items.map((item, index) => {
                       const isActive = index === currentItemIndex;
@@ -1703,11 +1693,13 @@ export default function PickPack() {
                       return (
                         <div 
                           key={item.id}
-                          className={`carousel-item ${!isActive ? 'carousel-item-inactive' : ''}`}
+                          className="flex-shrink-0"
                           style={{
-                            opacity: isVisible ? (isActive ? 1 : 0.5) : 0,
+                            width: '85%',
+                            opacity: isActive ? 1 : 0.7,
                             transform: `scale(${isActive ? 1 : 0.92})`,
-                            pointerEvents: isActive ? 'auto' : 'none'
+                            pointerEvents: isActive ? 'auto' : 'none',
+                            transition: 'all 0.3s ease-out'
                           }}
                         >
                           <Card className="mb-4 shadow-xl border-0 overflow-hidden">

@@ -90,33 +90,8 @@
 }
 
 /* Carousel animations */
-.carousel-container {
-  display: flex;
+.carousel-slide {
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.carousel-item {
-  flex: 0 0 100%;
-  padding: 0 0.5rem;
-}
-
-@media (min-width: 640px) {
-  .carousel-item {
-    padding: 0 1rem;
-  }
-}
-
-/* Edge visibility on mobile */
-@media (max-width: 1023px) {
-  .carousel-container {
-    margin: 0 -1rem;
-    padding: 0 1rem;
-  }
-  
-  .carousel-item-inactive {
-    opacity: 0.5;
-    transform: scale(0.95);
-  }
 }
 
 /* Touch optimization for mobile */
