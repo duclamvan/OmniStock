@@ -510,18 +510,16 @@ export default function PickPack() {
                   </div>
 
                   {/* Product Image */}
-                  {currentItem.image && (
-                    <div className="mb-3 bg-gray-100 rounded-lg p-2">
-                      <img 
-                        src={currentItem.image} 
-                        alt={currentItem.productName}
-                        className="w-full h-32 object-contain rounded"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    </div>
-                  )}
+                  <div className="mb-3 bg-gray-100 rounded-lg p-2">
+                    <img 
+                      src={currentItem.image || `https://via.placeholder.com/400x300/4F46E5/FFFFFF?text=${encodeURIComponent(currentItem.productName.substring(0, 20))}`} 
+                      alt={currentItem.productName}
+                      className="w-full h-32 object-contain rounded"
+                      onError={(e) => {
+                        e.currentTarget.src = `https://via.placeholder.com/400x300/6B7280/FFFFFF?text=No+Image`;
+                      }}
+                    />
+                  </div>
 
                   {/* Location */}
                   <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg p-3 text-white mb-3">
