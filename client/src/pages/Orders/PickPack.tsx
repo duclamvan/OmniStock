@@ -960,16 +960,6 @@ export default function PickPack() {
 
     if (priorityOrder) {
       startPicking(priorityOrder);
-      toast({
-        title: "Priority Order Started",
-        description: `Started picking high priority order ${priorityOrder.orderId}`,
-      });
-    } else {
-      toast({
-        title: "No Pending Orders",
-        description: "There are no orders ready to be picked",
-        variant: "destructive"
-      });
     }
   };
 
@@ -977,22 +967,11 @@ export default function PickPack() {
   const toggleBatchPickingMode = () => {
     setBatchPickingMode(!batchPickingMode);
     setSelectedBatchItems(new Set());
-    toast({
-      title: batchPickingMode ? "Batch Mode Disabled" : "Batch Mode Enabled",
-      description: batchPickingMode 
-        ? "Switched back to single order picking" 
-        : "Select multiple orders to pick together",
-    });
   };
 
   // Quick Action: Optimize Pick Route
   const optimizePickRoute = () => {
     if (!activePickingOrder) {
-      toast({
-        title: "No Active Order",
-        description: "Start picking an order first to optimize the route",
-        variant: "destructive"
-      });
       return;
     }
 
@@ -1009,10 +988,6 @@ export default function PickPack() {
     };
 
     setActivePickingOrder(optimizedOrder);
-    toast({
-      title: "Route Optimized",
-      description: "Items reordered for the most efficient picking path",
-    });
   };
 
   // Quick Action: Toggle Performance Stats
@@ -1166,10 +1141,6 @@ export default function PickPack() {
     setPickingTimer(0);
     setIsTimerRunning(true);
     playSound('success');
-    toast({
-      title: "Picking Started",
-      description: `Started picking order ${order.orderId}`,
-    });
     // Focus barcode input
     setTimeout(() => barcodeInputRef.current?.focus(), 100);
   };
@@ -1195,10 +1166,6 @@ export default function PickPack() {
     if (allPicked) {
       setIsTimerRunning(false); // Stop the timer when all items are picked
       playSound('success');
-      toast({
-        title: "All Items Picked!",
-        description: "You can now complete the picking process",
-      });
     }
   };
 
@@ -1226,10 +1193,6 @@ export default function PickPack() {
 
     setIsTimerRunning(false);
     queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
-    toast({
-      title: "Picking Completed",
-      description: `Order ${updatedOrder.orderId} is ready for packing`,
-    });
     playSound('success');
     setActivePickingOrder(null);
     setSelectedTab('packing');
@@ -1277,10 +1240,6 @@ export default function PickPack() {
     setPackageWeight('');
     
     playSound('success');
-    toast({
-      title: "AI Packing Started",
-      description: `AI selected ${recommendation.cartons.length} carton${recommendation.cartons.length > 1 ? 's' : ''} for optimal packing`,
-    });
   };
 
   // Complete packing
@@ -1306,10 +1265,6 @@ export default function PickPack() {
 
     setIsPackingTimerRunning(false);
     queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
-    toast({
-      title: "Packing Completed",
-      description: `Order ${updatedOrder.orderId} is ready to ship`,
-    });
     playSound('success');
     setActivePackingOrder(null);
     setSelectedTab('ready');
@@ -1322,10 +1277,6 @@ export default function PickPack() {
       status: 'shipped'
     });
 
-    toast({
-      title: "Order Shipped",
-      description: `Order ${order.orderId} has been marked as shipped`,
-    });
     playSound('success');
     queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
   };
@@ -1341,17 +1292,8 @@ export default function PickPack() {
     if (item) {
       const newQty = Math.min(item.pickedQuantity + 1, item.quantity);
       updatePickedItem(item.id, newQty);
-      toast({
-        title: "Item Scanned",
-        description: `${item.productName} (${newQty}/${item.quantity})`,
-      });
       playSound('scan');
     } else {
-      toast({
-        title: "Invalid Barcode",
-        description: "Item not found in this order",
-        variant: "destructive",
-      });
       playSound('error');
     }
     setBarcodeInput('');
@@ -1522,17 +1464,8 @@ export default function PickPack() {
                             if (matchingItem) {
                               setVerifiedItems(new Set([...verifiedItems, matchingItem.id]));
                               playSound('scan');
-                              toast({
-                                title: "Item Verified",
-                                description: matchingItem.productName,
-                              });
                             } else {
                               playSound('error');
-                              toast({
-                                title: "Item Not Found",
-                                description: "This item is not in the current order",
-                                variant: "destructive"
-                              });
                             }
                             setBarcodeInput('');
                           }
@@ -2000,10 +1933,7 @@ export default function PickPack() {
                       <Button 
                         className="w-full bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-blue-600"
                         onClick={() => {
-                          toast({
-                            title: "Shipping Label Generated",
-                            description: "Label ready for printing",
-                          });
+                          playSound('success');
                         }}
                       >
                         <Printer className="h-4 w-4 mr-2" />
@@ -2086,11 +2016,6 @@ export default function PickPack() {
                               const nextOrder = getOrdersByStatus('packing')[0];
                               if (nextOrder) {
                                 startPacking(nextOrder);
-                              } else {
-                                toast({
-                                  title: "No More Orders",
-                                  description: "All orders have been packed!",
-                                });
                               }
                             }, 500);
                           }}
@@ -2611,11 +2536,6 @@ export default function PickPack() {
                             const nextOrder = getOrdersByStatus('pending')[0];
                             if (nextOrder) {
                               startPicking(nextOrder);
-                            } else {
-                              toast({
-                                title: "No More Orders",
-                                description: "All orders have been picked!",
-                              });
                             }
                           }, 500);
                         }}
@@ -3093,10 +3013,6 @@ export default function PickPack() {
                         const selectedOrders = getOrdersByStatus('pending').filter(o => selectedBatchItems.has(o.id));
                         if (selectedOrders.length > 0) {
                           startPicking(selectedOrders[0]);
-                          toast({
-                            title: "Batch Picking Started",
-                            description: `Starting batch pick for ${selectedBatchItems.size} orders`,
-                          });
                         }
                       }}
                     >
@@ -3338,10 +3254,7 @@ export default function PickPack() {
                                 className="w-full sm:w-auto"
                                 onClick={() => {
                                   // Print shipping label
-                                  toast({
-                                    title: "Printing Label",
-                                    description: `Printing shipping label for ${order.orderId}`,
-                                  });
+                                  playSound('success');
                                 }}
                               >
                                 <Printer className="h-4 sm:h-5 w-4 sm:w-5 mr-1 sm:mr-2" />
