@@ -53,6 +53,7 @@ interface OrderItem {
   packedQuantity: number;
   warehouseLocation?: string;
   barcode?: string;
+  image?: string;
 }
 
 interface PickPackOrder {
@@ -148,7 +149,8 @@ export default function PickPack() {
           pickedQuantity: item.pickedQuantity || 0,
           packedQuantity: item.packedQuantity || 0,
           warehouseLocation: item.warehouseLocation || 'A1-01',
-          barcode: item.barcode || item.sku
+          barcode: item.barcode || item.sku,
+          image: item.image || item.imageUrl
         })) || [],
         totalItems: order.items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0,
         pickedItems: order.items?.reduce((sum: number, item: any) => sum + (item.pickedQuantity || 0), 0) || 0,
@@ -484,6 +486,20 @@ export default function PickPack() {
                       Item {currentItemIndex + 1} of {activePickingOrder.items.length}
                     </Badge>
                   </div>
+
+                  {/* Product Image */}
+                  {currentItem.image && (
+                    <div className="mb-3 bg-gray-100 rounded-lg p-2">
+                      <img 
+                        src={currentItem.image} 
+                        alt={currentItem.productName}
+                        className="w-full h-32 object-contain rounded"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
 
                   {/* Location */}
                   <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg p-3 text-white mb-3">
