@@ -31,10 +31,12 @@ The schema supports a comprehensive e-commerce workflow, encompassing core entit
 - **Expenses Management**: Redesigned expenses page with modern UI, enhanced stats, and streamlined forms.
 - **Product Bundles**: Comprehensive management system with standalone creation, robust product variant support, multiple pricing modes, advanced variant selection, detailed view pages with statistics, and duplicate/activate/deactivate functionality.
 - **Point of Sale (POS)**: Full-featured POS system for walk-in customers with thermal printer support, multi-currency support, real-time cart management, VAT calculation, receipt generation, and mobile optimization.
+- **Pick & Pack Enhanced**: Advanced warehouse fulfillment system with multi-batch picking, performance tracking with timers, celebratory completion screens with statistics, barcode scanning, robust packing workflows with material selection, and real-time activity notifications. Optimized for speed with quick navigation and auto-advancement features.
 - **Multi-Currency Support**: Supports five currencies (CZK, EUR, USD, VND, CNY) with simplified exchange rate conversion.
 - **Search Functionality**: Real-time Vietnamese diacritics search with custom character normalization.
 - **Reusable Components**: Generic DataTable component with bulk selection, sorting, pagination, and actions.
 - **Reporting**: Comprehensive sales, inventory, customer, and financial reports with filtering.
+- **Mobile-First UI**: Enhanced mobile menu with fixed user profile section at bottom for easy access, responsive layouts optimized for handheld devices.
 
 # External Dependencies
 
