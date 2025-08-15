@@ -744,13 +744,16 @@ export default function PickPack() {
 
   // Start picking an order
   const startPicking = async (order: PickPackOrder) => {
-    // Keep order status as "to_fulfill" but update pick status
-    await updateOrderStatusMutation.mutateAsync({
-      orderId: order.id,
-      status: 'to_fulfill',
-      pickStatus: 'in_progress',
-      pickedBy: currentEmployee
-    });
+    // Only update database for real orders (not mock orders)
+    if (!order.id.startsWith('mock-')) {
+      // Keep order status as "to_fulfill" but update pick status
+      await updateOrderStatusMutation.mutateAsync({
+        orderId: order.id,
+        status: 'to_fulfill',
+        pickStatus: 'in_progress',
+        pickedBy: currentEmployee
+      });
+    }
 
     const updatedOrder = {
       ...order,
@@ -804,13 +807,16 @@ export default function PickPack() {
   const completePicking = async () => {
     if (!activePickingOrder) return;
 
-    // Keep order status as "to_fulfill" but update pick status
-    await updateOrderStatusMutation.mutateAsync({
-      orderId: activePickingOrder.id,
-      status: 'to_fulfill',
-      pickStatus: 'completed',
-      packStatus: 'not_started'
-    });
+    // Only update database for real orders (not mock orders)
+    if (!activePickingOrder.id.startsWith('mock-')) {
+      // Keep order status as "to_fulfill" but update pick status
+      await updateOrderStatusMutation.mutateAsync({
+        orderId: activePickingOrder.id,
+        status: 'to_fulfill',
+        pickStatus: 'completed',
+        packStatus: 'not_started'
+      });
+    }
 
     const updatedOrder = {
       ...activePickingOrder,
@@ -832,14 +838,17 @@ export default function PickPack() {
 
   // Start packing an order
   const startPacking = async (order: PickPackOrder) => {
-    // Keep order status as "to_fulfill" but update pack status
-    if (order.packStatus !== 'in_progress') {
-      await updateOrderStatusMutation.mutateAsync({
-        orderId: order.id,
-        status: 'to_fulfill',
-        packStatus: 'in_progress',
-        packedBy: currentEmployee
-      });
+    // Only update database for real orders (not mock orders)
+    if (!order.id.startsWith('mock-')) {
+      // Keep order status as "to_fulfill" but update pack status
+      if (order.packStatus !== 'in_progress') {
+        await updateOrderStatusMutation.mutateAsync({
+          orderId: order.id,
+          status: 'to_fulfill',
+          packStatus: 'in_progress',
+          packedBy: currentEmployee
+        });
+      }
     }
 
     const updatedOrder = {
@@ -862,12 +871,15 @@ export default function PickPack() {
   const completePacking = async () => {
     if (!activePackingOrder) return;
 
-    // Update order status to "shipped" when packing is complete
-    await updateOrderStatusMutation.mutateAsync({
-      orderId: activePackingOrder.id,
-      status: 'shipped',
-      packStatus: 'completed'
-    });
+    // Only update database for real orders (not mock orders)
+    if (!activePackingOrder.id.startsWith('mock-')) {
+      // Update order status to "shipped" when packing is complete
+      await updateOrderStatusMutation.mutateAsync({
+        orderId: activePackingOrder.id,
+        status: 'shipped',
+        packStatus: 'completed'
+      });
+    }
 
     const updatedOrder = {
       ...activePackingOrder,
