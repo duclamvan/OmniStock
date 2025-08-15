@@ -96,6 +96,7 @@ export default function PickPack() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [verifiedPackItems, setVerifiedPackItems] = useState<Set<string>>(new Set());
   const barcodeInputRef = useRef<HTMLInputElement>(null);
+  const itemsScrollAreaRef = useRef<HTMLDivElement>(null);
 
   // Timer effects
   useEffect(() => {
@@ -227,7 +228,26 @@ export default function PickPack() {
       title: "Picking Started",
       description: `Started picking order ${order.orderId}`,
     });
-    setTimeout(() => barcodeInputRef.current?.focus(), 100);
+    setTimeout(() => {
+      barcodeInputRef.current?.focus();
+      scrollToNextUnpickedItem();
+    }, 100);
+  };
+
+  // Auto-scroll to next unpicked item
+  const scrollToNextUnpickedItem = () => {
+    if (!itemsScrollAreaRef.current) return;
+    
+    setTimeout(() => {
+      const scrollArea = itemsScrollAreaRef.current;
+      if (!scrollArea) return;
+      
+      // Find the first unpicked item element
+      const unpickedItem = scrollArea.querySelector('[data-picked="false"]');
+      if (unpickedItem) {
+        unpickedItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
   };
 
   // Update picked item quantity
@@ -269,6 +289,8 @@ export default function PickPack() {
       if (nextIndex >= 0) {
         setCurrentItemIndex(nextIndex);
       }
+      // Auto-scroll to next unpicked item when an item is fully picked
+      scrollToNextUnpickedItem();
     }
   };
 
@@ -616,10 +638,11 @@ export default function PickPack() {
                 </CardHeader>
                 <CardContent className="p-3">
                   <ScrollArea className="h-32">
-                    <div className="space-y-2">
+                    <div className="space-y-2" ref={itemsScrollAreaRef}>
                       {activePickingOrder.items.map((item, index) => (
                         <div
                           key={item.id}
+                          data-picked={item.pickedQuantity >= item.quantity ? "true" : "false"}
                           className={`flex items-center justify-between p-2 rounded-lg border cursor-pointer transition-colors ${
                             index === currentItemIndex ? 'bg-blue-50 border-blue-300' : 
                             item.pickedQuantity >= item.quantity ? 'bg-green-50 border-green-200' : 
