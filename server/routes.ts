@@ -1849,16 +1849,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (packedBy) updates.packedBy = packedBy;
 
       // Add timestamps for status changes
-      if (orderStatus === 'picking' && pickStatus === 'in_progress') {
+      if (pickStatus === 'in_progress' && !updates.pickStartTime) {
         updates.pickStartTime = new Date();
       }
-      if (orderStatus === 'packing' && pickStatus === 'completed') {
+      if (pickStatus === 'completed' && !updates.pickEndTime) {
         updates.pickEndTime = new Date();
       }
-      if (orderStatus === 'packing' && packStatus === 'in_progress') {
+      if (packStatus === 'in_progress' && !updates.packStartTime) {
         updates.packStartTime = new Date();
       }
-      if (orderStatus === 'ready_to_ship' && packStatus === 'completed') {
+      if (packStatus === 'completed' && !updates.packEndTime) {
         updates.packEndTime = new Date();
       }
       if (orderStatus === 'shipped') {
@@ -1872,13 +1872,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
         action: 'update',
         entityType: 'order',
         entityId: order.id,
-        description: `Updated order status to ${orderStatus}: ${order.orderId}`,
+        description: `Updated order status to ${orderStatus || pickStatus || packStatus}: ${order.orderId}`,
       });
       
       res.json(order);
     } catch (error) {
       console.error("Error updating order status:", error);
       res.status(500).json({ message: "Failed to update order status" });
+    }
+  });
+
+  // Get pick-pack dashboard data
+  app.get('/api/orders/pick-pack', async (req: any, res) => {
+    try {
+      const orders = await storage.getOrders();
+      const pickPackOrders = orders.filter(order => 
+        order.orderStatus === 'to_fulfill' || 
+        order.orderStatus === 'picking' || 
+        order.orderStatus === 'packing' ||
+        order.orderStatus === 'ready_to_ship'
+      );
+      res.json(pickPackOrders);
+    } catch (error) {
+      console.error("Error fetching pick-pack orders:", error);
+      res.status(500).json({ message: "Failed to fetch pick-pack orders" });
+    }
+  });
+
+  // Update item picked/packed quantity
+  app.patch('/api/orders/:orderId/items/:itemId', async (req: any, res) => {
+    try {
+      const { pickedQuantity, packedQuantity } = req.body;
+      const order = await storage.getOrder(req.params.orderId);
+      
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+      
+      const itemIndex = order.items.findIndex((item: any) => item.id === req.params.itemId);
+      if (itemIndex === -1) {
+        return res.status(404).json({ message: "Item not found" });
+      }
+      
+      if (pickedQuantity !== undefined) {
+        order.items[itemIndex].pickedQuantity = pickedQuantity;
+      }
+      if (packedQuantity !== undefined) {
+        order.items[itemIndex].packedQuantity = packedQuantity;
+      }
+      
+      const updatedOrder = await storage.updateOrder(req.params.orderId, { items: order.items });
+      res.json(updatedOrder);
+    } catch (error) {
+      console.error("Error updating item quantities:", error);
+      res.status(500).json({ message: "Failed to update item quantities" });
     }
   });
 
