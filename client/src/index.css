@@ -89,63 +89,6 @@
   animation: slide-up 0.3s ease-out;
 }
 
-/* Shake animation for incomplete item */
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-  20%, 40%, 60%, 80% { transform: translateX(5px); }
-}
-
-.shake-animation {
-  animation: shake 0.5s ease-in-out;
-}
-
-/* Smooth swipe transitions */
-@keyframes swipe-left-out {
-  from {
-    transform: translateX(0) scale(1);
-    opacity: 1;
-  }
-  to {
-    transform: translateX(-120%) scale(0.9);
-    opacity: 0;
-  }
-}
-
-@keyframes swipe-right-out {
-  from {
-    transform: translateX(0) scale(1);
-    opacity: 1;
-  }
-  to {
-    transform: translateX(120%) scale(0.9);
-    opacity: 0;
-  }
-}
-
-@keyframes swipe-in {
-  from {
-    transform: translateX(100%) scale(0.9);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0) scale(1);
-    opacity: 1;
-  }
-}
-
-.swipe-left-out {
-  animation: swipe-left-out 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-.swipe-right-out {
-  animation: swipe-right-out 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-.swipe-in {
-  animation: swipe-in 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
 /* Touch optimization for mobile */
 .touch-manipulation {
   touch-action: manipulation;

@@ -1677,23 +1677,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Orders endpoints
-  // Get pick-pack dashboard data (must be before dynamic routes)
-  app.get('/api/orders/pick-pack', async (req: any, res) => {
-    try {
-      const orders = await storage.getOrders();
-      const pickPackOrders = orders.filter(order => 
-        order.orderStatus === 'to_fulfill' || 
-        order.orderStatus === 'picking' || 
-        order.orderStatus === 'packing' ||
-        order.orderStatus === 'ready_to_ship'
-      );
-      res.json(pickPackOrders);
-    } catch (error) {
-      console.error("Error fetching pick-pack orders:", error);
-      res.status(500).json({ message: "Failed to fetch pick-pack orders" });
-    }
-  });
-
   app.get('/api/orders', async (req, res) => {
     try {
       const status = req.query.status as string;
@@ -1728,7 +1711,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Dynamic routes must be last
   app.get('/api/orders/:id', async (req, res) => {
     try {
       const order = await storage.getOrderById(req.params.id);
@@ -1867,16 +1849,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (packedBy) updates.packedBy = packedBy;
 
       // Add timestamps for status changes
-      if (pickStatus === 'in_progress' && !updates.pickStartTime) {
+      if (orderStatus === 'picking' && pickStatus === 'in_progress') {
         updates.pickStartTime = new Date();
       }
-      if (pickStatus === 'completed' && !updates.pickEndTime) {
+      if (orderStatus === 'packing' && pickStatus === 'completed') {
         updates.pickEndTime = new Date();
       }
-      if (packStatus === 'in_progress' && !updates.packStartTime) {
+      if (orderStatus === 'packing' && packStatus === 'in_progress') {
         updates.packStartTime = new Date();
       }
-      if (packStatus === 'completed' && !updates.packEndTime) {
+      if (orderStatus === 'ready_to_ship' && packStatus === 'completed') {
         updates.packEndTime = new Date();
       }
       if (orderStatus === 'shipped') {
@@ -1890,47 +1872,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         action: 'update',
         entityType: 'order',
         entityId: order.id,
-        description: `Updated order status to ${orderStatus || pickStatus || packStatus}: ${order.orderId}`,
+        description: `Updated order status to ${orderStatus}: ${order.orderId}`,
       });
       
       res.json(order);
     } catch (error) {
       console.error("Error updating order status:", error);
       res.status(500).json({ message: "Failed to update order status" });
-    }
-  });
-
-
-  // Update item picked/packed quantity
-  app.patch('/api/orders/:orderId/items/:itemId', async (req: any, res) => {
-    try {
-      const { pickedQuantity, packedQuantity } = req.body;
-      const order = await storage.getOrderById(req.params.orderId);
-      
-      if (!order) {
-        return res.status(404).json({ message: "Order not found" });
-      }
-      
-      // Find the item to update
-      const itemToUpdate = order.items?.find((item: any) => item.id === req.params.itemId);
-      if (!itemToUpdate) {
-        return res.status(404).json({ message: "Item not found" });
-      }
-      
-      // Update the item quantities directly in the database
-      if (pickedQuantity !== undefined) {
-        await storage.updateOrderItem(req.params.itemId, { pickedQuantity });
-      }
-      if (packedQuantity !== undefined) {
-        await storage.updateOrderItem(req.params.itemId, { packedQuantity });
-      }
-      
-      // Get the updated order
-      const updatedOrder = await storage.getOrderById(req.params.orderId);
-      res.json(updatedOrder);
-    } catch (error) {
-      console.error("Error updating item quantities:", error);
-      res.status(500).json({ message: "Failed to update item quantities" });
     }
   });
 

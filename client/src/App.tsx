@@ -49,16 +49,16 @@ import AddCategory from "@/pages/Inventory/AddCategory";
 import EditCategory from "@/pages/Inventory/EditCategory";
 import CategoryDetails from "@/pages/Inventory/CategoryDetails";
 import WarehouseMap from "@/pages/WarehouseMap";
-import PickPackEnhanced from "@/pages/Orders/PickPackEnhanced";
+import PickPack from "@/pages/Orders/PickPack";
 
 function Router() {
   return (
-    <Layout>
-      <Switch>
+    <Switch>
+      <Layout>
         <Route path="/" component={Home} />
         <Route path="/orders" component={AllOrders} />
         <Route path="/orders/add" component={AddOrder} />
-        <Route path="/orders/pick-pack" component={PickPackEnhanced} />
+        <Route path="/orders/pick-pack" component={PickPack} />
         <Route path="/orders/to-fulfill">
           {() => <AllOrders filter="to_fulfill" />}
         </Route>
@@ -71,7 +71,6 @@ function Router() {
         <Route path="/orders/pre-orders">
           {() => <div>Pre-orders page coming soon</div>}
         </Route>
-        {/* Dynamic routes must come last */}
         <Route path="/orders/:id/edit" component={EditOrder} />
         <Route path="/orders/:id" component={OrderDetails} />
         <Route path="/inventory" component={AllInventory} />
@@ -121,9 +120,9 @@ function Router() {
         <Route path="/settings">
           {() => <div>Settings page coming soon</div>}
         </Route>
-        <Route component={NotFound} />
-      </Switch>
-    </Layout>
+      </Layout>
+      <Route component={NotFound} />
+    </Switch>
   );
 }
 
