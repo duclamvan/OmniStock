@@ -2073,7 +2073,9 @@ export default function PickPack() {
           </div>
         </div>
       </div>
-    );
+    </div>
+  </div>
+  );
   }
 
   // Main Dashboard View
