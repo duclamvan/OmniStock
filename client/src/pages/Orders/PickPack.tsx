@@ -107,17 +107,15 @@ export default function PickPack() {
   // Fetch real orders from the API
   const { data: allOrders = [], isLoading } = useQuery({
     queryKey: ['/api/orders'],
-    queryFn: async () => {
-      const result = await apiRequest('/api/orders', 'GET');
-      return result || [];
-    },
     refetchInterval: 10000,
     staleTime: 5000,
   });
 
   // Transform real orders to PickPackOrder format
-  const transformedOrders: PickPackOrder[] = useMemo(() => 
-    ((allOrders || []) as any[])
+  const transformedOrders: PickPackOrder[] = useMemo(() => {
+    // Ensure allOrders is an array
+    const ordersArray = Array.isArray(allOrders) ? allOrders : [];
+    return ordersArray
     .filter((order: any) => order.orderStatus === 'to_fulfill')
     .map((order: any) => ({
       id: order.id,
@@ -151,7 +149,8 @@ export default function PickPack() {
       pickedBy: order.pickedBy,
       packedBy: order.packedBy,
       notes: order.notes
-    })), [allOrders]);
+    }));
+  }, [allOrders]);
 
   // Format timer
   const formatTimer = (seconds: number) => {
