@@ -1650,27 +1650,106 @@ export default function PickPack() {
                         {currentItemIndex + 1} / {activePickingOrder.items.length}
                       </Badge>
                     </CardTitle>
-                    {/* Mobile swipe indicator */}
+                    {/* Mobile swipe indicator and navigation buttons */}
                     {window.innerWidth < 1024 && (
-                      <div className="flex items-center justify-center mt-2 text-xs text-blue-100">
-                        {currentItemIndex > 0 && (
-                          <span className="flex items-center gap-1">
-                            <ChevronLeft className="h-3 w-3" />
-                            Previous
-                          </span>
-                        )}
-                        <span className="mx-4">Swipe to navigate</span>
-                        {currentItemIndex < activePickingOrder.items.length - 1 && (
-                          <span className="flex items-center gap-1">
-                            Next
-                            <ChevronRight className="h-3 w-3" />
-                          </span>
-                        )}
+                      <div className="mt-2">
+                        <div className="flex items-center justify-center text-xs text-blue-100">
+                          {currentItemIndex > 0 && (
+                            <span className="flex items-center gap-1">
+                              <ChevronLeft className="h-3 w-3" />
+                              Swipe left
+                            </span>
+                          )}
+                          <span className="mx-4">to navigate</span>
+                          {currentItemIndex < activePickingOrder.items.length - 1 && (
+                            <span className="flex items-center gap-1">
+                              Swipe right
+                              <ChevronRight className="h-3 w-3" />
+                            </span>
+                          )}
+                        </div>
+                        {/* Navigation buttons for double-checking and manual control */}
+                        <div className="mt-2 flex justify-center gap-2">
+                          {currentItemIndex > 0 && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 px-3 bg-white/20 hover:bg-white/30 text-white text-xs"
+                              onClick={() => {
+                                setSwipeAnimation('slide-right');
+                                setTimeout(() => {
+                                  setCurrentItemIndexState(currentItemIndex - 1);
+                                  setSwipeAnimation('');
+                                  playSound('scan');
+                                }, 300);
+                              }}
+                            >
+                              <ChevronLeft className="h-3 w-3 mr-1" />
+                              Previous
+                            </Button>
+                          )}
+                          {currentItemIndex < activePickingOrder.items.length - 1 && currentItem && currentItem.pickedQuantity >= currentItem.quantity && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 px-3 bg-white/20 hover:bg-white/30 text-white text-xs"
+                              onClick={() => {
+                                setSwipeAnimation('slide-left');
+                                setTimeout(() => {
+                                  setCurrentItemIndexState(currentItemIndex + 1);
+                                  setSwipeAnimation('');
+                                  playSound('scan');
+                                }, 300);
+                              }}
+                            >
+                              Next
+                              <ChevronRight className="h-3 w-3 ml-1" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     )}
                   </CardHeader>
                   <CardContent className="p-3 lg:p-6 bg-white">
                     <div className="space-y-3 lg:space-y-6">
+                      {/* Desktop Navigation Buttons */}
+                      <div className="hidden lg:flex justify-between mb-4">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={currentItemIndex === 0}
+                          className="h-9"
+                          onClick={() => {
+                            setSwipeAnimation('slide-right');
+                            setTimeout(() => {
+                              setCurrentItemIndexState(currentItemIndex - 1);
+                              setSwipeAnimation('');
+                              playSound('scan');
+                            }, 300);
+                          }}
+                        >
+                          <ChevronLeft className="h-4 w-4 mr-2" />
+                          Previous Item
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={currentItemIndex >= activePickingOrder.items.length - 1 || (currentItem && currentItem.pickedQuantity < currentItem.quantity)}
+                          className="h-9"
+                          onClick={() => {
+                            setSwipeAnimation('slide-left');
+                            setTimeout(() => {
+                              setCurrentItemIndexState(currentItemIndex + 1);
+                              setSwipeAnimation('');
+                              playSound('scan');
+                            }, 300);
+                          }}
+                        >
+                          Next Item
+                          <ChevronRight className="h-4 w-4 ml-2" />
+                        </Button>
+                      </div>
+
                       {/* Mobile Optimized Product Layout */}
                       <div className="flex flex-col sm:grid sm:grid-cols-2 lg:flex lg:flex-row lg:gap-6 gap-3">
                         {/* Product Image - Smaller on mobile */}
