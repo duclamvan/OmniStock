@@ -1632,244 +1632,45 @@ export default function PickPack() {
             {/* Left Panel - Current Item Focus */}
             <div className="flex-1 p-3 lg:p-6">
             {currentItem ? (
-              <div className="max-w-4xl mx-auto relative">
-                {/* Mobile Navigation Controls */}
-                <div className="lg:hidden mb-4">
-                  <div className="flex items-center justify-center text-xs text-gray-600 mb-2">
-                    <span className="flex items-center gap-1">
-                      <ChevronLeft className="h-3 w-3" />
-                      Swipe to navigate
-                      <ChevronRight className="h-3 w-3" />
-                    </span>
-                  </div>
-                  <div className="flex justify-center gap-2">
-                    {currentItemIndex > 0 && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 px-3 text-xs"
-                        onClick={() => {
-                          setCurrentItemIndexState(currentItemIndex - 1);
-                          playSound('scan');
-                        }}
-                      >
-                        <ChevronLeft className="h-3 w-3 mr-1" />
-                        Previous
-                      </Button>
-                    )}
-                    {currentItemIndex < activePickingOrder.items.length - 1 && currentItem && currentItem.pickedQuantity >= currentItem.quantity && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 px-3 text-xs"
-                        onClick={() => {
-                          setCurrentItemIndexState(currentItemIndex + 1);
-                          playSound('scan');
-                        }}
-                      >
-                        Next
-                        <ChevronRight className="h-3 w-3 ml-1" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Mobile Carousel Container */}
-                <div className="lg:hidden relative overflow-hidden px-8" {...swipeHandlers}>
-                  {/* Carousel Track with visible edges */}
-                  <div 
-                    className="flex transition-transform duration-300 ease-out gap-4"
-                    style={{
-                      transform: `translateX(calc(-${currentItemIndex * (100 - 15)}% - ${currentItemIndex * 16}px))`,
-                      marginLeft: '-7.5%'
-                    }}
-                  >
-                    {activePickingOrder.items.map((item, index) => {
-                      const isActive = index === currentItemIndex;
-                      const isPrevious = index === currentItemIndex - 1;
-                      const isNext = index === currentItemIndex + 1;
-                      const isVisible = isActive || isPrevious || isNext;
-                      
-                      return (
-                        <div 
-                          key={item.id}
-                          className="flex-shrink-0"
-                          style={{
-                            width: '85%',
-                            opacity: isActive ? 1 : 0.7,
-                            transform: `scale(${isActive ? 1 : 0.92})`,
-                            pointerEvents: isActive ? 'auto' : 'none',
-                            transition: 'all 0.3s ease-out'
-                          }}
-                        >
-                          <Card className="mb-4 shadow-xl border-0 overflow-hidden">
-                            <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white p-3">
-                              <CardTitle className="flex items-center justify-between">
-                                <span className="text-base flex items-center gap-2">
-                                  <Package className="h-5 w-5" />
-                                  <span>Pick Item</span>
-                                </span>
-                                <Badge className="bg-white text-blue-600 text-sm px-2 py-1 font-bold">
-                                  {index + 1} / {activePickingOrder.items.length}
-                                </Badge>
-                              </CardTitle>
-                            </CardHeader>
-                            <CardContent className="p-3 bg-white">
-                              {/* Show full content only for active item */}
-                              {isActive ? (
-                                <>
-                                  {/* Product Image and Details */}
-                                  <div className="flex flex-col gap-3">
-                                    <div className="flex gap-3">
-                                      {/* Product Image */}
-                                      <div className="relative">
-                                        <div className="w-20 h-20 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg flex items-center justify-center shadow-md">
-                                          {item.image ? (
-                                            <img src={item.image} alt={item.productName} className="w-full h-full object-contain rounded-lg p-1" />
-                                          ) : (
-                                            <Package className="h-10 w-10 text-gray-300" />
-                                          )}
-                                        </div>
-                                      </div>
-                                      
-                                      {/* Product Info */}
-                                      <div className="flex-1">
-                                        <h3 className="text-base font-bold text-gray-800 line-clamp-2">{item.productName}</h3>
-                                        <p className="text-xs text-gray-600 mt-1">SKU: {item.sku}</p>
-                                        <p className="text-xs text-gray-600">Barcode: {item.barcode}</p>
-                                      </div>
-                                    </div>
-                                    
-                                    {/* Location */}
-                                    <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-300 rounded-lg p-3 text-center">
-                                      <p className="text-xs text-orange-700 uppercase tracking-wide mb-1">Location</p>
-                                      <p className="text-2xl font-mono font-bold text-orange-600">{item.warehouseLocation}</p>
-                                    </div>
-                                    
-                                    {/* Quantity */}
-                                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-300 rounded-lg p-3">
-                                      <div className="flex items-center justify-between">
-                                        <span className="text-sm font-semibold text-green-800">Quantity</span>
-                                        <Badge className={`text-xs px-2 py-1 ${
-                                          item.pickedQuantity >= item.quantity
-                                            ? 'bg-green-600 text-white'
-                                            : 'bg-yellow-500 text-white'
-                                        }`}>
-                                          {item.pickedQuantity >= item.quantity ? 'PICKED' : 'PENDING'}
-                                        </Badge>
-                                      </div>
-                                      <div className="flex items-center justify-center gap-3 mt-2">
-                                        <Button
-                                          size="sm"
-                                          className="w-10 h-10 rounded-lg bg-red-500 hover:bg-red-600 text-white"
-                                          onClick={() => updatePickedItem(item.id, Math.max(0, item.pickedQuantity - 1))}
-                                          disabled={item.pickedQuantity === 0}
-                                        >
-                                          <Minus className="h-4 w-4" />
-                                        </Button>
-                                        
-                                        <div className="text-center bg-white rounded-lg px-4 py-2 shadow-md min-w-[80px]">
-                                          <div className="text-2xl font-bold text-gray-900">
-                                            {item.pickedQuantity}
-                                            <span className="text-base text-gray-500 ml-1">/{item.quantity}</span>
-                                          </div>
-                                        </div>
-                                        
-                                        <Button
-                                          size="sm"
-                                          className="w-10 h-10 rounded-lg bg-green-500 hover:bg-green-600 text-white"
-                                          onClick={() => updatePickedItem(item.id, Math.min(item.quantity, item.pickedQuantity + 1))}
-                                          disabled={item.pickedQuantity >= item.quantity}
-                                        >
-                                          <Plus className="h-4 w-4" />
-                                        </Button>
-                                      </div>
-                                      
-                                      {item.pickedQuantity < item.quantity && (
-                                        <Button 
-                                          size="sm" 
-                                          className="w-full mt-2 h-8 text-xs font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
-                                          onClick={() => updatePickedItem(item.id, item.quantity)}
-                                        >
-                                          <CheckCircle2 className="h-3 w-3 mr-1" />
-                                          Quick Pick All
-                                        </Button>
-                                      )}
-                                    </div>
-                                  </div>
-                                </>
-                              ) : (
-                                /* Simplified view for inactive items */
-                                <div className="text-center py-4">
-                                  <h3 className="text-base font-bold text-gray-600 mb-2 line-clamp-2">{item.productName}</h3>
-                                  <p className="text-xl font-mono font-bold text-orange-500 mb-2">{item.warehouseLocation}</p>
-                                  <p className="text-sm font-bold text-gray-500">
-                                    {item.pickedQuantity} / {item.quantity}
-                                  </p>
-                                </div>
-                              )}
-                            </CardContent>
-                          </Card>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-                
-                {/* Desktop Card (unchanged) */}
+              <div className="max-w-4xl mx-auto">
                 <Card 
-                  className={`hidden lg:block mb-4 lg:mb-6 shadow-xl border-0 overflow-hidden`}>
+                  {...(window.innerWidth < 1024 ? swipeHandlers : {})}
+                  className={`mb-4 lg:mb-6 shadow-xl border-0 overflow-hidden transition-transform duration-300 ${
+                    swipeAnimation === 'slide-left' ? '-translate-x-full opacity-0' : 
+                    swipeAnimation === 'slide-right' ? 'translate-x-full opacity-0' : ''
+                  }`}>
                   <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white p-3 lg:p-4">
                     <CardTitle className="flex items-center justify-between">
                       <span className="text-base lg:text-lg flex items-center gap-2">
                         <Package className="h-5 w-5" />
-                        <span>Current Item to Pick</span>
+                        <span className="hidden sm:inline">Current Item to Pick</span>
+                        <span className="sm:hidden">Pick Item</span>
                       </span>
                       <Badge className="bg-white text-blue-600 text-sm lg:text-base px-2 lg:px-3 py-1 font-bold">
                         {currentItemIndex + 1} / {activePickingOrder.items.length}
                       </Badge>
                     </CardTitle>
+                    {/* Mobile swipe indicator */}
+                    {window.innerWidth < 1024 && (
+                      <div className="flex items-center justify-center mt-2 text-xs text-blue-100">
+                        {currentItemIndex > 0 && (
+                          <span className="flex items-center gap-1">
+                            <ChevronLeft className="h-3 w-3" />
+                            Previous
+                          </span>
+                        )}
+                        <span className="mx-4">Swipe to navigate</span>
+                        {currentItemIndex < activePickingOrder.items.length - 1 && (
+                          <span className="flex items-center gap-1">
+                            Next
+                            <ChevronRight className="h-3 w-3" />
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </CardHeader>
                   <CardContent className="p-3 lg:p-6 bg-white">
                     <div className="space-y-3 lg:space-y-6">
-                      {/* Desktop Navigation Buttons */}
-                      <div className="hidden lg:flex justify-between mb-4">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={currentItemIndex === 0}
-                          className="h-9"
-                          onClick={() => {
-                            setSwipeAnimation('slide-right');
-                            setTimeout(() => {
-                              setCurrentItemIndexState(currentItemIndex - 1);
-                              setSwipeAnimation('');
-                              playSound('scan');
-                            }, 300);
-                          }}
-                        >
-                          <ChevronLeft className="h-4 w-4 mr-2" />
-                          Previous Item
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={currentItemIndex >= activePickingOrder.items.length - 1 || (currentItem && currentItem.pickedQuantity < currentItem.quantity)}
-                          className="h-9"
-                          onClick={() => {
-                            setSwipeAnimation('slide-left');
-                            setTimeout(() => {
-                              setCurrentItemIndexState(currentItemIndex + 1);
-                              setSwipeAnimation('');
-                              playSound('scan');
-                            }, 300);
-                          }}
-                        >
-                          Next Item
-                          <ChevronRight className="h-4 w-4 ml-2" />
-                        </Button>
-                      </div>
-
                       {/* Mobile Optimized Product Layout */}
                       <div className="flex flex-col sm:grid sm:grid-cols-2 lg:flex lg:flex-row lg:gap-6 gap-3">
                         {/* Product Image - Smaller on mobile */}
