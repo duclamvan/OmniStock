@@ -53,8 +53,8 @@ import PickPack from "@/pages/Orders/PickPack";
 
 function Router() {
   return (
-    <Switch>
-      <Layout>
+    <Layout>
+      <Switch>
         <Route path="/" component={Home} />
         <Route path="/orders" component={AllOrders} />
         <Route path="/orders/add" component={AddOrder} />
@@ -121,9 +121,9 @@ function Router() {
         <Route path="/settings">
           {() => <div>Settings page coming soon</div>}
         </Route>
-      </Layout>
-      <Route component={NotFound} />
-    </Switch>
+        <Route component={NotFound} />
+      </Switch>
+    </Layout>
   );
 }
 
