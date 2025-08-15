@@ -49,7 +49,8 @@ import {
   Plus,
   Minus,
   BarChart3,
-  TrendingUp
+  TrendingUp,
+  Menu
 } from "lucide-react";
 
 interface BundleItem {
@@ -154,6 +155,7 @@ export default function PickPack() {
   const [showPerformanceStats, setShowPerformanceStats] = useState(false);
   const [batchPickingMode, setBatchPickingMode] = useState(false);
   const [selectedBatchItems, setSelectedBatchItems] = useState<Set<string>>(new Set());
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const barcodeInputRef = useRef<HTMLInputElement>(null);
   
   // State for packing process
@@ -2836,8 +2838,8 @@ export default function PickPack() {
   // Main Dashboard View
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header - Mobile Optimized */}
-      <div className="bg-white border-b sticky top-0 z-10">
+      {/* Header - Hidden on mobile, visible on desktop */}
+      <div className="hidden sm:block bg-white border-b sticky top-0 z-10">
         <div className="px-3 sm:px-6 py-3 sm:py-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>
@@ -2858,8 +2860,92 @@ export default function PickPack() {
         </div>
       </div>
 
-      {/* Stats Overview - Mobile Optimized */}
-      <div className="px-3 sm:px-6 py-3 sm:py-4">
+      {/* Floating Menu Button - Mobile Only */}
+      <Button
+        className="sm:hidden fixed top-4 left-4 h-12 w-12 rounded-full bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white shadow-lg z-50 touch-manipulation"
+        onClick={() => setShowMobileMenu(true)}
+      >
+        <Menu className="h-6 w-6" />
+      </Button>
+
+      {/* Mobile Menu Overlay */}
+      {showMobileMenu && (
+        <div className="sm:hidden fixed inset-0 bg-black/50 z-40" onClick={() => setShowMobileMenu(false)}>
+          <div className="fixed top-0 left-0 w-80 h-full bg-white shadow-2xl p-6 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold">Pick & Pack Center</h2>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => setShowMobileMenu(false)}
+                className="h-8 w-8"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="bg-gray-50 rounded-lg p-4">
+                <p className="text-sm text-gray-500">Logged in as</p>
+                <p className="font-medium">{currentEmployee}</p>
+              </div>
+              
+              <div className="space-y-2">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => {
+                    setShowMobileMenu(false);
+                    window.location.href = '/';
+                  }}
+                >
+                  <Home className="h-4 w-4 mr-2" />
+                  Main Dashboard
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => {
+                    setShowMobileMenu(false);
+                    setShowPerformanceStats(true);
+                  }}
+                >
+                  <TrendingUp className="h-4 w-4 mr-2" />
+                  Performance Stats
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => {
+                    setShowMobileMenu(false);
+                    toggleBatchPickingMode();
+                  }}
+                >
+                  <Package className="h-4 w-4 mr-2" />
+                  {batchPickingMode ? 'Disable' : 'Enable'} Batch Mode
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => {
+                    setShowMobileMenu(false);
+                    setAudioEnabled(!audioEnabled);
+                  }}
+                >
+                  <Volume2 className="h-4 w-4 mr-2" />
+                  {audioEnabled ? 'Disable' : 'Enable'} Sound
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Stats Overview - Mobile Optimized with top padding for floating menu */}
+      <div className="px-3 sm:px-6 py-3 sm:py-4 pt-20 sm:pt-3">
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4">
           <Card>
             <CardContent className="p-3 sm:p-4">
