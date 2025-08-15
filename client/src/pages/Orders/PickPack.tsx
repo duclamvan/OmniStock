@@ -101,86 +101,7 @@ interface PickPackOrder {
   notes?: string;
 }
 
-// Helper functions moved outside component to prevent recreation on each render
-const generateMockLocation = () => {
-  const zones = ['A', 'B', 'C', 'D', 'E'];
-  const zone = zones[Math.floor(Math.random() * zones.length)];
-  const row = Math.floor(Math.random() * 20) + 1;
-  const shelf = Math.floor(Math.random() * 5) + 1;
-  return `${zone}${row}-${shelf}`;
-};
-
-const generateMockBarcode = (sku: string) => {
-  return `BAR${sku}${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
-};
-
-const generateMockImage = (productName: string) => {
-  // Generate a placeholder image URL based on product name
-  // In a real app, this would come from your database
-  const seed = productName.toLowerCase().replace(/\s+/g, '-');
-  return `https://picsum.photos/seed/${seed}/400/400`;
-};
-
-const generateBundleItems = (productName: string, location: string): BundleItem[] | undefined => {
-  const lowerName = productName.toLowerCase();
-  
-  // Check if it's a gel polish set or color collection
-  if (lowerName.includes('gel polish') || lowerName.includes('nail polish') || lowerName.includes('color set')) {
-    const colors = [
-      { name: 'Ruby Red', colorNumber: '001' },
-      { name: 'Ocean Blue', colorNumber: '002' },
-      { name: 'Forest Green', colorNumber: '003' },
-      { name: 'Sunset Orange', colorNumber: '004' },
-      { name: 'Lavender Purple', colorNumber: '005' },
-      { name: 'Midnight Black', colorNumber: '006' },
-      { name: 'Pearl White', colorNumber: '007' },
-      { name: 'Rose Gold', colorNumber: '008' },
-      { name: 'Teal Turquoise', colorNumber: '009' },
-      { name: 'Coral Pink', colorNumber: '010' },
-      { name: 'Silver Shimmer', colorNumber: '011' },
-      { name: 'Golden Yellow', colorNumber: '012' }
-    ];
-    
-    // Determine number of colors based on product name
-    const numColors = lowerName.match(/(\d+)\s*color/)?.[1] ? 
-      Math.min(parseInt(lowerName.match(/(\d+)\s*color/)?.[1] || '6'), 12) : 6;
-    
-    return colors.slice(0, numColors).map((color, index) => ({
-      id: `bundle-${Math.random().toString(36).substr(2, 9)}`,
-      name: color.name,
-      colorNumber: color.colorNumber,
-      quantity: 1,
-      picked: false,
-      location: `${location}-${index + 1}`
-    }));
-  }
-  
-  // Check if it's a nail art brush set
-  if (lowerName.includes('brush') || lowerName.includes('tool')) {
-    const tools = [
-      'Fine Detail Brush',
-      'Flat Brush',
-      'Dotting Tool',
-      'Striping Brush',
-      'Fan Brush',
-      'Clean-up Brush',
-      'Angular Brush'
-    ];
-    
-    const numTools = lowerName.match(/(\d+)\s*pc/)?.[1] ? 
-      Math.min(parseInt(lowerName.match(/(\d+)\s*pc/)?.[1] || '5'), 7) : 5;
-    
-    return tools.slice(0, numTools).map((tool, index) => ({
-      id: `bundle-${Math.random().toString(36).substr(2, 9)}`,
-      name: tool,
-      quantity: 1,
-      picked: false,
-      location: `${location}-${String.fromCharCode(65 + index)}`
-    }));
-  }
-  
-  return undefined;
-};
+// Helper functions removed - using only real data from API
 
 export default function PickPack() {
   const { toast } = useToast();
@@ -238,7 +159,7 @@ export default function PickPack() {
   }, [isPackingTimerRunning]);
 
   // Fetch real orders from the API
-  const { data: allOrders, isLoading } = useQuery({
+  const { data: allOrders = [], isLoading } = useQuery({
     queryKey: ['/api/orders'],
     queryFn: async () => {
       const result = await apiRequest('/api/orders', 'GET');
@@ -250,247 +171,13 @@ export default function PickPack() {
 
   // Note: Helper functions have been moved outside the component to prevent recreation on each render
 
-  // Mock orders for testing different statuses
-  const mockOrders: PickPackOrder[] = [
-    // Pending orders
-    {
-      id: 'mock-pending-1',
-      orderId: 'ORD-MOCK-001',
-      customerName: 'Sarah Johnson',
-      shippingMethod: 'Express',
-      shippingAddress: '789 Pine St, Seattle, WA 98101',
-      priority: 'high',
-      status: 'to_fulfill',
-      pickStatus: 'not_started',
-      packStatus: 'not_started',
-      items: [
-        {
-          id: 'mock-item-1',
-          productId: 'mock-prod-1',
-          productName: 'Gel Polish 12 Color Set - Spring Collection',
-          sku: 'GP-SPRING-12',
-          quantity: 1,
-          pickedQuantity: 0,
-          packedQuantity: 0,
-          warehouseLocation: 'A-15-2',
-          barcode: 'BAR123456789',
-          image: generateMockImage('gel-polish-set'),
-          isBundle: true,
-          bundleItems: [
-            { id: 'sp1', name: 'Cherry Blossom', colorNumber: '101', quantity: 1, picked: false, location: 'A-15-2-1' },
-            { id: 'sp2', name: 'Sky Blue', colorNumber: '102', quantity: 1, picked: false, location: 'A-15-2-2' },
-            { id: 'sp3', name: 'Mint Green', colorNumber: '103', quantity: 1, picked: false, location: 'A-15-2-3' },
-            { id: 'sp4', name: 'Peach Sunset', colorNumber: '104', quantity: 1, picked: false, location: 'A-15-2-4' },
-            { id: 'sp5', name: 'Lilac Dream', colorNumber: '105', quantity: 1, picked: false, location: 'A-15-2-5' },
-            { id: 'sp6', name: 'Sunshine Yellow', colorNumber: '106', quantity: 1, picked: false, location: 'A-15-2-6' },
-            { id: 'sp7', name: 'Cotton Candy', colorNumber: '107', quantity: 1, picked: false, location: 'A-15-2-7' },
-            { id: 'sp8', name: 'Ocean Wave', colorNumber: '108', quantity: 1, picked: false, location: 'A-15-2-8' },
-            { id: 'sp9', name: 'Forest Moss', colorNumber: '109', quantity: 1, picked: false, location: 'A-15-2-9' },
-            { id: 'sp10', name: 'Coral Reef', colorNumber: '110', quantity: 1, picked: false, location: 'A-15-2-10' },
-            { id: 'sp11', name: 'Silver Moon', colorNumber: '111', quantity: 1, picked: false, location: 'A-15-2-11' },
-            { id: 'sp12', name: 'Rose Garden', colorNumber: '112', quantity: 1, picked: false, location: 'A-15-2-12' }
-          ]
-        },
-        {
-          id: 'mock-item-2',
-          productId: 'mock-prod-2',
-          productName: 'UV LED Lamp 48W',
-          sku: 'LAMP-48W',
-          quantity: 1,
-          pickedQuantity: 0,
-          packedQuantity: 0,
-          warehouseLocation: 'B-10-1',
-          barcode: 'BAR987654321',
-          image: generateMockImage('uv-lamp')
-        }
-      ],
-      totalItems: 2,
-      pickedItems: 0,
-      packedItems: 0,
-      createdAt: new Date().toISOString(),
-      notes: 'Customer requested gift wrapping'
-    },
-    {
-      id: 'mock-pending-2',
-      orderId: 'ORD-MOCK-002',
-      customerName: 'Michael Chen',
-      shippingMethod: 'Standard',
-      shippingAddress: '456 Elm Ave, Portland, OR 97201',
-      priority: 'medium',
-      status: 'to_fulfill',
-      pickStatus: 'not_started',
-      packStatus: 'not_started',
-      items: [
-        {
-          id: 'mock-item-3',
-          productId: 'mock-prod-3',
-          productName: 'Nail Art Brush Set 7pcs Professional',
-          sku: 'BRUSH-PRO-7',
-          quantity: 1,
-          pickedQuantity: 0,
-          packedQuantity: 0,
-          warehouseLocation: 'C-05-3',
-          barcode: 'BAR456789123',
-          image: generateMockImage('brush-set'),
-          isBundle: true,
-          bundleItems: [
-            { id: 'br1', name: 'Ultra Fine Detail', quantity: 1, picked: false, location: 'C-05-3-A' },
-            { id: 'br2', name: 'Flat Square', quantity: 1, picked: false, location: 'C-05-3-B' },
-            { id: 'br3', name: 'Double Dotting', quantity: 1, picked: false, location: 'C-05-3-C' },
-            { id: 'br4', name: 'Long Striping', quantity: 1, picked: false, location: 'C-05-3-D' },
-            { id: 'br5', name: 'Angular', quantity: 1, picked: false, location: 'C-05-3-E' },
-            { id: 'br6', name: 'Fan Brush', quantity: 1, picked: false, location: 'C-05-3-F' },
-            { id: 'br7', name: 'Clean Up', quantity: 1, picked: false, location: 'C-05-3-G' }
-          ]
-        }
-      ],
-      totalItems: 1,
-      pickedItems: 0,
-      packedItems: 0,
-      createdAt: new Date().toISOString()
-    },
-    // Currently picking order
-    {
-      id: 'mock-picking-1',
-      orderId: 'ORD-MOCK-003',
-      customerName: 'Emma Wilson',
-      shippingMethod: 'Express',
-      shippingAddress: '321 Oak Blvd, San Francisco, CA 94102',
-      priority: 'high',
-      status: 'picking',
-      pickStatus: 'in_progress',
-      packStatus: 'not_started',
-      items: [
-        {
-          id: 'mock-item-4',
-          productId: 'mock-prod-4',
-          productName: 'Gel Polish 6 Color Set - Neon Edition',
-          sku: 'GP-NEON-6',
-          quantity: 1,
-          pickedQuantity: 0,
-          packedQuantity: 0,
-          warehouseLocation: 'D-20-5',
-          barcode: 'BAR111222333',
-          image: generateMockImage('neon-polish'),
-          isBundle: true,
-          bundleItems: [
-            { id: 'ne1', name: 'Electric Pink', colorNumber: '201', quantity: 1, picked: false, location: 'D-20-5-1' },
-            { id: 'ne2', name: 'Neon Green', colorNumber: '202', quantity: 1, picked: false, location: 'D-20-5-2' },
-            { id: 'ne3', name: 'Hot Orange', colorNumber: '203', quantity: 1, picked: false, location: 'D-20-5-3' },
-            { id: 'ne4', name: 'Cyber Yellow', colorNumber: '204', quantity: 1, picked: false, location: 'D-20-5-4' },
-            { id: 'ne5', name: 'UV Purple', colorNumber: '205', quantity: 1, picked: false, location: 'D-20-5-5' },
-            { id: 'ne6', name: 'Laser Blue', colorNumber: '206', quantity: 1, picked: false, location: 'D-20-5-6' }
-          ]
-        },
-        {
-          id: 'mock-item-5',
-          productId: 'mock-prod-5',
-          productName: 'Base & Top Coat Set',
-          sku: 'BT-SET-2',
-          quantity: 2,
-          pickedQuantity: 1,
-          packedQuantity: 0,
-          warehouseLocation: 'E-08-2',
-          barcode: 'BAR444555666',
-          image: generateMockImage('base-top-coat')
-        }
-      ],
-      totalItems: 3,
-      pickedItems: 1,
-      packedItems: 0,
-      createdAt: new Date(Date.now() - 3600000).toISOString(),
-      pickStartTime: new Date(Date.now() - 1800000).toISOString(),
-      pickedBy: 'John Warehouse'
-    },
-    // Currently packing order
-    {
-      id: 'mock-packing-1',
-      orderId: 'ORD-MOCK-004',
-      customerName: 'David Martinez',
-      shippingMethod: 'Standard',
-      shippingAddress: '555 Market St, Los Angeles, CA 90001',
-      priority: 'medium',
-      status: 'packing',
-      pickStatus: 'completed',
-      packStatus: 'in_progress',
-      items: [
-        {
-          id: 'mock-item-6',
-          productId: 'mock-prod-6',
-          productName: 'Nail Polish Remover 500ml',
-          sku: 'REM-500',
-          quantity: 3,
-          pickedQuantity: 3,
-          packedQuantity: 2,
-          warehouseLocation: 'F-12-4',
-          barcode: 'BAR777888999',
-          image: generateMockImage('remover')
-        },
-        {
-          id: 'mock-item-7',
-          productId: 'mock-prod-7',
-          productName: 'Cotton Pads 200pcs',
-          sku: 'COTTON-200',
-          quantity: 2,
-          pickedQuantity: 2,
-          packedQuantity: 2,
-          warehouseLocation: 'G-03-1',
-          barcode: 'BAR000111222',
-          image: generateMockImage('cotton-pads')
-        }
-      ],
-      totalItems: 5,
-      pickedItems: 5,
-      packedItems: 4,
-      createdAt: new Date(Date.now() - 7200000).toISOString(),
-      pickStartTime: new Date(Date.now() - 5400000).toISOString(),
-      pickEndTime: new Date(Date.now() - 3600000).toISOString(),
-      packStartTime: new Date(Date.now() - 1800000).toISOString(),
-      pickedBy: 'John Warehouse',
-      packedBy: 'Mary Packer'
-    },
-    // Ready to ship order
-    {
-      id: 'mock-ready-1',
-      orderId: 'ORD-MOCK-005',
-      customerName: 'Lisa Anderson',
-      shippingMethod: 'Express',
-      shippingAddress: '999 Broadway, New York, NY 10010',
-      priority: 'low',
-      status: 'ready_to_ship',
-      pickStatus: 'completed',
-      packStatus: 'completed',
-      items: [
-        {
-          id: 'mock-item-8',
-          productId: 'mock-prod-8',
-          productName: 'Cuticle Oil Set 5x15ml',
-          sku: 'OIL-SET-5',
-          quantity: 1,
-          pickedQuantity: 1,
-          packedQuantity: 1,
-          warehouseLocation: 'H-18-6',
-          barcode: 'BAR333444555',
-          image: generateMockImage('cuticle-oil')
-        }
-      ],
-      totalItems: 1,
-      pickedItems: 1,
-      packedItems: 1,
-      createdAt: new Date(Date.now() - 14400000).toISOString(),
-      pickStartTime: new Date(Date.now() - 10800000).toISOString(),
-      pickEndTime: new Date(Date.now() - 9000000).toISOString(),
-      packStartTime: new Date(Date.now() - 7200000).toISOString(),
-      packEndTime: new Date(Date.now() - 5400000).toISOString(),
-      pickedBy: 'John Warehouse',
-      packedBy: 'Mary Packer'
-    }
-  ];
+  // No mock orders - using only real data from API
+  // No mock orders - using only real data from API
+  const mockOrders: PickPackOrder[] = [];
 
   // Transform real orders to PickPackOrder format - Only include "To Fulfill" status orders
   const transformedOrders: PickPackOrder[] = useMemo(() => [
-    ...mockOrders,
-    ...((allOrders as any[] || [])
+    ...(((allOrders || []) as any[])
     .filter((order: any) => 
       order.orderStatus === 'to_fulfill'
     )
@@ -504,25 +191,20 @@ export default function PickPack() {
       status: order.orderStatus || 'to_fulfill',
       pickStatus: order.pickStatus || 'not_started',
       packStatus: order.packStatus || 'not_started',
-      items: order.items?.map((item: any) => {
-        const warehouseLocation = item.warehouseLocation || generateMockLocation();
-        const bundleItems = generateBundleItems(item.productName, warehouseLocation);
-        
-        return {
-          id: item.id,
-          productId: item.productId,
-          productName: item.productName,
-          sku: item.sku,
-          quantity: item.quantity,
-          pickedQuantity: item.pickedQuantity || 0,
-          packedQuantity: item.packedQuantity || 0,
-          warehouseLocation: warehouseLocation,
-          barcode: item.barcode || generateMockBarcode(item.sku),
-          image: item.image || generateMockImage(item.productName),
-          isBundle: !!bundleItems,
-          bundleItems: bundleItems
-        };
-      }) || [],
+      items: order.items?.map((item: any) => ({
+        id: item.id,
+        productId: item.productId,
+        productName: item.productName,
+        sku: item.sku,
+        quantity: item.quantity,
+        pickedQuantity: item.pickedQuantity || 0,
+        packedQuantity: item.packedQuantity || 0,
+        warehouseLocation: item.warehouseLocation || '',
+        barcode: item.barcode || '',
+        image: item.image || '',
+        isBundle: item.isBundle || false,
+        bundleItems: item.bundleItems || []
+      })) || [],
       totalItems: order.items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0,
       pickedItems: order.items?.reduce((sum: number, item: any) => sum + (item.pickedQuantity || 0), 0) || 0,
       packedItems: order.items?.reduce((sum: number, item: any) => sum + (item.packedQuantity || 0), 0) || 0,
@@ -1578,7 +1260,7 @@ export default function PickPack() {
           <div className="flex-1 flex flex-col lg:flex-row">
             {/* Mobile Full Screen Pick View */}
             <div className="flex-1 flex flex-col h-full bg-gray-50">
-            {currentItem ? (
+              {currentItem ? (
               <div className="h-full flex flex-col">
                 {/* Compact Header Bar */}
                 <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-2 shadow-md">
@@ -1913,8 +1595,11 @@ export default function PickPack() {
                   </div>
                 </div>
               </div>
-            )}
+              ) : null}
+            </div>
             
+            {/* Desktop Sidebar - inside flex row */}
+            <>
             {activePickingOrder ? (
               <div className="hidden lg:block w-80 xl:w-96 bg-gradient-to-b from-white to-gray-50 border-l-4 border-gray-200 p-4 xl:p-6 overflow-y-auto">
                 <div className="bg-gradient-to-r from-gray-700 to-gray-800 text-white rounded-xl p-3 xl:p-4 mb-4 xl:mb-6 shadow-lg">
@@ -1997,8 +1682,8 @@ export default function PickPack() {
           </div>
             ) : null}
             
-            {/* Mobile Items Drawer - Collapsible with Swipe Hint */}
-            {showMobileProgress && (
+            {/* Mobile Items Drawer */}
+            {showMobileProgress && activePickingOrder && (
               <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-300 max-h-56 overflow-y-auto shadow-2xl z-30 animate-slide-up">
                 <div className="p-3">
                   <div className="flex items-center justify-between mb-2">
@@ -2064,8 +1749,8 @@ export default function PickPack() {
               </div>
             )}
             
-            {/* Mobile Progress Toggle Button - Enhanced */}
-            {!showMobileProgress && (
+            {/* Mobile Progress Toggle Button */}
+            {!showMobileProgress && activePickingOrder && (
               <Button
                 className="lg:hidden fixed bottom-4 right-4 h-12 w-12 rounded-full bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white shadow-lg z-30 touch-manipulation animate-pulse"
                 onClick={() => setShowMobileProgress(true)}
@@ -2073,11 +1758,10 @@ export default function PickPack() {
                 <ClipboardList className="h-5 w-5" />
               </Button>
             )}
+            </>
           </div>
         </div>
       </div>
-    </div>
-  </div>
     );
   }
 
