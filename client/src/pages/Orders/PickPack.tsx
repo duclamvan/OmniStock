@@ -2069,11 +2069,7 @@ export default function PickPack() {
                 <ClipboardList className="h-5 w-5" />
               </Button>
             )}
-          </div>
-          </div>
-          </div>
-          </div>
-          </div>
+            </div>
           </div>
         </div>
       </div>
