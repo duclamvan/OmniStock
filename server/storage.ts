@@ -780,36 +780,8 @@ export class DatabaseStorage implements IStorage {
     // Get order items with product details for each order
     const ordersWithItems = await Promise.all(
       ordersWithCustomers.map(async (order: any) => {
-        const items = await db
-          .select({
-            id: orderItems.id,
-            productId: orderItems.productId,
-            productName: orderItems.productName,
-            sku: orderItems.sku,
-            quantity: orderItems.quantity,
-            price: orderItems.appliedPrice,
-            discount: orderItems.discount,
-            tax: orderItems.tax,
-            total: orderItems.total,
-            productId2: products.id,
-            productImportCostCzk: products.importCostCzk,
-            productImportCostEur: products.importCostEur,
-            productImportCostUsd: products.importCostUsd
-          })
-          .from(orderItems)
-          .leftJoin(products, eq(orderItems.productId, products.id))
-          .where(eq(orderItems.orderId, order.id));
-        
-        // Transform items to include product object
-        const transformedItems = items.map(item => ({
-          ...item,
-          product: item.productId2 ? {
-            id: item.productId2,
-            importCostCzk: item.productImportCostCzk,
-            importCostEur: item.productImportCostEur,
-            importCostUsd: item.productImportCostUsd,
-          } : undefined
-        }));
+        // Get order items with picking images
+        const transformedItems = await this.getOrderItems(order.id);
         
         // Transform order to include customer object
         const transformedOrder = {
@@ -876,39 +848,8 @@ export class DatabaseStorage implements IStorage {
     
     if (!order) return undefined;
     
-    // Get order items
-    const items = await db
-      .select({
-        id: orderItems.id,
-        productId: orderItems.productId,
-        productName: orderItems.productName,
-        sku: orderItems.sku,
-        quantity: orderItems.quantity,
-        price: orderItems.price,
-        unitPrice: orderItems.unitPrice,
-        appliedPrice: orderItems.appliedPrice,
-        discount: orderItems.discount,
-        tax: orderItems.tax,
-        total: orderItems.total,
-        productId2: products.id,
-        productImportCostCzk: products.importCostCzk,
-        productImportCostEur: products.importCostEur,
-        productImportCostUsd: products.importCostUsd
-      })
-      .from(orderItems)
-      .leftJoin(products, eq(orderItems.productId, products.id))
-      .where(eq(orderItems.orderId, id));
-    
-    // Transform items to include product object
-    const transformedItems = items.map(item => ({
-      ...item,
-      product: item.productId2 ? {
-        id: item.productId2,
-        importCostCzk: item.productImportCostCzk,
-        importCostEur: item.productImportCostEur,
-        importCostUsd: item.productImportCostUsd,
-      } : undefined
-    }));
+    // Get order items with picking images
+    const transformedItems = await this.getOrderItems(id);
     
     // Transform order to include customer object
     const transformedOrder = {
@@ -973,36 +914,8 @@ export class DatabaseStorage implements IStorage {
     // Get order items with product details for each order
     const ordersWithItems = await Promise.all(
       ordersWithCustomers.map(async (order: any) => {
-        const items = await db
-          .select({
-            id: orderItems.id,
-            productId: orderItems.productId,
-            productName: orderItems.productName,
-            sku: orderItems.sku,
-            quantity: orderItems.quantity,
-            price: orderItems.appliedPrice,
-            discount: orderItems.discount,
-            tax: orderItems.tax,
-            total: orderItems.total,
-            productId2: products.id,
-            productImportCostCzk: products.importCostCzk,
-            productImportCostEur: products.importCostEur,
-            productImportCostUsd: products.importCostUsd
-          })
-          .from(orderItems)
-          .leftJoin(products, eq(orderItems.productId, products.id))
-          .where(eq(orderItems.orderId, order.id));
-        
-        // Transform items to include product object
-        const transformedItems = items.map(item => ({
-          ...item,
-          product: item.productId2 ? {
-            id: item.productId2,
-            importCostCzk: item.productImportCostCzk,
-            importCostEur: item.productImportCostEur,
-            importCostUsd: item.productImportCostUsd,
-          } : undefined
-        }));
+        // Get order items with picking images
+        const transformedItems = await this.getOrderItems(order.id);
         
         // Transform order to include customer object
         const transformedOrder = {
@@ -1076,10 +989,7 @@ export class DatabaseStorage implements IStorage {
     // Get order items for each order
     const ordersWithItems = await Promise.all(
       ordersWithCustomers.map(async (order: any) => {
-        const items = await db
-          .select()
-          .from(orderItems)
-          .where(eq(orderItems.orderId, order.id));
+        const items = await this.getOrderItems(order.id);
         
         // Transform order to include customer object
         const transformedOrder = {
@@ -1207,7 +1117,40 @@ export class DatabaseStorage implements IStorage {
 
   // Order Items
   async getOrderItems(orderId: string): Promise<OrderItem[]> {
-    return await db.select().from(orderItems).where(eq(orderItems.orderId, orderId));
+    const items = await db
+      .select({
+        id: orderItems.id,
+        orderId: orderItems.orderId,
+        productId: orderItems.productId,
+        variantId: orderItems.variantId,
+        productName: orderItems.productName,
+        sku: orderItems.sku,
+        quantity: orderItems.quantity,
+        price: orderItems.price,
+        unitPrice: orderItems.unitPrice,
+        appliedPrice: orderItems.appliedPrice,
+        currency: orderItems.currency,
+        customerPriceId: orderItems.customerPriceId,
+        discount: orderItems.discount,
+        tax: orderItems.tax,
+        total: orderItems.total,
+        pickedQuantity: orderItems.pickedQuantity,
+        packedQuantity: orderItems.packedQuantity,
+        warehouseLocation: orderItems.warehouseLocation,
+        barcode: orderItems.barcode,
+        image: orderItems.image,
+        pickingImageUrl: products.pickingImageUrl,
+      })
+      .from(orderItems)
+      .leftJoin(products, eq(orderItems.productId, products.id))
+      .where(eq(orderItems.orderId, orderId));
+    
+    // Use pickingImageUrl from product if available, otherwise fall back to order item image
+    return items.map(item => ({
+      ...item,
+      image: item.pickingImageUrl || item.image,
+      pickingImageUrl: undefined, // Remove the extra field
+    }));
   }
 
   async createOrderItem(item: InsertOrderItem): Promise<OrderItem> {

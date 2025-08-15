@@ -199,6 +199,7 @@ export const products = pgTable("products", {
   importCostEur: decimal("import_cost_eur", { precision: 12, scale: 2 }),
   supplierLink: text("supplier_link"),
   imageUrl: varchar("image_url", { length: 500 }),
+  pickingImageUrl: varchar("picking_image_url", { length: 500 }),
   barcode: varchar("barcode", { length: 50 }),
   // Dimensions and weight
   length: decimal("length", { precision: 10, scale: 2 }), // in cm
