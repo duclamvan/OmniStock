@@ -61,6 +61,40 @@ interface BundleItem {
   location?: string;
 }
 
+interface ItemDimensions {
+  length: number; // cm
+  width: number;  // cm
+  height: number; // cm
+  weight: number; // kg
+}
+
+interface BoxSize {
+  id: string;
+  name: string;
+  dimensions: ItemDimensions;
+  maxWeight: number;
+  cost: number;
+  material: string;
+  isFragile?: boolean;
+}
+
+interface Carton {
+  id: string;
+  boxSize: BoxSize;
+  items: OrderItem[];
+  totalWeight: number;
+  utilization: number; // percentage
+  isFragile: boolean;
+}
+
+interface PackingRecommendation {
+  cartons: Carton[];
+  totalCost: number;
+  totalWeight: number;
+  efficiency: number;
+  reasoning: string;
+}
+
 interface OrderItem {
   id: string;
   productId: string;
@@ -73,6 +107,8 @@ interface OrderItem {
   barcode?: string;
   image?: string;
   isBundle?: boolean;
+  dimensions?: ItemDimensions;
+  isFragile?: boolean;
   bundleItems?: BundleItem[];
 }
 
@@ -125,13 +161,16 @@ export default function PickPack() {
     itemsVerified: false,
     packingSlipIncluded: false,
     boxSealed: false,
-    weightRecorded: false
+    weightRecorded: false,
+    fragileProtected: false
   });
   const [selectedBoxSize, setSelectedBoxSize] = useState<string>('');
   const [packageWeight, setPackageWeight] = useState<string>('');
   const [verifiedItems, setVerifiedItems] = useState<Set<string>>(new Set());
   const [expandedBundles, setExpandedBundles] = useState<Set<string>>(new Set());
   const [bundlePickedItems, setBundlePickedItems] = useState<Record<string, Set<string>>>({}); // itemId -> Set of picked bundle item ids
+  const [packingRecommendation, setPackingRecommendation] = useState<PackingRecommendation | null>(null);
+  const [selectedCarton, setSelectedCarton] = useState<string>('carton-1');
 
   // Timer effects
   useEffect(() => {
@@ -180,6 +219,264 @@ export default function PickPack() {
     // In a real app, this would come from your database
     const seed = productName.toLowerCase().replace(/\s+/g, '-');
     return `https://picsum.photos/seed/${seed}/400/400`;
+  };
+
+  // Available box sizes for AI-powered selection
+  const availableBoxSizes: BoxSize[] = [
+    {
+      id: 'small-envelope',
+      name: 'Small Envelope',
+      dimensions: { length: 22, width: 16, height: 2, weight: 0.05 },
+      maxWeight: 0.5,
+      cost: 0.80,
+      material: 'Padded Envelope'
+    },
+    {
+      id: 'medium-envelope',
+      name: 'Medium Envelope',
+      dimensions: { length: 35, width: 25, height: 3, weight: 0.08 },
+      maxWeight: 1.0,
+      cost: 1.20,
+      material: 'Padded Envelope'
+    },
+    {
+      id: 'small-box',
+      name: 'Small Box',
+      dimensions: { length: 20, width: 15, height: 10, weight: 0.15 },
+      maxWeight: 2.0,
+      cost: 1.50,
+      material: 'Corrugated Cardboard'
+    },
+    {
+      id: 'medium-box',
+      name: 'Medium Box',
+      dimensions: { length: 30, width: 20, height: 15, weight: 0.25 },
+      maxWeight: 5.0,
+      cost: 2.20,
+      material: 'Corrugated Cardboard'
+    },
+    {
+      id: 'large-box',
+      name: 'Large Box',
+      dimensions: { length: 40, width: 30, height: 20, weight: 0.35 },
+      maxWeight: 10.0,
+      cost: 3.50,
+      material: 'Corrugated Cardboard'
+    },
+    {
+      id: 'fragile-box',
+      name: 'Fragile Protection Box',
+      dimensions: { length: 35, width: 25, height: 18, weight: 0.40 },
+      maxWeight: 7.0,
+      cost: 4.20,
+      material: 'Double-Wall Cardboard',
+      isFragile: true
+    },
+    {
+      id: 'wine-box',
+      name: 'Bottle Protection Box',
+      dimensions: { length: 38, width: 28, height: 35, weight: 0.50 },
+      maxWeight: 15.0,
+      cost: 5.80,
+      material: 'Reinforced Cardboard'
+    }
+  ];
+
+  // Generate realistic item dimensions based on product type
+  const generateItemDimensions = (productName: string, quantity: number): ItemDimensions => {
+    const lowerName = productName.toLowerCase();
+    let baseDimensions: ItemDimensions;
+
+    if (lowerName.includes('gel polish') || lowerName.includes('nail polish')) {
+      baseDimensions = { length: 2.5, width: 2.5, height: 8, weight: 0.015 };
+    } else if (lowerName.includes('top coat') || lowerName.includes('base coat')) {
+      baseDimensions = { length: 3, width: 3, height: 9, weight: 0.020 };
+    } else if (lowerName.includes('cuticle oil')) {
+      baseDimensions = { length: 2, width: 2, height: 6, weight: 0.012 };
+    } else if (lowerName.includes('nail file')) {
+      baseDimensions = { length: 18, width: 2, height: 0.3, weight: 0.008 };
+    } else if (lowerName.includes('cotton pad')) {
+      baseDimensions = { length: 6, width: 5, height: 1, weight: 0.002 };
+    } else if (lowerName.includes('acetone') || lowerName.includes('cleaner')) {
+      baseDimensions = { length: 8, width: 5, height: 12, weight: 0.250 };
+    } else {
+      // Default dimensions for unknown products
+      baseDimensions = { length: 10, width: 8, height: 5, weight: 0.100 };
+    }
+
+    // Adjust for quantity (assuming items can be stacked/bundled efficiently)
+    const stackingEfficiency = Math.min(1, Math.pow(quantity, 0.7));
+    return {
+      length: baseDimensions.length,
+      width: baseDimensions.width,
+      height: baseDimensions.height * stackingEfficiency,
+      weight: baseDimensions.weight * quantity
+    };
+  };
+
+  // AI-powered packing optimization algorithm
+  const generatePackingRecommendation = (items: OrderItem[]): PackingRecommendation => {
+    const itemsWithDimensions = items.map(item => ({
+      ...item,
+      dimensions: item.dimensions || generateItemDimensions(item.productName, item.quantity),
+      isFragile: item.isFragile || item.productName.toLowerCase().includes('glass') || 
+                 item.productName.toLowerCase().includes('bottle') ||
+                 item.productName.toLowerCase().includes('fragile')
+    }));
+
+    // Calculate total volume and weight
+    const totalVolume = itemsWithDimensions.reduce((sum, item) => {
+      const dims = item.dimensions!;
+      return sum + (dims.length * dims.width * dims.height);
+    }, 0);
+
+    const totalWeight = itemsWithDimensions.reduce((sum, item) => sum + item.dimensions!.weight, 0);
+    const hasFragileItems = itemsWithDimensions.some(item => item.isFragile);
+
+    // Find optimal box combination
+    let bestRecommendation: PackingRecommendation = {
+      cartons: [],
+      totalCost: Infinity,
+      totalWeight: 0,
+      efficiency: 0,
+      reasoning: ''
+    };
+
+    // Try different packing strategies
+    const strategies = [
+      () => packInSingleBox(itemsWithDimensions, hasFragileItems),
+      () => packByWeight(itemsWithDimensions, hasFragileItems),
+      () => packByFragility(itemsWithDimensions),
+      () => packBySize(itemsWithDimensions, hasFragileItems)
+    ];
+
+    strategies.forEach(strategy => {
+      const recommendation = strategy();
+      if (recommendation && recommendation.totalCost < bestRecommendation.totalCost) {
+        bestRecommendation = recommendation;
+      }
+    });
+
+    return bestRecommendation;
+  };
+
+  // Packing strategy: Try to fit everything in one box
+  const packInSingleBox = (items: OrderItem[], hasFragileItems: boolean): PackingRecommendation | null => {
+    const totalWeight = items.reduce((sum, item) => sum + item.dimensions!.weight, 0);
+    
+    const suitableBoxes = availableBoxSizes.filter(box => {
+      if (hasFragileItems && !box.isFragile && box.material !== 'Double-Wall Cardboard') return false;
+      return box.maxWeight >= totalWeight;
+    }).sort((a, b) => a.cost - b.cost);
+
+    if (suitableBoxes.length === 0) return null;
+
+    const box = suitableBoxes[0];
+    const boxVolume = box.dimensions.length * box.dimensions.width * box.dimensions.height;
+    const itemsVolume = items.reduce((sum, item) => {
+      const dims = item.dimensions!;
+      return sum + (dims.length * dims.width * dims.height);
+    }, 0);
+
+    const utilization = Math.min(100, (itemsVolume / boxVolume) * 100);
+
+    if (utilization > 95) return null; // Too tight fit
+
+    return {
+      cartons: [{
+        id: 'carton-1',
+        boxSize: box,
+        items,
+        totalWeight,
+        utilization,
+        isFragile: hasFragileItems
+      }],
+      totalCost: box.cost,
+      totalWeight,
+      efficiency: utilization,
+      reasoning: `Single ${box.name} selected for optimal cost efficiency. ${hasFragileItems ? 'Fragile protection included.' : ''}`
+    };
+  };
+
+  // Packing strategy: Pack by weight distribution
+  const packByWeight = (items: OrderItem[], hasFragileItems: boolean): PackingRecommendation | null => {
+    const cartons: Carton[] = [];
+    const remainingItems = [...items];
+    let totalCost = 0;
+
+    while (remainingItems.length > 0) {
+      const suitableBoxes = availableBoxSizes.filter(box => {
+        if (hasFragileItems && !box.isFragile && box.material !== 'Double-Wall Cardboard') return false;
+        return true;
+      }).sort((a, b) => a.cost - b.cost);
+
+      let bestFit: { box: BoxSize; items: OrderItem[]; weight: number; utilization: number } | null = null;
+
+      for (const box of suitableBoxes) {
+        const fittingItems: OrderItem[] = [];
+        let currentWeight = 0;
+        let currentVolume = 0;
+        const boxVolume = box.dimensions.length * box.dimensions.width * box.dimensions.height;
+
+        for (const item of remainingItems) {
+          const itemWeight = item.dimensions!.weight;
+          const itemVolume = item.dimensions!.length * item.dimensions!.width * item.dimensions!.height;
+
+          if (currentWeight + itemWeight <= box.maxWeight && 
+              currentVolume + itemVolume <= boxVolume * 0.95) {
+            fittingItems.push(item);
+            currentWeight += itemWeight;
+            currentVolume += itemVolume;
+          }
+        }
+
+        if (fittingItems.length > 0) {
+          const utilization = (currentVolume / boxVolume) * 100;
+          if (!bestFit || fittingItems.length > bestFit.items.length) {
+            bestFit = { box, items: fittingItems, weight: currentWeight, utilization };
+          }
+        }
+      }
+
+      if (!bestFit) break;
+
+      cartons.push({
+        id: `carton-${cartons.length + 1}`,
+        boxSize: bestFit.box,
+        items: bestFit.items,
+        totalWeight: bestFit.weight,
+        utilization: bestFit.utilization,
+        isFragile: bestFit.items.some(item => item.isFragile)
+      });
+
+      bestFit.items.forEach(item => {
+        const index = remainingItems.indexOf(item);
+        remainingItems.splice(index, 1);
+      });
+
+      totalCost += bestFit.box.cost;
+    }
+
+    if (remainingItems.length > 0) return null;
+
+    const avgEfficiency = cartons.reduce((sum, carton) => sum + carton.utilization, 0) / cartons.length;
+
+    return {
+      cartons,
+      totalCost,
+      totalWeight: cartons.reduce((sum, carton) => sum + carton.totalWeight, 0),
+      efficiency: avgEfficiency,
+      reasoning: `Optimized weight distribution across ${cartons.length} carton${cartons.length > 1 ? 's' : ''} for balanced shipping.`
+    };
+  };
+
+  // Additional packing strategies (simplified for space)
+  const packByFragility = (items: OrderItem[]): PackingRecommendation | null => {
+    return packByWeight(items, true);
+  };
+
+  const packBySize = (items: OrderItem[], hasFragileItems: boolean): PackingRecommendation | null => {
+    return packByWeight(items, hasFragileItems);
   };
 
   // Generate bundle items for gel polish products
@@ -270,6 +567,7 @@ export default function PickPack() {
           barcode: 'BAR123456789',
           image: generateMockImage('gel-polish-set'),
           isBundle: true,
+          dimensions: { length: 15, width: 12, height: 8, weight: 0.180 },
           bundleItems: [
             { id: 'sp1', name: 'Cherry Blossom', colorNumber: '101', quantity: 1, picked: false, location: 'A-15-2-1' },
             { id: 'sp2', name: 'Sky Blue', colorNumber: '102', quantity: 1, picked: false, location: 'A-15-2-2' },
@@ -295,7 +593,9 @@ export default function PickPack() {
           packedQuantity: 0,
           warehouseLocation: 'B-10-1',
           barcode: 'BAR987654321',
-          image: generateMockImage('uv-lamp')
+          image: generateMockImage('uv-lamp'),
+          dimensions: { length: 25, width: 20, height: 12, weight: 0.850 },
+          isFragile: true
         }
       ],
       totalItems: 2,
@@ -838,6 +1138,10 @@ export default function PickPack() {
 
   // Start packing an order
   const startPacking = async (order: PickPackOrder) => {
+    // Generate AI packing recommendation
+    const recommendation = generatePackingRecommendation(order.items);
+    setPackingRecommendation(recommendation);
+    
     // Only update database for real orders (not mock orders)
     if (!order.id.startsWith('mock-')) {
       // Keep order status as "to_fulfill" but update pack status
@@ -860,10 +1164,23 @@ export default function PickPack() {
     setActivePackingOrder(updatedOrder);
     setPackingTimer(0);
     setIsPackingTimerRunning(true);
+    
+    // Reset packing state
+    setPackingChecklist({
+      itemsVerified: false,
+      packingSlipIncluded: false,
+      boxSealed: false,
+      weightRecorded: false,
+      fragileProtected: false
+    });
+    setVerifiedItems(new Set());
+    setSelectedCarton('carton-1');
+    setPackageWeight('');
+    
     playSound('success');
     toast({
-      title: "Packing Started",
-      description: `Started packing order ${order.orderId}`,
+      title: "AI Packing Started",
+      description: `AI selected ${recommendation.cartons.length} carton${recommendation.cartons.length > 1 ? 's' : ''} for optimal packing`,
     });
   };
 
@@ -990,7 +1307,8 @@ export default function PickPack() {
   // Active Packing View - Full Screen
   if (activePackingOrder) {
     const progress = (activePackingOrder.packedItems / activePackingOrder.totalItems) * 100;
-    const allItemsVerified = verifiedItems.size === activePackingOrder.items.length;
+    const currentCarton = packingRecommendation?.cartons.find(c => c.id === selectedCarton);
+    const allItemsVerified = currentCarton ? currentCarton.items.every(item => verifiedItems.has(item.id)) : false;
     const allChecklistComplete = Object.values(packingChecklist).every(v => v === true);
     const canCompletePacking = allItemsVerified && allChecklistComplete && selectedBoxSize && packageWeight;
     
@@ -1179,29 +1497,164 @@ export default function PickPack() {
 
               {/* Right Column - Packing Details */}
               <div className="space-y-4">
-                {/* Box Selection */}
+                {/* AI Carton Recommendations */}
                 <Card className="shadow-xl border-0">
-                  <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-                    <CardTitle className="text-base">Box Selection</CardTitle>
+                  <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Zap className="h-4 w-4" />
+                      AI Carton Selection
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="p-4">
-                    <div className="grid grid-cols-2 gap-2">
-                      {['Small (10x10x10)', 'Medium (15x15x15)', 'Large (20x20x20)', 'X-Large (25x25x25)'].map(size => (
-                        <Button
-                          key={size}
-                          variant={selectedBoxSize === size ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setSelectedBoxSize(size)}
-                          className="text-xs"
-                        >
-                          {size.split(' ')[0]}
-                        </Button>
-                      ))}
-                    </div>
+                    {packingRecommendation ? (
+                      <div className="space-y-4">
+                        {/* Summary */}
+                        <div className="bg-blue-50 p-3 rounded-lg">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-sm font-medium">Total Cartons:</span>
+                            <Badge variant="secondary">{packingRecommendation.cartons.length}</Badge>
+                          </div>
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="text-sm font-medium">Total Cost:</span>
+                            <span className="text-sm font-bold">${packingRecommendation.totalCost.toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-medium">Efficiency:</span>
+                            <span className="text-sm">{packingRecommendation.efficiency.toFixed(1)}%</span>
+                          </div>
+                        </div>
+
+                        {/* AI Reasoning */}
+                        <div className="bg-green-50 p-3 rounded-lg">
+                          <div className="flex items-start gap-2">
+                            <Info className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                            <p className="text-xs text-green-800">{packingRecommendation.reasoning}</p>
+                          </div>
+                        </div>
+
+                        {/* Carton Selection */}
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Select Carton to Pack:</label>
+                          <div className="grid gap-2">
+                            {packingRecommendation.cartons.map((carton, index) => (
+                              <Button
+                                key={carton.id}
+                                variant={selectedCarton === carton.id ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedCarton(carton.id);
+                                  setSelectedBoxSize(carton.boxSize.name);
+                                  setPackageWeight(carton.totalWeight.toFixed(2));
+                                  setPackingChecklist({...packingChecklist, weightRecorded: true});
+                                }}
+                                className="justify-between p-3 h-auto"
+                              >
+                                <div className="text-left">
+                                  <div className="font-medium">Carton {index + 1}: {carton.boxSize.name}</div>
+                                  <div className="text-xs opacity-75">
+                                    {carton.items.length} items • {carton.totalWeight.toFixed(2)}kg • {carton.utilization.toFixed(0)}% full
+                                  </div>
+                                  {carton.isFragile && (
+                                    <Badge variant="destructive" className="text-xs mt-1">Fragile</Badge>
+                                  )}
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-sm font-bold">${carton.boxSize.cost.toFixed(2)}</div>
+                                  <div className="text-xs">{carton.boxSize.material}</div>
+                                </div>
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <Zap className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                        <p className="text-sm text-gray-500">Start packing to see AI recommendations</p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 
-                {/* Weight Input */}
+                {/* Carton Details */}
+                {packingRecommendation && selectedCarton && (
+                  <Card className="shadow-xl border-0">
+                    <CardHeader className="bg-gradient-to-r from-green-500 to-blue-500 text-white">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Box className="h-4 w-4" />
+                        Current Carton Details
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4">
+                      {(() => {
+                        const carton = packingRecommendation.cartons.find(c => c.id === selectedCarton);
+                        if (!carton) return null;
+                        
+                        return (
+                          <div className="space-y-3">
+                            {/* Carton Info */}
+                            <div className="bg-gray-50 p-3 rounded-lg">
+                              <div className="flex justify-between items-center mb-2">
+                                <span className="font-medium">{carton.boxSize.name}</span>
+                                <Badge variant={carton.isFragile ? "destructive" : "secondary"}>
+                                  {carton.isFragile ? "Fragile" : "Standard"}
+                                </Badge>
+                              </div>
+                              <div className="text-xs text-gray-600 space-y-1">
+                                <div>Dimensions: {carton.boxSize.dimensions.length}×{carton.boxSize.dimensions.width}×{carton.boxSize.dimensions.height}cm</div>
+                                <div>Material: {carton.boxSize.material}</div>
+                                <div>Capacity: {carton.utilization.toFixed(1)}% filled</div>
+                                <div>Weight: {carton.totalWeight.toFixed(2)}kg / {carton.boxSize.maxWeight}kg max</div>
+                              </div>
+                            </div>
+                            
+                            {/* Items in this carton */}
+                            <div>
+                              <label className="text-sm font-medium mb-2 block">Items in this carton:</label>
+                              <div className="space-y-2 max-h-32 overflow-y-auto">
+                                {carton.items.map((item) => (
+                                  <div key={item.id} className="flex items-center justify-between p-2 bg-white border rounded">
+                                    <div className="flex items-center gap-2">
+                                      <Checkbox 
+                                        checked={verifiedItems.has(item.id)}
+                                        onCheckedChange={(checked) => {
+                                          const newVerified = new Set(verifiedItems);
+                                          if (checked) {
+                                            newVerified.add(item.id);
+                                          } else {
+                                            newVerified.delete(item.id);
+                                          }
+                                          setVerifiedItems(newVerified);
+                                          
+                                          // Update checklist
+                                          const allCartonItemsVerified = carton.items.every(i => newVerified.has(i.id));
+                                          if (allCartonItemsVerified) {
+                                            setPackingChecklist({...packingChecklist, itemsVerified: true});
+                                          }
+                                        }}
+                                      />
+                                      <div>
+                                        <div className="font-medium text-sm">{item.productName}</div>
+                                        <div className="text-xs text-gray-500">
+                                          {item.dimensions && `${item.dimensions.length}×${item.dimensions.width}×${item.dimensions.height}cm • ${item.dimensions.weight.toFixed(3)}kg`}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <Badge variant="outline" className="text-xs">
+                                      Qty: {item.quantity}
+                                    </Badge>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Weight Input - Auto-filled from AI recommendation */}
                 <Card className="shadow-xl border-0">
                   <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
                     <CardTitle className="text-base">Package Weight</CardTitle>
@@ -1210,7 +1663,7 @@ export default function PickPack() {
                     <div className="flex gap-2">
                       <Input
                         type="number"
-                        placeholder="Enter weight..."
+                        placeholder="Auto-calculated by AI..."
                         value={packageWeight}
                         onChange={(e) => {
                           setPackageWeight(e.target.value);
@@ -1222,52 +1675,158 @@ export default function PickPack() {
                       />
                       <span className="flex items-center px-3 text-sm font-medium">kg</span>
                     </div>
+                    {packingRecommendation && selectedCarton && (
+                      <div className="text-xs text-gray-500 mt-2">
+                        AI calculated: {packingRecommendation.cartons.find(c => c.id === selectedCarton)?.totalWeight.toFixed(2)}kg
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 
-                {/* Packing Checklist */}
+                {/* Enhanced Packing Checklist */}
                 <Card className="shadow-xl border-0">
                   <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-                    <CardTitle className="text-base">Packing Checklist</CardTitle>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <ClipboardList className="h-4 w-4" />
+                      Smart Packing Checklist
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="p-4">
-                    <div className="space-y-2">
+                    <div className="space-y-3">
+                      {/* Items Verification */}
                       <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
                         <Checkbox 
                           checked={allItemsVerified}
                           onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, itemsVerified: !!checked})}
                         />
-                        <span className={allItemsVerified ? 'text-green-600 font-medium' : ''}>
-                          All items verified and placed in box
-                        </span>
+                        <div className="flex-1">
+                          <span className={allItemsVerified ? 'text-green-600 font-medium' : 'font-medium'}>
+                            All items verified and placed in carton
+                          </span>
+                          {currentCarton && (
+                            <div className="text-xs text-gray-500 mt-1">
+                              {verifiedItems.size}/{currentCarton.items.length} items verified in {currentCarton.boxSize.name}
+                            </div>
+                          )}
+                        </div>
+                        {allItemsVerified && <CheckCircle className="h-4 w-4 text-green-600" />}
                       </label>
+
+                      {/* Packing Slip */}
                       <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
                         <Checkbox 
                           checked={packingChecklist.packingSlipIncluded}
                           onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, packingSlipIncluded: !!checked})}
                         />
-                        <span className={packingChecklist.packingSlipIncluded ? 'text-green-600 font-medium' : ''}>
-                          Packing slip included
-                        </span>
+                        <div className="flex-1">
+                          <span className={packingChecklist.packingSlipIncluded ? 'text-green-600 font-medium' : 'font-medium'}>
+                            Packing slip included
+                          </span>
+                          <div className="text-xs text-gray-500 mt-1">
+                            Include order details and customer information
+                          </div>
+                        </div>
+                        {packingChecklist.packingSlipIncluded && <CheckCircle className="h-4 w-4 text-green-600" />}
                       </label>
-                      <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
-                        <Checkbox 
-                          checked={packingChecklist.boxSealed}
-                          onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, boxSealed: !!checked})}
-                        />
-                        <span className={packingChecklist.boxSealed ? 'text-green-600 font-medium' : ''}>
-                          Box sealed and labeled
-                        </span>
-                      </label>
+
+                      {/* Fragile Handling */}
+                      {currentCarton?.isFragile && (
+                        <label className="flex items-center gap-3 p-3 bg-red-50 rounded-lg cursor-pointer hover:bg-red-100 border border-red-200">
+                          <Checkbox 
+                            checked={packingChecklist.fragileProtected}
+                            onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, fragileProtected: !!checked})}
+                          />
+                          <div className="flex-1">
+                            <span className={packingChecklist.fragileProtected ? 'text-green-600 font-medium' : 'font-medium text-red-700'}>
+                              Fragile items properly protected
+                            </span>
+                            <div className="text-xs text-red-600 mt-1">
+                              Extra padding and fragile labels applied
+                            </div>
+                          </div>
+                          {packingChecklist.fragileProtected && <CheckCircle className="h-4 w-4 text-green-600" />}
+                        </label>
+                      )}
+
+                      {/* Weight Recording */}
                       <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
                         <Checkbox 
                           checked={packingChecklist.weightRecorded}
                           onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, weightRecorded: !!checked})}
                         />
-                        <span className={packingChecklist.weightRecorded ? 'text-green-600 font-medium' : ''}>
-                          Weight recorded
-                        </span>
+                        <div className="flex-1">
+                          <span className={packingChecklist.weightRecorded ? 'text-green-600 font-medium' : 'font-medium'}>
+                            Weight recorded and verified
+                          </span>
+                          <div className="text-xs text-gray-500 mt-1">
+                            {packageWeight ? `Recorded: ${packageWeight}kg` : 'Enter final weight above'}
+                          </div>
+                        </div>
+                        {packingChecklist.weightRecorded && <CheckCircle className="h-4 w-4 text-green-600" />}
                       </label>
+
+                      {/* Box Sealing */}
+                      <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
+                        <Checkbox 
+                          checked={packingChecklist.boxSealed}
+                          onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, boxSealed: !!checked})}
+                        />
+                        <div className="flex-1">
+                          <span className={packingChecklist.boxSealed ? 'text-green-600 font-medium' : 'font-medium'}>
+                            Carton sealed and shipping label applied
+                          </span>
+                          <div className="text-xs text-gray-500 mt-1">
+                            Use quality tape and attach shipping label securely
+                          </div>
+                        </div>
+                        {packingChecklist.boxSealed && <CheckCircle className="h-4 w-4 text-green-600" />}
+                      </label>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="mt-4 pt-3 border-t">
+                      <div className="flex justify-between text-xs text-gray-600 mb-1">
+                        <span>Checklist Progress</span>
+                        <span>{Object.values(packingChecklist).filter(Boolean).length}/{Object.keys(packingChecklist).length}</span>
+                      </div>
+                      <Progress 
+                        value={(Object.values(packingChecklist).filter(Boolean).length / Object.keys(packingChecklist).length) * 100}
+                        className="h-2"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Shipping Label Generator */}
+                <Card className="shadow-xl border-0">
+                  <CardHeader className="bg-gradient-to-r from-indigo-500 to-blue-500 text-white">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Printer className="h-4 w-4" />
+                      Shipping Label
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4">
+                    <div className="space-y-3">
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <div className="text-sm font-medium mb-1">{activePackingOrder.customerName}</div>
+                        <div className="text-xs text-gray-600">{activePackingOrder.shippingAddress}</div>
+                        <div className="text-xs text-gray-600 mt-1">
+                          Method: {activePackingOrder.shippingMethod}
+                        </div>
+                      </div>
+                      
+                      <Button 
+                        className="w-full bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-blue-600"
+                        onClick={() => {
+                          toast({
+                            title: "Shipping Label Generated",
+                            description: "Label ready for printing",
+                          });
+                        }}
+                      >
+                        <Printer className="h-4 w-4 mr-2" />
+                        Generate Shipping Label
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
