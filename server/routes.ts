@@ -1905,25 +1905,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/orders/:orderId/items/:itemId', async (req: any, res) => {
     try {
       const { pickedQuantity, packedQuantity } = req.body;
-      const order = await storage.getOrder(req.params.orderId);
+      const order = await storage.getOrderById(req.params.orderId);
       
       if (!order) {
         return res.status(404).json({ message: "Order not found" });
       }
       
-      const itemIndex = order.items.findIndex((item: any) => item.id === req.params.itemId);
-      if (itemIndex === -1) {
+      // Find the item to update
+      const itemToUpdate = order.items?.find((item: any) => item.id === req.params.itemId);
+      if (!itemToUpdate) {
         return res.status(404).json({ message: "Item not found" });
       }
       
+      // Update the item quantities directly in the database
       if (pickedQuantity !== undefined) {
-        order.items[itemIndex].pickedQuantity = pickedQuantity;
+        await storage.updateOrderItem(req.params.itemId, { pickedQuantity });
       }
       if (packedQuantity !== undefined) {
-        order.items[itemIndex].packedQuantity = packedQuantity;
+        await storage.updateOrderItem(req.params.itemId, { packedQuantity });
       }
       
-      const updatedOrder = await storage.updateOrder(req.params.orderId, { items: order.items });
+      // Get the updated order
+      const updatedOrder = await storage.getOrderById(req.params.orderId);
       res.json(updatedOrder);
     } catch (error) {
       console.error("Error updating item quantities:", error);
