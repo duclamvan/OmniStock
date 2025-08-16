@@ -2564,19 +2564,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Complete picking for an order
   app.patch('/api/orders/:id', async (req: any, res) => {
     try {
+      console.log('Received body for order update:', req.body);
       const updates: any = {};
       
       // Process each field and convert date strings to Date objects
       for (const [key, value] of Object.entries(req.body)) {
         if (key === 'pickStartTime' || key === 'pickEndTime' || 
             key === 'packStartTime' || key === 'packEndTime' || 
-            key === 'shippedAt') {
+            key === 'shippedAt' || key === 'createdAt' || key === 'updatedAt') {
           // Convert date strings to Date objects
-          updates[key] = value ? new Date(value as string) : null;
+          if (value) {
+            const dateValue = new Date(value as string);
+            console.log(`Converting ${key}: ${value} to ${dateValue}`);
+            updates[key] = dateValue;
+          } else {
+            updates[key] = null;
+          }
         } else {
           updates[key] = value;
         }
       }
+      
+      console.log('Updates being sent to storage:', updates);
       
       // Check if this is a mock order (skip database update)
       if (req.params.id.startsWith('mock-')) {
@@ -2591,7 +2600,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(404).json({ message: "Order not found" });
       }
     } catch (error) {
-      console.error("Error updating order:", error);
+      console.error("Error updating order - detailed:", error);
       res.status(500).json({ message: "Failed to update order" });
     }
   });
