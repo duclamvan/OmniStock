@@ -3804,14 +3804,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/orders/:orderId/calculate-weight', async (req, res) => {
     try {
       const { orderId } = req.params;
-      const { selectedCartonId } = req.body;
+      const { selectedCartonId, optimizeMultipleCartons } = req.body;
       
-      const calculation = await weightCalculationService.calculatePackageWeight(orderId, selectedCartonId);
+      const calculation = await weightCalculationService.calculatePackageWeight(
+        orderId, 
+        selectedCartonId, 
+        optimizeMultipleCartons
+      );
       res.json(calculation);
     } catch (error) {
       console.error('Error calculating package weight:', error);
       res.status(500).json({ 
         error: error instanceof Error ? error.message : 'Failed to calculate package weight' 
+      });
+    }
+  });
+
+  // Multi-carton optimization endpoint
+  app.post('/api/orders/:orderId/optimize-multi-carton', async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      
+      const optimization = await weightCalculationService.optimizeMultiCartonPacking(orderId);
+      res.json(optimization);
+    } catch (error) {
+      console.error('Error optimizing multi-carton packing:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to optimize multi-carton packing' 
       });
     }
   });

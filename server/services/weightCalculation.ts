@@ -14,6 +14,42 @@ interface WeightCalculationResult {
     handlingInstructions: string[];
   };
   confidence: number;
+  multiCartonPlan?: MultiCartonResponse;
+}
+
+interface CartonPackingPlan {
+  cartonId: string;
+  cartonName: string;
+  cartonWeight: number;
+  maxWeight: number;
+  items: Array<{
+    id: string;
+    productName: string;
+    quantity: number;
+    weight: number;
+    dimensions: {
+      length: number;
+      width: number;
+      height: number;
+    };
+  }>;
+  totalItemsWeight: number;
+  packingMaterialsWeight: number;
+  finalWeight: number;
+  utilizationPercent: number;
+  costEstimate: number;
+}
+
+interface MultiCartonResponse {
+  totalWeight: number;
+  totalCost: number;
+  cartonPlans: CartonPackingPlan[];
+  confidence: number;
+  recommendations: {
+    shippingMethod: string;
+    handlingInstructions: string[];
+    costSavings?: string;
+  };
 }
 
 interface CartonSpec {
@@ -93,7 +129,7 @@ export class AIWeightCalculationService {
   /**
    * Calculate the total package weight using AI analysis
    */
-  async calculatePackageWeight(orderId: string, selectedCartonId?: string): Promise<WeightCalculationResult> {
+  async calculatePackageWeight(orderId: string, selectedCartonId?: string, optimizeMultipleCartons?: boolean): Promise<WeightCalculationResult> {
     try {
       // Get order details with items
       const order = await storage.getOrderById(orderId);
@@ -122,7 +158,7 @@ export class AIWeightCalculationService {
       // Calculate confidence based on data completeness
       const confidence = this.calculateConfidence(order, selectedCartonId);
 
-      return {
+      const result: WeightCalculationResult = {
         totalWeight: Math.round(totalWeight * 1000) / 1000, // Round to 3 decimal places
         breakdown: {
           itemsWeight: Math.round(itemsWeight * 1000) / 1000,
@@ -133,6 +169,13 @@ export class AIWeightCalculationService {
         recommendations,
         confidence
       };
+
+      // Add multi-carton optimization if requested
+      if (optimizeMultipleCartons) {
+        result.multiCartonPlan = await this.optimizeMultiCartonPacking(orderId);
+      }
+
+      return result;
     } catch (error) {
       console.error('Error calculating package weight:', error);
       throw error;
@@ -409,6 +452,203 @@ export class AIWeightCalculationService {
     return suitableCartons.reduce((smallest, current) => 
       current.weight < smallest.weight ? current : smallest
     );
+  }
+
+  /**
+   * Optimize multi-carton packing to minimize shipping costs
+   */
+  async optimizeMultiCartonPacking(orderId: string): Promise<MultiCartonResponse> {
+    const order = await storage.getOrderById(orderId);
+    if (!order || !order.items) {
+      throw new Error(`Order ${orderId} not found or has no items`);
+    }
+
+    // Get all products and their weights
+    const products = await storage.getProducts();
+    const packingMaterials = await storage.getPackingMaterials();
+    
+    const orderItems = order.items.map((item: any) => {
+      const product = products.find(p => p.id === item.productId);
+      const weight = product?.weight ? parseFloat(product.weight.toString()) : this.estimateProductWeight(product);
+      
+      return {
+        id: item.id,
+        productName: item.productName,
+        quantity: item.quantity,
+        weight: weight * item.quantity,
+        dimensions: {
+          length: product?.length ? parseFloat(product.length.toString()) : 10,
+          width: product?.width ? parseFloat(product.width.toString()) : 10,
+          height: product?.height ? parseFloat(product.height.toString()) : 5,
+        },
+        packingMaterial: packingMaterials.find(pm => pm.id === item.packingMaterialId)
+      };
+    });
+
+    // Sort items by weight (heaviest first)
+    orderItems.sort((a, b) => b.weight - a.weight);
+
+    // Bin packing algorithm - First Fit Decreasing
+    const cartonPlans: CartonPackingPlan[] = [];
+    
+    for (const item of orderItems) {
+      let placed = false;
+      
+      // Try to place in existing cartons
+      for (const plan of cartonPlans) {
+        const itemPackingWeight = this.estimatePackingMaterialWeight(item.packingMaterial);
+        const newWeight = plan.totalItemsWeight + plan.packingMaterialsWeight + item.weight + itemPackingWeight;
+        
+        if (newWeight <= plan.maxWeight * 0.95) { // 95% utilization limit
+          plan.items.push(item);
+          plan.totalItemsWeight += item.weight;
+          plan.packingMaterialsWeight += itemPackingWeight;
+          plan.finalWeight = plan.cartonWeight + plan.totalItemsWeight + plan.packingMaterialsWeight;
+          plan.utilizationPercent = (plan.finalWeight / plan.maxWeight) * 100;
+          placed = true;
+          break;
+        }
+      }
+      
+      // If not placed, create new carton
+      if (!placed) {
+        const suitableCarton = this.findOptimalCartonForItem(item);
+        const itemPackingWeight = this.estimatePackingMaterialWeight(item.packingMaterial);
+        
+        const newPlan: CartonPackingPlan = {
+          cartonId: suitableCarton.id,
+          cartonName: suitableCarton.name,
+          cartonWeight: suitableCarton.weight,
+          maxWeight: suitableCarton.maxWeight,
+          items: [item],
+          totalItemsWeight: item.weight,
+          packingMaterialsWeight: itemPackingWeight,
+          finalWeight: suitableCarton.weight + item.weight + itemPackingWeight,
+          utilizationPercent: ((suitableCarton.weight + item.weight + itemPackingWeight) / suitableCarton.maxWeight) * 100,
+          costEstimate: this.estimateShippingCost(suitableCarton.weight + item.weight + itemPackingWeight)
+        };
+        
+        cartonPlans.push(newPlan);
+      }
+    }
+
+    // Calculate total metrics
+    const totalWeight = cartonPlans.reduce((sum, plan) => sum + plan.finalWeight, 0);
+    const totalCost = cartonPlans.reduce((sum, plan) => sum + plan.costEstimate, 0);
+
+    // Generate recommendations
+    const recommendations = this.generateMultiCartonRecommendations(cartonPlans, order);
+
+    return {
+      totalWeight,
+      totalCost,
+      cartonPlans,
+      confidence: this.calculateMultiCartonConfidence(cartonPlans),
+      recommendations
+    };
+  }
+
+  /**
+   * Find optimal carton for a specific item
+   */
+  private findOptimalCartonForItem(item: any): CartonSpec {
+    const itemWeight = item.weight + 0.01; // Add packing material buffer
+    
+    const suitableCartons = this.standardCartons.filter(carton => 
+      carton.maxWeight >= itemWeight + carton.weight
+    );
+    
+    if (suitableCartons.length === 0) {
+      return this.standardCartons[this.standardCartons.length - 1]; // Largest carton
+    }
+    
+    // Return smallest suitable carton
+    return suitableCartons[0];
+  }
+
+  /**
+   * Estimate shipping cost based on weight
+   */
+  private estimateShippingCost(weight: number): number {
+    // Simplified cost estimation
+    if (weight < 0.5) return 5.00;
+    if (weight < 2) return 8.50;
+    if (weight < 5) return 12.00;
+    if (weight < 10) return 18.00;
+    if (weight < 20) return 35.00;
+    return 50.00;
+  }
+
+  /**
+   * Generate recommendations for multi-carton packing
+   */
+  private generateMultiCartonRecommendations(plans: CartonPackingPlan[], order: Order): {
+    shippingMethod: string;
+    handlingInstructions: string[];
+    costSavings?: string;
+  } {
+    const handlingInstructions: string[] = [];
+    let shippingMethod = 'Standard';
+    
+    // Multi-carton specific instructions
+    if (plans.length > 1) {
+      handlingInstructions.push(`Pack items into ${plans.length} separate cartons`);
+      handlingInstructions.push('Label cartons as 1 of N, 2 of N, etc.');
+      shippingMethod = 'Multi-Package';
+    }
+    
+    // Weight-based shipping method
+    const totalWeight = plans.reduce((sum, plan) => sum + plan.finalWeight, 0);
+    if (totalWeight > 20) {
+      shippingMethod = 'Freight';
+      handlingInstructions.push('Requires freight shipping due to total weight');
+    }
+    
+    // Utilization warnings
+    const underUtilized = plans.filter(plan => plan.utilizationPercent < 50);
+    if (underUtilized.length > 0) {
+      handlingInstructions.push(`Consider consolidating ${underUtilized.length} under-utilized cartons`);
+    }
+    
+    // Priority handling
+    if (order.priority === 'high') {
+      shippingMethod = 'Express Multi-Package';
+      handlingInstructions.push('Express shipping for all cartons');
+    }
+    
+    // Cost savings calculation
+    const singleCartonCost = this.estimateShippingCost(totalWeight);
+    const multiCartonCost = plans.reduce((sum, plan) => sum + plan.costEstimate, 0);
+    const savings = singleCartonCost - multiCartonCost;
+    const costSavings = savings > 0 ? `Saves $${savings.toFixed(2)} vs single large carton` : undefined;
+    
+    return {
+      shippingMethod,
+      handlingInstructions,
+      costSavings
+    };
+  }
+
+  /**
+   * Calculate confidence for multi-carton optimization
+   */
+  private calculateMultiCartonConfidence(plans: CartonPackingPlan[]): number {
+    let confidence = 0.7; // Base confidence for multi-carton
+    
+    // Decrease confidence for too many cartons
+    if (plans.length > 5) {
+      confidence -= 0.2;
+    }
+    
+    // Increase confidence for good utilization
+    const avgUtilization = plans.reduce((sum, plan) => sum + plan.utilizationPercent, 0) / plans.length;
+    if (avgUtilization > 70) {
+      confidence += 0.2;
+    } else if (avgUtilization < 40) {
+      confidence -= 0.3;
+    }
+    
+    return Math.max(0.1, Math.min(1.0, confidence));
   }
 }
 

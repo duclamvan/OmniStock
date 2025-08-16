@@ -246,6 +246,7 @@ export default function PickPack() {
   const [selectedCarton, setSelectedCarton] = useState<string>('K2');
   const [useNonCompanyCarton, setUseNonCompanyCarton] = useState<boolean>(false);
   const [aiWeightCalculation, setAiWeightCalculation] = useState<any>(null);
+  const [enableMultiCartonOptimization, setEnableMultiCartonOptimization] = useState<boolean>(false);
 
   // Timer effects
   useEffect(() => {
@@ -303,10 +304,14 @@ export default function PickPack() {
 
   // Mutation for calculating package weight
   const calculateWeightMutation = useMutation({
-    mutationFn: async ({ orderId, selectedCartonId }: { orderId: string; selectedCartonId: string }) => {
+    mutationFn: async ({ orderId, selectedCartonId, optimizeMultipleCartons }: { 
+      orderId: string; 
+      selectedCartonId: string; 
+      optimizeMultipleCartons?: boolean 
+    }) => {
       return apiRequest(`/api/orders/${orderId}/calculate-weight`, {
         method: 'POST',
-        body: { selectedCartonId },
+        body: { selectedCartonId, optimizeMultipleCartons },
       });
     },
     onSuccess: (data) => {
@@ -2386,13 +2391,34 @@ export default function PickPack() {
                   </CardHeader>
                   <CardContent className="p-4">
                     <div className="space-y-4">
+                      {/* Multi-carton optimization toggle */}
+                      <div className="flex items-center justify-between p-3 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg border border-orange-200">
+                        <div className="flex items-center space-x-3">
+                          <Package className="h-5 w-5 text-orange-600" />
+                          <div>
+                            <h4 className="text-sm font-medium text-orange-800">Multi-Carton Optimization</h4>
+                            <p className="text-xs text-orange-600">Analyze if using multiple cartons reduces shipping costs</p>
+                          </div>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="sr-only peer"
+                            checked={enableMultiCartonOptimization}
+                            onChange={(e) => setEnableMultiCartonOptimization(e.target.checked)}
+                          />
+                          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-600"></div>
+                        </label>
+                      </div>
+
                       {/* Calculate Weight Button */}
                       <Button
                         onClick={() => {
                           if (activePackingOrder && selectedCarton) {
                             calculateWeightMutation.mutate({
                               orderId: activePackingOrder.id,
-                              selectedCartonId: useNonCompanyCarton ? 'non-company' : selectedCarton
+                              selectedCartonId: useNonCompanyCarton ? 'non-company' : selectedCarton,
+                              optimizeMultipleCartons: enableMultiCartonOptimization
                             });
                           }
                         }}
@@ -2463,6 +2489,86 @@ export default function PickPack() {
                             <div className="space-y-1">
                               <div className="text-xs font-medium text-gray-700">Handling Instructions:</div>
                               {aiWeightCalculation.recommendations.handlingInstructions.map((instruction: string, index: number) => (
+                                <div key={index} className="text-xs text-gray-600 flex items-center gap-1">
+                                  <Info className="h-3 w-3" />
+                                  {instruction}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Multi-Carton Optimization Results */}
+                      {aiWeightCalculation && aiWeightCalculation.multiCartonPlan && (
+                        <div className="bg-gradient-to-r from-amber-50 to-orange-50 p-4 rounded-lg border border-amber-200">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Package className="h-4 w-4 text-amber-600" />
+                            <span className="font-semibold text-amber-800">Multi-Carton Analysis</span>
+                            <Badge variant="outline" className="text-xs bg-amber-100">
+                              {Math.round(aiWeightCalculation.multiCartonPlan.confidence * 100)}% confidence
+                            </Badge>
+                          </div>
+                          
+                          <div className="grid grid-cols-3 gap-3 mb-4">
+                            <div className="text-center p-2 bg-white rounded border">
+                              <div className="text-lg font-bold text-amber-600">
+                                {aiWeightCalculation.multiCartonPlan.cartonPlans.length}
+                              </div>
+                              <div className="text-xs text-gray-500">Cartons</div>
+                            </div>
+                            <div className="text-center p-2 bg-white rounded border">
+                              <div className="text-lg font-bold text-green-600">
+                                ${aiWeightCalculation.multiCartonPlan.totalCost.toFixed(2)}
+                              </div>
+                              <div className="text-xs text-gray-500">Total Cost</div>
+                            </div>
+                            <div className="text-center p-2 bg-white rounded border">
+                              <div className="text-lg font-bold text-blue-600">
+                                {aiWeightCalculation.multiCartonPlan.totalWeight.toFixed(2)}kg
+                              </div>
+                              <div className="text-xs text-gray-500">Total Weight</div>
+                            </div>
+                          </div>
+
+                          {/* Carton Plans */}
+                          <div className="space-y-3 mb-3">
+                            <div className="text-sm font-medium text-gray-700">Carton Distribution:</div>
+                            {aiWeightCalculation.multiCartonPlan.cartonPlans.map((plan: any, index: number) => (
+                              <div key={index} className="bg-white p-3 rounded border">
+                                <div className="flex justify-between items-center mb-2">
+                                  <span className="font-medium text-sm">{plan.cartonName}</span>
+                                  <div className="flex gap-2">
+                                    <Badge variant="secondary" className="text-xs">
+                                      {plan.utilizationPercent.toFixed(0)}% full
+                                    </Badge>
+                                    <Badge variant="outline" className="text-xs">
+                                      ${plan.costEstimate.toFixed(2)}
+                                    </Badge>
+                                  </div>
+                                </div>
+                                <div className="text-xs text-gray-600 mb-1">
+                                  Items: {plan.items.length} | Weight: {plan.finalWeight.toFixed(2)}kg / {plan.maxWeight}kg
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {plan.items.map((item: any) => item.productName).join(', ')}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Cost Savings */}
+                          {aiWeightCalculation.multiCartonPlan.recommendations.costSavings && (
+                            <div className="bg-green-100 p-2 rounded text-sm text-green-800 font-medium">
+                              💰 {aiWeightCalculation.multiCartonPlan.recommendations.costSavings}
+                            </div>
+                          )}
+
+                          {/* Multi-carton Handling Instructions */}
+                          {aiWeightCalculation.multiCartonPlan.recommendations.handlingInstructions.length > 0 && (
+                            <div className="space-y-1 mt-3">
+                              <div className="text-xs font-medium text-gray-700">Multi-Carton Instructions:</div>
+                              {aiWeightCalculation.multiCartonPlan.recommendations.handlingInstructions.map((instruction: string, index: number) => (
                                 <div key={index} className="text-xs text-gray-600 flex items-center gap-1">
                                   <Info className="h-3 w-3" />
                                   {instruction}
