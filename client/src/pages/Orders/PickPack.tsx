@@ -1021,7 +1021,7 @@ export default function PickPack() {
           barcode: 'BAR654MULTI5',
           image: generateMockImage('acetone-bulk'),
           dimensions: { length: 28, width: 20, height: 25, weight: 3.200 },
-          isHazardous: true
+          isFragile: true
         },
         {
           id: 'multi-item-6',
@@ -1677,7 +1677,8 @@ export default function PickPack() {
                     itemsVerified: false,
                     packingSlipIncluded: false,
                     boxSealed: false,
-                    weightRecorded: false
+                    weightRecorded: false,
+                    fragileProtected: false
                   });
                   setSelectedBoxSize('');
                   setPackageWeight('');
@@ -1764,7 +1765,7 @@ export default function PickPack() {
                               item => item.barcode === barcodeInput || item.sku === barcodeInput
                             );
                             if (matchingItem) {
-                              setVerifiedItems(new Set([...verifiedItems, matchingItem.id]));
+                              setVerifiedItems(new Set(Array.from(verifiedItems).concat(matchingItem.id)));
                               playSound('scan');
                             } else {
                               playSound('error');
@@ -1853,9 +1854,9 @@ export default function PickPack() {
                               variant={isVerified ? "default" : "outline"}
                               onClick={() => {
                                 if (isVerified) {
-                                  setVerifiedItems(new Set([...verifiedItems].filter(id => id !== item.id)));
+                                  setVerifiedItems(new Set(Array.from(verifiedItems).filter(id => id !== item.id)));
                                 } else {
-                                  setVerifiedItems(new Set([...verifiedItems, item.id]));
+                                  setVerifiedItems(new Set(Array.from(verifiedItems).concat(item.id)));
                                   playSound('scan');
                                 }
                               }}
@@ -2360,7 +2361,8 @@ export default function PickPack() {
                               itemsVerified: false,
                               packingSlipIncluded: false,
                               boxSealed: false,
-                              weightRecorded: false
+                              weightRecorded: false,
+                              fragileProtected: false
                             });
                             setSelectedBoxSize('');
                             setPackageWeight('');
@@ -2382,7 +2384,8 @@ export default function PickPack() {
                               itemsVerified: false,
                               packingSlipIncluded: false,
                               boxSealed: false,
-                              weightRecorded: false
+                              weightRecorded: false,
+                              fragileProtected: false
                             });
                             setSelectedBoxSize('');
                             setPackageWeight('');
@@ -2706,7 +2709,7 @@ export default function PickPack() {
                                     });
                                     
                                     // Update the picked quantity based on bundle completion
-                                    const allPicked = newPicked.size === currentItem.bundleItems.length;
+                                    const allPicked = newPicked.size === currentItem.bundleItems?.length;
                                     updatePickedItem(currentItem.id, allPicked ? currentItem.quantity : 0);
                                   }}
                                 >
@@ -2743,7 +2746,7 @@ export default function PickPack() {
                             })}
                           </div>
                           
-                          {bundlePickedItems[currentItem.id]?.size === currentItem.bundleItems.length && (
+                          {bundlePickedItems[currentItem.id]?.size === currentItem.bundleItems?.length && (
                             <Alert className="mt-4 bg-green-100 border-2 border-green-400 shadow-md">
                               <CheckCircle className="h-4 lg:h-5 w-4 lg:w-5 text-green-700" />
                               <AlertDescription className="text-green-800 font-semibold text-sm lg:text-base">
@@ -2753,12 +2756,12 @@ export default function PickPack() {
                           )}
                           
                           {/* Quick Pick All Bundle Items */}
-                          {(!bundlePickedItems[currentItem.id] || bundlePickedItems[currentItem.id].size < currentItem.bundleItems.length) && (
+                          {(!bundlePickedItems[currentItem.id] || bundlePickedItems[currentItem.id].size < (currentItem.bundleItems?.length || 0)) && (
                             <Button 
                               size="lg" 
                               className="w-full mt-4 h-11 sm:h-12 lg:h-14 text-sm sm:text-base lg:text-lg font-bold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg"
                               onClick={() => {
-                                const allIds = new Set(currentItem.bundleItems.map(item => item.id));
+                                const allIds = new Set(currentItem.bundleItems?.map(item => item.id) || []);
                                 setBundlePickedItems({
                                   ...bundlePickedItems,
                                   [currentItem.id]: allIds
