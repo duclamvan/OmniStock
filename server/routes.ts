@@ -2475,18 +2475,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/orders/:id', async (req: any, res) => {
     try {
+      console.log('PATCH /api/orders/:id - Received body:', req.body);
       const { items, ...orderUpdates } = req.body;
       
-      const updates = {
-        ...orderUpdates,
-        // Convert date strings to Date objects if present
-        shippedAt: orderUpdates.shippedAt ? new Date(orderUpdates.shippedAt) : undefined,
-      };
+      const updates = { ...orderUpdates };
+      
+      // Convert all date fields from strings to Date objects
+      const dateFields = ['pickStartTime', 'pickEndTime', 'packStartTime', 'packEndTime', 'shippedAt', 'createdAt', 'updatedAt'];
+      dateFields.forEach(field => {
+        if (updates[field] && typeof updates[field] === 'string') {
+          try {
+            const dateValue = new Date(updates[field]);
+            if (!isNaN(dateValue.getTime())) {
+              console.log(`Converting ${field}: ${updates[field]} to Date object`);
+              updates[field] = dateValue;
+            } else {
+              console.error(`Invalid date for ${field}: ${updates[field]}`);
+              updates[field] = null;
+            }
+          } catch (dateError) {
+            console.error(`Date conversion error for ${field}:`, dateError);
+            updates[field] = null;
+          }
+        }
+      });
       
       // Remove undefined fields
       Object.keys(updates).forEach(key => 
         updates[key] === undefined && delete updates[key]
       );
+      
+      console.log('Updates after date conversion:', updates);
       
       const order = await storage.updateOrder(req.params.id, updates);
       
@@ -2561,60 +2580,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Complete picking for an order
-  app.patch('/api/orders/:id', async (req: any, res) => {
-    try {
-      console.log('Received body for order update:', req.body);
-      const updates: any = {};
-      
-      // Process each field and convert date strings to Date objects
-      for (const [key, value] of Object.entries(req.body)) {
-        if (key === 'pickStartTime' || key === 'pickEndTime' || 
-            key === 'packStartTime' || key === 'packEndTime' || 
-            key === 'shippedAt' || key === 'createdAt' || key === 'updatedAt') {
-          // Convert date strings to Date objects
-          if (value && typeof value === 'string') {
-            try {
-              const dateValue = new Date(value);
-              // Check if the date is valid
-              if (!isNaN(dateValue.getTime())) {
-                console.log(`Converting ${key}: ${value} to ${dateValue.toISOString()}`);
-                updates[key] = dateValue;
-              } else {
-                console.error(`Invalid date for ${key}: ${value}`);
-                updates[key] = null;
-              }
-            } catch (dateError) {
-              console.error(`Date conversion error for ${key}:`, dateError);
-              updates[key] = null;
-            }
-          } else {
-            updates[key] = null;
-          }
-        } else {
-          updates[key] = value;
-        }
-      }
-      
-      console.log('Updates being sent to storage:', updates);
-      
-      // Check if this is a mock order (skip database update)
-      if (req.params.id.startsWith('mock-')) {
-        return res.json({ id: req.params.id, ...updates, message: 'Mock order updated' });
-      }
-      
-      const order = await storage.updateOrder(req.params.id, updates);
-      
-      if (order) {
-        res.json(order);
-      } else {
-        res.status(404).json({ message: "Order not found" });
-      }
-    } catch (error) {
-      console.error("Error updating order - detailed:", error);
-      res.status(500).json({ message: "Failed to update order" });
-    }
-  });
+
 
   // Update order status for Pick & Pack workflow
   app.patch('/api/orders/:id/status', async (req: any, res) => {
