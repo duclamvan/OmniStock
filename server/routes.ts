@@ -2564,7 +2564,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Complete picking for an order
   app.patch('/api/orders/:id', async (req: any, res) => {
     try {
-      const updates = req.body;
+      const updates: any = {};
+      
+      // Process each field and convert date strings to Date objects
+      for (const [key, value] of Object.entries(req.body)) {
+        if (key === 'pickStartTime' || key === 'pickEndTime' || 
+            key === 'packStartTime' || key === 'packEndTime' || 
+            key === 'shippedAt') {
+          // Convert date strings to Date objects
+          updates[key] = value ? new Date(value as string) : null;
+        } else {
+          updates[key] = value;
+        }
+      }
       
       // Check if this is a mock order (skip database update)
       if (req.params.id.startsWith('mock-')) {
