@@ -428,7 +428,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
 
 
         <div className={cn(
-          isPickPackPage ? "h-screen overflow-hidden" : "px-mobile py-mobile max-w-7xl mx-auto"
+          "px-mobile py-mobile max-w-7xl mx-auto"
         )}>
           {children}
         </div>
