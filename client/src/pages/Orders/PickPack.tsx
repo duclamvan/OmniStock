@@ -1094,9 +1094,7 @@ export default function PickPack() {
 
   // Transform real orders to PickPackOrder format - Include orders in the fulfillment process
   const transformedOrders: PickPackOrder[] = [
-    // Include demo packing orders to show shipping instructions feature
-    ...demoPackingOrders,
-    // Include real orders from database
+    // Use only real orders from database (removed demo orders)
     ...((allOrders as any[] || [])
     .filter((order: any) => 
       order.status === 'to_fulfill' || 
