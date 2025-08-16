@@ -1727,17 +1727,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/orders/:id/pick/start', async (req: any, res) => {
     try {
       const { employeeId } = req.body;
+      
+      // Handle mock orders
+      if (req.params.id.startsWith('mock-')) {
+        return res.json({ 
+          id: req.params.id, 
+          orderId: req.params.id,
+          pickStatus: 'in_progress',
+          pickedBy: employeeId || "test-user",
+          pickStartTime: new Date().toISOString(),
+          message: 'Mock order picking started' 
+        });
+      }
+      
       const order = await storage.startPickingOrder(req.params.id, employeeId || "test-user");
       
-      await storage.createUserActivity({
-        userId: "test-user",
-        action: 'started_picking',
-        entityType: 'order',
-        entityId: req.params.id,
-        description: `Started picking order: ${order.orderId}`,
-      });
-      
-      res.json(order);
+      if (order) {
+        await storage.createUserActivity({
+          userId: "test-user",
+          action: 'started_picking',
+          entityType: 'order',
+          entityId: req.params.id,
+          description: `Started picking order: ${order.orderId}`,
+        });
+        res.json(order);
+      } else {
+        res.status(404).json({ message: "Order not found" });
+      }
     } catch (error) {
       console.error("Error starting pick:", error);
       res.status(500).json({ message: "Failed to start picking order" });
@@ -1747,17 +1763,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Complete picking an order
   app.post('/api/orders/:id/pick/complete', async (req: any, res) => {
     try {
+      // Handle mock orders
+      if (req.params.id.startsWith('mock-')) {
+        return res.json({ 
+          id: req.params.id, 
+          orderId: req.params.id,
+          pickStatus: 'completed',
+          pickEndTime: new Date().toISOString(),
+          message: 'Mock order picking completed' 
+        });
+      }
+      
       const order = await storage.completePickingOrder(req.params.id);
       
-      await storage.createUserActivity({
-        userId: "test-user",
-        action: 'completed_picking',
-        entityType: 'order',
-        entityId: req.params.id,
-        description: `Completed picking order: ${order.orderId}`,
-      });
-      
-      res.json(order);
+      if (order) {
+        await storage.createUserActivity({
+          userId: "test-user",
+          action: 'completed_picking',
+          entityType: 'order',
+          entityId: req.params.id,
+          description: `Completed picking order: ${order.orderId}`,
+        });
+        res.json(order);
+      } else {
+        res.status(404).json({ message: "Order not found" });
+      }
     } catch (error) {
       console.error("Error completing pick:", error);
       res.status(500).json({ message: "Failed to complete picking order" });
@@ -1768,17 +1798,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/orders/:id/pack/start', async (req: any, res) => {
     try {
       const { employeeId } = req.body;
+      
+      // Handle mock orders
+      if (req.params.id.startsWith('mock-')) {
+        return res.json({ 
+          id: req.params.id, 
+          orderId: req.params.id,
+          packStatus: 'in_progress',
+          packedBy: employeeId || "test-user",
+          packStartTime: new Date().toISOString(),
+          message: 'Mock order packing started' 
+        });
+      }
+      
       const order = await storage.startPackingOrder(req.params.id, employeeId || "test-user");
       
-      await storage.createUserActivity({
-        userId: "test-user",
-        action: 'started_packing',
-        entityType: 'order',
-        entityId: req.params.id,
-        description: `Started packing order: ${order.orderId}`,
-      });
-      
-      res.json(order);
+      if (order) {
+        await storage.createUserActivity({
+          userId: "test-user",
+          action: 'started_packing',
+          entityType: 'order',
+          entityId: req.params.id,
+          description: `Started packing order: ${order.orderId}`,
+        });
+        res.json(order);
+      } else {
+        res.status(404).json({ message: "Order not found" });
+      }
     } catch (error) {
       console.error("Error starting pack:", error);
       res.status(500).json({ message: "Failed to start packing order" });
@@ -1788,17 +1834,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Complete packing an order
   app.post('/api/orders/:id/pack/complete', async (req: any, res) => {
     try {
+      // Handle mock orders
+      if (req.params.id.startsWith('mock-')) {
+        return res.json({ 
+          id: req.params.id, 
+          orderId: req.params.id,
+          packStatus: 'completed',
+          packEndTime: new Date().toISOString(),
+          orderStatus: 'shipped',
+          message: 'Mock order packing completed' 
+        });
+      }
+      
       const order = await storage.completePackingOrder(req.params.id);
       
-      await storage.createUserActivity({
-        userId: "test-user",
-        action: 'completed_packing',
-        entityType: 'order',
-        entityId: req.params.id,
-        description: `Completed packing order: ${order.orderId}`,
-      });
-      
-      res.json(order);
+      if (order) {
+        await storage.createUserActivity({
+          userId: "test-user",
+          action: 'completed_packing',
+          entityType: 'order',
+          entityId: req.params.id,
+          description: `Completed packing order: ${order.orderId}`,
+        });
+        res.json(order);
+      } else {
+        res.status(404).json({ message: "Order not found" });
+      }
     } catch (error) {
       console.error("Error completing pack:", error);
       res.status(500).json({ message: "Failed to complete packing order" });
@@ -1809,6 +1870,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/orders/:id/items/:itemId/pick', async (req: any, res) => {
     try {
       const { pickedQuantity } = req.body;
+      
+      // Handle mock orders
+      if (req.params.id.startsWith('mock-')) {
+        return res.json({ 
+          id: req.params.itemId, 
+          pickedQuantity,
+          message: 'Mock item picked quantity updated' 
+        });
+      }
+      
       const item = await storage.updateOrderItemPickedQuantity(req.params.itemId, pickedQuantity);
       
       await storage.createUserActivity({
@@ -1830,6 +1901,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/orders/:id/items/:itemId/pack', async (req: any, res) => {
     try {
       const { packedQuantity } = req.body;
+      
+      // Handle mock orders
+      if (req.params.id.startsWith('mock-')) {
+        return res.json({ 
+          id: req.params.itemId, 
+          packedQuantity,
+          message: 'Mock item packed quantity updated' 
+        });
+      }
+      
       const item = await storage.updateOrderItemPackedQuantity(req.params.itemId, packedQuantity);
       
       await storage.createUserActivity({
@@ -1863,17 +1944,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/orders/:id/pick/start', async (req: any, res) => {
     try {
       const { employeeId } = req.body;
+      
+      // Handle mock orders
+      if (req.params.id.startsWith('mock-')) {
+        return res.json({ 
+          id: req.params.id, 
+          orderId: req.params.id,
+          pickStatus: 'in_progress',
+          pickedBy: employeeId || "test-user",
+          pickStartTime: new Date().toISOString(),
+          message: 'Mock order picking started' 
+        });
+      }
+      
       const order = await storage.startPickingOrder(req.params.id, employeeId || "test-user");
       
-      await storage.createUserActivity({
-        userId: "test-user",
-        action: 'started_picking',
-        entityType: 'order',
-        entityId: req.params.id,
-        description: `Started picking order: ${order.orderId}`,
-      });
-      
-      res.json(order);
+      if (order) {
+        await storage.createUserActivity({
+          userId: "test-user",
+          action: 'started_picking',
+          entityType: 'order',
+          entityId: req.params.id,
+          description: `Started picking order: ${order.orderId}`,
+        });
+        res.json(order);
+      } else {
+        res.status(404).json({ message: "Order not found" });
+      }
     } catch (error) {
       console.error("Error starting pick:", error);
       res.status(500).json({ message: "Failed to start picking order" });
@@ -1883,17 +1980,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Complete picking an order
   app.post('/api/orders/:id/pick/complete', async (req: any, res) => {
     try {
+      // Handle mock orders
+      if (req.params.id.startsWith('mock-')) {
+        return res.json({ 
+          id: req.params.id, 
+          orderId: req.params.id,
+          pickStatus: 'completed',
+          pickEndTime: new Date().toISOString(),
+          message: 'Mock order picking completed' 
+        });
+      }
+      
       const order = await storage.completePickingOrder(req.params.id);
       
-      await storage.createUserActivity({
-        userId: "test-user",
-        action: 'completed_picking',
-        entityType: 'order',
-        entityId: req.params.id,
-        description: `Completed picking order: ${order.orderId}`,
-      });
-      
-      res.json(order);
+      if (order) {
+        await storage.createUserActivity({
+          userId: "test-user",
+          action: 'completed_picking',
+          entityType: 'order',
+          entityId: req.params.id,
+          description: `Completed picking order: ${order.orderId}`,
+        });
+        res.json(order);
+      } else {
+        res.status(404).json({ message: "Order not found" });
+      }
     } catch (error) {
       console.error("Error completing pick:", error);
       res.status(500).json({ message: "Failed to complete picking order" });
@@ -1904,17 +2015,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/orders/:id/pack/start', async (req: any, res) => {
     try {
       const { employeeId } = req.body;
+      
+      // Handle mock orders
+      if (req.params.id.startsWith('mock-')) {
+        return res.json({ 
+          id: req.params.id, 
+          orderId: req.params.id,
+          packStatus: 'in_progress',
+          packedBy: employeeId || "test-user",
+          packStartTime: new Date().toISOString(),
+          message: 'Mock order packing started' 
+        });
+      }
+      
       const order = await storage.startPackingOrder(req.params.id, employeeId || "test-user");
       
-      await storage.createUserActivity({
-        userId: "test-user",
-        action: 'started_packing',
-        entityType: 'order',
-        entityId: req.params.id,
-        description: `Started packing order: ${order.orderId}`,
-      });
-      
-      res.json(order);
+      if (order) {
+        await storage.createUserActivity({
+          userId: "test-user",
+          action: 'started_packing',
+          entityType: 'order',
+          entityId: req.params.id,
+          description: `Started packing order: ${order.orderId}`,
+        });
+        res.json(order);
+      } else {
+        res.status(404).json({ message: "Order not found" });
+      }
     } catch (error) {
       console.error("Error starting pack:", error);
       res.status(500).json({ message: "Failed to start packing order" });
@@ -1924,17 +2051,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Complete packing an order
   app.post('/api/orders/:id/pack/complete', async (req: any, res) => {
     try {
+      // Handle mock orders
+      if (req.params.id.startsWith('mock-')) {
+        return res.json({ 
+          id: req.params.id, 
+          orderId: req.params.id,
+          packStatus: 'completed',
+          packEndTime: new Date().toISOString(),
+          orderStatus: 'shipped',
+          message: 'Mock order packing completed' 
+        });
+      }
+      
       const order = await storage.completePackingOrder(req.params.id);
       
-      await storage.createUserActivity({
-        userId: "test-user",
-        action: 'completed_packing',
-        entityType: 'order',
-        entityId: req.params.id,
-        description: `Completed packing order: ${order.orderId}`,
-      });
-      
-      res.json(order);
+      if (order) {
+        await storage.createUserActivity({
+          userId: "test-user",
+          action: 'completed_packing',
+          entityType: 'order',
+          entityId: req.params.id,
+          description: `Completed packing order: ${order.orderId}`,
+        });
+        res.json(order);
+      } else {
+        res.status(404).json({ message: "Order not found" });
+      }
     } catch (error) {
       console.error("Error completing pack:", error);
       res.status(500).json({ message: "Failed to complete packing order" });
@@ -2119,17 +2261,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updates.shippedAt = new Date();
       }
       
+      // Check if this is a mock order (skip database update)
+      if (req.params.id.startsWith('mock-')) {
+        return res.json({ id: req.params.id, ...updates, message: 'Mock order updated' });
+      }
+      
       const order = await storage.updateOrder(req.params.id, updates);
       
-      await storage.createUserActivity({
-        userId: "test-user",
-        action: 'update',
-        entityType: 'order',
-        entityId: order.id,
-        description: `Updated order status to ${orderStatus}: ${order.orderId}`,
-      });
-      
-      res.json(order);
+      if (order) {
+        await storage.createUserActivity({
+          userId: "test-user",
+          action: 'update',
+          entityType: 'order',
+          entityId: order.id,
+          description: `Updated order status to ${orderStatus}: ${order.orderId}`,
+        });
+        res.json(order);
+      } else {
+        res.status(404).json({ message: "Order not found" });
+      }
     } catch (error) {
       console.error("Error updating order status:", error);
       res.status(500).json({ message: "Failed to update order status" });
