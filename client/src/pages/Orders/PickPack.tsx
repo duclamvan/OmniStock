@@ -1194,7 +1194,7 @@ export default function PickPack() {
   };
 
   // Play sound effect
-  const playSound = (type: 'scan' | 'success' | 'error') => {
+  const playSound = (type: 'scan' | 'success' | 'error' | 'complete') => {
     if (!audioEnabled) return;
     
     // In a real app, you would play actual sound files
@@ -1208,6 +1208,9 @@ export default function PickPack() {
         break;
       case 'error':
         console.log('Playing error sound');
+        break;
+      case 'complete':
+        console.log('Playing complete sound');
         break;
     }
   };
@@ -1501,36 +1504,45 @@ export default function PickPack() {
   const completePicking = async () => {
     if (!activePickingOrder) return;
 
-    // Only update database for real orders (not mock orders)
-    if (!activePickingOrder.id.startsWith('mock-')) {
-      // Keep status as 'to_fulfill' when picking is complete
-      await updateOrderStatusMutation.mutateAsync({
-        orderId: activePickingOrder.id,
-        status: 'to_fulfill',
-        pickStatus: 'completed',
-        packStatus: 'not_started'
+    try {
+      // Only update database for real orders (not mock orders)
+      if (!activePickingOrder.id.startsWith('mock-')) {
+        // Update order to mark picking as completed
+        await apiRequest(`/api/orders/${activePickingOrder.id}`, 'PATCH', {
+          pickStatus: 'completed',
+          pickEndTime: new Date().toISOString(),
+          pickedBy: currentEmployee
+        });
+      }
+
+      const updatedOrder = {
+        ...activePickingOrder,
+        pickStatus: 'completed' as const,
+        pickEndTime: new Date().toISOString(),
+        status: 'to_fulfill' as const,
+        packStatus: 'not_started' as const
+      };
+
+      setIsTimerRunning(false);
+      await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+      
+      toast({
+        title: "Picking completed!",
+        description: `Order ${activePickingOrder.orderId} is ready for packing`,
+      });
+      
+      playSound('complete');
+      
+      // Don't immediately clear the order or navigate - let the user choose
+      // The completion screen will handle the navigation
+    } catch (error) {
+      console.error('Error completing picking:', error);
+      toast({
+        title: "Error",
+        description: "Failed to complete picking",
+        variant: "destructive",
       });
     }
-
-    const updatedOrder = {
-      ...activePickingOrder,
-      pickStatus: 'completed' as const,
-      pickEndTime: new Date().toISOString(),
-      status: 'to_fulfill' as const,
-      packStatus: 'not_started' as const
-    };
-
-    setIsTimerRunning(false);
-    queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
-    playSound('success');
-    
-    // Automatically transition to packing the same order
-    setActivePickingOrder(null);
-    setSelectedTab('packing');
-    // Start packing the same order immediately
-    setTimeout(() => {
-      startPacking(updatedOrder);
-    }, 500);
   };
 
   // Start packing an order
@@ -2423,6 +2435,7 @@ export default function PickPack() {
     const currentItemIndex = manualItemIndex;
     const currentItem = activePickingOrder.items[currentItemIndex] || null;
     const hasUnpickedItems = activePickingOrder.items.some(item => item.pickedQuantity < item.quantity);
+    const allItemsPicked = activePickingOrder.items.every(item => item.pickedQuantity >= item.quantity);
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex flex-col">
@@ -2592,7 +2605,7 @@ export default function PickPack() {
           <div className="flex flex-col lg:flex-row min-h-full">
             {/* Left Panel - Current Item Focus */}
             <div className="flex-1 p-3 lg:p-6">
-            {currentItem ? (
+            {!allItemsPicked && currentItem ? (
               <div className="max-w-4xl mx-auto">
                 <Card className="mb-4 lg:mb-6 shadow-xl border-0 overflow-hidden">
                   <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white p-3 lg:p-4">
@@ -2906,7 +2919,7 @@ export default function PickPack() {
                   </CardContent>
                 </Card>
               </div>
-            ) : (
+            ) : allItemsPicked ? (
               <div className="max-w-3xl mx-auto px-3 lg:px-0">
                 <Card className="shadow-2xl border-0 overflow-hidden bg-gradient-to-br from-green-50 to-emerald-50">
                   <div className="bg-gradient-to-r from-green-500 to-emerald-500 p-1 lg:p-2"></div>
@@ -2941,7 +2954,23 @@ export default function PickPack() {
                     <div className="space-y-3">
                       <Button 
                         size="lg" 
-                        onClick={completePicking}
+                        onClick={async () => {
+                          await completePicking();
+                          // Move to packing
+                          const orderTopack = {
+                            ...activePickingOrder,
+                            pickStatus: 'completed' as const,
+                            pickEndTime: new Date().toISOString(),
+                          };
+                          setActivePickingOrder(null);
+                          setPickingTimer(0);
+                          setManualItemIndex(0);
+                          setSelectedTab('packing');
+                          // Start packing the same order
+                          setTimeout(() => {
+                            startPacking(orderTopack);
+                          }, 500);
+                        }}
                         className="w-full h-12 sm:h-14 lg:h-16 text-base sm:text-lg lg:text-xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-xl transform hover:scale-105 transition-all"
                       >
                         <PackageCheck className="h-5 w-5 sm:h-6 sm:w-6 lg:h-7 lg:w-7 mr-2 lg:mr-3" />
@@ -2951,9 +2980,14 @@ export default function PickPack() {
                       <Button 
                         size="lg" 
                         variant="outline"
-                        onClick={() => {
-                          completePicking();
-                          // After completing, immediately start the next priority order
+                        onClick={async () => {
+                          await completePicking();
+                          // Pick next order
+                          setActivePickingOrder(null);
+                          setPickingTimer(0);
+                          setManualItemIndex(0);
+                          setSelectedTab('pending');
+                          // After completing, immediately start the next priority order if available
                           setTimeout(() => {
                             const nextOrder = getOrdersByStatus('pending')[0];
                             if (nextOrder) {
@@ -2970,6 +3004,18 @@ export default function PickPack() {
                   </CardContent>
                 </Card>
               </div>
+            ) : (
+              // Show current item view if we have a current item but not all items are picked
+              currentItem && (
+                <div className="max-w-4xl mx-auto">
+                  <Alert className="mb-4 bg-yellow-50 border-2 border-yellow-400">
+                    <AlertCircle className="h-5 w-5 text-yellow-600" />
+                    <AlertDescription className="text-yellow-800 font-semibold">
+                      Unable to display item details. Please navigate using the Previous/Next buttons.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )
             )}
           </div>
 

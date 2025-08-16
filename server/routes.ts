@@ -2561,10 +2561,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Complete picking for an order
+  app.patch('/api/orders/:id', async (req: any, res) => {
+    try {
+      const updates = req.body;
+      
+      // Check if this is a mock order (skip database update)
+      if (req.params.id.startsWith('mock-')) {
+        return res.json({ id: req.params.id, ...updates, message: 'Mock order updated' });
+      }
+      
+      const order = await storage.updateOrder(req.params.id, updates);
+      
+      if (order) {
+        res.json(order);
+      } else {
+        res.status(404).json({ message: "Order not found" });
+      }
+    } catch (error) {
+      console.error("Error updating order:", error);
+      res.status(500).json({ message: "Failed to update order" });
+    }
+  });
+
   // Update order status for Pick & Pack workflow
   app.patch('/api/orders/:id/status', async (req: any, res) => {
     try {
-      const { status, orderStatus, pickStatus, packStatus, pickedBy, packedBy } = req.body;
+      const { status, orderStatus, pickStatus, packStatus, pickedBy, packedBy, pickStartTime, pickEndTime, packStartTime, packEndTime } = req.body;
       
       const updates: any = {};
       // Support both 'status' and 'orderStatus' fields
@@ -2575,20 +2598,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (pickedBy) updates.pickedBy = pickedBy;
       if (packedBy) updates.packedBy = packedBy;
 
-      // Add timestamps for status changes
-      const finalStatus = status || orderStatus;
-      if (finalStatus === 'picking' && pickStatus === 'in_progress') {
+      // Add timestamps if provided explicitly or based on status changes
+      if (pickStartTime !== undefined) {
+        updates.pickStartTime = pickStartTime ? new Date(pickStartTime) : null;
+      } else if (pickStatus === 'in_progress' && !req.body.hasOwnProperty('pickStartTime')) {
         updates.pickStartTime = new Date();
       }
-      if (finalStatus === 'packing' && pickStatus === 'completed') {
+      
+      if (pickEndTime !== undefined) {
+        updates.pickEndTime = pickEndTime ? new Date(pickEndTime) : null;
+      } else if (pickStatus === 'completed' && !req.body.hasOwnProperty('pickEndTime')) {
         updates.pickEndTime = new Date();
       }
-      if (finalStatus === 'packing' && packStatus === 'in_progress') {
+      
+      if (packStartTime !== undefined) {
+        updates.packStartTime = packStartTime ? new Date(packStartTime) : null;
+      } else if (packStatus === 'in_progress' && !req.body.hasOwnProperty('packStartTime')) {
         updates.packStartTime = new Date();
       }
-      if (finalStatus === 'ready_to_ship' && packStatus === 'completed') {
+      
+      if (packEndTime !== undefined) {
+        updates.packEndTime = packEndTime ? new Date(packEndTime) : null;
+      } else if (packStatus === 'completed' && !req.body.hasOwnProperty('packEndTime')) {
         updates.packEndTime = new Date();
       }
+      
+      const finalStatus = status || orderStatus;
       if (finalStatus === 'shipped') {
         updates.shippedAt = new Date();
       }
