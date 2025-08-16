@@ -81,11 +81,6 @@ export default function OrderDetails() {
   const [pickedItems, setPickedItems] = useState<Set<string>>(new Set());
   const [showPickingMode, setShowPickingMode] = useState(false);
 
-  // Prevent OrderDetails from rendering on pick-pack page
-  if (location === '/orders/pick-pack') {
-    return null;
-  }
-
   // Mutations for updating order status
   const updateOrderStatusMutation = useMutation({
     mutationFn: async (newStatus: string) => {
@@ -146,6 +141,11 @@ export default function OrderDetails() {
     staleTime: 3000, // Consider data stale after 3 seconds
     gcTime: 300000, // Keep in cache for 5 minutes
   });
+
+  // Prevent OrderDetails from rendering on pick-pack page
+  if (location === '/orders/pick-pack') {
+    return null;
+  }
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
