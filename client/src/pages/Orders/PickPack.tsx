@@ -694,6 +694,99 @@ export default function PickPack() {
     return undefined;
   };
 
+  // Demo orders with shipping instructions for testing packing mode
+  const demoPackingOrders: PickPackOrder[] = [
+    {
+      id: 'demo-pack-1',
+      orderId: 'ORD-DEMO-001',
+      customerName: 'Demo Electronics Store',
+      shippingMethod: 'Express',
+      shippingAddress: '123 Demo Street',
+      priority: 'high' as const,
+      status: 'packing' as const,
+      pickStatus: 'completed' as const,
+      packStatus: 'in_progress' as const,
+      items: [
+        {
+          id: 'demo-item-1',
+          productId: 'prod-1',
+          productName: 'Laptop Computer',
+          sku: 'LAPTOP-001',
+          quantity: 1,
+          pickedQuantity: 1,
+          packedQuantity: 0,
+          warehouseLocation: 'A1-2',
+          barcode: 'BAR-LAPTOP-001',
+          shipmentNotes: '⚠️ FRAGILE ELECTRONICS: Use anti-static bubble wrap. Place in center of box with 2 inches of cushioning on all sides. Include desiccant packet.',
+          packingMaterial: {
+            id: 'mat-1',
+            name: 'Anti-Static Bubble Wrap',
+            imageUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=200',
+            type: 'bubble_wrap',
+            description: 'Anti-static protection for electronics'
+          }
+        },
+        {
+          id: 'demo-item-2',
+          productId: 'prod-2',
+          productName: 'Wireless Mouse',
+          sku: 'MOUSE-001',
+          quantity: 2,
+          pickedQuantity: 2,
+          packedQuantity: 0,
+          warehouseLocation: 'B2-3',
+          barcode: 'BAR-MOUSE-001',
+          shipmentNotes: 'Include in same box as laptop. Wrap separately to prevent scratching.',
+          packingMaterial: null
+        }
+      ],
+      totalItems: 3,
+      pickedItems: 3,
+      packedItems: 0,
+      createdAt: new Date().toISOString(),
+      pickEndTime: new Date().toISOString(),
+      packStartTime: new Date().toISOString()
+    },
+    {
+      id: 'demo-pack-2',
+      orderId: 'ORD-DEMO-002',
+      customerName: 'Glass Art Gallery',
+      shippingMethod: 'Standard',
+      shippingAddress: '456 Gallery Lane',
+      priority: 'high' as const,
+      status: 'packing' as const,
+      pickStatus: 'completed' as const,
+      packStatus: 'in_progress' as const,
+      items: [
+        {
+          id: 'demo-item-3',
+          productId: 'prod-3',
+          productName: 'Crystal Vase',
+          sku: 'VASE-001',
+          quantity: 1,
+          pickedQuantity: 1,
+          packedQuantity: 0,
+          warehouseLocation: 'C3-1',
+          barcode: 'BAR-VASE-001',
+          shipmentNotes: '🚨 EXTREMELY FRAGILE! Double-box method required. Wrap in 3 layers of bubble wrap. Fill all voids with packing peanuts. Mark "FRAGILE - GLASS" on all 6 sides of box.',
+          packingMaterial: {
+            id: 'mat-3',
+            name: 'Heavy-Duty Bubble Wrap + Peanuts',
+            imageUrl: 'https://images.unsplash.com/photo-1605732562742-3023a888e56e?w=200',
+            type: 'special',
+            description: 'Maximum protection for fragile items'
+          }
+        }
+      ],
+      totalItems: 1,
+      pickedItems: 1,
+      packedItems: 0,
+      createdAt: new Date().toISOString(),
+      pickEndTime: new Date().toISOString(),
+      packStartTime: new Date().toISOString()
+    }
+  ];
+
   // Mock orders for testing different statuses
   const mockOrders: PickPackOrder[] = [
     // Pending orders
@@ -991,12 +1084,19 @@ export default function PickPack() {
     }
   ];
 
-  // Transform real orders to PickPackOrder format - Only include "To Fulfill" status orders
+  // Transform real orders to PickPackOrder format - Include orders in the fulfillment process
   const transformedOrders: PickPackOrder[] = [
-    // Remove mock orders - use only real data from database
+    // Include demo packing orders to show shipping instructions feature
+    ...demoPackingOrders,
+    // Include real orders from database
     ...((allOrders as any[] || [])
     .filter((order: any) => 
-      order.orderStatus === 'to_fulfill'
+      order.orderStatus === 'to_fulfill' || 
+      order.orderStatus === 'picking' || 
+      order.orderStatus === 'packing' ||
+      order.packStatus === 'in_progress' ||
+      order.pickStatus === 'in_progress' ||
+      order.pickStatus === 'completed'
     )
     .map((order: any) => ({
       id: order.id,
@@ -1485,9 +1585,9 @@ export default function PickPack() {
   // Filter orders by status - Updated to work with "to_fulfill" orders
   const getOrdersByStatus = (status: string) => {
     return transformedOrders.filter(order => {
-      if (status === 'pending') return order.pickStatus === 'not_started';
+      if (status === 'pending') return order.pickStatus === 'not_started' || (!order.pickStatus && !order.packStatus);
       if (status === 'picking') return order.pickStatus === 'in_progress';
-      if (status === 'packing') return order.pickStatus === 'completed' && order.packStatus !== 'completed';
+      if (status === 'packing') return order.packStatus === 'in_progress' || (order.pickStatus === 'completed' && order.packStatus !== 'completed');
       if (status === 'ready') return order.packStatus === 'completed' || order.status === 'shipped';
       return false;
     });

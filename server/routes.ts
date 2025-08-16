@@ -2531,29 +2531,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update order status for Pick & Pack workflow
   app.patch('/api/orders/:id/status', async (req: any, res) => {
     try {
-      const { orderStatus, pickStatus, packStatus, pickedBy, packedBy } = req.body;
+      const { status, orderStatus, pickStatus, packStatus, pickedBy, packedBy } = req.body;
       
       const updates: any = {};
-      if (orderStatus) updates.orderStatus = orderStatus;
+      // Support both 'status' and 'orderStatus' fields
+      if (status) updates.status = status;
+      if (orderStatus) updates.status = orderStatus; // Map orderStatus to status for compatibility
       if (pickStatus) updates.pickStatus = pickStatus;
       if (packStatus) updates.packStatus = packStatus;
       if (pickedBy) updates.pickedBy = pickedBy;
       if (packedBy) updates.packedBy = packedBy;
 
       // Add timestamps for status changes
-      if (orderStatus === 'picking' && pickStatus === 'in_progress') {
+      const finalStatus = status || orderStatus;
+      if (finalStatus === 'picking' && pickStatus === 'in_progress') {
         updates.pickStartTime = new Date();
       }
-      if (orderStatus === 'packing' && pickStatus === 'completed') {
+      if (finalStatus === 'packing' && pickStatus === 'completed') {
         updates.pickEndTime = new Date();
       }
-      if (orderStatus === 'packing' && packStatus === 'in_progress') {
+      if (finalStatus === 'packing' && packStatus === 'in_progress') {
         updates.packStartTime = new Date();
       }
-      if (orderStatus === 'ready_to_ship' && packStatus === 'completed') {
+      if (finalStatus === 'ready_to_ship' && packStatus === 'completed') {
         updates.packEndTime = new Date();
       }
-      if (orderStatus === 'shipped') {
+      if (finalStatus === 'shipped') {
         updates.shippedAt = new Date();
       }
       
