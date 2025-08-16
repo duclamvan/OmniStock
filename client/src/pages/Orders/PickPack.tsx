@@ -2553,7 +2553,7 @@ export default function PickPack() {
                             </div>
                             <div className="text-center p-2 bg-white rounded border">
                               <div className="text-sm font-semibold text-blue-600">
-                                {aiWeightCalculation.recommendations.shippingMethod}
+                                {aiWeightCalculation.recommendations?.shippingMethod || 'Standard'}
                               </div>
                               <div className="text-xs text-gray-500">Recommended Ship</div>
                             </div>
@@ -2580,7 +2580,7 @@ export default function PickPack() {
                           </div>
 
                           {/* Handling Instructions */}
-                          {aiWeightCalculation.recommendations.handlingInstructions.length > 0 && (
+                          {aiWeightCalculation.recommendations?.handlingInstructions?.length > 0 && (
                             <div className="space-y-1">
                               <div className="text-xs font-medium text-gray-700">Handling Instructions:</div>
                               {aiWeightCalculation.recommendations.handlingInstructions.map((instruction: string, index: number) => (
