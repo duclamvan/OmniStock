@@ -1185,10 +1185,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateOrder(id: string, order: Partial<InsertOrder>): Promise<Order> {
-    const updateData: any = { ...order, updatedAt: new Date() };
-    if (order.orderStatus === 'shipped') {
+    console.log('Storage updateOrder received:', JSON.stringify(order, null, 2));
+    
+    // Don't override updatedAt if it's already provided as a Date object
+    const updateData: any = { ...order };
+    if (!updateData.updatedAt) {
+      updateData.updatedAt = new Date();
+    }
+    
+    if (order.orderStatus === 'shipped' && !updateData.shippedAt) {
       updateData.shippedAt = new Date();
     }
+    
+    console.log('Storage updateOrder sending to DB:', JSON.stringify(updateData, null, 2));
     
     const [updatedOrder] = await db
       .update(orders)

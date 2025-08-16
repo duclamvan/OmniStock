@@ -2573,10 +2573,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
             key === 'packStartTime' || key === 'packEndTime' || 
             key === 'shippedAt' || key === 'createdAt' || key === 'updatedAt') {
           // Convert date strings to Date objects
-          if (value) {
-            const dateValue = new Date(value as string);
-            console.log(`Converting ${key}: ${value} to ${dateValue}`);
-            updates[key] = dateValue;
+          if (value && typeof value === 'string') {
+            try {
+              const dateValue = new Date(value);
+              // Check if the date is valid
+              if (!isNaN(dateValue.getTime())) {
+                console.log(`Converting ${key}: ${value} to ${dateValue.toISOString()}`);
+                updates[key] = dateValue;
+              } else {
+                console.error(`Invalid date for ${key}: ${value}`);
+                updates[key] = null;
+              }
+            } catch (dateError) {
+              console.error(`Date conversion error for ${key}:`, dateError);
+              updates[key] = null;
+            }
           } else {
             updates[key] = null;
           }
