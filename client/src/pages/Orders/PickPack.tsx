@@ -175,6 +175,7 @@ export default function PickPack() {
   const [batchPickingMode, setBatchPickingMode] = useState(false);
   const [selectedBatchItems, setSelectedBatchItems] = useState<Set<string>>(new Set());
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [manualItemIndex, setManualItemIndex] = useState(0);
   const barcodeInputRef = useRef<HTMLInputElement>(null);
 
   // Navigation structure
@@ -1464,6 +1465,9 @@ export default function PickPack() {
     };
     setActivePickingOrder(updatedOrder);
     setSelectedTab('picking');
+    // Find first unpicked item or start at 0
+    const firstUnpickedIndex = order.items.findIndex(item => item.pickedQuantity < item.quantity);
+    setManualItemIndex(firstUnpickedIndex >= 0 ? firstUnpickedIndex : 0);
     setPickingTimer(0);
     setIsTimerRunning(true);
     playSound('success');
@@ -2478,8 +2482,10 @@ export default function PickPack() {
   // Active Picking View - Full Screen
   if (activePickingOrder) {
     const progress = (activePickingOrder.pickedItems / activePickingOrder.totalItems) * 100;
-    const currentItemIndex = activePickingOrder.items.findIndex(item => item.pickedQuantity < item.quantity);
-    const currentItem = currentItemIndex >= 0 ? activePickingOrder.items[currentItemIndex] : null;
+    // Use manual index instead of auto-finding next unpicked item
+    const currentItemIndex = manualItemIndex;
+    const currentItem = activePickingOrder.items[currentItemIndex] || null;
+    const hasUnpickedItems = activePickingOrder.items.some(item => item.pickedQuantity < item.quantity);
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex flex-col">
@@ -2665,6 +2671,32 @@ export default function PickPack() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-3 lg:p-6 bg-white">
+                    {/* Navigation Controls */}
+                    <div className="flex justify-between items-center mb-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setManualItemIndex(Math.max(0, currentItemIndex - 1))}
+                        disabled={currentItemIndex === 0}
+                      >
+                        <ChevronLeft className="h-4 w-4 mr-1" />
+                        Previous
+                      </Button>
+                      <div className="text-sm text-gray-600 font-medium">
+                        {currentItem?.pickedQuantity === currentItem?.quantity && (
+                          <span className="text-green-600 font-bold">✓ Picked</span>
+                        )}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setManualItemIndex(Math.min(activePickingOrder.items.length - 1, currentItemIndex + 1))}
+                        disabled={currentItemIndex === activePickingOrder.items.length - 1}
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4 ml-1" />
+                      </Button>
+                    </div>
                     <div className="space-y-3 lg:space-y-6">
                       {/* Mobile Optimized Product Layout */}
                       <div className="flex flex-col sm:grid sm:grid-cols-2 lg:flex lg:flex-row lg:gap-6 gap-3">
