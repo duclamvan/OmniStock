@@ -1288,10 +1288,10 @@ export default function PickPack() {
   const startPicking = async (order: PickPackOrder) => {
     // Only update database for real orders (not mock orders)
     if (!order.id.startsWith('mock-')) {
-      // Keep order status as "to_fulfill" but update pick status
+      // Update order status to 'picking' when picking starts
       await updateOrderStatusMutation.mutateAsync({
         orderId: order.id,
-        status: 'to_fulfill',
+        status: 'picking',
         pickStatus: 'in_progress',
         pickedBy: currentEmployee
       });
@@ -1299,7 +1299,7 @@ export default function PickPack() {
 
     const updatedOrder = {
       ...order,
-      status: 'to_fulfill' as const,
+      status: 'picking' as const,
       pickStatus: 'in_progress' as const,
       pickStartTime: new Date().toISOString(),
       pickedBy: currentEmployee
@@ -1341,10 +1341,10 @@ export default function PickPack() {
 
     // Only update database for real orders (not mock orders)
     if (!activePickingOrder.id.startsWith('mock-')) {
-      // Keep order status as "to_fulfill" but update pick status
+      // Update order status to 'packing' when picking is complete
       await updateOrderStatusMutation.mutateAsync({
         orderId: activePickingOrder.id,
-        status: 'to_fulfill',
+        status: 'packing',
         pickStatus: 'completed',
         packStatus: 'not_started'
       });
@@ -1354,14 +1354,21 @@ export default function PickPack() {
       ...activePickingOrder,
       pickStatus: 'completed' as const,
       pickEndTime: new Date().toISOString(),
-      status: 'to_fulfill' as const
+      status: 'packing' as const,
+      packStatus: 'not_started' as const
     };
 
     setIsTimerRunning(false);
     queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
     playSound('success');
+    
+    // Automatically transition to packing the same order
     setActivePickingOrder(null);
     setSelectedTab('packing');
+    // Start packing the same order immediately
+    setTimeout(() => {
+      startPacking(updatedOrder);
+    }, 500);
   };
 
   // Start packing an order
@@ -1372,11 +1379,11 @@ export default function PickPack() {
     
     // Only update database for real orders (not mock orders)
     if (!order.id.startsWith('mock-')) {
-      // Keep order status as "to_fulfill" but update pack status
+      // Keep status as 'packing' when packing is in progress
       if (order.packStatus !== 'in_progress') {
         await updateOrderStatusMutation.mutateAsync({
           orderId: order.id,
-          status: 'to_fulfill',
+          status: 'packing',
           packStatus: 'in_progress',
           packedBy: currentEmployee
         });
@@ -1385,6 +1392,7 @@ export default function PickPack() {
 
     const updatedOrder = {
       ...order,
+      status: 'packing' as const,
       packStatus: 'in_progress' as const,
       packStartTime: new Date().toISOString(),
       packedBy: currentEmployee
@@ -1414,10 +1422,10 @@ export default function PickPack() {
 
     // Only update database for real orders (not mock orders)
     if (!activePackingOrder.id.startsWith('mock-')) {
-      // Update order status to "shipped" when packing is complete
+      // Update order status to "ready_to_ship" when packing is complete
       await updateOrderStatusMutation.mutateAsync({
         orderId: activePackingOrder.id,
-        status: 'shipped',
+        status: 'ready_to_ship',
         packStatus: 'completed'
       });
     }
@@ -1426,7 +1434,7 @@ export default function PickPack() {
       ...activePackingOrder,
       packStatus: 'completed' as const,
       packEndTime: new Date().toISOString(),
-      status: 'shipped' as const
+      status: 'ready_to_ship' as const
     };
 
     setIsPackingTimerRunning(false);
@@ -1484,6 +1492,26 @@ export default function PickPack() {
       case 'low': return 'secondary';
       default: return 'outline';
     }
+  };
+
+  const getOrderStatusDisplay = (order: PickPackOrder) => {
+    // Check the actual status values
+    if (order.status === 'picking' || order.pickStatus === 'in_progress') {
+      return { label: 'Currently Picking', color: 'bg-blue-100 text-blue-700 border-blue-200' };
+    }
+    if (order.status === 'packing' || (order.pickStatus === 'completed' && order.packStatus === 'in_progress')) {
+      return { label: 'Currently Packing', color: 'bg-purple-100 text-purple-700 border-purple-200' };
+    }
+    if (order.status === 'ready_to_ship' || order.packStatus === 'completed') {
+      return { label: 'Ready to Ship', color: 'bg-green-100 text-green-700 border-green-200' };
+    }
+    if (order.status === 'shipped') {
+      return { label: 'Shipped', color: 'bg-gray-100 text-gray-700 border-gray-200' };
+    }
+    if (order.pickStatus === 'completed' && order.packStatus === 'not_started') {
+      return { label: 'Awaiting Packing', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' };
+    }
+    return { label: 'Pending', color: 'bg-gray-100 text-gray-600 border-gray-200' };
   };
 
   // Statistics
@@ -3308,6 +3336,15 @@ export default function PickPack() {
                               {order.priority === 'high' && (
                                 <Zap className="h-3 sm:h-4 w-3 sm:w-4 text-red-500" />
                               )}
+                              {/* Status indicator */}
+                              {(() => {
+                                const status = getOrderStatusDisplay(order);
+                                return (
+                                  <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${status.color}`}>
+                                    {status.label}
+                                  </span>
+                                );
+                              })()}
                             </div>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
                               <div className="flex items-center gap-1">
@@ -3374,6 +3411,15 @@ export default function PickPack() {
                             <div>
                               <h3 className="font-semibold text-sm sm:text-base">{order.orderId}</h3>
                               <p className="text-xs sm:text-sm text-gray-600">Picked by: {order.pickedBy}</p>
+                              {/* Status indicator */}
+                              {(() => {
+                                const status = getOrderStatusDisplay(order);
+                                return (
+                                  <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${status.color}`}>
+                                    {status.label}
+                                  </span>
+                                );
+                              })()}
                             </div>
                             <Button variant="outline" size="sm" className="w-full sm:w-auto">Resume Picking</Button>
                           </div>
@@ -3407,9 +3453,15 @@ export default function PickPack() {
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1 sm:mb-2">
                                 <h3 className="font-semibold text-sm sm:text-base">{order.orderId}</h3>
-                                <Badge variant="default" className="text-xs bg-purple-500">
-                                  READY TO PACK
-                                </Badge>
+                                {/* Status indicator */}
+                                {(() => {
+                                  const status = getOrderStatusDisplay(order);
+                                  return (
+                                    <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${status.color}`}>
+                                      {status.label}
+                                    </span>
+                                  );
+                                })()}
                               </div>
                               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
                                 <div className="flex items-center gap-1">
@@ -3465,9 +3517,15 @@ export default function PickPack() {
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1 sm:mb-2">
                                 <h3 className="font-semibold text-sm sm:text-base">{order.orderId}</h3>
-                                <Badge variant="default" className="text-xs bg-green-500">
-                                  READY TO SHIP
-                                </Badge>
+                                {/* Status indicator */}
+                                {(() => {
+                                  const status = getOrderStatusDisplay(order);
+                                  return (
+                                    <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${status.color}`}>
+                                      {status.label}
+                                    </span>
+                                  );
+                                })()}
                               </div>
                               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
                                 <div className="flex items-center gap-1">
