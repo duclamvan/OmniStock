@@ -114,6 +114,14 @@ interface OrderItem {
   dimensions?: ItemDimensions;
   isFragile?: boolean;
   bundleItems?: BundleItem[];
+  shipmentNotes?: string | null;
+  packingMaterial?: {
+    id: string;
+    name: string;
+    imageUrl?: string | null;
+    type?: string | null;
+    description?: string | null;
+  } | null;
 }
 
 interface PickPackOrder {
@@ -241,7 +249,7 @@ export default function PickPack() {
 
   // Fetch real orders from the API with items and bundle details
   const { data: allOrders = [], isLoading } = useQuery({
-    queryKey: ['/api/orders?includeItems=true'],
+    queryKey: ['/api/orders?includeItems=true&includeProductDetails=true'],
     refetchInterval: 10000, // Refresh every 10 seconds
   });
 
@@ -1694,9 +1702,29 @@ export default function PickPack() {
                               }`}>
                                 {isVerified ? <CheckCircle className="h-5 w-5" /> : index + 1}
                               </div>
-                              <div>
+                              <div className="flex-1">
                                 <p className="font-medium">{item.productName}</p>
                                 <p className="text-sm text-gray-500">SKU: {item.sku} | Qty: {item.quantity}</p>
+                                
+                                {/* Shipping Instructions Inline */}
+                                {(item.shipmentNotes || item.packingMaterial) && (
+                                  <div className="mt-2 p-2 bg-yellow-50 rounded-lg border border-yellow-200">
+                                    {item.shipmentNotes && (
+                                      <div className="flex items-start gap-2">
+                                        <AlertCircle className="h-4 w-4 text-yellow-600 flex-shrink-0 mt-0.5" />
+                                        <p className="text-xs text-yellow-700">{item.shipmentNotes}</p>
+                                      </div>
+                                    )}
+                                    {item.packingMaterial && (
+                                      <div className="flex items-center gap-2 mt-1">
+                                        <Box className="h-3 w-3 text-orange-600" />
+                                        <span className="text-xs text-gray-600">
+                                          Use: {item.packingMaterial.name}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             </div>
                             <Button
@@ -1720,6 +1748,48 @@ export default function PickPack() {
                   </ScrollArea>
                 </CardContent>
               </Card>
+
+              {/* Shipping Instructions Summary Card */}
+              {activePackingOrder.items.some(item => item.shipmentNotes || item.packingMaterial) && (
+                <Card className="shadow-xl border-0">
+                  <CardHeader className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white">
+                    <CardTitle className="flex items-center gap-2">
+                      <AlertCircle className="h-5 w-5" />
+                      Packing Materials Required
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4">
+                    <div className="space-y-3">
+                      {activePackingOrder.items
+                        .filter(item => item.packingMaterial)
+                        .map((item, index, arr) => {
+                          // Group by packing material to avoid duplicates
+                          const isDuplicate = arr.findIndex(i => i.packingMaterial?.id === item.packingMaterial?.id) !== index;
+                          if (isDuplicate) return null;
+                          
+                          return (
+                            <div key={item.packingMaterial!.id} className="flex items-center gap-3 p-3 bg-orange-50 rounded-lg">
+                              {item.packingMaterial!.imageUrl && (
+                                <img 
+                                  src={item.packingMaterial!.imageUrl} 
+                                  alt={item.packingMaterial!.name}
+                                  className="w-16 h-16 object-cover rounded-lg border border-orange-200"
+                                />
+                              )}
+                              <div className="flex-1">
+                                <p className="font-semibold text-gray-800">{item.packingMaterial!.name}</p>
+                                {item.packingMaterial!.description && (
+                                  <p className="text-sm text-gray-600">{item.packingMaterial!.description}</p>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })
+                      }
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Right Column - Packing Details */}
               <div className="space-y-4">

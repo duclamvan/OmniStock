@@ -1794,6 +1794,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // For each item, check if it's part of a bundle and fetch bundle items
           const itemsWithBundleDetails = await Promise.all(items.map(async (item) => {
+            // Fetch product details including shipping notes and packing material
+            let shipmentNotes = null;
+            let packingMaterial = null;
+            
+            if (item.productId) {
+              const product = await storage.getProductById(item.productId);
+              if (product) {
+                shipmentNotes = product.shipmentNotes;
+                if (product.packingMaterialId) {
+                  packingMaterial = await storage.getPackingMaterialById(product.packingMaterialId);
+                }
+              }
+            }
+            
             // Check if the item name indicates it's a bundle product
             const bundles = await storage.getBundles();
             const isBundle = item.productName?.toLowerCase().includes('bundle') || 
@@ -1853,7 +1867,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return {
               ...item,
               isBundle: isBundle,
-              bundleItems: bundleItemsData.length > 0 ? bundleItemsData : undefined
+              bundleItems: bundleItemsData.length > 0 ? bundleItemsData : undefined,
+              shipmentNotes,
+              packingMaterial
             };
           }));
           
