@@ -58,6 +58,9 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
     return saved ? JSON.parse(saved) : false;
   });
 
+  // Check if we're on the Pick & Pack page
+  const isPickPackPage = location === '/orders/pick-pack';
+
   useEffect(() => {
     localStorage.setItem('sidebarCollapsed', JSON.stringify(isCollapsed));
   }, [isCollapsed]);
@@ -136,6 +139,11 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
       name: "POS",
       href: "/pos",
       icon: Store,
+    },
+    {
+      name: "Shipping",
+      href: "/shipping",
+      icon: Truck,
     },
     {
       name: "Reports",
@@ -272,7 +280,8 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile Header */}
+      {/* Mobile Header - Hidden on Pick & Pack page */}
+      {!isPickPackPage && (
       <header className="lg:hidden sticky top-0 z-40 bg-white border-b border-gray-200">
         <div className="flex items-center justify-between px-4 py-3">
           <img src={logoPath} alt="Davie Professional" className="h-8" />
@@ -293,6 +302,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
           </Sheet>
         </div>
       </header>
+      )}
 
       {/* Desktop Sidebar */}
       <aside className={cn(
@@ -331,7 +341,8 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
         "transition-all duration-300",
         isCollapsed ? "lg:ml-16" : "lg:ml-64"
       )}>
-        {/* Top Navigation Bar - Desktop Only */}
+        {/* Top Navigation Bar - Desktop Only - Hidden on Pick & Pack page */}
+        {!isPickPackPage && (
         <header className="hidden lg:block sticky top-0 z-30 bg-white border-b border-gray-200">
           <div className="flex items-center justify-between px-6 py-3">
             {/* Page Title and Search */}
@@ -347,6 +358,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                  location.includes('/returns') ? 'Returns' :
                  location.includes('/expenses') ? 'Expenses' :
                  location.includes('/pos') ? 'Point of Sale' :
+                 location.includes('/shipping') ? 'Shipping Management' :
                  location.includes('/reports') ? 'Reports' : 'Dashboard'}
               </h2>
               <div className="relative max-w-md w-full">
@@ -412,10 +424,49 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
             </div>
           </div>
         </header>
+        )}
 
-        <div className="px-mobile py-mobile max-w-7xl mx-auto">
+        <div className={cn(
+          "max-w-7xl mx-auto",
+          isPickPackPage ? "p-0" : "px-mobile py-mobile"
+        )}>
           {children}
         </div>
+
+        {/* Floating Menu for Pick & Pack page */}
+        {isPickPackPage && (
+          <div className="fixed top-4 right-4 z-50">
+            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button 
+                  size="icon" 
+                  className="h-12 w-12 rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+                >
+                  <Menu className="h-6 w-6" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-72 p-0 flex flex-col h-full">
+                <div className="p-4 border-b flex-shrink-0">
+                  <div className="flex items-center gap-3">
+                    <img src={logoPath} alt="Davie Professional" className="h-8" />
+                    <div>
+                      <h2 className="text-lg font-semibold">Navigation</h2>
+                      <p className="text-sm text-gray-500">Pick & Pack Center</p>
+                    </div>
+                  </div>
+                </div>
+                <nav className="p-4 space-y-2 overflow-y-auto flex-1">
+                  <NavLinks />
+                </nav>
+                <div className="p-4 border-t flex-shrink-0">
+                  <div className="text-center text-sm text-gray-500">
+                    Logged in as Employee #001
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+        )}
       </main>
     </div>
   );

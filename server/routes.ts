@@ -1711,30 +1711,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Pick & Pack endpoints - must be before /:id route
-  app.get('/api/orders/pick-pack', async (req, res) => {
-    try {
-      const orders = await storage.getPickPackOrders();
-      res.json(orders);
-    } catch (error) {
-      console.error("Error fetching pick-pack orders:", error);
-      res.status(500).json({ message: "Failed to fetch pick-pack orders" });
-    }
-  });
-
-  app.get('/api/orders/pick-pack/:id', async (req, res) => {
-    try {
-      const order = await storage.getPickPackOrderById(req.params.id);
-      if (!order) {
-        return res.status(404).json({ message: "Order not found" });
-      }
-      res.json(order);
-    } catch (error) {
-      console.error("Error fetching pick-pack order:", error);
-      res.status(500).json({ message: "Failed to fetch pick-pack order" });
-    }
-  });
-
   app.get('/api/orders/:id', async (req, res) => {
     try {
       const order = await storage.getOrderById(req.params.id);
@@ -1927,112 +1903,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting order:", error);
       res.status(500).json({ message: "Failed to delete order" });
-    }
-  });
-
-  app.patch('/api/orders/:id/pick-status', async (req, res) => {
-    try {
-      const { pickStatus, pickedBy, pickStartTime, pickEndTime } = req.body;
-      const order = await storage.updateOrderPickStatus(req.params.id, {
-        pickStatus,
-        pickedBy,
-        pickStartTime,
-        pickEndTime
-      });
-      
-      if (!order) {
-        return res.status(404).json({ message: "Order not found" });
-      }
-
-      await storage.createUserActivity({
-        userId: "test-user",
-        action: 'update',
-        entityType: 'order',
-        entityId: req.params.id,
-        description: `Updated pick status to ${pickStatus} for order ${order.orderId}`,
-      });
-      
-      res.json(order);
-    } catch (error) {
-      console.error("Error updating pick status:", error);
-      res.status(500).json({ message: "Failed to update pick status" });
-    }
-  });
-
-  app.patch('/api/orders/:id/pack-status', async (req, res) => {
-    try {
-      const { packStatus, packedBy, packStartTime, packEndTime } = req.body;
-      const order = await storage.updateOrderPackStatus(req.params.id, {
-        packStatus,
-        packedBy,
-        packStartTime,
-        packEndTime
-      });
-      
-      if (!order) {
-        return res.status(404).json({ message: "Order not found" });
-      }
-
-      await storage.createUserActivity({
-        userId: "test-user",
-        action: 'update',
-        entityType: 'order',
-        entityId: req.params.id,
-        description: `Updated pack status to ${packStatus} for order ${order.orderId}`,
-      });
-      
-      res.json(order);
-    } catch (error) {
-      console.error("Error updating pack status:", error);
-      res.status(500).json({ message: "Failed to update pack status" });
-    }
-  });
-
-  app.patch('/api/order-items/:id/picked', async (req, res) => {
-    try {
-      const { pickedQuantity } = req.body;
-      const item = await storage.updateOrderItemPickedQuantity(req.params.id, pickedQuantity);
-      
-      if (!item) {
-        return res.status(404).json({ message: "Order item not found" });
-      }
-      
-      res.json(item);
-    } catch (error) {
-      console.error("Error updating picked quantity:", error);
-      res.status(500).json({ message: "Failed to update picked quantity" });
-    }
-  });
-
-  app.patch('/api/order-items/:id/packed', async (req, res) => {
-    try {
-      const { packedQuantity } = req.body;
-      const item = await storage.updateOrderItemPackedQuantity(req.params.id, packedQuantity);
-      
-      if (!item) {
-        return res.status(404).json({ message: "Order item not found" });
-      }
-      
-      res.json(item);
-    } catch (error) {
-      console.error("Error updating packed quantity:", error);
-      res.status(500).json({ message: "Failed to update packed quantity" });
-    }
-  });
-
-  app.patch('/api/order-item-bundle-components/:id/picked', async (req, res) => {
-    try {
-      const { picked } = req.body;
-      const component = await storage.updateBundleComponentPicked(req.params.id, picked);
-      
-      if (!component) {
-        return res.status(404).json({ message: "Bundle component not found" });
-      }
-      
-      res.json(component);
-    } catch (error) {
-      console.error("Error updating bundle component:", error);
-      res.status(500).json({ message: "Failed to update bundle component" });
     }
   });
 
@@ -2943,6 +2813,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error seeding returns:", error);
       res.status(500).json({ message: "Failed to seed returns" });
+    }
+  });
+
+  // Sendcloud API routes
+  const { sendcloudService } = await import('./services/sendcloud');
+
+  // Test Sendcloud connection
+  app.get('/api/shipping/test-connection', async (req, res) => {
+    try {
+      const result = await sendcloudService.testConnection();
+      res.json(result);
+    } catch (error) {
+      console.error('Sendcloud connection test failed:', error);
+      res.status(500).json({ 
+        connected: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  });
+
+  // Get available shipping methods
+  app.get('/api/shipping/methods', async (req, res) => {
+    try {
+      const methods = await sendcloudService.getShippingMethods();
+      res.json(methods);
+    } catch (error) {
+      console.error('Failed to fetch shipping methods:', error);
+      res.status(500).json({ error: 'Failed to fetch shipping methods' });
+    }
+  });
+
+  // Create shipping label for order
+  app.post('/api/shipping/create-label', async (req, res) => {
+    try {
+      const orderData = req.body;
+      
+      // Validate required fields
+      if (!orderData.orderNumber || !orderData.customerName || !orderData.shippingAddress) {
+        return res.status(400).json({ error: 'Missing required order data' });
+      }
+
+      const result = await sendcloudService.createShippingLabel(orderData);
+      res.json(result);
+    } catch (error) {
+      console.error('Failed to create shipping label:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to create shipping label' 
+      });
+    }
+  });
+
+  // Get tracking information
+  app.get('/api/shipping/tracking/:parcelId', async (req, res) => {
+    try {
+      const parcelId = parseInt(req.params.parcelId);
+      if (isNaN(parcelId)) {
+        return res.status(400).json({ error: 'Invalid parcel ID' });
+      }
+
+      const tracking = await sendcloudService.getTracking(parcelId);
+      res.json(tracking);
+    } catch (error) {
+      console.error('Failed to get tracking info:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to get tracking info' 
+      });
+    }
+  });
+
+  // Get service points (pickup locations)
+  app.get('/api/shipping/service-points', async (req, res) => {
+    try {
+      const { country, postalCode, carrier } = req.query;
+      
+      if (!country || !postalCode) {
+        return res.status(400).json({ error: 'Country and postal code are required' });
+      }
+
+      const servicePoints = await sendcloudService.getServicePoints(
+        country as string, 
+        postalCode as string, 
+        carrier as string
+      );
+      res.json(servicePoints);
+    } catch (error) {
+      console.error('Failed to fetch service points:', error);
+      res.status(500).json({ error: 'Failed to fetch service points' });
+    }
+  });
+
+  // Cancel parcel
+  app.post('/api/shipping/cancel/:parcelId', async (req, res) => {
+    try {
+      const parcelId = parseInt(req.params.parcelId);
+      if (isNaN(parcelId)) {
+        return res.status(400).json({ error: 'Invalid parcel ID' });
+      }
+
+      const success = await sendcloudService.cancelParcel(parcelId);
+      res.json({ success });
+    } catch (error) {
+      console.error('Failed to cancel parcel:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to cancel parcel' 
+      });
+    }
+  });
+
+  // Create test parcel
+  app.post('/api/shipping/create-test-parcel', async (req, res) => {
+    try {
+      const address = req.body;
+      
+      if (!address.name || !address.address || !address.city || !address.postal_code || !address.country) {
+        return res.status(400).json({ error: 'Missing required address fields' });
+      }
+
+      const result = await sendcloudService.createTestParcel(address);
+      res.json(result);
+    } catch (error) {
+      console.error('Failed to create test parcel:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to create test parcel' 
+      });
     }
   });
 
