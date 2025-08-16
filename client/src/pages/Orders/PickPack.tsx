@@ -1142,14 +1142,41 @@ export default function PickPack() {
   // Quick Action: Optimize Pick Route
   const optimizePickRoute = () => {
     if (!activePickingOrder) {
+      toast({
+        title: "No Active Order",
+        description: "Please start picking an order first.",
+        variant: "destructive"
+      });
       return;
     }
 
     // Sort items by warehouse location for optimal route
     const sortedItems = [...activePickingOrder.items].sort((a, b) => {
-      const locA = a.warehouseLocation || '';
-      const locB = b.warehouseLocation || '';
-      return locA.localeCompare(locB);
+      const locA = a.warehouseLocation || 'Z99-99';
+      const locB = b.warehouseLocation || 'Z99-99';
+      
+      // Parse location format (e.g., "A1-2" -> zone A, row 1, shelf 2)
+      const parseLocation = (loc: string) => {
+        const match = loc.match(/^([A-Z])(\d+)-(\d+)$/);
+        if (!match) return { zone: 'Z', row: 99, shelf: 99 };
+        return {
+          zone: match[1],
+          row: parseInt(match[2]),
+          shelf: parseInt(match[3])
+        };
+      };
+      
+      const parsedA = parseLocation(locA);
+      const parsedB = parseLocation(locB);
+      
+      // Sort by zone, then row, then shelf
+      if (parsedA.zone !== parsedB.zone) {
+        return parsedA.zone.localeCompare(parsedB.zone);
+      }
+      if (parsedA.row !== parsedB.row) {
+        return parsedA.row - parsedB.row;
+      }
+      return parsedA.shelf - parsedB.shelf;
     });
 
     const optimizedOrder = {
@@ -1158,6 +1185,14 @@ export default function PickPack() {
     };
 
     setActivePickingOrder(optimizedOrder);
+    
+    // Show success message
+    toast({
+      title: "Route Optimized",
+      description: `Items reordered for efficient picking. Start at ${sortedItems[0]?.warehouseLocation || 'first location'}.`,
+    });
+    
+    playSound('success');
   };
 
   // Quick Action: Toggle Performance Stats
