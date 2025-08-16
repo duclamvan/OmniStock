@@ -256,6 +256,7 @@ export default function PickPack() {
   const [aiWeightCalculation, setAiWeightCalculation] = useState<any>(null);
   const [enableMultiCartonOptimization, setEnableMultiCartonOptimization] = useState<boolean>(false);
   const [cartonSearchFilter, setCartonSearchFilter] = useState<string>('');
+  const [isWeightManuallyModified, setIsWeightManuallyModified] = useState<boolean>(false);
 
   // Timer effects
   useEffect(() => {
@@ -294,6 +295,18 @@ export default function PickPack() {
     return () => clearInterval(interval);
   }, [isPackingTimerRunning]);
 
+  // Auto-calculate weight when entering pack mode
+  useEffect(() => {
+    if (activePackingOrder && selectedCarton && !aiWeightCalculation && !useNonCompanyCarton) {
+      // Trigger automatic weight calculation
+      calculateWeightMutation.mutate({
+        orderId: activePackingOrder.id,
+        selectedCartonId: selectedCarton,
+        optimizeMultipleCartons: enableMultiCartonOptimization
+      });
+    }
+  }, [activePackingOrder?.id, selectedCarton, useNonCompanyCarton]);
+
   // Fetch real orders from the API with items and bundle details
   const { data: allOrders = [], isLoading } = useQuery({
     queryKey: ['/api/orders/pick-pack'],
@@ -310,10 +323,10 @@ export default function PickPack() {
     if (!cartonSearchFilter) return true;
     const searchLower = cartonSearchFilter.toLowerCase();
     return (
-      carton.name.toLowerCase().includes(searchLower) ||
-      carton.material.toLowerCase().includes(searchLower) ||
-      carton.type.toLowerCase().includes(searchLower) ||
-      `${carton.dimensions.length}x${carton.dimensions.width}x${carton.dimensions.height}`.includes(searchLower)
+      carton.name?.toLowerCase().includes(searchLower) ||
+      carton.material?.toLowerCase().includes(searchLower) ||
+      carton.type?.toLowerCase().includes(searchLower) ||
+      `${carton.dimensions?.length}x${carton.dimensions?.width}x${carton.dimensions?.height}`.includes(searchLower)
     );
   });
 
@@ -339,6 +352,7 @@ export default function PickPack() {
       setAiWeightCalculation(data);
       if (data.totalWeight) {
         setPackageWeight(data.totalWeight.toString());
+        setIsWeightManuallyModified(false);
       }
     },
   });
@@ -2512,32 +2526,15 @@ export default function PickPack() {
                         </label>
                       </div>
 
-                      {/* Calculate Weight Button */}
-                      <Button
-                        onClick={() => {
-                          if (activePackingOrder && selectedCarton) {
-                            calculateWeightMutation.mutate({
-                              orderId: activePackingOrder.id,
-                              selectedCartonId: useNonCompanyCarton ? 'non-company' : selectedCarton,
-                              optimizeMultipleCartons: enableMultiCartonOptimization
-                            });
-                          }
-                        }}
-                        disabled={calculateWeightMutation.isPending || !activePackingOrder}
-                        className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700"
-                      >
-                        {calculateWeightMutation.isPending ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                            Calculating...
-                          </>
-                        ) : (
-                          <>
-                            <Zap className="h-4 w-4 mr-2" />
-                            Calculate AI Weight
-                          </>
-                        )}
-                      </Button>
+                      {/* Auto-calculation status */}
+                      {calculateWeightMutation.isPending && (
+                        <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                          <div className="flex items-center gap-2">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600" />
+                            <span className="text-sm text-blue-700">Calculating AI weight automatically...</span>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Weight Results */}
                       {aiWeightCalculation && (
@@ -2687,10 +2684,11 @@ export default function PickPack() {
                           <Input
                             type="number"
                             step="0.001"
-                            placeholder={aiWeightCalculation ? aiWeightCalculation.totalWeight.toString() : "Enter weight..."}
+                            placeholder="Enter weight..."
                             value={packageWeight}
                             onChange={(e) => {
                               setPackageWeight(e.target.value);
+                              setIsWeightManuallyModified(true);
                               if (e.target.value) {
                                 setPackingChecklist({...packingChecklist, weightRecorded: true});
                               }
@@ -2699,9 +2697,22 @@ export default function PickPack() {
                           />
                           <span className="flex items-center px-3 text-sm font-medium">kg</span>
                         </div>
-                        <div className="text-xs text-gray-500">
-                          {aiWeightCalculation ? "AI calculated weight auto-filled above. You can override if needed." : "Use AI calculation or enter manually"}
-                        </div>
+                        {!isWeightManuallyModified && aiWeightCalculation && (
+                          <div className="flex items-center gap-2 text-xs text-green-600 bg-green-50 p-2 rounded">
+                            <Zap className="h-3 w-3" />
+                            <span>Weight automatically calculated by AI</span>
+                          </div>
+                        )}
+                        {isWeightManuallyModified && (
+                          <div className="text-xs text-gray-500">
+                            Manual weight entered
+                          </div>
+                        )}
+                        {!aiWeightCalculation && !isWeightManuallyModified && (
+                          <div className="text-xs text-gray-500">
+                            Weight will be calculated automatically
+                          </div>
+                        )}
                       </div>
                     </div>
                   </CardContent>
