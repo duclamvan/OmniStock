@@ -1611,28 +1611,56 @@ export default function PickPack() {
   const completePacking = async () => {
     if (!activePackingOrder) return;
 
-    // Only update database for real orders (not mock orders)
-    if (!activePackingOrder.id.startsWith('mock-')) {
-      // Update order status to "ready_to_ship" when packing is complete
-      await updateOrderStatusMutation.mutateAsync({
-        orderId: activePackingOrder.id,
-        status: 'ready_to_ship',
-        packStatus: 'completed'
+    try {
+      // Only update database for real orders (not mock orders)
+      if (!activePackingOrder.id.startsWith('mock-')) {
+        // Log packing completion activity
+        await apiRequest(`/api/orders/${activePackingOrder.id}/pick-pack-logs`, 'POST', {
+          activityType: 'pack_complete',
+          userName: currentEmployee,
+          notes: `Packing completed. Box: ${selectedBoxSize}, Weight: ${packageWeight}kg`
+        });
+
+        // Update order status to "shipped" when packing is complete
+        await updateOrderStatusMutation.mutateAsync({
+          orderId: activePackingOrder.id,
+          status: 'shipped',
+          packStatus: 'completed',
+          packEndTime: new Date().toISOString(),
+          shippedAt: new Date().toISOString(),
+          finalWeight: parseFloat(packageWeight) || 0,
+          cartonUsed: selectedBoxSize
+        });
+      }
+
+      const updatedOrder = {
+        ...activePackingOrder,
+        packStatus: 'completed' as const,
+        packEndTime: new Date().toISOString(),
+        status: 'shipped' as const,
+        shippedAt: new Date().toISOString()
+      };
+
+      setIsPackingTimerRunning(false);
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      
+      toast({
+        title: "Order Shipped!",
+        description: `Order ${activePackingOrder.orderId} has been completed and marked as shipped`,
+      });
+      
+      playSound('complete');
+      setActivePackingOrder(null);
+      setSelectedTab('ready');
+    } catch (error) {
+      console.error('Error completing packing:', error);
+      toast({
+        title: "Error",
+        description: "Failed to complete packing. Please try again.",
+        variant: "destructive",
       });
     }
-
-    const updatedOrder = {
-      ...activePackingOrder,
-      packStatus: 'completed' as const,
-      packEndTime: new Date().toISOString(),
-      status: 'ready_to_ship' as const
-    };
-
-    setIsPackingTimerRunning(false);
-    queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
-    playSound('success');
-    setActivePackingOrder(null);
-    setSelectedTab('ready');
   };
 
   // Mark order as shipped
@@ -2336,6 +2364,107 @@ export default function PickPack() {
                       >
                         <Printer className="h-4 w-4 mr-2" />
                         Generate Shipping Label
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* PDF Documents & Printing Section */}
+                <Card className="shadow-xl border-0">
+                  <CardHeader className="bg-gradient-to-r from-green-500 to-emerald-500 text-white">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Documents & Certificates
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4">
+                    <div className="space-y-3">
+                      {/* Document Checklist */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-20 flex flex-col items-center justify-center border-2 hover:border-green-500 hover:bg-green-50"
+                          onClick={() => {
+                            // Generate and print packing list
+                            window.print();
+                            playSound('success');
+                          }}
+                        >
+                          <ClipboardList className="h-6 w-6 mb-1 text-green-600" />
+                          <span className="text-xs font-medium">Packing List</span>
+                        </Button>
+                        
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-20 flex flex-col items-center justify-center border-2 hover:border-blue-500 hover:bg-blue-50"
+                          onClick={() => {
+                            // Generate and print invoice
+                            window.open(`/api/orders/${activePackingOrder.id}/invoice.pdf`, '_blank');
+                            playSound('success');
+                          }}
+                        >
+                          <FileText className="h-6 w-6 mb-1 text-blue-600" />
+                          <span className="text-xs font-medium">Invoice</span>
+                        </Button>
+                        
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-20 flex flex-col items-center justify-center border-2 hover:border-orange-500 hover:bg-orange-50"
+                          onClick={() => {
+                            // Generate and print MSDS files
+                            window.open(`/api/orders/${activePackingOrder.id}/msds.pdf`, '_blank');
+                            playSound('success');
+                          }}
+                        >
+                          <AlertCircle className="h-6 w-6 mb-1 text-orange-600" />
+                          <span className="text-xs font-medium">MSDS Files</span>
+                        </Button>
+                        
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-20 flex flex-col items-center justify-center border-2 hover:border-purple-500 hover:bg-purple-50"
+                          onClick={() => {
+                            // Generate and print CPNP certificate
+                            window.open(`/api/orders/${activePackingOrder.id}/cpnp-certificate.pdf`, '_blank');
+                            playSound('success');
+                          }}
+                        >
+                          <CheckCircle className="h-6 w-6 mb-1 text-purple-600" />
+                          <span className="text-xs font-medium">CPNP Certificate</span>
+                        </Button>
+                      </div>
+                      
+                      {/* Print All Documents Button */}
+                      <Button 
+                        className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                        onClick={() => {
+                          // Print all required documents
+                          const documents = [
+                            `/api/orders/${activePackingOrder.id}/packing-list.pdf`,
+                            `/api/orders/${activePackingOrder.id}/invoice.pdf`,
+                            `/api/orders/${activePackingOrder.id}/msds.pdf`,
+                            `/api/orders/${activePackingOrder.id}/cpnp-certificate.pdf`
+                          ];
+                          
+                          documents.forEach((doc, index) => {
+                            setTimeout(() => {
+                              window.open(doc, '_blank');
+                            }, index * 500); // Stagger opening to avoid browser blocking
+                          });
+                          
+                          playSound('success');
+                          toast({
+                            title: "Documents Generated",
+                            description: "All required documents have been generated and opened for printing",
+                          });
+                        }}
+                      >
+                        <Printer className="h-4 w-4 mr-2" />
+                        Print All Documents
                       </Button>
                     </div>
                   </CardContent>

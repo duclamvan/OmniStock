@@ -321,6 +321,9 @@ export const orders = pgTable("orders", {
   pickEndTime: timestamp("pick_end_time"),
   packStartTime: timestamp("pack_start_time"),
   packEndTime: timestamp("pack_end_time"),
+  // Packing details
+  finalWeight: decimal("final_weight", { precision: 8, scale: 2 }),
+  cartonUsed: varchar("carton_used", { length: 100 }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   shippedAt: timestamp("shipped_at"),
