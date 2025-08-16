@@ -343,10 +343,7 @@ export default function PickPack() {
       selectedCartonId: string; 
       optimizeMultipleCartons?: boolean 
     }) => {
-      return apiRequest(`/api/orders/${orderId}/calculate-weight`, {
-        method: 'POST',
-        body: { selectedCartonId, optimizeMultipleCartons },
-      });
+      return apiRequest(`/api/orders/${orderId}/calculate-weight`, 'POST', { selectedCartonId, optimizeMultipleCartons });
     },
     onSuccess: (data) => {
       setAiWeightCalculation(data);
