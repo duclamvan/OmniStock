@@ -2881,7 +2881,7 @@ export default function PickPack() {
 
   // Main Dashboard View
   return (
-    <div className="h-screen overflow-hidden bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50">
       {/* Header - Mobile Optimized */}
       <div className="bg-white border-b sticky top-0 z-10">
         <div className="px-3 sm:px-6 py-3 sm:py-4">
@@ -2914,7 +2914,7 @@ export default function PickPack() {
                       <Menu className="h-4 w-4" />
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="right" className="w-72 p-0 flex flex-col h-full">
+                  <SheetContent side="left" className="w-72 p-0 flex flex-col h-full">
                     <div className="p-4 border-b flex-shrink-0">
                       <div className="flex items-center gap-3">
                         <img src={logoPath} alt="Davie Professional" className="h-8" />
