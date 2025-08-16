@@ -249,7 +249,7 @@ export default function PickPack() {
 
   // Fetch real orders from the API with items and bundle details
   const { data: allOrders = [], isLoading } = useQuery({
-    queryKey: ['/api/orders?includeItems=true&includeProductDetails=true'],
+    queryKey: ['/api/orders/pick-pack'],
     refetchInterval: 10000, // Refresh every 10 seconds
   });
 
@@ -1390,7 +1390,7 @@ export default function PickPack() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
     }
   });
 
@@ -1469,7 +1469,7 @@ export default function PickPack() {
     };
 
     setIsTimerRunning(false);
-    queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
     playSound('success');
     
     // Automatically transition to packing the same order
@@ -1548,7 +1548,7 @@ export default function PickPack() {
     };
 
     setIsPackingTimerRunning(false);
-    queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
     playSound('success');
     setActivePackingOrder(null);
     setSelectedTab('ready');
@@ -1562,7 +1562,7 @@ export default function PickPack() {
     });
 
     playSound('success');
-    queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
   };
 
   // Handle barcode scanning
