@@ -35,6 +35,7 @@ import {
   Box,
   ClipboardList,
   AlertCircle,
+  AlertTriangle,
   Timer,
   Route,
   Users,
@@ -780,6 +781,7 @@ export default function PickPack() {
           id: 'demo-item-1',
           productId: 'prod-1',
           productName: 'Laptop Computer',
+          productImage: 'https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?w=200&h=200&fit=crop&crop=center',
           sku: 'LAPTOP-001',
           quantity: 1,
           pickedQuantity: 1,
@@ -799,6 +801,7 @@ export default function PickPack() {
           id: 'demo-item-2',
           productId: 'prod-2',
           productName: 'Wireless Mouse',
+          productImage: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=200&h=200&fit=crop&crop=center',
           sku: 'MOUSE-001',
           quantity: 2,
           pickedQuantity: 2,
@@ -831,6 +834,7 @@ export default function PickPack() {
           id: 'demo-item-3',
           productId: 'prod-3',
           productName: 'Crystal Vase',
+          productImage: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=200&h=200&fit=crop&crop=center',
           sku: 'VASE-001',
           quantity: 1,
           pickedQuantity: 1,
@@ -1950,58 +1954,116 @@ export default function PickPack() {
                         return (
                           <div 
                             key={item.id} 
-                            className={`flex items-center justify-between p-3 rounded-lg border-2 transition-all ${
+                            className={`relative p-3 rounded-lg border-2 transition-all ${
                               isVerified 
                                 ? 'bg-green-50 border-green-300' 
                                 : 'bg-gray-50 border-gray-200'
                             }`}
                           >
-                            <div className="flex items-center gap-3">
-                              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
-                                isVerified 
-                                  ? 'bg-green-500 text-white' 
-                                  : 'bg-purple-100 text-purple-600'
-                              }`}>
-                                {isVerified ? <CheckCircle className="h-5 w-5" /> : index + 1}
+                            {/* Shipping Note Warning Banner */}
+                            {item.shipmentNotes && (
+                              <div className="absolute -top-1 -right-1 z-10">
+                                <div className="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg">
+                                  <AlertTriangle className="h-3 w-3" />
+                                  SPECIAL
+                                </div>
                               </div>
+                            )}
+
+                            <div className="flex items-center gap-3">
+                              {/* Product Image */}
+                              <div className="relative">
+                                <div className="w-16 h-16 rounded-lg overflow-hidden bg-white border-2 border-gray-200 flex items-center justify-center">
+                                  {item.productImage ? (
+                                    <img 
+                                      src={item.productImage} 
+                                      alt={item.productName}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <Package className="h-8 w-8 text-gray-400" />
+                                  )}
+                                </div>
+                                {/* Verification Status Badge */}
+                                <div className={`absolute -top-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs ${
+                                  isVerified 
+                                    ? 'bg-green-500 text-white' 
+                                    : 'bg-purple-100 text-purple-600 border-2 border-white'
+                                }`}>
+                                  {isVerified ? <CheckCircle className="h-4 w-4" /> : index + 1}
+                                </div>
+                              </div>
+
                               <div className="flex-1">
-                                <p className="font-medium">{item.productName}</p>
-                                <p className="text-sm text-gray-500">SKU: {item.sku} | Qty: {item.quantity}</p>
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <p className="font-semibold text-gray-900 text-sm leading-tight">{item.productName}</p>
+                                    <div className="flex items-center gap-2 mt-1">
+                                      {/* Prominent Quantity Display */}
+                                      <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-md font-bold text-sm">
+                                        Qty: {item.quantity}
+                                      </div>
+                                      <div className="text-xs text-gray-400">
+                                        {item.warehouseLocation}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Verify Button */}
+                                  <Button
+                                    variant={isVerified ? "default" : "outline"}
+                                    size="sm"
+                                    className={`ml-2 ${
+                                      isVerified 
+                                        ? 'bg-green-500 hover:bg-green-600 text-white' 
+                                        : 'border-purple-300 text-purple-600 hover:bg-purple-50'
+                                    }`}
+                                    onClick={() => {
+                                      if (isVerified) {
+                                        const newSet = new Set(verifiedItems);
+                                        newSet.delete(item.id);
+                                        setVerifiedItems(newSet);
+                                      } else {
+                                        setVerifiedItems(new Set([...verifiedItems, item.id]));
+                                        playSound('scan');
+                                      }
+                                    }}
+                                  >
+                                    {isVerified ? (
+                                      <>
+                                        <CheckCircle className="h-3 w-3 mr-1" />
+                                        Done
+                                      </>
+                                    ) : (
+                                      <>
+                                        <ScanLine className="h-3 w-3 mr-1" />
+                                        Verify
+                                      </>
+                                    )}
+                                  </Button>
+                                </div>
                                 
-                                {/* Shipping Instructions Inline with Images */}
-                                {(item.shipmentNotes || item.packingMaterial) && (
-                                  <div className="mt-2 p-3 bg-yellow-50 rounded-lg border-2 border-yellow-300">
-                                    <div className="flex gap-3">
-                                      {/* Packing Material Image */}
-                                      {item.packingMaterial?.imageUrl && (
-                                        <div className="flex-shrink-0">
-                                          <img 
-                                            src={item.packingMaterial.imageUrl} 
-                                            alt={item.packingMaterial.name}
-                                            className="w-14 h-14 object-cover rounded-md border-2 border-yellow-400 shadow-sm"
-                                          />
-                                          <p className="text-[10px] text-center font-medium text-yellow-700 mt-1">
-                                            {item.packingMaterial.type === 'bubble_wrap' ? 'Bubble Wrap' :
-                                             item.packingMaterial.type === 'special' ? 'Special' :
-                                             item.packingMaterial.type || 'Material'}
-                                          </p>
-                                        </div>
-                                      )}
-                                      
-                                      {/* Instructions Text */}
-                                      <div className="flex-1 space-y-2">
-                                        {item.shipmentNotes && (
-                                          <div className="flex items-start gap-2">
-                                            <AlertCircle className="h-4 w-4 text-yellow-600 flex-shrink-0 mt-0.5" />
-                                            <p className="text-xs text-yellow-700 font-medium leading-relaxed">{item.shipmentNotes}</p>
-                                          </div>
-                                        )}
+                                {/* Enhanced Shipping Instructions */}
+                                {item.shipmentNotes && (
+                                  <div className="mt-3 p-3 bg-gradient-to-r from-red-50 to-orange-50 rounded-lg border-l-4 border-red-400">
+                                    <div className="flex items-start gap-2">
+                                      <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+                                      <div className="flex-1">
+                                        <div className="text-xs font-semibold text-red-700 mb-1">SPECIAL HANDLING REQUIRED</div>
+                                        <div className="text-xs text-red-600 leading-relaxed">{item.shipmentNotes}</div>
                                         {item.packingMaterial && (
-                                          <div className="flex items-center gap-2">
-                                            <Box className="h-3 w-3 text-orange-600" />
-                                            <span className="text-xs text-orange-700 font-semibold">
-                                              Required: {item.packingMaterial.name}
-                                            </span>
+                                          <div className="flex items-center gap-2 mt-2">
+                                            {item.packingMaterial.imageUrl && (
+                                              <img 
+                                                src={item.packingMaterial.imageUrl} 
+                                                alt={item.packingMaterial.name}
+                                                className="w-8 h-8 rounded object-cover border"
+                                              />
+                                            )}
+                                            <div className="text-xs">
+                                              <div className="font-medium text-red-700">{item.packingMaterial.name}</div>
+                                              <div className="text-red-500">{item.packingMaterial.description}</div>
+                                            </div>
                                           </div>
                                         )}
                                       </div>
@@ -2010,20 +2072,6 @@ export default function PickPack() {
                                 )}
                               </div>
                             </div>
-                            <Button
-                              size="sm"
-                              variant={isVerified ? "default" : "outline"}
-                              onClick={() => {
-                                if (isVerified) {
-                                  setVerifiedItems(new Set(Array.from(verifiedItems).filter(id => id !== item.id)));
-                                } else {
-                                  setVerifiedItems(new Set(Array.from(verifiedItems).concat(item.id)));
-                                  playSound('scan');
-                                }
-                              }}
-                            >
-                              {isVerified ? 'Verified' : 'Verify'}
-                            </Button>
                           </div>
                         );
                       })}
