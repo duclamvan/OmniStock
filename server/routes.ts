@@ -2530,6 +2530,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update individual order item
+  app.patch('/api/orders/:orderId/items/:itemId', async (req: any, res) => {
+    try {
+      const { pickedQuantity, packedQuantity, ...otherUpdates } = req.body;
+      
+      let updatedItem;
+      
+      // Handle specific quantity updates
+      if (pickedQuantity !== undefined) {
+        updatedItem = await storage.updateOrderItemPickedQuantity(req.params.itemId, pickedQuantity);
+      } else if (packedQuantity !== undefined) {
+        updatedItem = await storage.updateOrderItemPackedQuantity(req.params.itemId, packedQuantity);
+      } else if (Object.keys(otherUpdates).length > 0) {
+        // Handle general updates
+        updatedItem = await storage.updateOrderItem(req.params.itemId, otherUpdates);
+      } else {
+        return res.status(400).json({ message: "No updates provided" });
+      }
+      
+      res.json(updatedItem);
+    } catch (error) {
+      console.error("Error updating order item:", error);
+      res.status(500).json({ message: "Failed to update order item" });
+    }
+  });
+
   // Update order status for Pick & Pack workflow
   app.patch('/api/orders/:id/status', async (req: any, res) => {
     try {

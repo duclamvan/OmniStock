@@ -10,6 +10,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -48,6 +54,9 @@ import {
   Hash,
   Calendar,
   ChevronLeft,
+  MoreVertical,
+  RotateCcw,
+  RefreshCw,
   X,
   Plus,
   Minus,
@@ -1143,6 +1152,81 @@ export default function PickPack() {
       notes: order.notes
     }))
   )];
+
+  // Handle sending order back to pick
+  const sendBackToPick = async (order: PickPackOrder) => {
+    try {
+      // Reset pick and pack status
+      await apiRequest(`/api/orders/${order.id}`, 'PATCH', {
+        pickStatus: 'not_started',
+        packStatus: 'not_started',
+        pickStartTime: null,
+        pickEndTime: null,
+        packStartTime: null,
+        packEndTime: null,
+        pickedBy: null,
+        packedBy: null
+      });
+      
+      // Reset item quantities
+      for (const item of order.items) {
+        await apiRequest(`/api/orders/${order.id}/items/${item.id}`, 'PATCH', {
+          pickedQuantity: 0,
+          packedQuantity: 0
+        });
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+      toast({
+        title: 'Order sent back to pick',
+        description: `Order ${order.orderId} has been reset to pending status`
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to send order back to pick',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  // Handle refining all processes
+  const refineAllProcesses = async (order: PickPackOrder) => {
+    try {
+      // Reset the entire order workflow
+      await apiRequest(`/api/orders/${order.id}`, 'PATCH', {
+        orderStatus: 'pending',
+        pickStatus: null,
+        packStatus: null,
+        pickStartTime: null,
+        pickEndTime: null,
+        packStartTime: null,
+        packEndTime: null,
+        pickedBy: null,
+        packedBy: null
+      });
+      
+      // Reset all item quantities
+      for (const item of order.items) {
+        await apiRequest(`/api/orders/${order.id}/items/${item.id}`, 'PATCH', {
+          pickedQuantity: 0,
+          packedQuantity: 0
+        });
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+      toast({
+        title: 'All processes refined',
+        description: `Order ${order.orderId} has been completely reset`
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to refine processes',
+        variant: 'destructive'
+      });
+    }
+  };
 
   // Play sound effect
   const playSound = (type: 'scan' | 'success' | 'error') => {
@@ -3666,14 +3750,48 @@ export default function PickPack() {
                                 </div>
                               </div>
                             </div>
-                            <Button
-                              size="sm"
-                              className="w-full sm:w-auto sm:h-10 bg-purple-600 hover:bg-purple-700"
-                              onClick={() => startPacking(order)}
-                            >
-                              <Box className="h-4 sm:h-5 w-4 sm:w-5 mr-1 sm:mr-2" />
-                              Start Packing
-                            </Button>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                className="w-full sm:w-auto sm:h-10 bg-purple-600 hover:bg-purple-700"
+                                onClick={() => startPacking(order)}
+                              >
+                                <Box className="h-4 sm:h-5 w-4 sm:w-5 mr-1 sm:mr-2" />
+                                Start Packing
+                              </Button>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-10 w-10 p-0"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      sendBackToPick(order);
+                                    }}
+                                  >
+                                    <RotateCcw className="h-4 w-4 mr-2" />
+                                    Send back to Pick
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      refineAllProcesses(order);
+                                    }}
+                                  >
+                                    <RefreshCw className="h-4 w-4 mr-2" />
+                                    Refine all processes
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
