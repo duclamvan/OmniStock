@@ -172,6 +172,15 @@ export interface IStorage {
   deleteOrderItem(id: string): Promise<void>;
   deleteOrderItems(orderId: string): Promise<void>;
 
+  // Pick & Pack Operations
+  getPickPackOrders(status?: string): Promise<Order[]>;
+  startPickingOrder(orderId: string, employeeId: string): Promise<Order>;
+  completePickingOrder(orderId: string): Promise<Order>;
+  startPackingOrder(orderId: string, employeeId: string): Promise<Order>;
+  completePackingOrder(orderId: string): Promise<Order>;
+  updateOrderItemPickedQuantity(itemId: string, pickedQuantity: number): Promise<OrderItem>;
+  updateOrderItemPackedQuantity(itemId: string, packedQuantity: number): Promise<OrderItem>;
+
   // Dashboard Analytics
   getDashboardMetrics(): Promise<{
     fulfillOrdersToday: number;
@@ -1230,6 +1239,102 @@ export class DatabaseStorage implements IStorage {
 
   async deleteOrderItems(orderId: string): Promise<void> {
     await db.delete(orderItems).where(eq(orderItems.orderId, orderId));
+  }
+
+  // Pick & Pack Operations
+  async getPickPackOrders(status?: string): Promise<Order[]> {
+    let whereCondition = eq(orders.orderStatus, 'to_fulfill');
+    
+    if (status) {
+      if (status === 'picking') {
+        whereCondition = and(
+          eq(orders.orderStatus, 'to_fulfill'),
+          eq(orders.pickStatus, 'in_progress')
+        );
+      } else if (status === 'packing') {
+        whereCondition = and(
+          eq(orders.orderStatus, 'to_fulfill'),
+          eq(orders.pickStatus, 'completed'),
+          eq(orders.packStatus, 'in_progress')
+        );
+      } else if (status === 'ready_to_ship') {
+        whereCondition = and(
+          eq(orders.orderStatus, 'to_fulfill'),
+          eq(orders.pickStatus, 'completed'),
+          eq(orders.packStatus, 'completed')
+        );
+      }
+    }
+
+    return await db.select().from(orders).where(whereCondition).orderBy(asc(orders.createdAt));
+  }
+
+  async startPickingOrder(orderId: string, employeeId: string): Promise<Order> {
+    const [updatedOrder] = await db
+      .update(orders)
+      .set({
+        pickStatus: 'in_progress',
+        pickedBy: employeeId,
+        pickStartTime: new Date()
+      })
+      .where(eq(orders.id, orderId))
+      .returning();
+    return updatedOrder;
+  }
+
+  async completePickingOrder(orderId: string): Promise<Order> {
+    const [updatedOrder] = await db
+      .update(orders)
+      .set({
+        pickStatus: 'completed',
+        pickEndTime: new Date()
+      })
+      .where(eq(orders.id, orderId))
+      .returning();
+    return updatedOrder;
+  }
+
+  async startPackingOrder(orderId: string, employeeId: string): Promise<Order> {
+    const [updatedOrder] = await db
+      .update(orders)
+      .set({
+        packStatus: 'in_progress',
+        packedBy: employeeId,
+        packStartTime: new Date()
+      })
+      .where(eq(orders.id, orderId))
+      .returning();
+    return updatedOrder;
+  }
+
+  async completePackingOrder(orderId: string): Promise<Order> {
+    const [updatedOrder] = await db
+      .update(orders)
+      .set({
+        packStatus: 'completed',
+        packEndTime: new Date()
+      })
+      .where(eq(orders.id, orderId))
+      .returning();
+    return updatedOrder;
+  }
+
+  async updateOrderItemPickedQuantity(itemId: string, pickedQuantity: number): Promise<OrderItem> {
+    const [updatedItem] = await db
+      .update(orderItems)
+      .set({ pickedQuantity })
+      .where(eq(orderItems.id, itemId))
+      .returning();
+    return updatedItem;
+  }
+
+  async updateOrderItemPackedQuantity(itemId: string, packedQuantity: number): Promise<OrderItem> {
+    const [updatedItem] = await db
+      .update(orderItems)
+      .set({ packedQuantity })
+      .where(eq(orderItems.id, itemId))
+      .returning();
+    return updatedItem;
   }
 
   // Dashboard Analytics

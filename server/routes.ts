@@ -1711,6 +1711,260 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Pick & Pack endpoints
+  app.get('/api/orders/pick-pack', async (req, res) => {
+    try {
+      const status = req.query.status as string; // pending, picking, packing, ready
+      const orders = await storage.getPickPackOrders(status);
+      res.json(orders);
+    } catch (error) {
+      console.error("Error fetching pick-pack orders:", error);
+      res.status(500).json({ message: "Failed to fetch pick-pack orders" });
+    }
+  });
+
+  // Start picking an order
+  app.post('/api/orders/:id/pick/start', async (req: any, res) => {
+    try {
+      const { employeeId } = req.body;
+      const order = await storage.startPickingOrder(req.params.id, employeeId || "test-user");
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'started_picking',
+        entityType: 'order',
+        entityId: req.params.id,
+        description: `Started picking order: ${order.orderId}`,
+      });
+      
+      res.json(order);
+    } catch (error) {
+      console.error("Error starting pick:", error);
+      res.status(500).json({ message: "Failed to start picking order" });
+    }
+  });
+
+  // Complete picking an order
+  app.post('/api/orders/:id/pick/complete', async (req: any, res) => {
+    try {
+      const order = await storage.completePickingOrder(req.params.id);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'completed_picking',
+        entityType: 'order',
+        entityId: req.params.id,
+        description: `Completed picking order: ${order.orderId}`,
+      });
+      
+      res.json(order);
+    } catch (error) {
+      console.error("Error completing pick:", error);
+      res.status(500).json({ message: "Failed to complete picking order" });
+    }
+  });
+
+  // Start packing an order
+  app.post('/api/orders/:id/pack/start', async (req: any, res) => {
+    try {
+      const { employeeId } = req.body;
+      const order = await storage.startPackingOrder(req.params.id, employeeId || "test-user");
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'started_packing',
+        entityType: 'order',
+        entityId: req.params.id,
+        description: `Started packing order: ${order.orderId}`,
+      });
+      
+      res.json(order);
+    } catch (error) {
+      console.error("Error starting pack:", error);
+      res.status(500).json({ message: "Failed to start packing order" });
+    }
+  });
+
+  // Complete packing an order
+  app.post('/api/orders/:id/pack/complete', async (req: any, res) => {
+    try {
+      const order = await storage.completePackingOrder(req.params.id);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'completed_packing',
+        entityType: 'order',
+        entityId: req.params.id,
+        description: `Completed packing order: ${order.orderId}`,
+      });
+      
+      res.json(order);
+    } catch (error) {
+      console.error("Error completing pack:", error);
+      res.status(500).json({ message: "Failed to complete packing order" });
+    }
+  });
+
+  // Update picked quantity for an order item
+  app.patch('/api/orders/:id/items/:itemId/pick', async (req: any, res) => {
+    try {
+      const { pickedQuantity } = req.body;
+      const item = await storage.updateOrderItemPickedQuantity(req.params.itemId, pickedQuantity);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'updated_pick_quantity',
+        entityType: 'order_item',
+        entityId: req.params.itemId,
+        description: `Updated picked quantity to ${pickedQuantity} for item ${item.productName}`,
+      });
+      
+      res.json(item);
+    } catch (error) {
+      console.error("Error updating picked quantity:", error);
+      res.status(500).json({ message: "Failed to update picked quantity" });
+    }
+  });
+
+  // Update packed quantity for an order item
+  app.patch('/api/orders/:id/items/:itemId/pack', async (req: any, res) => {
+    try {
+      const { packedQuantity } = req.body;
+      const item = await storage.updateOrderItemPackedQuantity(req.params.itemId, packedQuantity);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'updated_pack_quantity',
+        entityType: 'order_item',
+        entityId: req.params.itemId,
+        description: `Updated packed quantity to ${packedQuantity} for item ${item.productName}`,
+      });
+      
+      res.json(item);
+    } catch (error) {
+      console.error("Error updating packed quantity:", error);
+      res.status(500).json({ message: "Failed to update packed quantity" });
+    }
+  });
+
+  // Pick & Pack endpoints - moved above parameterized route
+  app.get('/api/orders/pick-pack', async (req, res) => {
+    try {
+      const status = req.query.status as string; // pending, picking, packing, ready
+      const orders = await storage.getPickPackOrders(status);
+      res.json(orders);
+    } catch (error) {
+      console.error("Error fetching pick-pack orders:", error);
+      res.status(500).json({ message: "Failed to fetch pick-pack orders" });
+    }
+  });
+
+  // Start picking an order
+  app.post('/api/orders/:id/pick/start', async (req: any, res) => {
+    try {
+      const { employeeId } = req.body;
+      const order = await storage.startPickingOrder(req.params.id, employeeId || "test-user");
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'started_picking',
+        entityType: 'order',
+        entityId: req.params.id,
+        description: `Started picking order: ${order.orderId}`,
+      });
+      
+      res.json(order);
+    } catch (error) {
+      console.error("Error starting pick:", error);
+      res.status(500).json({ message: "Failed to start picking order" });
+    }
+  });
+
+  // Complete picking an order
+  app.post('/api/orders/:id/pick/complete', async (req: any, res) => {
+    try {
+      const order = await storage.completePickingOrder(req.params.id);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'completed_picking',
+        entityType: 'order',
+        entityId: req.params.id,
+        description: `Completed picking order: ${order.orderId}`,
+      });
+      
+      res.json(order);
+    } catch (error) {
+      console.error("Error completing pick:", error);
+      res.status(500).json({ message: "Failed to complete picking order" });
+    }
+  });
+
+  // Start packing an order
+  app.post('/api/orders/:id/pack/start', async (req: any, res) => {
+    try {
+      const { employeeId } = req.body;
+      const order = await storage.startPackingOrder(req.params.id, employeeId || "test-user");
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'started_packing',
+        entityType: 'order',
+        entityId: req.params.id,
+        description: `Started packing order: ${order.orderId}`,
+      });
+      
+      res.json(order);
+    } catch (error) {
+      console.error("Error starting pack:", error);
+      res.status(500).json({ message: "Failed to start packing order" });
+    }
+  });
+
+  // Complete packing an order
+  app.post('/api/orders/:id/pack/complete', async (req: any, res) => {
+    try {
+      const order = await storage.completePackingOrder(req.params.id);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'completed_packing',
+        entityType: 'order',
+        entityId: req.params.id,
+        description: `Completed packing order: ${order.orderId}`,
+      });
+      
+      res.json(order);
+    } catch (error) {
+      console.error("Error completing pack:", error);
+      res.status(500).json({ message: "Failed to complete packing order" });
+    }
+  });
+
+  // Update picked quantity for an order item
+  app.patch('/api/orders/:id/items/:itemId/pick', async (req: any, res) => {
+    try {
+      const { pickedQuantity } = req.body;
+      const orderItem = await storage.updateOrderItemPickedQuantity(req.params.itemId, pickedQuantity);
+      res.json(orderItem);
+    } catch (error) {
+      console.error("Error updating picked quantity:", error);
+      res.status(500).json({ message: "Failed to update picked quantity" });
+    }
+  });
+
+  // Update packed quantity for an order item
+  app.patch('/api/orders/:id/items/:itemId/pack', async (req: any, res) => {
+    try {
+      const { packedQuantity } = req.body;
+      const orderItem = await storage.updateOrderItemPackedQuantity(req.params.itemId, packedQuantity);
+      res.json(orderItem);
+    } catch (error) {
+      console.error("Error updating packed quantity:", error);
+      res.status(500).json({ message: "Failed to update packed quantity" });
+    }
+  });
+
   app.get('/api/orders/:id', async (req, res) => {
     try {
       const order = await storage.getOrderById(req.params.id);
