@@ -138,6 +138,11 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
       icon: Store,
     },
     {
+      name: "Shipping",
+      href: "/shipping",
+      icon: Truck,
+    },
+    {
       name: "Reports",
       href: "/reports",
       icon: BarChart3,
@@ -347,6 +352,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                  location.includes('/returns') ? 'Returns' :
                  location.includes('/expenses') ? 'Expenses' :
                  location.includes('/pos') ? 'Point of Sale' :
+                 location.includes('/shipping') ? 'Shipping Management' :
                  location.includes('/reports') ? 'Reports' : 'Dashboard'}
               </h2>
               <div className="relative max-w-md w-full">

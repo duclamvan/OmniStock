@@ -347,29 +347,6 @@ export const orderItems = pgTable("order_items", {
   warehouseLocation: varchar("warehouse_location", { length: 100 }),
   barcode: varchar("barcode", { length: 50 }),
   image: varchar("image", { length: 500 }),
-  // Bundle fields for complex items
-  isBundle: boolean("is_bundle").default(false),
-  bundleId: varchar("bundle_id").references(() => productBundles.id),
-  // Dimensions for packing calculation
-  length: decimal("length", { precision: 10, scale: 2 }), // in cm
-  width: decimal("width", { precision: 10, scale: 2 }), // in cm  
-  height: decimal("height", { precision: 10, scale: 2 }), // in cm
-  weight: decimal("weight", { precision: 10, scale: 3 }), // in kg
-  isFragile: boolean("is_fragile").default(false),
-  isHazardous: boolean("is_hazardous").default(false),
-});
-
-// Order Item Bundle Components (for tracking individual items in bundles during picking)
-export const orderItemBundleComponents = pgTable("order_item_bundle_components", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  orderItemId: varchar("order_item_id").references(() => orderItems.id, { onDelete: 'cascade' }).notNull(),
-  componentName: varchar("component_name", { length: 255 }).notNull(),
-  colorNumber: varchar("color_number", { length: 50 }),
-  quantity: integer("quantity").notNull().default(1),
-  picked: boolean("picked").default(false),
-  location: varchar("location", { length: 100 }),
-  barcode: varchar("barcode", { length: 50 }),
-  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // Purchases
