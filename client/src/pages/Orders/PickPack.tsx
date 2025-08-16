@@ -2914,6 +2914,31 @@ export default function PickPack() {
                           )}
                         </div>
                       )}
+                      
+                      {/* Item Navigation Buttons - Below Pick Quantity */}
+                      <div className="flex justify-between items-center mt-6 lg:mt-8 px-4 lg:px-8">
+                        <Button
+                          variant="outline"
+                          size="lg"
+                          className="flex items-center gap-2 h-12 lg:h-14 px-4 lg:px-6 font-bold text-sm lg:text-base border-2 hover:bg-gray-50"
+                          onClick={() => setManualItemIndex(Math.max(0, currentItemIndex - 1))}
+                          disabled={currentItemIndex === 0}
+                        >
+                          <ChevronLeft className="h-5 lg:h-6 w-5 lg:w-6" />
+                          Previous Item
+                        </Button>
+                        
+                        <Button
+                          variant="outline"
+                          size="lg"
+                          className="flex items-center gap-2 h-12 lg:h-14 px-4 lg:px-6 font-bold text-sm lg:text-base border-2 hover:bg-gray-50"
+                          onClick={() => setManualItemIndex(Math.min(activePickingOrder.items.length - 1, currentItemIndex + 1))}
+                          disabled={currentItemIndex === activePickingOrder.items.length - 1}
+                        >
+                          Next Item
+                          <ChevronRight className="h-5 lg:h-6 w-5 lg:w-6" />
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
