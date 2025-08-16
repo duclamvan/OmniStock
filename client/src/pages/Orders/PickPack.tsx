@@ -228,6 +228,15 @@ export default function PickPack() {
     weightRecorded: false,
     fragileProtected: false
   });
+  
+  // State for document printing checklist
+  const [printedDocuments, setPrintedDocuments] = useState({
+    packingList: false,
+    invoice: false,
+    msds: false,
+    cpnpCertificate: false
+  });
+  
   const [selectedBoxSize, setSelectedBoxSize] = useState<string>('');
   const [packageWeight, setPackageWeight] = useState<string>('');
   const [verifiedItems, setVerifiedItems] = useState<Set<string>>(new Set());
@@ -1600,6 +1609,12 @@ export default function PickPack() {
       weightRecorded: false,
       fragileProtected: false
     });
+    setPrintedDocuments({
+      packingList: false,
+      invoice: false,
+      msds: false,
+      cpnpCertificate: false
+    });
     setVerifiedItems(new Set());
     setSelectedCarton('carton-1');
     setPackageWeight('');
@@ -1979,6 +1994,167 @@ export default function PickPack() {
                       })}
                     </div>
                   </ScrollArea>
+                </CardContent>
+              </Card>
+
+              {/* Documents to Print Section */}
+              <Card className="shadow-xl border-0">
+                <CardHeader className="bg-gradient-to-r from-green-500 to-emerald-500 text-white">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Documents to Print
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    {/* Document Checklist */}
+                    <div className="space-y-2">
+                      {/* Packing List */}
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <Checkbox 
+                            checked={printedDocuments.packingList}
+                            readOnly
+                            className="cursor-default"
+                          />
+                          <div className="flex items-center gap-2">
+                            <ClipboardList className="h-4 w-4 text-green-600" />
+                            <span className="text-sm font-medium">Packing List</span>
+                          </div>
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            window.print();
+                            setPrintedDocuments(prev => ({ ...prev, packingList: true }));
+                            playSound('success');
+                          }}
+                        >
+                          <Printer className="h-3 w-3 mr-1" />
+                          Print
+                        </Button>
+                      </div>
+
+                      {/* Invoice */}
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <Checkbox 
+                            checked={printedDocuments.invoice}
+                            readOnly
+                            className="cursor-default"
+                          />
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-blue-600" />
+                            <span className="text-sm font-medium">Invoice</span>
+                          </div>
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            window.open(`/api/orders/${activePackingOrder.id}/invoice.pdf`, '_blank');
+                            setPrintedDocuments(prev => ({ ...prev, invoice: true }));
+                            playSound('success');
+                          }}
+                        >
+                          <Printer className="h-3 w-3 mr-1" />
+                          Print
+                        </Button>
+                      </div>
+
+                      {/* MSDS Files */}
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <Checkbox 
+                            checked={printedDocuments.msds}
+                            readOnly
+                            className="cursor-default"
+                          />
+                          <div className="flex items-center gap-2">
+                            <AlertCircle className="h-4 w-4 text-orange-600" />
+                            <span className="text-sm font-medium">MSDS Files</span>
+                          </div>
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            window.open(`/api/orders/${activePackingOrder.id}/msds.pdf`, '_blank');
+                            setPrintedDocuments(prev => ({ ...prev, msds: true }));
+                            playSound('success');
+                          }}
+                        >
+                          <Printer className="h-3 w-3 mr-1" />
+                          Print
+                        </Button>
+                      </div>
+
+                      {/* CPNP Certificate */}
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <Checkbox 
+                            checked={printedDocuments.cpnpCertificate}
+                            readOnly
+                            className="cursor-default"
+                          />
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-purple-600" />
+                            <span className="text-sm font-medium">CPNP Certificate</span>
+                          </div>
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            window.open(`/api/orders/${activePackingOrder.id}/cpnp-certificate.pdf`, '_blank');
+                            setPrintedDocuments(prev => ({ ...prev, cpnpCertificate: true }));
+                            playSound('success');
+                          }}
+                        >
+                          <Printer className="h-3 w-3 mr-1" />
+                          Print
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    {/* Print All Documents Button */}
+                    <Button 
+                      className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                      onClick={() => {
+                        // Print all required documents
+                        const documents = [
+                          `/api/orders/${activePackingOrder.id}/packing-list.pdf`,
+                          `/api/orders/${activePackingOrder.id}/invoice.pdf`,
+                          `/api/orders/${activePackingOrder.id}/msds.pdf`,
+                          `/api/orders/${activePackingOrder.id}/cpnp-certificate.pdf`
+                        ];
+                        
+                        documents.forEach((doc, index) => {
+                          setTimeout(() => {
+                            window.open(doc, '_blank');
+                          }, index * 500); // Stagger opening to avoid browser blocking
+                        });
+                        
+                        // Mark all documents as printed
+                        setPrintedDocuments({
+                          packingList: true,
+                          invoice: true,
+                          msds: true,
+                          cpnpCertificate: true
+                        });
+                        
+                        playSound('success');
+                        toast({
+                          title: "Documents Generated",
+                          description: "All required documents have been generated and opened for printing",
+                        });
+                      }}
+                    >
+                      <Printer className="h-4 w-4 mr-2" />
+                      Print All Documents
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -2369,106 +2545,7 @@ export default function PickPack() {
                   </CardContent>
                 </Card>
 
-                {/* PDF Documents & Printing Section */}
-                <Card className="shadow-xl border-0">
-                  <CardHeader className="bg-gradient-to-r from-green-500 to-emerald-500 text-white">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <FileText className="h-4 w-4" />
-                      Documents & Certificates
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-4">
-                    <div className="space-y-3">
-                      {/* Document Checklist */}
-                      <div className="grid grid-cols-2 gap-3">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="h-20 flex flex-col items-center justify-center border-2 hover:border-green-500 hover:bg-green-50"
-                          onClick={() => {
-                            // Generate and print packing list
-                            window.print();
-                            playSound('success');
-                          }}
-                        >
-                          <ClipboardList className="h-6 w-6 mb-1 text-green-600" />
-                          <span className="text-xs font-medium">Packing List</span>
-                        </Button>
-                        
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="h-20 flex flex-col items-center justify-center border-2 hover:border-blue-500 hover:bg-blue-50"
-                          onClick={() => {
-                            // Generate and print invoice
-                            window.open(`/api/orders/${activePackingOrder.id}/invoice.pdf`, '_blank');
-                            playSound('success');
-                          }}
-                        >
-                          <FileText className="h-6 w-6 mb-1 text-blue-600" />
-                          <span className="text-xs font-medium">Invoice</span>
-                        </Button>
-                        
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="h-20 flex flex-col items-center justify-center border-2 hover:border-orange-500 hover:bg-orange-50"
-                          onClick={() => {
-                            // Generate and print MSDS files
-                            window.open(`/api/orders/${activePackingOrder.id}/msds.pdf`, '_blank');
-                            playSound('success');
-                          }}
-                        >
-                          <AlertCircle className="h-6 w-6 mb-1 text-orange-600" />
-                          <span className="text-xs font-medium">MSDS Files</span>
-                        </Button>
-                        
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="h-20 flex flex-col items-center justify-center border-2 hover:border-purple-500 hover:bg-purple-50"
-                          onClick={() => {
-                            // Generate and print CPNP certificate
-                            window.open(`/api/orders/${activePackingOrder.id}/cpnp-certificate.pdf`, '_blank');
-                            playSound('success');
-                          }}
-                        >
-                          <CheckCircle className="h-6 w-6 mb-1 text-purple-600" />
-                          <span className="text-xs font-medium">CPNP Certificate</span>
-                        </Button>
-                      </div>
-                      
-                      {/* Print All Documents Button */}
-                      <Button 
-                        className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
-                        onClick={() => {
-                          // Print all required documents
-                          const documents = [
-                            `/api/orders/${activePackingOrder.id}/packing-list.pdf`,
-                            `/api/orders/${activePackingOrder.id}/invoice.pdf`,
-                            `/api/orders/${activePackingOrder.id}/msds.pdf`,
-                            `/api/orders/${activePackingOrder.id}/cpnp-certificate.pdf`
-                          ];
-                          
-                          documents.forEach((doc, index) => {
-                            setTimeout(() => {
-                              window.open(doc, '_blank');
-                            }, index * 500); // Stagger opening to avoid browser blocking
-                          });
-                          
-                          playSound('success');
-                          toast({
-                            title: "Documents Generated",
-                            description: "All required documents have been generated and opened for printing",
-                          });
-                        }}
-                      >
-                        <Printer className="h-4 w-4 mr-2" />
-                        Print All Documents
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+
 
                 {/* Complete Packing Button */}
                 {canCompletePacking ? (
