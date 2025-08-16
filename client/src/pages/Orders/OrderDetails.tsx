@@ -68,6 +68,11 @@ export default function OrderDetails() {
   const { id } = useParams();
   const [location, navigate] = useLocation();
   const { toast } = useToast();
+
+  // Prevent OrderDetails from rendering on pick-pack page
+  if (location === '/orders/pick-pack') {
+    return null;
+  }
   const previousPath = useRef<string>("/orders");
   const [showReturnDialog, setShowReturnDialog] = useState(false);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
