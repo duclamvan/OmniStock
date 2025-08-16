@@ -50,7 +50,6 @@ import EditCategory from "@/pages/Inventory/EditCategory";
 import CategoryDetails from "@/pages/Inventory/CategoryDetails";
 import WarehouseMap from "@/pages/WarehouseMap";
 import PickPack from "@/pages/Orders/PickPack";
-import ShippingManagement from "@/pages/Shipping/ShippingManagement";
 
 function Router() {
   return (
@@ -115,7 +114,6 @@ function Router() {
         <Route path="/expenses/edit/:id" component={EditExpense} />
         <Route path="/expenses/:id" component={ExpenseDetails} />
         <Route path="/pos" component={POS} />
-        <Route path="/shipping" component={ShippingManagement} />
         <Route path="/reports">
           {() => <div>Reports page coming soon</div>}
         </Route>
