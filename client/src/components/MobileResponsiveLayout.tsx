@@ -426,64 +426,9 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
         </header>
         )}
 
-        {/* Fixed Header for Pick & Pack page */}
-        {isPickPackPage && (
-          <header className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
-            <div className="flex items-center justify-between px-4 py-3">
-              <div className="flex items-center gap-3">
-                <img src={logoPath} alt="Davie Professional" className="h-8" />
-                <div>
-                  <h1 className="text-lg font-semibold text-gray-900">Pick & Pack Center</h1>
-                  <p className="text-sm text-gray-500">Warehouse Operations Dashboard</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                {/* Employee Info */}
-                <div className="hidden sm:block text-right">
-                  <p className="text-sm font-medium text-gray-900">Employee #001</p>
-                  <p className="text-xs text-gray-500">Logged in</p>
-                </div>
-                
-                {/* Navigation Menu */}
-                <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-                  <SheetTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
-                      className="h-10 w-10 border-gray-300 hover:bg-gray-50"
-                    >
-                      <Menu className="h-5 w-5" />
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent side="right" className="w-72 p-0 flex flex-col h-full">
-                    <div className="p-4 border-b flex-shrink-0">
-                      <div className="flex items-center gap-3">
-                        <img src={logoPath} alt="Davie Professional" className="h-8" />
-                        <div>
-                          <h2 className="text-lg font-semibold">Navigation</h2>
-                          <p className="text-sm text-gray-500">Pick & Pack Center</p>
-                        </div>
-                      </div>
-                    </div>
-                    <nav className="p-4 space-y-2 overflow-y-auto flex-1">
-                      <NavLinks />
-                    </nav>
-                    <div className="p-4 border-t flex-shrink-0">
-                      <div className="text-center text-sm text-gray-500">
-                        Logged in as Employee #001
-                      </div>
-                    </div>
-                  </SheetContent>
-                </Sheet>
-              </div>
-            </div>
-          </header>
-        )}
 
         <div className={cn(
-          "max-w-7xl mx-auto",
-          isPickPackPage ? "p-0" : "px-mobile py-mobile"
+          isPickPackPage ? "h-screen overflow-hidden" : "px-mobile py-mobile max-w-7xl mx-auto"
         )}>
           {children}
         </div>
