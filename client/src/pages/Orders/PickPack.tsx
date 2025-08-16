@@ -239,9 +239,15 @@ export default function PickPack() {
     return () => clearInterval(interval);
   }, [isPackingTimerRunning]);
 
-  // Fetch real orders from the API
-  const { data: allOrders = [], isLoading } = useQuery({
-    queryKey: ['/api/orders'],
+  // Fetch Pick & Pack orders from the API
+  const { data: pickPackOrders = [], isLoading: isLoadingOrders } = useQuery({
+    queryKey: ['/api/orders/pick-pack'],
+    refetchInterval: 10000, // Refresh every 10 seconds
+  });
+
+  // Fetch Pick & Pack stats from the API
+  const { data: pickPackStats } = useQuery({
+    queryKey: ['/api/orders/pick-pack/stats'],
     refetchInterval: 10000, // Refresh every 10 seconds
   });
 
@@ -983,13 +989,10 @@ export default function PickPack() {
     }
   ];
 
-  // Transform real orders to PickPackOrder format - Only include "To Fulfill" status orders
+  // Transform real orders to PickPackOrder format
   const transformedOrders: PickPackOrder[] = [
     ...mockOrders,
-    ...((allOrders as any[] || [])
-    .filter((order: any) => 
-      order.orderStatus === 'to_fulfill'
-    )
+    ...((pickPackOrders as any[] || [])
     .map((order: any) => ({
       id: order.id,
       orderId: order.orderId,
@@ -1283,16 +1286,57 @@ export default function PickPack() {
     }
   });
 
+  // Mutation to start picking an order
+  const startPickingMutation = useMutation({
+    mutationFn: async ({ orderId, employeeId }: { orderId: string; employeeId: string }) => {
+      return apiRequest(`/api/orders/${orderId}/start-picking`, 'POST', { employeeId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack/stats'] });
+    }
+  });
+
+  // Mutation to complete picking an order
+  const completePickingMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      return apiRequest(`/api/orders/${orderId}/complete-picking`, 'POST', {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack/stats'] });
+    }
+  });
+
+  // Mutation to start packing an order
+  const startPackingMutation = useMutation({
+    mutationFn: async ({ orderId, employeeId }: { orderId: string; employeeId: string }) => {
+      return apiRequest(`/api/orders/${orderId}/start-packing`, 'POST', { employeeId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack/stats'] });
+    }
+  });
+
+  // Mutation to complete packing an order
+  const completePackingMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      return apiRequest(`/api/orders/${orderId}/complete-packing`, 'POST', {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack/stats'] });
+    }
+  });
+
   // Start picking an order
   const startPicking = async (order: PickPackOrder) => {
     // Only update database for real orders (not mock orders)
     if (!order.id.startsWith('mock-')) {
-      // Keep order status as "to_fulfill" but update pick status
-      await updateOrderStatusMutation.mutateAsync({
+      await startPickingMutation.mutateAsync({
         orderId: order.id,
-        status: 'to_fulfill',
-        pickStatus: 'in_progress',
-        pickedBy: currentEmployee
+        employeeId: currentEmployee
       });
     }
 
@@ -1340,13 +1384,8 @@ export default function PickPack() {
 
     // Only update database for real orders (not mock orders)
     if (!activePickingOrder.id.startsWith('mock-')) {
-      // Keep order status as "to_fulfill" but update pick status
-      await updateOrderStatusMutation.mutateAsync({
-        orderId: activePickingOrder.id,
-        status: 'to_fulfill',
-        pickStatus: 'completed',
-        packStatus: 'not_started'
-      });
+      // Complete picking using the dedicated mutation
+      await completePickingMutation.mutateAsync(activePickingOrder.id);
     }
 
     const updatedOrder = {
@@ -1357,7 +1396,8 @@ export default function PickPack() {
     };
 
     setIsTimerRunning(false);
-    queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack/stats'] });
     playSound('success');
     setActivePickingOrder(null);
     setSelectedTab('packing');
@@ -1371,13 +1411,11 @@ export default function PickPack() {
     
     // Only update database for real orders (not mock orders)
     if (!order.id.startsWith('mock-')) {
-      // Keep order status as "to_fulfill" but update pack status
+      // Start packing using the dedicated mutation
       if (order.packStatus !== 'in_progress') {
-        await updateOrderStatusMutation.mutateAsync({
+        await startPackingMutation.mutateAsync({
           orderId: order.id,
-          status: 'to_fulfill',
-          packStatus: 'in_progress',
-          packedBy: currentEmployee
+          employeeId: currentEmployee
         });
       }
     }
@@ -1413,12 +1451,8 @@ export default function PickPack() {
 
     // Only update database for real orders (not mock orders)
     if (!activePackingOrder.id.startsWith('mock-')) {
-      // Update order status to "shipped" when packing is complete
-      await updateOrderStatusMutation.mutateAsync({
-        orderId: activePackingOrder.id,
-        status: 'shipped',
-        packStatus: 'completed'
-      });
+      // Complete packing using the dedicated mutation
+      await completePackingMutation.mutateAsync(activePackingOrder.id);
     }
 
     const updatedOrder = {
@@ -1429,7 +1463,8 @@ export default function PickPack() {
     };
 
     setIsPackingTimerRunning(false);
-    queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack/stats'] });
     playSound('success');
     setActivePackingOrder(null);
     setSelectedTab('ready');
@@ -1443,7 +1478,8 @@ export default function PickPack() {
     });
 
     playSound('success');
-    queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack/stats'] });
   };
 
   // Handle barcode scanning
@@ -1497,7 +1533,7 @@ export default function PickPack() {
     avgPickTime: '15:30' // Mock average
   };
 
-  if (isLoading && transformedOrders.length === 0) {
+  if (isLoadingOrders && transformedOrders.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
