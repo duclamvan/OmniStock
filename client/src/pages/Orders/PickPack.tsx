@@ -1091,12 +1091,14 @@ export default function PickPack() {
     // Include real orders from database
     ...((allOrders as any[] || [])
     .filter((order: any) => 
-      order.orderStatus === 'to_fulfill' || 
-      order.orderStatus === 'picking' || 
-      order.orderStatus === 'packing' ||
-      order.packStatus === 'in_progress' ||
+      order.status === 'to_fulfill' || 
+      order.status === 'picking' || 
+      order.status === 'packing' ||
+      order.status === 'ready_to_ship' ||
       order.pickStatus === 'in_progress' ||
-      order.pickStatus === 'completed'
+      order.pickStatus === 'completed' ||
+      order.packStatus === 'in_progress' ||
+      order.packStatus === 'completed'
     )
     .map((order: any) => ({
       id: order.id,
@@ -1105,7 +1107,7 @@ export default function PickPack() {
       shippingMethod: order.shippingMethod || 'Standard',
       shippingAddress: order.shippingAddress,
       priority: order.priority || 'medium',
-      status: order.orderStatus || 'to_fulfill',
+      status: order.status || 'to_fulfill',
       pickStatus: order.pickStatus || 'not_started',
       packStatus: order.packStatus || 'not_started',
       items: order.items?.map((item: any) => {
