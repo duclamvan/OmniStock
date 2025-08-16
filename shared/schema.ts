@@ -205,6 +205,9 @@ export const products = pgTable("products", {
   width: decimal("width", { precision: 10, scale: 2 }), // in cm
   height: decimal("height", { precision: 10, scale: 2 }), // in cm
   weight: decimal("weight", { precision: 10, scale: 3 }), // in kg
+  // Shipping and packing
+  shipmentNotes: text("shipment_notes"),
+  packingMaterialId: varchar("packing_material_id").references(() => packingMaterials.id),
   // Soft delete flag
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow(),
@@ -479,6 +482,26 @@ export const settings = pgTable("settings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Packing Materials
+export const packingMaterials = pgTable("packing_materials", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 255 }).notNull(),
+  code: varchar("code", { length: 50 }).unique(),
+  type: varchar("type", { length: 100 }), // box, bubble_wrap, foam, paper, tape, etc.
+  size: varchar("size", { length: 100 }), // small, medium, large, or dimensions
+  imageUrl: varchar("image_url", { length: 500 }),
+  cost: decimal("cost", { precision: 12, scale: 2 }),
+  currency: currencyEnum("currency").default('CZK'),
+  supplier: varchar("supplier", { length: 255 }),
+  stockQuantity: integer("stock_quantity").default(0),
+  minStockLevel: integer("min_stock_level").default(10),
+  description: text("description"),
+  isFragileProtection: boolean("is_fragile_protection").default(false),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const categoriesRelations = relations(categories, ({ many }) => ({
   products: many(products),
@@ -505,8 +528,16 @@ export const productsRelations = relations(products, ({ one, many }) => ({
     fields: [products.supplierId],
     references: [suppliers.id],
   }),
+  packingMaterial: one(packingMaterials, {
+    fields: [products.packingMaterialId],
+    references: [packingMaterials.id],
+  }),
   variants: many(productVariants),
   orderItems: many(orderItems),
+}));
+
+export const packingMaterialsRelations = relations(packingMaterials, ({ many }) => ({
+  products: many(products),
 }));
 
 export const productVariantsRelations = relations(productVariants, ({ one }) => ({
@@ -671,6 +702,7 @@ export const insertBundleItemSchema = createInsertSchema(bundleItems).omit({ id:
 export const insertPreOrderSchema = createInsertSchema(preOrders).omit({ id: true, createdAt: true });
 export const insertUserActivitySchema = createInsertSchema(userActivities).omit({ id: true, createdAt: true });
 export const insertSettingSchema = createInsertSchema(settings).omit({ id: true, updatedAt: true });
+export const insertPackingMaterialSchema = createInsertSchema(packingMaterials).omit({ id: true, createdAt: true, updatedAt: true });
 
 // Types
 export type UpsertUser = typeof users.$inferInsert;
@@ -737,3 +769,5 @@ export type WarehouseLocation = typeof warehouseLocations.$inferSelect;
 export type InsertWarehouseLocation = z.infer<typeof insertWarehouseLocationSchema>;
 export type InventoryBalance = typeof inventoryBalances.$inferSelect;
 export type InsertInventoryBalance = z.infer<typeof insertInventoryBalanceSchema>;
+export type PackingMaterial = typeof packingMaterials.$inferSelect;
+export type InsertPackingMaterial = z.infer<typeof insertPackingMaterialSchema>;

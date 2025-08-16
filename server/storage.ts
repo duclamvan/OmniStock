@@ -74,6 +74,9 @@ import {
   type InsertWarehouseLocation,
   type InventoryBalance,
   type InsertInventoryBalance,
+  packingMaterials,
+  type PackingMaterial,
+  type InsertPackingMaterial,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, and, or, like, sql, gte, lte, count, inArray, isNotNull } from "drizzle-orm";
@@ -274,6 +277,14 @@ export interface IStorage {
   
   // Putaway Suggestions
   suggestPutawayLocations(variantId: string, quantity: number): Promise<{ locationId: string; address: string; score: number; reasons: string[] }[]>;
+
+  // Packing Materials
+  getPackingMaterials(): Promise<PackingMaterial[]>;
+  getPackingMaterialById(id: string): Promise<PackingMaterial | undefined>;
+  createPackingMaterial(material: InsertPackingMaterial): Promise<PackingMaterial>;
+  updatePackingMaterial(id: string, material: Partial<InsertPackingMaterial>): Promise<PackingMaterial>;
+  deletePackingMaterial(id: string): Promise<void>;
+  searchPackingMaterials(query: string): Promise<PackingMaterial[]>;
 
   // Utility Functions
   generateSKU(categoryName: string, productName: string): Promise<string>;
@@ -2163,6 +2174,62 @@ export class DatabaseStorage implements IStorage {
 
   async deleteInventoryBalance(id: string): Promise<void> {
     await db.delete(inventoryBalances).where(eq(inventoryBalances.id, id));
+  }
+
+  // Packing Materials
+  async getPackingMaterials(): Promise<PackingMaterial[]> {
+    return await db.select().from(packingMaterials)
+      .where(eq(packingMaterials.isActive, true))
+      .orderBy(asc(packingMaterials.name));
+  }
+
+  async getPackingMaterialById(id: string): Promise<PackingMaterial | undefined> {
+    const [material] = await db.select().from(packingMaterials)
+      .where(and(
+        eq(packingMaterials.id, id),
+        eq(packingMaterials.isActive, true)
+      ));
+    return material;
+  }
+
+  async createPackingMaterial(material: InsertPackingMaterial): Promise<PackingMaterial> {
+    const [newMaterial] = await db.insert(packingMaterials).values(material).returning();
+    return newMaterial;
+  }
+
+  async updatePackingMaterial(id: string, material: Partial<InsertPackingMaterial>): Promise<PackingMaterial> {
+    const [updatedMaterial] = await db
+      .update(packingMaterials)
+      .set({ ...material, updatedAt: new Date() })
+      .where(eq(packingMaterials.id, id))
+      .returning();
+    return updatedMaterial;
+  }
+
+  async deletePackingMaterial(id: string): Promise<void> {
+    // Soft delete
+    await db
+      .update(packingMaterials)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(packingMaterials.id, id));
+  }
+
+  async searchPackingMaterials(query: string): Promise<PackingMaterial[]> {
+    const normalizedQuery = this.removeDiacritics(query.toLowerCase());
+    
+    const allMaterials = await db.select().from(packingMaterials)
+      .where(eq(packingMaterials.isActive, true))
+      .orderBy(asc(packingMaterials.name));
+    
+    return allMaterials.filter(material => {
+      const normalizedName = this.removeDiacritics(material.name.toLowerCase());
+      const normalizedCode = material.code ? this.removeDiacritics(material.code.toLowerCase()) : '';
+      const normalizedType = material.type ? this.removeDiacritics(material.type.toLowerCase()) : '';
+      
+      return normalizedName.includes(normalizedQuery) || 
+             normalizedCode.includes(normalizedQuery) ||
+             normalizedType.includes(normalizedQuery);
+    });
   }
 
   // Putaway Suggestions

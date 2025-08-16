@@ -98,6 +98,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
         { name: "All Products", href: "/inventory" },
         { name: "Categories", href: "/inventory/categories" },
         { name: "Product Bundles", href: "/inventory/bundles" },
+        { name: "Packing Materials", href: "/packing-materials" },
         { name: "Add Product", href: "/inventory/add" },
       ],
     },
@@ -350,6 +351,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
               <h2 className="text-xl font-semibold text-gray-900">
                 {location === '/' ? 'Dashboard' : 
                  location.includes('/orders') ? 'Orders' :
+                 location.includes('/packing-materials') ? 'Packing Materials' :
                  location.includes('/inventory') ? 'Inventory' :
                  location.includes('/warehouses') ? 'Warehouses' :
                  location.includes('/discounts') ? 'Discounts' :

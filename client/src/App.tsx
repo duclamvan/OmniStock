@@ -51,6 +51,9 @@ import CategoryDetails from "@/pages/Inventory/CategoryDetails";
 import WarehouseMap from "@/pages/WarehouseMap";
 import PickPack from "@/pages/Orders/PickPack";
 import ShippingManagement from "@/pages/Shipping/ShippingManagement";
+import PackingMaterials from "@/pages/PackingMaterials";
+import AddPackingMaterial from "@/pages/PackingMaterials/AddPackingMaterial";
+import EditPackingMaterial from "@/pages/PackingMaterials/EditPackingMaterial";
 
 function Router() {
   return (
@@ -89,6 +92,9 @@ function Router() {
         <Route path="/inventory/add" component={AddProduct} />
         <Route path="/inventory/:id/edit" component={EditProduct} />
         <Route path="/inventory/products/edit/:id" component={EditProduct} />
+        <Route path="/packing-materials" component={PackingMaterials} />
+        <Route path="/packing-materials/add" component={AddPackingMaterial} />
+        <Route path="/packing-materials/edit/:id" component={EditPackingMaterial} />
         <Route path="/warehouses" component={AllWarehouses} />
         <Route path="/warehouses/add" component={AddWarehouse} />
         <Route path="/warehouses/map" component={WarehouseMap} />

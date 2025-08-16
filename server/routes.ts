@@ -1366,6 +1366,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Packing Materials endpoints
+  app.get('/api/packing-materials', async (req, res) => {
+    try {
+      const search = req.query.search as string;
+      let materials;
+      
+      if (search) {
+        materials = await storage.searchPackingMaterials(search);
+      } else {
+        materials = await storage.getPackingMaterials();
+      }
+      
+      res.json(materials);
+    } catch (error) {
+      console.error("Error fetching packing materials:", error);
+      res.status(500).json({ message: "Failed to fetch packing materials" });
+    }
+  });
+
+  app.get('/api/packing-materials/:id', async (req, res) => {
+    try {
+      const material = await storage.getPackingMaterialById(req.params.id);
+      if (material) {
+        res.json(material);
+      } else {
+        res.status(404).json({ message: "Packing material not found" });
+      }
+    } catch (error) {
+      console.error("Error fetching packing material:", error);
+      res.status(500).json({ message: "Failed to fetch packing material" });
+    }
+  });
+
+  app.post('/api/packing-materials', async (req: any, res) => {
+    try {
+      const materialData = req.body;
+      const material = await storage.createPackingMaterial(materialData);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'created',
+        entityType: 'packing_material',
+        entityId: material.id,
+        description: `Created packing material: ${material.name}`,
+      });
+      
+      res.status(201).json(material);
+    } catch (error) {
+      console.error("Error creating packing material:", error);
+      res.status(500).json({ message: "Failed to create packing material" });
+    }
+  });
+
+  app.patch('/api/packing-materials/:id', async (req: any, res) => {
+    try {
+      const updates = req.body;
+      const material = await storage.updatePackingMaterial(req.params.id, updates);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'updated',
+        entityType: 'packing_material',
+        entityId: material.id,
+        description: `Updated packing material: ${material.name}`,
+      });
+      
+      res.json(material);
+    } catch (error) {
+      console.error("Error updating packing material:", error);
+      res.status(500).json({ message: "Failed to update packing material" });
+    }
+  });
+
+  app.delete('/api/packing-materials/:id', async (req: any, res) => {
+    try {
+      await storage.deletePackingMaterial(req.params.id);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'deleted',
+        entityType: 'packing_material',
+        entityId: req.params.id,
+        description: `Deleted packing material`,
+      });
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting packing material:", error);
+      res.status(500).json({ message: "Failed to delete packing material" });
+    }
+  });
+
   // Customers endpoints
   app.get('/api/customers', async (req, res) => {
     try {
