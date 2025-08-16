@@ -1288,10 +1288,10 @@ export default function PickPack() {
   const startPicking = async (order: PickPackOrder) => {
     // Only update database for real orders (not mock orders)
     if (!order.id.startsWith('mock-')) {
-      // Update order status to 'picking' when picking starts
+      // Keep order status as 'to_fulfill' and update pickStatus
       await updateOrderStatusMutation.mutateAsync({
         orderId: order.id,
-        status: 'picking',
+        status: 'to_fulfill',
         pickStatus: 'in_progress',
         pickedBy: currentEmployee
       });
@@ -1299,7 +1299,7 @@ export default function PickPack() {
 
     const updatedOrder = {
       ...order,
-      status: 'picking' as const,
+      status: 'to_fulfill' as const,
       pickStatus: 'in_progress' as const,
       pickStartTime: new Date().toISOString(),
       pickedBy: currentEmployee
@@ -1341,10 +1341,10 @@ export default function PickPack() {
 
     // Only update database for real orders (not mock orders)
     if (!activePickingOrder.id.startsWith('mock-')) {
-      // Update order status to 'packing' when picking is complete
+      // Keep order status as 'to_fulfill' when picking is complete
       await updateOrderStatusMutation.mutateAsync({
         orderId: activePickingOrder.id,
-        status: 'packing',
+        status: 'to_fulfill',
         pickStatus: 'completed',
         packStatus: 'not_started'
       });
@@ -1354,7 +1354,7 @@ export default function PickPack() {
       ...activePickingOrder,
       pickStatus: 'completed' as const,
       pickEndTime: new Date().toISOString(),
-      status: 'packing' as const,
+      status: 'to_fulfill' as const,
       packStatus: 'not_started' as const
     };
 
@@ -1379,11 +1379,11 @@ export default function PickPack() {
     
     // Only update database for real orders (not mock orders)
     if (!order.id.startsWith('mock-')) {
-      // Keep status as 'packing' when packing is in progress
+      // Keep order status as 'to_fulfill' when packing is in progress
       if (order.packStatus !== 'in_progress') {
         await updateOrderStatusMutation.mutateAsync({
           orderId: order.id,
-          status: 'packing',
+          status: 'to_fulfill',
           packStatus: 'in_progress',
           packedBy: currentEmployee
         });
@@ -1392,7 +1392,7 @@ export default function PickPack() {
 
     const updatedOrder = {
       ...order,
-      status: 'packing' as const,
+      status: 'to_fulfill' as const,
       packStatus: 'in_progress' as const,
       packStartTime: new Date().toISOString(),
       packedBy: currentEmployee
@@ -1422,10 +1422,10 @@ export default function PickPack() {
 
     // Only update database for real orders (not mock orders)
     if (!activePackingOrder.id.startsWith('mock-')) {
-      // Update order status to "ready_to_ship" when packing is complete
+      // Update order status to "shipped" when packing is complete
       await updateOrderStatusMutation.mutateAsync({
         orderId: activePackingOrder.id,
-        status: 'ready_to_ship',
+        status: 'shipped',
         packStatus: 'completed'
       });
     }
@@ -1434,7 +1434,7 @@ export default function PickPack() {
       ...activePackingOrder,
       packStatus: 'completed' as const,
       packEndTime: new Date().toISOString(),
-      status: 'ready_to_ship' as const
+      status: 'shipped' as const
     };
 
     setIsPackingTimerRunning(false);
@@ -1477,10 +1477,10 @@ export default function PickPack() {
   // Filter orders by status - Updated to work with "to_fulfill" orders
   const getOrdersByStatus = (status: string) => {
     return transformedOrders.filter(order => {
-      if (status === 'pending') return order.status === 'to_fulfill' && order.pickStatus === 'not_started';
-      if (status === 'picking') return order.status === 'picking' || order.pickStatus === 'in_progress';
-      if (status === 'packing') return order.status === 'packing' || (order.pickStatus === 'completed' && order.packStatus !== 'completed');
-      if (status === 'ready') return order.status === 'ready_to_ship' || order.packStatus === 'completed';
+      if (status === 'pending') return order.pickStatus === 'not_started';
+      if (status === 'picking') return order.pickStatus === 'in_progress';
+      if (status === 'packing') return order.pickStatus === 'completed' && order.packStatus !== 'completed';
+      if (status === 'ready') return order.packStatus === 'completed' || order.status === 'shipped';
       return false;
     });
   };
@@ -1495,21 +1495,21 @@ export default function PickPack() {
   };
 
   const getOrderStatusDisplay = (order: PickPackOrder) => {
-    // Check the actual status values
-    if (order.status === 'picking' || order.pickStatus === 'in_progress') {
+    // Check the pickStatus and packStatus fields for actual status
+    if (order.pickStatus === 'in_progress') {
       return { label: 'Currently Picking', color: 'bg-blue-100 text-blue-700 border-blue-200' };
     }
-    if (order.status === 'packing' || (order.pickStatus === 'completed' && order.packStatus === 'in_progress')) {
+    if (order.packStatus === 'in_progress') {
       return { label: 'Currently Packing', color: 'bg-purple-100 text-purple-700 border-purple-200' };
     }
-    if (order.status === 'ready_to_ship' || order.packStatus === 'completed') {
+    if (order.packStatus === 'completed' || order.status === 'shipped') {
       return { label: 'Ready to Ship', color: 'bg-green-100 text-green-700 border-green-200' };
-    }
-    if (order.status === 'shipped') {
-      return { label: 'Shipped', color: 'bg-gray-100 text-gray-700 border-gray-200' };
     }
     if (order.pickStatus === 'completed' && order.packStatus === 'not_started') {
       return { label: 'Awaiting Packing', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' };
+    }
+    if (order.pickStatus === 'not_started') {
+      return { label: 'Pending', color: 'bg-gray-100 text-gray-600 border-gray-200' };
     }
     return { label: 'Pending', color: 'bg-gray-100 text-gray-600 border-gray-200' };
   };
