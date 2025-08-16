@@ -15,6 +15,7 @@ import {
   customerPrices,
   orders,
   orderItems,
+  orderItemBundleComponents,
   purchases,
   incomingShipments,
   sales,
@@ -265,6 +266,15 @@ export interface IStorage {
   
   // Putaway Suggestions
   suggestPutawayLocations(variantId: string, quantity: number): Promise<{ locationId: string; address: string; score: number; reasons: string[] }[]>;
+
+  // Pick & Pack Operations
+  getPickPackOrders(): Promise<any[]>;
+  getPickPackOrderById(id: string): Promise<any>;
+  updateOrderPickStatus(id: string, data: { pickStatus: string; pickedBy?: string; pickStartTime?: Date; pickEndTime?: Date }): Promise<Order>;
+  updateOrderPackStatus(id: string, data: { packStatus: string; packedBy?: string; packStartTime?: Date; packEndTime?: Date }): Promise<Order>;
+  updateOrderItemPickedQuantity(id: string, quantity: number): Promise<OrderItem>;
+  updateOrderItemPackedQuantity(id: string, quantity: number): Promise<OrderItem>;
+  updateBundleComponentPicked(id: string, picked: boolean): Promise<any>;
 
   // Utility Functions
   generateSKU(categoryName: string, productName: string): Promise<string>;
@@ -1230,6 +1240,183 @@ export class DatabaseStorage implements IStorage {
 
   async deleteOrderItems(orderId: string): Promise<void> {
     await db.delete(orderItems).where(eq(orderItems.orderId, orderId));
+  }
+
+  // Pick & Pack Operations
+  async getPickPackOrders(): Promise<any[]> {
+    const ordersData = await db
+      .select({
+        order: orders,
+        customer: customers,
+        items: sql`COUNT(DISTINCT ${orderItems.id})`.as('totalItems'),
+        pickedItems: sql`SUM(CASE WHEN ${orderItems.pickedQuantity} >= ${orderItems.quantity} THEN 1 ELSE 0 END)`.as('pickedItems'),
+        packedItems: sql`SUM(CASE WHEN ${orderItems.packedQuantity} >= ${orderItems.quantity} THEN 1 ELSE 0 END)`.as('packedItems')
+      })
+      .from(orders)
+      .leftJoin(customers, eq(orders.customerId, customers.id))
+      .leftJoin(orderItems, eq(orders.id, orderItems.orderId))
+      .where(
+        and(
+          eq(orders.orderStatus, 'to_fulfill'),
+          isNotNull(orderItems.id)
+        )
+      )
+      .groupBy(orders.id, customers.id)
+      .orderBy(
+        sql`CASE ${orders.priority} 
+          WHEN 'high' THEN 1 
+          WHEN 'medium' THEN 2 
+          WHEN 'low' THEN 3 
+          ELSE 4 END`,
+        asc(orders.createdAt)
+      );
+
+    return ordersData.map(row => ({
+      ...row.order,
+      customerName: row.customer?.name || 'Unknown Customer',
+      shippingAddress: `${row.customer?.address || ''}, ${row.customer?.city || ''}, ${row.customer?.state || ''} ${row.customer?.zipCode || ''}`.trim(),
+      totalItems: Number(row.totalItems) || 0,
+      pickedItems: Number(row.pickedItems) || 0,
+      packedItems: Number(row.packedItems) || 0,
+      status: row.order.packStatus === 'completed' ? 'ready_to_ship' :
+               row.order.packStatus === 'in_progress' ? 'packing' :
+               row.order.pickStatus === 'completed' ? 'ready_to_pack' :
+               row.order.pickStatus === 'in_progress' ? 'picking' : 'to_fulfill'
+    }));
+  }
+
+  async getPickPackOrderById(id: string): Promise<any> {
+    const orderData = await db
+      .select({
+        order: orders,
+        customer: customers
+      })
+      .from(orders)
+      .leftJoin(customers, eq(orders.customerId, customers.id))
+      .where(eq(orders.id, id))
+      .limit(1);
+
+    if (!orderData.length) return null;
+
+    const items = await db
+      .select({
+        item: orderItems,
+        product: products,
+        variant: productVariants,
+        bundle: productBundles
+      })
+      .from(orderItems)
+      .leftJoin(products, eq(orderItems.productId, products.id))
+      .leftJoin(productVariants, eq(orderItems.variantId, productVariants.id))
+      .leftJoin(productBundles, eq(orderItems.bundleId, productBundles.id))
+      .where(eq(orderItems.orderId, id));
+
+    const itemsWithComponents = await Promise.all(
+      items.map(async (row) => {
+        let bundleComponents = null;
+        if (row.item.isBundle && row.bundle) {
+          const components = await db
+            .select()
+            .from(orderItemBundleComponents)
+            .where(eq(orderItemBundleComponents.orderItemId, row.item.id));
+          bundleComponents = components;
+        }
+
+        return {
+          ...row.item,
+          productName: row.product?.name || row.variant?.name || row.item.productName,
+          sku: row.product?.sku || row.item.sku,
+          barcode: row.product?.barcode || row.variant?.barcode || row.item.barcode,
+          image: row.product?.imageUrl || row.bundle?.imageUrl || row.item.image,
+          warehouseLocation: row.product?.warehouseLocation || row.item.warehouseLocation,
+          dimensions: row.item.length && row.item.width && row.item.height && row.item.weight ? {
+            length: Number(row.item.length),
+            width: Number(row.item.width),
+            height: Number(row.item.height),
+            weight: Number(row.item.weight)
+          } : null,
+          bundleItems: bundleComponents
+        };
+      })
+    );
+
+    return {
+      ...orderData[0].order,
+      customerName: orderData[0].customer?.name || 'Unknown Customer',
+      shippingAddress: `${orderData[0].customer?.address || ''}, ${orderData[0].customer?.city || ''}, ${orderData[0].customer?.state || ''} ${orderData[0].customer?.zipCode || ''}`.trim(),
+      items: itemsWithComponents,
+      totalItems: itemsWithComponents.reduce((sum, item) => sum + item.quantity, 0),
+      pickedItems: itemsWithComponents.reduce((sum, item) => sum + (item.pickedQuantity || 0), 0),
+      packedItems: itemsWithComponents.reduce((sum, item) => sum + (item.packedQuantity || 0), 0)
+    };
+  }
+
+  async updateOrderPickStatus(id: string, data: { pickStatus: string; pickedBy?: string; pickStartTime?: Date; pickEndTime?: Date }): Promise<Order> {
+    const updateData: any = { 
+      pickStatus: data.pickStatus,
+      updatedAt: new Date()
+    };
+    
+    if (data.pickedBy !== undefined) updateData.pickedBy = data.pickedBy;
+    if (data.pickStartTime !== undefined) updateData.pickStartTime = data.pickStartTime;
+    if (data.pickEndTime !== undefined) updateData.pickEndTime = data.pickEndTime;
+
+    const [updatedOrder] = await db
+      .update(orders)
+      .set(updateData)
+      .where(eq(orders.id, id))
+      .returning();
+    
+    return updatedOrder;
+  }
+
+  async updateOrderPackStatus(id: string, data: { packStatus: string; packedBy?: string; packStartTime?: Date; packEndTime?: Date }): Promise<Order> {
+    const updateData: any = { 
+      packStatus: data.packStatus,
+      updatedAt: new Date()
+    };
+    
+    if (data.packedBy !== undefined) updateData.packedBy = data.packedBy;
+    if (data.packStartTime !== undefined) updateData.packStartTime = data.packStartTime;
+    if (data.packEndTime !== undefined) updateData.packEndTime = data.packEndTime;
+
+    const [updatedOrder] = await db
+      .update(orders)
+      .set(updateData)
+      .where(eq(orders.id, id))
+      .returning();
+    
+    return updatedOrder;
+  }
+
+  async updateOrderItemPickedQuantity(id: string, quantity: number): Promise<OrderItem> {
+    const [updatedItem] = await db
+      .update(orderItems)
+      .set({ pickedQuantity: quantity })
+      .where(eq(orderItems.id, id))
+      .returning();
+    
+    return updatedItem;
+  }
+
+  async updateOrderItemPackedQuantity(id: string, quantity: number): Promise<OrderItem> {
+    const [updatedItem] = await db
+      .update(orderItems)
+      .set({ packedQuantity: quantity })
+      .where(eq(orderItems.id, id))
+      .returning();
+    
+    return updatedItem;
+  }
+
+  async updateBundleComponentPicked(id: string, picked: boolean): Promise<any> {
+    const [updatedComponent] = await db
+      .update(orderItemBundleComponents)
+      .set({ picked })
+      .where(eq(orderItemBundleComponents.id, id))
+      .returning();
+    
+    return updatedComponent;
   }
 
   // Dashboard Analytics

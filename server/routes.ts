@@ -1711,6 +1711,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Pick & Pack endpoints - must be before /:id route
+  app.get('/api/orders/pick-pack', async (req, res) => {
+    try {
+      const orders = await storage.getPickPackOrders();
+      res.json(orders);
+    } catch (error) {
+      console.error("Error fetching pick-pack orders:", error);
+      res.status(500).json({ message: "Failed to fetch pick-pack orders" });
+    }
+  });
+
+  app.get('/api/orders/pick-pack/:id', async (req, res) => {
+    try {
+      const order = await storage.getPickPackOrderById(req.params.id);
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+      res.json(order);
+    } catch (error) {
+      console.error("Error fetching pick-pack order:", error);
+      res.status(500).json({ message: "Failed to fetch pick-pack order" });
+    }
+  });
+
   app.get('/api/orders/:id', async (req, res) => {
     try {
       const order = await storage.getOrderById(req.params.id);
@@ -1903,6 +1927,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting order:", error);
       res.status(500).json({ message: "Failed to delete order" });
+    }
+  });
+
+  app.patch('/api/orders/:id/pick-status', async (req, res) => {
+    try {
+      const { pickStatus, pickedBy, pickStartTime, pickEndTime } = req.body;
+      const order = await storage.updateOrderPickStatus(req.params.id, {
+        pickStatus,
+        pickedBy,
+        pickStartTime,
+        pickEndTime
+      });
+      
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'update',
+        entityType: 'order',
+        entityId: req.params.id,
+        description: `Updated pick status to ${pickStatus} for order ${order.orderId}`,
+      });
+      
+      res.json(order);
+    } catch (error) {
+      console.error("Error updating pick status:", error);
+      res.status(500).json({ message: "Failed to update pick status" });
+    }
+  });
+
+  app.patch('/api/orders/:id/pack-status', async (req, res) => {
+    try {
+      const { packStatus, packedBy, packStartTime, packEndTime } = req.body;
+      const order = await storage.updateOrderPackStatus(req.params.id, {
+        packStatus,
+        packedBy,
+        packStartTime,
+        packEndTime
+      });
+      
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'update',
+        entityType: 'order',
+        entityId: req.params.id,
+        description: `Updated pack status to ${packStatus} for order ${order.orderId}`,
+      });
+      
+      res.json(order);
+    } catch (error) {
+      console.error("Error updating pack status:", error);
+      res.status(500).json({ message: "Failed to update pack status" });
+    }
+  });
+
+  app.patch('/api/order-items/:id/picked', async (req, res) => {
+    try {
+      const { pickedQuantity } = req.body;
+      const item = await storage.updateOrderItemPickedQuantity(req.params.id, pickedQuantity);
+      
+      if (!item) {
+        return res.status(404).json({ message: "Order item not found" });
+      }
+      
+      res.json(item);
+    } catch (error) {
+      console.error("Error updating picked quantity:", error);
+      res.status(500).json({ message: "Failed to update picked quantity" });
+    }
+  });
+
+  app.patch('/api/order-items/:id/packed', async (req, res) => {
+    try {
+      const { packedQuantity } = req.body;
+      const item = await storage.updateOrderItemPackedQuantity(req.params.id, packedQuantity);
+      
+      if (!item) {
+        return res.status(404).json({ message: "Order item not found" });
+      }
+      
+      res.json(item);
+    } catch (error) {
+      console.error("Error updating packed quantity:", error);
+      res.status(500).json({ message: "Failed to update packed quantity" });
+    }
+  });
+
+  app.patch('/api/order-item-bundle-components/:id/picked', async (req, res) => {
+    try {
+      const { picked } = req.body;
+      const component = await storage.updateBundleComponentPicked(req.params.id, picked);
+      
+      if (!component) {
+        return res.status(404).json({ message: "Bundle component not found" });
+      }
+      
+      res.json(component);
+    } catch (error) {
+      console.error("Error updating bundle component:", error);
+      res.status(500).json({ message: "Failed to update bundle component" });
     }
   });
 
