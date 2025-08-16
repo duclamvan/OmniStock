@@ -1399,7 +1399,7 @@ export default function PickPack() {
       // Keep order status as 'to_fulfill' and update pickStatus
       await updateOrderStatusMutation.mutateAsync({
         orderId: order.id,
-        status: 'to_fulfill',
+        status: 'picking',
         pickStatus: 'in_progress',
         pickedBy: currentEmployee
       });
@@ -1407,7 +1407,7 @@ export default function PickPack() {
 
     const updatedOrder = {
       ...order,
-      status: 'to_fulfill' as const,
+      status: 'picking' as const,
       pickStatus: 'in_progress' as const,
       pickStartTime: new Date().toISOString(),
       pickedBy: currentEmployee
@@ -1449,10 +1449,10 @@ export default function PickPack() {
 
     // Only update database for real orders (not mock orders)
     if (!activePickingOrder.id.startsWith('mock-')) {
-      // Keep order status as 'to_fulfill' when picking is complete
+      // Update order status to 'packing' when picking is complete
       await updateOrderStatusMutation.mutateAsync({
         orderId: activePickingOrder.id,
-        status: 'to_fulfill',
+        status: 'packing',
         pickStatus: 'completed',
         packStatus: 'not_started'
       });
@@ -1462,7 +1462,7 @@ export default function PickPack() {
       ...activePickingOrder,
       pickStatus: 'completed' as const,
       pickEndTime: new Date().toISOString(),
-      status: 'to_fulfill' as const,
+      status: 'packing' as const,
       packStatus: 'not_started' as const
     };
 
@@ -1487,11 +1487,11 @@ export default function PickPack() {
     
     // Only update database for real orders (not mock orders)
     if (!order.id.startsWith('mock-')) {
-      // Keep order status as 'to_fulfill' when packing is in progress
+      // Update order status to 'packing' when packing is in progress
       if (order.packStatus !== 'in_progress') {
         await updateOrderStatusMutation.mutateAsync({
           orderId: order.id,
-          status: 'to_fulfill',
+          status: 'packing',
           packStatus: 'in_progress',
           packedBy: currentEmployee
         });
@@ -1500,7 +1500,7 @@ export default function PickPack() {
 
     const updatedOrder = {
       ...order,
-      status: 'to_fulfill' as const,
+      status: 'packing' as const,
       packStatus: 'in_progress' as const,
       packStartTime: new Date().toISOString(),
       packedBy: currentEmployee
@@ -1530,10 +1530,10 @@ export default function PickPack() {
 
     // Only update database for real orders (not mock orders)
     if (!activePackingOrder.id.startsWith('mock-')) {
-      // Update order status to "shipped" when packing is complete
+      // Update order status to "ready_to_ship" when packing is complete
       await updateOrderStatusMutation.mutateAsync({
         orderId: activePackingOrder.id,
-        status: 'shipped',
+        status: 'ready_to_ship',
         packStatus: 'completed'
       });
     }
@@ -1542,7 +1542,7 @@ export default function PickPack() {
       ...activePackingOrder,
       packStatus: 'completed' as const,
       packEndTime: new Date().toISOString(),
-      status: 'shipped' as const
+      status: 'ready_to_ship' as const
     };
 
     setIsPackingTimerRunning(false);
