@@ -239,9 +239,9 @@ export default function PickPack() {
     return () => clearInterval(interval);
   }, [isPackingTimerRunning]);
 
-  // Fetch real orders from the API
+  // Fetch real orders from the API with items and bundle details
   const { data: allOrders = [], isLoading } = useQuery({
-    queryKey: ['/api/orders'],
+    queryKey: ['/api/orders?includeItems=true'],
     refetchInterval: 10000, // Refresh every 10 seconds
   });
 
@@ -985,7 +985,7 @@ export default function PickPack() {
 
   // Transform real orders to PickPackOrder format - Only include "To Fulfill" status orders
   const transformedOrders: PickPackOrder[] = [
-    ...mockOrders,
+    // Remove mock orders - use only real data from database
     ...((allOrders as any[] || [])
     .filter((order: any) => 
       order.orderStatus === 'to_fulfill'
@@ -1002,7 +1002,6 @@ export default function PickPack() {
       packStatus: order.packStatus || 'not_started',
       items: order.items?.map((item: any) => {
         const warehouseLocation = item.warehouseLocation || generateMockLocation();
-        const bundleItems = generateBundleItems(item.productName, warehouseLocation);
         
         return {
           id: item.id,
@@ -1015,8 +1014,10 @@ export default function PickPack() {
           warehouseLocation: warehouseLocation,
           barcode: item.barcode || generateMockBarcode(item.sku),
           image: item.image || generateMockImage(item.productName),
-          isBundle: !!bundleItems,
-          bundleItems: bundleItems
+          isBundle: item.isBundle || false,
+          bundleItems: item.bundleItems || undefined,
+          dimensions: item.dimensions,
+          isFragile: item.isFragile
         };
       }) || [],
       totalItems: order.items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0,

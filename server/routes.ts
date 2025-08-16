@@ -1682,6 +1682,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const status = req.query.status as string;
       const paymentStatus = req.query.paymentStatus as string;
       const customerId = req.query.customerId as string;
+      const includeItems = req.query.includeItems === 'true';
       
       let orders;
       if (status) {
@@ -1694,7 +1695,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
         orders = await storage.getOrders();
       }
       
-      res.json(orders);
+      // If includeItems is requested, fetch order items for each order
+      if (includeItems) {
+        const ordersWithItems = await Promise.all(orders.map(async (order) => {
+          const items = await storage.getOrderItems(order.id);
+          
+          // For each item, check if it's part of a bundle and fetch bundle items
+          const itemsWithBundleDetails = await Promise.all(items.map(async (item) => {
+            // Check if the item name indicates it's a bundle product
+            const bundles = await storage.getBundles();
+            const isBundle = item.productName?.toLowerCase().includes('bundle') || 
+                           item.productName?.toLowerCase().includes('kit') || 
+                           item.productName?.toLowerCase().includes('collection') ||
+                           item.productName?.toLowerCase().includes('set');
+            
+            let bundleItemsData = [];
+            
+            if (isBundle) {
+              // Try to find the bundle by name match
+              const bundle = bundles.find(b => 
+                item.productName.includes(b.name) || 
+                b.name.includes(item.productName) ||
+                item.sku === b.sku
+              );
+              
+              if (bundle) {
+                // Fetch bundle items
+                const bundleItems = await storage.getBundleItems(bundle.id);
+                bundleItemsData = await Promise.all(bundleItems.map(async (bundleItem) => {
+                  let productName = '';
+                  let colorNumber = '';
+                  let location = '';
+                  
+                  if (bundleItem.productId) {
+                    const product = await storage.getProductById(bundleItem.productId);
+                    productName = product?.name || '';
+                    location = product?.warehouseLocation || '';
+                    
+                    if (bundleItem.variantId) {
+                      const variants = await storage.getProductVariants(bundleItem.productId);
+                      const variant = variants.find(v => v.id === bundleItem.variantId);
+                      if (variant) {
+                        productName = `${productName} - ${variant.name}`;
+                        // Extract color number from variant name if present
+                        const colorMatch = variant.name.match(/#(\d+)/);
+                        if (colorMatch) {
+                          colorNumber = colorMatch[1];
+                        }
+                      }
+                    }
+                  }
+                  
+                  return {
+                    id: bundleItem.id,
+                    name: productName || bundleItem.notes || 'Bundle Item',
+                    colorNumber: colorNumber || undefined,
+                    quantity: bundleItem.quantity,
+                    picked: false,
+                    location: location || undefined
+                  };
+                }));
+              }
+            }
+            
+            return {
+              ...item,
+              isBundle: isBundle,
+              bundleItems: bundleItemsData.length > 0 ? bundleItemsData : undefined
+            };
+          }));
+          
+          return {
+            ...order,
+            items: itemsWithBundleDetails
+          };
+        }));
+        
+        res.json(ordersWithItems);
+      } else {
+        res.json(orders);
+      }
     } catch (error) {
       console.error("Error fetching orders:", error);
       res.status(500).json({ message: "Failed to fetch orders" });
@@ -1716,7 +1796,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const status = req.query.status as string; // pending, picking, packing, ready
       const orders = await storage.getPickPackOrders(status);
-      res.json(orders);
+      
+      // Fetch order items for each order with bundle details
+      const ordersWithItems = await Promise.all(orders.map(async (order) => {
+        const items = await storage.getOrderItems(order.id);
+        
+        // For each item, check if it's part of a bundle and fetch bundle items
+        const itemsWithBundleDetails = await Promise.all(items.map(async (item) => {
+          // Check if this product is a bundle
+          const bundles = await storage.getBundles();
+          const bundle = bundles.find(b => item.productName.includes(b.name));
+          
+          if (bundle) {
+            // Fetch bundle items
+            const bundleItems = await storage.getBundleItems(bundle.id);
+            const bundleItemsWithDetails = await Promise.all(bundleItems.map(async (bundleItem) => {
+              let productName = '';
+              if (bundleItem.productId) {
+                const product = await storage.getProductById(bundleItem.productId);
+                productName = product?.name || '';
+                
+                if (bundleItem.variantId) {
+                  const variants = await storage.getProductVariants(bundleItem.productId);
+                  const variant = variants.find(v => v.id === bundleItem.variantId);
+                  if (variant) {
+                    productName = `${productName} - ${variant.name}`;
+                  }
+                }
+              }
+              
+              return {
+                id: bundleItem.id,
+                name: productName || bundleItem.notes || 'Bundle Item',
+                quantity: bundleItem.quantity,
+                picked: false,
+                location: item.warehouseLocation || 'A1-R1-S1'
+              };
+            }));
+            
+            return {
+              ...item,
+              isBundle: true,
+              bundleItems: bundleItemsWithDetails
+            };
+          }
+          
+          return item;
+        }));
+        
+        return {
+          ...order,
+          items: itemsWithBundleDetails
+        };
+      }));
+      
+      res.json(ordersWithItems);
     } catch (error) {
       console.error("Error fetching pick-pack orders:", error);
       res.status(500).json({ message: "Failed to fetch pick-pack orders" });
@@ -1933,7 +2067,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const status = req.query.status as string; // pending, picking, packing, ready
       const orders = await storage.getPickPackOrders(status);
-      res.json(orders);
+      
+      // Fetch order items for each order with bundle details
+      const ordersWithItems = await Promise.all(orders.map(async (order) => {
+        const items = await storage.getOrderItems(order.id);
+        
+        // For each item, check if it's part of a bundle and fetch bundle items
+        const itemsWithBundleDetails = await Promise.all(items.map(async (item) => {
+          // Check if this product is a bundle
+          const bundles = await storage.getBundles();
+          const bundle = bundles.find(b => item.productName.includes(b.name));
+          
+          if (bundle) {
+            // Fetch bundle items
+            const bundleItems = await storage.getBundleItems(bundle.id);
+            const bundleItemsWithDetails = await Promise.all(bundleItems.map(async (bundleItem) => {
+              let productName = '';
+              if (bundleItem.productId) {
+                const product = await storage.getProductById(bundleItem.productId);
+                productName = product?.name || '';
+                
+                if (bundleItem.variantId) {
+                  const variants = await storage.getProductVariants(bundleItem.productId);
+                  const variant = variants.find(v => v.id === bundleItem.variantId);
+                  if (variant) {
+                    productName = `${productName} - ${variant.name}`;
+                  }
+                }
+              }
+              
+              return {
+                id: bundleItem.id,
+                name: productName || bundleItem.notes || 'Bundle Item',
+                quantity: bundleItem.quantity,
+                picked: false,
+                location: item.warehouseLocation || 'A1-R1-S1'
+              };
+            }));
+            
+            return {
+              ...item,
+              isBundle: true,
+              bundleItems: bundleItemsWithDetails
+            };
+          }
+          
+          return item;
+        }));
+        
+        return {
+          ...order,
+          items: itemsWithBundleDetails
+        };
+      }));
+      
+      res.json(ordersWithItems);
     } catch (error) {
       console.error("Error fetching pick-pack orders:", error);
       res.status(500).json({ message: "Failed to fetch pick-pack orders" });
@@ -3217,6 +3405,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error seeding returns:", error);
       res.status(500).json({ message: "Failed to seed returns" });
+    }
+  });
+
+  // Seed Pick & Pack data with bundles
+  app.post('/api/seed-pick-pack', async (req, res) => {
+    try {
+      const { seedPickPackData } = await import('./seedPickPackData.js');
+      const result = await seedPickPackData();
+      res.json({ 
+        message: "Pick & Pack data with bundles seeded successfully",
+        counts: result 
+      });
+    } catch (error) {
+      console.error("Error seeding pick & pack data:", error);
+      res.status(500).json({ message: "Failed to seed pick & pack data" });
     }
   });
 
