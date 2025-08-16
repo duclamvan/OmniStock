@@ -703,7 +703,7 @@ export default function PickPack() {
       shippingMethod: 'Express',
       shippingAddress: '123 Demo Street',
       priority: 'high' as const,
-      status: 'packing' as const,
+      status: 'to_fulfill' as const,
       pickStatus: 'completed' as const,
       packStatus: 'in_progress' as const,
       items: [
@@ -754,7 +754,7 @@ export default function PickPack() {
       shippingMethod: 'Standard',
       shippingAddress: '456 Gallery Lane',
       priority: 'high' as const,
-      status: 'packing' as const,
+      status: 'to_fulfill' as const,
       pickStatus: 'completed' as const,
       packStatus: 'in_progress' as const,
       items: [
@@ -897,7 +897,7 @@ export default function PickPack() {
       shippingMethod: 'Express',
       shippingAddress: '321 Oak Blvd, San Francisco, CA 94102',
       priority: 'high',
-      status: 'picking',
+      status: 'to_fulfill',
       pickStatus: 'in_progress',
       packStatus: 'not_started',
       items: [
@@ -1401,7 +1401,7 @@ export default function PickPack() {
       // Keep order status as 'to_fulfill' and update pickStatus
       await updateOrderStatusMutation.mutateAsync({
         orderId: order.id,
-        status: 'picking',
+        status: 'to_fulfill',
         pickStatus: 'in_progress',
         pickedBy: currentEmployee
       });
@@ -1409,7 +1409,7 @@ export default function PickPack() {
 
     const updatedOrder = {
       ...order,
-      status: 'picking' as const,
+      status: 'to_fulfill' as const,
       pickStatus: 'in_progress' as const,
       pickStartTime: new Date().toISOString(),
       pickedBy: currentEmployee
@@ -1451,10 +1451,10 @@ export default function PickPack() {
 
     // Only update database for real orders (not mock orders)
     if (!activePickingOrder.id.startsWith('mock-')) {
-      // Update order status to 'packing' when picking is complete
+      // Keep status as 'to_fulfill' when picking is complete
       await updateOrderStatusMutation.mutateAsync({
         orderId: activePickingOrder.id,
-        status: 'packing',
+        status: 'to_fulfill',
         pickStatus: 'completed',
         packStatus: 'not_started'
       });
@@ -1464,7 +1464,7 @@ export default function PickPack() {
       ...activePickingOrder,
       pickStatus: 'completed' as const,
       pickEndTime: new Date().toISOString(),
-      status: 'packing' as const,
+      status: 'to_fulfill' as const,
       packStatus: 'not_started' as const
     };
 
@@ -1489,11 +1489,11 @@ export default function PickPack() {
     
     // Only update database for real orders (not mock orders)
     if (!order.id.startsWith('mock-')) {
-      // Update order status to 'packing' when packing is in progress
+      // Keep status as 'to_fulfill' when packing is in progress
       if (order.packStatus !== 'in_progress') {
         await updateOrderStatusMutation.mutateAsync({
           orderId: order.id,
-          status: 'packing',
+          status: 'to_fulfill',
           packStatus: 'in_progress',
           packedBy: currentEmployee
         });
@@ -1502,7 +1502,7 @@ export default function PickPack() {
 
     const updatedOrder = {
       ...order,
-      status: 'packing' as const,
+      status: 'to_fulfill' as const,
       packStatus: 'in_progress' as const,
       packStartTime: new Date().toISOString(),
       packedBy: currentEmployee
@@ -1587,10 +1587,10 @@ export default function PickPack() {
   // Filter orders by status - Updated to work with "to_fulfill" orders
   const getOrdersByStatus = (status: string) => {
     return transformedOrders.filter(order => {
-      if (status === 'pending') return order.pickStatus === 'not_started' || (!order.pickStatus && !order.packStatus);
-      if (status === 'picking') return order.pickStatus === 'in_progress';
-      if (status === 'packing') return order.packStatus === 'in_progress' || (order.pickStatus === 'completed' && order.packStatus !== 'completed');
-      if (status === 'ready') return order.packStatus === 'completed' || order.status === 'shipped';
+      if (status === 'pending') return order.status === 'to_fulfill' && (order.pickStatus === 'not_started' || !order.pickStatus);
+      if (status === 'picking') return order.status === 'to_fulfill' && order.pickStatus === 'in_progress';
+      if (status === 'packing') return order.status === 'to_fulfill' && (order.packStatus === 'in_progress' || (order.pickStatus === 'completed' && order.packStatus === 'not_started'));
+      if (status === 'ready') return order.status === 'ready_to_ship' || order.status === 'shipped';
       return false;
     });
   };

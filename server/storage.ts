@@ -1254,7 +1254,10 @@ export class DatabaseStorage implements IStorage {
 
   // Pick & Pack Operations
   async getPickPackOrders(status?: string): Promise<Order[]> {
-    let whereCondition = eq(orders.orderStatus, 'to_fulfill');
+    let whereCondition = or(
+      eq(orders.orderStatus, 'to_fulfill'),
+      eq(orders.orderStatus, 'ready_to_ship')
+    );
     
     if (status) {
       if (status === 'picking') {
@@ -1266,14 +1269,13 @@ export class DatabaseStorage implements IStorage {
         whereCondition = and(
           eq(orders.orderStatus, 'to_fulfill'),
           eq(orders.pickStatus, 'completed'),
-          eq(orders.packStatus, 'in_progress')
+          or(
+            eq(orders.packStatus, 'in_progress'),
+            eq(orders.packStatus, 'not_started')
+          )
         );
       } else if (status === 'ready_to_ship') {
-        whereCondition = and(
-          eq(orders.orderStatus, 'to_fulfill'),
-          eq(orders.pickStatus, 'completed'),
-          eq(orders.packStatus, 'completed')
-        );
+        whereCondition = eq(orders.orderStatus, 'ready_to_ship');
       }
     }
 

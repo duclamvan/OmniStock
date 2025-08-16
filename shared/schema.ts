@@ -39,7 +39,7 @@ export const users = pgTable("users", {
 
 // Enums
 export const currencyEnum = pgEnum('currency', ['CZK', 'EUR', 'USD', 'VND', 'CNY']);
-export const orderStatusEnum = pgEnum('order_status', ['pending', 'to_fulfill', 'shipped']);
+export const orderStatusEnum = pgEnum('order_status', ['pending', 'to_fulfill', 'ready_to_ship', 'shipped']);
 export const paymentStatusEnum = pgEnum('payment_status', ['pending', 'paid', 'pay_later']);
 export const orderPriorityEnum = pgEnum('order_priority', ['low', 'medium', 'high']);
 export const discountTypeEnum = pgEnum('discount_type', ['flat', 'rate']);
