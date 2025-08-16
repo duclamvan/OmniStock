@@ -3714,7 +3714,24 @@ export default function PickPack() {
                                 );
                               })()}
                             </div>
-                            <Button variant="outline" size="sm" className="w-full sm:w-auto">Resume Picking</Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="w-full sm:w-auto"
+                              onClick={() => {
+                                // Resume picking by setting the active order and switching to picking view
+                                setActivePickingOrder(order);
+                                setSelectedTab('picking');
+                                // Find the first unpicked item or start at 0
+                                const firstUnpickedIndex = order.items.findIndex(item => item.pickedQuantity < item.quantity);
+                                setManualItemIndex(firstUnpickedIndex >= 0 ? firstUnpickedIndex : 0);
+                                // Resume timer
+                                setIsTimerRunning(true);
+                                playSound('success');
+                              }}
+                            >
+                              Resume Picking
+                            </Button>
                           </div>
                         </CardContent>
                       </Card>
