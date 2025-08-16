@@ -15,6 +15,7 @@ import {
   customerPrices,
   orders,
   orderItems,
+  pickPackLogs,
   purchases,
   incomingShipments,
   sales,
@@ -77,6 +78,8 @@ import {
   packingMaterials,
   type PackingMaterial,
   type InsertPackingMaterial,
+  type PickPackLog,
+  type InsertPickPackLog,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, and, or, like, sql, gte, lte, count, inArray, isNotNull } from "drizzle-orm";
@@ -181,8 +184,13 @@ export interface IStorage {
   completePickingOrder(orderId: string): Promise<Order>;
   startPackingOrder(orderId: string, employeeId: string): Promise<Order>;
   completePackingOrder(orderId: string): Promise<Order>;
-  updateOrderItemPickedQuantity(itemId: string, pickedQuantity: number): Promise<OrderItem>;
+  updateOrderItemPickedQuantity(itemId: string, pickedQuantity: number, timestamp?: Date): Promise<OrderItem>;
   updateOrderItemPackedQuantity(itemId: string, packedQuantity: number): Promise<OrderItem>;
+  
+  // Pick & Pack Logs
+  createPickPackLog(log: InsertPickPackLog): Promise<PickPackLog>;
+  getPickPackLogs(orderId: string): Promise<PickPackLog[]>;
+  getPickPackLogsByItem(orderItemId: string): Promise<PickPackLog[]>;
 
   // Dashboard Analytics
   getDashboardMetrics(): Promise<{
@@ -1341,22 +1349,68 @@ export class DatabaseStorage implements IStorage {
     return updatedOrder;
   }
 
-  async updateOrderItemPickedQuantity(itemId: string, pickedQuantity: number): Promise<OrderItem> {
+  async updateOrderItemPickedQuantity(itemId: string, pickedQuantity: number, timestamp?: Date): Promise<OrderItem> {
+    const updateData: any = { pickedQuantity };
+    
+    // Set pick timestamps based on quantity
+    if (pickedQuantity > 0) {
+      // Item is being picked - set start time if not set, update end time
+      const [currentItem] = await db.select().from(orderItems).where(eq(orderItems.id, itemId));
+      if (currentItem && !currentItem.pickStartTime) {
+        updateData.pickStartTime = timestamp || new Date();
+      }
+      updateData.pickEndTime = timestamp || new Date();
+    }
+    
     const [updatedItem] = await db
       .update(orderItems)
-      .set({ pickedQuantity })
+      .set(updateData)
       .where(eq(orderItems.id, itemId))
       .returning();
     return updatedItem;
   }
 
   async updateOrderItemPackedQuantity(itemId: string, packedQuantity: number): Promise<OrderItem> {
+    const updateData: any = { packedQuantity };
+    
+    // Set pack timestamps based on quantity
+    if (packedQuantity > 0) {
+      // Item is being packed - set start time if not set, update end time
+      const [currentItem] = await db.select().from(orderItems).where(eq(orderItems.id, itemId));
+      if (currentItem && !currentItem.packStartTime) {
+        updateData.packStartTime = new Date();
+      }
+      updateData.packEndTime = new Date();
+    }
+    
     const [updatedItem] = await db
       .update(orderItems)
-      .set({ packedQuantity })
+      .set(updateData)
       .where(eq(orderItems.id, itemId))
       .returning();
     return updatedItem;
+  }
+  
+  // Pick & Pack Logs implementation
+  async createPickPackLog(log: InsertPickPackLog): Promise<PickPackLog> {
+    const [newLog] = await db.insert(pickPackLogs).values(log).returning();
+    return newLog;
+  }
+  
+  async getPickPackLogs(orderId: string): Promise<PickPackLog[]> {
+    return await db
+      .select()
+      .from(pickPackLogs)
+      .where(eq(pickPackLogs.orderId, orderId))
+      .orderBy(desc(pickPackLogs.timestamp));
+  }
+  
+  async getPickPackLogsByItem(orderItemId: string): Promise<PickPackLog[]> {
+    return await db
+      .select()
+      .from(pickPackLogs)
+      .where(eq(pickPackLogs.orderItemId, orderItemId))
+      .orderBy(desc(pickPackLogs.timestamp));
   }
 
   // Dashboard Analytics

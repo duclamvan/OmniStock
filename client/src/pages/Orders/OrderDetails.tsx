@@ -142,6 +142,14 @@ export default function OrderDetails() {
     gcTime: 300000, // Keep in cache for 5 minutes
   });
 
+  // Fetch pick/pack logs for the order
+  const { data: pickPackLogs } = useQuery<any[]>({
+    queryKey: [`/api/orders/${id}/pick-pack-logs`],
+    enabled: !!id && !!order,
+    refetchInterval: 5000,
+    staleTime: 3000,
+  });
+
   // Prevent OrderDetails from rendering on pick-pack page
   if (location === '/orders/pick-pack') {
     return null;
@@ -842,6 +850,55 @@ export default function OrderDetails() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Pick & Pack Activity Logs */}
+          {pickPackLogs && pickPackLogs.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="h-5 w-5" />
+                  Pick & Pack Activity
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {pickPackLogs.map((log: any, index: number) => (
+                    <div key={log.id || index} className="flex items-start gap-3">
+                      <div className={cn(
+                        "w-2 h-2 rounded-full mt-1.5",
+                        log.activityType === 'pick_start' ? 'bg-purple-500' : 
+                        log.activityType === 'item_picked' ? 'bg-purple-400' :
+                        log.activityType === 'pick_complete' ? 'bg-purple-600' :
+                        log.activityType === 'pack_start' ? 'bg-indigo-500' :
+                        log.activityType === 'item_packed' ? 'bg-indigo-400' :
+                        log.activityType === 'pack_complete' ? 'bg-indigo-600' :
+                        'bg-gray-400'
+                      )} />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm">
+                          {log.activityType === 'pick_start' && 'Picking Started'}
+                          {log.activityType === 'item_picked' && `Picked: ${log.productName || 'Item'}`}
+                          {log.activityType === 'pick_complete' && 'Picking Completed'}
+                          {log.activityType === 'pack_start' && 'Packing Started'}
+                          {log.activityType === 'item_packed' && `Packed: ${log.productName || 'Item'}`}
+                          {log.activityType === 'pack_complete' && 'Packing Completed'}
+                        </p>
+                        <div className="text-xs text-slate-500 mt-0.5">
+                          {new Date(log.timestamp).toLocaleString()}
+                          {log.userName && ` • ${log.userName}`}
+                          {log.quantity && ` • Qty: ${log.quantity}`}
+                          {log.location && ` • Loc: ${log.location}`}
+                        </div>
+                        {log.notes && (
+                          <p className="text-xs text-slate-600 mt-1">{log.notes}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Right Column - Customer & Order Info */}

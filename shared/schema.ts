@@ -350,6 +350,28 @@ export const orderItems = pgTable("order_items", {
   warehouseLocation: varchar("warehouse_location", { length: 100 }),
   barcode: varchar("barcode", { length: 50 }),
   image: varchar("image", { length: 500 }),
+  // Timestamps for individual item picking
+  pickStartTime: timestamp("pick_start_time"),
+  pickEndTime: timestamp("pick_end_time"),
+  packStartTime: timestamp("pack_start_time"),
+  packEndTime: timestamp("pack_end_time"),
+});
+
+// Pick & Pack Activity Logs
+export const pickPackLogs = pgTable("pick_pack_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar("order_id").references(() => orders.id, { onDelete: 'cascade' }).notNull(),
+  orderItemId: varchar("order_item_id").references(() => orderItems.id, { onDelete: 'cascade' }),
+  activityType: varchar("activity_type", { length: 50 }).notNull(), // picking_started, item_picked, picking_completed, packing_started, item_packed, packing_completed
+  userId: varchar("user_id").references(() => users.id),
+  userName: varchar("user_name", { length: 255 }),
+  productName: varchar("product_name", { length: 255 }),
+  sku: varchar("sku", { length: 100 }),
+  quantity: integer("quantity"),
+  location: varchar("location", { length: 100 }),
+  notes: text("notes"),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // Purchases
@@ -703,6 +725,7 @@ export const insertPreOrderSchema = createInsertSchema(preOrders).omit({ id: tru
 export const insertUserActivitySchema = createInsertSchema(userActivities).omit({ id: true, createdAt: true });
 export const insertSettingSchema = createInsertSchema(settings).omit({ id: true, updatedAt: true });
 export const insertPackingMaterialSchema = createInsertSchema(packingMaterials).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertPickPackLogSchema = createInsertSchema(pickPackLogs).omit({ id: true, timestamp: true, createdAt: true });
 
 // Types
 export type UpsertUser = typeof users.$inferInsert;
@@ -771,3 +794,5 @@ export type InventoryBalance = typeof inventoryBalances.$inferSelect;
 export type InsertInventoryBalance = z.infer<typeof insertInventoryBalanceSchema>;
 export type PackingMaterial = typeof packingMaterials.$inferSelect;
 export type InsertPackingMaterial = z.infer<typeof insertPackingMaterialSchema>;
+export type PickPackLog = typeof pickPackLogs.$inferSelect;
+export type InsertPickPackLog = z.infer<typeof insertPickPackLogSchema>;

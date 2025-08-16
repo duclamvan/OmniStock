@@ -2123,8 +2123,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const item = await storage.updateOrderItemPickedQuantity(req.params.itemId, pickedQuantity);
+      // Get current item details before update
+      const currentItems = await storage.getOrderItems(req.params.id);
+      const currentItem = currentItems.find(i => i.id === req.params.itemId);
       
+      // Update the picked quantity with timestamp
+      const item = await storage.updateOrderItemPickedQuantity(req.params.itemId, pickedQuantity, new Date());
+      
+      // Create detailed pick log
+      await storage.createPickPackLog({
+        orderId: req.params.id,
+        orderItemId: req.params.itemId,
+        activityType: 'item_picked',
+        userId: "test-user",
+        userName: "Test User",
+        productName: item.productName,
+        sku: item.sku || '',
+        quantity: pickedQuantity,
+        location: item.warehouseLocation || '',
+        notes: `Picked ${pickedQuantity} of ${item.quantity} units`,
+      });
+      
+      // Also log to user activities
       await storage.createUserActivity({
         userId: "test-user",
         action: 'updated_pick_quantity',
@@ -2405,6 +2425,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get pick/pack logs for an order
+  app.get('/api/orders/:id/pick-pack-logs', async (req: any, res) => {
+    try {
+      const logs = await storage.getPickPackLogs(req.params.id);
+      res.json(logs);
+    } catch (error) {
+      console.error("Error getting pick/pack logs:", error);
+      res.status(500).json({ message: "Failed to get pick/pack logs" });
+    }
+  });
+
   app.get('/api/orders/:id', async (req, res) => {
     try {
       const order = await storage.getOrderById(req.params.id);
@@ -2634,12 +2665,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const order = await storage.updateOrder(req.params.id, updates);
       
       if (order) {
+        // Create pick/pack logs based on status changes
+        if (pickStatus === 'in_progress' && pickedBy) {
+          await storage.createPickPackLog({
+            orderId: req.params.id,
+            activityType: 'picking_started',
+            userId: "test-user",
+            userName: pickedBy,
+            notes: `Started picking order ${order.orderId}`,
+          });
+        }
+        
+        if (pickStatus === 'completed') {
+          await storage.createPickPackLog({
+            orderId: req.params.id,
+            activityType: 'picking_completed',
+            userId: "test-user",
+            userName: pickedBy || 'Unknown',
+            notes: `Completed picking order ${order.orderId}`,
+          });
+        }
+        
+        if (packStatus === 'in_progress' && packedBy) {
+          await storage.createPickPackLog({
+            orderId: req.params.id,
+            activityType: 'packing_started',
+            userId: "test-user",
+            userName: packedBy,
+            notes: `Started packing order ${order.orderId}`,
+          });
+        }
+        
+        if (packStatus === 'completed') {
+          await storage.createPickPackLog({
+            orderId: req.params.id,
+            activityType: 'packing_completed',
+            userId: "test-user",
+            userName: packedBy || 'Unknown',
+            notes: `Completed packing order ${order.orderId}`,
+          });
+        }
+        
+        // Also keep the user activity log
         await storage.createUserActivity({
           userId: "test-user",
           action: 'update',
           entityType: 'order',
           entityId: order.id,
-          description: `Updated order status to ${orderStatus}: ${order.orderId}`,
+          description: `Updated order status to ${orderStatus || finalStatus}: ${order.orderId}`,
         });
         res.json(order);
       } else {
