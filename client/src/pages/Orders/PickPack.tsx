@@ -1972,146 +1972,83 @@ export default function PickPack() {
                   <CardContent className="p-4">
                     {packingRecommendation ? (
                       <div className="space-y-4">
-                        {/* Summary */}
-                        <div className="bg-blue-50 p-3 rounded-lg">
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-sm font-medium">Total Cartons:</span>
-                            <Badge variant="secondary">{packingRecommendation.cartons.length}</Badge>
-                          </div>
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-sm font-medium">Total Weight:</span>
-                            <span className="text-sm font-bold">{packingRecommendation.totalWeight.toFixed(2)}kg</span>
-                          </div>
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm font-medium">Packing Efficiency:</span>
-                            <span className="text-sm">{packingRecommendation.efficiency.toFixed(1)}%</span>
-                          </div>
-                        </div>
-
-                        {/* Carton Type Legend */}
-                        <div className="bg-gray-50 p-3 rounded-lg">
-                          <div className="text-sm font-medium mb-2">Carton Types:</div>
-                          <div className="grid grid-cols-2 gap-2 text-xs">
-                            <div className="flex items-center gap-2">
-                              <div className="w-3 h-3 rounded" style={{ backgroundColor: '#f59e0b' }}></div>
-                              <span>E-Series: Envelopes</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <div className="w-3 h-3 rounded" style={{ backgroundColor: '#3b82f6' }}></div>
-                              <span>K-Series: Standard</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <div className="w-3 h-3 rounded" style={{ backgroundColor: '#ef4444' }}></div>
-                              <span>F-Series: Fragile</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <div className="w-3 h-3 rounded" style={{ backgroundColor: '#8b5cf6' }}></div>
-                              <span>B-Series: Bottles</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* AI Reasoning */}
-                        <div className="bg-green-50 p-3 rounded-lg">
-                          <div className="flex items-start gap-2">
-                            <Info className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-                            <div className="flex-1">
-                              <div className="text-xs font-medium text-green-800 mb-1">AI Recommendation:</div>
-                              <p className="text-xs text-green-700">{packingRecommendation.reasoning}</p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Carton Selection with Visual Representations */}
+                        {/* Simplified Carton Selection */}
                         <div className="space-y-3">
                           <label className="text-sm font-medium">Select Carton to Pack:</label>
-                          <div className="grid gap-3">
-                            {packingRecommendation.cartons.map((carton, index) => (
-                              <div
-                                key={carton.id}
-                                className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
-                                  selectedCarton === carton.id 
-                                    ? 'border-blue-500 bg-blue-50' 
-                                    : 'border-gray-200 hover:border-gray-300 bg-white'
-                                }`}
-                                onClick={() => {
-                                  setSelectedCarton(carton.id);
-                                  setSelectedBoxSize(carton.boxSize.name);
-                                  setPackageWeight(carton.totalWeight.toFixed(2));
-                                  setPackingChecklist({...packingChecklist, weightRecorded: true});
-                                }}
-                              >
-                                <div className="flex items-center gap-4">
-                                  {/* Carton Visual */}
-                                  <div className="flex-shrink-0">
-                                    {generateCartonSVG(carton.boxSize, selectedCarton === carton.id)}
-                                  </div>
-                                  
-                                  {/* Carton Details */}
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <span className="font-bold text-lg text-blue-600">
-                                        {carton.boxSize.name.split(' - ')[0]}
-                                      </span>
-                                      <Badge variant="outline" className="text-xs">
-                                        #{index + 1}
-                                      </Badge>
-                                      {carton.isFragile && (
-                                        <Badge variant="destructive" className="text-xs">Fragile</Badge>
-                                      )}
-                                    </div>
-                                    
-                                    <div className="text-sm text-gray-600 mb-2">
-                                      {carton.boxSize.name.split(' - ')[1]}
-                                    </div>
-                                    
-                                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-500">
-                                      <div>
-                                        <span className="font-medium">Items:</span> {carton.items.length}
-                                      </div>
-                                      <div>
-                                        <span className="font-medium">Weight:</span> {carton.totalWeight.toFixed(2)}kg
-                                      </div>
-                                      <div>
-                                        <span className="font-medium">Size:</span> {carton.boxSize.dimensions.length}×{carton.boxSize.dimensions.width}×{carton.boxSize.dimensions.height}cm
-                                      </div>
-                                      <div>
-                                        <span className="font-medium">Fill:</span> {carton.utilization.toFixed(0)}%
-                                      </div>
-                                    </div>
-                                    
-                                    <div className="mt-2 text-xs text-gray-600">
-                                      <span className="font-medium">Material:</span> {carton.boxSize.material}
-                                    </div>
-                                  </div>
-                                  
-                                  {/* Selection Indicator */}
-                                  {selectedCarton === carton.id && (
-                                    <div className="flex-shrink-0">
-                                      <CheckCircle className="h-6 w-6 text-blue-600" />
-                                    </div>
-                                  )}
+                          {packingRecommendation.cartons.map((carton, index) => (
+                            <div
+                              key={carton.id}
+                              className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                                selectedCarton === carton.id 
+                                  ? 'border-blue-500 bg-blue-50' 
+                                  : 'border-gray-200 hover:border-gray-300 bg-white'
+                              }`}
+                              onClick={() => {
+                                setSelectedCarton(carton.id);
+                                setSelectedBoxSize(carton.boxSize.name);
+                                setPackageWeight(carton.totalWeight.toFixed(2));
+                                setPackingChecklist({...packingChecklist, weightRecorded: true});
+                              }}
+                            >
+                              <div className="flex items-center gap-4">
+                                {/* Carton Image */}
+                                <div className="flex-shrink-0">
+                                  {generateCartonSVG(carton.boxSize, selectedCarton === carton.id)}
                                 </div>
                                 
-                                {/* Utilization Bar */}
-                                <div className="mt-3">
-                                  <div className="flex justify-between text-xs text-gray-500 mb-1">
-                                    <span>Space Utilization</span>
-                                    <span>{carton.utilization.toFixed(1)}%</span>
+                                {/* Simplified Carton Info */}
+                                <div className="flex-1">
+                                  <div className="font-bold text-lg mb-2">
+                                    {carton.boxSize.name}
                                   </div>
-                                  <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div 
-                                      className={`h-2 rounded-full transition-all ${
-                                        carton.utilization > 80 ? 'bg-red-500' :
-                                        carton.utilization > 60 ? 'bg-yellow-500' : 'bg-green-500'
-                                      }`}
-                                      style={{ width: `${Math.min(carton.utilization, 100)}%` }}
-                                    ></div>
+                                  
+                                  <div className="grid grid-cols-2 gap-3 text-sm">
+                                    <div>
+                                      <span className="text-gray-600">Dimensions:</span>
+                                      <div className="font-medium">{carton.boxSize.dimensions.length}×{carton.boxSize.dimensions.width}×{carton.boxSize.dimensions.height}cm</div>
+                                    </div>
+                                    <div>
+                                      <span className="text-gray-600">Material:</span>
+                                      <div className="font-medium">{carton.boxSize.material}</div>
+                                    </div>
+                                    <div>
+                                      <span className="text-gray-600">Space Utilization:</span>
+                                      <div className="font-medium">{carton.utilization.toFixed(0)}%</div>
+                                    </div>
+                                    <div>
+                                      <span className="text-gray-600">Weight:</span>
+                                      <div className="font-medium">{carton.totalWeight.toFixed(2)}kg</div>
+                                    </div>
                                   </div>
                                 </div>
+                                
+                                {/* Selection Indicator */}
+                                {selectedCarton === carton.id && (
+                                  <div className="flex-shrink-0">
+                                    <CheckCircle className="h-6 w-6 text-blue-600" />
+                                  </div>
+                                )}
                               </div>
-                            ))}
-                          </div>
+                            </div>
+                          ))}
+                          
+                          {/* Non-company carton button */}
+                          <Button
+                            variant="outline"
+                            className="w-full h-12 border-2 border-dashed border-gray-400 hover:border-gray-600 hover:bg-gray-50"
+                            onClick={() => {
+                              setSelectedCarton('non-company');
+                              setSelectedBoxSize('Non-company Carton');
+                              setPackageWeight('');
+                              toast({
+                                title: 'Non-company carton selected',
+                                description: 'Please enter the package details manually'
+                              });
+                            }}
+                          >
+                            <Package className="h-5 w-5 mr-2" />
+                            I picked a Non-company carton
+                          </Button>
                         </div>
                       </div>
                     ) : (
