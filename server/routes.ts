@@ -29,6 +29,7 @@ import {
 import { ObjectPermission } from "./objectAcl";
 import { locationsRouter } from "./routes/locations";
 import { putawayRouter } from "./routes/putaway";
+import { weightCalculationService } from "./services/weightCalculation";
 
 // Configure multer for image uploads
 const storage_disk = multer.diskStorage({
@@ -3793,6 +3794,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Failed to create test parcel:', error);
       res.status(500).json({ 
         error: error instanceof Error ? error.message : 'Failed to create test parcel' 
+      });
+    }
+  });
+
+  // Weight Calculation AI Endpoints
+  
+  // Calculate package weight for an order
+  app.post('/api/orders/:orderId/calculate-weight', async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const { selectedCartonId } = req.body;
+      
+      const calculation = await weightCalculationService.calculatePackageWeight(orderId, selectedCartonId);
+      res.json(calculation);
+    } catch (error) {
+      console.error('Error calculating package weight:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to calculate package weight' 
+      });
+    }
+  });
+
+  // Get available cartons for selection
+  app.get('/api/cartons/available', async (req, res) => {
+    try {
+      const cartons = weightCalculationService.getAvailableCartons();
+      res.json(cartons);
+    } catch (error) {
+      console.error('Error getting available cartons:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to get available cartons' 
+      });
+    }
+  });
+
+  // Recommend optimal carton for an order
+  app.get('/api/orders/:orderId/recommend-carton', async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      
+      const recommendation = await weightCalculationService.recommendOptimalCarton(orderId);
+      res.json(recommendation);
+    } catch (error) {
+      console.error('Error recommending carton:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to recommend carton' 
+      });
+    }
+  });
+
+  // Real-time weight calculation as items are picked
+  app.post('/api/orders/:orderId/realtime-weight', async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const { pickedItems, selectedCartonId } = req.body;
+      
+      // Create a temporary order object with current picked quantities
+      const order = await storage.getOrderById(orderId);
+      if (!order) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+      
+      // Update quantities with picked amounts
+      const updatedOrder = {
+        ...order,
+        items: order.items.map(item => ({
+          ...item,
+          quantity: pickedItems[item.id] || 0
+        }))
+      };
+      
+      // Calculate weight with current picked items
+      const calculation = await weightCalculationService.calculatePackageWeight(orderId, selectedCartonId);
+      res.json(calculation);
+    } catch (error) {
+      console.error('Error calculating real-time weight:', error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : 'Failed to calculate real-time weight' 
       });
     }
   });

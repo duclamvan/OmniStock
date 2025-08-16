@@ -1,0 +1,416 @@
+import { storage } from "../storage";
+import type { Order, Product, PackingMaterial, ProductVariant } from "@shared/schema";
+
+interface WeightCalculationResult {
+  totalWeight: number;
+  breakdown: {
+    itemsWeight: number;
+    packingMaterialsWeight: number;
+    cartonWeight: number;
+    additionalWeight: number;
+  };
+  recommendations: {
+    shippingMethod: string;
+    handlingInstructions: string[];
+  };
+  confidence: number;
+}
+
+interface CartonSpec {
+  id: string;
+  name: string;
+  weight: number; // in kg
+  dimensions: {
+    length: number;
+    width: number;
+    height: number;
+  };
+  maxWeight: number;
+  material: string;
+}
+
+export class AIWeightCalculationService {
+  // Standard carton specifications with weights
+  private readonly standardCartons: CartonSpec[] = [
+    {
+      id: 'E1',
+      name: 'E1 - Small Envelope',
+      weight: 0.015, // 15g
+      dimensions: { length: 22, width: 16, height: 2 },
+      maxWeight: 0.5,
+      material: 'Padded Envelope'
+    },
+    {
+      id: 'E2',
+      name: 'E2 - Medium Envelope',
+      weight: 0.025, // 25g
+      dimensions: { length: 27, width: 20, height: 3 },
+      maxWeight: 1.0,
+      material: 'Padded Envelope'
+    },
+    {
+      id: 'K1',
+      name: 'K1 - Small Carton',
+      weight: 0.085, // 85g
+      dimensions: { length: 20, width: 15, height: 10 },
+      maxWeight: 5.0,
+      material: 'Corrugated Cardboard'
+    },
+    {
+      id: 'K2',
+      name: 'K2 - Medium Carton',
+      weight: 0.150, // 150g
+      dimensions: { length: 30, width: 20, height: 15 },
+      maxWeight: 10.0,
+      material: 'Corrugated Cardboard'
+    },
+    {
+      id: 'K3',
+      name: 'K3 - Large Carton',
+      weight: 0.220, // 220g
+      dimensions: { length: 40, width: 30, height: 20 },
+      maxWeight: 20.0,
+      material: 'Corrugated Cardboard'
+    },
+    {
+      id: 'F1',
+      name: 'F1 - Fragile Protection Box',
+      weight: 0.180, // 180g
+      dimensions: { length: 35, width: 25, height: 18 },
+      maxWeight: 15.0,
+      material: 'Reinforced Cardboard with Foam'
+    },
+    {
+      id: 'B1',
+      name: 'B1 - Bottle Protection Box',
+      weight: 0.200, // 200g
+      dimensions: { length: 25, width: 25, height: 35 },
+      maxWeight: 12.0,
+      material: 'Cardboard with Dividers'
+    }
+  ];
+
+  /**
+   * Calculate the total package weight using AI analysis
+   */
+  async calculatePackageWeight(orderId: string, selectedCartonId?: string): Promise<WeightCalculationResult> {
+    try {
+      // Get order details with items
+      const order = await storage.getOrderById(orderId);
+      if (!order) {
+        throw new Error(`Order ${orderId} not found`);
+      }
+
+      // Calculate items weight
+      const itemsWeight = await this.calculateItemsWeight(order);
+      
+      // Get packing materials weight
+      const packingMaterialsWeight = await this.calculatePackingMaterialsWeight(order);
+      
+      // Get carton weight
+      const cartonWeight = this.getCartonWeight(selectedCartonId);
+      
+      // Calculate additional weight (tape, labels, padding)
+      const additionalWeight = this.calculateAdditionalWeight(itemsWeight, cartonWeight);
+      
+      // Total weight calculation
+      const totalWeight = itemsWeight + packingMaterialsWeight + cartonWeight + additionalWeight;
+      
+      // Generate shipping recommendations
+      const recommendations = this.generateShippingRecommendations(totalWeight, order);
+      
+      // Calculate confidence based on data completeness
+      const confidence = this.calculateConfidence(order, selectedCartonId);
+
+      return {
+        totalWeight: Math.round(totalWeight * 1000) / 1000, // Round to 3 decimal places
+        breakdown: {
+          itemsWeight: Math.round(itemsWeight * 1000) / 1000,
+          packingMaterialsWeight: Math.round(packingMaterialsWeight * 1000) / 1000,
+          cartonWeight: Math.round(cartonWeight * 1000) / 1000,
+          additionalWeight: Math.round(additionalWeight * 1000) / 1000
+        },
+        recommendations,
+        confidence
+      };
+    } catch (error) {
+      console.error('Error calculating package weight:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Calculate the total weight of all items in the order
+   */
+  private async calculateItemsWeight(order: Order): Promise<number> {
+    let totalWeight = 0;
+    
+    if (!order.items) {
+      return totalWeight;
+    }
+    
+    for (const item of order.items) {
+      if (item.productId) {
+        // Get product details
+        const product = await storage.getProductById(item.productId);
+        if (product && product.weight) {
+          const productWeight = parseFloat(product.weight.toString());
+          totalWeight += productWeight * item.quantity;
+        } else {
+          // Estimate weight based on product category and size if no weight specified
+          const estimatedWeight = this.estimateProductWeight(product || null);
+          totalWeight += estimatedWeight * item.quantity;
+        }
+      }
+      
+      // Handle product variants - get all variants and find the matching one
+      if (item.variantId) {
+        const variants = await storage.getProductVariants();
+        const variant = variants.find(v => v.id === item.variantId);
+        if (variant && variant.weight) {
+          const variantWeight = parseFloat(variant.weight.toString());
+          totalWeight += variantWeight * item.quantity;
+        }
+      }
+    }
+    
+    return totalWeight;
+  }
+
+  /**
+   * Calculate weight of packing materials used for products
+   */
+  private async calculatePackingMaterialsWeight(order: Order): Promise<number> {
+    let totalPackingWeight = 0;
+    const packingMaterials = await storage.getPackingMaterials();
+    
+    if (!order.items) {
+      return totalPackingWeight;
+    }
+    
+    for (const item of order.items) {
+      if (item.productId) {
+        const product = await storage.getProductById(item.productId);
+        if (product && product.packingMaterialId) {
+          const packingMaterial = packingMaterials.find((pm: PackingMaterial) => pm.id === product.packingMaterialId);
+          if (packingMaterial && packingMaterial.weight) {
+            const materialWeight = parseFloat(packingMaterial.weight.toString());
+            totalPackingWeight += materialWeight * item.quantity;
+          } else {
+            // Estimate packing material weight based on type
+            const estimatedWeight = this.estimatePackingMaterialWeight(packingMaterial);
+            totalPackingWeight += estimatedWeight * item.quantity;
+          }
+        }
+      }
+    }
+    
+    return totalPackingWeight;
+  }
+
+  /**
+   * Get the weight of the selected carton
+   */
+  private getCartonWeight(selectedCartonId?: string): number {
+    if (!selectedCartonId || selectedCartonId === 'non-company') {
+      // Default medium carton weight if not specified
+      return 0.150;
+    }
+    
+    const carton = this.standardCartons.find(c => c.id === selectedCartonId);
+    return carton ? carton.weight : 0.150;
+  }
+
+  /**
+   * Calculate additional weight from tape, labels, padding, etc.
+   */
+  private calculateAdditionalWeight(itemsWeight: number, cartonWeight: number): number {
+    // Base additional weight: tape, labels, etc.
+    let additionalWeight = 0.025; // 25g base
+    
+    // Add padding based on items weight (more items = more padding)
+    if (itemsWeight > 2) {
+      additionalWeight += 0.050; // Additional 50g for heavy items
+    }
+    
+    // Add bubble wrap or protection material for fragile items
+    if (cartonWeight > 0.15) { // Larger cartons typically need more protection
+      additionalWeight += 0.030; // 30g for bubble wrap
+    }
+    
+    return additionalWeight;
+  }
+
+  /**
+   * Estimate product weight based on category and dimensions
+   */
+  private estimateProductWeight(product: Product | null): number {
+    if (!product) return 0.1; // Default 100g
+    
+    // Use dimensions if available
+    if (product.length && product.width && product.height) {
+      const volume = parseFloat(product.length.toString()) * 
+                    parseFloat(product.width.toString()) * 
+                    parseFloat(product.height.toString());
+      
+      // Estimate density based on category (grams per cm³)
+      let density = 0.5; // Default density
+      
+      if (product.categoryId) {
+        // Different densities for different product types
+        // This would ideally be enhanced with category information
+        density = 0.3; // Light products
+      }
+      
+      return (volume * density) / 1000; // Convert to kg
+    }
+    
+    // Fallback weight estimation
+    return 0.2; // 200g default
+  }
+
+  /**
+   * Estimate packing material weight
+   */
+  private estimatePackingMaterialWeight(material: PackingMaterial | undefined): number {
+    if (!material) return 0.005; // 5g default
+    
+    switch (material.type?.toLowerCase()) {
+      case 'bubble_wrap':
+        return 0.005; // 5g
+      case 'foam':
+        return 0.003; // 3g
+      case 'paper':
+        return 0.002; // 2g
+      case 'tape':
+        return 0.001; // 1g
+      case 'box':
+      case 'carton':
+        return 0.100; // 100g
+      default:
+        return 0.005; // 5g default
+    }
+  }
+
+  /**
+   * Generate shipping method recommendations based on weight
+   */
+  private generateShippingRecommendations(totalWeight: number, order: Order): {
+    shippingMethod: string;
+    handlingInstructions: string[];
+  } {
+    const handlingInstructions: string[] = [];
+    let shippingMethod = 'Standard';
+    
+    // Weight-based recommendations
+    if (totalWeight < 0.5) {
+      shippingMethod = 'Letter Post';
+      handlingInstructions.push('Can be sent as letter post');
+    } else if (totalWeight < 2) {
+      shippingMethod = 'Small Package';
+      handlingInstructions.push('Suitable for small package delivery');
+    } else if (totalWeight < 10) {
+      shippingMethod = 'Standard Package';
+      handlingInstructions.push('Standard package handling');
+    } else if (totalWeight < 20) {
+      shippingMethod = 'Heavy Package';
+      handlingInstructions.push('Heavy package - use two-person lift');
+    } else {
+      shippingMethod = 'Freight';
+      handlingInstructions.push('Requires freight shipping');
+      handlingInstructions.push('Special handling required');
+    }
+    
+    // Priority-based adjustments
+    if (order.priority === 'high') {
+      shippingMethod = 'Express';
+      handlingInstructions.push('Express shipping requested');
+    }
+    
+    // Add fragile handling if needed - check if items exist first
+    if (order.items) {
+      const hasFragileItems = order.items.some((item: any) => 
+        item.productName?.toLowerCase().includes('fragile') ||
+        item.productName?.toLowerCase().includes('glass') ||
+        item.productName?.toLowerCase().includes('ceramic')
+      );
+      
+      if (hasFragileItems) {
+        handlingInstructions.push('FRAGILE - Handle with care');
+        handlingInstructions.push('This side up');
+      }
+    }
+    
+    return {
+      shippingMethod,
+      handlingInstructions
+    };
+  }
+
+  /**
+   * Calculate confidence score based on data completeness
+   */
+  private calculateConfidence(order: Order, selectedCartonId?: string): number {
+    let confidence = 0.5; // Base confidence
+    
+    // Increase confidence if products have weight data
+    if (order.items && order.items.length > 0) {
+      const productsWithWeight = order.items.filter((item: any) => 
+        item.productId // This would need to be checked against actual product weight data
+      ).length;
+      
+      confidence += (productsWithWeight / order.items.length) * 0.3;
+      
+      // Decrease confidence for complex orders
+      if (order.items.length > 10) {
+        confidence -= 0.1;
+      }
+    }
+    
+    // Increase confidence if carton is selected
+    if (selectedCartonId && selectedCartonId !== 'non-company') {
+      confidence += 0.2;
+    }
+    
+    return Math.max(0.1, Math.min(1.0, confidence));
+  }
+
+  /**
+   * Get available cartons for selection
+   */
+  getAvailableCartons(): CartonSpec[] {
+    return this.standardCartons;
+  }
+
+  /**
+   * Recommend optimal carton based on order contents
+   */
+  async recommendOptimalCarton(orderId: string): Promise<CartonSpec> {
+    const order = await storage.getOrderById(orderId);
+    if (!order) {
+      throw new Error(`Order ${orderId} not found`);
+    }
+
+    const itemsWeight = await this.calculateItemsWeight(order);
+    const packingWeight = await this.calculatePackingMaterialsWeight(order);
+    const totalContentWeight = itemsWeight + packingWeight;
+
+    // Find the smallest carton that can handle the weight
+    const suitableCartons = this.standardCartons.filter(carton => 
+      carton.maxWeight >= totalContentWeight + 0.1 // Add buffer
+    );
+
+    if (suitableCartons.length === 0) {
+      // Return largest carton if content is too heavy
+      return this.standardCartons[this.standardCartons.length - 1];
+    }
+
+    // Return the smallest suitable carton
+    return suitableCartons.reduce((smallest, current) => 
+      current.weight < smallest.weight ? current : smallest
+    );
+  }
+}
+
+// Export singleton instance
+export const weightCalculationService = new AIWeightCalculationService();

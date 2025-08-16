@@ -243,8 +243,9 @@ export default function PickPack() {
   const [expandedBundles, setExpandedBundles] = useState<Set<string>>(new Set());
   const [bundlePickedItems, setBundlePickedItems] = useState<Record<string, Set<string>>>({}); // itemId -> Set of picked bundle item ids
   const [packingRecommendation, setPackingRecommendation] = useState<PackingRecommendation | null>(null);
-  const [selectedCarton, setSelectedCarton] = useState<string>('carton-1');
+  const [selectedCarton, setSelectedCarton] = useState<string>('K2');
   const [useNonCompanyCarton, setUseNonCompanyCarton] = useState<boolean>(false);
+  const [aiWeightCalculation, setAiWeightCalculation] = useState<any>(null);
 
   // Timer effects
   useEffect(() => {
@@ -287,6 +288,33 @@ export default function PickPack() {
   const { data: allOrders = [], isLoading } = useQuery({
     queryKey: ['/api/orders/pick-pack'],
     refetchInterval: 10000, // Refresh every 10 seconds
+  });
+
+  // Query for available cartons
+  const { data: availableCartons = [] } = useQuery({
+    queryKey: ['/api/cartons/available'],
+  });
+
+  // Query for carton recommendation for current order
+  const { data: recommendedCarton } = useQuery({
+    queryKey: ['/api/orders', activePackingOrder?.id, 'recommend-carton'],
+    enabled: !!activePackingOrder?.id,
+  });
+
+  // Mutation for calculating package weight
+  const calculateWeightMutation = useMutation({
+    mutationFn: async ({ orderId, selectedCartonId }: { orderId: string; selectedCartonId: string }) => {
+      return apiRequest(`/api/orders/${orderId}/calculate-weight`, {
+        method: 'POST',
+        body: { selectedCartonId },
+      });
+    },
+    onSuccess: (data) => {
+      setAiWeightCalculation(data);
+      if (data.totalWeight) {
+        setPackageWeight(data.totalWeight.toString());
+      }
+    },
   });
 
   // Mock location generator for demo
@@ -2196,107 +2224,101 @@ export default function PickPack() {
 
               {/* Right Column - Packing Details */}
               <div className="space-y-4">
-                {/* AI Carton Recommendations */}
+                {/* AI Carton Selection */}
                 <Card className="shadow-xl border-0">
                   <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
                     <CardTitle className="text-base flex items-center gap-2">
                       <Zap className="h-4 w-4" />
-                      AI Carton Selection
+                      Carton Selection
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-4">
-                    {packingRecommendation ? (
+                    {availableCartons.length > 0 ? (
                       <div className="space-y-4">
-                        {/* Simplified Carton Selection */}
+                        {/* AI Recommendation */}
+                        {recommendedCarton && (
+                          <div className="bg-gradient-to-r from-green-50 to-blue-50 p-3 rounded-lg border border-green-200">
+                            <div className="flex items-center gap-2 mb-2">
+                              <TrendingUp className="h-4 w-4 text-green-600" />
+                              <span className="font-semibold text-green-800 text-sm">AI Recommendation</span>
+                            </div>
+                            <div className="text-sm text-green-700">
+                              Optimal carton: <strong>{recommendedCarton.name}</strong>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Carton Selection */}
                         <div className="space-y-3">
                           <label className="text-sm font-medium">Select Carton to Pack:</label>
-                          {packingRecommendation.cartons.map((carton, index) => (
-                            <div
-                              key={carton.id}
-                              className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
-                                selectedCarton === carton.id 
-                                  ? 'border-blue-500 bg-blue-50' 
-                                  : 'border-gray-200 hover:border-gray-300 bg-white'
-                              }`}
-                              onClick={() => {
-                                setSelectedCarton(carton.id);
-                                setSelectedBoxSize(carton.boxSize.name);
-                                setPackageWeight(carton.totalWeight.toFixed(2));
-                                setPackingChecklist({...packingChecklist, weightRecorded: true});
-                                setUseNonCompanyCarton(false);
-                              }}
-                            >
-                              <div className="flex items-center gap-4">
-                                {/* Carton Image */}
-                                <div className="flex-shrink-0">
-                                  {generateCartonSVG(carton.boxSize, selectedCarton === carton.id)}
-                                </div>
-                                
-                                {/* Simplified Carton Info */}
-                                <div className="flex-1">
-                                  <div className="font-bold text-lg mb-2">
-                                    {carton.boxSize.name}
+                          <div className="grid grid-cols-1 gap-2">
+                            {availableCartons.map((carton: any) => (
+                              <div
+                                key={carton.id}
+                                className={`border-2 rounded-lg p-3 cursor-pointer transition-all ${
+                                  selectedCarton === carton.id 
+                                    ? 'border-blue-500 bg-blue-50' 
+                                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                                }`}
+                                onClick={() => {
+                                  setSelectedCarton(carton.id);
+                                  setSelectedBoxSize(carton.name);
+                                  setUseNonCompanyCarton(false);
+                                }}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1">
+                                    <div className="font-bold text-sm mb-1">{carton.name}</div>
+                                    <div className="text-xs text-gray-600">
+                                      {carton.dimensions.length}×{carton.dimensions.width}×{carton.dimensions.height}cm
+                                    </div>
+                                    <div className="text-xs text-gray-600">
+                                      {carton.material} • Max: {carton.maxWeight}kg
+                                    </div>
                                   </div>
                                   
-                                  <div className="grid grid-cols-2 gap-3 text-sm">
-                                    <div>
-                                      <span className="text-gray-600">Dimensions:</span>
-                                      <div className="font-medium">{carton.boxSize.dimensions.length}×{carton.boxSize.dimensions.width}×{carton.boxSize.dimensions.height}cm</div>
+                                  <div className="text-right">
+                                    <div className="text-sm font-semibold text-blue-600">
+                                      {carton.weight}kg
                                     </div>
-                                    <div>
-                                      <span className="text-gray-600">Material:</span>
-                                      <div className="font-medium">{carton.boxSize.material}</div>
-                                    </div>
-                                    <div>
-                                      <span className="text-gray-600">Space Utilization:</span>
-                                      <div className="font-medium">{carton.utilization.toFixed(0)}%</div>
-                                    </div>
-                                    <div>
-                                      <span className="text-gray-600">Weight:</span>
-                                      <div className="font-medium">{carton.totalWeight.toFixed(2)}kg</div>
-                                    </div>
+                                    {selectedCarton === carton.id && (
+                                      <CheckCircle className="h-4 w-4 text-blue-600" />
+                                    )}
                                   </div>
                                 </div>
-                                
-                                {/* Selection Indicator */}
-                                {selectedCarton === carton.id && (
-                                  <div className="flex-shrink-0">
-                                    <CheckCircle className="h-6 w-6 text-blue-600" />
-                                  </div>
-                                )}
                               </div>
-                            </div>
-                          ))}
-                          
-                          {/* Non-company carton option */}
-                          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                            <div className="flex items-center gap-3">
-                              <Checkbox 
-                                checked={useNonCompanyCarton}
-                                onCheckedChange={(checked) => {
-                                  setUseNonCompanyCarton(checked as boolean);
-                                  if (checked) {
-                                    setSelectedCarton('non-company');
-                                    setSelectedBoxSize('Non-company Carton');
-                                    setPackageWeight('');
-                                    toast({
-                                      title: 'Non-company carton selected',
-                                      description: 'Please enter the package details manually'
-                                    });
-                                  } else {
-                                    // Reset to first available carton if unchecked
-                                    if (packingRecommendation?.cartons.length) {
-                                      const firstCarton = packingRecommendation.cartons[0];
-                                      setSelectedCarton(firstCarton.id);
-                                      setSelectedBoxSize(firstCarton.boxSize.name);
-                                      setPackageWeight(firstCarton.totalWeight.toFixed(2));
+                            ))}
+                            
+                            {/* Non-company carton option */}
+                            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                              <div className="flex items-center gap-3">
+                                <Checkbox 
+                                  checked={useNonCompanyCarton}
+                                  onCheckedChange={(checked) => {
+                                    setUseNonCompanyCarton(checked as boolean);
+                                    if (checked) {
+                                      setSelectedCarton('non-company');
+                                      setSelectedBoxSize('Non-company Carton');
+                                      setPackageWeight('');
+                                      toast({
+                                        title: 'Non-company carton selected',
+                                        description: 'Please enter the package details manually'
+                                      });
+                                    } else {
+                                      // Reset to first available carton if unchecked
+                                      if (availableCartons.length) {
+                                        const firstCarton = availableCartons[0];
+                                        setSelectedCarton(firstCarton.id);
+                                        setSelectedBoxSize(firstCarton.name);
+                                        setPackageWeight('');
+                                      }
                                     }
-                                  }
-                                }}
-                              />
-                              <div className="flex items-center gap-2">
-                                <Package className="h-4 w-4 text-gray-600" />
-                                <span className="text-sm font-medium">I picked a Non-company carton</span>
+                                  }}
+                                />
+                                <div className="flex items-center gap-2">
+                                  <Package className="h-4 w-4 text-gray-600" />
+                                  <span className="text-sm font-medium">I picked a Non-company carton</span>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -2311,18 +2333,18 @@ export default function PickPack() {
                   </CardContent>
                 </Card>
 
-                {/* Carton Details */}
-                {packingRecommendation && selectedCarton && !useNonCompanyCarton && (
+                {/* Selected Carton Details */}
+                {selectedCarton && !useNonCompanyCarton && availableCartons.length > 0 && (
                   <Card className="shadow-xl border-0">
                     <CardHeader className="bg-gradient-to-r from-green-500 to-blue-500 text-white">
                       <CardTitle className="text-base flex items-center gap-2">
                         <Box className="h-4 w-4" />
-                        Current Carton Details
+                        Selected Carton Details
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="p-4">
                       {(() => {
-                        const carton = packingRecommendation.cartons.find(c => c.id === selectedCarton);
+                        const carton = availableCartons.find((c: any) => c.id === selectedCarton);
                         if (!carton) return null;
                         
                         return (
@@ -2330,57 +2352,22 @@ export default function PickPack() {
                             {/* Carton Info */}
                             <div className="bg-gray-50 p-3 rounded-lg">
                               <div className="flex justify-between items-center mb-2">
-                                <span className="font-medium">{carton.boxSize.name}</span>
-                                <Badge variant={carton.isFragile ? "destructive" : "secondary"}>
-                                  {carton.isFragile ? "Fragile" : "Standard"}
+                                <span className="font-medium">{carton.name}</span>
+                                <Badge variant="secondary">
+                                  {carton.material}
                                 </Badge>
                               </div>
                               <div className="text-xs text-gray-600 space-y-1">
-                                <div>Dimensions: {carton.boxSize.dimensions.length}×{carton.boxSize.dimensions.width}×{carton.boxSize.dimensions.height}cm</div>
-                                <div>Material: {carton.boxSize.material}</div>
-                                <div>Capacity: {carton.utilization.toFixed(1)}% filled</div>
-                                <div>Weight: {carton.totalWeight.toFixed(2)}kg / {carton.boxSize.maxWeight}kg max</div>
+                                <div>Dimensions: {carton.dimensions.length}×{carton.dimensions.width}×{carton.dimensions.height}cm</div>
+                                <div>Carton Weight: {carton.weight}kg</div>
+                                <div>Max Capacity: {carton.maxWeight}kg</div>
+                                <div>Type: {carton.type}</div>
                               </div>
                             </div>
                             
-                            {/* Items in this carton */}
-                            <div>
-                              <label className="text-sm font-medium mb-2 block">Items in this carton:</label>
-                              <div className="space-y-2 max-h-32 overflow-y-auto">
-                                {carton.items.map((item) => (
-                                  <div key={item.id} className="flex items-center justify-between p-2 bg-white border rounded">
-                                    <div className="flex items-center gap-2">
-                                      <Checkbox 
-                                        checked={verifiedItems.has(item.id)}
-                                        onCheckedChange={(checked) => {
-                                          const newVerified = new Set(verifiedItems);
-                                          if (checked) {
-                                            newVerified.add(item.id);
-                                          } else {
-                                            newVerified.delete(item.id);
-                                          }
-                                          setVerifiedItems(newVerified);
-                                          
-                                          // Update checklist
-                                          const allCartonItemsVerified = carton.items.every(i => newVerified.has(i.id));
-                                          if (allCartonItemsVerified) {
-                                            setPackingChecklist({...packingChecklist, itemsVerified: true});
-                                          }
-                                        }}
-                                      />
-                                      <div>
-                                        <div className="font-medium text-sm">{item.productName}</div>
-                                        <div className="text-xs text-gray-500">
-                                          {item.dimensions && `${item.dimensions.length}×${item.dimensions.width}×${item.dimensions.height}cm • ${item.dimensions.weight.toFixed(3)}kg`}
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <Badge variant="outline" className="text-xs">
-                                      Qty: {item.quantity}
-                                    </Badge>
-                                  </div>
-                                ))}
-                              </div>
+                            {/* Instructions */}
+                            <div className="text-xs text-gray-600 bg-blue-50 p-2 rounded">
+                              Place all order items in this carton and use the AI weight calculation to get the final package weight.
                             </div>
                           </div>
                         );
@@ -2389,32 +2376,127 @@ export default function PickPack() {
                   </Card>
                 )}
 
-                {/* Weight Input - Auto-filled from AI recommendation */}
+                {/* AI Weight Calculation */}
                 <Card className="shadow-xl border-0">
                   <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-                    <CardTitle className="text-base">Package Weight</CardTitle>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <BarChart3 className="h-4 w-4" />
+                      AI Package Weight Calculation
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="p-4">
-                    <div className="flex gap-2">
-                      <Input
-                        type="number"
-                        placeholder="Auto-calculated by AI..."
-                        value={packageWeight}
-                        onChange={(e) => {
-                          setPackageWeight(e.target.value);
-                          if (e.target.value) {
-                            setPackingChecklist({...packingChecklist, weightRecorded: true});
+                    <div className="space-y-4">
+                      {/* Calculate Weight Button */}
+                      <Button
+                        onClick={() => {
+                          if (activePackingOrder && selectedCarton) {
+                            calculateWeightMutation.mutate({
+                              orderId: activePackingOrder.id,
+                              selectedCartonId: useNonCompanyCarton ? 'non-company' : selectedCarton
+                            });
                           }
                         }}
-                        className="text-lg"
-                      />
-                      <span className="flex items-center px-3 text-sm font-medium">kg</span>
-                    </div>
-                    {packingRecommendation && selectedCarton && (
-                      <div className="text-xs text-gray-500 mt-2">
-                        AI calculated: {packingRecommendation.cartons.find(c => c.id === selectedCarton)?.totalWeight.toFixed(2)}kg
+                        disabled={calculateWeightMutation.isPending || !activePackingOrder}
+                        className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700"
+                      >
+                        {calculateWeightMutation.isPending ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                            Calculating...
+                          </>
+                        ) : (
+                          <>
+                            <Zap className="h-4 w-4 mr-2" />
+                            Calculate AI Weight
+                          </>
+                        )}
+                      </Button>
+
+                      {/* Weight Results */}
+                      {aiWeightCalculation && (
+                        <div className="bg-gradient-to-r from-green-50 to-blue-50 p-4 rounded-lg border border-green-200">
+                          <div className="flex items-center gap-2 mb-3">
+                            <TrendingUp className="h-4 w-4 text-green-600" />
+                            <span className="font-semibold text-green-800">AI Weight Analysis</span>
+                            <Badge variant="outline" className="text-xs">
+                              {Math.round(aiWeightCalculation.confidence * 100)}% confidence
+                            </Badge>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-3 mb-4">
+                            <div className="text-center p-2 bg-white rounded border">
+                              <div className="text-xl font-bold text-green-600">
+                                {aiWeightCalculation.totalWeight}kg
+                              </div>
+                              <div className="text-xs text-gray-500">Total Weight</div>
+                            </div>
+                            <div className="text-center p-2 bg-white rounded border">
+                              <div className="text-sm font-semibold text-blue-600">
+                                {aiWeightCalculation.recommendations.shippingMethod}
+                              </div>
+                              <div className="text-xs text-gray-500">Recommended Ship</div>
+                            </div>
+                          </div>
+
+                          {/* Weight Breakdown */}
+                          <div className="space-y-2 mb-3">
+                            <div className="flex justify-between text-sm">
+                              <span>Items:</span>
+                              <span>{aiWeightCalculation.breakdown.itemsWeight}kg</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span>Carton:</span>
+                              <span>{aiWeightCalculation.breakdown.cartonWeight}kg</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span>Packing Materials:</span>
+                              <span>{aiWeightCalculation.breakdown.packingMaterialsWeight}kg</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span>Additional (tape, labels):</span>
+                              <span>{aiWeightCalculation.breakdown.additionalWeight}kg</span>
+                            </div>
+                          </div>
+
+                          {/* Handling Instructions */}
+                          {aiWeightCalculation.recommendations.handlingInstructions.length > 0 && (
+                            <div className="space-y-1">
+                              <div className="text-xs font-medium text-gray-700">Handling Instructions:</div>
+                              {aiWeightCalculation.recommendations.handlingInstructions.map((instruction: string, index: number) => (
+                                <div key={index} className="text-xs text-gray-600 flex items-center gap-1">
+                                  <Info className="h-3 w-3" />
+                                  {instruction}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Manual Weight Override */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">Final Weight (kg)</label>
+                        <div className="flex gap-2">
+                          <Input
+                            type="number"
+                            step="0.001"
+                            placeholder={aiWeightCalculation ? aiWeightCalculation.totalWeight.toString() : "Enter weight..."}
+                            value={packageWeight}
+                            onChange={(e) => {
+                              setPackageWeight(e.target.value);
+                              if (e.target.value) {
+                                setPackingChecklist({...packingChecklist, weightRecorded: true});
+                              }
+                            }}
+                            className="text-lg"
+                          />
+                          <span className="flex items-center px-3 text-sm font-medium">kg</span>
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {aiWeightCalculation ? "AI calculated weight auto-filled above. You can override if needed." : "Use AI calculation or enter manually"}
+                        </div>
                       </div>
-                    )}
+                    </div>
                   </CardContent>
                 </Card>
 

@@ -522,6 +522,11 @@ export const packingMaterials = pgTable("packing_materials", {
   minStockLevel: integer("min_stock_level").default(10),
   description: text("description"),
   isFragileProtection: boolean("is_fragile_protection").default(false),
+  weight: decimal("weight", { precision: 10, scale: 3 }), // in kg
+  // Dimensions for cartons
+  length: decimal("length", { precision: 10, scale: 2 }), // in cm
+  width: decimal("width", { precision: 10, scale: 2 }), // in cm  
+  height: decimal("height", { precision: 10, scale: 2 }), // in cm
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
