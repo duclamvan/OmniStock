@@ -162,6 +162,7 @@ export default function PickPack() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activePickingOrder, setActivePickingOrder] = useState<PickPackOrder | null>(null);
   const [activePackingOrder, setActivePackingOrder] = useState<PickPackOrder | null>(null);
+  const [showPickingCompletionModal, setShowPickingCompletionModal] = useState(false);
   const [barcodeInput, setBarcodeInput] = useState('');
   const [selectedBatchOrders, setSelectedBatchOrders] = useState<string[]>([]);
   const [packingTimer, setPackingTimer] = useState(0);
@@ -245,6 +246,22 @@ export default function PickPack() {
     }
     return () => clearInterval(interval);
   }, [isTimerRunning]);
+
+  // Show completion modal when all items are picked
+  useEffect(() => {
+    if (!activePickingOrder) {
+      setShowPickingCompletionModal(false);
+      return;
+    }
+
+    const allItemsPicked = activePickingOrder.items.every(
+      item => item.pickedQuantity >= item.quantity
+    );
+
+    if (allItemsPicked && activePickingOrder.pickStatus !== 'completed') {
+      setShowPickingCompletionModal(true);
+    }
+  }, [activePickingOrder, activePickingOrder?.items.map(i => i.pickedQuantity).join(',')]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -2919,7 +2936,7 @@ export default function PickPack() {
                   </CardContent>
                 </Card>
               </div>
-            ) : allItemsPicked ? (
+            ) : allItemsPicked && showPickingCompletionModal ? (
               <div className="max-w-3xl mx-auto px-3 lg:px-0">
                 <Card className="shadow-2xl border-0 overflow-hidden bg-gradient-to-br from-green-50 to-emerald-50">
                   <div className="bg-gradient-to-r from-green-500 to-emerald-500 p-1 lg:p-2"></div>
@@ -2955,21 +2972,29 @@ export default function PickPack() {
                       <Button 
                         size="lg" 
                         onClick={async () => {
-                          await completePicking();
-                          // Move to packing
+                          // Store order data before clearing
                           const orderTopack = {
                             ...activePickingOrder,
                             pickStatus: 'completed' as const,
                             pickEndTime: new Date().toISOString(),
                           };
+                          
+                          // Hide modal immediately
+                          setShowPickingCompletionModal(false);
+                          setSelectedTab('packing');
+                          
+                          // Complete picking first (needs activePickingOrder)
+                          await completePicking();
+                          
+                          // Then clear picking state
                           setActivePickingOrder(null);
                           setPickingTimer(0);
                           setManualItemIndex(0);
-                          setSelectedTab('packing');
+                          
                           // Start packing the same order
                           setTimeout(() => {
                             startPacking(orderTopack);
-                          }, 500);
+                          }, 100);
                         }}
                         className="w-full h-12 sm:h-14 lg:h-16 text-base sm:text-lg lg:text-xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-xl transform hover:scale-105 transition-all"
                       >
@@ -2981,19 +3006,23 @@ export default function PickPack() {
                         size="lg" 
                         variant="outline"
                         onClick={async () => {
+                          // Hide modal immediately
+                          setShowPickingCompletionModal(false);
+                          setSelectedTab('pending');
+                          
                           await completePicking();
                           // Pick next order
                           setActivePickingOrder(null);
                           setPickingTimer(0);
                           setManualItemIndex(0);
-                          setSelectedTab('pending');
+                          
                           // After completing, immediately start the next priority order if available
                           setTimeout(() => {
                             const nextOrder = getOrdersByStatus('pending')[0];
                             if (nextOrder) {
                               startPicking(nextOrder);
                             }
-                          }, 500);
+                          }, 100);
                         }}
                         className="w-full h-12 sm:h-14 lg:h-16 text-base sm:text-lg lg:text-xl font-bold border-2 border-blue-600 text-blue-600 hover:bg-blue-50 shadow-lg"
                       >
