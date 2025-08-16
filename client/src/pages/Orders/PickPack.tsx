@@ -2560,24 +2560,26 @@ export default function PickPack() {
                           </div>
 
                           {/* Weight Breakdown */}
-                          <div className="space-y-2 mb-3">
-                            <div className="flex justify-between text-sm">
-                              <span>Items:</span>
-                              <span>{aiWeightCalculation.breakdown.itemsWeight}kg</span>
+                          {aiWeightCalculation.breakdown && (
+                            <div className="space-y-2 mb-3">
+                              <div className="flex justify-between text-sm">
+                                <span>Items:</span>
+                                <span>{aiWeightCalculation.breakdown.itemsWeight || 0}kg</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span>Carton:</span>
+                                <span>{aiWeightCalculation.breakdown.cartonWeight || 0}kg</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span>Packing Materials:</span>
+                                <span>{aiWeightCalculation.breakdown.packingMaterialsWeight || 0}kg</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span>Additional (tape, labels):</span>
+                                <span>{aiWeightCalculation.breakdown.additionalWeight || 0}kg</span>
+                              </div>
                             </div>
-                            <div className="flex justify-between text-sm">
-                              <span>Carton:</span>
-                              <span>{aiWeightCalculation.breakdown.cartonWeight}kg</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                              <span>Packing Materials:</span>
-                              <span>{aiWeightCalculation.breakdown.packingMaterialsWeight}kg</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                              <span>Additional (tape, labels):</span>
-                              <span>{aiWeightCalculation.breakdown.additionalWeight}kg</span>
-                            </div>
-                          </div>
+                          )}
 
                           {/* Handling Instructions */}
                           {aiWeightCalculation.recommendations?.handlingInstructions?.length > 0 && (
