@@ -1954,6 +1954,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         return {
           ...order,
+          status: order.orderStatus, // Map orderStatus to status for client compatibility
           items: itemsWithBundleDetails
         };
       }));
@@ -2225,6 +2226,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         return {
           ...order,
+          status: order.orderStatus, // Map orderStatus to status for client compatibility
           items: itemsWithBundleDetails
         };
       }));
