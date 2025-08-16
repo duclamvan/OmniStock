@@ -244,6 +244,7 @@ export default function PickPack() {
   const [bundlePickedItems, setBundlePickedItems] = useState<Record<string, Set<string>>>({}); // itemId -> Set of picked bundle item ids
   const [packingRecommendation, setPackingRecommendation] = useState<PackingRecommendation | null>(null);
   const [selectedCarton, setSelectedCarton] = useState<string>('carton-1');
+  const [useNonCompanyCarton, setUseNonCompanyCarton] = useState<boolean>(false);
 
   // Timer effects
   useEffect(() => {
@@ -1617,6 +1618,7 @@ export default function PickPack() {
     });
     setVerifiedItems(new Set());
     setSelectedCarton('carton-1');
+    setUseNonCompanyCarton(false);
     setPackageWeight('');
     
     playSound('success');
@@ -2221,6 +2223,7 @@ export default function PickPack() {
                                 setSelectedBoxSize(carton.boxSize.name);
                                 setPackageWeight(carton.totalWeight.toFixed(2));
                                 setPackingChecklist({...packingChecklist, weightRecorded: true});
+                                setUseNonCompanyCarton(false);
                               }}
                             >
                               <div className="flex items-center gap-4">
@@ -2265,23 +2268,38 @@ export default function PickPack() {
                             </div>
                           ))}
                           
-                          {/* Non-company carton button */}
-                          <Button
-                            variant="outline"
-                            className="w-full h-12 border-2 border-dashed border-gray-400 hover:border-gray-600 hover:bg-gray-50"
-                            onClick={() => {
-                              setSelectedCarton('non-company');
-                              setSelectedBoxSize('Non-company Carton');
-                              setPackageWeight('');
-                              toast({
-                                title: 'Non-company carton selected',
-                                description: 'Please enter the package details manually'
-                              });
-                            }}
-                          >
-                            <Package className="h-5 w-5 mr-2" />
-                            I picked a Non-company carton
-                          </Button>
+                          {/* Non-company carton option */}
+                          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                            <div className="flex items-center gap-3">
+                              <Checkbox 
+                                checked={useNonCompanyCarton}
+                                onCheckedChange={(checked) => {
+                                  setUseNonCompanyCarton(checked as boolean);
+                                  if (checked) {
+                                    setSelectedCarton('non-company');
+                                    setSelectedBoxSize('Non-company Carton');
+                                    setPackageWeight('');
+                                    toast({
+                                      title: 'Non-company carton selected',
+                                      description: 'Please enter the package details manually'
+                                    });
+                                  } else {
+                                    // Reset to first available carton if unchecked
+                                    if (packingRecommendation?.cartons.length) {
+                                      const firstCarton = packingRecommendation.cartons[0];
+                                      setSelectedCarton(firstCarton.id);
+                                      setSelectedBoxSize(firstCarton.boxSize.name);
+                                      setPackageWeight(firstCarton.totalWeight.toFixed(2));
+                                    }
+                                  }
+                                }}
+                              />
+                              <div className="flex items-center gap-2">
+                                <Package className="h-4 w-4 text-gray-600" />
+                                <span className="text-sm font-medium">I picked a Non-company carton</span>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     ) : (
@@ -2294,7 +2312,7 @@ export default function PickPack() {
                 </Card>
 
                 {/* Carton Details */}
-                {packingRecommendation && selectedCarton && (
+                {packingRecommendation && selectedCarton && !useNonCompanyCarton && (
                   <Card className="shadow-xl border-0">
                     <CardHeader className="bg-gradient-to-r from-green-500 to-blue-500 text-white">
                       <CardTitle className="text-base flex items-center gap-2">
