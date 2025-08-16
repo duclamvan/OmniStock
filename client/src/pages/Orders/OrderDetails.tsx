@@ -761,6 +761,73 @@ export default function OrderDetails() {
                   </div>
                 )}
                 
+                {/* Picking Started */}
+                {order.pickStartTime && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full mt-1.5"></div>
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">Picking Started</p>
+                      <p className="text-sm text-slate-500">
+                        {new Date(order.pickStartTime).toLocaleString()}
+                        {order.pickedBy && ` by ${order.pickedBy}`}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Picking Completed */}
+                {order.pickEndTime && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full mt-1.5"></div>
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">Picking Completed</p>
+                      <p className="text-sm text-slate-500">
+                        {new Date(order.pickEndTime).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Packing Started */}
+                {order.packStartTime && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-indigo-500 rounded-full mt-1.5"></div>
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">Packing Started</p>
+                      <p className="text-sm text-slate-500">
+                        {new Date(order.packStartTime).toLocaleString()}
+                        {order.packedBy && ` by ${order.packedBy}`}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Packing Completed */}
+                {order.packEndTime && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-indigo-500 rounded-full mt-1.5"></div>
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">Packing Completed</p>
+                      <p className="text-sm text-slate-500">
+                        {new Date(order.packEndTime).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Ready to Ship */}
+                {order.orderStatus === 'ready_to_ship' && !order.shippedAt && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-teal-500 rounded-full mt-1.5"></div>
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">Ready to Ship</p>
+                      <p className="text-sm text-slate-500">
+                        {order.packEndTime ? new Date(order.packEndTime).toLocaleString() : 'Awaiting shipment'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                
                 {order.shippedAt && (
                   <div className="flex items-start gap-3">
                     <div className="w-2 h-2 bg-orange-500 rounded-full mt-1.5"></div>
