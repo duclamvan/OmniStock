@@ -56,7 +56,6 @@ import {
   ChevronLeft,
   MoreVertical,
   RotateCcw,
-  RefreshCw,
   X,
   Plus,
   Minus,
@@ -1156,7 +1155,7 @@ export default function PickPack() {
   // Handle sending order back to pick
   const sendBackToPick = async (order: PickPackOrder) => {
     try {
-      // Reset pick and pack status
+      // Reset pick and pack status to move order back to pending
       await apiRequest(`/api/orders/${order.id}`, 'PATCH', {
         pickStatus: 'not_started',
         packStatus: 'not_started',
@@ -1168,61 +1167,28 @@ export default function PickPack() {
         packedBy: null
       });
       
-      // Reset item quantities
-      for (const item of order.items) {
-        await apiRequest(`/api/orders/${order.id}/items/${item.id}`, 'PATCH', {
-          pickedQuantity: 0,
-          packedQuantity: 0
-        });
+      // Reset item quantities if they exist
+      if (order.items && order.items.length > 0) {
+        for (const item of order.items) {
+          if (item.id) {
+            await apiRequest(`/api/orders/${order.id}/items/${item.id}`, 'PATCH', {
+              pickedQuantity: 0,
+              packedQuantity: 0
+            });
+          }
+        }
       }
       
       queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
       toast({
-        title: 'Order sent back to pick',
-        description: `Order ${order.orderId} has been reset to pending status`
+        title: 'Order sent back to pending',
+        description: `Order ${order.orderId} has been moved back to pending pick status`
       });
     } catch (error) {
+      console.error('Error sending order back to pick:', error);
       toast({
         title: 'Error',
         description: 'Failed to send order back to pick',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  // Handle refining all processes
-  const refineAllProcesses = async (order: PickPackOrder) => {
-    try {
-      // Reset the entire order workflow
-      await apiRequest(`/api/orders/${order.id}`, 'PATCH', {
-        orderStatus: 'pending',
-        pickStatus: null,
-        packStatus: null,
-        pickStartTime: null,
-        pickEndTime: null,
-        packStartTime: null,
-        packEndTime: null,
-        pickedBy: null,
-        packedBy: null
-      });
-      
-      // Reset all item quantities
-      for (const item of order.items) {
-        await apiRequest(`/api/orders/${order.id}/items/${item.id}`, 'PATCH', {
-          pickedQuantity: 0,
-          packedQuantity: 0
-        });
-      }
-      
-      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
-      toast({
-        title: 'All processes refined',
-        description: `Order ${order.orderId} has been completely reset`
-      });
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to refine processes',
         variant: 'destructive'
       });
     }
@@ -3779,15 +3745,6 @@ export default function PickPack() {
                                   >
                                     <RotateCcw className="h-4 w-4 mr-2" />
                                     Send back to Pick
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      refineAllProcesses(order);
-                                    }}
-                                  >
-                                    <RefreshCw className="h-4 w-4 mr-2" />
-                                    Refine all processes
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>

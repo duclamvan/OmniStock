@@ -2490,6 +2490,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const order = await storage.updateOrder(req.params.id, updates);
       
+      // Check if order exists
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+      
       // Update order items if provided
       if (items && Array.isArray(items)) {
         // Delete existing items and add new ones
