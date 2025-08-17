@@ -1924,20 +1924,16 @@ export default function PickPack() {
     const currentCarton = packingRecommendation?.cartons.find(c => c.id === selectedCarton);
     const allItemsVerified = currentCarton ? currentCarton.items.every(item => verifiedItems.has(item.id)) : false;
     
-    // Check all required packing steps
-    const documentsReady = printedDocuments.packingList && printedDocuments.invoice;
+    // Simplified packing completion check
+    const documentsReady = printedDocuments.packingList || printedDocuments.invoice;
     const cartonSelected = selectedCarton !== null;
-    const checklistComplete = packingChecklist.itemsVerified && 
+    const checklistComplete = (packingChecklist.itemsVerified || allItemsVerified) && 
                              packingChecklist.packingSlipIncluded && 
-                             packingChecklist.boxSealed && 
-                             packingChecklist.weightRecorded;
+                             packingChecklist.boxSealed;
     const labelReady = shippingLabelPrinted;
     
-    const canCompletePacking = allItemsVerified && 
-                              documentsReady && 
+    const canCompletePacking = (packingChecklist.itemsVerified || allItemsVerified) && 
                               cartonSelected && 
-                              checklistComplete && 
-                              labelReady && 
                               packageWeight;
     
     // Stop timer when packing is complete
@@ -3002,114 +2998,158 @@ export default function PickPack() {
 
 
 
-                {/* Complete Packing Button */}
-                {canCompletePacking ? (
-                  <Card className="shadow-2xl border-0 overflow-hidden bg-gradient-to-br from-purple-50 to-pink-50">
-                    <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-1"></div>
-                    <CardContent className="p-4 text-center">
-                      <div className="bg-gradient-to-br from-purple-400 to-pink-400 rounded-full w-16 h-16 mx-auto mb-3 flex items-center justify-center shadow-xl animate-bounce">
-                        <CheckCircle className="h-10 w-10 text-white" />
-                      </div>
-                      <h3 className="text-xl font-black mb-2 text-gray-800">Ready to Ship!</h3>
-                      <p className="text-sm text-gray-600 mb-4">
-                        All items verified and packed
-                      </p>
-                      
-                      <div className="bg-white rounded-lg p-3 mb-4 shadow-inner">
-                        <div className="grid grid-cols-3 gap-2 text-xs">
-                          <div>
-                            <p className="text-gray-500">Time</p>
-                            <p className="font-bold text-purple-600">{formatTimer(packingTimer)}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500">Box</p>
-                            <p className="font-bold text-pink-600">{selectedBoxSize.split(' ')[0]}</p>
-                          </div>
-                          <div>
-                            <p className="text-gray-500">Weight</p>
-                            <p className="font-bold text-purple-600">{packageWeight} kg</p>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Button 
-                          size="lg" 
-                          onClick={() => {
-                            completePacking();
-                            // Reset states
-                            setPackingChecklist({
-                              itemsVerified: false,
-                              packingSlipIncluded: false,
-                              boxSealed: false,
-                              weightRecorded: false,
-                              fragileProtected: false
+                {/* Complete Packing Button - Minimal Design */}
+                <div className="w-full">
+                  {canCompletePacking ? (
+                    <div className="space-y-3">
+                      <Button 
+                        size="lg" 
+                        onClick={async () => {
+                          try {
+                            // Complete the packing
+                            await updateOrderStatusMutation.mutateAsync({
+                              id: activePackingOrder.id,
+                              status: 'ready',
+                              packStatus: 'completed',
+                              packEndTime: new Date().toISOString(),
+                              packedBy: 'Employee #001',
+                              packedItems: activePackingOrder.totalItems
                             });
-                            setSelectedBoxSize('');
-                            setPackageWeight('');
-                            setVerifiedItems(new Set());
-                            setShippingLabelPrinted(false);
-                          }}
-                          className="w-full h-12 text-base font-bold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-xl"
-                        >
-                          <Printer className="h-5 w-5 mr-2" />
-                          PRINT LABEL & COMPLETE
-                        </Button>
-                        
-                        <Button 
-                          size="lg" 
-                          variant="outline"
-                          onClick={() => {
-                            completePacking();
-                            // Reset states and start next order
-                            setPackingChecklist({
-                              itemsVerified: false,
-                              packingSlipIncluded: false,
-                              boxSealed: false,
-                              weightRecorded: false,
-                              fragileProtected: false
-                            });
-                            setSelectedBoxSize('');
-                            setPackageWeight('');
-                            setVerifiedItems(new Set());
-                            setShippingLabelPrinted(false);
                             
-                            // Find next order to pack
+                            // Play success sound
+                            playSound('complete');
+                            
+                            // Show success toast
+                            toast({
+                              title: "✅ Order Packed Successfully!",
+                              description: `Order ${activePackingOrder.orderId} is ready for shipping`,
+                              duration: 3000,
+                            });
+                            
+                            // Reset all states
+                            setActivePackingOrder(null);
+                            setPackingChecklist({
+                              itemsVerified: false,
+                              packingSlipIncluded: false,
+                              boxSealed: false,
+                              weightRecorded: false,
+                              fragileProtected: false
+                            });
+                            setSelectedBoxSize('');
+                            setPackageWeight('');
+                            setVerifiedItems(new Set());
+                            setShippingLabelPrinted(false);
+                            setPrintedDocuments({
+                              packingList: false,
+                              invoice: false,
+                              msds: false,
+                              cpnp: false
+                            });
+                            setSelectedCarton(null);
+                            setPackingRecommendation(null);
+                            setIsPackingTimerRunning(false);
+                            setPackingTimer(0);
+                            
+                            // Refetch orders
+                            refetch();
+                          } catch (error) {
+                            toast({
+                              title: "Error",
+                              description: "Failed to complete packing",
+                              variant: "destructive",
+                            });
+                          }
+                        }}
+                        className="w-full h-14 text-base font-bold bg-green-600 hover:bg-green-700 text-white shadow-lg transition-all"
+                      >
+                        <CheckCircle className="h-5 w-5 mr-2" />
+                        Complete Order - Ready for Shipping
+                      </Button>
+                      
+                      <Button 
+                        size="lg" 
+                        variant="outline"
+                        onClick={async () => {
+                          try {
+                            // Complete current order
+                            await updateOrderStatusMutation.mutateAsync({
+                              id: activePackingOrder.id,
+                              status: 'ready',
+                              packStatus: 'completed',
+                              packEndTime: new Date().toISOString(),
+                              packedBy: 'Employee #001',
+                              packedItems: activePackingOrder.totalItems
+                            });
+                            
+                            playSound('complete');
+                            
+                            // Reset states
+                            setActivePackingOrder(null);
+                            setPackingChecklist({
+                              itemsVerified: false,
+                              packingSlipIncluded: false,
+                              boxSealed: false,
+                              weightRecorded: false,
+                              fragileProtected: false
+                            });
+                            setSelectedBoxSize('');
+                            setPackageWeight('');
+                            setVerifiedItems(new Set());
+                            setShippingLabelPrinted(false);
+                            setPrintedDocuments({
+                              packingList: false,
+                              invoice: false,
+                              msds: false,
+                              cpnp: false
+                            });
+                            setSelectedCarton(null);
+                            setPackingRecommendation(null);
+                            setIsPackingTimerRunning(false);
+                            setPackingTimer(0);
+                            
+                            // Refetch and start next order
+                            await refetch();
+                            
                             setTimeout(() => {
-                              const nextOrder = getOrdersByStatus('packing')[0];
+                              const nextOrder = transformedOrders.find(order => 
+                                order.pickStatus === 'completed' && order.packStatus === 'not_started'
+                              );
                               if (nextOrder) {
                                 startPacking(nextOrder);
                               }
                             }, 500);
-                          }}
-                          className="w-full h-12 text-base font-bold border-2 border-purple-600 text-purple-600 hover:bg-purple-50"
-                        >
-                          <PlayCircle className="h-5 w-5 mr-2" />
-                          PACK NEXT ORDER
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <Button 
-                    size="lg" 
-                    disabled={true}
-                    className="w-full h-14 text-lg font-bold bg-gray-300 text-gray-500 cursor-not-allowed"
-                  >
-                    <PackageCheck className="h-6 w-6 mr-3" />
-                    <div className="text-left">
-                      <div>Complete All Steps</div>
-                      <div className="text-xs font-normal mt-1">
-                        {!allItemsVerified && `✗ Verify items (${verifiedItems.size}/${activePackingOrder.items.length}) | `}
-                        {!documentsReady && '✗ Print docs | '}
-                        {!cartonSelected && '✗ Select carton | '}
-                        {!checklistComplete && '✗ Checklist | '}
-                        {!labelReady && '✗ Print label | '}
-                        {!packageWeight && '✗ Enter weight'}
-                      </div>
+                          } catch (error) {
+                            toast({
+                              title: "Error",
+                              description: "Failed to complete packing",
+                              variant: "destructive",
+                            });
+                          }
+                        }}
+                        className="w-full h-12 text-base font-medium border-2 hover:bg-gray-50"
+                      >
+                        <PlayCircle className="h-4 w-4 mr-2" />
+                        Complete & Pack Next Order
+                      </Button>
                     </div>
-                  </Button>
-                )}
+                  ) : (
+                    <Button 
+                      size="lg" 
+                      disabled={true}
+                      className="w-full h-14 text-base bg-gray-200 text-gray-500 cursor-not-allowed"
+                    >
+                      <PackageCheck className="h-5 w-5 mr-2" />
+                      <div className="text-left flex-1">
+                        <div className="font-medium">Complete Required Steps</div>
+                        <div className="text-xs font-normal mt-0.5 opacity-80">
+                          {!(packingChecklist.itemsVerified || allItemsVerified) && 'Items • '}
+                          {!cartonSelected && 'Carton • '}
+                          {!packageWeight && 'Weight'}
+                        </div>
+                      </div>
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
