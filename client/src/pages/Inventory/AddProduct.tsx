@@ -268,8 +268,20 @@ export default function AddProduct() {
           throw new Error('Failed to upload image');
         }
         
-        const { imageUrl } = await uploadResponse.json();
-        data.imageUrl = imageUrl;
+        const uploadResult = await uploadResponse.json();
+        data.imageUrl = uploadResult.imageUrl;
+        
+        // Show compression info if available
+        if (uploadResult.compressionInfo) {
+          const { originalSize, compressedSize, compressionRatio } = uploadResult.compressionInfo;
+          const originalKB = (originalSize / 1024).toFixed(2);
+          const compressedKB = (compressedSize / 1024).toFixed(2);
+          
+          toast({
+            title: "Image Compressed",
+            description: `Original: ${originalKB} KB → Compressed: ${compressedKB} KB (${compressionRatio} saved)`,
+          });
+        }
       }
       
       await apiRequest('POST', '/api/products', data);

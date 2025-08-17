@@ -30,25 +30,14 @@ import { ObjectPermission } from "./objectAcl";
 import { locationsRouter } from "./routes/locations";
 import { putawayRouter } from "./routes/putaway";
 import { weightCalculationService } from "./services/weightCalculation";
+import { ImageCompressionService } from "./services/imageCompression";
 
-// Configure multer for image uploads
-const storage_disk = multer.diskStorage({
-  destination: async (req, file, cb) => {
-    const uploadDir = 'public/images';
-    await fs.mkdir(uploadDir, { recursive: true });
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
+// Configure multer for image uploads with memory storage for compression
 const upload = multer({ 
-  storage: storage_disk,
+  storage: multer.memoryStorage(), // Use memory storage for compression
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|webp/;
+    const allowedTypes = /jpeg|jpg|png|gif|webp|avif/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
     
@@ -333,12 +322,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "No file uploaded" });
       }
       
-      // Return the public URL for the uploaded image
-      const imageUrl = `/images/${req.file.filename}`;
-      res.json({ imageUrl });
+      // Ensure upload directory exists
+      const uploadDir = 'public/images';
+      await fs.mkdir(uploadDir, { recursive: true });
+      
+      // Generate unique filename with webp extension
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const outputFilename = uniqueSuffix + '.webp';
+      const outputPath = path.join(uploadDir, outputFilename);
+      
+      // Compress image with lossless compression
+      const compressionResult = await ImageCompressionService.compressImageBuffer(
+        req.file.buffer,
+        {
+          format: 'webp',
+          lossless: true,
+          quality: 95,
+          maxWidth: 2048,
+          maxHeight: 2048
+        }
+      );
+      
+      // Save compressed image
+      await fs.writeFile(outputPath, compressionResult.buffer);
+      
+      // Generate thumbnail
+      const thumbnailFilename = uniqueSuffix + '_thumb.webp';
+      const thumbnailPath = path.join(uploadDir, thumbnailFilename);
+      
+      // Create thumbnail from compressed buffer
+      const thumbnailBuffer = await ImageCompressionService.compressImageBuffer(
+        compressionResult.buffer,
+        {
+          format: 'webp',
+          quality: 85,
+          maxWidth: 200,
+          maxHeight: 200
+        }
+      );
+      
+      await fs.writeFile(thumbnailPath, thumbnailBuffer.buffer);
+      
+      // Log compression stats
+      console.log(`Image compressed: ${req.file.originalname}`);
+      console.log(`Original size: ${(req.file.size / 1024).toFixed(2)} KB`);
+      console.log(`Compressed size: ${(compressionResult.compressedSize / 1024).toFixed(2)} KB`);
+      console.log(`Compression ratio: ${compressionResult.compressionRatio.toFixed(2)}%`);
+      
+      // Return URLs and compression info
+      res.json({ 
+        imageUrl: `/images/${outputFilename}`,
+        thumbnailUrl: `/images/${thumbnailFilename}`,
+        compressionInfo: {
+          originalSize: req.file.size,
+          compressedSize: compressionResult.compressedSize,
+          compressionRatio: compressionResult.compressionRatio.toFixed(2) + '%',
+          format: 'webp'
+        }
+      });
     } catch (error) {
-      console.error("Error uploading file:", error);
-      res.status(500).json({ message: "Failed to upload file" });
+      console.error("Error uploading and compressing file:", error);
+      res.status(500).json({ message: "Failed to upload and compress file" });
     }
   });
 
@@ -1456,6 +1500,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting packing material:", error);
       res.status(500).json({ message: "Failed to delete packing material" });
+    }
+  });
+
+  // Batch compress existing images endpoint
+  app.post('/api/compress-images', async (req, res) => {
+    try {
+      const { paths, format = 'webp', lossless = true, quality = 95 } = req.body;
+      
+      if (!paths || !Array.isArray(paths)) {
+        return res.status(400).json({ message: "Paths array is required" });
+      }
+      
+      const results = [];
+      
+      for (const imagePath of paths) {
+        try {
+          // Check if file exists
+          const fullPath = path.join('public', imagePath.replace(/^\//, ''));
+          await fs.access(fullPath);
+          
+          // Generate output path
+          const ext = path.extname(fullPath);
+          const outputPath = fullPath.replace(ext, `.compressed.${format}`);
+          
+          // Compress image
+          const compressionResult = await ImageCompressionService.compressImage(
+            fullPath,
+            outputPath,
+            { format, lossless, quality, maxWidth: 2048, maxHeight: 2048 }
+          );
+          
+          results.push({
+            original: imagePath,
+            compressed: imagePath.replace(ext, `.compressed.${format}`),
+            ...compressionResult,
+            success: true
+          });
+        } catch (error) {
+          results.push({
+            original: imagePath,
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
+        }
+      }
+      
+      res.json({ results });
+    } catch (error) {
+      console.error("Error batch compressing images:", error);
+      res.status(500).json({ message: "Failed to batch compress images" });
+    }
+  });
+
+  // Get image compression info endpoint
+  app.post('/api/image-info', upload.single('image'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+      
+      // Get metadata from buffer
+      const metadata = await ImageCompressionService.getImageMetadataFromBuffer(req.file.buffer);
+      
+      // Simulate compression to get potential savings
+      const compressionResult = await ImageCompressionService.compressImageBuffer(
+        req.file.buffer,
+        { format: 'webp', lossless: true, quality: 95 }
+      );
+      
+      res.json({
+        original: {
+          size: req.file.size,
+          format: metadata.format,
+          width: metadata.width,
+          height: metadata.height,
+          density: metadata.density
+        },
+        potential: {
+          compressedSize: compressionResult.compressedSize,
+          compressionRatio: compressionResult.compressionRatio.toFixed(2) + '%',
+          format: 'webp'
+        }
+      });
+    } catch (error) {
+      console.error("Error getting image info:", error);
+      res.status(500).json({ message: "Failed to get image info" });
     }
   });
 
