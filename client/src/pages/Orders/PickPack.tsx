@@ -1907,9 +1907,9 @@ export default function PickPack() {
     }
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex flex-col">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-slate-100 flex flex-col">
         {/* Header - Packing Mode */}
-        <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg sticky top-0 z-20">
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-700 text-white shadow-lg sticky top-0 z-20">
           <div className="px-3 lg:px-4 py-2 lg:py-3">
             <div className="flex items-center justify-between gap-2">
               <Button
@@ -1967,9 +1967,9 @@ export default function PickPack() {
                 <span className="text-purple-100">Packing Progress</span>
                 <span className="font-bold text-white">{verifiedItems.size}/{activePackingOrder.totalItems} items verified</span>
               </div>
-              <div className="w-full bg-white/20 rounded-full h-2 overflow-hidden">
+              <div className="w-full bg-black/30 rounded-full h-2 overflow-hidden">
                 <div 
-                  className="h-full bg-gradient-to-r from-pink-400 to-purple-400 transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-yellow-400 to-green-400 transition-all duration-500"
                   style={{ width: `${(verifiedItems.size / activePackingOrder.totalItems) * 100}%` }}
                 />
               </div>
@@ -1982,8 +1982,8 @@ export default function PickPack() {
           <div className="p-2 sm:p-4 max-w-6xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
               {/* Left Column - Items Verification */}
-              <Card className="shadow-xl border-0">
-                <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+              <Card className="shadow-xl border-0 bg-white">
+                <CardHeader className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white">
                   <CardTitle className="flex items-center justify-between">
                     <span className="flex items-center gap-2">
                       <ScanLine className="h-5 w-5" />
@@ -2162,8 +2162,8 @@ export default function PickPack() {
               </Card>
 
               {/* Documents to Print Section */}
-              <Card className="shadow-xl border-0">
-                <CardHeader className="bg-gradient-to-r from-green-500 to-emerald-500 text-white">
+              <Card className="shadow-xl border-0 bg-white">
+                <CardHeader className="bg-gradient-to-r from-rose-600 to-pink-600 text-white">
                   <CardTitle className="text-base flex items-center gap-2">
                     <FileText className="h-4 w-4" />
                     Documents to Print
@@ -2359,8 +2359,8 @@ export default function PickPack() {
               {/* Right Column - Packing Details */}
               <div className="space-y-4">
                 {/* AI Carton Selection */}
-                <Card className="shadow-xl border-0">
-                  <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
+                <Card className="shadow-xl border-0 bg-white">
+                  <CardHeader className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white">
                     <CardTitle className="text-base flex items-center gap-2">
                       <Zap className="h-4 w-4" />
                       Carton Selection
@@ -2527,8 +2527,8 @@ export default function PickPack() {
 
 
                 {/* AI Weight Calculation */}
-                <Card className="shadow-xl border-0">
-                  <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+                <Card className="shadow-xl border-0 bg-white">
+                  <CardHeader className="bg-gradient-to-r from-orange-600 to-amber-600 text-white">
                     <CardTitle className="text-base flex items-center gap-2">
                       <BarChart3 className="h-4 w-4" />
                       AI Package Weight Calculation
@@ -2751,8 +2751,8 @@ export default function PickPack() {
                 </Card>
 
                 {/* Enhanced Packing Checklist */}
-                <Card className="shadow-xl border-0">
-                  <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+                <Card className="shadow-xl border-0 bg-white">
+                  <CardHeader className="bg-gradient-to-r from-violet-600 to-purple-600 text-white">
                     <CardTitle className="text-base flex items-center gap-2">
                       <ClipboardList className="h-4 w-4" />
                       Smart Packing Checklist
