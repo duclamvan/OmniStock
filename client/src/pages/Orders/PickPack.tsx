@@ -235,7 +235,9 @@ export default function PickPack() {
     packingSlipIncluded: false,
     boxSealed: false,
     weightRecorded: false,
-    fragileProtected: false
+    fragileProtected: false,
+    invoiceIncluded: false,
+    promotionalMaterials: false
   });
   
   // State for document printing checklist
@@ -312,13 +314,22 @@ export default function PickPack() {
 
   // Auto-calculate weight when entering pack mode
   useEffect(() => {
-    if (activePackingOrder && selectedCarton && !aiWeightCalculation && !useNonCompanyCarton) {
-      // Trigger automatic weight calculation
-      calculateWeightMutation.mutate({
-        orderId: activePackingOrder.id,
-        selectedCartonId: selectedCarton,
-        optimizeMultipleCartons: enableMultiCartonOptimization
-      });
+    if (activePackingOrder && selectedCarton && !useNonCompanyCarton) {
+      // Reset AI calculation when carton changes
+      if (aiWeightCalculation && aiWeightCalculation.cartonId !== selectedCarton) {
+        setAiWeightCalculation(null);
+        setPackageWeight('');
+        setIsWeightManuallyModified(false);
+      }
+      
+      // Trigger automatic weight calculation if not already calculated
+      if (!aiWeightCalculation || aiWeightCalculation.cartonId !== selectedCarton) {
+        calculateWeightMutation.mutate({
+          orderId: activePackingOrder.id,
+          selectedCartonId: selectedCarton,
+          optimizeMultipleCartons: enableMultiCartonOptimization
+        });
+      }
     }
   }, [activePackingOrder?.id, selectedCarton, useNonCompanyCarton]);
 
@@ -360,14 +371,22 @@ export default function PickPack() {
     }) => {
       return apiRequest(`/api/orders/${orderId}/calculate-weight`, 'POST', { selectedCartonId, optimizeMultipleCartons });
     },
-    onSuccess: (data) => {
-      setAiWeightCalculation(data);
+    onSuccess: (data, variables) => {
+      console.log('Weight calculation success:', data);
+      
+      // Add cartonId to the calculation result for tracking
+      const calculationWithCarton = { ...data, cartonId: variables.selectedCartonId };
+      setAiWeightCalculation(calculationWithCarton);
+      
       // Automatically set the weight from AI calculation
-      if (data && data.totalWeight) {
+      if (data && data.totalWeight !== undefined && data.totalWeight !== null) {
         const weightValue = data.totalWeight.toString();
+        console.log('Setting package weight to:', weightValue);
         setPackageWeight(weightValue);
         setPackingChecklist(prev => ({ ...prev, weightRecorded: true }));
         setIsWeightManuallyModified(false);
+      } else {
+        console.log('No totalWeight in data:', data);
       }
     },
   });
@@ -1702,7 +1721,9 @@ export default function PickPack() {
       packingSlipIncluded: false,
       boxSealed: false,
       weightRecorded: false,
-      fragileProtected: false
+      fragileProtected: false,
+      invoiceIncluded: false,
+      promotionalMaterials: false
     });
     setPrintedDocuments({
       packingList: false,
@@ -1962,7 +1983,9 @@ export default function PickPack() {
                     packingSlipIncluded: false,
                     boxSealed: false,
                     weightRecorded: false,
-                    fragileProtected: false
+                    fragileProtected: false,
+                    invoiceIncluded: false,
+                    promotionalMaterials: false
                   });
                   setSelectedBoxSize('');
                   setPackageWeight('');
@@ -3038,7 +3061,9 @@ export default function PickPack() {
                               packingSlipIncluded: false,
                               boxSealed: false,
                               weightRecorded: false,
-                              fragileProtected: false
+                              fragileProtected: false,
+                              invoiceIncluded: false,
+                              promotionalMaterials: false
                             });
                             setSelectedBoxSize('');
                             setPackageWeight('');
@@ -3095,7 +3120,9 @@ export default function PickPack() {
                               packingSlipIncluded: false,
                               boxSealed: false,
                               weightRecorded: false,
-                              fragileProtected: false
+                              fragileProtected: false,
+                              invoiceIncluded: false,
+                              promotionalMaterials: false
                             });
                             setSelectedBoxSize('');
                             setPackageWeight('');
