@@ -251,12 +251,24 @@ export default function PickPack() {
   const [expandedBundles, setExpandedBundles] = useState<Set<string>>(new Set());
   const [bundlePickedItems, setBundlePickedItems] = useState<Record<string, Set<string>>>({}); // itemId -> Set of picked bundle item ids
   const [packingRecommendation, setPackingRecommendation] = useState<PackingRecommendation | null>(null);
-  const [selectedCarton, setSelectedCarton] = useState<string>('K2');
-  const [useNonCompanyCarton, setUseNonCompanyCarton] = useState<boolean>(false);
+  const [selectedCartons, setSelectedCartons] = useState<Array<{
+    id: string;
+    cartonId: string;
+    cartonName: string;
+    isNonCompany: boolean;
+    weight?: string;
+    aiCalculation?: any;
+  }>>([]);
+  const [currentCartonSelection, setCurrentCartonSelection] = useState<string>('');
+  const [currentUseNonCompanyCarton, setCurrentUseNonCompanyCarton] = useState<boolean>(false);
   const [aiWeightCalculation, setAiWeightCalculation] = useState<any>(null);
   const [enableMultiCartonOptimization, setEnableMultiCartonOptimization] = useState<boolean>(false);
   const [cartonSearchFilter, setCartonSearchFilter] = useState<string>('');
   const [isWeightManuallyModified, setIsWeightManuallyModified] = useState<boolean>(false);
+  
+  // Legacy states for compatibility
+  const [selectedCarton, setSelectedCarton] = useState<string>('K2');
+  const [useNonCompanyCarton, setUseNonCompanyCarton] = useState<boolean>(false);
 
   // Timer effects
   useEffect(() => {
@@ -2332,114 +2344,138 @@ export default function PickPack() {
                           </div>
                         )}
 
-                        {/* Carton Selection */}
-                        <div className="space-y-3">
-                          <label className="text-sm font-medium">Select Carton to Pack:</label>
-                          
-                          {/* Search Input */}
-                          <div className="relative">
-                            <Search className="h-4 w-4 absolute left-3 top-3 text-gray-400" />
-                            <Input
-                              placeholder="Search cartons by name, material, or dimensions..."
-                              value={cartonSearchFilter}
-                              onChange={(e) => setCartonSearchFilter(e.target.value)}
-                              className="pl-10"
-                            />
+                        {/* Multi-Carton Selection */}
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <label className="text-sm font-medium">Cartons for Packing:</label>
+                            <Badge variant="outline" className="text-xs">
+                              {selectedCartons.length} carton{selectedCartons.length !== 1 ? 's' : ''}
+                            </Badge>
                           </div>
 
-                          {/* Dropdown Selection */}
-                          <Select 
-                            value={useNonCompanyCarton ? 'non-company' : selectedCarton} 
-                            onValueChange={(value) => {
-                              if (value === 'non-company') {
-                                setUseNonCompanyCarton(true);
-                                setSelectedCarton('non-company');
-                                setSelectedBoxSize('Non-company Carton');
-                                setPackageWeight('');
-                                toast({
-                                  title: 'Non-company carton selected',
-                                  description: 'Please enter the package details manually'
-                                });
-                              } else {
-                                setUseNonCompanyCarton(false);
-                                const carton = availableCartons.find((c: any) => c.id === value);
-                                if (carton) {
-                                  setSelectedCarton(carton.id);
-                                  setSelectedBoxSize(carton.name);
+                          {/* Selected Cartons List */}
+                          {selectedCartons.length > 0 && (
+                            <div className="space-y-2 mb-4">
+                              {selectedCartons.map((carton, index) => (
+                                <div key={carton.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                                  <Badge variant="secondary" className="text-xs">
+                                    #{index + 1}
+                                  </Badge>
+                                  <div className="flex-1">
+                                    <div className="font-medium text-sm">
+                                      {carton.isNonCompany ? 'Non-company carton' : carton.cartonName}
+                                    </div>
+                                    {carton.weight && (
+                                      <div className="text-xs text-gray-500">Weight: {carton.weight}kg</div>
+                                    )}
+                                  </div>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => {
+                                      setSelectedCartons(prev => prev.filter(c => c.id !== carton.id));
+                                    }}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          
+                          {/* Add New Carton Section */}
+                          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 space-y-3">
+                            <div className="text-sm font-medium text-gray-700">Add Carton:</div>
+                            
+                            {/* Search Input */}
+                            <div className="relative">
+                              <Search className="h-4 w-4 absolute left-3 top-3 text-gray-400" />
+                              <Input
+                                placeholder="Search cartons by name, material, or dimensions..."
+                                value={cartonSearchFilter}
+                                onChange={(e) => setCartonSearchFilter(e.target.value)}
+                                className="pl-10"
+                              />
+                            </div>
+
+                            {/* Dropdown Selection */}
+                            <Select 
+                              value={currentUseNonCompanyCarton ? 'non-company' : currentCartonSelection} 
+                              onValueChange={(value) => {
+                                if (value === 'non-company') {
+                                  setCurrentUseNonCompanyCarton(true);
+                                  setCurrentCartonSelection('non-company');
+                                } else {
+                                  setCurrentUseNonCompanyCarton(false);
+                                  const carton = availableCartons.find((c: any) => c.id === value);
+                                  if (carton) {
+                                    setCurrentCartonSelection(carton.id);
+                                  }
                                 }
-                              }
-                            }}
-                          >
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Choose a carton..." />
-                            </SelectTrigger>
-                            <SelectContent className="w-[500px] max-w-[90vw]">
-                              {filteredCartons.map((carton: any) => (
-                                <SelectItem key={carton.id} value={carton.id} className="p-3">
-                                  <div className="flex items-center justify-between w-full min-w-0">
-                                    <div className="flex-1 min-w-0">
-                                      <div className="font-medium text-sm truncate">{carton.name}</div>
-                                      <div className="text-xs text-gray-500 truncate">
-                                        {carton.dimensions.length}×{carton.dimensions.width}×{carton.dimensions.height}cm • {carton.material} • Max: {carton.maxWeight}kg
+                              }}
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Choose a carton..." />
+                              </SelectTrigger>
+                              <SelectContent className="w-[500px] max-w-[90vw]">
+                                {filteredCartons.map((carton: any) => (
+                                  <SelectItem key={carton.id} value={carton.id} className="p-3">
+                                    <div className="flex items-center justify-between w-full min-w-0">
+                                      <div className="flex-1 min-w-0">
+                                        <div className="font-medium text-sm truncate">{carton.name}</div>
+                                        <div className="text-xs text-gray-500 truncate">
+                                          {carton.dimensions.length}×{carton.dimensions.width}×{carton.dimensions.height}cm • {carton.material} • Max: {carton.maxWeight}kg
+                                        </div>
+                                      </div>
+                                      <div className="text-sm font-semibold text-blue-600 ml-2 flex-shrink-0">
+                                        {carton.weight}kg
                                       </div>
                                     </div>
-                                    <div className="text-sm font-semibold text-blue-600 ml-2 flex-shrink-0">
-                                      {carton.weight}kg
-                                    </div>
+                                  </SelectItem>
+                                ))}
+                                <SelectItem value="non-company">
+                                  <div className="flex items-center gap-2">
+                                    <Package className="h-4 w-4 text-gray-600" />
+                                    <span className="font-medium">Non-company carton</span>
                                   </div>
                                 </SelectItem>
-                              ))}
-                              <SelectItem value="non-company">
-                                <div className="flex items-center gap-2">
-                                  <Package className="h-4 w-4 text-gray-600" />
-                                  <span className="font-medium">Non-company carton</span>
-                                </div>
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
+                              </SelectContent>
+                            </Select>
 
-                          {/* Non-company carton clickable option */}
-                          <div 
-                            className={`p-3 rounded-lg border-2 border-dashed cursor-pointer transition-all ${
-                              useNonCompanyCarton 
-                                ? 'border-blue-500 bg-blue-50' 
-                                : 'border-gray-300 bg-gray-50 hover:border-gray-400'
-                            }`}
-                            onClick={() => {
-                              const newValue = !useNonCompanyCarton;
-                              setUseNonCompanyCarton(newValue);
-                              if (newValue) {
-                                setSelectedCarton('non-company');
-                                setSelectedBoxSize('Non-company Carton');
-                                setPackageWeight('');
-                                toast({
-                                  title: 'Non-company carton selected',
-                                  description: 'Please enter the package details manually'
-                                });
-                              } else {
-                                // Reset to first available carton if unchecked
-                                if (availableCartons.length) {
-                                  const firstCarton = availableCartons[0];
-                                  setSelectedCarton(firstCarton.id);
-                                  setSelectedBoxSize(firstCarton.name);
-                                  setPackageWeight('');
+                            {/* Add Carton Button */}
+                            <Button
+                              onClick={() => {
+                                if (currentCartonSelection || currentUseNonCompanyCarton) {
+                                  const cartonId = currentUseNonCompanyCarton ? 'non-company' : currentCartonSelection;
+                                  const carton = availableCartons.find((c: any) => c.id === cartonId);
+                                  const newCarton = {
+                                    id: `carton-${Date.now()}`,
+                                    cartonId: cartonId,
+                                    cartonName: currentUseNonCompanyCarton ? 'Non-company carton' : (carton?.name || ''),
+                                    isNonCompany: currentUseNonCompanyCarton,
+                                  };
+                                  
+                                  setSelectedCartons(prev => [...prev, newCarton]);
+                                  setCurrentCartonSelection('');
+                                  setCurrentUseNonCompanyCarton(false);
+                                  setCartonSearchFilter('');
+                                  
+                                  toast({
+                                    title: 'Carton added',
+                                    description: `${newCarton.cartonName} added to packing list`
+                                  });
                                 }
-                              }
-                            }}
-                          >
-                            <div className="flex items-center gap-3">
-                              <Checkbox 
-                                checked={useNonCompanyCarton}
-                                readOnly
-                                className="cursor-pointer"
-                              />
-                              <div className="flex items-center gap-2">
-                                <Package className="h-4 w-4 text-gray-600" />
-                                <span className="text-sm font-medium">I picked a Non-company carton</span>
-                              </div>
-                            </div>
+                              }}
+                              disabled={!currentCartonSelection && !currentUseNonCompanyCarton}
+                              className="w-full"
+                            >
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add Carton
+                            </Button>
                           </div>
                         </div>
+
+
                       </div>
                     ) : (
                       <div className="text-center py-4">
@@ -2450,48 +2486,7 @@ export default function PickPack() {
                   </CardContent>
                 </Card>
 
-                {/* Selected Carton Details */}
-                {selectedCarton && !useNonCompanyCarton && availableCartons.length > 0 && (
-                  <Card className="shadow-xl border-0">
-                    <CardHeader className="bg-gradient-to-r from-green-500 to-blue-500 text-white">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <Box className="h-4 w-4" />
-                        Selected Carton Details
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-4">
-                      {(() => {
-                        const carton = availableCartons.find((c: any) => c.id === selectedCarton);
-                        if (!carton) return null;
-                        
-                        return (
-                          <div className="space-y-3">
-                            {/* Carton Info */}
-                            <div className="bg-gray-50 p-3 rounded-lg">
-                              <div className="flex justify-between items-center mb-2">
-                                <span className="font-medium">{carton.name}</span>
-                                <Badge variant="secondary">
-                                  {carton.material}
-                                </Badge>
-                              </div>
-                              <div className="text-xs text-gray-600 space-y-1">
-                                <div>Dimensions: {carton.dimensions.length}×{carton.dimensions.width}×{carton.dimensions.height}cm</div>
-                                <div>Carton Weight: {carton.weight}kg</div>
-                                <div>Max Capacity: {carton.maxWeight}kg</div>
-                                <div>Type: {carton.type}</div>
-                              </div>
-                            </div>
-                            
-                            {/* Instructions */}
-                            <div className="text-xs text-gray-600 bg-blue-50 p-2 rounded">
-                              Place all order items in this carton and use the AI weight calculation to get the final package weight.
-                            </div>
-                          </div>
-                        );
-                      })()}
-                    </CardContent>
-                  </Card>
-                )}
+
 
                 {/* AI Weight Calculation */}
                 <Card className="shadow-xl border-0">
