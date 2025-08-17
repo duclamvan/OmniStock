@@ -2208,6 +2208,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Complete packing an order
   app.post('/api/orders/:id/pack/complete', async (req: any, res) => {
     try {
+      const { cartons, packageWeight, printedDocuments, packingChecklist } = req.body;
+      
       // Handle mock orders
       if (req.params.id.startsWith('mock-')) {
         return res.json({ 
@@ -2216,10 +2218,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           packStatus: 'completed',
           packEndTime: new Date().toISOString(),
           orderStatus: 'shipped',
+          finalWeight: packageWeight,
           message: 'Mock order packing completed' 
         });
       }
       
+      // Update order with weight and complete packing
+      const updateData = {
+        packStatus: 'completed',
+        packEndTime: new Date(),
+        finalWeight: parseFloat(packageWeight) || 0,
+        cartonUsed: cartons?.length > 0 ? cartons.map((c: any) => c.cartonName).join(', ') : ''
+      };
+      
+      await storage.updateOrder(req.params.id, updateData);
       const order = await storage.completePackingOrder(req.params.id);
       
       if (order) {
@@ -2228,7 +2240,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           action: 'completed_packing',
           entityType: 'order',
           entityId: req.params.id,
-          description: `Completed packing order: ${order.orderId}`,
+          description: `Completed packing order: ${order.orderId}. Weight: ${packageWeight}kg`,
         });
         res.json(order);
       } else {
@@ -2494,41 +2506,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error starting pack:", error);
       res.status(500).json({ message: "Failed to start packing order" });
-    }
-  });
-
-  // Complete packing an order
-  app.post('/api/orders/:id/pack/complete', async (req: any, res) => {
-    try {
-      // Handle mock orders
-      if (req.params.id.startsWith('mock-')) {
-        return res.json({ 
-          id: req.params.id, 
-          orderId: req.params.id,
-          packStatus: 'completed',
-          packEndTime: new Date().toISOString(),
-          orderStatus: 'shipped',
-          message: 'Mock order packing completed' 
-        });
-      }
-      
-      const order = await storage.completePackingOrder(req.params.id);
-      
-      if (order) {
-        await storage.createUserActivity({
-          userId: "test-user",
-          action: 'completed_packing',
-          entityType: 'order',
-          entityId: req.params.id,
-          description: `Completed packing order: ${order.orderId}`,
-        });
-        res.json(order);
-      } else {
-        res.status(404).json({ message: "Order not found" });
-      }
-    } catch (error) {
-      console.error("Error completing pack:", error);
-      res.status(500).json({ message: "Failed to complete packing order" });
     }
   });
 

@@ -2975,18 +2975,61 @@ export default function PickPack() {
                     <div className="mt-4 pt-3 border-t">
                       <div className="flex justify-between text-xs text-gray-600 mb-1">
                         <span>Checklist Progress</span>
-                        <span className="font-medium">{Object.values(packingChecklist).filter(Boolean).length}/{Object.keys(packingChecklist).length} completed</span>
+                        <span className="font-medium">
+                          {(() => {
+                            // Count only relevant checklist items
+                            const relevantItems = {
+                              itemsVerified: packingChecklist.itemsVerified,
+                              packingSlipIncluded: packingChecklist.packingSlipIncluded,
+                              invoiceIncluded: packingChecklist.invoiceIncluded,
+                              weightRecorded: packingChecklist.weightRecorded,
+                              boxSealed: packingChecklist.boxSealed,
+                              promotionalMaterials: packingChecklist.promotionalMaterials,
+                              // Only include fragileProtected if there are fragile items
+                              ...(currentCarton?.isFragile ? { fragileProtected: packingChecklist.fragileProtected } : {})
+                            };
+                            const completed = Object.values(relevantItems).filter(Boolean).length;
+                            const total = Object.keys(relevantItems).length;
+                            return `${completed}/${total} completed`;
+                          })()}
+                        </span>
                       </div>
                       <Progress 
-                        value={(Object.values(packingChecklist).filter(Boolean).length / Object.keys(packingChecklist).length) * 100}
+                        value={(() => {
+                          const relevantItems = {
+                            itemsVerified: packingChecklist.itemsVerified,
+                            packingSlipIncluded: packingChecklist.packingSlipIncluded,
+                            invoiceIncluded: packingChecklist.invoiceIncluded,
+                            weightRecorded: packingChecklist.weightRecorded,
+                            boxSealed: packingChecklist.boxSealed,
+                            promotionalMaterials: packingChecklist.promotionalMaterials,
+                            ...(currentCarton?.isFragile ? { fragileProtected: packingChecklist.fragileProtected } : {})
+                          };
+                          const completed = Object.values(relevantItems).filter(Boolean).length;
+                          const total = Object.keys(relevantItems).length;
+                          return (completed / total) * 100;
+                        })()}
                         className="h-2 bg-gray-200"
                       />
-                      {Object.values(packingChecklist).filter(Boolean).length === Object.keys(packingChecklist).length && (
-                        <div className="mt-2 flex items-center gap-2 text-xs text-green-600 font-medium">
-                          <CheckCircle className="h-3 w-3" />
-                          All checks completed - Ready to complete packing!
-                        </div>
-                      )}
+                      {(() => {
+                        const relevantItems = {
+                          itemsVerified: packingChecklist.itemsVerified,
+                          packingSlipIncluded: packingChecklist.packingSlipIncluded,
+                          invoiceIncluded: packingChecklist.invoiceIncluded,
+                          weightRecorded: packingChecklist.weightRecorded,
+                          boxSealed: packingChecklist.boxSealed,
+                          promotionalMaterials: packingChecklist.promotionalMaterials,
+                          ...(currentCarton?.isFragile ? { fragileProtected: packingChecklist.fragileProtected } : {})
+                        };
+                        const completed = Object.values(relevantItems).filter(Boolean).length;
+                        const total = Object.keys(relevantItems).length;
+                        return completed === total && (
+                          <div className="mt-2 flex items-center gap-2 text-xs text-green-600 font-medium">
+                            <CheckCircle className="h-3 w-3" />
+                            All checks completed - Ready to complete packing!
+                          </div>
+                        );
+                      })()}
                     </div>
                   </CardContent>
                 </Card>
