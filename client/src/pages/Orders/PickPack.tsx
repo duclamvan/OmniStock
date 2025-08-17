@@ -267,6 +267,7 @@ export default function PickPack() {
   const [enableMultiCartonOptimization, setEnableMultiCartonOptimization] = useState<boolean>(false);
   const [cartonSearchFilter, setCartonSearchFilter] = useState<string>('');
   const [isWeightManuallyModified, setIsWeightManuallyModified] = useState<boolean>(false);
+  const [selectedSearchIndex, setSelectedSearchIndex] = useState<number>(0);
   
   // Legacy states for compatibility
   const [selectedCarton, setSelectedCarton] = useState<string>('K2');
@@ -2566,95 +2567,180 @@ export default function PickPack() {
                             </div>
                           )}
                           
-                          {/* Add New Carton Section */}
+                          {/* Add New Carton Section - Improved UX */}
                           <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 space-y-3">
                             <div className="text-sm font-medium text-gray-700">Add Carton:</div>
                             
-                            {/* Search Input */}
+                            {/* Search Input with Live Results */}
                             <div className="relative">
                               <Search className="h-4 w-4 absolute left-3 top-3 text-gray-400" />
                               <Input
-                                placeholder="Search cartons by name, material, or dimensions..."
+                                placeholder="Type to search cartons..."
                                 value={cartonSearchFilter}
-                                onChange={(e) => setCartonSearchFilter(e.target.value)}
+                                onChange={(e) => {
+                                  setCartonSearchFilter(e.target.value);
+                                  setSelectedSearchIndex(0);
+                                }}
+                                onKeyDown={(e) => {
+                                  const visibleCartons = filteredCartons.slice(0, 5);
+                                  if (e.key === 'ArrowDown') {
+                                    e.preventDefault();
+                                    setSelectedSearchIndex(prev => 
+                                      Math.min(prev + 1, visibleCartons.length - 1)
+                                    );
+                                  } else if (e.key === 'ArrowUp') {
+                                    e.preventDefault();
+                                    setSelectedSearchIndex(prev => Math.max(prev - 1, 0));
+                                  } else if (e.key === 'Enter' && visibleCartons.length > 0) {
+                                    e.preventDefault();
+                                    const selectedCarton = visibleCartons[selectedSearchIndex];
+                                    if (selectedCarton) {
+                                      const newCarton = {
+                                        id: `carton-${Date.now()}`,
+                                        cartonId: selectedCarton.id,
+                                        cartonName: selectedCarton.name,
+                                        isNonCompany: false,
+                                      };
+                                      setSelectedCartons(prev => [...prev, newCarton]);
+                                      setCartonSearchFilter('');
+                                      setSelectedSearchIndex(0);
+                                      toast({
+                                        title: 'Carton added',
+                                        description: `${newCarton.cartonName} added to packing list`
+                                      });
+                                    }
+                                  } else if (e.key === 'Escape') {
+                                    setCartonSearchFilter('');
+                                    setSelectedSearchIndex(0);
+                                  }
+                                }}
                                 className="pl-10"
+                                autoComplete="off"
                               />
+                              
+                              {/* Live Search Results */}
+                              {cartonSearchFilter && (
+                                <div className="absolute top-full mt-1 left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto z-50">
+                                  {filteredCartons.length > 0 ? (
+                                    <>
+                                      {filteredCartons.slice(0, 5).map((carton: any, index: number) => (
+                                        <button
+                                          key={carton.id}
+                                          onClick={() => {
+                                            const newCarton = {
+                                              id: `carton-${Date.now()}`,
+                                              cartonId: carton.id,
+                                              cartonName: carton.name,
+                                              isNonCompany: false,
+                                            };
+                                            
+                                            setSelectedCartons(prev => [...prev, newCarton]);
+                                            setCartonSearchFilter('');
+                                            setSelectedSearchIndex(0);
+                                            
+                                            toast({
+                                              title: 'Carton added',
+                                              description: `${newCarton.cartonName} added to packing list`
+                                            });
+                                          }}
+                                          onMouseEnter={() => setSelectedSearchIndex(index)}
+                                          className={`w-full p-3 transition-colors text-left border-b border-gray-100 last:border-b-0 ${
+                                            index === selectedSearchIndex ? 'bg-blue-50' : 'hover:bg-gray-50'
+                                          }`}
+                                        >
+                                          <div className="flex items-center justify-between">
+                                            <div className="flex-1">
+                                              <div className="font-medium text-sm">{carton.name}</div>
+                                              <div className="text-xs text-gray-500">
+                                                {carton.dimensions.length}×{carton.dimensions.width}×{carton.dimensions.height}cm • {carton.material}
+                                              </div>
+                                            </div>
+                                            <div className="ml-3 flex flex-col items-end">
+                                              <Badge variant="secondary" className="text-xs">
+                                                Max {carton.maxWeight}kg
+                                              </Badge>
+                                              <span className="text-xs text-blue-600 mt-1">${carton.cost}</span>
+                                            </div>
+                                          </div>
+                                        </button>
+                                      ))}
+                                      {filteredCartons.length > 5 && (
+                                        <div className="p-2 text-center text-xs text-gray-500">
+                                          +{filteredCartons.length - 5} more results
+                                        </div>
+                                      )}
+                                    </>
+                                  ) : (
+                                    <div className="p-4 text-center text-sm text-gray-500">
+                                      No cartons found matching "{cartonSearchFilter}"
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             </div>
 
-                            {/* Dropdown Selection */}
-                            <Select 
-                              value={currentUseNonCompanyCarton ? 'non-company' : currentCartonSelection} 
-                              onValueChange={(value) => {
-                                if (value === 'non-company') {
-                                  setCurrentUseNonCompanyCarton(true);
-                                  setCurrentCartonSelection('non-company');
-                                } else {
-                                  setCurrentUseNonCompanyCarton(false);
-                                  const carton = availableCartons.find((c: any) => c.id === value);
-                                  if (carton) {
-                                    setCurrentCartonSelection(carton.id);
-                                  }
-                                }
-                              }}
-                            >
-                              <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Choose a carton..." />
-                              </SelectTrigger>
-                              <SelectContent className="w-[500px] max-w-[90vw]">
-                                {filteredCartons.map((carton: any) => (
-                                  <SelectItem key={carton.id} value={carton.id} className="p-3">
-                                    <div className="flex items-center justify-between w-full min-w-0">
-                                      <div className="flex-1 min-w-0">
-                                        <div className="font-medium text-sm truncate">{carton.name}</div>
-                                        <div className="text-xs text-gray-500 truncate">
-                                          {carton.dimensions.length}×{carton.dimensions.width}×{carton.dimensions.height}cm • {carton.material} • Max: {carton.maxWeight}kg
-                                        </div>
-                                      </div>
-                                      <div className="text-sm font-semibold text-blue-600 ml-2 flex-shrink-0">
-                                        {carton.weight}kg
-                                      </div>
-                                    </div>
-                                  </SelectItem>
-                                ))}
-                                <SelectItem value="non-company">
-                                  <div className="flex items-center gap-2">
-                                    <Package className="h-4 w-4 text-gray-600" />
-                                    <span className="font-medium">Non-company carton</span>
-                                  </div>
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-
-                            {/* Add Carton Button */}
-                            <Button
-                              onClick={() => {
-                                if (currentCartonSelection || currentUseNonCompanyCarton) {
-                                  const cartonId = currentUseNonCompanyCarton ? 'non-company' : currentCartonSelection;
-                                  const carton = availableCartons.find((c: any) => c.id === cartonId);
+                            {/* Quick Add Options */}
+                            <div className="flex flex-wrap gap-2">
+                              {/* Show help text when not searching */}
+                              {!cartonSearchFilter && (
+                                <div className="text-xs text-gray-500 w-full mb-2">
+                                  💡 Quick select below or type to search all cartons
+                                </div>
+                              )}
+                              
+                              {/* Show top 3 cartons as quick buttons when not searching */}
+                              {!cartonSearchFilter && availableCartons.slice(0, 3).map((carton: any) => (
+                                <Button
+                                  key={carton.id}
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const newCarton = {
+                                      id: `carton-${Date.now()}`,
+                                      cartonId: carton.id,
+                                      cartonName: carton.name,
+                                      isNonCompany: false,
+                                    };
+                                    
+                                    setSelectedCartons(prev => [...prev, newCarton]);
+                                    
+                                    toast({
+                                      title: 'Carton added',
+                                      description: `${newCarton.cartonName} added to packing list`
+                                    });
+                                  }}
+                                  className="text-xs"
+                                >
+                                  <Plus className="h-3 w-3 mr-1" />
+                                  {carton.name.split(' - ')[0]}
+                                </Button>
+                              ))}
+                              
+                              {/* Non-company carton option */}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
                                   const newCarton = {
                                     id: `carton-${Date.now()}`,
-                                    cartonId: cartonId,
-                                    cartonName: currentUseNonCompanyCarton ? 'Non-company carton' : (carton?.name || ''),
-                                    isNonCompany: currentUseNonCompanyCarton,
+                                    cartonId: 'non-company',
+                                    cartonName: 'Non-company carton',
+                                    isNonCompany: true,
                                   };
                                   
                                   setSelectedCartons(prev => [...prev, newCarton]);
-                                  setCurrentCartonSelection('');
-                                  setCurrentUseNonCompanyCarton(false);
-                                  setCartonSearchFilter('');
                                   
                                   toast({
                                     title: 'Carton added',
-                                    description: `${newCarton.cartonName} added to packing list`
+                                    description: 'Non-company carton added to packing list'
                                   });
-                                }
-                              }}
-                              disabled={!currentCartonSelection && !currentUseNonCompanyCarton}
-                              className="w-full"
-                            >
-                              <Plus className="h-4 w-4 mr-2" />
-                              Add Carton
-                            </Button>
+                                }}
+                                className="text-xs"
+                              >
+                                <Package className="h-3 w-3 mr-1" />
+                                Non-company
+                              </Button>
+                            </div>
                           </div>
                         </div>
 
