@@ -2031,7 +2031,7 @@ export default function PickPack() {
                   {(() => {
                     // Calculate overall packing progress based on all steps
                     const steps = [
-                      verifiedItems.size === activePackingOrder.totalItems, // All items verified
+                      verifiedItems.size === activePackingOrder.items.length, // All items verified
                       printedDocuments.packingList && printedDocuments.invoice, // Essential documents printed
                       selectedCarton !== null, // Carton selected
                       packingChecklist.itemsVerified && packingChecklist.packingSlipIncluded && 
@@ -2050,7 +2050,7 @@ export default function PickPack() {
                   style={{ 
                     width: `${(() => {
                       // Calculate percentage based on all packing steps
-                      const itemsProgress = (verifiedItems.size / activePackingOrder.totalItems) * 20; // 20%
+                      const itemsProgress = (verifiedItems.size / activePackingOrder.items.length) * 20; // 20%
                       const documentsProgress = ((printedDocuments.packingList ? 1 : 0) + (printedDocuments.invoice ? 1 : 0)) / 2 * 20; // 20%
                       const cartonProgress = selectedCarton ? 20 : 0; // 20%
                       const checklistProgress = [
@@ -2070,11 +2070,11 @@ export default function PickPack() {
               {/* Packing Steps Indicators */}
               <div className="flex items-center gap-1 mt-2 justify-center">
                 <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                  verifiedItems.size === activePackingOrder.totalItems 
+                  verifiedItems.size === activePackingOrder.items.length 
                     ? 'bg-green-500 text-white' 
                     : 'bg-black/20 text-purple-200'
                 }`}>
-                  {verifiedItems.size === activePackingOrder.totalItems ? (
+                  {verifiedItems.size === activePackingOrder.items.length ? (
                     <CheckCircle className="h-3 w-3" />
                   ) : (
                     <Circle className="h-3 w-3" />
