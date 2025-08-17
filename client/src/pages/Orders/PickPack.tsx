@@ -1699,9 +1699,33 @@ export default function PickPack() {
       cpnpCertificate: false
     });
     setVerifiedItems(new Set());
-    setSelectedCarton('carton-1');
     setUseNonCompanyCarton(false);
     setPackageWeight('');
+    setShippingLabelPrinted(false);
+    
+    // Clear previous selections before auto-selecting
+    setSelectedCartons([]);
+    setCurrentCartonSelection('');
+    setCurrentUseNonCompanyCarton(false);
+    
+    // Auto-select the AI-recommended carton after clearing
+    if (recommendation && recommendation.cartons.length > 0) {
+      const firstRecommendedCarton = recommendation.cartons[0];
+      const cartonId = firstRecommendedCarton.boxSize.id;
+      const cartonName = firstRecommendedCarton.boxSize.name;
+      
+      // Add the recommended carton to selected cartons
+      setSelectedCartons([{
+        id: `carton-1`,
+        cartonId: cartonId,
+        cartonName: cartonName,
+        isNonCompany: false
+      }]);
+      
+      // Set the current carton selection
+      setSelectedCarton(cartonId);
+      setCurrentCartonSelection(cartonId);
+    }
     
     playSound('success');
   };
@@ -2488,14 +2512,17 @@ export default function PickPack() {
                     {availableCartons.length > 0 ? (
                       <div className="space-y-4">
                         {/* AI Recommendation */}
-                        {recommendedCarton && (
+                        {packingRecommendation && packingRecommendation.cartons.length > 0 && (
                           <div className="bg-gradient-to-r from-green-50 to-blue-50 p-3 rounded-lg border border-green-200">
                             <div className="flex items-center gap-2 mb-2">
                               <TrendingUp className="h-4 w-4 text-green-600" />
                               <span className="font-semibold text-green-800 text-sm">AI Recommendation</span>
+                              {selectedCartons.length > 0 && selectedCartons[0].cartonId === packingRecommendation.cartons[0].boxSize.id && (
+                                <Badge className="bg-green-600 text-white text-xs">Auto-selected</Badge>
+                              )}
                             </div>
                             <div className="text-sm text-green-700">
-                              Optimal carton: <strong>{recommendedCarton.name}</strong>
+                              Optimal carton: <strong>{packingRecommendation.cartons[0].boxSize.name}</strong>
                             </div>
                           </div>
                         )}
