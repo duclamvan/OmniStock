@@ -2373,17 +2373,17 @@ export default function PickPack() {
                             <SelectTrigger className="w-full">
                               <SelectValue placeholder="Choose a carton..." />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="w-[500px] max-w-[90vw]">
                               {filteredCartons.map((carton: any) => (
-                                <SelectItem key={carton.id} value={carton.id}>
-                                  <div className="flex items-center justify-between w-full">
-                                    <div className="flex-1">
-                                      <div className="font-medium">{carton.name}</div>
-                                      <div className="text-xs text-gray-500">
+                                <SelectItem key={carton.id} value={carton.id} className="p-3">
+                                  <div className="flex items-center justify-between w-full min-w-0">
+                                    <div className="flex-1 min-w-0">
+                                      <div className="font-medium text-sm truncate">{carton.name}</div>
+                                      <div className="text-xs text-gray-500 truncate">
                                         {carton.dimensions.length}×{carton.dimensions.width}×{carton.dimensions.height}cm • {carton.material} • Max: {carton.maxWeight}kg
                                       </div>
                                     </div>
-                                    <div className="text-sm font-semibold text-blue-600 ml-2">
+                                    <div className="text-sm font-semibold text-blue-600 ml-2 flex-shrink-0">
                                       {carton.weight}kg
                                     </div>
                                   </div>
