@@ -364,7 +364,8 @@ export default function PickPack() {
       setAiWeightCalculation(data);
       // Automatically set the weight from AI calculation
       if (data && data.totalWeight) {
-        setPackageWeight(data.totalWeight.toString());
+        const weightValue = data.totalWeight.toString();
+        setPackageWeight(weightValue);
         setPackingChecklist(prev => ({ ...prev, weightRecorded: true }));
         setIsWeightManuallyModified(false);
       }
@@ -3012,7 +3013,7 @@ export default function PickPack() {
                           try {
                             // Complete the packing
                             await updateOrderStatusMutation.mutateAsync({
-                              id: activePackingOrder.id,
+                              orderId: activePackingOrder.id,
                               status: 'ready',
                               packStatus: 'completed',
                               packEndTime: new Date().toISOString(),
@@ -3077,7 +3078,7 @@ export default function PickPack() {
                           try {
                             // Complete current order
                             await updateOrderStatusMutation.mutateAsync({
-                              id: activePackingOrder.id,
+                              orderId: activePackingOrder.id,
                               status: 'ready',
                               packStatus: 'completed',
                               packEndTime: new Date().toISOString(),
