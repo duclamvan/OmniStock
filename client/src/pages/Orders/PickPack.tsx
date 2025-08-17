@@ -1289,17 +1289,23 @@ export default function PickPack() {
       }
       
       queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
-      toast({
-        title: 'Order sent back to pending',
-        description: `Order ${order.orderId} has been moved back to pending pick status`
-      });
+      // Suppress notifications in picking/packing mode
+      if (!activePickingOrder && !activePackingOrder) {
+        toast({
+          title: 'Order sent back to pending',
+          description: `Order ${order.orderId} has been moved back to pending pick status`
+        });
+      }
     } catch (error) {
       console.error('Error sending order back to pick:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to send order back to pick',
-        variant: 'destructive'
-      });
+      // Suppress notifications in picking/packing mode
+      if (!activePickingOrder && !activePackingOrder) {
+        toast({
+          title: 'Error',
+          description: 'Failed to send order back to pick',
+          variant: 'destructive'
+        });
+      }
     }
   };
 
@@ -1636,10 +1642,8 @@ export default function PickPack() {
       setIsTimerRunning(false);
       await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
       
-      toast({
-        title: "Picking completed!",
-        description: `Order ${activePickingOrder.orderId} is ready for packing`,
-      });
+      // Suppress notifications in picking/packing mode - no need here as this is completion
+      // But suppress since we're still in picking mode technically
       
       playSound('complete');
       
@@ -1647,11 +1651,7 @@ export default function PickPack() {
       // The completion screen will handle the navigation
     } catch (error) {
       console.error('Error completing picking:', error);
-      toast({
-        title: "Error",
-        description: "Failed to complete picking",
-        variant: "destructive",
-      });
+      // Suppress error notifications in picking/packing mode
     }
   };
 
@@ -1744,10 +1744,7 @@ export default function PickPack() {
       return apiRequest(`/api/orders/${data.orderId}/packing-details`, 'POST', data);
     },
     onSuccess: () => {
-      toast({
-        title: "Packing Details Saved",
-        description: "Packing information has been saved successfully",
-      });
+      // Suppress notifications in picking/packing mode
     },
   });
 
@@ -1807,21 +1804,14 @@ export default function PickPack() {
       queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
       
-      toast({
-        title: "Order Shipped!",
-        description: `Order ${activePackingOrder.orderId} has been completed and marked as shipped`,
-      });
+      // Suppress notifications in picking/packing mode - but this is completion so allow sound
       
       playSound('complete');
       setActivePackingOrder(null);
       setSelectedTab('ready');
     } catch (error) {
       console.error('Error completing packing:', error);
-      toast({
-        title: "Error",
-        description: "Failed to complete packing. Please try again.",
-        variant: "destructive",
-      });
+      // Suppress error notifications in picking/packing mode
     }
   };
 
@@ -2452,10 +2442,7 @@ export default function PickPack() {
                         });
                         
                         playSound('success');
-                        toast({
-                          title: "Documents Generated",
-                          description: "All required documents have been generated and opened for printing",
-                        });
+                        // Suppress notifications in picking/packing mode
                       }}
                     >
                       <Printer className="h-4 w-4 mr-2" />
@@ -2604,10 +2591,7 @@ export default function PickPack() {
                                       setSelectedCartons(prev => [...prev, newCarton]);
                                       setCartonSearchFilter('');
                                       setSelectedSearchIndex(0);
-                                      toast({
-                                        title: 'Carton added',
-                                        description: `${newCarton.cartonName} added to packing list`
-                                      });
+                                      // Suppress notifications in picking/packing mode
                                     }
                                   } else if (e.key === 'Escape') {
                                     setCartonSearchFilter('');
@@ -2638,10 +2622,7 @@ export default function PickPack() {
                                             setCartonSearchFilter('');
                                             setSelectedSearchIndex(0);
                                             
-                                            toast({
-                                              title: 'Carton added',
-                                              description: `${newCarton.cartonName} added to packing list`
-                                            });
+                                            // Suppress notifications in picking/packing mode
                                           }}
                                           onMouseEnter={() => setSelectedSearchIndex(index)}
                                           className={`w-full p-3 transition-colors text-left border-b border-gray-100 last:border-b-0 ${
@@ -2704,10 +2685,7 @@ export default function PickPack() {
                                     
                                     setSelectedCartons(prev => [...prev, newCarton]);
                                     
-                                    toast({
-                                      title: 'Carton added',
-                                      description: `${newCarton.cartonName} added to packing list`
-                                    });
+                                    // Suppress notifications in picking/packing mode
                                   }}
                                   className="text-xs"
                                 >
@@ -2730,10 +2708,7 @@ export default function PickPack() {
                                   
                                   setSelectedCartons(prev => [...prev, newCarton]);
                                   
-                                  toast({
-                                    title: 'Carton added',
-                                    description: 'Non-company carton added to packing list'
-                                  });
+                                  // Suppress notifications in picking/packing mode
                                 }}
                                 className="text-xs"
                               >
