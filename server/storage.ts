@@ -1301,7 +1301,10 @@ export class DatabaseStorage implements IStorage {
           )
         );
       } else if (status === 'ready_to_ship') {
-        whereCondition = eq(orders.orderStatus, 'ready_to_ship');
+        whereCondition = and(
+          eq(orders.orderStatus, 'ready_to_ship'),
+          eq(orders.packStatus, 'completed')
+        );
       }
     }
 

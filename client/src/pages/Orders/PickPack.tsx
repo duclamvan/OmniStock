@@ -1883,7 +1883,7 @@ export default function PickPack() {
       if (status === 'pending') return order.status === 'to_fulfill' && (order.pickStatus === 'not_started' || !order.pickStatus);
       if (status === 'picking') return order.status === 'to_fulfill' && order.pickStatus === 'in_progress';
       if (status === 'packing') return order.status === 'to_fulfill' && (order.packStatus === 'in_progress' || (order.pickStatus === 'completed' && order.packStatus === 'not_started'));
-      if (status === 'ready') return order.status === 'ready_to_ship' || order.status === 'shipped';
+      if (status === 'ready') return (order.status === 'ready_to_ship' && order.packStatus === 'completed') || order.status === 'shipped';
       return false;
     });
   };
