@@ -1564,32 +1564,40 @@ export default function PickPack() {
 
   // Start picking an order
   const startPicking = async (order: PickPackOrder) => {
-    // Only update database for real orders (not mock orders)
-    if (!order.id.startsWith('mock-')) {
-      // Keep order status as 'to_fulfill' and update pickStatus
-      await updateOrderStatusMutation.mutateAsync({
-        orderId: order.id,
-        status: 'to_fulfill',
-        pickStatus: 'in_progress',
-        pickedBy: currentEmployee
-      });
-    }
+    try {
+      // Only update database for real orders (not mock orders)
+      if (!order.id.startsWith('mock-')) {
+        // Keep order status as 'to_fulfill' and update pickStatus
+        await updateOrderStatusMutation.mutateAsync({
+          orderId: order.id,
+          status: 'to_fulfill',
+          pickStatus: 'in_progress',
+          pickedBy: currentEmployee
+        });
+      }
 
-    const updatedOrder = {
-      ...order,
-      status: 'to_fulfill' as const,
-      pickStatus: 'in_progress' as const,
-      pickStartTime: new Date().toISOString(),
-      pickedBy: currentEmployee
-    };
-    setActivePickingOrder(updatedOrder);
-    setSelectedTab('picking');
-    // Find first unpicked item or start at 0
-    const firstUnpickedIndex = order.items.findIndex(item => item.pickedQuantity < item.quantity);
-    setManualItemIndex(firstUnpickedIndex >= 0 ? firstUnpickedIndex : 0);
-    setPickingTimer(0);
-    setIsTimerRunning(true);
-    playSound('success');
+      const updatedOrder = {
+        ...order,
+        status: 'to_fulfill' as const,
+        pickStatus: 'in_progress' as const,
+        pickStartTime: new Date().toISOString(),
+        pickedBy: currentEmployee,
+        items: order.items || [] // Ensure items array exists
+      };
+      setActivePickingOrder(updatedOrder);
+      setSelectedTab('picking');
+      // Find first unpicked item or start at 0
+      const firstUnpickedIndex = updatedOrder.items.findIndex(item => 
+        (item.pickedQuantity || 0) < item.quantity
+      );
+      setManualItemIndex(firstUnpickedIndex >= 0 ? firstUnpickedIndex : 0);
+      setPickingTimer(0);
+      setIsTimerRunning(true);
+      playSound('success');
+    } catch (error) {
+      console.error('Error starting picking:', error);
+      playSound('error');
+    }
   };
 
   // Update item picked quantity
@@ -3792,13 +3800,70 @@ export default function PickPack() {
                           setPickingTimer(0);
                           setManualItemIndex(0);
                           
-                          // After completing, immediately start the next priority order if available
-                          setTimeout(() => {
-                            const nextOrder = getOrdersByStatus('pending')[0];
-                            if (nextOrder) {
+                          // After completing, refetch and start the next priority order if available
+                          await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+                          
+                          // Wait a moment for the data to refresh
+                          setTimeout(async () => {
+                            // Refetch the latest orders
+                            const result = await queryClient.fetchQuery({ 
+                              queryKey: ['/api/orders/pick-pack'] 
+                            });
+                            
+                            // Transform the fresh data same as transformedOrders logic
+                            const freshOrders = (result as any[])
+                              .filter((order: any) => 
+                                order.status === 'to_fulfill' && 
+                                (order.pickStatus === 'not_started' || !order.pickStatus)
+                              )
+                              .map((order: any) => ({
+                                id: order.id,
+                                orderId: order.orderId,
+                                customerName: order.customerName || 'Walk-in Customer',
+                                shippingMethod: order.shippingMethod || 'Standard',
+                                shippingAddress: order.shippingAddress,
+                                priority: order.priority || 'medium',
+                                status: order.status || 'to_fulfill',
+                                pickStatus: order.pickStatus || 'not_started',
+                                packStatus: order.packStatus || 'not_started',
+                                items: order.items?.map((item: any) => ({
+                                  id: item.id,
+                                  productId: item.productId,
+                                  productName: item.productName,
+                                  sku: item.sku,
+                                  quantity: item.quantity,
+                                  pickedQuantity: item.pickedQuantity || 0,
+                                  packedQuantity: item.packedQuantity || 0,
+                                  warehouseLocation: item.warehouseLocation || generateMockLocation(),
+                                  barcode: item.barcode || generateMockBarcode(item.sku),
+                                  image: item.image || generateMockImage(item.productName),
+                                  isBundle: item.isBundle || false,
+                                  bundleItems: item.bundleItems || undefined,
+                                  dimensions: item.dimensions,
+                                  isFragile: item.isFragile
+                                })) || [],
+                                totalItems: order.items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0,
+                                pickedItems: order.items?.reduce((sum: number, item: any) => sum + (item.pickedQuantity || 0), 0) || 0,
+                                packedItems: order.items?.reduce((sum: number, item: any) => sum + (item.packedQuantity || 0), 0) || 0,
+                                createdAt: order.createdAt,
+                                pickStartTime: order.pickStartTime,
+                                pickEndTime: order.pickEndTime,
+                                packStartTime: order.packStartTime,
+                                packEndTime: order.packEndTime,
+                                pickedBy: order.pickedBy,
+                                packedBy: order.packedBy,
+                                notes: order.notes
+                              }));
+                            
+                            if (freshOrders.length > 0) {
+                              const nextOrder = freshOrders[0];
+                              console.log('Starting next order:', nextOrder);
+                              // Start picking the next order
                               startPicking(nextOrder);
+                            } else {
+                              console.log('No pending orders available to pick');
                             }
-                          }, 100);
+                          }, 300);
                         }}
                         className="w-full h-12 sm:h-14 lg:h-16 text-base sm:text-lg lg:text-xl font-bold border-2 border-blue-600 text-blue-600 hover:bg-blue-50 shadow-lg"
                       >
