@@ -362,8 +362,10 @@ export default function PickPack() {
     },
     onSuccess: (data) => {
       setAiWeightCalculation(data);
-      if (data.totalWeight) {
+      // Automatically set the weight from AI calculation
+      if (data && data.totalWeight) {
         setPackageWeight(data.totalWeight.toString());
+        setPackingChecklist(prev => ({ ...prev, weightRecorded: true }));
         setIsWeightManuallyModified(false);
       }
     },
@@ -2757,6 +2759,8 @@ export default function PickPack() {
                             setIsWeightManuallyModified(true);
                             if (e.target.value) {
                               setPackingChecklist({...packingChecklist, weightRecorded: true});
+                            } else {
+                              setPackingChecklist({...packingChecklist, weightRecorded: false});
                             }
                           }}
                           className="text-lg"
