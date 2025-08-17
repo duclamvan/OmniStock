@@ -369,7 +369,8 @@ export default function PickPack() {
       selectedCartonId: string; 
       optimizeMultipleCartons?: boolean 
     }) => {
-      return apiRequest(`/api/orders/${orderId}/calculate-weight`, 'POST', { selectedCartonId, optimizeMultipleCartons });
+      const response = await apiRequest(`/api/orders/${orderId}/calculate-weight`, 'POST', { selectedCartonId, optimizeMultipleCartons });
+      return await response.json();
     },
     onSuccess: (data, variables) => {
       console.log('Weight calculation success:', data);
@@ -2969,6 +2970,37 @@ export default function PickPack() {
                         </div>
                         {packingChecklist.boxSealed && <CheckCircle className="h-4 w-4 text-green-600" />}
                       </div>
+                    </div>
+
+                    {/* Check All Button */}
+                    <div className="mt-4 flex justify-center">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setPackingChecklist({
+                            itemsVerified: true,
+                            packingSlipIncluded: true,
+                            invoiceIncluded: true,
+                            weightRecorded: !!packageWeight,
+                            boxSealed: true,
+                            promotionalMaterials: true,
+                            fragileProtected: currentCarton?.isFragile ? true : packingChecklist.fragileProtected
+                          });
+                          // Mark all items as verified
+                          if (currentCarton) {
+                            const newVerifiedItems = new Set(verifiedItems);
+                            currentCarton.items.forEach(item => {
+                              newVerifiedItems.add(item.id);
+                            });
+                            setVerifiedItems(newVerifiedItems);
+                          }
+                        }}
+                        className="bg-green-500 hover:bg-green-600 text-white"
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Check All Items
+                      </Button>
                     </div>
 
                     {/* Progress Bar */}
