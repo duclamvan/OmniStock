@@ -2796,14 +2796,35 @@ export default function PickPack() {
                   </CardHeader>
                   <CardContent className="p-4">
                     <div className="space-y-3">
-                      {/* Items Verification */}
-                      <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
+                      {/* Items Verification - Now properly functional */}
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                         <Checkbox 
-                          checked={allItemsVerified}
-                          onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, itemsVerified: !!checked})}
+                          checked={packingChecklist.itemsVerified || allItemsVerified}
+                          onCheckedChange={(checked) => {
+                            setPackingChecklist({...packingChecklist, itemsVerified: !!checked});
+                            // If checking, mark all items as verified
+                            if (checked && currentCarton) {
+                              const newVerifiedItems = new Set(verifiedItems);
+                              currentCarton.items.forEach(item => {
+                                newVerifiedItems.add(item.id);
+                              });
+                              setVerifiedItems(newVerifiedItems);
+                            }
+                          }}
+                          className="cursor-pointer"
                         />
-                        <div className="flex-1">
-                          <span className={allItemsVerified ? 'text-green-600 font-medium' : 'font-medium'}>
+                        <div className="flex-1 cursor-pointer" onClick={() => {
+                          const newChecked = !(packingChecklist.itemsVerified || allItemsVerified);
+                          setPackingChecklist({...packingChecklist, itemsVerified: newChecked});
+                          if (newChecked && currentCarton) {
+                            const newVerifiedItems = new Set(verifiedItems);
+                            currentCarton.items.forEach(item => {
+                              newVerifiedItems.add(item.id);
+                            });
+                            setVerifiedItems(newVerifiedItems);
+                          }
+                        }}>
+                          <span className={(packingChecklist.itemsVerified || allItemsVerified) ? 'text-green-600 font-medium' : 'font-medium'}>
                             All items verified and placed in carton
                           </span>
                           {currentCarton && (
@@ -2812,16 +2833,17 @@ export default function PickPack() {
                             </div>
                           )}
                         </div>
-                        {allItemsVerified && <CheckCircle className="h-4 w-4 text-green-600" />}
-                      </label>
+                        {(packingChecklist.itemsVerified || allItemsVerified) && <CheckCircle className="h-4 w-4 text-green-600" />}
+                      </div>
 
                       {/* Packing Slip */}
-                      <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                         <Checkbox 
                           checked={packingChecklist.packingSlipIncluded}
                           onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, packingSlipIncluded: !!checked})}
+                          className="cursor-pointer"
                         />
-                        <div className="flex-1">
+                        <div className="flex-1 cursor-pointer" onClick={() => setPackingChecklist({...packingChecklist, packingSlipIncluded: !packingChecklist.packingSlipIncluded})}>
                           <span className={packingChecklist.packingSlipIncluded ? 'text-green-600 font-medium' : 'font-medium'}>
                             Packing slip included
                           </span>
@@ -2830,16 +2852,35 @@ export default function PickPack() {
                           </div>
                         </div>
                         {packingChecklist.packingSlipIncluded && <CheckCircle className="h-4 w-4 text-green-600" />}
-                      </label>
+                      </div>
+
+                      {/* Invoice Included */}
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <Checkbox 
+                          checked={packingChecklist.invoiceIncluded || false}
+                          onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, invoiceIncluded: !!checked})}
+                          className="cursor-pointer"
+                        />
+                        <div className="flex-1 cursor-pointer" onClick={() => setPackingChecklist({...packingChecklist, invoiceIncluded: !packingChecklist.invoiceIncluded})}>
+                          <span className={packingChecklist.invoiceIncluded ? 'text-green-600 font-medium' : 'font-medium'}>
+                            Invoice printed and included
+                          </span>
+                          <div className="text-xs text-gray-500 mt-1">
+                            Customer invoice with pricing details
+                          </div>
+                        </div>
+                        {packingChecklist.invoiceIncluded && <CheckCircle className="h-4 w-4 text-green-600" />}
+                      </div>
 
                       {/* Fragile Handling */}
                       {currentCarton?.isFragile && (
-                        <label className="flex items-center gap-3 p-3 bg-red-50 rounded-lg cursor-pointer hover:bg-red-100 border border-red-200">
+                        <div className="flex items-center gap-3 p-3 bg-red-50 rounded-lg hover:bg-red-100 border border-red-200 transition-colors">
                           <Checkbox 
                             checked={packingChecklist.fragileProtected}
                             onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, fragileProtected: !!checked})}
+                            className="cursor-pointer"
                           />
-                          <div className="flex-1">
+                          <div className="flex-1 cursor-pointer" onClick={() => setPackingChecklist({...packingChecklist, fragileProtected: !packingChecklist.fragileProtected})}>
                             <span className={packingChecklist.fragileProtected ? 'text-green-600 font-medium' : 'font-medium text-red-700'}>
                               Fragile items properly protected
                             </span>
@@ -2848,16 +2889,35 @@ export default function PickPack() {
                             </div>
                           </div>
                           {packingChecklist.fragileProtected && <CheckCircle className="h-4 w-4 text-green-600" />}
-                        </label>
+                        </div>
                       )}
 
+                      {/* Promotional Materials */}
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <Checkbox 
+                          checked={packingChecklist.promotionalMaterials || false}
+                          onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, promotionalMaterials: !!checked})}
+                          className="cursor-pointer"
+                        />
+                        <div className="flex-1 cursor-pointer" onClick={() => setPackingChecklist({...packingChecklist, promotionalMaterials: !packingChecklist.promotionalMaterials})}>
+                          <span className={packingChecklist.promotionalMaterials ? 'text-green-600 font-medium' : 'font-medium'}>
+                            Promotional materials added
+                          </span>
+                          <div className="text-xs text-gray-500 mt-1">
+                            Catalogs, samples, or discount codes
+                          </div>
+                        </div>
+                        {packingChecklist.promotionalMaterials && <CheckCircle className="h-4 w-4 text-green-600" />}
+                      </div>
+
                       {/* Weight Recording */}
-                      <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                         <Checkbox 
                           checked={packingChecklist.weightRecorded}
                           onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, weightRecorded: !!checked})}
+                          className="cursor-pointer"
                         />
-                        <div className="flex-1">
+                        <div className="flex-1 cursor-pointer" onClick={() => setPackingChecklist({...packingChecklist, weightRecorded: !packingChecklist.weightRecorded})}>
                           <span className={packingChecklist.weightRecorded ? 'text-green-600 font-medium' : 'font-medium'}>
                             Weight recorded and verified
                           </span>
@@ -2866,15 +2926,16 @@ export default function PickPack() {
                           </div>
                         </div>
                         {packingChecklist.weightRecorded && <CheckCircle className="h-4 w-4 text-green-600" />}
-                      </label>
+                      </div>
 
                       {/* Box Sealing */}
-                      <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100">
+                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                         <Checkbox 
                           checked={packingChecklist.boxSealed}
                           onCheckedChange={(checked) => setPackingChecklist({...packingChecklist, boxSealed: !!checked})}
+                          className="cursor-pointer"
                         />
-                        <div className="flex-1">
+                        <div className="flex-1 cursor-pointer" onClick={() => setPackingChecklist({...packingChecklist, boxSealed: !packingChecklist.boxSealed})}>
                           <span className={packingChecklist.boxSealed ? 'text-green-600 font-medium' : 'font-medium'}>
                             Carton sealed and shipping label applied
                           </span>
@@ -2883,19 +2944,25 @@ export default function PickPack() {
                           </div>
                         </div>
                         {packingChecklist.boxSealed && <CheckCircle className="h-4 w-4 text-green-600" />}
-                      </label>
+                      </div>
                     </div>
 
                     {/* Progress Bar */}
                     <div className="mt-4 pt-3 border-t">
                       <div className="flex justify-between text-xs text-gray-600 mb-1">
                         <span>Checklist Progress</span>
-                        <span>{Object.values(packingChecklist).filter(Boolean).length}/{Object.keys(packingChecklist).length}</span>
+                        <span className="font-medium">{Object.values(packingChecklist).filter(Boolean).length}/{Object.keys(packingChecklist).length} completed</span>
                       </div>
                       <Progress 
                         value={(Object.values(packingChecklist).filter(Boolean).length / Object.keys(packingChecklist).length) * 100}
-                        className="h-2"
+                        className="h-2 bg-gray-200"
                       />
+                      {Object.values(packingChecklist).filter(Boolean).length === Object.keys(packingChecklist).length && (
+                        <div className="mt-2 flex items-center gap-2 text-xs text-green-600 font-medium">
+                          <CheckCircle className="h-3 w-3" />
+                          All checks completed - Ready to complete packing!
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
