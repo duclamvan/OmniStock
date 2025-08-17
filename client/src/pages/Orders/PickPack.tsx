@@ -32,7 +32,8 @@ import logoPath from '@assets/logo_1754349267160.png';
 import { 
   Package, 
   Printer, 
-  CheckCircle, 
+  CheckCircle,
+  Circle, 
   Clock,
   MapPin,
   User,
@@ -1898,8 +1899,22 @@ export default function PickPack() {
     const progress = (activePackingOrder.packedItems / activePackingOrder.totalItems) * 100;
     const currentCarton = packingRecommendation?.cartons.find(c => c.id === selectedCarton);
     const allItemsVerified = currentCarton ? currentCarton.items.every(item => verifiedItems.has(item.id)) : false;
-    const allChecklistComplete = Object.values(packingChecklist).every(v => v === true);
-    const canCompletePacking = allItemsVerified && allChecklistComplete && selectedBoxSize && packageWeight;
+    
+    // Check all required packing steps
+    const documentsReady = printedDocuments.packingList && printedDocuments.invoice;
+    const cartonSelected = selectedCarton !== null;
+    const checklistComplete = packingChecklist.itemsVerified && 
+                             packingChecklist.packingSlipIncluded && 
+                             packingChecklist.boxSealed && 
+                             packingChecklist.weightRecorded;
+    const labelReady = shippingLabelPrinted;
+    
+    const canCompletePacking = allItemsVerified && 
+                              documentsReady && 
+                              cartonSelected && 
+                              checklistComplete && 
+                              labelReady && 
+                              packageWeight;
     
     // Stop timer when packing is complete
     if (canCompletePacking && isPackingTimerRunning) {
@@ -1965,13 +1980,114 @@ export default function PickPack() {
             <div className="mt-2">
               <div className="flex justify-between text-xs mb-1">
                 <span className="text-purple-100">Packing Progress</span>
-                <span className="font-bold text-white">{verifiedItems.size}/{activePackingOrder.totalItems} items verified</span>
+                <span className="font-bold text-white">
+                  {(() => {
+                    // Calculate overall packing progress based on all steps
+                    const steps = [
+                      verifiedItems.size === activePackingOrder.totalItems, // All items verified
+                      printedDocuments.packingList && printedDocuments.invoice, // Essential documents printed
+                      selectedCarton !== null, // Carton selected
+                      packingChecklist.itemsVerified && packingChecklist.packingSlipIncluded && 
+                      packingChecklist.boxSealed && packingChecklist.weightRecorded, // Core checklist items
+                      shippingLabelPrinted // Shipping label printed
+                    ];
+                    const completedSteps = steps.filter(Boolean).length;
+                    const totalSteps = steps.length;
+                    return `${completedSteps}/${totalSteps} steps`;
+                  })()}
+                </span>
               </div>
               <div className="w-full bg-black/30 rounded-full h-2 overflow-hidden">
                 <div 
                   className="h-full bg-gradient-to-r from-yellow-400 to-green-400 transition-all duration-500"
-                  style={{ width: `${(verifiedItems.size / activePackingOrder.totalItems) * 100}%` }}
+                  style={{ 
+                    width: `${(() => {
+                      // Calculate percentage based on all packing steps
+                      const itemsProgress = (verifiedItems.size / activePackingOrder.totalItems) * 20; // 20%
+                      const documentsProgress = ((printedDocuments.packingList ? 1 : 0) + (printedDocuments.invoice ? 1 : 0)) / 2 * 20; // 20%
+                      const cartonProgress = selectedCarton ? 20 : 0; // 20%
+                      const checklistProgress = [
+                        packingChecklist.itemsVerified,
+                        packingChecklist.packingSlipIncluded,
+                        packingChecklist.boxSealed,
+                        packingChecklist.weightRecorded
+                      ].filter(Boolean).length / 4 * 20; // 20%
+                      const labelProgress = shippingLabelPrinted ? 20 : 0; // 20%
+                      
+                      return itemsProgress + documentsProgress + cartonProgress + checklistProgress + labelProgress;
+                    })()}%` 
+                  }}
                 />
+              </div>
+              
+              {/* Packing Steps Indicators */}
+              <div className="flex items-center gap-1 mt-2 justify-center">
+                <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                  verifiedItems.size === activePackingOrder.totalItems 
+                    ? 'bg-green-500 text-white' 
+                    : 'bg-black/20 text-purple-200'
+                }`}>
+                  {verifiedItems.size === activePackingOrder.totalItems ? (
+                    <CheckCircle className="h-3 w-3" />
+                  ) : (
+                    <Circle className="h-3 w-3" />
+                  )}
+                  Items
+                </div>
+                
+                <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                  printedDocuments.packingList && printedDocuments.invoice
+                    ? 'bg-green-500 text-white' 
+                    : 'bg-black/20 text-purple-200'
+                }`}>
+                  {printedDocuments.packingList && printedDocuments.invoice ? (
+                    <CheckCircle className="h-3 w-3" />
+                  ) : (
+                    <Circle className="h-3 w-3" />
+                  )}
+                  Docs
+                </div>
+                
+                <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                  selectedCarton 
+                    ? 'bg-green-500 text-white' 
+                    : 'bg-black/20 text-purple-200'
+                }`}>
+                  {selectedCarton ? (
+                    <CheckCircle className="h-3 w-3" />
+                  ) : (
+                    <Circle className="h-3 w-3" />
+                  )}
+                  Carton
+                </div>
+                
+                <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                  packingChecklist.itemsVerified && packingChecklist.packingSlipIncluded && 
+                  packingChecklist.boxSealed && packingChecklist.weightRecorded
+                    ? 'bg-green-500 text-white' 
+                    : 'bg-black/20 text-purple-200'
+                }`}>
+                  {packingChecklist.itemsVerified && packingChecklist.packingSlipIncluded && 
+                   packingChecklist.boxSealed && packingChecklist.weightRecorded ? (
+                    <CheckCircle className="h-3 w-3" />
+                  ) : (
+                    <Circle className="h-3 w-3" />
+                  )}
+                  Checklist
+                </div>
+                
+                <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                  shippingLabelPrinted 
+                    ? 'bg-green-500 text-white' 
+                    : 'bg-black/20 text-purple-200'
+                }`}>
+                  {shippingLabelPrinted ? (
+                    <CheckCircle className="h-3 w-3" />
+                  ) : (
+                    <Circle className="h-3 w-3" />
+                  )}
+                  Label
+                </div>
               </div>
             </div>
           </div>
@@ -2990,7 +3106,17 @@ export default function PickPack() {
                     className="w-full h-14 text-lg font-bold bg-gray-300 text-gray-500 cursor-not-allowed"
                   >
                     <PackageCheck className="h-6 w-6 mr-3" />
-                    Complete Checklist ({verifiedItems.size}/{activePackingOrder.items.length} items)
+                    <div className="text-left">
+                      <div>Complete All Steps</div>
+                      <div className="text-xs font-normal mt-1">
+                        {!allItemsVerified && `✗ Verify items (${verifiedItems.size}/${activePackingOrder.items.length}) | `}
+                        {!documentsReady && '✗ Print docs | '}
+                        {!cartonSelected && '✗ Select carton | '}
+                        {!checklistComplete && '✗ Checklist | '}
+                        {!labelReady && '✗ Print label | '}
+                        {!packageWeight && '✗ Enter weight'}
+                      </div>
+                    </div>
                   </Button>
                 )}
               </div>
