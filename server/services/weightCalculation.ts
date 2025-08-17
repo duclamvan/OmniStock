@@ -225,8 +225,25 @@ export class AIWeightCalculationService {
     }
     
     for (const item of order.items) {
-      if (item.productId) {
-        // Get product details
+      // Check if this is a bundle
+      if (item.isBundle && item.bundleItems && item.bundleItems.length > 0) {
+        // Calculate weight for bundle items
+        for (const bundleItem of item.bundleItems) {
+          // Find the product by name (since bundle items use product names)
+          const products = await storage.getProducts();
+          const product = products.find(p => p.name === bundleItem.name);
+          
+          if (product && product.weight) {
+            const productWeight = parseFloat(product.weight.toString());
+            totalWeight += productWeight * bundleItem.quantity * item.quantity;
+          } else {
+            // Estimate weight if not found
+            const estimatedWeight = this.estimateProductWeight(product || null);
+            totalWeight += estimatedWeight * bundleItem.quantity * item.quantity;
+          }
+        }
+      } else if (item.productId) {
+        // Regular product (not a bundle)
         const product = await storage.getProductById(item.productId);
         if (product && product.weight) {
           const productWeight = parseFloat(product.weight.toString());
