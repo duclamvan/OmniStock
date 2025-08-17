@@ -54,6 +54,7 @@ import ShippingManagement from "@/pages/Shipping/ShippingManagement";
 import PackingMaterials from "@/pages/PackingMaterials";
 import AddPackingMaterial from "@/pages/PackingMaterials/AddPackingMaterial";
 import EditPackingMaterial from "@/pages/PackingMaterials/EditPackingMaterial";
+import Files from "@/pages/Files/Files";
 
 function Router() {
   return (
@@ -122,6 +123,7 @@ function Router() {
         <Route path="/expenses/:id" component={ExpenseDetails} />
         <Route path="/pos" component={POS} />
         <Route path="/shipping" component={ShippingManagement} />
+        <Route path="/files" component={Files} />
         <Route path="/reports">
           {() => <div>Reports page coming soon</div>}
         </Route>

@@ -192,6 +192,7 @@ export default function PackingMaterials() {
       <DataTable
         columns={columns}
         data={materials}
+        getRowKey={(material: PackingMaterial) => material.id}
         emptyMessage="No packing materials found"
       />
     </div>

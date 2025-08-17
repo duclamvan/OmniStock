@@ -532,6 +532,22 @@ export const packingMaterials = pgTable("packing_materials", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Product Files table for storing MSDS, CPNP certificates, leaflets, etc
+export const productFiles = pgTable("product_files", {
+  id: text("id").primaryKey().$defaultFn(() => `file-${Math.random().toString(36).substr(2, 9)}`),
+  productId: text("product_id").references(() => products.id),
+  fileName: text("file_name").notNull(),
+  fileType: text("file_type").notNull(), // MSDS, CPNP, Leaflet, Manual, Certificate, Other
+  fileUrl: text("file_url").notNull(),
+  fileSize: integer("file_size"), // in bytes
+  mimeType: text("mime_type"),
+  description: text("description"),
+  uploadedBy: text("uploaded_by"),
+  uploadedAt: timestamp("uploaded_at").defaultNow().notNull(),
+  isActive: boolean("is_active").default(true),
+  tags: text("tags").array(), // Additional tags for categorization
+});
+
 // Relations
 export const categoriesRelations = relations(categories, ({ many }) => ({
   products: many(products),
@@ -564,10 +580,18 @@ export const productsRelations = relations(products, ({ one, many }) => ({
   }),
   variants: many(productVariants),
   orderItems: many(orderItems),
+  files: many(productFiles),
 }));
 
 export const packingMaterialsRelations = relations(packingMaterials, ({ many }) => ({
   products: many(products),
+}));
+
+export const productFilesRelations = relations(productFiles, ({ one }) => ({
+  product: one(products, {
+    fields: [productFiles.productId],
+    references: [products.id],
+  }),
 }));
 
 export const productVariantsRelations = relations(productVariants, ({ one }) => ({

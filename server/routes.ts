@@ -2402,6 +2402,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create packing session
+  app.post('/api/packing/sessions', async (req, res) => {
+    try {
+      const { orderId, packerId } = req.body;
+      
+      const session = {
+        id: `pack-session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        orderId,
+        packerId: packerId || req.user?.id || 'system',
+        startedAt: new Date().toISOString(),
+        status: 'in_progress',
+        timer: {
+          startTime: Date.now(),
+          elapsed: 0,
+          paused: false
+        },
+        steps: {
+          itemsPicked: false,
+          cartonSelected: false,
+          itemsPacked: false,
+          documentsIncluded: false,
+          labelPrinted: false,
+          photoCaptured: false
+        },
+        documents: [],
+        cartons: [],
+        notes: []
+      };
+      
+      // In production, save to database
+      res.json(session);
+    } catch (error) {
+      console.error('Error creating packing session:', error);
+      res.status(500).json({ message: 'Failed to create packing session' });
+    }
+  });
+
+  // Update packing session
+  app.patch('/api/packing/sessions/:sessionId', async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      const updates = req.body;
+      
+      // In production, fetch from database
+      const updatedSession = {
+        id: sessionId,
+        ...updates,
+        lastUpdated: new Date().toISOString()
+      };
+      
+      res.json(updatedSession);
+    } catch (error) {
+      console.error('Error updating packing session:', error);
+      res.status(500).json({ message: 'Failed to update packing session' });
+    }
+  });
+
+  // Get packing session
+  app.get('/api/packing/sessions/:sessionId', async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      
+      // In production, fetch from database
+      const session = {
+        id: sessionId,
+        orderId: 'ORD-2025-0001',
+        packerId: 'user-123',
+        startedAt: new Date().toISOString(),
+        status: 'in_progress',
+        timer: {
+          startTime: Date.now(),
+          elapsed: 0,
+          paused: false
+        }
+      };
+      
+      res.json(session);
+    } catch (error) {
+      console.error('Error fetching packing session:', error);
+      res.status(500).json({ message: 'Failed to fetch packing session' });
+    }
+  });
+
   // Save packing details with multi-carton support
   app.post('/api/orders/:id/packing-details', async (req: any, res) => {
     try {
@@ -3935,6 +4018,181 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         error: error instanceof Error ? error.message : 'Failed to calculate real-time weight' 
       });
+    }
+  });
+
+  // Product Files Routes
+  app.get('/api/product-files', async (req, res) => {
+    try {
+      const { productId, fileType } = req.query;
+      
+      let files;
+      if (fileType) {
+        files = await storage.getFilesByType(fileType as string);
+      } else if (productId) {
+        files = await storage.getProductFiles(productId as string);
+      } else {
+        files = await storage.getAllFiles();
+      }
+      
+      res.json(files);
+    } catch (error) {
+      console.error('Error fetching product files:', error);
+      res.status(500).json({ message: 'Failed to fetch product files' });
+    }
+  });
+
+  // Get files required for packing an order
+  app.get('/api/orders/:orderId/packing-files', async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      
+      // Get order items
+      const order = await storage.getOrderById(orderId);
+      if (!order) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+      
+      const items = await storage.getOrderItems(orderId);
+      const productIds = [...new Set(items.map(item => item.productId))];
+      
+      // Get all files for products in this order
+      const filesPromises = productIds.map(productId => storage.getProductFiles(productId));
+      const filesArrays = await Promise.all(filesPromises);
+      const allFiles = filesArrays.flat();
+      
+      // Group files by type for easy display
+      const filesByType = {
+        MSDS: allFiles.filter(f => f.fileType === 'MSDS'),
+        CPNP: allFiles.filter(f => f.fileType === 'CPNP'),
+        Leaflet: allFiles.filter(f => f.fileType === 'Leaflet'),
+        Manual: allFiles.filter(f => f.fileType === 'Manual'),
+        Certificate: allFiles.filter(f => f.fileType === 'Certificate'),
+        Other: allFiles.filter(f => f.fileType === 'Other'),
+      };
+      
+      res.json({
+        orderId,
+        totalFiles: allFiles.length,
+        filesByType,
+        files: allFiles
+      });
+    } catch (error) {
+      console.error('Error fetching packing files:', error);
+      res.status(500).json({ message: 'Failed to fetch packing files' });
+    }
+  });
+
+  app.post('/api/product-files', async (req, res) => {
+    try {
+      const file = await storage.createProductFile(req.body);
+      res.json(file);
+    } catch (error) {
+      console.error('Error creating product file:', error);
+      res.status(500).json({ message: 'Failed to create product file' });
+    }
+  });
+
+  // Mark documents as included in packing
+  app.post('/api/orders/:orderId/packing-documents', async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const { documentIds, packingSessionId } = req.body;
+      
+      // Update packing session with included documents
+      const packingDocuments = {
+        orderId,
+        packingSessionId: packingSessionId || `pack-${Date.now()}`,
+        documentIds,
+        includedAt: new Date().toISOString(),
+        includedBy: req.user?.id || 'system'
+      };
+      
+      // Store packing document tracking (would need a new table in production)
+      res.json({
+        success: true,
+        packingDocuments
+      });
+    } catch (error) {
+      console.error('Error tracking packing documents:', error);
+      res.status(500).json({ message: 'Failed to track packing documents' });
+    }
+  });
+
+  // Complete packing with document checklist
+  app.post('/api/orders/:orderId/complete-packing', async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const { 
+        packingSessionId,
+        usedCartons,
+        actualWeight,
+        includedDocuments,
+        packingNotes,
+        packingPhotos,
+        shippingLabel
+      } = req.body;
+      
+      // Update order status to ready_to_ship
+      const order = await storage.getOrderById(orderId);
+      if (!order) {
+        return res.status(404).json({ error: 'Order not found' });
+      }
+      
+      // Create packing completion record
+      const packingCompletion = {
+        orderId,
+        packingSessionId: packingSessionId || `pack-${Date.now()}`,
+        completedAt: new Date().toISOString(),
+        completedBy: req.user?.id || 'system',
+        usedCartons: usedCartons || [],
+        actualWeight: actualWeight || 0,
+        includedDocuments: includedDocuments || [],
+        packingNotes: packingNotes || '',
+        packingPhotos: packingPhotos || [],
+        shippingLabel: shippingLabel || null,
+        previousStatus: order.status,
+        newStatus: 'ready_to_ship'
+      };
+      
+      // Update order status
+      await storage.updateOrder(orderId, {
+        ...order,
+        status: 'ready_to_ship',
+        packingCompletedAt: new Date().toISOString()
+      });
+      
+      res.json({
+        success: true,
+        packingCompletion,
+        order: {
+          ...order,
+          status: 'ready_to_ship'
+        }
+      });
+    } catch (error) {
+      console.error('Error completing packing:', error);
+      res.status(500).json({ message: 'Failed to complete packing' });
+    }
+  });
+
+  app.put('/api/product-files/:id', async (req, res) => {
+    try {
+      const file = await storage.updateProductFile(req.params.id, req.body);
+      res.json(file);
+    } catch (error) {
+      console.error('Error updating product file:', error);
+      res.status(500).json({ message: 'Failed to update product file' });
+    }
+  });
+
+  app.delete('/api/product-files/:id', async (req, res) => {
+    try {
+      await storage.deleteProductFile(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error deleting product file:', error);
+      res.status(500).json({ message: 'Failed to delete product file' });
     }
   });
 

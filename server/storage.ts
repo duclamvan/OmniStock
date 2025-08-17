@@ -80,6 +80,7 @@ import {
   type InsertPackingMaterial,
   type PickPackLog,
   type InsertPickPackLog,
+  productFiles,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, and, or, like, sql, gte, lte, count, inArray, isNotNull } from "drizzle-orm";
@@ -293,6 +294,14 @@ export interface IStorage {
   updatePackingMaterial(id: string, material: Partial<InsertPackingMaterial>): Promise<PackingMaterial>;
   deletePackingMaterial(id: string): Promise<void>;
   searchPackingMaterials(query: string): Promise<PackingMaterial[]>;
+
+  // Product Files
+  createProductFile(file: any): Promise<any>;
+  getProductFiles(productId?: string): Promise<any[]>;
+  getAllFiles(): Promise<any[]>;
+  getFilesByType(fileType: string): Promise<any[]>;
+  updateProductFile(id: string, data: any): Promise<any>;
+  deleteProductFile(id: string): Promise<boolean>;
 
   // Utility Functions
   generateSKU(categoryName: string, productName: string): Promise<string>;
@@ -2358,6 +2367,68 @@ export class DatabaseStorage implements IStorage {
     return suggestions
       .sort((a, b) => b.score - a.score)
       .slice(0, 3);
+  }
+
+  // Product Files Implementation
+  async createProductFile(file: any): Promise<any> {
+    const fileData = {
+      ...file,
+      id: file.id || `file-${Math.random().toString(36).substr(2, 9)}`,
+    };
+    
+    const [createdFile] = await db.insert(productFiles).values(fileData).returning();
+    return createdFile;
+  }
+
+  async getProductFiles(productId?: string): Promise<any[]> {
+    if (productId) {
+      return await db.select()
+        .from(productFiles)
+        .where(and(
+          eq(productFiles.productId, productId),
+          eq(productFiles.isActive, true)
+        ))
+        .orderBy(desc(productFiles.uploadedAt));
+    }
+    return await db.select()
+      .from(productFiles)
+      .where(eq(productFiles.isActive, true))
+      .orderBy(desc(productFiles.uploadedAt));
+  }
+
+  async getAllFiles(): Promise<any[]> {
+    return await db.select()
+      .from(productFiles)
+      .leftJoin(products, eq(productFiles.productId, products.id))
+      .where(eq(productFiles.isActive, true))
+      .orderBy(desc(productFiles.uploadedAt));
+  }
+
+  async getFilesByType(fileType: string): Promise<any[]> {
+    return await db.select()
+      .from(productFiles)
+      .leftJoin(products, eq(productFiles.productId, products.id))
+      .where(and(
+        eq(productFiles.fileType, fileType),
+        eq(productFiles.isActive, true)
+      ))
+      .orderBy(desc(productFiles.uploadedAt));
+  }
+
+  async updateProductFile(id: string, data: any): Promise<any> {
+    const [updatedFile] = await db.update(productFiles)
+      .set(data)
+      .where(eq(productFiles.id, id))
+      .returning();
+    return updatedFile;
+  }
+
+  async deleteProductFile(id: string): Promise<boolean> {
+    // Soft delete by setting isActive to false
+    await db.update(productFiles)
+      .set({ isActive: false })
+      .where(eq(productFiles.id, id));
+    return true;
   }
 }
 

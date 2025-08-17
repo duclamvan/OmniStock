@@ -32,6 +32,7 @@ The schema supports a comprehensive e-commerce workflow, encompassing core entit
 - **Product Bundles**: Comprehensive management system with standalone creation, robust product variant support, multiple pricing modes, advanced variant selection, detailed view pages with statistics, and duplicate/activate/deactivate functionality.
 - **Point of Sale (POS)**: Full-featured POS system for walk-in customers with thermal printer support, multi-currency support, real-time cart management, VAT calculation, receipt generation, and mobile optimization.
 - **AI-Powered Packing System**: Advanced carton selection algorithm that analyzes item dimensions, weight, and fragility to recommend optimal box combinations with cost efficiency analysis, visual carton representations with code names (E1-E2 for envelopes, K1-K3 for standard cartons, F1 for fragile protection, B1 for bottles), comprehensive packing workflow with smart checklists, automatic weight calculation, and shipping label integration.
+- **Files Management System**: Comprehensive document management for MSDS, CPNP certificates, leaflets, and other product-related files with categorization by type, product linking, tagging system, and quick access during packing operations.
 - **Multi-Currency Support**: Supports five currencies (CZK, EUR, USD, VND, CNY) with simplified exchange rate conversion.
 - **Search Functionality**: Real-time Vietnamese diacritics search with custom character normalization.
 - **Reusable Components**: Generic DataTable component with bulk selection, sorting, pagination, and actions.

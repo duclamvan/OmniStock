@@ -12,7 +12,8 @@ import {
   ChevronDown,
   Plus,
   Truck,
-  Ship
+  Ship,
+  FileText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -58,6 +59,11 @@ const navigation = [
     name: "Customers",
     href: "/customers",
     icon: Users,
+  },
+  {
+    name: "Files",
+    href: "/files",
+    icon: FileText,
   },
   {
     name: "Reports",
