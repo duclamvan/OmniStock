@@ -2402,6 +2402,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Save packing details with multi-carton support
+  app.post('/api/orders/:id/packing-details', async (req: any, res) => {
+    try {
+      const { 
+        cartons, // Array of selected cartons
+        packageWeight,
+        printedDocuments,
+        packingChecklist,
+        multiCartonOptimization
+      } = req.body;
+      
+      // Store packing details
+      const packingDetails = {
+        orderId: req.params.id,
+        cartons: cartons || [],
+        totalWeight: packageWeight,
+        documentsChecklist: printedDocuments,
+        packingChecklist: packingChecklist,
+        multiCartonEnabled: multiCartonOptimization,
+        createdAt: new Date()
+      };
+      
+      // Log packing details activity
+      await storage.createPickPackLog({
+        orderId: req.params.id,
+        orderItemId: null,
+        activityType: 'packing_details_saved',
+        userId: "test-user",
+        userName: "Test User",
+        productName: '',
+        sku: '',
+        quantity: cartons?.length || 0,
+        location: '',
+        notes: `Saved packing details: ${cartons?.length || 0} carton(s), weight: ${packageWeight}kg`,
+      });
+      
+      res.json({ success: true, packingDetails });
+    } catch (error) {
+      console.error("Error saving packing details:", error);
+      res.status(500).json({ message: "Failed to save packing details" });
+    }
+  });
+
   // Update picked quantity for an order item
   app.patch('/api/orders/:id/items/:itemId/pick', async (req: any, res) => {
     try {

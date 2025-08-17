@@ -1704,6 +1704,26 @@ export default function PickPack() {
     playSound('success');
   };
 
+  // Mutation for saving packing details
+  const savePackingDetailsMutation = useMutation({
+    mutationFn: async (data: {
+      orderId: string;
+      cartons: Array<{ id: string; cartonId: string; cartonName: string; weight?: string }>;
+      packageWeight: string;
+      printedDocuments: typeof printedDocuments;
+      packingChecklist: typeof packingChecklist;
+      multiCartonOptimization: boolean;
+    }) => {
+      return apiRequest(`/api/orders/${data.orderId}/packing-details`, 'POST', data);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Packing Details Saved",
+        description: "Packing information has been saved successfully",
+      });
+    },
+  });
+
   // Complete packing
   const completePacking = async () => {
     if (!activePackingOrder) return;
@@ -1711,11 +1731,29 @@ export default function PickPack() {
     try {
       // Only update database for real orders (not mock orders)
       if (!activePackingOrder.id.startsWith('mock-')) {
+        // Save all packing details including multi-carton information
+        await savePackingDetailsMutation.mutateAsync({
+          orderId: activePackingOrder.id,
+          cartons: selectedCartons,
+          packageWeight: packageWeight,
+          printedDocuments: printedDocuments,
+          packingChecklist: packingChecklist,
+          multiCartonOptimization: enableMultiCartonOptimization
+        });
+
         // Log packing completion activity
         await apiRequest(`/api/orders/${activePackingOrder.id}/pick-pack-logs`, 'POST', {
           activityType: 'pack_complete',
           userName: currentEmployee,
-          notes: `Packing completed. Box: ${selectedBoxSize}, Weight: ${packageWeight}kg`
+          notes: `Packing completed. ${selectedCartons.length} carton(s), Total weight: ${packageWeight}kg`
+        });
+
+        // Complete packing with multi-carton data
+        await apiRequest(`/api/orders/${activePackingOrder.id}/pack/complete`, 'POST', {
+          cartons: selectedCartons,
+          packageWeight: packageWeight,
+          printedDocuments: printedDocuments,
+          packingChecklist: packingChecklist
         });
 
         // Update order status to "shipped" when packing is complete
@@ -1726,7 +1764,7 @@ export default function PickPack() {
           packEndTime: new Date().toISOString(),
           shippedAt: new Date().toISOString(),
           finalWeight: parseFloat(packageWeight) || 0,
-          cartonUsed: selectedBoxSize
+          cartonUsed: selectedCartons.length > 0 ? selectedCartons.map(c => c.cartonName).join(', ') : selectedCarton
         });
       }
 
