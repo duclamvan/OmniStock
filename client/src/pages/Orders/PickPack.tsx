@@ -3037,7 +3037,7 @@ export default function PickPack() {
                             // Complete the packing
                             await updateOrderStatusMutation.mutateAsync({
                               orderId: activePackingOrder.id,
-                              status: 'ready',
+                              status: 'ready_to_ship',
                               packStatus: 'completed',
                               packEndTime: new Date().toISOString(),
                               packedBy: 'Employee #001',
