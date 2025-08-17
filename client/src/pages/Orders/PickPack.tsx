@@ -249,6 +249,7 @@ export default function PickPack() {
   const [selectedBoxSize, setSelectedBoxSize] = useState<string>('');
   const [packageWeight, setPackageWeight] = useState<string>('');
   const [verifiedItems, setVerifiedItems] = useState<Set<string>>(new Set());
+  const [shippingLabelPrinted, setShippingLabelPrinted] = useState<boolean>(false);
   const [expandedBundles, setExpandedBundles] = useState<Set<string>>(new Set());
   const [bundlePickedItems, setBundlePickedItems] = useState<Record<string, Set<string>>>({}); // itemId -> Set of picked bundle item ids
   const [packingRecommendation, setPackingRecommendation] = useState<PackingRecommendation | null>(null);
@@ -1944,6 +1945,7 @@ export default function PickPack() {
                   setSelectedBoxSize('');
                   setPackageWeight('');
                   setVerifiedItems(new Set());
+                  setShippingLabelPrinted(false);
                 }}
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
@@ -3001,11 +3003,13 @@ export default function PickPack() {
                       <Button 
                         className="w-full bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-blue-600"
                         onClick={() => {
+                          setShippingLabelPrinted(true);
                           playSound('success');
                         }}
+                        disabled={shippingLabelPrinted}
                       >
                         <Printer className="h-4 w-4 mr-2" />
-                        Generate Shipping Label
+                        {shippingLabelPrinted ? 'Label Printed ✓' : 'Generate Shipping Label'}
                       </Button>
                     </div>
                   </CardContent>
@@ -3059,6 +3063,7 @@ export default function PickPack() {
                             setSelectedBoxSize('');
                             setPackageWeight('');
                             setVerifiedItems(new Set());
+                            setShippingLabelPrinted(false);
                           }}
                           className="w-full h-12 text-base font-bold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-xl"
                         >
@@ -3082,6 +3087,7 @@ export default function PickPack() {
                             setSelectedBoxSize('');
                             setPackageWeight('');
                             setVerifiedItems(new Set());
+                            setShippingLabelPrinted(false);
                             
                             // Find next order to pack
                             setTimeout(() => {
