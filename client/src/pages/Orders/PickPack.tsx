@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, memo } from "react";
 import { createPortal } from "react-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -172,6 +172,52 @@ interface PickPackOrder {
   packedBy?: string;
   notes?: string;
 }
+
+// Memoized Product Image Component to prevent re-renders from timer updates
+const ProductImage = memo(({ 
+  item, 
+  onImageClick 
+}: { 
+  item: OrderItem, 
+  onImageClick: (image: string) => void 
+}) => {
+  return (
+    <div className="relative flex-shrink-0 z-0">
+      <div 
+        className="w-20 h-20 sm:w-24 sm:h-24 lg:w-40 lg:h-40 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center shadow-lg border-2 lg:border-4 border-white cursor-pointer hover:shadow-xl transition-shadow"
+        onClick={(e) => {
+          e.stopPropagation();
+          if (item.image) {
+            onImageClick(item.image);
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            if (item.image) {
+              onImageClick(item.image);
+            }
+          }
+        }}
+      >
+        {item.image ? (
+          <img 
+            src={item.image} 
+            alt={item.productName}
+            className="w-full h-full object-contain rounded-lg p-1 lg:p-2"
+            style={{ pointerEvents: 'none' }}
+          />
+        ) : (
+          <Package className="h-10 lg:h-16 w-10 lg:w-16 text-gray-300" style={{ pointerEvents: 'none' }} />
+        )}
+      </div>
+      <div className="absolute -top-1 -right-1 lg:-top-2 lg:-right-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center font-bold text-xs lg:text-base shadow-lg" style={{ pointerEvents: 'none' }}>
+        {item.quantity}x
+      </div>
+    </div>
+  );
+});
 
 export default function PickPack() {
   const { toast } = useToast();
@@ -3571,40 +3617,10 @@ export default function PickPack() {
                       {/* Mobile Optimized Compact Product Layout */}
                       <div className="flex gap-3 lg:gap-6">
                         {/* Product Image - Compact on mobile */}
-                        <div className="relative flex-shrink-0 z-0">
-                          <div 
-                            className="w-20 h-20 sm:w-24 sm:h-24 lg:w-40 lg:h-40 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center shadow-lg border-2 lg:border-4 border-white cursor-pointer hover:shadow-xl transition-shadow"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (currentItem.image) {
-                                setExpandedProductImage(currentItem.image);
-                              }
-                            }}
-                            role="button"
-                            tabIndex={0}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                if (currentItem.image) {
-                                  setExpandedProductImage(currentItem.image);
-                                }
-                              }
-                            }}
-                          >
-                            {currentItem.image ? (
-                              <img 
-                                src={currentItem.image} 
-                                alt={currentItem.productName}
-                                className="w-full h-full object-contain rounded-lg p-1 lg:p-2"
-                                style={{ pointerEvents: 'none' }}
-                              />
-                            ) : (
-                              <Package className="h-10 lg:h-16 w-10 lg:w-16 text-gray-300" style={{ pointerEvents: 'none' }} />
-                            )}
-                          </div>
-                          <div className="absolute -top-1 -right-1 lg:-top-2 lg:-right-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center font-bold text-xs lg:text-base shadow-lg" style={{ pointerEvents: 'none' }}>
-                            {currentItem.quantity}x
-                          </div>
-                        </div>
+                        <ProductImage 
+                          item={currentItem} 
+                          onImageClick={setExpandedProductImage}
+                        />
                         
                         {/* Product Details - Organized layout */}
                         <div className="flex-1 min-w-0 flex flex-col justify-center">
