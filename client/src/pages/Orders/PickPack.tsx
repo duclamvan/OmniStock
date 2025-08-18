@@ -283,6 +283,24 @@ export default function PickPack() {
   const [useNonCompanyCarton, setUseNonCompanyCarton] = useState<boolean>(false);
   const [previewOrder, setPreviewOrder] = useState<PickPackOrder | null>(null);
   const [selectedReadyOrders, setSelectedReadyOrders] = useState<Set<string>>(new Set());
+  const [showShipAllConfirm, setShowShipAllConfirm] = useState(false);
+  const [recentlyShippedOrders, setRecentlyShippedOrders] = useState<PickPackOrder[]>([]);
+  const [showUndoPopup, setShowUndoPopup] = useState(false);
+  const [undoTimeLeft, setUndoTimeLeft] = useState(5);
+
+  // Timer effect for undo popup
+  useEffect(() => {
+    if (showUndoPopup && undoTimeLeft > 0) {
+      const timer = setTimeout(() => {
+        setUndoTimeLeft(prev => prev - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (undoTimeLeft === 0) {
+      setShowUndoPopup(false);
+      setRecentlyShippedOrders([]);
+      setUndoTimeLeft(5);
+    }
+  }, [showUndoPopup, undoTimeLeft]);
 
   // Timer effects
   useEffect(() => {
@@ -1932,6 +1950,59 @@ export default function PickPack() {
 
     playSound('success');
     queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+  };
+
+  // Ship all ready orders
+  const shipAllOrders = async () => {
+    const readyOrders = getOrdersByStatus('ready');
+    setRecentlyShippedOrders(readyOrders);
+    
+    // Mark all orders as shipped
+    for (const order of readyOrders) {
+      await updateOrderStatusMutation.mutateAsync({
+        orderId: order.id,
+        status: 'shipped'
+      });
+    }
+    
+    playSound('success');
+    queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+    
+    // Show undo popup
+    setShowShipAllConfirm(false);
+    setShowUndoPopup(true);
+    setUndoTimeLeft(5);
+    
+    toast({
+      title: "Orders Shipped",
+      description: `${readyOrders.length} orders marked as shipped`,
+    });
+  };
+
+  // Undo shipment - move orders back to packing
+  const undoShipment = async () => {
+    for (const order of recentlyShippedOrders) {
+      await updatePickPackStatusMutation.mutateAsync({
+        orderId: order.id,
+        packStatus: 'in_progress'
+      });
+      
+      await updateOrderStatusMutation.mutateAsync({
+        orderId: order.id,
+        status: 'to_fulfill'
+      });
+    }
+    
+    queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+    
+    setShowUndoPopup(false);
+    setRecentlyShippedOrders([]);
+    setUndoTimeLeft(5);
+    
+    toast({
+      title: "Shipment Undone",
+      description: `${recentlyShippedOrders.length} orders moved back to packing`,
+    });
   };
 
   // Handle barcode scanning
@@ -4733,37 +4804,15 @@ export default function PickPack() {
                     <CardTitle className="text-base sm:text-lg">Ready to Ship</CardTitle>
                     <CardDescription className="text-xs sm:text-sm">Orders fully packed and ready for shipping</CardDescription>
                   </div>
-                  {selectedReadyOrders.size > 0 && (
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          selectedReadyOrders.forEach(orderId => {
-                            const order = getOrdersByStatus('ready').find(o => o.id === orderId);
-                            if (order) returnToPacking(order);
-                          });
-                          setSelectedReadyOrders(new Set());
-                        }}
-                      >
-                        <RotateCcw className="h-4 w-4 mr-1" />
-                        Return {selectedReadyOrders.size} to Packing
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="bg-green-600 hover:bg-green-700"
-                        onClick={() => {
-                          selectedReadyOrders.forEach(orderId => {
-                            const order = getOrdersByStatus('ready').find(o => o.id === orderId);
-                            if (order) markAsShipped(order);
-                          });
-                          setSelectedReadyOrders(new Set());
-                        }}
-                      >
-                        <Truck className="h-4 w-4 mr-1" />
-                        Ship {selectedReadyOrders.size} Orders
-                      </Button>
-                    </div>
+                  {getOrdersByStatus('ready').length > 0 && (
+                    <Button
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700"
+                      onClick={() => setShowShipAllConfirm(true)}
+                    >
+                      <Truck className="h-4 w-4 mr-1" />
+                      Mark all as shipped
+                    </Button>
                   )}
                 </div>
               </CardHeader>
@@ -4778,30 +4827,13 @@ export default function PickPack() {
                     {getOrdersByStatus('ready').map(order => (
                       <Card 
                         key={order.id} 
-                        className={`cursor-pointer hover:shadow-md transition-shadow ${
-                          selectedReadyOrders.has(order.id) ? 'ring-2 ring-green-500' : ''
-                        }`}
+                        className="cursor-pointer hover:shadow-md transition-shadow"
                         onClick={() => setPreviewOrder(order)}
                       >
                         <CardContent className="p-3 sm:p-4">
                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                            <div className="flex items-start gap-3">
-                              <Checkbox
-                                checked={selectedReadyOrders.has(order.id)}
-                                onCheckedChange={(checked) => {
-                                  const newSelected = new Set(selectedReadyOrders);
-                                  if (checked) {
-                                    newSelected.add(order.id);
-                                  } else {
-                                    newSelected.delete(order.id);
-                                  }
-                                  setSelectedReadyOrders(newSelected);
-                                }}
-                                onClick={(e) => e.stopPropagation()}
-                                className="mt-1"
-                              />
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1 sm:mb-2">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1 sm:mb-2">
                                 <h3 className="font-semibold text-sm sm:text-base">{order.orderId}</h3>
                                 {/* Status indicator */}
                                 {(() => {
@@ -4827,7 +4859,6 @@ export default function PickPack() {
                                   <span className="text-green-600">Packed by {order.packedBy}</span>
                                 </div>
                               </div>
-                            </div>
                             </div>
                             <div className="flex gap-2 items-center ml-auto">
                               <Button
@@ -4962,6 +4993,51 @@ export default function PickPack() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Ship All Confirmation Dialog */}
+      <Dialog open={showShipAllConfirm} onOpenChange={setShowShipAllConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Shipment</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to mark all {getOrdersByStatus('ready').length} orders as shipped?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-3 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowShipAllConfirm(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-green-600 hover:bg-green-700"
+              onClick={shipAllOrders}
+            >
+              <Truck className="h-4 w-4 mr-2" />
+              Confirm Shipment
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Undo Popup */}
+      {showUndoPopup && (
+        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
+          <div className="bg-gray-900 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3">
+            <CheckCircle className="h-5 w-5 text-green-400" />
+            <span>{recentlyShippedOrders.length} orders marked as shipped</span>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={undoShipment}
+              className="ml-3"
+            >
+              Undo ({undoTimeLeft}s)
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
