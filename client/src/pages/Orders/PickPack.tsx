@@ -5167,7 +5167,8 @@ export default function PickPack() {
       {/* Expanded Product Image Modal - Portal to document.body */}
       {expandedProductImage && createPortal(
         <div 
-          className="fixed inset-0 z-[999999] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          className="fixed inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          style={{ zIndex: 999999, position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
           onClick={() => setExpandedProductImage(null)}
         >
           <div 

@@ -281,16 +281,14 @@
   }
 }
 
-/* Image dialog specific styles to ensure it appears above picking interface */
-.image-dialog {
+/* Force all portals to appear above picking interface */
+body > [data-radix-portal] {
   z-index: 999999 !important;
+  position: fixed !important;
 }
 
-.image-dialog ~ [data-radix-dialog-overlay] {
-  z-index: 999998 !important;
-}
-
-/* Override for image dialog portal */
-[data-radix-portal]:has(.image-dialog) {
+/* Ensure image modal appears above everything */
+body > div[style*="z-index: 999999"] {
   z-index: 999999 !important;
+  position: fixed !important;
 }
