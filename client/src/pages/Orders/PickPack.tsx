@@ -287,6 +287,7 @@ export default function PickPack() {
   const [recentlyShippedOrders, setRecentlyShippedOrders] = useState<PickPackOrder[]>([]);
   const [showUndoPopup, setShowUndoPopup] = useState(false);
   const [undoTimeLeft, setUndoTimeLeft] = useState(5);
+  const [expandedProductImage, setExpandedProductImage] = useState<string | null>(null);
 
   // Timer effect for undo popup
   useEffect(() => {
@@ -3570,7 +3571,10 @@ export default function PickPack() {
                       <div className="flex gap-3 lg:gap-6">
                         {/* Product Image - Compact on mobile */}
                         <div className="relative flex-shrink-0">
-                          <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-40 lg:h-40 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center shadow-lg border-2 lg:border-4 border-white">
+                          <div 
+                            className="w-20 h-20 sm:w-24 sm:h-24 lg:w-40 lg:h-40 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center shadow-lg border-2 lg:border-4 border-white cursor-pointer hover:shadow-xl transition-shadow"
+                            onClick={() => currentItem.image && setExpandedProductImage(currentItem.image)}
+                          >
                             {currentItem.image ? (
                               <img 
                                 src={currentItem.image} 
@@ -3592,7 +3596,7 @@ export default function PickPack() {
                           <div className="space-y-1.5">
                             {/* Product Name */}
                             <div className="flex items-start">
-                              <h3 className="text-base sm:text-lg lg:text-2xl font-bold text-gray-900 line-clamp-1">{currentItem.productName}</h3>
+                              <h3 className="text-base sm:text-lg lg:text-2xl font-bold text-gray-900 break-words">{currentItem.productName}</h3>
                             </div>
                             
                             {/* SKU */}
@@ -5140,6 +5144,29 @@ export default function PickPack() {
               <Truck className="h-4 w-4 mr-2" />
               Confirm Shipment
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Expanded Product Image Dialog */}
+      <Dialog open={!!expandedProductImage} onOpenChange={() => setExpandedProductImage(null)}>
+        <DialogContent className="max-w-5xl h-[90vh] p-0">
+          <div className="relative w-full h-full flex items-center justify-center bg-black/95 rounded-lg">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 text-white hover:bg-white/20 z-10"
+              onClick={() => setExpandedProductImage(null)}
+            >
+              <X className="h-6 w-6" />
+            </Button>
+            {expandedProductImage && (
+              <img 
+                src={expandedProductImage} 
+                alt="Expanded product"
+                className="max-w-full max-h-full object-contain p-4"
+              />
+            )}
           </div>
         </DialogContent>
       </Dialog>
