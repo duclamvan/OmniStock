@@ -5048,33 +5048,64 @@ export default function PickPack() {
                       
                       // Categorize orders
                       const czechiaSlovakia = readyOrders.filter(order => {
+                        // Check order ID prefix or notes content for CZ orders
+                        const orderId = order.orderId?.toLowerCase() || '';
+                        const notes = order.notes?.toLowerCase() || '';
                         const address = order.shippingAddress?.toLowerCase() || '';
-                        return address.includes('czech') || address.includes('česk') || 
+                        
+                        return orderId.includes('-cz') || 
+                               notes.includes('czech/slovak') || 
+                               address.includes('czech') || address.includes('česk') || 
                                address.includes('slovakia') || address.includes('slovensk') ||
-                               address.includes('praha') || address.includes('bratislava') ||
-                               address.includes('brno') || address.includes('košice');
+                               address.includes('prague') || address.includes('praha') || 
+                               address.includes('bratislava') || address.includes('brno') || 
+                               address.includes('košice') || address.includes('plzeň') ||
+                               address.includes('ostrava') || address.includes('prešov') ||
+                               address.includes('nitra') || address.includes('trnava');
                       });
                       
                       const germanyEU = readyOrders.filter(order => {
+                        // Check order ID prefix or notes content for DE orders
+                        const orderId = order.orderId?.toLowerCase() || '';
+                        const notes = order.notes?.toLowerCase() || '';
                         const address = order.shippingAddress?.toLowerCase() || '';
                         const isCzechSlovak = czechiaSlovakia.includes(order);
+                        
                         return !isCzechSlovak && (
+                          orderId.includes('-de') || 
+                          notes.includes('german/eu') ||
                           address.includes('germany') || address.includes('deutschland') ||
                           address.includes('berlin') || address.includes('munich') ||
+                          address.includes('düsseldorf') || address.includes('frankfurt') ||
+                          address.includes('hamburg') || address.includes('vienna') ||
+                          address.includes('zurich') || address.includes('geneva') ||
+                          address.includes('austria') || address.includes('switzerland') ||
                           address.includes('france') || address.includes('italy') ||
                           address.includes('spain') || address.includes('poland') ||
-                          address.includes('austria') || address.includes('belgium')
+                          address.includes('belgium')
                         );
                       });
                       
                       const personalDelivery = readyOrders.filter(order => {
+                        // Check order ID prefix or notes content for PD orders
+                        const orderId = order.orderId?.toLowerCase() || '';
+                        const notes = order.notes?.toLowerCase() || '';
                         const method = order.shippingMethod?.toLowerCase() || '';
-                        return method.includes('personal') || method.includes('hand deliver');
+                        
+                        return orderId.includes('-pd') || 
+                               notes.includes('personal') ||
+                               method.includes('personal') || method.includes('hand deliver');
                       });
                       
                       const pickup = readyOrders.filter(order => {
+                        // Check order ID prefix or notes content for PU orders
+                        const orderId = order.orderId?.toLowerCase() || '';
+                        const notes = order.notes?.toLowerCase() || '';
                         const method = order.shippingMethod?.toLowerCase() || '';
-                        return method.includes('pickup') || method.includes('collect');
+                        
+                        return orderId.includes('-pu') || 
+                               notes.includes('pickup') ||
+                               method.includes('pickup') || method.includes('collect');
                       });
                       
                       // Other orders (not in any category)
@@ -5140,14 +5171,15 @@ export default function PickPack() {
                               </div>
                               <Button
                                 size="sm"
-                                className={section.buttonColor}
+                                className={`${section.buttonColor} text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2`}
                                 onClick={() => {
                                   // Mark all orders in this section as shipped
                                   section.orders.forEach(order => markAsShipped(order));
                                 }}
                               >
-                                <Truck className="h-4 w-4 mr-1" />
-                                Ship {section.title}
+                                <Truck className="h-3 sm:h-4 w-3 sm:w-4 mr-1" />
+                                <span className="hidden sm:inline">Ship {section.title}</span>
+                                <span className="sm:hidden">Ship {section.orders.length}</span>
                               </Button>
                             </div>
                             
