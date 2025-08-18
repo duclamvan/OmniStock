@@ -365,7 +365,7 @@ export default function PickPack() {
   // Fetch real orders from the API with items and bundle details
   const { data: allOrders = [], isLoading } = useQuery({
     queryKey: ['/api/orders/pick-pack'],
-    refetchInterval: 10000, // Refresh every 10 seconds
+    refetchInterval: expandedProductImage ? false : 10000, // Disable refresh when image modal is open
   });
 
   // Query for available cartons
