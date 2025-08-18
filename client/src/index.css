@@ -281,18 +281,16 @@
   }
 }
 
-/* Ensure dialog portals appear above all other elements */
-[data-radix-portal] {
+/* Image dialog specific styles to ensure it appears above picking interface */
+.image-dialog {
   z-index: 999999 !important;
 }
 
-/* Force dialog overlay to appear above picking interface */
-[data-radix-dialog-overlay] {
+.image-dialog ~ [data-radix-dialog-overlay] {
   z-index: 999998 !important;
-  position: fixed !important;
 }
 
-[data-radix-dialog-content] {
+/* Override for image dialog portal */
+[data-radix-portal]:has(.image-dialog) {
   z-index: 999999 !important;
-  position: fixed !important;
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -5163,39 +5164,35 @@ export default function PickPack() {
         </DialogContent>
       </Dialog>
 
-      {/* Expanded Product Image Dialog */}
-      <Dialog open={!!expandedProductImage} onOpenChange={() => setExpandedProductImage(null)}>
-        <DialogContent 
-          className="max-w-5xl h-[90vh] p-0 border-0 fixed inset-0 m-auto" 
-          style={{ 
-            zIndex: 999999,
-            position: 'fixed'
-          }}
+      {/* Expanded Product Image Modal - Portal to document.body */}
+      {expandedProductImage && createPortal(
+        <div 
+          className="fixed inset-0 z-[999999] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          onClick={() => setExpandedProductImage(null)}
         >
-          <DialogHeader className="sr-only">
-            <DialogTitle>Product Image</DialogTitle>
-            <DialogDescription>Expanded view of product image</DialogDescription>
-          </DialogHeader>
-          <div className="relative w-full h-full flex items-center justify-center bg-black/95 rounded-lg">
+          <div 
+            className="relative max-w-5xl max-h-[90vh] w-full h-full m-4 bg-black rounded-lg shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             <Button
               variant="ghost"
               size="icon"
-              className="absolute top-2 right-2 text-white hover:bg-white/20"
-              style={{ zIndex: 999999 }}
+              className="absolute top-2 right-2 z-10 text-white hover:bg-white/20"
               onClick={() => setExpandedProductImage(null)}
             >
               <X className="h-6 w-6" />
             </Button>
-            {expandedProductImage && (
+            <div className="w-full h-full flex items-center justify-center p-4">
               <img 
                 src={expandedProductImage} 
                 alt="Expanded product"
-                className="max-w-full max-h-full object-contain p-4"
+                className="max-w-full max-h-full object-contain"
               />
-            )}
+            </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>,
+        document.body
+      )}
 
       {/* Undo Popup */}
       {showUndoPopup && (
