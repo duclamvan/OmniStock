@@ -2100,13 +2100,13 @@ export default function PickPack() {
           packingChecklist: packingChecklist
         });
 
-        // Update order status to "shipped" when packing is complete
+        // Update order status to "ready_to_ship" when packing is complete
+        // Order will stay in Ready tab until manually marked as shipped
         await updateOrderStatusMutation.mutateAsync({
           orderId: activePackingOrder.id,
-          status: 'shipped',
+          status: 'ready_to_ship',
           packStatus: 'completed',
           packEndTime: new Date().toISOString(),
-          shippedAt: new Date().toISOString(),
           finalWeight: parseFloat(packageWeight) || 0,
           cartonUsed: selectedCartons.length > 0 ? selectedCartons.map(c => c.cartonName).join(', ') : selectedCarton
         });
@@ -2238,7 +2238,7 @@ export default function PickPack() {
       if (status === 'pending') return order.status === 'to_fulfill' && (order.pickStatus === 'not_started' || !order.pickStatus);
       if (status === 'picking') return order.status === 'to_fulfill' && order.pickStatus === 'in_progress';
       if (status === 'packing') return order.status === 'to_fulfill' && (order.packStatus === 'in_progress' || (order.pickStatus === 'completed' && order.packStatus === 'not_started'));
-      if (status === 'ready') return (order.status === 'ready_to_ship' && order.packStatus === 'completed') || order.status === 'shipped';
+      if (status === 'ready') return order.status === 'ready_to_ship' && order.packStatus === 'completed';
       return false;
     });
   };
@@ -2260,7 +2260,10 @@ export default function PickPack() {
     if (order.packStatus === 'in_progress') {
       return { label: 'Currently Packing', color: 'bg-purple-100 text-purple-700 border-purple-200' };
     }
-    if (order.packStatus === 'completed' || order.status === 'shipped') {
+    if (order.status === 'shipped') {
+      return { label: 'Shipped', color: 'bg-blue-100 text-blue-700 border-blue-200' };
+    }
+    if (order.packStatus === 'completed' && order.status === 'ready_to_ship') {
       return { label: 'Ready to Ship', color: 'bg-green-100 text-green-700 border-green-200' };
     }
     if (order.pickStatus === 'completed' && order.packStatus === 'not_started') {
