@@ -274,6 +274,7 @@ export default function PickPack() {
   // Legacy states for compatibility
   const [selectedCarton, setSelectedCarton] = useState<string>('K2');
   const [useNonCompanyCarton, setUseNonCompanyCarton] = useState<boolean>(false);
+  const [previewOrder, setPreviewOrder] = useState<PickPackOrder | null>(null);
 
   // Timer effects
   useEffect(() => {
@@ -1284,6 +1285,44 @@ export default function PickPack() {
     }))
   )];
 
+  // Handle returning order to packing
+  const returnToPacking = async (order: PickPackOrder) => {
+    try {
+      // Reset pack status to move order back to packing
+      await apiRequest(`/api/orders/${order.id}`, 'PATCH', {
+        orderStatus: 'to_fulfill',
+        packStatus: 'not_started',
+        packStartTime: null,
+        packEndTime: null,
+        packedBy: null
+      });
+      
+      // Reset packed quantities if they exist
+      if (order.items && order.items.length > 0) {
+        for (const item of order.items) {
+          if (item.id) {
+            await apiRequest(`/api/orders/${order.id}/items/${item.id}`, 'PATCH', {
+              packedQuantity: 0
+            });
+          }
+        }
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+      toast({
+        title: 'Order returned to packing',
+        description: `Order ${order.orderId} is now available for packing again`
+      });
+    } catch (error) {
+      console.error('Error returning order to packing:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to return order to packing',
+        variant: 'destructive'
+      });
+    }
+  };
+  
   // Handle sending order back to pick
   const sendBackToPick = async (order: PickPackOrder) => {
     try {
@@ -4693,7 +4732,11 @@ export default function PickPack() {
                 ) : (
                   <div className="space-y-2 sm:space-y-3">
                     {getOrdersByStatus('ready').map(order => (
-                      <Card key={order.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                      <Card 
+                        key={order.id} 
+                        className="cursor-pointer hover:shadow-md transition-shadow"
+                        onClick={() => setPreviewOrder(order)}
+                      >
                         <CardContent className="p-3 sm:p-4">
                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                             <div className="flex-1">
@@ -4724,12 +4767,13 @@ export default function PickPack() {
                                 </div>
                               </div>
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 items-center">
                               <Button
                                 size="sm"
                                 variant="outline"
                                 className="w-full sm:w-auto"
-                                onClick={() => {
+                                onClick={(e) => {
+                                  e.stopPropagation();
                                   // Print shipping label
                                   playSound('success');
                                 }}
@@ -4740,11 +4784,37 @@ export default function PickPack() {
                               <Button
                                 size="sm"
                                 className="w-full sm:w-auto sm:h-10 bg-green-600 hover:bg-green-700"
-                                onClick={() => markAsShipped(order)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  markAsShipped(order);
+                                }}
                               >
                                 <Truck className="h-4 sm:h-5 w-4 sm:w-5 mr-1 sm:mr-2" />
                                 Mark Shipped
                               </Button>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-8 w-8 p-0"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      returnToPacking(order);
+                                    }}
+                                  >
+                                    <RotateCcw className="h-4 w-4 mr-2" />
+                                    Return to Packing
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </div>
                           </div>
                         </CardContent>
@@ -4757,6 +4827,79 @@ export default function PickPack() {
           </TabsContent>
         </Tabs>
       </div>
+      
+      {/* Order Preview Dialog */}
+      <Dialog open={!!previewOrder} onOpenChange={() => setPreviewOrder(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{previewOrder?.orderId} - Order Items</DialogTitle>
+            <DialogDescription>
+              {previewOrder?.customerName} • {previewOrder?.totalItems} items
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 mt-4">
+            {previewOrder?.items.map((item, index) => (
+              <div key={item.id || index} className="flex items-center gap-3 p-3 border rounded-lg bg-gray-50">
+                {item.image && (
+                  <img 
+                    src={item.image} 
+                    alt={item.productName}
+                    className="w-12 h-12 object-cover rounded"
+                  />
+                )}
+                <div className="flex-1">
+                  <div className="font-medium text-sm">{item.productName}</div>
+                  <div className="text-xs text-gray-500">
+                    SKU: {item.sku} {item.barcode && `• ${item.barcode}`}
+                  </div>
+                  {item.warehouseLocation && (
+                    <div className="text-xs text-blue-600 mt-1">
+                      📍 {item.warehouseLocation}
+                    </div>
+                  )}
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-semibold">Qty: {item.quantity}</div>
+                  {item.pickedQuantity > 0 && (
+                    <div className="text-xs text-green-600">
+                      Picked: {item.pickedQuantity}
+                    </div>
+                  )}
+                  {item.packedQuantity > 0 && (
+                    <div className="text-xs text-blue-600">
+                      Packed: {item.packedQuantity}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+            <div className="text-sm space-y-1">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Pick Status:</span>
+                <span className="font-medium">{previewOrder?.pickStatus}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Pack Status:</span>
+                <span className="font-medium">{previewOrder?.packStatus}</span>
+              </div>
+              {previewOrder?.pickedBy && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Picked by:</span>
+                  <span className="font-medium">{previewOrder.pickedBy}</span>
+                </div>
+              )}
+              {previewOrder?.packedBy && (
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Packed by:</span>
+                  <span className="font-medium">{previewOrder.packedBy}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
