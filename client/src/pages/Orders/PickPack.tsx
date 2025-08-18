@@ -3809,7 +3809,11 @@ export default function PickPack() {
                         <Button
                           variant="outline"
                           size="lg"
-                          className="flex items-center gap-2 h-12 lg:h-14 px-4 lg:px-6 font-bold text-sm lg:text-base border-2 hover:bg-gray-50"
+                          className={`flex items-center gap-2 h-12 lg:h-14 px-4 lg:px-6 font-bold text-sm lg:text-base border-2 ${
+                            currentItem.pickedQuantity >= currentItem.quantity 
+                              ? 'glow-next-button' 
+                              : 'hover:bg-gray-50'
+                          }`}
                           onClick={() => setManualItemIndex(Math.min(activePickingOrder.items.length - 1, currentItemIndex + 1))}
                           disabled={currentItemIndex === activePickingOrder.items.length - 1}
                         >
