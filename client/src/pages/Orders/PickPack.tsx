@@ -187,6 +187,7 @@ const ProductImage = memo(({
         className="w-20 h-20 sm:w-24 sm:h-24 lg:w-40 lg:h-40 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center shadow-lg border-2 lg:border-4 border-white cursor-pointer hover:shadow-xl transition-shadow"
         onClick={(e) => {
           e.stopPropagation();
+          console.log('Image clicked:', item.image);
           if (item.image) {
             onImageClick(item.image);
           }
@@ -352,38 +353,50 @@ export default function PickPack() {
     }
   }, [showUndoPopup, undoTimeLeft]);
 
-  // Timer effects - using direct DOM updates to avoid re-renders
+  // Timer effects - completely independent of React to avoid any re-renders
   useEffect(() => {
     if (isTimerRunning) {
-      if (!pickingStartTimeRef.current) {
-        pickingStartTimeRef.current = Date.now() - (pickingTimer * 1000);
-      }
+      // Store the start time once
+      const startTime = Date.now() - (pickingTimer * 1000);
       
-      const updateTimerDisplay = () => {
-        const elapsed = Math.floor((Date.now() - pickingStartTimeRef.current!) / 1000);
+      // Create a completely independent timer that only updates DOM text
+      const interval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const formatted = formatTimer(elapsed);
+        
+        // Direct DOM manipulation without triggering any React updates
         const timerElements = document.querySelectorAll('[data-picking-timer]');
-        timerElements.forEach(element => {
-          element.textContent = formatTimer(elapsed);
+        timerElements.forEach(el => {
+          if (el.textContent !== formatted) {
+            el.textContent = formatted;
+          }
         });
-      };
+      }, 1000);
       
-      updateTimerDisplay(); // Update immediately
-      timerIntervalRef.current = setInterval(updateTimerDisplay, 1000);
+      // Store interval ref for cleanup
+      timerIntervalRef.current = interval;
+      
+      // Initial update
+      const initialElapsed = Math.floor((Date.now() - startTime) / 1000);
+      const initialFormatted = formatTimer(initialElapsed);
+      document.querySelectorAll('[data-picking-timer]').forEach(el => {
+        el.textContent = initialFormatted;
+      });
+      
+      return () => {
+        if (timerIntervalRef.current) {
+          clearInterval(timerIntervalRef.current);
+          timerIntervalRef.current = null;
+        }
+      };
     } else {
+      // Clear interval when timer stops
       if (timerIntervalRef.current) {
         clearInterval(timerIntervalRef.current);
         timerIntervalRef.current = null;
       }
-      pickingStartTimeRef.current = null;
     }
-    
-    return () => {
-      if (timerIntervalRef.current) {
-        clearInterval(timerIntervalRef.current);
-        timerIntervalRef.current = null;
-      }
-    };
-  }, [isTimerRunning, pickingTimer]);
+  }, [isTimerRunning]); // Remove pickingTimer from deps to avoid re-runs
 
   // Show completion modal when all items are picked
   useEffect(() => {
@@ -399,7 +412,7 @@ export default function PickPack() {
     if (allItemsPicked && activePickingOrder.pickStatus !== 'completed') {
       setShowPickingCompletionModal(true);
     }
-  }, [activePickingOrder, activePickingOrder?.items.map(i => i.pickedQuantity).join(',')]);
+  }, [activePickingOrder?.id, activePickingOrder?.pickStatus, JSON.stringify(activePickingOrder?.items?.map(i => ({ id: i.id, pickedQuantity: i.pickedQuantity })))]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -435,12 +448,21 @@ export default function PickPack() {
   // Fetch real orders from the API with items and bundle details
   const { data: allOrders = [], isLoading } = useQuery({
     queryKey: ['/api/orders/pick-pack'],
-    refetchInterval: expandedProductImage ? false : 10000, // Disable refresh when image modal is open
+    refetchInterval: activePickingOrder ? 0 : 10000, // Use 0 to completely disable during picking
+    refetchOnWindowFocus: activePickingOrder ? false : true,
+    refetchOnMount: activePickingOrder ? false : true,
+    refetchOnReconnect: activePickingOrder ? false : true,
+    staleTime: activePickingOrder ? Infinity : 0, // Never consider data stale during picking
   });
 
   // Query for available cartons
-  const { data: availableCartons = [] } = useQuery({
+  const { data: availableCartons = [] } = useQuery<any[]>({
     queryKey: ['/api/cartons/available'],
+    refetchInterval: activePickingOrder ? 0 : 30000, // Use 0 to completely disable during picking
+    refetchOnWindowFocus: activePickingOrder ? false : true,
+    refetchOnMount: activePickingOrder ? false : true,
+    refetchOnReconnect: activePickingOrder ? false : true,
+    staleTime: activePickingOrder ? Infinity : 0,
   });
 
   // Filter cartons based on search
@@ -459,6 +481,8 @@ export default function PickPack() {
   const { data: recommendedCarton } = useQuery({
     queryKey: ['/api/orders', activePackingOrder?.id, 'recommend-carton'],
     enabled: !!activePackingOrder?.id,
+    refetchInterval: false, // Disable automatic refetch
+    refetchOnWindowFocus: false,
   });
 
   // Mutation for calculating package weight
@@ -1518,13 +1542,14 @@ export default function PickPack() {
       // Add character to buffer
       if (e.key.length === 1) { // Only single characters
         scanBuffer += e.key;
-        setBarcodeInput(scanBuffer);
+        // Don't update state on every keypress to avoid re-renders
+        // setBarcodeInput(scanBuffer);
 
         // Clear buffer after timeout (in case Enter is missed)
         clearTimeout(scanTimeout);
         scanTimeout = setTimeout(() => {
           scanBuffer = '';
-          setBarcodeInput('');
+          // setBarcodeInput('');
         }, 1000);
       }
     };
@@ -2513,7 +2538,7 @@ export default function PickPack() {
                                         newSet.delete(item.id);
                                         setVerifiedItems(newSet);
                                       } else {
-                                        setVerifiedItems(new Set([...verifiedItems, item.id]));
+                                        setVerifiedItems(new Set(Array.from(verifiedItems).concat(item.id)));
                                         playSound('scan');
                                       }
                                     }}
@@ -3643,7 +3668,10 @@ export default function PickPack() {
                         {/* Product Image - Compact on mobile */}
                         <ProductImage 
                           item={currentItem} 
-                          onImageClick={setExpandedProductImage}
+                          onImageClick={(image) => {
+                            console.log('Setting expandedProductImage to:', image);
+                            setExpandedProductImage(image);
+                          }}
                         />
                         
                         {/* Product Details - Organized layout */}
@@ -5205,6 +5233,7 @@ export default function PickPack() {
       </Dialog>
 
       {/* Expanded Product Image Modal - Portal to document.body */}
+      {expandedProductImage && console.log('Rendering modal with image:', expandedProductImage)}
       {expandedProductImage && createPortal(
         <div 
           className="fixed inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm"
