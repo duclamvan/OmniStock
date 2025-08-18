@@ -404,10 +404,30 @@ export default function PickPack() {
   const [showUndoPopup, setShowUndoPopup] = useState(false);
   const [undoTimeLeft, setUndoTimeLeft] = useState(5);
   const [expandedProductId, setExpandedProductId] = useState<string | null>(null);
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() => {
+    // Initialize from localStorage
+    const saved = localStorage.getItem('pickpack-collapsed-sections');
+    return saved ? new Set(JSON.parse(saved)) : new Set();
+  });
   const [preferExpandedImages, setPreferExpandedImages] = useState<boolean>(() => {
     // Load preference from localStorage
     return localStorage.getItem('pickPackExpandedImages') === 'true';
   });
+
+  // Toggle section collapse state
+  const toggleSectionCollapse = (sectionName: string) => {
+    setCollapsedSections(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(sectionName)) {
+        newSet.delete(sectionName);
+      } else {
+        newSet.add(sectionName);
+      }
+      // Save to localStorage
+      localStorage.setItem('pickpack-collapsed-sections', JSON.stringify(Array.from(newSet)));
+      return newSet;
+    });
+  };
 
   // Handle image click for in-place expansion
   const handleImageClick = (productId: string) => {
@@ -5158,14 +5178,17 @@ export default function PickPack() {
                         const Icon = section.icon;
                         return (
                           <div key={sectionIndex} className={`rounded-xl border ${section.color} overflow-hidden`}>
-                            {/* Section Header */}
-                            <div className={`px-4 py-3 border-b border-opacity-20 ${section.color.replace('bg-', 'border-').replace('-50', '-200')}`}>
+                            {/* Section Header - Clickable */}
+                            <div 
+                              className={`px-4 py-3 border-b border-opacity-20 cursor-pointer select-none ${section.color.replace('bg-', 'border-').replace('-50', '-200')} hover:brightness-105 transition-all`}
+                              onClick={() => toggleSectionCollapse(section.title)}
+                            >
                               <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-3 flex-1">
                                   <div className={`p-2 rounded-lg ${section.color.replace('-50', '-100')}`}>
                                     <Icon className="h-4 w-4 text-gray-700" />
                                   </div>
-                                  <div>
+                                  <div className="flex-1">
                                     <h3 className="font-semibold text-base text-gray-900">
                                       {section.title}
                                     </h3>
@@ -5173,11 +5196,18 @@ export default function PickPack() {
                                       {section.orders.length} {section.orders.length === 1 ? 'order ready' : 'orders ready'}
                                     </p>
                                   </div>
+                                  {/* Collapse/Expand indicator */}
+                                  <ChevronDown 
+                                    className={`h-5 w-5 text-gray-500 transition-transform duration-200 ${
+                                      collapsedSections.has(section.title) ? '-rotate-90' : ''
+                                    }`} 
+                                  />
                                 </div>
                                 <Button
                                   size="sm"
-                                  className={`${section.buttonColor} shadow-sm text-xs sm:text-sm px-3 py-2 font-medium hover:shadow-md transition-all duration-200`}
-                                  onClick={() => {
+                                  className={`${section.buttonColor} shadow-sm text-xs sm:text-sm px-3 py-2 font-medium hover:shadow-md transition-all duration-200 ml-3`}
+                                  onClick={(e) => {
+                                    e.stopPropagation(); // Prevent collapse when clicking Ship All
                                     // Mark all orders in this section as shipped
                                     section.orders.forEach(order => markAsShipped(order));
                                   }}
@@ -5189,8 +5219,9 @@ export default function PickPack() {
                               </div>
                             </div>
                             
-                            {/* Section Content */}
-                            <div className="p-4 bg-white">
+                            {/* Section Content - Collapsible */}
+                            {!collapsedSections.has(section.title) && (
+                              <div className="p-4 bg-white">
                               {/* Section Orders */}
                               <div className="space-y-2">
                               {section.orders.map(order => (
@@ -5278,6 +5309,7 @@ export default function PickPack() {
                               ))}
                               </div>
                             </div>
+                            )}
                           </div>
                         );
                       });
