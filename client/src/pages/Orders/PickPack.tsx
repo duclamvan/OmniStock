@@ -2157,41 +2157,51 @@ export default function PickPack() {
     }
   };
 
-  // Mark order as shipped
-  const markAsShipped = async (order: PickPackOrder) => {
-    await updateOrderStatusMutation.mutateAsync({
-      orderId: order.id,
-      status: 'shipped'
-    });
+  // Batch ship mutation for optimized performance
+  const batchShipMutation = useMutation({
+    mutationFn: async (orderIds: string[]) => {
+      return apiRequest('/api/orders/batch-ship', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderIds }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+    },
+  });
 
-    playSound('success');
-    queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+  // Mark order as shipped - optimized for single order
+  const markAsShipped = async (order: PickPackOrder) => {
+    try {
+      // Use batch endpoint even for single order for consistency
+      await batchShipMutation.mutateAsync([order.id]);
+      playSound('success');
+      
+      toast({
+        title: "Order Shipped",
+        description: `${order.orderId} marked as shipped`,
+      });
+    } catch (error) {
+      console.error('Error shipping order:', error);
+      toast({
+        title: "Error",
+        description: "Failed to ship order",
+        variant: "destructive"
+      });
+    }
   };
 
-  // Ship all ready orders
+  // Ship all ready orders - now much faster with batch operation
   const shipAllOrders = async () => {
     const readyOrders = getOrdersByStatus('ready');
     setRecentlyShippedOrders(readyOrders);
     
     try {
-      // Mark all orders as shipped
-      for (const order of readyOrders) {
-        await updateOrderStatusMutation.mutateAsync({
-          orderId: order.id,
-          status: 'shipped'
-        });
-        
-        // Also update pick/pack status to ensure proper state
-        await updateOrderStatusMutation.mutateAsync({
-          orderId: order.id,
-          status: 'shipped',
-          packStatus: 'completed'
-        });
-      }
-      
-      // Wait for queries to invalidate
-      await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
-      await queryClient.refetchQueries({ queryKey: ['/api/orders/pick-pack'] });
+      // Use batch endpoint for all orders at once
+      const orderIds = readyOrders.map(order => order.id);
+      const result = await batchShipMutation.mutateAsync(orderIds);
       
       playSound('success');
       
@@ -2202,7 +2212,7 @@ export default function PickPack() {
       
       toast({
         title: "Orders Shipped",
-        description: `${readyOrders.length} orders marked as shipped`,
+        description: result.message || `${readyOrders.length} orders marked as shipped`,
       });
     } catch (error) {
       console.error('Error shipping orders:', error);
@@ -5207,10 +5217,25 @@ export default function PickPack() {
                                 <Button
                                   size="sm"
                                   className={`${section.buttonColor} shadow-sm text-xs sm:text-sm px-3 py-2 font-medium hover:shadow-md transition-all duration-200 ml-3`}
-                                  onClick={(e) => {
+                                  onClick={async (e) => {
                                     e.stopPropagation(); // Prevent collapse when clicking Ship All
-                                    // Mark all orders in this section as shipped
-                                    section.orders.forEach(order => markAsShipped(order));
+                                    // Use batch shipping for all orders in this section
+                                    const orderIds = section.orders.map(o => o.id);
+                                    try {
+                                      const result = await batchShipMutation.mutateAsync(orderIds);
+                                      playSound('success');
+                                      toast({
+                                        title: "Section Shipped",
+                                        description: `${section.orders.length} orders from ${section.title} marked as shipped`,
+                                      });
+                                    } catch (error) {
+                                      console.error('Error shipping section:', error);
+                                      toast({
+                                        title: "Error",
+                                        description: "Failed to ship some orders",
+                                        variant: "destructive"
+                                      });
+                                    }
                                   }}
                                 >
                                   <Truck className="h-3.5 w-3.5 mr-1.5" />

@@ -2848,6 +2848,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
+  // Batch update order status - Optimized for multiple orders
+  app.post('/api/orders/batch-ship', async (req: any, res) => {
+    try {
+      const { orderIds } = req.body;
+      
+      if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
+        return res.status(400).json({ message: "Order IDs array is required" });
+      }
+      
+      const shippedAt = new Date();
+      const results = [];
+      const errors = [];
+      
+      // Process all orders in parallel for better performance
+      const updatePromises = orderIds.map(async (orderId) => {
+        try {
+          // Skip mock orders
+          if (orderId.startsWith('mock-')) {
+            return { id: orderId, success: true, message: 'Mock order shipped' };
+          }
+          
+          const updates = {
+            orderStatus: 'shipped' as const,
+            packStatus: 'completed' as const,
+            shippedAt
+          };
+          
+          const order = await storage.updateOrder(orderId, updates);
+          
+          if (order) {
+            // Log the shipping action
+            await storage.createPickPackLog({
+              orderId: orderId,
+              activityType: 'order_shipped',
+              userId: "test-user",
+              userName: 'System',
+              notes: `Order ${order.orderId} marked as shipped`,
+            });
+            
+            return { id: orderId, success: true, order };
+          } else {
+            return { id: orderId, success: false, error: 'Order not found' };
+          }
+        } catch (error) {
+          console.error(`Error shipping order ${orderId}:`, error);
+          return { id: orderId, success: false, error: error.message || 'Unknown error' };
+        }
+      });
+      
+      // Wait for all updates to complete
+      const allResults = await Promise.all(updatePromises);
+      
+      // Separate successful and failed updates
+      allResults.forEach(result => {
+        if (result.success) {
+          results.push(result);
+        } else {
+          errors.push(result);
+        }
+      });
+      
+      res.json({
+        success: true,
+        shipped: results.length,
+        failed: errors.length,
+        results,
+        errors,
+        message: `Successfully shipped ${results.length} orders${errors.length > 0 ? `, ${errors.length} failed` : ''}`
+      });
+      
+    } catch (error) {
+      console.error("Error in batch ship orders:", error);
+      res.status(500).json({ message: "Failed to batch ship orders" });
+    }
+  });
+
   // Update order status for Pick & Pack workflow
   app.patch('/api/orders/:id/status', async (req: any, res) => {
     try {
