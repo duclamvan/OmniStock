@@ -403,7 +403,12 @@ export default function PickPack() {
   const [showShipAllConfirm, setShowShipAllConfirm] = useState(false);
   const [recentlyShippedOrders, setRecentlyShippedOrders] = useState<PickPackOrder[]>([]);
   const [showUndoPopup, setShowUndoPopup] = useState(false);
-  const [undoTimeLeft, setUndoTimeLeft] = useState(5);
+  const [undoTimeLeft, setUndoTimeLeft] = useState(15);
+  const [pendingShipments, setPendingShipments] = useState<{
+    orderIds: string[];
+    timestamp: number;
+    description: string;
+  } | null>(null);
   const [expandedProductId, setExpandedProductId] = useState<string | null>(null);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() => {
     // Initialize from localStorage
@@ -2160,11 +2165,17 @@ export default function PickPack() {
   // Batch ship mutation for optimized performance
   const batchShipMutation = useMutation({
     mutationFn: async (orderIds: string[]) => {
-      return apiRequest('/api/orders/batch-ship', {
+      const response = await fetch('/api/orders/batch-ship', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderIds }),
       });
+      
+      if (!response.ok) {
+        throw new Error('Failed to ship orders');
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
@@ -2172,24 +2183,46 @@ export default function PickPack() {
     },
   });
 
-  // Mark order as shipped - optimized for single order
+  // Mark order as shipped with optimistic update and undo
   const markAsShipped = async (order: PickPackOrder) => {
+    // Optimistic update - remove from ready orders immediately
+    const cachedData = queryClient.getQueryData<PickPackOrder[]>(['/api/orders/pick-pack']);
+    if (cachedData) {
+      queryClient.setQueryData<PickPackOrder[]>(
+        ['/api/orders/pick-pack'],
+        cachedData.map(o => 
+          o.id === order.id 
+            ? { ...o, status: 'shipped' as const }
+            : o
+        )
+      );
+    }
+    
+    // Show undo bar immediately
+    setPendingShipments({
+      orderIds: [order.id],
+      timestamp: Date.now(),
+      description: `Shipped ${order.orderId}`
+    });
+    setShowUndoPopup(true);
+    setUndoTimeLeft(15);
+    
+    playSound('success');
+    
+    // Process in background
     try {
-      // Use batch endpoint even for single order for consistency
       await batchShipMutation.mutateAsync([order.id]);
-      playSound('success');
-      
-      toast({
-        title: "Order Shipped",
-        description: `${order.orderId} marked as shipped`,
-      });
     } catch (error) {
+      // Rollback on error
       console.error('Error shipping order:', error);
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
       toast({
         title: "Error",
         description: "Failed to ship order",
         variant: "destructive"
       });
+      setPendingShipments(null);
+      setShowUndoPopup(false);
     }
   };
 
@@ -2224,14 +2257,60 @@ export default function PickPack() {
     }
   };
 
-  // Undo shipment - move orders back to packing
+  // Undo timer effect
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (showUndoPopup && undoTimeLeft > 0) {
+      timer = setTimeout(() => {
+        setUndoTimeLeft(prev => prev - 1);
+      }, 1000);
+    } else if (undoTimeLeft === 0) {
+      // Time's up, clear pending shipments
+      setShowUndoPopup(false);
+      setPendingShipments(null);
+      setUndoTimeLeft(15);
+    }
+    return () => clearTimeout(timer);
+  }, [showUndoPopup, undoTimeLeft]);
+
+  // Undo shipment function
   const undoShipment = async () => {
-    for (const order of recentlyShippedOrders) {
-      await updateOrderStatusMutation.mutateAsync({
-        orderId: order.id,
-        status: 'to_fulfill',
-        packStatus: 'in_progress'
+    if (!pendingShipments) return;
+    
+    // Immediately hide undo bar
+    setShowUndoPopup(false);
+    
+    // Revert optimistic update
+    queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+    
+    // Call undo endpoint
+    try {
+      const response = await fetch('/api/orders/batch-undo-ship', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderIds: pendingShipments.orderIds }),
       });
+      
+      if (!response.ok) {
+        throw new Error('Failed to undo shipment');
+      }
+      
+      await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+      
+      toast({
+        title: "Shipment Undone",
+        description: "Orders returned to ready status",
+      });
+    } catch (error) {
+      console.error('Error undoing shipment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to undo shipment",
+        variant: "destructive"
+      });
+    } finally {
+      setPendingShipments(null);
+      setUndoTimeLeft(15);
     }
     
     queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
@@ -5219,22 +5298,46 @@ export default function PickPack() {
                                   className={`${section.buttonColor} shadow-sm text-xs sm:text-sm px-3 py-2 font-medium hover:shadow-md transition-all duration-200 ml-3`}
                                   onClick={async (e) => {
                                     e.stopPropagation(); // Prevent collapse when clicking Ship All
-                                    // Use batch shipping for all orders in this section
+                                    
+                                    // Optimistic update - mark all orders as shipped immediately
                                     const orderIds = section.orders.map(o => o.id);
+                                    const cachedData = queryClient.getQueryData<PickPackOrder[]>(['/api/orders/pick-pack']);
+                                    if (cachedData) {
+                                      queryClient.setQueryData<PickPackOrder[]>(
+                                        ['/api/orders/pick-pack'],
+                                        cachedData.map(o => 
+                                          orderIds.includes(o.id) 
+                                            ? { ...o, status: 'shipped' as const }
+                                            : o
+                                        )
+                                      );
+                                    }
+                                    
+                                    // Show undo bar immediately
+                                    setPendingShipments({
+                                      orderIds,
+                                      timestamp: Date.now(),
+                                      description: `Shipped ${section.orders.length} orders from ${section.title}`
+                                    });
+                                    setShowUndoPopup(true);
+                                    setUndoTimeLeft(15);
+                                    
+                                    playSound('success');
+                                    
+                                    // Process in background
                                     try {
-                                      const result = await batchShipMutation.mutateAsync(orderIds);
-                                      playSound('success');
-                                      toast({
-                                        title: "Section Shipped",
-                                        description: `${section.orders.length} orders from ${section.title} marked as shipped`,
-                                      });
+                                      await batchShipMutation.mutateAsync(orderIds);
                                     } catch (error) {
+                                      // Rollback on error
                                       console.error('Error shipping section:', error);
+                                      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
                                       toast({
                                         title: "Error",
                                         description: "Failed to ship some orders",
                                         variant: "destructive"
                                       });
+                                      setPendingShipments(null);
+                                      setShowUndoPopup(false);
                                     }
                                   }}
                                 >
@@ -5575,20 +5678,48 @@ export default function PickPack() {
 
 
 
-      {/* Undo Popup */}
-      {showUndoPopup && (
-        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
-          <div className="bg-gray-900 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3">
-            <CheckCircle className="h-5 w-5 text-green-400" />
-            <span>{recentlyShippedOrders.length} orders marked as shipped</span>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={undoShipment}
-              className="ml-3"
-            >
-              Undo ({undoTimeLeft}s)
-            </Button>
+      {/* Undo Bar - Fixed at bottom */}
+      {showUndoPopup && pendingShipments && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 animate-in slide-in-from-bottom duration-300">
+          <div className="bg-gradient-to-r from-gray-900 to-gray-800 border-t border-gray-700">
+            <div className="max-w-7xl mx-auto px-4 py-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-green-400 animate-pulse" />
+                    <span className="text-white font-medium">{pendingShipments.description}</span>
+                  </div>
+                  <div className="h-4 w-px bg-gray-600" />
+                  <span className="text-gray-400 text-sm">
+                    Processing in background...
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <Timer className="h-4 w-4 text-gray-400" />
+                    <span className="text-gray-300 text-sm font-mono">
+                      {undoTimeLeft}s
+                    </span>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={undoShipment}
+                    className="bg-white/10 hover:bg-white/20 text-white border-0"
+                  >
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    Undo
+                  </Button>
+                </div>
+              </div>
+              {/* Progress bar */}
+              <div className="mt-2 h-1 bg-gray-700 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-green-400 to-blue-400 transition-all duration-1000 ease-linear"
+                  style={{ width: `${(undoTimeLeft / 15) * 100}%` }}
+                />
+              </div>
+            </div>
           </div>
         </div>
       )}

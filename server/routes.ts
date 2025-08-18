@@ -2848,6 +2848,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
+  // Batch undo ship - Return orders to ready status
+  app.post('/api/orders/batch-undo-ship', async (req: any, res) => {
+    try {
+      const { orderIds } = req.body;
+      
+      if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
+        return res.status(400).json({ message: "Order IDs array is required" });
+      }
+      
+      const results = [];
+      const errors = [];
+      
+      // Process all orders in parallel for better performance
+      const updatePromises = orderIds.map(async (orderId) => {
+        try {
+          // Skip mock orders
+          if (orderId.startsWith('mock-')) {
+            return { id: orderId, success: true, message: 'Mock order unshipped' };
+          }
+          
+          const updates = {
+            orderStatus: 'ready_to_ship' as const,
+            packStatus: 'completed' as const,
+            shippedAt: null
+          };
+          
+          const order = await storage.updateOrder(orderId, updates);
+          
+          if (order) {
+            // Log the undo action
+            await storage.createPickPackLog({
+              orderId: orderId,
+              activityType: 'order_unshipped',
+              userId: "test-user",
+              userName: 'System',
+              notes: `Order ${order.orderId} shipment undone`,
+            });
+            
+            return { id: orderId, success: true, order };
+          } else {
+            return { id: orderId, success: false, error: 'Order not found' };
+          }
+        } catch (error) {
+          console.error(`Error undoing shipment for order ${orderId}:`, error);
+          return { id: orderId, success: false, error: error.message || 'Unknown error' };
+        }
+      });
+      
+      // Wait for all updates to complete
+      const allResults = await Promise.all(updatePromises);
+      
+      // Separate successful and failed updates
+      allResults.forEach(result => {
+        if (result.success) {
+          results.push(result);
+        } else {
+          errors.push(result);
+        }
+      });
+      
+      res.json({
+        success: true,
+        unshipped: results.length,
+        failed: errors.length,
+        results,
+        errors,
+        message: `Successfully unshipped ${results.length} orders${errors.length > 0 ? `, ${errors.length} failed` : ''}`
+      });
+      
+    } catch (error) {
+      console.error("Error in batch undo ship orders:", error);
+      res.status(500).json({ message: "Failed to batch undo ship orders" });
+    }
+  });
+
   // Batch update order status - Optimized for multiple orders
   app.post('/api/orders/batch-ship', async (req: any, res) => {
     try {
