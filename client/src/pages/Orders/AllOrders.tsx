@@ -206,6 +206,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
         return <Badge variant="secondary">Pending</Badge>;
       case 'to_fulfill':
         return <Badge variant="default">To Fulfill</Badge>;
+      case 'ready_to_ship':
+        return <Badge className="bg-blue-100 text-blue-800">Ready to Ship</Badge>;
       case 'shipped':
         return <Badge className="bg-green-100 text-green-800">Shipped</Badge>;
       default:
@@ -466,6 +468,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                   <SelectItem value="all">All Orders</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="to_fulfill">To Fulfill</SelectItem>
+                  <SelectItem value="ready_to_ship">Ready to Ship</SelectItem>
                   <SelectItem value="shipped">Shipped</SelectItem>
                 </SelectContent>
               </Select>
@@ -505,6 +508,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                     <SelectContent>
                       <SelectItem value="pending">Pending</SelectItem>
                       <SelectItem value="to_fulfill">To Fulfill</SelectItem>
+                      <SelectItem value="ready_to_ship">Ready to Ship</SelectItem>
                       <SelectItem value="shipped">Shipped</SelectItem>
                       <SelectItem value="cancelled">Cancelled</SelectItem>
                     </SelectContent>
