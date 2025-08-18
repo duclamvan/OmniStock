@@ -3536,14 +3536,30 @@ export default function PickPack() {
             {!allItemsPicked && currentItem ? (
               <div className="max-w-4xl mx-auto">
                 <Card className="mb-4 lg:mb-6 shadow-xl border-0 overflow-hidden">
-                  <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white p-3 lg:p-4">
+                  <CardHeader className={`${
+                    currentItem?.pickedQuantity === currentItem?.quantity
+                      ? 'bg-gradient-to-r from-green-500 to-green-600'
+                      : 'bg-gradient-to-r from-blue-500 to-indigo-500'
+                  } text-white p-3 lg:p-4`}>
                     <CardTitle className="flex items-center justify-between">
                       <span className="text-base lg:text-lg flex items-center gap-2">
-                        <Package className="h-5 w-5" />
-                        <span className="hidden sm:inline">Current Item to Pick</span>
-                        <span className="sm:hidden">Pick Item</span>
+                        {currentItem?.pickedQuantity === currentItem?.quantity ? (
+                          <CheckCircle className="h-5 w-5" />
+                        ) : (
+                          <Package className="h-5 w-5" />
+                        )}
+                        <span className="hidden sm:inline">
+                          {currentItem?.pickedQuantity === currentItem?.quantity ? 'Item Picked' : 'Current Item to Pick'}
+                        </span>
+                        <span className="sm:hidden">
+                          {currentItem?.pickedQuantity === currentItem?.quantity ? 'Picked' : 'Pick Item'}
+                        </span>
                       </span>
-                      <Badge className="bg-white text-blue-600 text-sm lg:text-base px-2 lg:px-3 py-1 font-bold">
+                      <Badge className={`${
+                        currentItem?.pickedQuantity === currentItem?.quantity
+                          ? 'bg-white text-green-600'
+                          : 'bg-white text-blue-600'
+                      } text-sm lg:text-base px-2 lg:px-3 py-1 font-bold`}>
                         {currentItemIndex + 1} / {activePickingOrder.items.length}
                       </Badge>
                     </CardTitle>
@@ -3566,7 +3582,7 @@ export default function PickPack() {
                             )}
                           </div>
                           <div className="absolute -top-1 -right-1 lg:-top-2 lg:-right-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full w-7 h-7 lg:w-10 lg:h-10 flex items-center justify-center font-bold text-xs lg:text-base shadow-lg">
-                            {currentItemIndex + 1}
+                            {currentItem.quantity}
                           </div>
                         </div>
                         
@@ -3576,27 +3592,19 @@ export default function PickPack() {
                           <h3 className="text-base sm:text-lg lg:text-2xl font-bold text-gray-900 line-clamp-1 mb-2">{currentItem.productName}</h3>
                           
                           {/* Info Grid */}
-                          <div className="grid grid-cols-1 gap-1.5">
-                            {/* Picked status */}
-                            {currentItem?.pickedQuantity === currentItem?.quantity && (
-                              <div className="flex items-center gap-2">
-                                <CheckCircle className="h-4 lg:h-5 w-4 lg:w-5 text-green-600 flex-shrink-0" />
-                                <span className="text-sm lg:text-base font-semibold text-green-600">Picked</span>
-                              </div>
-                            )}
-                            
+                          <div className="space-y-1.5">
                             {/* SKU */}
                             <div className="flex items-center gap-2">
                               <Hash className="h-3.5 lg:h-4 w-3.5 lg:w-4 text-blue-500 flex-shrink-0" />
-                              <span className="text-xs lg:text-sm text-gray-500 font-medium min-w-[45px]">SKU:</span>
-                              <span className="font-mono font-semibold text-xs lg:text-sm text-gray-900">{currentItem.sku}</span>
+                              <span className="text-xs lg:text-sm text-gray-500 font-medium">SKU:</span>
+                              <span className="font-mono font-semibold text-xs lg:text-sm text-gray-900 ml-2">{currentItem.sku}</span>
                             </div>
                             
                             {/* Barcode */}
                             <div className="flex items-center gap-2">
                               <ScanLine className="h-3.5 lg:h-4 w-3.5 lg:w-4 text-purple-500 flex-shrink-0" />
-                              <span className="text-xs lg:text-sm text-gray-500 font-medium min-w-[45px]">Barcode:</span>
-                              <span className="font-mono font-semibold text-xs lg:text-sm text-gray-900">{currentItem.barcode}</span>
+                              <span className="text-xs lg:text-sm text-gray-500 font-medium">Barcode:</span>
+                              <span className="font-mono font-semibold text-xs lg:text-sm text-gray-900 ml-2">{currentItem.barcode}</span>
                             </div>
                           </div>
                         </div>
