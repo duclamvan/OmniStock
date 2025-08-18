@@ -67,6 +67,7 @@ import {
   CheckCircle2,
   Info,
   ArrowLeft,
+  Maximize2,
   Home,
   Hash,
   Calendar,
@@ -186,7 +187,7 @@ const ProductImage = memo(({
   if (isExpanded) {
     // Full-width expanded view
     return (
-      <div className="w-full space-y-2">
+      <div className="w-full space-y-3">
         <div 
           className="w-full h-[350px] sm:h-[450px] bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center shadow-lg border-2 border-white cursor-pointer hover:shadow-xl transition-all duration-300"
           onClick={(e) => {
@@ -216,6 +217,22 @@ const ProductImage = memo(({
             />
           )}
         </div>
+        
+        {/* Product Details Below Image */}
+        <div className="space-y-2 px-2">
+          <h3 className="text-lg sm:text-xl font-bold text-gray-900">{item.productName}</h3>
+          <div className="flex items-center gap-2">
+            <Hash className="h-4 w-4 text-blue-500" />
+            <span className="text-sm text-gray-500">SKU:</span>
+            <span className="font-mono font-semibold text-sm text-gray-900">{item.sku}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <ScanLine className="h-4 w-4 text-purple-500" />
+            <span className="text-sm text-gray-500">Barcode:</span>
+            <span className="font-mono font-semibold text-sm text-gray-900">{item.barcode}</span>
+          </div>
+        </div>
+        
         <div className="flex justify-between items-center px-2">
           <span className="text-sm font-medium text-gray-500">Click to minimize</span>
           <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white">
@@ -380,6 +397,10 @@ export default function PickPack() {
   const [showUndoPopup, setShowUndoPopup] = useState(false);
   const [undoTimeLeft, setUndoTimeLeft] = useState(5);
   const [expandedProductId, setExpandedProductId] = useState<string | null>(null);
+  const [preferExpandedImages, setPreferExpandedImages] = useState<boolean>(() => {
+    // Load preference from localStorage
+    return localStorage.getItem('pickPackExpandedImages') === 'true';
+  });
 
   // Handle image click for in-place expansion
   const handleImageClick = (productId: string) => {
@@ -387,11 +408,27 @@ export default function PickPack() {
     if (expandedProductId === productId) {
       console.log('Minimizing image');
       setExpandedProductId(null);
+      // If user manually minimizes, turn off the preference
+      setPreferExpandedImages(false);
+      localStorage.setItem('pickPackExpandedImages', 'false');
     } else {
       console.log('Expanding image for product:', productId);
       setExpandedProductId(productId);
+      // If user manually expands, turn on the preference
+      setPreferExpandedImages(true);
+      localStorage.setItem('pickPackExpandedImages', 'true');
     }
   };
+
+  // Auto-expand images based on preference when item changes
+  useEffect(() => {
+    if (preferExpandedImages && activePickingOrder) {
+      const currentItem = activePickingOrder.items[manualItemIndex];
+      if (currentItem) {
+        setExpandedProductId(currentItem.id);
+      }
+    }
+  }, [manualItemIndex, activePickingOrder, preferExpandedImages]);
 
   // Timer effect for undo popup
   useEffect(() => {
@@ -3705,6 +3742,12 @@ export default function PickPack() {
                         <span className="sm:hidden">
                           {currentItem?.pickedQuantity === currentItem?.quantity ? 'Picked' : 'Pick Item'}
                         </span>
+                        {preferExpandedImages && (
+                          <Badge className="ml-2 bg-white/20 text-white text-xs">
+                            <Maximize2 className="h-3 w-3 mr-1" />
+                            Expanded Mode
+                          </Badge>
+                        )}
                       </span>
                       <Badge className={`${
                         currentItem?.pickedQuantity === currentItem?.quantity
