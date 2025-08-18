@@ -1784,6 +1784,35 @@ export default function PickPack() {
   // Complete packing
   const completePacking = async () => {
     if (!activePackingOrder) return;
+    
+    // Validate ALL checkboxes are checked
+    const currentCarton = packingRecommendation?.cartons.find(c => c.id === selectedCarton);
+    const allItemsVerified = currentCarton ? currentCarton.items.every(item => verifiedItems.has(item.id)) : false;
+    const needsFragileProtection = currentCarton?.isFragile || false;
+    
+    // Check each required checkbox
+    const missingChecks = [];
+    if (!(packingChecklist.itemsVerified || allItemsVerified)) missingChecks.push('Items Verification');
+    if (!packingChecklist.packingSlipIncluded) missingChecks.push('Packing Slip');
+    if (!packingChecklist.invoiceIncluded) missingChecks.push('Invoice');
+    if (!packingChecklist.weightRecorded) missingChecks.push('Weight Recording');
+    if (!packingChecklist.boxSealed) missingChecks.push('Box Sealing');
+    if (!packingChecklist.promotionalMaterials) missingChecks.push('Promotional Materials');
+    if (needsFragileProtection && !packingChecklist.fragileProtected) missingChecks.push('Fragile Protection');
+    if (!shippingLabelPrinted) missingChecks.push('Shipping Label');
+    if (!selectedCarton) missingChecks.push('Carton Selection');
+    if (!packageWeight) missingChecks.push('Package Weight');
+    
+    if (missingChecks.length > 0) {
+      toast({
+        title: "Cannot Complete Packing",
+        description: `Please complete: ${missingChecks.join(', ')}`,
+        variant: "destructive",
+        duration: 5000,
+      });
+      playSound('error');
+      return;
+    }
 
     try {
       // Only update database for real orders (not mock orders)
@@ -1956,9 +1985,20 @@ export default function PickPack() {
                              packingChecklist.boxSealed;
     const labelReady = shippingLabelPrinted;
     
+    // Check if fragile items need protection
+    const needsFragileProtection = currentCarton?.isFragile || false;
+    
+    // ALL required checkboxes must be checked
     const canCompletePacking = (packingChecklist.itemsVerified || allItemsVerified) && 
+                              packingChecklist.packingSlipIncluded && 
+                              packingChecklist.invoiceIncluded &&
+                              packingChecklist.weightRecorded &&
+                              packingChecklist.boxSealed &&
+                              packingChecklist.promotionalMaterials &&
+                              (!needsFragileProtection || packingChecklist.fragileProtected) && // Only required if fragile
                               cartonSelected && 
-                              packageWeight;
+                              packageWeight && 
+                              shippingLabelPrinted;
     
     // Stop timer when packing is complete
     if (canCompletePacking && isPackingTimerRunning) {
@@ -3106,136 +3146,11 @@ export default function PickPack() {
                     <div className="space-y-3">
                       <Button 
                         size="lg" 
-                        onClick={async () => {
-                          try {
-                            // Complete the packing
-                            await updateOrderStatusMutation.mutateAsync({
-                              orderId: activePackingOrder.id,
-                              status: 'ready_to_ship',
-                              packStatus: 'completed',
-                              packEndTime: new Date().toISOString(),
-                              packedBy: 'Employee #001',
-                              packedItems: activePackingOrder.totalItems
-                            });
-                            
-                            // Play success sound
-                            playSound('complete');
-                            
-                            // Show success toast
-                            toast({
-                              title: "✅ Order Packed Successfully!",
-                              description: `Order ${activePackingOrder.orderId} is ready for shipping`,
-                              duration: 3000,
-                            });
-                            
-                            // Reset all states
-                            setActivePackingOrder(null);
-                            setPackingChecklist({
-                              itemsVerified: false,
-                              packingSlipIncluded: false,
-                              boxSealed: false,
-                              weightRecorded: false,
-                              fragileProtected: false,
-                              invoiceIncluded: false,
-                              promotionalMaterials: false
-                            });
-                            setSelectedBoxSize('');
-                            setPackageWeight('');
-                            setVerifiedItems(new Set());
-                            setShippingLabelPrinted(false);
-                            setPrintedDocuments({
-                              packingList: false,
-                              invoice: false,
-                              msds: false,
-                              cpnp: false
-                            });
-                            setSelectedCarton(null);
-                            setPackingRecommendation(null);
-                            setIsPackingTimerRunning(false);
-                            setPackingTimer(0);
-                            
-                            // Refetch orders
-                            refetch();
-                          } catch (error) {
-                            toast({
-                              title: "Error",
-                              description: "Failed to complete packing",
-                              variant: "destructive",
-                            });
-                          }
-                        }}
+                        onClick={completePacking}
                         className="w-full h-14 text-base font-bold bg-green-600 hover:bg-green-700 text-white shadow-lg transition-all"
                       >
                         <CheckCircle className="h-5 w-5 mr-2" />
                         Complete Order - Ready for Shipping
-                      </Button>
-                      
-                      <Button 
-                        size="lg" 
-                        variant="outline"
-                        onClick={async () => {
-                          try {
-                            // Complete current order
-                            await updateOrderStatusMutation.mutateAsync({
-                              orderId: activePackingOrder.id,
-                              status: 'ready',
-                              packStatus: 'completed',
-                              packEndTime: new Date().toISOString(),
-                              packedBy: 'Employee #001',
-                              packedItems: activePackingOrder.totalItems
-                            });
-                            
-                            playSound('complete');
-                            
-                            // Reset states
-                            setActivePackingOrder(null);
-                            setPackingChecklist({
-                              itemsVerified: false,
-                              packingSlipIncluded: false,
-                              boxSealed: false,
-                              weightRecorded: false,
-                              fragileProtected: false,
-                              invoiceIncluded: false,
-                              promotionalMaterials: false
-                            });
-                            setSelectedBoxSize('');
-                            setPackageWeight('');
-                            setVerifiedItems(new Set());
-                            setShippingLabelPrinted(false);
-                            setPrintedDocuments({
-                              packingList: false,
-                              invoice: false,
-                              msds: false,
-                              cpnp: false
-                            });
-                            setSelectedCarton(null);
-                            setPackingRecommendation(null);
-                            setIsPackingTimerRunning(false);
-                            setPackingTimer(0);
-                            
-                            // Refetch and start next order
-                            await refetch();
-                            
-                            setTimeout(() => {
-                              const nextOrder = transformedOrders.find(order => 
-                                order.pickStatus === 'completed' && order.packStatus === 'not_started'
-                              );
-                              if (nextOrder) {
-                                startPacking(nextOrder);
-                              }
-                            }, 500);
-                          } catch (error) {
-                            toast({
-                              title: "Error",
-                              description: "Failed to complete packing",
-                              variant: "destructive",
-                            });
-                          }
-                        }}
-                        className="w-full h-12 text-base font-medium border-2 hover:bg-gray-50"
-                      >
-                        <PlayCircle className="h-4 w-4 mr-2" />
-                        Complete & Pack Next Order
                       </Button>
                     </div>
                   ) : (
@@ -3243,14 +3158,58 @@ export default function PickPack() {
                       size="lg" 
                       disabled={true}
                       className="w-full h-14 text-base bg-gray-200 text-gray-500 cursor-not-allowed"
+                      onClick={() => {
+                        // Show detailed error message when clicked
+                        const missingChecks = [];
+                        if (!(packingChecklist.itemsVerified || allItemsVerified)) missingChecks.push('✓ Verify All Items');
+                        if (!packingChecklist.packingSlipIncluded) missingChecks.push('✓ Include Packing Slip');
+                        if (!packingChecklist.invoiceIncluded) missingChecks.push('✓ Include Invoice');
+                        if (!packingChecklist.weightRecorded) missingChecks.push('✓ Record Weight');
+                        if (!packingChecklist.boxSealed) missingChecks.push('✓ Seal Box');
+                        if (!packingChecklist.promotionalMaterials) missingChecks.push('✓ Add Promotional Materials');
+                        if (currentCarton?.isFragile && !packingChecklist.fragileProtected) missingChecks.push('✓ Protect Fragile Items');
+                        if (!shippingLabelPrinted) missingChecks.push('✓ Print Shipping Label');
+                        if (!selectedCarton) missingChecks.push('✓ Select Carton');
+                        if (!packageWeight) missingChecks.push('✓ Enter Package Weight');
+                        
+                        toast({
+                          title: "Cannot Complete Packing",
+                          description: (
+                            <div className="mt-2 space-y-1">
+                              <div className="font-medium mb-2">Please complete all required steps:</div>
+                              {missingChecks.map((check, i) => (
+                                <div key={i} className="text-sm">{check}</div>
+                              ))}
+                            </div>
+                          ),
+                          variant: "destructive",
+                          duration: 8000,
+                        });
+                        playSound('error');
+                      }}
                     >
                       <PackageCheck className="h-5 w-5 mr-2" />
                       <div className="text-left flex-1">
-                        <div className="font-medium">Complete Required Steps</div>
+                        <div className="font-medium">Cannot Complete - Missing Steps</div>
                         <div className="text-xs font-normal mt-0.5 opacity-80">
-                          {!(packingChecklist.itemsVerified || allItemsVerified) && 'Items • '}
-                          {!cartonSelected && 'Carton • '}
-                          {!packageWeight && 'Weight'}
+                          {(() => {
+                            const missing = [];
+                            if (!(packingChecklist.itemsVerified || allItemsVerified)) missing.push('Items');
+                            if (!packingChecklist.packingSlipIncluded) missing.push('Packing Slip');
+                            if (!packingChecklist.invoiceIncluded) missing.push('Invoice');
+                            if (!packingChecklist.weightRecorded) missing.push('Weight Check');
+                            if (!packingChecklist.boxSealed) missing.push('Box Seal');
+                            if (!packingChecklist.promotionalMaterials) missing.push('Promo');
+                            if (currentCarton?.isFragile && !packingChecklist.fragileProtected) missing.push('Fragile');
+                            if (!shippingLabelPrinted) missing.push('Label');
+                            if (!selectedCarton) missing.push('Carton');
+                            if (!packageWeight) missing.push('Weight');
+                            
+                            // Show first 3 missing items
+                            const display = missing.slice(0, 3).join(' • ');
+                            const remaining = missing.length - 3;
+                            return display + (remaining > 0 ? ` +${remaining} more` : '');
+                          })()}
                         </div>
                       </div>
                     </Button>
