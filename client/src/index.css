@@ -283,5 +283,16 @@
 
 /* Ensure dialog portals appear above all other elements */
 [data-radix-portal] {
-  z-index: 99999 !important;
+  z-index: 999999 !important;
+}
+
+/* Force dialog overlay to appear above picking interface */
+[data-radix-dialog-overlay] {
+  z-index: 999998 !important;
+  position: fixed !important;
+}
+
+[data-radix-dialog-content] {
+  z-index: 999999 !important;
+  position: fixed !important;
 }

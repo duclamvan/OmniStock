@@ -5165,7 +5165,13 @@ export default function PickPack() {
 
       {/* Expanded Product Image Dialog */}
       <Dialog open={!!expandedProductImage} onOpenChange={() => setExpandedProductImage(null)}>
-        <DialogContent className="max-w-5xl h-[90vh] p-0 border-0" style={{ zIndex: 9999 }}>
+        <DialogContent 
+          className="max-w-5xl h-[90vh] p-0 border-0 fixed inset-0 m-auto" 
+          style={{ 
+            zIndex: 999999,
+            position: 'fixed'
+          }}
+        >
           <DialogHeader className="sr-only">
             <DialogTitle>Product Image</DialogTitle>
             <DialogDescription>Expanded view of product image</DialogDescription>
@@ -5174,7 +5180,8 @@ export default function PickPack() {
             <Button
               variant="ghost"
               size="icon"
-              className="absolute top-2 right-2 text-white hover:bg-white/20 z-50"
+              className="absolute top-2 right-2 text-white hover:bg-white/20"
+              style={{ zIndex: 999999 }}
               onClick={() => setExpandedProductImage(null)}
             >
               <X className="h-6 w-6" />
