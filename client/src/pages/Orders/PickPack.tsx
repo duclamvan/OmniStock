@@ -3549,38 +3549,12 @@ export default function PickPack() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-3 lg:p-6 bg-white">
-                    {/* Navigation Controls */}
-                    <div className="flex justify-between items-center mb-4">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setManualItemIndex(Math.max(0, currentItemIndex - 1))}
-                        disabled={currentItemIndex === 0}
-                      >
-                        <ChevronLeft className="h-4 w-4 mr-1" />
-                        Previous
-                      </Button>
-                      <div className="text-sm text-gray-600 font-medium">
-                        {currentItem?.pickedQuantity === currentItem?.quantity && (
-                          <span className="text-green-600 font-bold">✓ Picked</span>
-                        )}
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setManualItemIndex(Math.min(activePickingOrder.items.length - 1, currentItemIndex + 1))}
-                        disabled={currentItemIndex === activePickingOrder.items.length - 1}
-                      >
-                        Next
-                        <ChevronRight className="h-4 w-4 ml-1" />
-                      </Button>
-                    </div>
                     <div className="space-y-3 lg:space-y-6">
-                      {/* Mobile Optimized Product Layout */}
-                      <div className="flex flex-col sm:grid sm:grid-cols-2 lg:flex lg:flex-row lg:gap-6 gap-3">
-                        {/* Product Image - Smaller on mobile */}
-                        <div className="relative mx-auto sm:mx-0">
-                          <div className="w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg border-2 lg:border-4 border-white">
+                      {/* Mobile Optimized Compact Product Layout */}
+                      <div className="flex gap-3 lg:gap-6">
+                        {/* Product Image - Compact on mobile */}
+                        <div className="relative flex-shrink-0">
+                          <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-40 lg:h-40 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center shadow-lg border-2 lg:border-4 border-white">
                             {currentItem.image ? (
                               <img 
                                 src={currentItem.image} 
@@ -3588,29 +3562,37 @@ export default function PickPack() {
                                 className="w-full h-full object-contain rounded-lg p-1 lg:p-2"
                               />
                             ) : (
-                              <Package className="h-12 lg:h-16 w-12 lg:w-16 text-gray-300" />
+                              <Package className="h-10 lg:h-16 w-10 lg:w-16 text-gray-300" />
                             )}
                           </div>
-                          <div className="absolute -top-1 -right-1 lg:-top-2 lg:-right-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center font-bold text-sm lg:text-base shadow-lg">
+                          <div className="absolute -top-1 -right-1 lg:-top-2 lg:-right-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full w-7 h-7 lg:w-10 lg:h-10 flex items-center justify-center font-bold text-xs lg:text-base shadow-lg">
                             {currentItemIndex + 1}
                           </div>
                         </div>
                         
-                        {/* Product Details */}
-                        <div className="flex-1 space-y-2 lg:space-y-3">
-                          <h3 className="text-lg lg:text-2xl font-bold text-gray-800 line-clamp-2">{currentItem.productName}</h3>
+                        {/* Product Details - Beside image on mobile */}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-base sm:text-lg lg:text-2xl font-bold text-gray-800 line-clamp-2 mb-2">{currentItem.productName}</h3>
                           
-                          <div className="space-y-2">
-                            <div className="bg-gray-50 rounded-lg p-2 lg:p-3 flex items-center gap-2">
-                              <Hash className="h-4 lg:h-5 w-4 lg:w-5 text-blue-500 flex-shrink-0" />
+                          {/* Picked status indicator for mobile */}
+                          {currentItem?.pickedQuantity === currentItem?.quantity && (
+                            <div className="text-green-600 font-bold text-sm mb-2 flex items-center gap-1">
+                              <CheckCircle className="h-4 w-4" />
+                              <span>Picked</span>
+                            </div>
+                          )}
+                          
+                          <div className="space-y-1.5 lg:space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Hash className="h-3.5 lg:h-5 w-3.5 lg:w-5 text-blue-500 flex-shrink-0" />
                               <span className="text-xs lg:text-sm text-gray-600 font-medium">SKU:</span>
-                              <span className="font-mono font-bold text-sm lg:text-base text-gray-800 truncate">{currentItem.sku}</span>
+                              <span className="font-mono font-bold text-xs lg:text-base text-gray-800 truncate">{currentItem.sku}</span>
                             </div>
                             
-                            <div className="bg-gray-50 rounded-lg p-2 lg:p-3 flex items-center gap-2">
-                              <ScanLine className="h-4 lg:h-5 w-4 lg:w-5 text-purple-500 flex-shrink-0" />
+                            <div className="flex items-center gap-2">
+                              <ScanLine className="h-3.5 lg:h-5 w-3.5 lg:w-5 text-purple-500 flex-shrink-0" />
                               <span className="text-xs lg:text-sm text-gray-600 font-medium">Barcode:</span>
-                              <span className="font-mono font-bold text-sm lg:text-base text-gray-800 truncate">{currentItem.barcode}</span>
+                              <span className="font-mono font-bold text-xs lg:text-base text-gray-800 truncate">{currentItem.barcode}</span>
                             </div>
                           </div>
                         </div>
