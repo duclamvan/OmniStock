@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, memo } from "react";
-import { createPortal } from "react-dom";
+
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -176,29 +176,35 @@ interface PickPackOrder {
 // Memoized Product Image Component to prevent re-renders from timer updates
 const ProductImage = memo(({ 
   item, 
-  onImageClick 
+  isExpanded,
+  onToggleExpand 
 }: { 
   item: OrderItem, 
-  onImageClick: (image: string) => void 
+  isExpanded: boolean,
+  onToggleExpand: () => void 
 }) => {
   return (
-    <div className="relative flex-shrink-0 z-0">
+    <div className={`relative flex-shrink-0 z-0 transition-all duration-300 ${isExpanded ? 'col-span-full' : ''}`}>
       <div 
-        className="w-20 h-20 sm:w-24 sm:h-24 lg:w-40 lg:h-40 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center shadow-lg border-2 lg:border-4 border-white cursor-pointer hover:shadow-xl transition-shadow"
+        className={`
+          ${isExpanded 
+            ? 'w-full h-[400px] sm:h-[500px]' 
+            : 'w-20 h-20 sm:w-24 sm:h-24 lg:w-40 lg:h-40'
+          } 
+          bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center 
+          shadow-lg border-2 lg:border-4 border-white cursor-pointer hover:shadow-xl 
+          transition-all duration-300
+        `}
         onClick={(e) => {
           e.stopPropagation();
-          console.log('Image clicked:', item.image);
-          if (item.image) {
-            onImageClick(item.image);
-          }
+          console.log(isExpanded ? 'Minimizing image' : 'Expanding image');
+          onToggleExpand();
         }}
         role="button"
         tabIndex={0}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
-            if (item.image) {
-              onImageClick(item.image);
-            }
+            onToggleExpand();
           }
         }}
       >
@@ -206,16 +212,35 @@ const ProductImage = memo(({
           <img 
             src={item.image} 
             alt={item.productName}
-            className="w-full h-full object-contain rounded-lg p-1 lg:p-2"
+            className={`
+              ${isExpanded ? 'w-full h-full' : 'w-full h-full'} 
+              object-contain rounded-lg p-1 lg:p-2
+            `}
             style={{ pointerEvents: 'none' }}
           />
         ) : (
-          <Package className="h-10 lg:h-16 w-10 lg:w-16 text-gray-300" style={{ pointerEvents: 'none' }} />
+          <Package 
+            className={`
+              ${isExpanded ? 'h-32 w-32' : 'h-10 lg:h-16 w-10 lg:w-16'} 
+              text-gray-300
+            `} 
+            style={{ pointerEvents: 'none' }} 
+          />
         )}
       </div>
-      <div className="absolute -top-1 -right-1 lg:-top-2 lg:-right-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center font-bold text-xs lg:text-base shadow-lg" style={{ pointerEvents: 'none' }}>
-        {item.quantity}x
-      </div>
+      {!isExpanded && (
+        <div className="absolute -top-1 -right-1 lg:-top-2 lg:-right-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center font-bold text-xs lg:text-base shadow-lg" style={{ pointerEvents: 'none' }}>
+          {item.quantity}x
+        </div>
+      )}
+      {isExpanded && (
+        <div className="mt-2 flex justify-between items-center px-2">
+          <span className="text-sm font-medium text-gray-600">Click to minimize</span>
+          <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white">
+            {item.quantity}x
+          </Badge>
+        </div>
+      )}
     </div>
   );
 });
@@ -337,7 +362,19 @@ export default function PickPack() {
   const [recentlyShippedOrders, setRecentlyShippedOrders] = useState<PickPackOrder[]>([]);
   const [showUndoPopup, setShowUndoPopup] = useState(false);
   const [undoTimeLeft, setUndoTimeLeft] = useState(5);
-  const [expandedProductImage, setExpandedProductImage] = useState<string | null>(null);
+  const [expandedProductId, setExpandedProductId] = useState<string | null>(null);
+
+  // Handle image click for in-place expansion
+  const handleImageClick = (productId: string) => {
+    console.log('Image clicked for product:', productId);
+    if (expandedProductId === productId) {
+      console.log('Minimizing image');
+      setExpandedProductId(null);
+    } else {
+      console.log('Expanding image for product:', productId);
+      setExpandedProductId(productId);
+    }
+  };
 
   // Timer effect for undo popup
   useEffect(() => {
@@ -3668,10 +3705,8 @@ export default function PickPack() {
                         {/* Product Image - Compact on mobile */}
                         <ProductImage 
                           item={currentItem} 
-                          onImageClick={(image) => {
-                            console.log('Setting expandedProductImage to:', image);
-                            setExpandedProductImage(image);
-                          }}
+                          isExpanded={expandedProductId === currentItem.id}
+                          onToggleExpand={() => handleImageClick(currentItem.id)}
                         />
                         
                         {/* Product Details - Organized layout */}
@@ -5232,37 +5267,7 @@ export default function PickPack() {
         </DialogContent>
       </Dialog>
 
-      {/* Expanded Product Image Modal - Portal to document.body */}
-      {expandedProductImage && console.log('Rendering modal with image:', expandedProductImage)}
-      {expandedProductImage && createPortal(
-        <div 
-          className="fixed inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm"
-          style={{ zIndex: 999999, position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
-          onClick={() => setExpandedProductImage(null)}
-        >
-          <div 
-            className="relative max-w-5xl max-h-[90vh] w-full h-full m-4 bg-black rounded-lg shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-2 right-2 z-10 text-white hover:bg-white/20"
-              onClick={() => setExpandedProductImage(null)}
-            >
-              <X className="h-6 w-6" />
-            </Button>
-            <div className="w-full h-full flex items-center justify-center p-4">
-              <img 
-                src={expandedProductImage} 
-                alt="Expanded product"
-                className="max-w-full max-h-full object-contain"
-              />
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+
 
       {/* Undo Popup */}
       {showUndoPopup && (
