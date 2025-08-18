@@ -131,10 +131,9 @@ export class AIWeightCalculationService {
    */
   async calculatePackageWeight(orderId: string, selectedCartonId?: string, optimizeMultipleCartons?: boolean): Promise<WeightCalculationResult> {
     try {
-      console.log('Calculating weight for order:', orderId, 'with carton:', selectedCartonId);
-      
       // Get order details with items
       const order = await storage.getOrderById(orderId);
+      
       if (!order) {
         console.error(`Order ${orderId} not found`);
         // Return a default weight calculation for mock data
@@ -154,8 +153,60 @@ export class AIWeightCalculationService {
         };
       }
 
+      // Get order items
+      const items = await storage.getOrderItems(order.id);
+      
+      // Enrich items with bundle details
+      const itemsWithBundleDetails = await Promise.all(items.map(async (item) => {
+        // Check if this product is a bundle
+        const bundles = await storage.getBundles();
+        const bundle = bundles.find(b => item.productName.includes(b.name));
+        
+        if (bundle) {
+          // Fetch bundle items
+          const bundleItems = await storage.getBundleItems(bundle.id);
+          const bundleItemsWithDetails = await Promise.all(bundleItems.map(async (bundleItem) => {
+            let productName = '';
+            if (bundleItem.productId) {
+              const product = await storage.getProductById(bundleItem.productId);
+              productName = product?.name || '';
+              
+              if (bundleItem.variantId) {
+                const variants = await storage.getProductVariants(bundleItem.productId);
+                const variant = variants.find(v => v.id === bundleItem.variantId);
+                if (variant) {
+                  productName = `${productName} - ${variant.name}`;
+                }
+              }
+            }
+            
+            return {
+              id: bundleItem.id,
+              name: productName || bundleItem.notes || 'Bundle Item',
+              quantity: bundleItem.quantity,
+              picked: false,
+              location: 'A1-R1-S1'
+            };
+          }));
+          
+          return {
+            ...item,
+            isBundle: true,
+            bundleItems: bundleItemsWithDetails
+          };
+        }
+        
+        return item;
+      }));
+      
+      // Create enriched order with bundle details
+      const enrichedOrder = {
+        ...order,
+        items: itemsWithBundleDetails
+      };
+
       // Calculate items weight
-      const itemsWeight = await this.calculateItemsWeight(order);
+      const itemsWeight = await this.calculateItemsWeight(enrichedOrder);
       
       // Get packing materials weight
       const packingMaterialsWeight = await this.calculatePackingMaterialsWeight(order);
@@ -235,11 +286,13 @@ export class AIWeightCalculationService {
           
           if (product && product.weight) {
             const productWeight = parseFloat(product.weight.toString());
-            totalWeight += productWeight * bundleItem.quantity * item.quantity;
+            const itemWeight = productWeight * bundleItem.quantity * item.quantity;
+            totalWeight += itemWeight;
           } else {
             // Estimate weight if not found
             const estimatedWeight = this.estimateProductWeight(product || null);
-            totalWeight += estimatedWeight * bundleItem.quantity * item.quantity;
+            const itemWeight = estimatedWeight * bundleItem.quantity * item.quantity;
+            totalWeight += itemWeight;
           }
         }
       } else if (item.productId) {
@@ -247,11 +300,13 @@ export class AIWeightCalculationService {
         const product = await storage.getProductById(item.productId);
         if (product && product.weight) {
           const productWeight = parseFloat(product.weight.toString());
-          totalWeight += productWeight * item.quantity;
+          const itemWeight = productWeight * item.quantity;
+          totalWeight += itemWeight;
         } else {
           // Estimate weight based on product category and size if no weight specified
           const estimatedWeight = this.estimateProductWeight(product || null);
-          totalWeight += estimatedWeight * item.quantity;
+          const itemWeight = estimatedWeight * item.quantity;
+          totalWeight += itemWeight;
         }
       }
       
