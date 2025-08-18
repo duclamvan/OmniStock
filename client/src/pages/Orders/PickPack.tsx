@@ -5165,7 +5165,7 @@ export default function PickPack() {
 
       {/* Expanded Product Image Dialog */}
       <Dialog open={!!expandedProductImage} onOpenChange={() => setExpandedProductImage(null)}>
-        <DialogContent className="max-w-5xl h-[90vh] p-0 border-0">
+        <DialogContent className="max-w-5xl h-[90vh] p-0 border-0" style={{ zIndex: 9999 }}>
           <DialogHeader className="sr-only">
             <DialogTitle>Product Image</DialogTitle>
             <DialogDescription>Expanded view of product image</DialogDescription>
