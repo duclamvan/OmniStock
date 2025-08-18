@@ -3581,30 +3581,32 @@ export default function PickPack() {
                               <Package className="h-10 lg:h-16 w-10 lg:w-16 text-gray-300" />
                             )}
                           </div>
-                          <div className="absolute -top-1 -right-1 lg:-top-2 lg:-right-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full w-7 h-7 lg:w-10 lg:h-10 flex items-center justify-center font-bold text-xs lg:text-base shadow-lg">
-                            {currentItem.quantity}
+                          <div className="absolute -top-1 -right-1 lg:-top-2 lg:-right-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center font-bold text-xs lg:text-base shadow-lg">
+                            {currentItem.quantity}x
                           </div>
                         </div>
                         
                         {/* Product Details - Organized layout */}
                         <div className="flex-1 min-w-0 flex flex-col justify-center">
-                          {/* Product Name */}
-                          <h3 className="text-base sm:text-lg lg:text-2xl font-bold text-gray-900 line-clamp-1 mb-2">{currentItem.productName}</h3>
-                          
-                          {/* Info Grid */}
+                          {/* Info Grid with aligned values */}
                           <div className="space-y-1.5">
+                            {/* Product Name */}
+                            <div className="flex items-start">
+                              <h3 className="text-base sm:text-lg lg:text-2xl font-bold text-gray-900 line-clamp-1">{currentItem.productName}</h3>
+                            </div>
+                            
                             {/* SKU */}
-                            <div className="flex items-center gap-2">
-                              <Hash className="h-3.5 lg:h-4 w-3.5 lg:w-4 text-blue-500 flex-shrink-0" />
-                              <span className="text-xs lg:text-sm text-gray-500 font-medium">SKU:</span>
-                              <span className="font-mono font-semibold text-xs lg:text-sm text-gray-900 ml-2">{currentItem.sku}</span>
+                            <div className="flex items-center">
+                              <Hash className="h-3.5 lg:h-4 w-3.5 lg:w-4 text-blue-500 flex-shrink-0 mr-2" />
+                              <span className="text-xs lg:text-sm text-gray-500 font-medium min-w-[60px]">SKU:</span>
+                              <span className="font-mono font-semibold text-xs lg:text-sm text-gray-900">{currentItem.sku}</span>
                             </div>
                             
                             {/* Barcode */}
-                            <div className="flex items-center gap-2">
-                              <ScanLine className="h-3.5 lg:h-4 w-3.5 lg:w-4 text-purple-500 flex-shrink-0" />
-                              <span className="text-xs lg:text-sm text-gray-500 font-medium">Barcode:</span>
-                              <span className="font-mono font-semibold text-xs lg:text-sm text-gray-900 ml-2">{currentItem.barcode}</span>
+                            <div className="flex items-center">
+                              <ScanLine className="h-3.5 lg:h-4 w-3.5 lg:w-4 text-purple-500 flex-shrink-0 mr-2" />
+                              <span className="text-xs lg:text-sm text-gray-500 font-medium min-w-[60px]">Barcode:</span>
+                              <span className="font-mono font-semibold text-xs lg:text-sm text-gray-900">{currentItem.barcode}</span>
                             </div>
                           </div>
                         </div>
