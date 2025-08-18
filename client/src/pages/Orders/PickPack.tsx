@@ -3575,7 +3575,6 @@ export default function PickPack() {
                             className="w-20 h-20 sm:w-24 sm:h-24 lg:w-40 lg:h-40 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center shadow-lg border-2 lg:border-4 border-white cursor-pointer hover:shadow-xl transition-shadow"
                             onClick={(e) => {
                               e.stopPropagation();
-                              console.log('Image clicked!', currentItem.image);
                               if (currentItem.image) {
                                 setExpandedProductImage(currentItem.image);
                               }
