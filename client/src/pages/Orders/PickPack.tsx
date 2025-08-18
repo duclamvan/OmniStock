@@ -5157,34 +5157,42 @@ export default function PickPack() {
                       return sections.map((section, sectionIndex) => {
                         const Icon = section.icon;
                         return (
-                          <div key={sectionIndex} className={`rounded-lg border-2 ${section.color} p-4`}>
+                          <div key={sectionIndex} className={`rounded-xl border ${section.color} overflow-hidden`}>
                             {/* Section Header */}
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="flex items-center gap-2">
-                                <Icon className="h-5 w-5 text-gray-700" />
-                                <h3 className="font-semibold text-base">
-                                  {section.title}
-                                </h3>
-                                <Badge className="bg-white">
-                                  {section.orders.length} {section.orders.length === 1 ? 'order' : 'orders'}
-                                </Badge>
+                            <div className={`px-4 py-3 border-b border-opacity-20 ${section.color.replace('bg-', 'border-').replace('-50', '-200')}`}>
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <div className={`p-2 rounded-lg ${section.color.replace('-50', '-100')}`}>
+                                    <Icon className="h-4 w-4 text-gray-700" />
+                                  </div>
+                                  <div>
+                                    <h3 className="font-semibold text-base text-gray-900">
+                                      {section.title}
+                                    </h3>
+                                    <p className="text-xs text-gray-500 mt-0.5">
+                                      {section.orders.length} {section.orders.length === 1 ? 'order ready' : 'orders ready'}
+                                    </p>
+                                  </div>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  className={`${section.buttonColor} shadow-sm text-xs sm:text-sm px-3 py-2 font-medium hover:shadow-md transition-all duration-200`}
+                                  onClick={() => {
+                                    // Mark all orders in this section as shipped
+                                    section.orders.forEach(order => markAsShipped(order));
+                                  }}
+                                >
+                                  <Truck className="h-3.5 w-3.5 mr-1.5" />
+                                  <span className="hidden sm:inline">Ship All</span>
+                                  <span className="sm:hidden">Ship {section.orders.length}</span>
+                                </Button>
                               </div>
-                              <Button
-                                size="sm"
-                                className={`${section.buttonColor} text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2`}
-                                onClick={() => {
-                                  // Mark all orders in this section as shipped
-                                  section.orders.forEach(order => markAsShipped(order));
-                                }}
-                              >
-                                <Truck className="h-3 sm:h-4 w-3 sm:w-4 mr-1" />
-                                <span className="hidden sm:inline">Ship {section.title}</span>
-                                <span className="sm:hidden">Ship {section.orders.length}</span>
-                              </Button>
                             </div>
                             
-                            {/* Section Orders */}
-                            <div className="space-y-2">
+                            {/* Section Content */}
+                            <div className="p-4 bg-white">
+                              {/* Section Orders */}
+                              <div className="space-y-2">
                               {section.orders.map(order => (
                                 <Card 
                                   key={order.id} 
@@ -5268,6 +5276,7 @@ export default function PickPack() {
                                   </CardContent>
                                 </Card>
                               ))}
+                              </div>
                             </div>
                           </div>
                         );
