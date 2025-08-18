@@ -2854,9 +2854,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { status, orderStatus, pickStatus, packStatus, pickedBy, packedBy, pickStartTime, pickEndTime, packStartTime, packEndTime } = req.body;
       
       const updates: any = {};
-      // Support both 'status' and 'orderStatus' fields
-      if (status) updates.status = status;
-      if (orderStatus) updates.status = orderStatus; // Map orderStatus to status for compatibility
+      // Support both 'status' and 'orderStatus' fields - map to orderStatus which is the DB field
+      if (status) updates.orderStatus = status;
+      if (orderStatus) updates.orderStatus = orderStatus; 
       if (pickStatus) updates.pickStatus = pickStatus;
       if (packStatus) updates.packStatus = packStatus;
       if (pickedBy) updates.pickedBy = pickedBy;
@@ -2887,8 +2887,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updates.packEndTime = new Date();
       }
       
-      const finalStatus = status || orderStatus;
-      if (finalStatus === 'shipped') {
+      // Check if order is being marked as shipped
+      if (updates.orderStatus === 'shipped') {
         updates.shippedAt = new Date();
       }
       
