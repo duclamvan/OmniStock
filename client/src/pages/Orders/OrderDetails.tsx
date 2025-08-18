@@ -135,7 +135,7 @@ export default function OrderDetails() {
   // Fetch order data with optimized caching
   const { data: order, isLoading } = useQuery<any>({
     queryKey: [`/api/orders/${id}`],
-    enabled: !!id && !['add', 'to-fulfill', 'shipped', 'pay-later', 'pre-orders'].includes(id || ''),
+    enabled: !!id && !['add', 'to-fulfill', 'shipped', 'pay-later', 'pre-orders', 'pick-pack'].includes(id || ''),
     refetchInterval: 5000, // Refetch every 5 seconds for real-time updates
     refetchOnWindowFocus: true, // Refetch when user returns to the tab
     staleTime: 3000, // Consider data stale after 3 seconds
@@ -145,7 +145,7 @@ export default function OrderDetails() {
   // Fetch pick/pack logs for the order
   const { data: pickPackLogs } = useQuery<any[]>({
     queryKey: [`/api/orders/${id}/pick-pack-logs`],
-    enabled: !!id && !!order,
+    enabled: !!id && !!order && id !== 'pick-pack',
     refetchInterval: 5000,
     staleTime: 3000,
   });
