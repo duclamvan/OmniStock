@@ -39,6 +39,10 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   const [statusFilter, setStatusFilter] = useState("all");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedOrders, setSelectedOrders] = useState<any[]>([]);
+  const [selectAll, setSelectAll] = useState(false);
+  const [showBulkActions, setShowBulkActions] = useState(false);
+  const [bulkActionType, setBulkActionType] = useState<'status' | 'payment' | null>(null);
+  const [bulkNewStatus, setBulkNewStatus] = useState("");
   
   // Load saved expand preference from localStorage
   const [expandAll, setExpandAll] = useState(() => {
@@ -110,6 +114,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
         description: `Deleted ${selectedOrders.length} order(s) successfully`,
       });
       setSelectedOrders([]);
+      setSelectAll(false);
     },
     onError: (error: any) => {
       console.error("Order delete error:", error);
@@ -121,18 +126,79 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     },
   });
 
-  // Filter orders based on search query (memoized for performance)
+  const bulkUpdateStatusMutation = useMutation({
+    mutationFn: async ({ orderIds, status }: { orderIds: string[], status: string }) => {
+      await Promise.all(orderIds.map(id => 
+        apiRequest(`/api/orders/${id}`, 'PATCH', { orderStatus: status })
+      ));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      toast({
+        title: "Success",
+        description: `Updated ${selectedOrders.length} order(s) successfully`,
+      });
+      setSelectedOrders([]);
+      setSelectAll(false);
+      setShowBulkActions(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update orders",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const bulkUpdatePaymentMutation = useMutation({
+    mutationFn: async ({ orderIds, paymentStatus }: { orderIds: string[], paymentStatus: string }) => {
+      await Promise.all(orderIds.map(id => 
+        apiRequest(`/api/orders/${id}`, 'PATCH', { paymentStatus })
+      ));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      toast({
+        title: "Success",
+        description: `Updated payment status for ${selectedOrders.length} order(s)`,
+      });
+      setSelectedOrders([]);
+      setSelectAll(false);
+      setShowBulkActions(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update payment status",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Filter orders based on search query and status (memoized for performance)
   const filteredOrders = useMemo(() => {
     if (!orders) return [];
-    if (!searchQuery) return orders;
     
-    const matcher = createVietnameseSearchMatcher(searchQuery);
-    return orders.filter((order: any) => 
-      matcher(order.orderId || '') ||
-      matcher(order.customer?.name || '') ||
-      matcher(order.customer?.facebookName || '')
-    );
-  }, [orders, searchQuery]);
+    let filtered = orders;
+    
+    // Apply status filter
+    if (statusFilter && statusFilter !== 'all') {
+      filtered = filtered.filter((order: any) => order.orderStatus === statusFilter);
+    }
+    
+    // Apply search filter
+    if (searchQuery) {
+      const matcher = createVietnameseSearchMatcher(searchQuery);
+      filtered = filtered.filter((order: any) => 
+        matcher(order.orderId || '') ||
+        matcher(order.customer?.name || '') ||
+        matcher(order.customer?.facebookName || '')
+      );
+    }
+    
+    return filtered;
+  }, [orders, searchQuery, statusFilter]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -199,6 +265,23 @@ export default function AllOrders({ filter }: AllOrdersProps) {
 
   // Define table columns
   const columns: DataTableColumn<any>[] = [
+    {
+      key: "select",
+      header: "",
+      sortable: false,
+      cell: (order) => (
+        <input
+          type="checkbox"
+          checked={selectedOrders.some(o => o.id === order.id)}
+          onChange={(e) => {
+            e.stopPropagation();
+            handleOrderSelect(order, e.target.checked);
+          }}
+          onClick={(e) => e.stopPropagation()}
+          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        />
+      ),
+    },
     {
       key: "customer",
       header: "Customer",
@@ -297,6 +380,43 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     setShowDeleteDialog(false);
   };
 
+  // Handle select all checkbox
+  const handleSelectAll = (checked: boolean) => {
+    setSelectAll(checked);
+    if (checked) {
+      setSelectedOrders(filteredOrders);
+    } else {
+      setSelectedOrders([]);
+    }
+  };
+
+  // Handle individual order selection
+  const handleOrderSelect = (order: any, checked: boolean) => {
+    if (checked) {
+      setSelectedOrders([...selectedOrders, order]);
+    } else {
+      setSelectedOrders(selectedOrders.filter(o => o.id !== order.id));
+      setSelectAll(false);
+    }
+  };
+
+  // Handle bulk status update
+  const handleBulkStatusUpdate = () => {
+    if (!bulkNewStatus || selectedOrders.length === 0) return;
+    
+    if (bulkActionType === 'status') {
+      bulkUpdateStatusMutation.mutate({
+        orderIds: selectedOrders.map(o => o.id),
+        status: bulkNewStatus
+      });
+    } else if (bulkActionType === 'payment') {
+      bulkUpdatePaymentMutation.mutate({
+        orderIds: selectedOrders.map(o => o.id),
+        paymentStatus: bulkNewStatus
+      });
+    }
+  };
+
   // Remove loading state to prevent UI refresh indicators
 
   return (
@@ -358,17 +478,74 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       <Card>
         <CardHeader className="p-4 sm:p-6">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-mobile-lg">Orders ({filteredOrders?.length || 0})</CardTitle>
-            <div className="hidden sm:flex items-center gap-2">
-              <Label htmlFor="expand-all" className="text-sm text-slate-600 cursor-pointer">
-                {expandAll ? 'Collapse All' : 'Expand All'}
-              </Label>
-              <Switch
-                id="expand-all"
-                checked={expandAll}
-                onCheckedChange={handleExpandAllChange}
-                className="data-[state=checked]:bg-blue-600"
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                checked={selectAll}
+                onChange={(e) => handleSelectAll(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
               />
+              <CardTitle className="text-mobile-lg">Orders ({filteredOrders?.length || 0})</CardTitle>
+              {selectedOrders.length > 0 && (
+                <Badge variant="secondary">{selectedOrders.length} selected</Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {selectedOrders.length > 0 && (
+                <div className="flex gap-2">
+                  <Select onValueChange={(value) => {
+                    bulkUpdateStatusMutation.mutate({
+                      orderIds: selectedOrders.map(o => o.id),
+                      status: value
+                    });
+                  }}>
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue placeholder="Update Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="to_fulfill">To Fulfill</SelectItem>
+                      <SelectItem value="shipped">Shipped</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <Select onValueChange={(value) => {
+                    bulkUpdatePaymentMutation.mutate({
+                      orderIds: selectedOrders.map(o => o.id),
+                      paymentStatus: value
+                    });
+                  }}>
+                    <SelectTrigger className="w-[140px]">
+                      <SelectValue placeholder="Payment Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="paid">Paid</SelectItem>
+                      <SelectItem value="pay_later">Pay Later</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <Button 
+                    size="sm" 
+                    variant="destructive"
+                    onClick={() => setShowDeleteDialog(true)}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              )}
+              <div className="hidden sm:flex items-center gap-2">
+                <Label htmlFor="expand-all" className="text-sm text-slate-600 cursor-pointer">
+                  {expandAll ? 'Collapse All' : 'Expand All'}
+                </Label>
+                <Switch
+                  id="expand-all"
+                  checked={expandAll}
+                  onCheckedChange={handleExpandAllChange}
+                  className="data-[state=checked]:bg-blue-600"
+                />
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -385,6 +562,16 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                   {/* Top Row - Customer, Status, Edit */}
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <input
+                        type="checkbox"
+                        checked={selectedOrders.some(o => o.id === order.id)}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          handleOrderSelect(order, e.target.checked);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
                       <Avatar className="h-10 w-10 flex-shrink-0">
                         <AvatarImage src={order.customer?.profileImageUrl} />
                         <AvatarFallback className="text-sm bg-gray-100">{order.customer?.name?.charAt(0) || 'C'}</AvatarFallback>
