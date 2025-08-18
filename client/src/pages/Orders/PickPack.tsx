@@ -189,7 +189,7 @@ const ProductImage = memo(({
     return (
       <div className="w-full space-y-3">
         <div 
-          className="w-full h-[350px] sm:h-[450px] bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center shadow-lg border-2 border-white cursor-pointer hover:shadow-xl transition-all duration-300"
+          className="relative w-full h-[350px] sm:h-[450px] bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center shadow-lg border-2 border-white cursor-pointer hover:shadow-xl transition-all duration-300"
           onClick={(e) => {
             e.stopPropagation();
             console.log('Minimizing image');
@@ -203,6 +203,11 @@ const ProductImage = memo(({
             }
           }}
         >
+          {/* Tiny minimize icon at top right - visual only */}
+          <div className="absolute top-2 right-2 bg-black/10 rounded-full p-1 pointer-events-none">
+            <Minus className="h-3 w-3 text-gray-600" />
+          </div>
+          
           {item.image ? (
             <img 
               src={item.image} 
