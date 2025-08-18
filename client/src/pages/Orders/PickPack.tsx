@@ -5251,22 +5251,22 @@ export default function PickPack() {
       
       {/* Order Preview Dialog */}
       <Dialog open={!!previewOrder} onOpenChange={() => setPreviewOrder(null)}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{previewOrder?.orderId} - Shipping Details</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="w-[95vw] max-w-3xl sm:w-full max-h-[90vh] overflow-y-auto mx-auto">
+          <DialogHeader className="px-2 sm:px-0">
+            <DialogTitle className="text-base sm:text-lg">{previewOrder?.orderId} - Shipping Details</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               Ready to ship • {previewOrder?.totalItems} items
             </DialogDescription>
           </DialogHeader>
           
           {/* Shipping Information */}
-          <div className="space-y-4 mt-4">
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
-                <User className="h-4 w-4" />
+          <div className="space-y-3 sm:space-y-4 mt-3 sm:mt-4 px-2 sm:px-0">
+            <div className="bg-blue-50 p-3 sm:p-4 rounded-lg">
+              <h3 className="font-semibold text-xs sm:text-sm mb-2 sm:mb-3 flex items-center gap-2">
+                <User className="h-3 sm:h-4 w-3 sm:w-4" />
                 Customer Information
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm">
                 <div>
                   <span className="text-gray-600">Name:</span>
                   <p className="font-medium">{previewOrder?.customerName}</p>
@@ -5278,23 +5278,23 @@ export default function PickPack() {
               </div>
             </div>
 
-            <div className="bg-green-50 p-4 rounded-lg">
-              <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
+            <div className="bg-green-50 p-3 sm:p-4 rounded-lg">
+              <h3 className="font-semibold text-xs sm:text-sm mb-2 sm:mb-3 flex items-center gap-2">
+                <MapPin className="h-3 sm:h-4 w-3 sm:w-4" />
                 Shipping Address
               </h3>
-              <div className="text-sm space-y-2">
-                <p className="font-medium text-gray-900">
+              <div className="text-xs sm:text-sm space-y-2">
+                <p className="font-medium text-gray-900 break-words">
                   {previewOrder?.shippingAddress || 'No address provided'}
                 </p>
-                <div className="flex items-center gap-4 mt-2">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 mt-2">
                   <div className="flex items-center gap-1">
-                    <Truck className="h-4 w-4 text-gray-500" />
+                    <Truck className="h-3 sm:h-4 w-3 sm:w-4 text-gray-500" />
                     <span className="text-gray-600">Method:</span>
                     <span className="font-medium">{previewOrder?.shippingMethod}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <AlertCircle className="h-4 w-4 text-gray-500" />
+                    <AlertCircle className="h-3 sm:h-4 w-3 sm:w-4 text-gray-500" />
                     <span className="text-gray-600">Priority:</span>
                     <span className={`font-medium capitalize ${
                       previewOrder?.priority === 'high' ? 'text-red-600' :
@@ -5310,34 +5310,34 @@ export default function PickPack() {
 
             {/* Order Items */}
             <div>
-              <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
-                <Package className="h-4 w-4" />
+              <h3 className="font-semibold text-xs sm:text-sm mb-2 sm:mb-3 flex items-center gap-2">
+                <Package className="h-3 sm:h-4 w-3 sm:w-4" />
                 Order Items ({previewOrder?.totalItems})
               </h3>
               <div className="space-y-2">
                 {previewOrder?.items.map((item, index) => (
-                  <div key={item.id || index} className="flex items-center gap-3 p-3 border rounded-lg bg-gray-50">
+                  <div key={item.id || index} className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 border rounded-lg bg-gray-50">
                     {item.image && (
                       <img 
                         src={item.image} 
                         alt={item.productName}
-                        className="w-12 h-12 object-cover rounded"
+                        className="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded flex-shrink-0"
                       />
                     )}
-                    <div className="flex-1">
-                      <div className="font-medium text-sm">{item.productName}</div>
-                      <div className="text-xs text-gray-500">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-xs sm:text-sm truncate">{item.productName}</div>
+                      <div className="text-[10px] sm:text-xs text-gray-500">
                         SKU: {item.sku} {item.barcode && `• ${item.barcode}`}
                       </div>
                       {item.warehouseLocation && (
-                        <div className="text-xs text-blue-600 mt-1">
+                        <div className="text-[10px] sm:text-xs text-blue-600 mt-1">
                           📍 {item.warehouseLocation}
                         </div>
                       )}
                     </div>
-                    <div className="text-right">
-                      <div className="text-sm font-semibold">Qty: {item.quantity}</div>
-                      <div className="text-xs text-green-600">
+                    <div className="text-right flex-shrink-0">
+                      <div className="text-xs sm:text-sm font-semibold">Qty: {item.quantity}</div>
+                      <div className="text-[10px] sm:text-xs text-green-600">
                         ✓ Packed
                       </div>
                     </div>
@@ -5347,12 +5347,12 @@ export default function PickPack() {
             </div>
 
             {/* Processing Information */}
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
-                <Clock className="h-4 w-4" />
+            <div className="bg-gray-50 p-3 sm:p-4 rounded-lg">
+              <h3 className="font-semibold text-xs sm:text-sm mb-2 sm:mb-3 flex items-center gap-2">
+                <Clock className="h-3 sm:h-4 w-3 sm:w-4" />
                 Processing Information
               </h3>
-              <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="grid grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm">
                 <div>
                   <span className="text-gray-600">Picked by:</span>
                   <p className="font-medium">{previewOrder?.pickedBy || 'N/A'}</p>
