@@ -27,6 +27,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface AllOrdersProps {
   filter?: string;
@@ -495,49 +503,118 @@ export default function AllOrders({ filter }: AllOrdersProps) {
             </div>
             <div className="flex items-center gap-2">
               {selectedOrders.length > 0 && (
-                <div className="flex gap-2">
-                  <Select onValueChange={(value) => {
-                    bulkUpdateStatusMutation.mutate({
-                      orderIds: selectedOrders.map(o => o.id),
-                      status: value
-                    });
-                  }}>
-                    <SelectTrigger className="w-[140px]">
-                      <SelectValue placeholder="Update Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="to_fulfill">To Fulfill</SelectItem>
-                      <SelectItem value="ready_to_ship">Ready to Ship</SelectItem>
-                      <SelectItem value="shipped">Shipped</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <>
+                  {/* Mobile: Compact dropdown menu */}
+                  <div className="sm:hidden">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button size="sm" variant="outline">
+                          Actions <ChevronDown className="ml-1 h-3 w-3" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuLabel>Update Status</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => bulkUpdateStatusMutation.mutate({
+                          orderIds: selectedOrders.map(o => o.id),
+                          status: 'pending'
+                        })}>
+                          → Pending
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => bulkUpdateStatusMutation.mutate({
+                          orderIds: selectedOrders.map(o => o.id),
+                          status: 'to_fulfill'
+                        })}>
+                          → To Fulfill
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => bulkUpdateStatusMutation.mutate({
+                          orderIds: selectedOrders.map(o => o.id),
+                          status: 'ready_to_ship'
+                        })}>
+                          → Ready to Ship
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => bulkUpdateStatusMutation.mutate({
+                          orderIds: selectedOrders.map(o => o.id),
+                          status: 'shipped'
+                        })}>
+                          → Shipped
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuLabel>Payment Status</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => bulkUpdatePaymentMutation.mutate({
+                          orderIds: selectedOrders.map(o => o.id),
+                          paymentStatus: 'pending'
+                        })}>
+                          💳 Pending
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => bulkUpdatePaymentMutation.mutate({
+                          orderIds: selectedOrders.map(o => o.id),
+                          paymentStatus: 'paid'
+                        })}>
+                          ✓ Paid
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => bulkUpdatePaymentMutation.mutate({
+                          orderIds: selectedOrders.map(o => o.id),
+                          paymentStatus: 'pay_later'
+                        })}>
+                          ⏰ Pay Later
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          className="text-red-600"
+                          onClick={() => setShowDeleteDialog(true)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete Selected
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                   
-                  <Select onValueChange={(value) => {
-                    bulkUpdatePaymentMutation.mutate({
-                      orderIds: selectedOrders.map(o => o.id),
-                      paymentStatus: value
-                    });
-                  }}>
-                    <SelectTrigger className="w-[140px]">
-                      <SelectValue placeholder="Payment Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="paid">Paid</SelectItem>
-                      <SelectItem value="pay_later">Pay Later</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  
-                  <Button 
-                    size="sm" 
-                    variant="destructive"
-                    onClick={() => setShowDeleteDialog(true)}
-                  >
-                    Delete
-                  </Button>
-                </div>
+                  {/* Desktop: Original layout */}
+                  <div className="hidden sm:flex gap-2">
+                    <Select onValueChange={(value) => {
+                      bulkUpdateStatusMutation.mutate({
+                        orderIds: selectedOrders.map(o => o.id),
+                        status: value
+                      });
+                    }}>
+                      <SelectTrigger className="w-[140px]">
+                        <SelectValue placeholder="Update Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="to_fulfill">To Fulfill</SelectItem>
+                        <SelectItem value="ready_to_ship">Ready to Ship</SelectItem>
+                        <SelectItem value="shipped">Shipped</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    
+                    <Select onValueChange={(value) => {
+                      bulkUpdatePaymentMutation.mutate({
+                        orderIds: selectedOrders.map(o => o.id),
+                        paymentStatus: value
+                      });
+                    }}>
+                      <SelectTrigger className="w-[140px]">
+                        <SelectValue placeholder="Payment Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="paid">Paid</SelectItem>
+                        <SelectItem value="pay_later">Pay Later</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    
+                    <Button 
+                      size="sm" 
+                      variant="destructive"
+                      onClick={() => setShowDeleteDialog(true)}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </>
               )}
               <div className="hidden sm:flex items-center gap-2">
                 <Label htmlFor="expand-all" className="text-sm text-slate-600 cursor-pointer">
