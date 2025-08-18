@@ -282,6 +282,7 @@ export default function PickPack() {
   const [selectedCarton, setSelectedCarton] = useState<string>('K2');
   const [useNonCompanyCarton, setUseNonCompanyCarton] = useState<boolean>(false);
   const [previewOrder, setPreviewOrder] = useState<PickPackOrder | null>(null);
+  const [selectedReadyOrders, setSelectedReadyOrders] = useState<Set<string>>(new Set());
 
   // Timer effects
   useEffect(() => {
@@ -4727,8 +4728,44 @@ export default function PickPack() {
           <TabsContent value="ready" className="mt-4 sm:mt-6">
             <Card>
               <CardHeader className="pb-3 sm:pb-6">
-                <CardTitle className="text-base sm:text-lg">Ready to Ship</CardTitle>
-                <CardDescription className="text-xs sm:text-sm">Orders fully packed and ready for shipping</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-base sm:text-lg">Ready to Ship</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">Orders fully packed and ready for shipping</CardDescription>
+                  </div>
+                  {selectedReadyOrders.size > 0 && (
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          selectedReadyOrders.forEach(orderId => {
+                            const order = getOrdersByStatus('ready').find(o => o.id === orderId);
+                            if (order) returnToPacking(order);
+                          });
+                          setSelectedReadyOrders(new Set());
+                        }}
+                      >
+                        <RotateCcw className="h-4 w-4 mr-1" />
+                        Return {selectedReadyOrders.size} to Packing
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700"
+                        onClick={() => {
+                          selectedReadyOrders.forEach(orderId => {
+                            const order = getOrdersByStatus('ready').find(o => o.id === orderId);
+                            if (order) markAsShipped(order);
+                          });
+                          setSelectedReadyOrders(new Set());
+                        }}
+                      >
+                        <Truck className="h-4 w-4 mr-1" />
+                        Ship {selectedReadyOrders.size} Orders
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="px-3 sm:px-6">
                 {getOrdersByStatus('ready').length === 0 ? (
@@ -4741,13 +4778,30 @@ export default function PickPack() {
                     {getOrdersByStatus('ready').map(order => (
                       <Card 
                         key={order.id} 
-                        className="cursor-pointer hover:shadow-md transition-shadow"
+                        className={`cursor-pointer hover:shadow-md transition-shadow ${
+                          selectedReadyOrders.has(order.id) ? 'ring-2 ring-green-500' : ''
+                        }`}
                         onClick={() => setPreviewOrder(order)}
                       >
                         <CardContent className="p-3 sm:p-4">
                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1 sm:mb-2">
+                            <div className="flex items-start gap-3">
+                              <Checkbox
+                                checked={selectedReadyOrders.has(order.id)}
+                                onCheckedChange={(checked) => {
+                                  const newSelected = new Set(selectedReadyOrders);
+                                  if (checked) {
+                                    newSelected.add(order.id);
+                                  } else {
+                                    newSelected.delete(order.id);
+                                  }
+                                  setSelectedReadyOrders(newSelected);
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                className="mt-1"
+                              />
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1 sm:mb-2">
                                 <h3 className="font-semibold text-sm sm:text-base">{order.orderId}</h3>
                                 {/* Status indicator */}
                                 {(() => {
@@ -4774,7 +4828,8 @@ export default function PickPack() {
                                 </div>
                               </div>
                             </div>
-                            <div className="flex gap-2 items-center">
+                            </div>
+                            <div className="flex gap-2 items-center ml-auto">
                               <Button
                                 size="sm"
                                 variant="outline"
