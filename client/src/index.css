@@ -2,32 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Glowing button animation for pick & pack */
-@keyframes glow-pulse {
-  0% {
-    box-shadow: 0 0 5px rgba(34, 197, 94, 0.5), 0 0 20px rgba(34, 197, 94, 0.3);
-    transform: scale(1);
-  }
-  50% {
-    box-shadow: 0 0 20px rgba(34, 197, 94, 0.8), 0 0 40px rgba(34, 197, 94, 0.5);
-    transform: scale(1.05);
-  }
-  100% {
-    box-shadow: 0 0 5px rgba(34, 197, 94, 0.5), 0 0 20px rgba(34, 197, 94, 0.3);
-    transform: scale(1);
-  }
-}
-
-.glow-next-button {
-  animation: glow-pulse 1.5s ease-in-out infinite;
+/* Green button styling for completed items */
+.completed-next-button {
   background: linear-gradient(to right, #10b981, #059669);
   color: white !important;
   border: 2px solid #10b981 !important;
 }
 
-.glow-next-button:hover {
+.completed-next-button:hover {
   background: linear-gradient(to right, #059669, #047857);
-  transform: scale(1.08) !important;
 }
 
 :root {
