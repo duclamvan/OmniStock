@@ -877,7 +877,7 @@ export default function PickPack() {
           id: 'demo-item-1',
           productId: 'prod-1',
           productName: 'Laptop Computer',
-          productImage: 'https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?w=200&h=200&fit=crop&crop=center',
+          image: 'https://images.unsplash.com/photo-1525547719571-a2d4ac8945e2?w=200&h=200&fit=crop&crop=center',
           sku: 'LAPTOP-001',
           quantity: 1,
           pickedQuantity: 1,
@@ -897,7 +897,7 @@ export default function PickPack() {
           id: 'demo-item-2',
           productId: 'prod-2',
           productName: 'Wireless Mouse',
-          productImage: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=200&h=200&fit=crop&crop=center',
+          image: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=200&h=200&fit=crop&crop=center',
           sku: 'MOUSE-001',
           quantity: 2,
           pickedQuantity: 2,
@@ -930,7 +930,7 @@ export default function PickPack() {
           id: 'demo-item-3',
           productId: 'prod-3',
           productName: 'Crystal Vase',
-          productImage: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=200&h=200&fit=crop&crop=center',
+          image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=200&h=200&fit=crop&crop=center',
           sku: 'VASE-001',
           quantity: 1,
           pickedQuantity: 1,
@@ -1957,39 +1957,54 @@ export default function PickPack() {
     const readyOrders = getOrdersByStatus('ready');
     setRecentlyShippedOrders(readyOrders);
     
-    // Mark all orders as shipped
-    for (const order of readyOrders) {
-      await updateOrderStatusMutation.mutateAsync({
-        orderId: order.id,
-        status: 'shipped'
+    try {
+      // Mark all orders as shipped
+      for (const order of readyOrders) {
+        await updateOrderStatusMutation.mutateAsync({
+          orderId: order.id,
+          status: 'shipped'
+        });
+        
+        // Also update pick/pack status to ensure proper state
+        await updateOrderStatusMutation.mutateAsync({
+          orderId: order.id,
+          status: 'shipped',
+          packStatus: 'completed'
+        });
+      }
+      
+      // Wait for queries to invalidate
+      await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+      await queryClient.refetchQueries({ queryKey: ['/api/orders/pick-pack'] });
+      
+      playSound('success');
+      
+      // Show undo popup
+      setShowShipAllConfirm(false);
+      setShowUndoPopup(true);
+      setUndoTimeLeft(5);
+      
+      toast({
+        title: "Orders Shipped",
+        description: `${readyOrders.length} orders marked as shipped`,
+      });
+    } catch (error) {
+      console.error('Error shipping orders:', error);
+      toast({
+        title: "Error",
+        description: "Failed to ship some orders",
+        variant: "destructive"
       });
     }
-    
-    playSound('success');
-    queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
-    
-    // Show undo popup
-    setShowShipAllConfirm(false);
-    setShowUndoPopup(true);
-    setUndoTimeLeft(5);
-    
-    toast({
-      title: "Orders Shipped",
-      description: `${readyOrders.length} orders marked as shipped`,
-    });
   };
 
   // Undo shipment - move orders back to packing
   const undoShipment = async () => {
     for (const order of recentlyShippedOrders) {
-      await updatePickPackStatusMutation.mutateAsync({
-        orderId: order.id,
-        packStatus: 'in_progress'
-      });
-      
       await updateOrderStatusMutation.mutateAsync({
         orderId: order.id,
-        status: 'to_fulfill'
+        status: 'to_fulfill',
+        packStatus: 'in_progress'
       });
     }
     
@@ -2376,9 +2391,9 @@ export default function PickPack() {
                               {/* Product Image */}
                               <div className="relative">
                                 <div className="w-16 h-16 rounded-lg overflow-hidden bg-white border-2 border-gray-200 flex items-center justify-center">
-                                  {item.productImage ? (
+                                  {item.image ? (
                                     <img 
-                                      src={item.productImage} 
+                                      src={item.image} 
                                       alt={item.productName}
                                       className="w-full h-full object-cover"
                                     />
@@ -2499,7 +2514,7 @@ export default function PickPack() {
                         <div className="flex items-center gap-3">
                           <Checkbox 
                             checked={printedDocuments.packingList}
-                            readOnly
+                            disabled
                             className="cursor-default"
                           />
                           <div className="flex items-center gap-2">
@@ -2526,7 +2541,7 @@ export default function PickPack() {
                         <div className="flex items-center gap-3">
                           <Checkbox 
                             checked={printedDocuments.invoice}
-                            readOnly
+                            disabled
                             className="cursor-default"
                           />
                           <div className="flex items-center gap-2">
@@ -2553,7 +2568,7 @@ export default function PickPack() {
                         <div className="flex items-center gap-3">
                           <Checkbox 
                             checked={printedDocuments.msds}
-                            readOnly
+                            disabled
                             className="cursor-default"
                           />
                           <div className="flex items-center gap-2">
@@ -2580,7 +2595,7 @@ export default function PickPack() {
                         <div className="flex items-center gap-3">
                           <Checkbox 
                             checked={printedDocuments.cpnpCertificate}
-                            readOnly
+                            disabled
                             className="cursor-default"
                           />
                           <div className="flex items-center gap-2">
@@ -4923,73 +4938,181 @@ export default function PickPack() {
       
       {/* Order Preview Dialog */}
       <Dialog open={!!previewOrder} onOpenChange={() => setPreviewOrder(null)}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{previewOrder?.orderId} - Order Items</DialogTitle>
+            <DialogTitle>{previewOrder?.orderId} - Shipping Details</DialogTitle>
             <DialogDescription>
-              {previewOrder?.customerName} • {previewOrder?.totalItems} items
+              Ready to ship • {previewOrder?.totalItems} items
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 mt-4">
-            {previewOrder?.items.map((item, index) => (
-              <div key={item.id || index} className="flex items-center gap-3 p-3 border rounded-lg bg-gray-50">
-                {item.image && (
-                  <img 
-                    src={item.image} 
-                    alt={item.productName}
-                    className="w-12 h-12 object-cover rounded"
-                  />
-                )}
-                <div className="flex-1">
-                  <div className="font-medium text-sm">{item.productName}</div>
-                  <div className="text-xs text-gray-500">
-                    SKU: {item.sku} {item.barcode && `• ${item.barcode}`}
-                  </div>
-                  {item.warehouseLocation && (
-                    <div className="text-xs text-blue-600 mt-1">
-                      📍 {item.warehouseLocation}
-                    </div>
-                  )}
+          
+          {/* Shipping Information */}
+          <div className="space-y-4 mt-4">
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Customer Information
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                <div>
+                  <span className="text-gray-600">Name:</span>
+                  <p className="font-medium">{previewOrder?.customerName}</p>
                 </div>
-                <div className="text-right">
-                  <div className="text-sm font-semibold">Qty: {item.quantity}</div>
-                  {item.pickedQuantity > 0 && (
-                    <div className="text-xs text-green-600">
-                      Picked: {item.pickedQuantity}
-                    </div>
-                  )}
-                  {item.packedQuantity > 0 && (
-                    <div className="text-xs text-blue-600">
-                      Packed: {item.packedQuantity}
-                    </div>
-                  )}
+                <div>
+                  <span className="text-gray-600">Order ID:</span>
+                  <p className="font-medium">{previewOrder?.orderId}</p>
                 </div>
               </div>
-            ))}
-          </div>
-          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-            <div className="text-sm space-y-1">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Pick Status:</span>
-                <span className="font-medium">{previewOrder?.pickStatus}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Pack Status:</span>
-                <span className="font-medium">{previewOrder?.packStatus}</span>
-              </div>
-              {previewOrder?.pickedBy && (
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Picked by:</span>
-                  <span className="font-medium">{previewOrder.pickedBy}</span>
-                </div>
-              )}
-              {previewOrder?.packedBy && (
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Packed by:</span>
-                  <span className="font-medium">{previewOrder.packedBy}</span>
-                </div>
-              )}
             </div>
+
+            <div className="bg-green-50 p-4 rounded-lg">
+              <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                Shipping Address
+              </h3>
+              <div className="text-sm space-y-2">
+                <p className="font-medium text-gray-900">
+                  {previewOrder?.shippingAddress || 'No address provided'}
+                </p>
+                <div className="flex items-center gap-4 mt-2">
+                  <div className="flex items-center gap-1">
+                    <Truck className="h-4 w-4 text-gray-500" />
+                    <span className="text-gray-600">Method:</span>
+                    <span className="font-medium">{previewOrder?.shippingMethod}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <AlertCircle className="h-4 w-4 text-gray-500" />
+                    <span className="text-gray-600">Priority:</span>
+                    <span className={`font-medium capitalize ${
+                      previewOrder?.priority === 'high' ? 'text-red-600' :
+                      previewOrder?.priority === 'medium' ? 'text-yellow-600' :
+                      'text-gray-600'
+                    }`}>
+                      {previewOrder?.priority}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Order Items */}
+            <div>
+              <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                Order Items ({previewOrder?.totalItems})
+              </h3>
+              <div className="space-y-2">
+                {previewOrder?.items.map((item, index) => (
+                  <div key={item.id || index} className="flex items-center gap-3 p-3 border rounded-lg bg-gray-50">
+                    {item.image && (
+                      <img 
+                        src={item.image} 
+                        alt={item.productName}
+                        className="w-12 h-12 object-cover rounded"
+                      />
+                    )}
+                    <div className="flex-1">
+                      <div className="font-medium text-sm">{item.productName}</div>
+                      <div className="text-xs text-gray-500">
+                        SKU: {item.sku} {item.barcode && `• ${item.barcode}`}
+                      </div>
+                      {item.warehouseLocation && (
+                        <div className="text-xs text-blue-600 mt-1">
+                          📍 {item.warehouseLocation}
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-semibold">Qty: {item.quantity}</div>
+                      <div className="text-xs text-green-600">
+                        ✓ Packed
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Processing Information */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                Processing Information
+              </h3>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <span className="text-gray-600">Picked by:</span>
+                  <p className="font-medium">{previewOrder?.pickedBy || 'N/A'}</p>
+                </div>
+                <div>
+                  <span className="text-gray-600">Packed by:</span>
+                  <p className="font-medium">{previewOrder?.packedBy || 'N/A'}</p>
+                </div>
+                <div>
+                  <span className="text-gray-600">Pick Time:</span>
+                  <p className="font-medium">
+                    {previewOrder?.pickEndTime 
+                      ? new Date(previewOrder.pickEndTime).toLocaleString()
+                      : 'N/A'}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-gray-600">Pack Time:</span>
+                  <p className="font-medium">
+                    {previewOrder?.packEndTime 
+                      ? new Date(previewOrder.packEndTime).toLocaleString()
+                      : 'N/A'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Notes */}
+            {previewOrder?.notes && (
+              <div className="bg-yellow-50 p-4 rounded-lg">
+                <h3 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Order Notes
+                </h3>
+                <p className="text-sm text-gray-700">{previewOrder.notes}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+            <Button
+              variant="outline"
+              onClick={() => setPreviewOrder(null)}
+            >
+              Close
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                // Print shipping label
+                playSound('success');
+                toast({
+                  title: "Printing Label",
+                  description: `Shipping label for ${previewOrder?.orderId}`,
+                });
+              }}
+            >
+              <Printer className="h-4 w-4 mr-2" />
+              Print Label
+            </Button>
+            <Button
+              className="bg-green-600 hover:bg-green-700"
+              onClick={() => {
+                if (previewOrder) {
+                  markAsShipped(previewOrder);
+                  setPreviewOrder(null);
+                }
+              }}
+            >
+              <Truck className="h-4 w-4 mr-2" />
+              Mark as Shipped
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
