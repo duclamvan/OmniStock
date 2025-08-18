@@ -234,6 +234,8 @@ export default function PickPack() {
   const [currentEmployee] = useState('Employee #001');
   const [pickingTimer, setPickingTimer] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const pickingStartTimeRef = useRef<number | null>(null);
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [showMobileProgress, setShowMobileProgress] = useState(false);
   const [showPerformanceStats, setShowPerformanceStats] = useState(false);
   const [batchPickingMode, setBatchPickingMode] = useState(false);
@@ -350,16 +352,38 @@ export default function PickPack() {
     }
   }, [showUndoPopup, undoTimeLeft]);
 
-  // Timer effects
+  // Timer effects - using direct DOM updates to avoid re-renders
   useEffect(() => {
-    let interval: NodeJS.Timeout;
     if (isTimerRunning) {
-      interval = setInterval(() => {
-        setPickingTimer(prev => prev + 1);
-      }, 1000);
+      if (!pickingStartTimeRef.current) {
+        pickingStartTimeRef.current = Date.now() - (pickingTimer * 1000);
+      }
+      
+      const updateTimerDisplay = () => {
+        const elapsed = Math.floor((Date.now() - pickingStartTimeRef.current!) / 1000);
+        const timerElements = document.querySelectorAll('[data-picking-timer]');
+        timerElements.forEach(element => {
+          element.textContent = formatTimer(elapsed);
+        });
+      };
+      
+      updateTimerDisplay(); // Update immediately
+      timerIntervalRef.current = setInterval(updateTimerDisplay, 1000);
+    } else {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+      pickingStartTimeRef.current = null;
     }
-    return () => clearInterval(interval);
-  }, [isTimerRunning]);
+    
+    return () => {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+        timerIntervalRef.current = null;
+      }
+    };
+  }, [isTimerRunning, pickingTimer]);
 
   // Show completion modal when all items are picked
   useEffect(() => {
@@ -3450,7 +3474,7 @@ export default function PickPack() {
                 
                 <div className="flex items-center gap-1">
                   <div className="text-right">
-                    <div className="font-mono text-sm font-bold tabular-nums">{formatTimer(pickingTimer)}</div>
+                    <div className="font-mono text-sm font-bold tabular-nums" data-picking-timer>{formatTimer(pickingTimer)}</div>
                     <div className="text-[10px] text-blue-100">Time</div>
                   </div>
                   <div className="flex flex-col gap-0.5">
@@ -3532,7 +3556,7 @@ export default function PickPack() {
                   <div className="text-right">
                     <div className="flex items-center gap-2">
                       <Timer className="h-4 w-4 text-blue-200" />
-                      <span className="font-mono text-xl font-bold">{formatTimer(pickingTimer)}</span>
+                      <span className="font-mono text-xl font-bold" data-picking-timer>{formatTimer(pickingTimer)}</span>
                     </div>
                     <p className="text-xs text-blue-100">Elapsed Time</p>
                   </div>
