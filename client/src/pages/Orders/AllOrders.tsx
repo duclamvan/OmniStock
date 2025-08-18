@@ -280,16 +280,22 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       header: "",
       sortable: false,
       cell: (order) => (
-        <input
-          type="checkbox"
-          checked={selectedOrders.some(o => o.id === order.id)}
-          onChange={(e) => {
-            e.stopPropagation();
-            handleOrderSelect(order, e.target.checked);
-          }}
-          onClick={(e) => e.stopPropagation()}
-          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-        />
+        <label className="relative inline-flex items-center cursor-pointer" onClick={(e) => e.stopPropagation()}>
+          <input
+            type="checkbox"
+            checked={selectedOrders.some(o => o.id === order.id)}
+            onChange={(e) => {
+              e.stopPropagation();
+              handleOrderSelect(order, e.target.checked);
+            }}
+            className="sr-only peer"
+          />
+          <div className="w-5 h-5 bg-white border-2 border-gray-300 rounded-full peer-checked:bg-blue-600 peer-checked:border-blue-600 transition-all duration-200 peer-hover:border-blue-400 peer-focus:ring-2 peer-focus:ring-blue-300 peer-focus:ring-offset-1">
+            <svg className="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity duration-200 absolute top-[3px] left-[3px]" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+          </div>
+        </label>
       ),
     },
     {
@@ -490,12 +496,19 @@ export default function AllOrders({ filter }: AllOrdersProps) {
         <CardHeader className="p-4 sm:p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                checked={selectAll}
-                onChange={(e) => handleSelectAll(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={selectAll}
+                  onChange={(e) => handleSelectAll(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-5 h-5 bg-white border-2 border-gray-300 rounded-full peer-checked:bg-blue-600 peer-checked:border-blue-600 transition-all duration-200 peer-hover:border-blue-400 peer-focus:ring-2 peer-focus:ring-blue-300 peer-focus:ring-offset-1">
+                  <svg className="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity duration-200 absolute top-[3px] left-[3px]" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </label>
               <CardTitle className="text-mobile-lg">Orders ({filteredOrders?.length || 0})</CardTitle>
               {selectedOrders.length > 0 && (
                 <Badge variant="secondary">{selectedOrders.length} selected</Badge>
@@ -643,16 +656,22 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                   {/* Top Row - Customer, Status, Edit */}
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <input
-                        type="checkbox"
-                        checked={selectedOrders.some(o => o.id === order.id)}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          handleOrderSelect(order, e.target.checked);
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
+                      <label className="relative inline-flex items-center cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={selectedOrders.some(o => o.id === order.id)}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            handleOrderSelect(order, e.target.checked);
+                          }}
+                          className="sr-only peer"
+                        />
+                        <div className="w-5 h-5 bg-white border-2 border-gray-300 rounded-full peer-checked:bg-blue-600 peer-checked:border-blue-600 transition-all duration-200 peer-hover:border-blue-400 peer-focus:ring-2 peer-focus:ring-blue-300 peer-focus:ring-offset-1">
+                          <svg className="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity duration-200 absolute top-[3px] left-[3px]" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      </label>
                       <Avatar className="h-10 w-10 flex-shrink-0">
                         <AvatarImage src={order.customer?.profileImageUrl} />
                         <AvatarFallback className="text-sm bg-gray-100">{order.customer?.name?.charAt(0) || 'C'}</AvatarFallback>
