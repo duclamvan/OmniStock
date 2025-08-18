@@ -1308,7 +1308,27 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
-    return await db.select().from(orders).where(whereCondition).orderBy(asc(orders.createdAt));
+    // First get the orders
+    const ordersList = await db.select().from(orders).where(whereCondition).orderBy(asc(orders.createdAt));
+    
+    // Then fetch customer names for each order
+    const ordersWithCustomerNames = await Promise.all(
+      ordersList.map(async (order) => {
+        if (order.customerId) {
+          const customer = await db.select().from(customers).where(eq(customers.id, order.customerId)).limit(1);
+          return {
+            ...order,
+            customerName: customer[0]?.name || 'Walk-in Customer'
+          };
+        }
+        return {
+          ...order,
+          customerName: 'Walk-in Customer'
+        };
+      })
+    );
+    
+    return ordersWithCustomerNames as Order[];
   }
 
   async startPickingOrder(orderId: string, employeeId: string): Promise<Order> {
