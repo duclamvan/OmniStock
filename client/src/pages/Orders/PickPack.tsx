@@ -55,6 +55,8 @@ import {
   Timer,
   Route,
   Users,
+  Globe,
+  Building,
   ChevronRight,
   Zap,
   FileText,
@@ -5018,7 +5020,7 @@ export default function PickPack() {
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="text-base sm:text-lg">Ready to Ship</CardTitle>
-                    <CardDescription className="text-xs sm:text-sm">Orders fully packed and ready for shipping</CardDescription>
+                    <CardDescription className="text-xs sm:text-sm">Orders organized by shipping destination</CardDescription>
                   </div>
                   {getOrdersByStatus('ready').length > 0 && (
                     <Button
@@ -5039,96 +5041,206 @@ export default function PickPack() {
                     <p className="text-sm sm:text-base text-gray-500">No orders ready to ship</p>
                   </div>
                 ) : (
-                  <div className="space-y-2 sm:space-y-3">
-                    {getOrdersByStatus('ready').map(order => (
-                      <Card 
-                        key={order.id} 
-                        className="cursor-pointer hover:shadow-md transition-shadow"
-                        onClick={() => setPreviewOrder(order)}
-                      >
-                        <CardContent className="p-3 sm:p-4">
-                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1 sm:mb-2">
-                                <h3 className="font-semibold text-sm sm:text-base">{order.orderId}</h3>
-                                {/* Status indicator */}
-                                {(() => {
-                                  const status = getOrderStatusDisplay(order);
-                                  return (
-                                    <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${status.color}`}>
-                                      {status.label}
-                                    </span>
-                                  );
-                                })()}
+                  <div className="space-y-4 sm:space-y-6">
+                    {/* Categorize orders by shipping location */}
+                    {(() => {
+                      const readyOrders = getOrdersByStatus('ready');
+                      
+                      // Categorize orders
+                      const czechiaSlovakia = readyOrders.filter(order => {
+                        const address = order.shippingAddress?.toLowerCase() || '';
+                        return address.includes('czech') || address.includes('česk') || 
+                               address.includes('slovakia') || address.includes('slovensk') ||
+                               address.includes('praha') || address.includes('bratislava') ||
+                               address.includes('brno') || address.includes('košice');
+                      });
+                      
+                      const germanyEU = readyOrders.filter(order => {
+                        const address = order.shippingAddress?.toLowerCase() || '';
+                        const isCzechSlovak = czechiaSlovakia.includes(order);
+                        return !isCzechSlovak && (
+                          address.includes('germany') || address.includes('deutschland') ||
+                          address.includes('berlin') || address.includes('munich') ||
+                          address.includes('france') || address.includes('italy') ||
+                          address.includes('spain') || address.includes('poland') ||
+                          address.includes('austria') || address.includes('belgium')
+                        );
+                      });
+                      
+                      const personalDelivery = readyOrders.filter(order => {
+                        const method = order.shippingMethod?.toLowerCase() || '';
+                        return method.includes('personal') || method.includes('hand deliver');
+                      });
+                      
+                      const pickup = readyOrders.filter(order => {
+                        const method = order.shippingMethod?.toLowerCase() || '';
+                        return method.includes('pickup') || method.includes('collect');
+                      });
+                      
+                      // Other orders (not in any category)
+                      const otherOrders = readyOrders.filter(order => 
+                        !czechiaSlovakia.includes(order) && 
+                        !germanyEU.includes(order) && 
+                        !personalDelivery.includes(order) && 
+                        !pickup.includes(order)
+                      );
+                      
+                      const sections = [
+                        { 
+                          title: 'Czechia & Slovakia', 
+                          icon: MapPin,
+                          color: 'bg-blue-50 border-blue-200',
+                          buttonColor: 'bg-blue-600 hover:bg-blue-700',
+                          orders: czechiaSlovakia 
+                        },
+                        { 
+                          title: 'Germany & EU', 
+                          icon: Globe,
+                          color: 'bg-purple-50 border-purple-200',
+                          buttonColor: 'bg-purple-600 hover:bg-purple-700',
+                          orders: germanyEU 
+                        },
+                        { 
+                          title: 'Personal Delivery', 
+                          icon: Users,
+                          color: 'bg-amber-50 border-amber-200',
+                          buttonColor: 'bg-amber-600 hover:bg-amber-700',
+                          orders: personalDelivery 
+                        },
+                        { 
+                          title: 'Customer Pickup', 
+                          icon: Building,
+                          color: 'bg-green-50 border-green-200',
+                          buttonColor: 'bg-green-600 hover:bg-green-700',
+                          orders: pickup 
+                        },
+                        { 
+                          title: 'Other Destinations', 
+                          icon: Package,
+                          color: 'bg-gray-50 border-gray-200',
+                          buttonColor: 'bg-gray-600 hover:bg-gray-700',
+                          orders: otherOrders 
+                        },
+                      ].filter(section => section.orders.length > 0);
+                      
+                      return sections.map((section, sectionIndex) => {
+                        const Icon = section.icon;
+                        return (
+                          <div key={sectionIndex} className={`rounded-lg border-2 ${section.color} p-4`}>
+                            {/* Section Header */}
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-2">
+                                <Icon className="h-5 w-5 text-gray-700" />
+                                <h3 className="font-semibold text-base">
+                                  {section.title}
+                                </h3>
+                                <Badge className="bg-white">
+                                  {section.orders.length} {section.orders.length === 1 ? 'order' : 'orders'}
+                                </Badge>
                               </div>
-                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
-                                <div className="flex items-center gap-1">
-                                  <User className="h-3 sm:h-4 w-3 sm:w-4" />
-                                  <span className="truncate">{order.customerName}</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Truck className="h-3 sm:h-4 w-3 sm:w-4" />
-                                  <span>{order.shippingMethod}</span>
-                                </div>
-                                <div className="flex items-center gap-1 col-span-2 sm:col-span-1">
-                                  <PackageCheck className="h-3 sm:h-4 w-3 sm:w-4 text-green-500" />
-                                  <span className="text-green-600">Packed by {order.packedBy}</span>
-                                </div>
-                              </div>
+                              <Button
+                                size="sm"
+                                className={section.buttonColor}
+                                onClick={() => {
+                                  // Mark all orders in this section as shipped
+                                  section.orders.forEach(order => markAsShipped(order));
+                                }}
+                              >
+                                <Truck className="h-4 w-4 mr-1" />
+                                Ship {section.title}
+                              </Button>
                             </div>
-                            <div className="flex gap-2 items-center ml-auto">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="w-full sm:w-auto"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  // Print shipping label
-                                  playSound('success');
-                                }}
-                              >
-                                <Printer className="h-4 sm:h-5 w-4 sm:w-5 mr-1 sm:mr-2" />
-                                Print Label
-                              </Button>
-                              <Button
-                                size="sm"
-                                className="w-full sm:w-auto sm:h-10 bg-green-600 hover:bg-green-700"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  markAsShipped(order);
-                                }}
-                              >
-                                <Truck className="h-4 sm:h-5 w-4 sm:w-5 mr-1 sm:mr-2" />
-                                Mark Shipped
-                              </Button>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    className="h-8 w-8 p-0"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      returnToPacking(order);
-                                    }}
-                                  >
-                                    <RotateCcw className="h-4 w-4 mr-2" />
-                                    Return to Packing
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                            
+                            {/* Section Orders */}
+                            <div className="space-y-2">
+                              {section.orders.map(order => (
+                                <Card 
+                                  key={order.id} 
+                                  className="bg-white cursor-pointer hover:shadow-md transition-shadow"
+                                  onClick={() => setPreviewOrder(order)}
+                                >
+                                  <CardContent className="p-3 sm:p-4">
+                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-1 sm:mb-2">
+                                          <h3 className="font-semibold text-sm sm:text-base">{order.orderId}</h3>
+                                          <span className="text-xs px-2 py-0.5 rounded-full border font-medium bg-green-100 text-green-700 border-green-200">
+                                            Ready to Ship
+                                          </span>
+                                        </div>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
+                                          <div className="flex items-center gap-1">
+                                            <User className="h-3 sm:h-4 w-3 sm:w-4" />
+                                            <span className="truncate">{order.customerName}</span>
+                                          </div>
+                                          <div className="flex items-center gap-1">
+                                            <MapPin className="h-3 sm:h-4 w-3 sm:w-4" />
+                                            <span className="truncate">{order.shippingAddress?.split(',')[0] || 'N/A'}</span>
+                                          </div>
+                                          <div className="flex items-center gap-1 col-span-2 sm:col-span-1">
+                                            <PackageCheck className="h-3 sm:h-4 w-3 sm:w-4 text-green-500" />
+                                            <span className="text-green-600">Packed by {order.packedBy}</span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div className="flex gap-2 items-center ml-auto">
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          className="w-full sm:w-auto"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            // Print shipping label
+                                            playSound('success');
+                                          }}
+                                        >
+                                          <Printer className="h-4 sm:h-5 w-4 sm:w-5 mr-1 sm:mr-2" />
+                                          Label
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          className="w-full sm:w-auto sm:h-10 bg-green-600 hover:bg-green-700"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            markAsShipped(order);
+                                          }}
+                                        >
+                                          <Truck className="h-4 sm:h-5 w-4 sm:w-5 mr-1 sm:mr-2" />
+                                          Ship
+                                        </Button>
+                                        <DropdownMenu>
+                                          <DropdownMenuTrigger asChild>
+                                            <Button 
+                                              variant="ghost" 
+                                              size="sm" 
+                                              className="h-8 w-8 p-0"
+                                              onClick={(e) => e.stopPropagation()}
+                                            >
+                                              <MoreVertical className="h-4 w-4" />
+                                            </Button>
+                                          </DropdownMenuTrigger>
+                                          <DropdownMenuContent align="end">
+                                            <DropdownMenuItem 
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                returnToPacking(order);
+                                              }}
+                                            >
+                                              <RotateCcw className="h-4 w-4 mr-2" />
+                                              Return to Packing
+                                            </DropdownMenuItem>
+                                          </DropdownMenuContent>
+                                        </DropdownMenu>
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              ))}
                             </div>
                           </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                        );
+                      });
+                    })()}
                   </div>
                 )}
               </CardContent>
