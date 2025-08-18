@@ -183,21 +183,57 @@ const ProductImage = memo(({
   isExpanded: boolean,
   onToggleExpand: () => void 
 }) => {
+  if (isExpanded) {
+    // Full-width expanded view
+    return (
+      <div className="w-full space-y-2">
+        <div 
+          className="w-full h-[350px] sm:h-[450px] bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center shadow-lg border-2 border-white cursor-pointer hover:shadow-xl transition-all duration-300"
+          onClick={(e) => {
+            e.stopPropagation();
+            console.log('Minimizing image');
+            onToggleExpand();
+          }}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              onToggleExpand();
+            }
+          }}
+        >
+          {item.image ? (
+            <img 
+              src={item.image} 
+              alt={item.productName}
+              className="w-full h-full object-contain rounded-lg p-4"
+              style={{ pointerEvents: 'none' }}
+            />
+          ) : (
+            <Package 
+              className="h-32 w-32 text-gray-300"
+              style={{ pointerEvents: 'none' }} 
+            />
+          )}
+        </div>
+        <div className="flex justify-between items-center px-2">
+          <span className="text-sm font-medium text-gray-500">Click to minimize</span>
+          <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white">
+            {item.quantity}x
+          </Badge>
+        </div>
+      </div>
+    );
+  }
+
+  // Compact default view
   return (
-    <div className={`relative flex-shrink-0 z-0 transition-all duration-300 ${isExpanded ? 'col-span-full' : ''}`}>
+    <div className="relative flex-shrink-0 z-0">
       <div 
-        className={`
-          ${isExpanded 
-            ? 'w-full h-[400px] sm:h-[500px]' 
-            : 'w-20 h-20 sm:w-24 sm:h-24 lg:w-40 lg:h-40'
-          } 
-          bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center 
-          shadow-lg border-2 lg:border-4 border-white cursor-pointer hover:shadow-xl 
-          transition-all duration-300
-        `}
+        className="w-20 h-20 sm:w-24 sm:h-24 lg:w-40 lg:h-40 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center shadow-lg border-2 lg:border-4 border-white cursor-pointer hover:shadow-xl transition-shadow"
         onClick={(e) => {
           e.stopPropagation();
-          console.log(isExpanded ? 'Minimizing image' : 'Expanding image');
+          console.log('Expanding image');
           onToggleExpand();
         }}
         role="button"
@@ -212,35 +248,16 @@ const ProductImage = memo(({
           <img 
             src={item.image} 
             alt={item.productName}
-            className={`
-              ${isExpanded ? 'w-full h-full' : 'w-full h-full'} 
-              object-contain rounded-lg p-1 lg:p-2
-            `}
+            className="w-full h-full object-contain rounded-lg p-1 lg:p-2"
             style={{ pointerEvents: 'none' }}
           />
         ) : (
-          <Package 
-            className={`
-              ${isExpanded ? 'h-32 w-32' : 'h-10 lg:h-16 w-10 lg:w-16'} 
-              text-gray-300
-            `} 
-            style={{ pointerEvents: 'none' }} 
-          />
+          <Package className="h-10 lg:h-16 w-10 lg:w-16 text-gray-300" style={{ pointerEvents: 'none' }} />
         )}
       </div>
-      {!isExpanded && (
-        <div className="absolute -top-1 -right-1 lg:-top-2 lg:-right-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center font-bold text-xs lg:text-base shadow-lg" style={{ pointerEvents: 'none' }}>
-          {item.quantity}x
-        </div>
-      )}
-      {isExpanded && (
-        <div className="mt-2 flex justify-between items-center px-2">
-          <span className="text-sm font-medium text-gray-600">Click to minimize</span>
-          <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white">
-            {item.quantity}x
-          </Badge>
-        </div>
-      )}
+      <div className="absolute -top-1 -right-1 lg:-top-2 lg:-right-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center font-bold text-xs lg:text-base shadow-lg" style={{ pointerEvents: 'none' }}>
+        {item.quantity}x
+      </div>
     </div>
   );
 });
@@ -3701,16 +3718,25 @@ export default function PickPack() {
                   <CardContent className="p-3 lg:p-6 bg-white">
                     <div className="space-y-3 lg:space-y-6">
                       {/* Mobile Optimized Compact Product Layout */}
-                      <div className="flex gap-3 lg:gap-6">
-                        {/* Product Image - Compact on mobile */}
+                      {expandedProductId === currentItem.id ? (
+                        /* Full-width expanded image */
                         <ProductImage 
                           item={currentItem} 
-                          isExpanded={expandedProductId === currentItem.id}
+                          isExpanded={true}
                           onToggleExpand={() => handleImageClick(currentItem.id)}
                         />
-                        
-                        {/* Product Details - Organized layout */}
-                        <div className="flex-1 min-w-0 flex flex-col justify-center">
+                      ) : (
+                        /* Regular layout with image and details side by side */
+                        <div className="flex gap-3 lg:gap-6">
+                          {/* Product Image - Compact on mobile */}
+                          <ProductImage 
+                            item={currentItem} 
+                            isExpanded={false}
+                            onToggleExpand={() => handleImageClick(currentItem.id)}
+                          />
+                          
+                          {/* Product Details - Organized layout */}
+                          <div className="flex-1 min-w-0 flex flex-col justify-center">
                           {/* Info Grid with aligned values */}
                           <div className="space-y-1.5">
                             {/* Product Name */}
@@ -3734,6 +3760,7 @@ export default function PickPack() {
                           </div>
                         </div>
                       </div>
+                      )}
 
                       {/* Location - Mobile Optimized */}
                       <div className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl lg:rounded-2xl p-3 lg:p-6 text-center shadow-lg">
