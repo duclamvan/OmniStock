@@ -1354,7 +1354,8 @@ export class DatabaseStorage implements IStorage {
       .update(orders)
       .set({
         packStatus: 'completed',
-        packEndTime: new Date()
+        packEndTime: new Date(),
+        orderStatus: 'ready_to_ship'
       })
       .where(eq(orders.id, orderId))
       .returning();

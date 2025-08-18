@@ -2227,12 +2227,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updateData = {
         packStatus: 'completed',
         packEndTime: new Date(),
+        orderStatus: 'ready_to_ship', // Update status to ready_to_ship
         finalWeight: parseFloat(packageWeight) || 0,
         cartonUsed: cartons?.length > 0 ? cartons.map((c: any) => c.cartonName).join(', ') : ''
       };
       
       await storage.updateOrder(req.params.id, updateData);
-      const order = await storage.completePackingOrder(req.params.id);
+      const order = await storage.getOrderById(req.params.id);
       
       if (order) {
         await storage.createUserActivity({

@@ -1829,8 +1829,7 @@ export default function PickPack() {
         ...activePackingOrder,
         packStatus: 'completed' as const,
         packEndTime: new Date().toISOString(),
-        status: 'shipped' as const,
-        shippedAt: new Date().toISOString()
+        status: 'ready_to_ship' as const
       };
 
       setIsPackingTimerRunning(false);
