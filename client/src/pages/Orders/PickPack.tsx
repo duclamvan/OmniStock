@@ -3572,20 +3572,20 @@ export default function PickPack() {
                         {/* Product Image - Compact on mobile */}
                         <div className="relative flex-shrink-0">
                           <div 
-                            className="w-20 h-20 sm:w-24 sm:h-24 lg:w-40 lg:h-40 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center shadow-lg border-2 lg:border-4 border-white cursor-pointer hover:shadow-xl transition-shadow"
+                            className="w-20 h-20 sm:w-24 sm:h-24 lg:w-40 lg:h-40 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center shadow-lg border-2 lg:border-4 border-white cursor-pointer hover:shadow-xl transition-shadow relative z-10"
                             onClick={() => currentItem.image && setExpandedProductImage(currentItem.image)}
                           >
                             {currentItem.image ? (
                               <img 
                                 src={currentItem.image} 
                                 alt={currentItem.productName}
-                                className="w-full h-full object-contain rounded-lg p-1 lg:p-2"
+                                className="w-full h-full object-contain rounded-lg p-1 lg:p-2 pointer-events-none"
                               />
                             ) : (
-                              <Package className="h-10 lg:h-16 w-10 lg:w-16 text-gray-300" />
+                              <Package className="h-10 lg:h-16 w-10 lg:w-16 text-gray-300 pointer-events-none" />
                             )}
                           </div>
-                          <div className="absolute -top-1 -right-1 lg:-top-2 lg:-right-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center font-bold text-xs lg:text-base shadow-lg">
+                          <div className="absolute -top-1 -right-1 lg:-top-2 lg:-right-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center font-bold text-xs lg:text-base shadow-lg pointer-events-none">
                             {currentItem.quantity}x
                           </div>
                         </div>
@@ -5150,12 +5150,16 @@ export default function PickPack() {
 
       {/* Expanded Product Image Dialog */}
       <Dialog open={!!expandedProductImage} onOpenChange={() => setExpandedProductImage(null)}>
-        <DialogContent className="max-w-5xl h-[90vh] p-0">
+        <DialogContent className="max-w-5xl h-[90vh] p-0 border-0">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Product Image</DialogTitle>
+            <DialogDescription>Expanded view of product image</DialogDescription>
+          </DialogHeader>
           <div className="relative w-full h-full flex items-center justify-center bg-black/95 rounded-lg">
             <Button
               variant="ghost"
               size="icon"
-              className="absolute top-2 right-2 text-white hover:bg-white/20 z-10"
+              className="absolute top-2 right-2 text-white hover:bg-white/20 z-50"
               onClick={() => setExpandedProductImage(null)}
             >
               <X className="h-6 w-6" />
