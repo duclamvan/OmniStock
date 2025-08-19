@@ -1697,6 +1697,68 @@ export default function PickPack() {
     }
   };
 
+  // Get country code from order
+  const getOrderCountryCode = (order: PickPackOrder): string => {
+    // Extract country code from order data
+    const orderId = order.orderId?.toLowerCase() || '';
+    const address = order.shippingAddress?.toLowerCase() || '';
+    const notes = order.notes?.toLowerCase() || '';
+    
+    // Check order ID prefixes first
+    if (orderId.includes('-cz')) return 'CZ';
+    if (orderId.includes('-de')) return 'DE';
+    if (orderId.includes('-sk')) return 'SK';
+    if (orderId.includes('-fr')) return 'FR';
+    if (orderId.includes('-be')) return 'BE';
+    if (orderId.includes('-nl')) return 'NL';
+    if (orderId.includes('-at')) return 'AT';
+    if (orderId.includes('-ch')) return 'CH';
+    if (orderId.includes('-pl')) return 'PL';
+    if (orderId.includes('-hu')) return 'HU';
+    
+    // Check address content for country names or cities
+    if (address.includes('czech') || address.includes('česk') || 
+        address.includes('prague') || address.includes('praha') || 
+        address.includes('brno') || address.includes('ostrava')) return 'CZ';
+    
+    if (address.includes('slovakia') || address.includes('slovensk') || 
+        address.includes('bratislava') || address.includes('košice') || 
+        address.includes('prešov') || address.includes('nitra')) return 'SK';
+    
+    if (address.includes('germany') || address.includes('deutschland') ||
+        address.includes('berlin') || address.includes('munich') ||
+        address.includes('hamburg') || address.includes('frankfurt')) return 'DE';
+    
+    if (address.includes('france') || address.includes('paris') ||
+        address.includes('lyon') || address.includes('marseille')) return 'FR';
+    
+    if (address.includes('belgium') || address.includes('belgië') ||
+        address.includes('brussels') || address.includes('antwerp')) return 'BE';
+    
+    if (address.includes('netherlands') || address.includes('nederland') ||
+        address.includes('amsterdam') || address.includes('rotterdam')) return 'NL';
+    
+    if (address.includes('austria') || address.includes('österreich') ||
+        address.includes('vienna') || address.includes('wien')) return 'AT';
+    
+    if (address.includes('switzerland') || address.includes('schweiz') ||
+        address.includes('zurich') || address.includes('geneva')) return 'CH';
+    
+    if (address.includes('poland') || address.includes('polska') ||
+        address.includes('warsaw') || address.includes('krakow')) return 'PL';
+    
+    if (address.includes('hungary') || address.includes('magyarország') ||
+        address.includes('budapest') || address.includes('debrecen')) return 'HU';
+    
+    // Check notes for country information
+    if (notes.includes('czech') || notes.includes('slovak')) return 'CZ';
+    if (notes.includes('german')) return 'DE';
+    if (notes.includes('french')) return 'FR';
+    
+    // Default to EU if no specific country found
+    return 'EU';
+  };
+
   // Global barcode scanner listener for continuous scanning
   useEffect(() => {
     if (!activePickingOrder) return;
@@ -5021,6 +5083,10 @@ export default function PickPack() {
                                 <span className="truncate">{order.customerName}</span>
                               </div>
                               <div className="flex items-center gap-1">
+                                <Globe className="h-3 sm:h-4 w-3 sm:w-4" />
+                                <span className="font-semibold">{getOrderCountryCode(order)}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
                                 <Package className="h-3 sm:h-4 w-3 sm:w-4" />
                                 <span>{order.totalItems} items</span>
                               </div>
@@ -5090,18 +5156,29 @@ export default function PickPack() {
                       <Card key={order.id} className="transition-shadow">
                         <CardContent className="p-3 sm:p-4">
                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                            <div>
-                              <h3 className="font-semibold text-sm sm:text-base">{order.orderId}</h3>
-                              <p className="text-xs sm:text-sm text-gray-600">Picked by: {order.pickedBy}</p>
-                              {/* Status indicator */}
-                              {(() => {
-                                const status = getOrderStatusDisplay(order);
-                                return (
-                                  <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${status.color}`}>
-                                    {status.label}
-                                  </span>
-                                );
-                              })()}
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="font-semibold text-sm sm:text-base">{order.orderId}</h3>
+                                {/* Status indicator */}
+                                {(() => {
+                                  const status = getOrderStatusDisplay(order);
+                                  return (
+                                    <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${status.color}`}>
+                                      {status.label}
+                                    </span>
+                                  );
+                                })()}
+                              </div>
+                              <div className="flex items-center gap-3 text-xs sm:text-sm text-gray-600">
+                                <div className="flex items-center gap-1">
+                                  <Globe className="h-3 sm:h-4 w-3 sm:w-4" />
+                                  <span className="font-semibold">{getOrderCountryCode(order)}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <User className="h-3 sm:h-4 w-3 sm:w-4" />
+                                  <span>Picked by: {order.pickedBy}</span>
+                                </div>
+                              </div>
                             </div>
                             <Button 
                               variant="outline" 
@@ -5168,16 +5245,20 @@ export default function PickPack() {
                                   );
                                 })()}
                               </div>
-                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
                                 <div className="flex items-center gap-1">
                                   <User className="h-3 sm:h-4 w-3 sm:w-4" />
                                   <span className="truncate">{order.customerName}</span>
                                 </div>
                                 <div className="flex items-center gap-1">
+                                  <Globe className="h-3 sm:h-4 w-3 sm:w-4" />
+                                  <span className="font-semibold">{getOrderCountryCode(order)}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
                                   <Package className="h-3 sm:h-4 w-3 sm:w-4" />
                                   <span>{order.totalItems} items</span>
                                 </div>
-                                <div className="flex items-center gap-1 col-span-2 sm:col-span-1">
+                                <div className="flex items-center gap-1">
                                   <CheckCircle className="h-3 sm:h-4 w-3 sm:w-4 text-green-500" />
                                   <span className="text-green-600">Picked by {order.pickedBy}</span>
                                 </div>
