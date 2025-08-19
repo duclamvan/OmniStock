@@ -3756,7 +3756,7 @@ export default function PickPack() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex flex-col">
         {/* Header - Optimized for Mobile */}
-        <div className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-lg sticky top-0 z-20">
+        <div className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-lg z-20">
           <div className="px-3 lg:px-4 py-2 lg:py-3">
             {/* Mobile Layout - Clean and Organized */}
             <div className="lg:hidden">
