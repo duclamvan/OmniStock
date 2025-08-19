@@ -2260,18 +2260,20 @@ export default function PickPack() {
   // Undo timer effect
   useEffect(() => {
     let timer: NodeJS.Timeout;
-    if (showUndoPopup && undoTimeLeft > 0) {
-      timer = setTimeout(() => {
-        setUndoTimeLeft(prev => prev - 1);
-      }, 1000);
-    } else if (undoTimeLeft === 0) {
-      // Time's up, clear pending shipments
-      setShowUndoPopup(false);
-      setPendingShipments(null);
-      setUndoTimeLeft(15);
+    if (showUndoPopup && pendingShipments) {
+      if (undoTimeLeft > 0) {
+        timer = setTimeout(() => {
+          setUndoTimeLeft(prev => prev - 1);
+        }, 1000);
+      } else if (undoTimeLeft <= 0) {
+        // Time's up, clear pending shipments and hide bar
+        setShowUndoPopup(false);
+        setPendingShipments(null);
+        setUndoTimeLeft(15);
+      }
     }
     return () => clearTimeout(timer);
-  }, [showUndoPopup, undoTimeLeft]);
+  }, [showUndoPopup, undoTimeLeft, pendingShipments]);
 
   // Undo shipment function
   const undoShipment = async () => {
@@ -5698,7 +5700,7 @@ export default function PickPack() {
                   <div className="flex items-center gap-2">
                     <Timer className="h-4 w-4 text-gray-400" />
                     <span className="text-gray-300 text-sm font-mono">
-                      {undoTimeLeft}s
+                      {Math.max(0, undoTimeLeft)}s
                     </span>
                   </div>
                   <Button
