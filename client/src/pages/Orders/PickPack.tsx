@@ -1704,59 +1704,163 @@ export default function PickPack() {
     const address = order.shippingAddress?.toLowerCase() || '';
     const notes = order.notes?.toLowerCase() || '';
     
-    // Check order ID prefixes first
-    if (orderId.includes('-cz')) return 'CZ';
-    if (orderId.includes('-de')) return 'DE';
-    if (orderId.includes('-sk')) return 'SK';
-    if (orderId.includes('-fr')) return 'FR';
-    if (orderId.includes('-be')) return 'BE';
-    if (orderId.includes('-nl')) return 'NL';
-    if (orderId.includes('-at')) return 'AT';
-    if (orderId.includes('-ch')) return 'CH';
-    if (orderId.includes('-pl')) return 'PL';
-    if (orderId.includes('-hu')) return 'HU';
+    // Check order ID prefixes first (most reliable)
+    if (orderId.includes('ord-') && orderId.split('-').length >= 3) {
+      const prefix = orderId.split('-')[2];
+      if (prefix === 'cz') return 'CZ';
+      if (prefix === 'de') return 'DE';
+      if (prefix === 'sk') return 'SK';
+      if (prefix === 'fr') return 'FR';
+      if (prefix === 'be') return 'BE';
+      if (prefix === 'nl') return 'NL';
+      if (prefix === 'at') return 'AT';
+      if (prefix === 'ch') return 'CH';
+      if (prefix === 'pl') return 'PL';
+      if (prefix === 'hu') return 'HU';
+      if (prefix === 'it') return 'IT';
+      if (prefix === 'es') return 'ES';
+      if (prefix === 'pu') return 'CZ'; // Pickup orders default to CZ
+      if (prefix === 'pd') return 'CZ'; // Personal delivery default to CZ
+    }
     
-    // Check address content for country names or cities
-    if (address.includes('czech') || address.includes('česk') || 
-        address.includes('prague') || address.includes('praha') || 
-        address.includes('brno') || address.includes('ostrava')) return 'CZ';
+    // Parse country from address (looking at the end of address string)
+    // Most addresses end with ", Country Name"
+    const addressParts = address.split(',');
+    const lastPart = addressParts[addressParts.length - 1]?.trim().toLowerCase();
     
-    if (address.includes('slovakia') || address.includes('slovensk') || 
-        address.includes('bratislava') || address.includes('košice') || 
-        address.includes('prešov') || address.includes('nitra')) return 'SK';
+    // Country name mappings
+    const countryMappings: { [key: string]: string } = {
+      'czech republic': 'CZ',
+      'czechia': 'CZ',
+      'česká republika': 'CZ',
+      'slovakia': 'SK',
+      'slovensko': 'SK',
+      'germany': 'DE',
+      'deutschland': 'DE',
+      'france': 'FR',
+      'belgium': 'BE',
+      'belgië': 'BE',
+      'belgique': 'BE',
+      'netherlands': 'NL',
+      'nederland': 'NL',
+      'austria': 'AT',
+      'österreich': 'AT',
+      'switzerland': 'CH',
+      'schweiz': 'CH',
+      'suisse': 'CH',
+      'poland': 'PL',
+      'polska': 'PL',
+      'hungary': 'HU',
+      'magyarország': 'HU',
+      'italy': 'IT',
+      'italia': 'IT',
+      'spain': 'ES',
+      'españa': 'ES',
+      'portugal': 'PT',
+      'romania': 'RO',
+      'bulgaria': 'BG',
+      'croatia': 'HR',
+      'slovenia': 'SI',
+      'luxembourg': 'LU',
+      'denmark': 'DK',
+      'sweden': 'SE',
+      'norway': 'NO',
+      'finland': 'FI',
+      'united kingdom': 'GB',
+      'uk': 'GB',
+      'great britain': 'GB',
+      'ireland': 'IE',
+      'usa': 'US',
+      'united states': 'US'
+    };
     
-    if (address.includes('germany') || address.includes('deutschland') ||
-        address.includes('berlin') || address.includes('munich') ||
-        address.includes('hamburg') || address.includes('frankfurt')) return 'DE';
+    // Check if last part of address is a country
+    for (const [country, code] of Object.entries(countryMappings)) {
+      if (lastPart && lastPart.includes(country)) {
+        return code;
+      }
+    }
     
-    if (address.includes('france') || address.includes('paris') ||
-        address.includes('lyon') || address.includes('marseille')) return 'FR';
+    // Check major cities in address for country detection
+    const cityCountryMap: { [key: string]: string } = {
+      // Czech cities
+      'prague': 'CZ', 'praha': 'CZ', 'brno': 'CZ', 'ostrava': 'CZ', 'plzeň': 'CZ', 'plzen': 'CZ',
+      'české budějovice': 'CZ', 'ceske budejovice': 'CZ', 'liberec': 'CZ', 'olomouc': 'CZ',
+      // Slovak cities
+      'bratislava': 'SK', 'košice': 'SK', 'kosice': 'SK', 'prešov': 'SK', 'presov': 'SK',
+      'žilina': 'SK', 'zilina': 'SK', 'nitra': 'SK', 'trnava': 'SK', 'banská bystrica': 'SK',
+      // German cities
+      'berlin': 'DE', 'munich': 'DE', 'münchen': 'DE', 'hamburg': 'DE', 'frankfurt': 'DE',
+      'cologne': 'DE', 'köln': 'DE', 'düsseldorf': 'DE', 'stuttgart': 'DE', 'leipzig': 'DE',
+      // French cities
+      'paris': 'FR', 'lyon': 'FR', 'marseille': 'FR', 'toulouse': 'FR', 'nice': 'FR',
+      'nantes': 'FR', 'strasbourg': 'FR', 'bordeaux': 'FR', 'lille': 'FR',
+      // Belgian cities
+      'brussels': 'BE', 'bruxelles': 'BE', 'antwerp': 'BE', 'antwerpen': 'BE', 'ghent': 'BE',
+      'gent': 'BE', 'bruges': 'BE', 'brugge': 'BE', 'liège': 'BE', 'liege': 'BE',
+      // Dutch cities
+      'amsterdam': 'NL', 'rotterdam': 'NL', 'the hague': 'NL', 'den haag': 'NL', 'utrecht': 'NL',
+      'eindhoven': 'NL', 'groningen': 'NL', 'tilburg': 'NL',
+      // Austrian cities
+      'vienna': 'AT', 'wien': 'AT', 'graz': 'AT', 'linz': 'AT', 'salzburg': 'AT', 'innsbruck': 'AT',
+      // Swiss cities
+      'zurich': 'CH', 'zürich': 'CH', 'geneva': 'CH', 'genève': 'CH', 'basel': 'CH', 'bern': 'CH',
+      'lausanne': 'CH', 'lucerne': 'CH', 'luzern': 'CH',
+      // Polish cities
+      'warsaw': 'PL', 'warszawa': 'PL', 'krakow': 'PL', 'kraków': 'PL', 'wrocław': 'PL',
+      'wroclaw': 'PL', 'poznań': 'PL', 'poznan': 'PL', 'gdańsk': 'PL', 'gdansk': 'PL',
+      // Hungarian cities
+      'budapest': 'HU', 'debrecen': 'HU', 'szeged': 'HU', 'pécs': 'HU', 'pecs': 'HU',
+      // Italian cities
+      'rome': 'IT', 'roma': 'IT', 'milan': 'IT', 'milano': 'IT', 'naples': 'IT', 'napoli': 'IT',
+      'turin': 'IT', 'torino': 'IT', 'florence': 'IT', 'firenze': 'IT', 'venice': 'IT', 'venezia': 'IT',
+      // Spanish cities
+      'madrid': 'ES', 'barcelona': 'ES', 'valencia': 'ES', 'seville': 'ES', 'sevilla': 'ES',
+      'zaragoza': 'ES', 'málaga': 'ES', 'malaga': 'ES', 'bilbao': 'ES'
+    };
     
-    if (address.includes('belgium') || address.includes('belgië') ||
-        address.includes('brussels') || address.includes('antwerp')) return 'BE';
-    
-    if (address.includes('netherlands') || address.includes('nederland') ||
-        address.includes('amsterdam') || address.includes('rotterdam')) return 'NL';
-    
-    if (address.includes('austria') || address.includes('österreich') ||
-        address.includes('vienna') || address.includes('wien')) return 'AT';
-    
-    if (address.includes('switzerland') || address.includes('schweiz') ||
-        address.includes('zurich') || address.includes('geneva')) return 'CH';
-    
-    if (address.includes('poland') || address.includes('polska') ||
-        address.includes('warsaw') || address.includes('krakow')) return 'PL';
-    
-    if (address.includes('hungary') || address.includes('magyarország') ||
-        address.includes('budapest') || address.includes('debrecen')) return 'HU';
+    // Check for cities in the address
+    for (const [city, code] of Object.entries(cityCountryMap)) {
+      if (address.includes(city)) {
+        return code;
+      }
+    }
     
     // Check notes for country information
-    if (notes.includes('czech') || notes.includes('slovak')) return 'CZ';
-    if (notes.includes('german')) return 'DE';
-    if (notes.includes('french')) return 'FR';
+    if (notes.includes('pickup') || notes.includes('will call')) return 'CZ';
+    if (notes.includes('personal delivery')) return 'CZ';
     
-    // Default to EU if no specific country found
-    return 'EU';
+    // If still no match, check for postal codes patterns
+    // Czech postal codes: 3 digits + space + 2 digits (e.g., 110 00)
+    if (/\b\d{3}\s\d{2}\b/.test(address)) return 'CZ';
+    // German postal codes: 5 digits (e.g., 10178)
+    if (/\b\d{5}\b/.test(address) && address.includes('deutschland')) return 'DE';
+    // Slovak postal codes: 3 digits + space + 2 digits (same as Czech)
+    if (/\b\d{3}\s\d{2}\b/.test(address) && address.includes('slovak')) return 'SK';
+    
+    // If warehouse/pickup address, default to CZ
+    if (address.includes('warehouse') || address.includes('pickup') || address.includes('gate')) {
+      return 'CZ';
+    }
+    
+    // If we still can't determine, check customer name for hints
+    const customerName = order.customerName?.toLowerCase() || '';
+    if (customerName.includes('czech') || customerName.includes('praha')) return 'CZ';
+    if (customerName.includes('slovak') || customerName.includes('bratislava')) return 'SK';
+    if (customerName.includes('german') || customerName.includes('deutsch')) return 'DE';
+    if (customerName.includes('austrian') || customerName.includes('österreich')) return 'AT';
+    if (customerName.includes('swiss') || customerName.includes('schweiz')) return 'CH';
+    if (customerName.includes('french') || customerName.includes('français')) return 'FR';
+    if (customerName.includes('belgian') || customerName.includes('belge')) return 'BE';
+    if (customerName.includes('dutch') || customerName.includes('nederlands')) return 'NL';
+    
+    // Last resort: if address seems local (short, no country), assume CZ
+    if (addressParts.length <= 2 || address.length < 30) {
+      return 'CZ';
+    }
+    
+    // Default to CZ for central European operations
+    return 'CZ';
   };
 
   // Global barcode scanner listener for continuous scanning
