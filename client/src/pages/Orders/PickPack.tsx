@@ -4979,6 +4979,8 @@ export default function PickPack() {
                             newSelection.add(order.id);
                           }
                           setSelectedBatchItems(newSelection);
+                        } else {
+                          setPreviewOrder(order);
                         }
                       }}
                     >
@@ -5084,7 +5086,7 @@ export default function PickPack() {
                 ) : (
                   <div className="space-y-2 sm:space-y-3 stagger-animation">
                     {getOrdersByStatus('picking').map(order => (
-                      <Card key={order.id}>
+                      <Card key={order.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setPreviewOrder(order)}>
                         <CardContent className="p-3 sm:p-4">
                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                             <div>
@@ -5149,7 +5151,7 @@ export default function PickPack() {
                 ) : (
                   <div className="space-y-2 sm:space-y-3 stagger-animation">
                     {getOrdersByStatus('packing').map(order => (
-                      <Card key={order.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                      <Card key={order.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setPreviewOrder(order)}>
                         <CardContent className="p-3 sm:p-4">
                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                             <div className="flex-1">
@@ -5574,13 +5576,13 @@ export default function PickPack() {
         </Tabs>
       </div>
       
-      {/* Order Preview Dialog */}
+      {/* Enhanced Order Preview Dialog with Pricing */}
       <Dialog open={!!previewOrder} onOpenChange={() => setPreviewOrder(null)}>
         <DialogContent className="w-[92vw] max-w-3xl sm:w-full max-h-[80vh] sm:max-h-[90vh] mx-auto flex flex-col p-2 sm:p-6">
           <DialogHeader className="flex-shrink-0 pb-1 sm:pb-2">
-            <DialogTitle className="text-xs sm:text-lg">{previewOrder?.orderId} - Shipping Details</DialogTitle>
+            <DialogTitle className="text-xs sm:text-lg">{previewOrder?.orderId} - Order Details</DialogTitle>
             <DialogDescription className="text-[9px] sm:text-sm">
-              Ready to ship • {previewOrder?.totalItems} items
+              {previewOrder && getOrderStatusDisplay(previewOrder).label} • {previewOrder?.totalItems} items • {previewOrder?.shippingMethod}
             </DialogDescription>
           </DialogHeader>
           
@@ -5635,42 +5637,78 @@ export default function PickPack() {
               </div>
             </div>
 
-            {/* Order Items */}
+            {/* Order Items with Pricing for Pickup/Personal Delivery */}
             <div>
               <h3 className="font-semibold text-xs sm:text-sm mb-2 sm:mb-3 flex items-center gap-2">
                 <Package className="h-3 sm:h-4 w-3 sm:w-4" />
                 Order Items ({previewOrder?.totalItems})
               </h3>
               <div className="space-y-2">
-                {previewOrder?.items.map((item, index) => (
-                  <div key={item.id || index} className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 border rounded-lg bg-gray-50">
-                    {item.image && (
-                      <img 
-                        src={item.image} 
-                        alt={item.productName}
-                        className="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded flex-shrink-0"
-                      />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-xs sm:text-sm truncate">{item.productName}</div>
-                      <div className="text-[10px] sm:text-xs text-gray-500">
-                        SKU: {item.sku} {item.barcode && `• ${item.barcode}`}
-                      </div>
-                      {item.warehouseLocation && (
-                        <div className="text-[10px] sm:text-xs text-blue-600 mt-1">
-                          📍 {item.warehouseLocation}
-                        </div>
+                {previewOrder?.items.map((item, index) => {
+                  const showPricing = previewOrder?.shippingMethod?.toLowerCase().includes('pickup') || 
+                                     previewOrder?.shippingMethod?.toLowerCase().includes('personal');
+                  return (
+                    <div key={item.id || index} className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 border rounded-lg bg-gray-50">
+                      {item.image && (
+                        <img 
+                          src={item.image} 
+                          alt={item.productName}
+                          className="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded flex-shrink-0"
+                        />
                       )}
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      <div className="text-xs sm:text-sm font-semibold">Qty: {item.quantity}</div>
-                      <div className="text-[10px] sm:text-xs text-green-600">
-                        ✓ Packed
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-xs sm:text-sm truncate">{item.productName}</div>
+                        <div className="text-[10px] sm:text-xs text-gray-500">
+                          SKU: {item.sku} {item.barcode && `• ${item.barcode}`}
+                        </div>
+                        {item.warehouseLocation && (
+                          <div className="text-[10px] sm:text-xs text-blue-600 mt-1">
+                            📍 {item.warehouseLocation}
+                          </div>
+                        )}
+                        {showPricing && (item as any).price && (
+                          <div className="text-[10px] sm:text-xs text-gray-600 mt-1">
+                            Unit Price: ${(item as any).price.toFixed(2)}
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <div className="text-xs sm:text-sm font-semibold">Qty: {item.quantity}</div>
+                        {showPricing && (item as any).price && (
+                          <div className="text-xs sm:text-sm font-medium text-gray-700">
+                            ${((item as any).price * item.quantity).toFixed(2)}
+                          </div>
+                        )}
+                        <div className="text-[10px] sm:text-xs text-green-600">
+                          {item.pickedQuantity === item.quantity ? '✓ Picked' : 
+                           previewOrder?.packStatus === 'completed' ? '✓ Packed' : 
+                           '⏳ Pending'}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
+              
+              {/* Order Total for Pickup/Personal Delivery */}
+              {(previewOrder?.shippingMethod?.toLowerCase().includes('pickup') || 
+                previewOrder?.shippingMethod?.toLowerCase().includes('personal')) && (
+                <div className="mt-3 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm sm:text-base font-semibold text-indigo-900">Order Total:</span>
+                    <span className="text-base sm:text-lg font-bold text-indigo-900">
+                      ${previewOrder?.items.reduce((total, item) => {
+                        return total + (((item as any).price || 0) * item.quantity);
+                      }, 0).toFixed(2)}
+                    </span>
+                  </div>
+                  {(previewOrder as any)?.paymentStatus && (
+                    <div className="mt-2 text-xs sm:text-sm text-indigo-700">
+                      Payment Status: <span className="font-medium capitalize">{(previewOrder as any).paymentStatus}</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Processing Information */}
@@ -5720,7 +5758,7 @@ export default function PickPack() {
             </div>
           </div>
 
-          {/* Action Buttons */}
+          {/* Dynamic Action Buttons Based on Order Status */}
           <div className="flex flex-row justify-between gap-1 sm:justify-end sm:gap-3 mt-2 sm:mt-6 pt-2 sm:pt-4 border-t flex-shrink-0">
             <Button
               variant="outline"
@@ -5730,37 +5768,102 @@ export default function PickPack() {
             >
               Close
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                // Print shipping label
-                playSound('success');
-                toast({
-                  title: "Printing Label",
-                  description: `Shipping label for ${previewOrder?.orderId}`,
-                });
-              }}
-              className="text-[10px] sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-7 sm:h-9"
-            >
-              <Printer className="h-3 sm:h-4 w-3 sm:w-4 mr-0.5 sm:mr-2" />
-              <span className="hidden sm:inline">Print Label</span>
-              <span className="sm:hidden">Print</span>
-            </Button>
-            <Button
-              size="sm"
-              className="bg-green-600 hover:bg-green-700 text-[10px] sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-7 sm:h-9"
-              onClick={() => {
-                if (previewOrder) {
-                  markAsShipped(previewOrder);
-                  setPreviewOrder(null);
-                }
-              }}
-            >
-              <Truck className="h-3 sm:h-4 w-3 sm:w-4 mr-0.5 sm:mr-2" />
-              <span className="hidden sm:inline">Mark as Shipped</span>
-              <span className="sm:hidden">Ship</span>
-            </Button>
+            
+            {/* Show Print Label button for ready orders */}
+            {previewOrder?.packStatus === 'completed' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  // Print shipping label
+                  playSound('success');
+                  toast({
+                    title: "Printing Label",
+                    description: `Shipping label for ${previewOrder?.orderId}`,
+                  });
+                }}
+                className="text-[10px] sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-7 sm:h-9"
+              >
+                <Printer className="h-3 sm:h-4 w-3 sm:w-4 mr-0.5 sm:mr-2" />
+                <span className="hidden sm:inline">Print Label</span>
+                <span className="sm:hidden">Print</span>
+              </Button>
+            )}
+            
+            {/* Show different primary action buttons based on order status */}
+            {previewOrder?.packStatus === 'not_started' && (
+              <Button
+                size="sm"
+                className="bg-purple-600 hover:bg-purple-700 text-[10px] sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-7 sm:h-9"
+                onClick={() => {
+                  if (previewOrder) {
+                    startPicking(previewOrder);
+                    setPreviewOrder(null);
+                  }
+                }}
+              >
+                <PlayCircle className="h-3 sm:h-4 w-3 sm:w-4 mr-0.5 sm:mr-2" />
+                <span className="hidden sm:inline">Start Picking</span>
+                <span className="sm:hidden">Pick</span>
+              </Button>
+            )}
+            
+            {previewOrder?.packStatus === 'picking' && (
+              <Button
+                size="sm"
+                className="bg-blue-600 hover:bg-blue-700 text-[10px] sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-7 sm:h-9"
+                onClick={() => {
+                  if (previewOrder) {
+                    setActivePickingOrder(previewOrder);
+                    setSelectedTab('picking');
+                    const firstUnpickedIndex = previewOrder.items.findIndex(item => item.pickedQuantity < item.quantity);
+                    setManualItemIndex(firstUnpickedIndex >= 0 ? firstUnpickedIndex : 0);
+                    setIsTimerRunning(true);
+                    setPreviewOrder(null);
+                    playSound('success');
+                  }
+                }}
+              >
+                <PlayCircle className="h-3 sm:h-4 w-3 sm:w-4 mr-0.5 sm:mr-2" />
+                <span className="hidden sm:inline">Resume Picking</span>
+                <span className="sm:hidden">Resume</span>
+              </Button>
+            )}
+            
+            {previewOrder?.packStatus === 'packing' && (
+              <Button
+                size="sm"
+                className="bg-indigo-600 hover:bg-indigo-700 text-[10px] sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-7 sm:h-9"
+                onClick={() => {
+                  if (previewOrder) {
+                    startPacking(previewOrder);
+                    setPreviewOrder(null);
+                  }
+                }}
+              >
+                <Box className="h-3 sm:h-4 w-3 sm:w-4 mr-0.5 sm:mr-2" />
+                <span className="hidden sm:inline">Start Packing</span>
+                <span className="sm:hidden">Pack</span>
+              </Button>
+            )}
+            
+            {previewOrder?.packStatus === 'completed' && (
+              <Button
+                size="sm"
+                className="bg-green-600 hover:bg-green-700 text-[10px] sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-7 sm:h-9"
+                onClick={() => {
+                  if (previewOrder) {
+                    markAsShipped(previewOrder);
+                    setPreviewOrder(null);
+                  }
+                }}
+              >
+                <Truck className="h-3 sm:h-4 w-3 sm:w-4 mr-0.5 sm:mr-2" />
+                <span className="hidden sm:inline">Mark as Shipped</span>
+                <span className="sm:hidden">Ship</span>
+              </Button>
+            )}
+            
             <Button
               variant="outline"
               onClick={() => setPreviewOrder(null)}
