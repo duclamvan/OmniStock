@@ -60,6 +60,7 @@ import {
   ChevronRight,
   ChevronDown,
   Zap,
+  Eye,
   FileText,
   PackageCheck,
   Navigation,
@@ -5183,6 +5184,16 @@ export default function PickPack() {
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
+                              {/* Quick View Button */}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => setPreviewOrder(order)}
+                                title="View Order Details"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
                               <Button
                                 size="sm"
                                 className="min-w-[100px] max-w-[140px] bg-purple-600 hover:bg-purple-700"
