@@ -2572,9 +2572,9 @@ export default function PickPack() {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'high': return 'destructive';
-      case 'medium': return 'default';
-      case 'low': return 'secondary';
+      case 'high': return 'destructive';  // Keep red for high
+      case 'medium': return 'warning';     // Orange for medium
+      case 'low': return 'info';           // Blue for low
       default: return 'outline';
     }
   };
