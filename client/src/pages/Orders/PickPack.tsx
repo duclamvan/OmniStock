@@ -4918,19 +4918,26 @@ export default function PickPack() {
       <div className="px-3 sm:px-6 pb-6">
         <Tabs value={selectedTab} onValueChange={(v) => setSelectedTab(v as any)}>
           <div className="overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-0">
-            <TabsList className="grid grid-cols-5 w-full min-w-[400px] sm:max-w-2xl bg-gray-50 p-1 gap-1">
-              <TabsTrigger value="overview" className="text-xs sm:text-sm bg-gray-100 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-900 data-[state=active]:shadow-sm">Overview</TabsTrigger>
-              <TabsTrigger value="pending" className="text-xs sm:text-sm bg-gray-100 data-[state=active]:bg-orange-100 data-[state=active]:text-orange-900 data-[state=active]:shadow-sm">
-                Pending ({stats.pending})
+            <TabsList className="grid grid-cols-5 w-full min-w-[400px] sm:max-w-3xl bg-gradient-to-b from-gray-50 to-gray-100 p-1.5 gap-1.5 shadow-inner rounded-lg">
+              <TabsTrigger value="overview" className="flex flex-col items-center gap-1 py-3 px-2 text-xs sm:text-sm font-semibold bg-white data-[state=active]:bg-gradient-to-b data-[state=active]:from-blue-50 data-[state=active]:to-blue-100 data-[state=active]:text-blue-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-blue-500 rounded-md transition-all">
+                <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span>Overview</span>
               </TabsTrigger>
-              <TabsTrigger value="picking" className="text-xs sm:text-sm bg-gray-100 data-[state=active]:bg-yellow-100 data-[state=active]:text-yellow-900 data-[state=active]:shadow-sm">
-                Picking ({stats.picking})
+              <TabsTrigger value="pending" className="flex flex-col items-center gap-1 py-3 px-2 text-xs sm:text-sm font-semibold bg-white data-[state=active]:bg-gradient-to-b data-[state=active]:from-orange-50 data-[state=active]:to-orange-100 data-[state=active]:text-orange-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-orange-500 rounded-md transition-all">
+                <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span>Pending ({stats.pending})</span>
               </TabsTrigger>
-              <TabsTrigger value="packing" className="text-xs sm:text-sm bg-gray-100 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-900 data-[state=active]:shadow-sm">
-                Packing ({stats.packing})
+              <TabsTrigger value="picking" className="flex flex-col items-center gap-1 py-3 px-2 text-xs sm:text-sm font-semibold bg-white data-[state=active]:bg-gradient-to-b data-[state=active]:from-yellow-50 data-[state=active]:to-yellow-100 data-[state=active]:text-yellow-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-yellow-500 rounded-md transition-all">
+                <Package className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span>Picking ({stats.picking})</span>
               </TabsTrigger>
-              <TabsTrigger value="ready" className="text-xs sm:text-sm bg-gray-100 data-[state=active]:bg-green-100 data-[state=active]:text-green-900 data-[state=active]:shadow-sm">
-                Ready ({stats.ready})
+              <TabsTrigger value="packing" className="flex flex-col items-center gap-1 py-3 px-2 text-xs sm:text-sm font-semibold bg-white data-[state=active]:bg-gradient-to-b data-[state=active]:from-purple-50 data-[state=active]:to-purple-100 data-[state=active]:text-purple-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-purple-500 rounded-md transition-all">
+                <Box className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span>Packing ({stats.packing})</span>
+              </TabsTrigger>
+              <TabsTrigger value="ready" className="flex flex-col items-center gap-1 py-3 px-2 text-xs sm:text-sm font-semibold bg-white data-[state=active]:bg-gradient-to-b data-[state=active]:from-green-50 data-[state=active]:to-green-100 data-[state=active]:text-green-900 data-[state=active]:shadow-md data-[state=active]:border-b-2 data-[state=active]:border-green-500 rounded-md transition-all">
+                <Truck className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span>Ready ({stats.ready})</span>
               </TabsTrigger>
             </TabsList>
           </div>
