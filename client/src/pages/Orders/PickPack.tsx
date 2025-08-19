@@ -5181,7 +5181,7 @@ export default function PickPack() {
                                 );
                               })()}
                             </div>
-                            <div className="space-y-1 text-xs sm:text-sm text-gray-600">
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:text-sm text-gray-600">
                               <div className="flex items-center gap-1">
                                 <User className="h-3 sm:h-4 w-3 sm:w-4" />
                                 <span className="truncate">{order.customerName}</span>
