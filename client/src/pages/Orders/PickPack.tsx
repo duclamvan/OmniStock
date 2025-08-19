@@ -5435,19 +5435,25 @@ export default function PickPack() {
           <TabsContent value="ready" className="mt-4 sm:mt-6">
             <Card>
               <CardHeader className="pb-3 sm:pb-6">
-                <div className="flex items-center justify-between">
-                  <div>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1">
                     <CardTitle className="text-base sm:text-lg">Ready to Ship</CardTitle>
                     <CardDescription className="text-xs sm:text-sm">Orders organized by shipping destination</CardDescription>
+                    {getOrdersByStatus('ready').length > 0 && (
+                      <div className="mt-2 text-sm font-semibold text-gray-700">
+                        Total Orders: {getOrdersByStatus('ready').length}
+                      </div>
+                    )}
                   </div>
                   {getOrdersByStatus('ready').length > 0 && (
                     <Button
                       size="sm"
-                      className="bg-green-600 hover:bg-green-700 min-w-[140px] max-w-[180px]"
+                      className="bg-green-600 hover:bg-green-700 text-xs sm:text-sm whitespace-nowrap"
                       onClick={() => setShowShipAllConfirm(true)}
                     >
-                      <Truck className="h-4 w-4 mr-1" />
-                      Mark all as shipped
+                      <Truck className="h-3 sm:h-4 w-3 sm:w-4 mr-1" />
+                      <span className="hidden sm:inline">Mark all as shipped</span>
+                      <span className="sm:hidden">Ship All</span>
                     </Button>
                   )}
                 </div>
