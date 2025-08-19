@@ -4967,7 +4967,9 @@ export default function PickPack() {
                   {getOrdersByStatus('pending').map(order => (
                     <Card 
                       key={order.id} 
-                      className={`cursor-pointer hover:shadow-md transition-all ${
+                      className={`${
+                        batchPickingMode ? 'cursor-pointer hover:shadow-md' : ''
+                      } transition-all ${
                         batchPickingMode && selectedBatchItems.has(order.id) ? 'border-2 border-purple-500 bg-purple-50' : ''
                       }`}
                       onClick={() => {
@@ -4979,8 +4981,6 @@ export default function PickPack() {
                             newSelection.add(order.id);
                           }
                           setSelectedBatchItems(newSelection);
-                        } else {
-                          setPreviewOrder(order);
                         }
                       }}
                     >
@@ -5086,7 +5086,7 @@ export default function PickPack() {
                 ) : (
                   <div className="space-y-2 sm:space-y-3 stagger-animation">
                     {getOrdersByStatus('picking').map(order => (
-                      <Card key={order.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setPreviewOrder(order)}>
+                      <Card key={order.id} className="transition-shadow">
                         <CardContent className="p-3 sm:p-4">
                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                             <div>
