@@ -4297,6 +4297,17 @@ export default function PickPack() {
                       ) : (
                         /* Regular Quantity Picker - Enhanced Visibility */
                         <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl lg:rounded-2xl p-4 lg:p-8 border-3 border-green-400 shadow-xl">
+                          {/* Quantity to Pick Indicator */}
+                          {currentItem.quantity > 1 && (
+                            <div className="mb-4 text-center">
+                              <div className="inline-flex items-center gap-2 bg-orange-100 border-2 border-orange-400 rounded-full px-4 py-2">
+                                <ShoppingCart className="h-5 w-5 text-orange-600" />
+                                <span className="text-lg font-bold text-orange-700">
+                                  Pick {currentItem.quantity} items
+                                </span>
+                              </div>
+                            </div>
+                          )}
                           <p className="text-center text-base lg:text-xl font-black text-green-800 mb-4 uppercase tracking-wider">Pick Quantity</p>
                           <div className="flex items-center justify-center gap-3 sm:gap-4 lg:gap-8">
                             <Button
