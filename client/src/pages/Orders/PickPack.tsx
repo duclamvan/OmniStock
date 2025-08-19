@@ -5541,35 +5541,45 @@ export default function PickPack() {
                         { 
                           title: 'Czechia & Slovakia', 
                           icon: MapPin,
-                          color: 'bg-slate-50 border-slate-200',
+                          color: 'bg-blue-50 border-blue-200',
+                          headerColor: 'from-blue-50 via-blue-50 to-white',
+                          iconBg: 'from-white to-blue-50 border-blue-200',
                           buttonColor: 'bg-blue-600 hover:bg-blue-700',
                           orders: czechiaSlovakia 
                         },
                         { 
                           title: 'Germany & EU', 
                           icon: Globe,
-                          color: 'bg-slate-50 border-slate-200',
+                          color: 'bg-purple-50 border-purple-200',
+                          headerColor: 'from-purple-50 via-purple-50 to-white',
+                          iconBg: 'from-white to-purple-50 border-purple-200',
                           buttonColor: 'bg-purple-600 hover:bg-purple-700',
                           orders: germanyEU 
                         },
                         { 
                           title: 'Personal Delivery', 
                           icon: Users,
-                          color: 'bg-slate-50 border-slate-200',
+                          color: 'bg-orange-50 border-orange-200',
+                          headerColor: 'from-orange-50 via-orange-50 to-white',
+                          iconBg: 'from-white to-orange-50 border-orange-200',
                           buttonColor: 'bg-orange-600 hover:bg-orange-700',
                           orders: personalDelivery 
                         },
                         { 
                           title: 'Customer Pickup', 
                           icon: Building,
-                          color: 'bg-slate-50 border-slate-200',
+                          color: 'bg-emerald-50 border-emerald-200',
+                          headerColor: 'from-emerald-50 via-emerald-50 to-white',
+                          iconBg: 'from-white to-emerald-50 border-emerald-200',
                           buttonColor: 'bg-emerald-600 hover:bg-emerald-700',
                           orders: pickup 
                         },
                         { 
                           title: 'Other Destinations', 
                           icon: Package,
-                          color: 'bg-slate-50 border-slate-200',
+                          color: 'bg-teal-50 border-teal-200',
+                          headerColor: 'from-teal-50 via-teal-50 to-white',
+                          iconBg: 'from-white to-teal-50 border-teal-200',
                           buttonColor: 'bg-teal-600 hover:bg-teal-700',
                           orders: otherOrders 
                         },
@@ -5578,16 +5588,16 @@ export default function PickPack() {
                       return sections.map((section, sectionIndex) => {
                         const Icon = section.icon;
                         return (
-                          <div key={sectionIndex} className="rounded-xl border border-gray-200 overflow-hidden shadow-sm bg-white">
+                          <div key={sectionIndex} className={`rounded-xl border overflow-hidden shadow-sm bg-white ${section.color}`}>
                             {/* Section Header - Stone Carved Style */}
                             <div 
-                              className="px-4 py-3 border-b cursor-pointer select-none bg-gradient-to-r from-gray-50 via-gray-50 to-white border-gray-200 hover:from-gray-100 hover:to-gray-50 transition-all"
+                              className={`px-4 py-3 border-b cursor-pointer select-none bg-gradient-to-r ${section.headerColor} hover:brightness-95 transition-all`}
                               onClick={() => toggleSectionCollapse(section.title)}
                             >
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3 flex-1">
-                                  <div className="p-2.5 rounded-lg bg-gradient-to-br from-white to-gray-50 shadow-inner border border-gray-300">
-                                    <Icon className="h-4 w-4 text-gray-600" />
+                                  <div className={`p-2.5 rounded-lg bg-gradient-to-br shadow-inner border ${section.iconBg}`}>
+                                    <Icon className="h-4 w-4 text-gray-700" />
                                   </div>
                                   <div className="flex-1">
                                     <h3 className="font-bold text-base text-gray-800 tracking-wide uppercase text-shadow-sm">
@@ -5660,7 +5670,7 @@ export default function PickPack() {
                             
                             {/* Section Content - Collapsible */}
                             {!collapsedSections.has(section.title) && (
-                              <div className="p-4 bg-white">
+                              <div className="p-4">
                               {/* Section Orders */}
                               <div className="space-y-2">
                               {section.orders.map(order => (
