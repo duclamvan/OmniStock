@@ -2173,49 +2173,21 @@ export default function PickPack() {
         });
       }
 
-      const updatedOrder = {
-        ...activePickingOrder,
-        pickStatus: 'completed' as const,
-        pickEndTime: new Date().toISOString(),
-        status: 'to_fulfill' as const,
-        packStatus: 'not_started' as const
-      };
-
       setIsTimerRunning(false);
-      await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
       
-      // Suppress notifications in picking/packing mode - no need here as this is completion
-      // But suppress since we're still in picking mode technically
+      // Invalidate queries in background without awaiting
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
       
       playSound('complete');
       
-      // Don't immediately clear the order or navigate - let the user choose
-      // The completion screen will handle the navigation
     } catch (error) {
       console.error('Error completing picking:', error);
-      // Suppress error notifications in picking/packing mode
     }
   };
 
   // Start packing an order
   const startPacking = async (order: PickPackOrder) => {
-    // Generate AI packing recommendation
-    const recommendation = generatePackingRecommendation(order.items);
-    setPackingRecommendation(recommendation);
-    
-    // Only update database for real orders (not mock orders)
-    if (!order.id.startsWith('mock-')) {
-      // Keep status as 'to_fulfill' when packing is in progress
-      if (order.packStatus !== 'in_progress') {
-        await updateOrderStatusMutation.mutateAsync({
-          orderId: order.id,
-          status: 'to_fulfill',
-          packStatus: 'in_progress',
-          packedBy: currentEmployee
-        });
-      }
-    }
-
+    // Set the order immediately to show UI quickly
     const updatedOrder = {
       ...order,
       status: 'to_fulfill' as const,
@@ -2226,6 +2198,22 @@ export default function PickPack() {
     setActivePackingOrder(updatedOrder);
     setPackingTimer(0);
     setIsPackingTimerRunning(true);
+    
+    // Generate AI packing recommendation
+    const recommendation = generatePackingRecommendation(order.items);
+    setPackingRecommendation(recommendation);
+    
+    // Update database in background for real orders (non-blocking)
+    if (!order.id.startsWith('mock-')) {
+      if (order.packStatus !== 'in_progress') {
+        updateOrderStatusMutation.mutateAsync({
+          orderId: order.id,
+          status: 'to_fulfill',
+          packStatus: 'in_progress',
+          packedBy: currentEmployee
+        }).catch(console.error);
+      }
+    }
     
     // Reset packing state
     setPackingChecklist({
@@ -2253,7 +2241,7 @@ export default function PickPack() {
     setCurrentCartonSelection('');
     setCurrentUseNonCompanyCarton(false);
     
-    // Auto-select the AI-recommended carton after clearing
+    // Auto-select the AI-recommended carton immediately
     if (recommendation && recommendation.cartons.length > 0) {
       const firstRecommendedCarton = recommendation.cartons[0];
       const cartonId = firstRecommendedCarton.boxSize.id;
@@ -4462,22 +4450,20 @@ export default function PickPack() {
                             pickEndTime: new Date().toISOString(),
                           };
                           
-                          // Hide modal immediately
+                          // Immediately transition to packing without delay
                           setShowPickingCompletionModal(false);
-                          setSelectedTab('packing');
-                          
-                          // Complete picking first (needs activePickingOrder)
-                          await completePicking();
-                          
-                          // Then clear picking state
                           setActivePickingOrder(null);
                           setPickingTimer(0);
                           setManualItemIndex(0);
                           
-                          // Start packing the same order
-                          setTimeout(() => {
-                            startPacking(orderTopack);
-                          }, 100);
+                          // Start packing immediately (no setTimeout delay)
+                          startPacking(orderTopack);
+                          
+                          // Complete picking in background (non-blocking)
+                          completePicking().catch(console.error);
+                          
+                          // Switch tab after starting packing
+                          setSelectedTab('packing');
                         }}
                         className="w-full h-12 sm:h-14 lg:h-16 text-base sm:text-lg lg:text-xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-xl transform hover:scale-105 transition-all"
                       >
