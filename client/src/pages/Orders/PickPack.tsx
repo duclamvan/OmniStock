@@ -4932,18 +4932,18 @@ export default function PickPack() {
       <div className="px-3 sm:px-6 pb-6">
         <Tabs value={selectedTab} onValueChange={(v) => setSelectedTab(v as any)}>
           <div className="overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-0">
-            <TabsList className="grid grid-cols-5 w-full min-w-[400px] sm:max-w-2xl">
-              <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
-              <TabsTrigger value="pending" className="text-xs sm:text-sm">
+            <TabsList className="grid grid-cols-5 w-full min-w-[400px] sm:max-w-2xl bg-gray-100">
+              <TabsTrigger value="overview" className="text-xs sm:text-sm data-[state=active]:bg-white">Overview</TabsTrigger>
+              <TabsTrigger value="pending" className="text-xs sm:text-sm data-[state=active]:bg-white">
                 Pending ({stats.pending})
               </TabsTrigger>
-              <TabsTrigger value="picking" className="text-xs sm:text-sm">
+              <TabsTrigger value="picking" className="text-xs sm:text-sm data-[state=active]:bg-white">
                 Picking ({stats.picking})
               </TabsTrigger>
-              <TabsTrigger value="packing" className="text-xs sm:text-sm">
+              <TabsTrigger value="packing" className="text-xs sm:text-sm data-[state=active]:bg-white">
                 Packing ({stats.packing})
               </TabsTrigger>
-              <TabsTrigger value="ready" className="text-xs sm:text-sm">
+              <TabsTrigger value="ready" className="text-xs sm:text-sm data-[state=active]:bg-white">
                 Ready ({stats.ready})
               </TabsTrigger>
             </TabsList>
@@ -5437,13 +5437,10 @@ export default function PickPack() {
               <CardHeader className="pb-3 sm:pb-6">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1">
-                    <CardTitle className="text-base sm:text-lg">Ready to Ship</CardTitle>
+                    <CardTitle className="text-base sm:text-lg">
+                      Ready to Ship {getOrdersByStatus('ready').length > 0 && `(${getOrdersByStatus('ready').length})`}
+                    </CardTitle>
                     <CardDescription className="text-xs sm:text-sm">Orders organized by shipping destination</CardDescription>
-                    {getOrdersByStatus('ready').length > 0 && (
-                      <div className="mt-2 text-sm font-semibold text-gray-700">
-                        Total Orders: {getOrdersByStatus('ready').length}
-                      </div>
-                    )}
                   </div>
                   {getOrdersByStatus('ready').length > 0 && (
                     <Button
