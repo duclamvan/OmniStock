@@ -4094,8 +4094,8 @@ export default function PickPack() {
                 <Card className="mb-4 lg:mb-6 shadow-xl border-0 overflow-hidden">
                   <CardHeader className={`${
                     currentItem?.pickedQuantity === currentItem?.quantity
-                      ? 'bg-gradient-to-r from-green-500 to-green-600'
-                      : 'bg-gradient-to-r from-blue-500 to-indigo-500'
+                      ? 'bg-gradient-to-r from-emerald-500 to-teal-600'
+                      : 'bg-gradient-to-r from-slate-600 to-slate-700'
                   } text-white p-3 lg:p-4`}>
                     <CardTitle className="flex items-center justify-between">
                       <span className="text-base lg:text-lg flex items-center gap-2">
@@ -4119,8 +4119,8 @@ export default function PickPack() {
                       </span>
                       <Badge className={`${
                         currentItem?.pickedQuantity === currentItem?.quantity
-                          ? 'bg-white text-green-600'
-                          : 'bg-white text-blue-600'
+                          ? 'bg-white text-emerald-600'
+                          : 'bg-white text-slate-700'
                       } text-sm lg:text-base px-2 lg:px-3 py-1 font-bold`}>
                         {currentItemIndex + 1} / {activePickingOrder.items.length}
                       </Badge>
@@ -4264,9 +4264,9 @@ export default function PickPack() {
                           </div>
                           
                           {bundlePickedItems[currentItem.id]?.size === currentItem.bundleItems?.length && (
-                            <Alert className="mt-4 bg-green-100 border-2 border-green-400 shadow-md">
-                              <CheckCircle className="h-4 lg:h-5 w-4 lg:w-5 text-green-700" />
-                              <AlertDescription className="text-green-800 font-semibold text-sm lg:text-base">
+                            <Alert className="mt-4 bg-emerald-50 border-2 border-emerald-300 shadow-md">
+                              <CheckCircle className="h-4 lg:h-5 w-4 lg:w-5 text-emerald-700" />
+                              <AlertDescription className="text-emerald-800 font-semibold text-sm lg:text-base">
                                 ✓ All bundle items picked! Ready for next item.
                               </AlertDescription>
                             </Alert>
@@ -4330,7 +4330,7 @@ export default function PickPack() {
                             
                             <Button
                               size="lg"
-                              className="w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-xl lg:rounded-2xl bg-green-500 hover:bg-green-600 active:bg-green-700 text-white shadow-xl touch-manipulation transform hover:scale-110 transition-transform"
+                              className="w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-xl lg:rounded-2xl bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white shadow-xl touch-manipulation transform hover:scale-110 transition-transform"
                               onClick={() => updatePickedItem(currentItem.id, Math.min(currentItem.quantity, currentItem.pickedQuantity + 1))}
                               disabled={currentItem.pickedQuantity >= currentItem.quantity}
                             >
@@ -4339,9 +4339,9 @@ export default function PickPack() {
                           </div>
                           
                           {currentItem.pickedQuantity >= currentItem.quantity && (
-                            <Alert className="mt-3 lg:mt-4 bg-green-100 border-2 border-green-400 shadow-md">
-                              <CheckCircle className="h-4 lg:h-5 w-4 lg:w-5 text-green-700" />
-                              <AlertDescription className="text-green-800 font-semibold text-sm lg:text-base">
+                            <Alert className="mt-3 lg:mt-4 bg-emerald-50 border-2 border-emerald-300 shadow-md">
+                              <CheckCircle className="h-4 lg:h-5 w-4 lg:w-5 text-emerald-700" />
+                              <AlertDescription className="text-emerald-800 font-semibold text-sm lg:text-base">
                                 ✓ Item fully picked! Ready for next item.
                               </AlertDescription>
                             </Alert>
