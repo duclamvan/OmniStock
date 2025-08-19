@@ -324,6 +324,11 @@ export const orders = pgTable("orders", {
   // Packing details
   finalWeight: decimal("final_weight", { precision: 8, scale: 2 }),
   cartonUsed: varchar("carton_used", { length: 100 }),
+  // Modification tracking
+  modifiedAfterPacking: boolean("modified_after_packing").default(false),
+  modificationNotes: text("modification_notes"),
+  lastModifiedAt: timestamp("last_modified_at"),
+  previousPackStatus: varchar("previous_pack_status", { length: 50 }), // Store previous pack status before modification
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   shippedAt: timestamp("shipped_at"),

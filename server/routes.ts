@@ -2846,6 +2846,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Detect and mark orders as modified after packing
+  app.post('/api/orders/:id/check-modifications', async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const order = await storage.getOrder(id);
+      
+      if (!order) {
+        return res.status(404).json({ message: 'Order not found' });
+      }
+      
+      // Check if order is in ready state and has been modified
+      if (order.orderStatus === 'ready_to_ship' && order.packStatus === 'completed') {
+        const { modificationNotes } = req.body;
+        
+        // Mark order as modified
+        const updatedOrder = await storage.updateOrder(id, {
+          modifiedAfterPacking: true,
+          modificationNotes: modificationNotes || 'Items have been changed after packing',
+          lastModifiedAt: new Date(),
+          previousPackStatus: order.packStatus
+        });
+        
+        // Log the modification
+        await storage.createPickPackLog({
+          orderId: id,
+          activityType: 'order_modified',
+          userId: req.user?.id || 'system',
+          userName: req.user?.firstName || 'System',
+          notes: modificationNotes || 'Order modified after packing'
+        });
+        
+        res.json({
+          modified: true,
+          order: updatedOrder,
+          message: 'Order marked as modified and needs repacking'
+        });
+      } else {
+        res.json({
+          modified: false,
+          message: 'Order is not in a state that requires modification tracking'
+        });
+      }
+    } catch (error) {
+      console.error('Error checking order modifications:', error);
+      res.status(500).json({ message: 'Failed to check order modifications' });
+    }
+  });
+
 
 
   // Batch undo ship - Return orders to ready status

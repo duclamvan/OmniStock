@@ -175,6 +175,11 @@ interface PickPackOrder {
   pickedBy?: string;
   packedBy?: string;
   notes?: string;
+  // Modification tracking
+  modifiedAfterPacking?: boolean;
+  modificationNotes?: string;
+  lastModifiedAt?: string;
+  previousPackStatus?: string;
 }
 
 // Memoized Product Image Component to prevent re-renders from timer updates
@@ -310,6 +315,7 @@ export default function PickPack() {
   const [selectedBatchItems, setSelectedBatchItems] = useState<Set<string>>(new Set());
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [manualItemIndex, setManualItemIndex] = useState(0);
+  const [modificationDialog, setModificationDialog] = useState<PickPackOrder | null>(null);
   const barcodeInputRef = useRef<HTMLInputElement>(null);
 
   // Navigation structure
@@ -1565,6 +1571,57 @@ export default function PickPack() {
         title: 'Error',
         description: 'Failed to return order to packing',
         variant: 'destructive'
+      });
+    }
+  };
+
+  // Handle repacking of modified orders
+  const handleRepack = async (order: PickPackOrder) => {
+    try {
+      // Clear modification flag and return to packing
+      await apiRequest(`/api/orders/${order.id}`, 'PATCH', {
+        orderStatus: 'to_fulfill',
+        packStatus: 'not_started',
+        packStartTime: null,
+        packEndTime: null,
+        packedBy: null,
+        modifiedAfterPacking: false,
+        modificationNotes: null
+      });
+      
+      // Reset packed quantities if they exist
+      if (order.items && order.items.length > 0) {
+        for (const item of order.items) {
+          if (item.id) {
+            await apiRequest(`/api/orders/${order.id}/items/${item.id}`, 'PATCH', {
+              packedQuantity: 0
+            });
+          }
+        }
+      }
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+      
+      const notificationMessage = order.modificationNotes 
+        ? `Modifications: ${order.modificationNotes}` 
+        : "Order has been sent for repacking";
+      
+      toast({
+        title: "Repacking Order",
+        description: notificationMessage,
+      });
+      
+      // Play error sound for repacking
+      playSound('error');
+      
+      // Switch to packing tab
+      setSelectedTab('packing');
+    } catch (error) {
+      console.error('Error repacking order:', error);
+      toast({
+        title: "Error",
+        description: "Failed to initiate repacking",
+        variant: "destructive"
       });
     }
   };
@@ -5369,6 +5426,12 @@ export default function PickPack() {
                                           <span className="text-xs px-2 py-0.5 rounded-full border font-medium bg-green-100 text-green-700 border-green-200">
                                             Ready to Ship
                                           </span>
+                                          {order.modifiedAfterPacking && (
+                                            <span className="text-xs px-2 py-0.5 rounded-full border font-medium bg-amber-100 text-amber-700 border-amber-200 flex items-center gap-1 animate-pulse">
+                                              <AlertTriangle className="h-3 w-3" />
+                                              Modified
+                                            </span>
+                                          )}
                                         </div>
                                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
                                           <div className="flex items-center gap-1">
@@ -5422,6 +5485,18 @@ export default function PickPack() {
                                             </Button>
                                           </DropdownMenuTrigger>
                                           <DropdownMenuContent align="end">
+                                            {order.modifiedAfterPacking && (
+                                              <DropdownMenuItem 
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleRepack(order);
+                                                }}
+                                                className="text-amber-600 font-medium"
+                                              >
+                                                <Package className="h-4 w-4 mr-2" />
+                                                Repack Order
+                                              </DropdownMenuItem>
+                                            )}
                                             <DropdownMenuItem 
                                               onClick={(e) => {
                                                 e.stopPropagation();
