@@ -4932,18 +4932,18 @@ export default function PickPack() {
       <div className="px-3 sm:px-6 pb-6">
         <Tabs value={selectedTab} onValueChange={(v) => setSelectedTab(v as any)}>
           <div className="overflow-x-auto -mx-3 sm:mx-0 px-3 sm:px-0">
-            <TabsList className="grid grid-cols-5 w-full min-w-[400px] sm:max-w-2xl bg-gray-100">
-              <TabsTrigger value="overview" className="text-xs sm:text-sm data-[state=active]:bg-white">Overview</TabsTrigger>
-              <TabsTrigger value="pending" className="text-xs sm:text-sm data-[state=active]:bg-white">
+            <TabsList className="grid grid-cols-5 w-full min-w-[400px] sm:max-w-2xl bg-gray-50 p-1">
+              <TabsTrigger value="overview" className="text-xs sm:text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm">Overview</TabsTrigger>
+              <TabsTrigger value="pending" className="text-xs sm:text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm">
                 Pending ({stats.pending})
               </TabsTrigger>
-              <TabsTrigger value="picking" className="text-xs sm:text-sm data-[state=active]:bg-white">
+              <TabsTrigger value="picking" className="text-xs sm:text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm">
                 Picking ({stats.picking})
               </TabsTrigger>
-              <TabsTrigger value="packing" className="text-xs sm:text-sm data-[state=active]:bg-white">
+              <TabsTrigger value="packing" className="text-xs sm:text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm">
                 Packing ({stats.packing})
               </TabsTrigger>
-              <TabsTrigger value="ready" className="text-xs sm:text-sm data-[state=active]:bg-white">
+              <TabsTrigger value="ready" className="text-xs sm:text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm">
                 Ready ({stats.ready})
               </TabsTrigger>
             </TabsList>
