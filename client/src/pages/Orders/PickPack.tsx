@@ -5181,22 +5181,26 @@ export default function PickPack() {
                                 );
                               })()}
                             </div>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
-                              <div className="flex items-center gap-1">
-                                <User className="h-3 sm:h-4 w-3 sm:w-4" />
-                                <span className="truncate">{order.customerName}</span>
+                            <div className="space-y-1 text-xs sm:text-sm text-gray-600">
+                              <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-1">
+                                  <User className="h-3 sm:h-4 w-3 sm:w-4" />
+                                  <span className="truncate">{order.customerName}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Globe className="h-3 sm:h-4 w-3 sm:w-4" />
+                                  <span className="font-semibold">{getOrderCountryCode(order)}</span>
+                                </div>
                               </div>
-                              <div className="flex items-center gap-1">
-                                <Globe className="h-3 sm:h-4 w-3 sm:w-4" />
-                                <span className="font-semibold">{getOrderCountryCode(order)}</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Package className="h-3 sm:h-4 w-3 sm:w-4" />
-                                <span>{order.totalItems} items</span>
-                              </div>
-                              <div className="flex items-center gap-1 col-span-2 sm:col-span-1">
-                                <Truck className="h-3 sm:h-4 w-3 sm:w-4" />
-                                <span className="truncate">{order.shippingMethod}</span>
+                              <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-1">
+                                  <Package className="h-3 sm:h-4 w-3 sm:w-4" />
+                                  <span>{order.totalItems} items</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Truck className="h-3 sm:h-4 w-3 sm:w-4" />
+                                  <span className="truncate">{order.shippingMethod}</span>
+                                </div>
                               </div>
                             </div>
                           </div>
