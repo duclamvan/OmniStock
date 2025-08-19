@@ -5105,7 +5105,7 @@ export default function PickPack() {
                             <Button 
                               variant="outline" 
                               size="sm" 
-                              className="w-full sm:w-auto"
+                              className="min-w-[100px] max-w-[140px]"
                               onClick={() => {
                                 // Resume picking by setting the active order and switching to picking view
                                 setActivePickingOrder(order);
@@ -5185,10 +5185,10 @@ export default function PickPack() {
                             <div className="flex items-center gap-2">
                               <Button
                                 size="sm"
-                                className="w-full sm:w-auto sm:h-10 bg-purple-600 hover:bg-purple-700"
+                                className="min-w-[100px] max-w-[140px] bg-purple-600 hover:bg-purple-700"
                                 onClick={() => startPacking(order)}
                               >
-                                <Box className="h-4 sm:h-5 w-4 sm:w-5 mr-1 sm:mr-2" />
+                                <Box className="h-4 w-4 mr-1" />
                                 Start Packing
                               </Button>
                               <DropdownMenu>
@@ -5236,7 +5236,7 @@ export default function PickPack() {
                   {getOrdersByStatus('ready').length > 0 && (
                     <Button
                       size="sm"
-                      className="bg-green-600 hover:bg-green-700"
+                      className="bg-green-600 hover:bg-green-700 min-w-[140px] max-w-[180px]"
                       onClick={() => setShowShipAllConfirm(true)}
                     >
                       <Truck className="h-4 w-4 mr-1" />
@@ -5337,36 +5337,36 @@ export default function PickPack() {
                         { 
                           title: 'Czechia & Slovakia', 
                           icon: MapPin,
-                          color: 'bg-blue-50 border-blue-200',
+                          color: 'bg-slate-50 border-slate-200',
                           buttonColor: 'bg-blue-600 hover:bg-blue-700',
                           orders: czechiaSlovakia 
                         },
                         { 
                           title: 'Germany & EU', 
                           icon: Globe,
-                          color: 'bg-purple-50 border-purple-200',
+                          color: 'bg-slate-50 border-slate-200',
                           buttonColor: 'bg-purple-600 hover:bg-purple-700',
                           orders: germanyEU 
                         },
                         { 
                           title: 'Personal Delivery', 
                           icon: Users,
-                          color: 'bg-amber-50 border-amber-200',
-                          buttonColor: 'bg-amber-600 hover:bg-amber-700',
+                          color: 'bg-slate-50 border-slate-200',
+                          buttonColor: 'bg-orange-600 hover:bg-orange-700',
                           orders: personalDelivery 
                         },
                         { 
                           title: 'Customer Pickup', 
                           icon: Building,
-                          color: 'bg-green-50 border-green-200',
+                          color: 'bg-slate-50 border-slate-200',
                           buttonColor: 'bg-green-600 hover:bg-green-700',
                           orders: pickup 
                         },
                         { 
                           title: 'Other Destinations', 
                           icon: Package,
-                          color: 'bg-gray-50 border-gray-200',
-                          buttonColor: 'bg-gray-600 hover:bg-gray-700',
+                          color: 'bg-slate-50 border-slate-200',
+                          buttonColor: 'bg-slate-600 hover:bg-slate-700',
                           orders: otherOrders 
                         },
                       ].filter(section => section.orders.length > 0);
@@ -5374,22 +5374,22 @@ export default function PickPack() {
                       return sections.map((section, sectionIndex) => {
                         const Icon = section.icon;
                         return (
-                          <div key={sectionIndex} className={`rounded-xl border ${section.color} overflow-hidden`}>
-                            {/* Section Header - Clickable */}
+                          <div key={sectionIndex} className="rounded-xl border border-gray-200 overflow-hidden shadow-sm bg-white">
+                            {/* Section Header - Stone Carved Style */}
                             <div 
-                              className={`px-4 py-3 border-b border-opacity-20 cursor-pointer select-none ${section.color.replace('bg-', 'border-').replace('-50', '-200')} hover:brightness-105 transition-all`}
+                              className="px-4 py-3 border-b cursor-pointer select-none bg-gradient-to-r from-gray-50 via-gray-50 to-white border-gray-200 hover:from-gray-100 hover:to-gray-50 transition-all"
                               onClick={() => toggleSectionCollapse(section.title)}
                             >
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3 flex-1">
-                                  <div className={`p-2 rounded-lg ${section.color.replace('-50', '-100')}`}>
-                                    <Icon className="h-4 w-4 text-gray-700" />
+                                  <div className="p-2.5 rounded-lg bg-gradient-to-br from-white to-gray-50 shadow-inner border border-gray-300">
+                                    <Icon className="h-4 w-4 text-gray-600" />
                                   </div>
                                   <div className="flex-1">
-                                    <h3 className="font-semibold text-base text-gray-900">
+                                    <h3 className="font-bold text-base text-gray-800 tracking-wide uppercase text-shadow-sm">
                                       {section.title}
                                     </h3>
-                                    <p className="text-xs text-gray-500 mt-0.5">
+                                    <p className="text-xs text-gray-600 mt-0.5 font-medium">
                                       {section.orders.length} {section.orders.length === 1 ? 'order ready' : 'orders ready'}
                                     </p>
                                   </div>
@@ -5402,7 +5402,7 @@ export default function PickPack() {
                                 </div>
                                 <Button
                                   size="sm"
-                                  className={`${section.buttonColor} shadow-sm text-xs sm:text-sm px-3 py-2 font-medium hover:shadow-md transition-all duration-200 ml-3`}
+                                  className={`${section.buttonColor} shadow-sm text-xs sm:text-sm px-3 py-2 font-medium hover:shadow-md transition-all duration-200 ml-3 min-w-[80px] max-w-[120px]`}
                                   onClick={async (e) => {
                                     e.stopPropagation(); // Prevent collapse when clicking Ship All
                                     
@@ -5449,8 +5449,7 @@ export default function PickPack() {
                                   }}
                                 >
                                   <Truck className="h-3.5 w-3.5 mr-1.5" />
-                                  <span className="hidden sm:inline">Ship All</span>
-                                  <span className="sm:hidden">Ship {section.orders.length}</span>
+                                  <span>Ship {section.orders.length}</span>
                                 </Button>
                               </div>
                             </div>
@@ -5500,25 +5499,25 @@ export default function PickPack() {
                                         <Button
                                           size="sm"
                                           variant="outline"
-                                          className="w-full sm:w-auto"
+                                          className="min-w-[70px] max-w-[90px]"
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             // Print shipping label
                                             playSound('success');
                                           }}
                                         >
-                                          <Printer className="h-4 sm:h-5 w-4 sm:w-5 mr-1 sm:mr-2" />
+                                          <Printer className="h-4 w-4 mr-1" />
                                           Label
                                         </Button>
                                         <Button
                                           size="sm"
-                                          className="w-full sm:w-auto sm:h-10 bg-green-600 hover:bg-green-700"
+                                          className="min-w-[70px] max-w-[90px] bg-green-600 hover:bg-green-700"
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             markAsShipped(order);
                                           }}
                                         >
-                                          <Truck className="h-4 sm:h-5 w-4 sm:w-5 mr-1 sm:mr-2" />
+                                          <Truck className="h-4 w-4 mr-1" />
                                           Ship
                                         </Button>
                                         <DropdownMenu>
