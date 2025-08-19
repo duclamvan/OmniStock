@@ -576,7 +576,7 @@ export default function PickPack() {
   }, [activePackingOrder?.id, selectedCarton, useNonCompanyCarton]);
 
   // Fetch real orders from the API with items and bundle details
-  const { data: allOrders = [], isLoading } = useQuery({
+  const { data: allOrders = [], isLoading, isSuccess } = useQuery({
     queryKey: ['/api/orders/pick-pack'],
     refetchInterval: activePickingOrder ? 0 : 10000, // Use 0 to completely disable during picking
     refetchOnWindowFocus: activePickingOrder ? false : true,
@@ -2458,12 +2458,33 @@ export default function PickPack() {
     avgPickTime: '15:30' // Mock average
   };
 
+  // Skeleton loader component for order cards
+  const OrderCardSkeleton = () => (
+    <Card className="animate-pulse">
+      <CardContent className="p-3 sm:p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="flex-1 space-y-2">
+            <div className="skeleton skeleton-title w-32"></div>
+            <div className="skeleton skeleton-text w-48"></div>
+            <div className="skeleton skeleton-text w-24"></div>
+          </div>
+          <div className="skeleton skeleton-button"></div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  // Full page skeleton loader for initial load
   if (isLoading && transformedOrders.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <Package className="h-12 w-12 mx-auto mb-4 text-gray-400 animate-pulse" />
-          <p className="text-gray-500">No orders to pick</p>
+        <div className="w-full max-w-4xl p-4">
+          <div className="skeleton skeleton-title w-48 mx-auto mb-8"></div>
+          <div className="space-y-4">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="skeleton skeleton-card"></div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -5024,10 +5045,17 @@ export default function PickPack() {
                     </Card>
                   ))}
                   
-                  {getOrdersByStatus('pending').length === 0 && (
-                    <div className="text-center py-12">
+                  {!isLoading && getOrdersByStatus('pending').length === 0 && (
+                    <div className="text-center py-12 fade-in">
                       <Package className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                       <p className="text-gray-500">No pending orders to pick</p>
+                    </div>
+                  )}
+                  {isLoading && (
+                    <div className="space-y-3">
+                      {[1, 2, 3, 4].map(i => (
+                        <OrderCardSkeleton key={i} />
+                      ))}
                     </div>
                   )}
                 </div>
@@ -5042,13 +5070,19 @@ export default function PickPack() {
                 <CardTitle className="text-base sm:text-lg">Orders Being Picked</CardTitle>
               </CardHeader>
               <CardContent className="px-3 sm:px-6">
-                {getOrdersByStatus('picking').length === 0 ? (
-                  <div className="text-center py-8 sm:py-12">
+                {isLoading ? (
+                  <div className="space-y-3">
+                    {[1, 2].map(i => (
+                      <OrderCardSkeleton key={i} />
+                    ))}
+                  </div>
+                ) : getOrdersByStatus('picking').length === 0 ? (
+                  <div className="text-center py-8 sm:py-12 fade-in">
                     <Package className="h-10 sm:h-12 w-10 sm:w-12 text-gray-300 mx-auto mb-3 sm:mb-4" />
                     <p className="text-sm sm:text-base text-gray-500">No orders currently being picked</p>
                   </div>
                 ) : (
-                  <div className="space-y-2 sm:space-y-3">
+                  <div className="space-y-2 sm:space-y-3 stagger-animation">
                     {getOrdersByStatus('picking').map(order => (
                       <Card key={order.id}>
                         <CardContent className="p-3 sm:p-4">
@@ -5101,13 +5135,19 @@ export default function PickPack() {
                 <CardDescription className="text-xs sm:text-sm">Orders that have been picked and ready to pack</CardDescription>
               </CardHeader>
               <CardContent className="px-3 sm:px-6">
-                {getOrdersByStatus('packing').length === 0 ? (
-                  <div className="text-center py-8 sm:py-12">
+                {isLoading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map(i => (
+                      <OrderCardSkeleton key={i} />
+                    ))}
+                  </div>
+                ) : getOrdersByStatus('packing').length === 0 ? (
+                  <div className="text-center py-8 sm:py-12 fade-in">
                     <Box className="h-10 sm:h-12 w-10 sm:w-12 text-gray-300 mx-auto mb-3 sm:mb-4" />
                     <p className="text-sm sm:text-base text-gray-500">No orders ready for packing</p>
                   </div>
                 ) : (
-                  <div className="space-y-2 sm:space-y-3">
+                  <div className="space-y-2 sm:space-y-3 stagger-animation">
                     {getOrdersByStatus('packing').map(order => (
                       <Card key={order.id} className="cursor-pointer hover:shadow-md transition-shadow">
                         <CardContent className="p-3 sm:p-4">
@@ -5204,8 +5244,14 @@ export default function PickPack() {
                 </div>
               </CardHeader>
               <CardContent className="px-3 sm:px-6">
-                {getOrdersByStatus('ready').length === 0 ? (
-                  <div className="text-center py-8 sm:py-12">
+                {isLoading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map(i => (
+                      <OrderCardSkeleton key={i} />
+                    ))}
+                  </div>
+                ) : getOrdersByStatus('ready').length === 0 ? (
+                  <div className="text-center py-8 sm:py-12 fade-in">
                     <Truck className="h-10 sm:h-12 w-10 sm:w-12 text-gray-300 mx-auto mb-3 sm:mb-4" />
                     <p className="text-sm sm:text-base text-gray-500">No orders ready to ship</p>
                   </div>
