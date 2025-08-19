@@ -84,7 +84,8 @@ import {
   BarChart3,
   TrendingUp,
   ShoppingCart,
-  Menu
+  Menu,
+  Check
 } from "lucide-react";
 
 interface BundleItem {
@@ -5441,7 +5442,7 @@ export default function PickPack() {
                       className="bg-green-600 hover:bg-green-700 text-xs sm:text-sm whitespace-nowrap"
                       onClick={() => setShowShipAllConfirm(true)}
                     >
-                      <Truck className="h-3 sm:h-4 w-3 sm:w-4 mr-1" />
+                      <Check className="h-3 sm:h-4 w-3 sm:w-4 mr-1" />
                       <span className="hidden sm:inline">Mark all as shipped</span>
                       <span className="sm:hidden">Ship All</span>
                     </Button>
@@ -5562,14 +5563,14 @@ export default function PickPack() {
                           title: 'Customer Pickup', 
                           icon: Building,
                           color: 'bg-slate-50 border-slate-200',
-                          buttonColor: 'bg-green-600 hover:bg-green-700',
+                          buttonColor: 'bg-emerald-600 hover:bg-emerald-700',
                           orders: pickup 
                         },
                         { 
                           title: 'Other Destinations', 
                           icon: Package,
                           color: 'bg-slate-50 border-slate-200',
-                          buttonColor: 'bg-slate-600 hover:bg-slate-700',
+                          buttonColor: 'bg-teal-600 hover:bg-teal-700',
                           orders: otherOrders 
                         },
                       ].filter(section => section.orders.length > 0);
@@ -5651,7 +5652,7 @@ export default function PickPack() {
                                     }
                                   }}
                                 >
-                                  <Truck className="h-3.5 w-3.5 mr-1.5" />
+                                  <Check className="h-3.5 w-3.5 mr-1.5" />
                                   <span>Ship {section.orders.length}</span>
                                 </Button>
                               </div>
