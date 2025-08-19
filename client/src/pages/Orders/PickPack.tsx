@@ -5151,7 +5151,7 @@ export default function PickPack() {
                 ) : (
                   <div className="space-y-2 sm:space-y-3 stagger-animation">
                     {getOrdersByStatus('packing').map(order => (
-                      <Card key={order.id} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setPreviewOrder(order)}>
+                      <Card key={order.id} className="transition-shadow">
                         <CardContent className="p-3 sm:p-4">
                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                             <div className="flex-1">
@@ -5807,7 +5807,7 @@ export default function PickPack() {
               </Button>
             )}
             
-            {previewOrder?.packStatus === 'picking' && (
+            {previewOrder?.pickStatus === 'in_progress' && (
               <Button
                 size="sm"
                 className="bg-blue-600 hover:bg-blue-700 text-[10px] sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-7 sm:h-9"
@@ -5829,7 +5829,7 @@ export default function PickPack() {
               </Button>
             )}
             
-            {previewOrder?.packStatus === 'packing' && (
+            {previewOrder?.packStatus === 'in_progress' && (
               <Button
                 size="sm"
                 className="bg-indigo-600 hover:bg-indigo-700 text-[10px] sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-7 sm:h-9"
