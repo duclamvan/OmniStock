@@ -83,6 +83,7 @@ import {
   Minus,
   BarChart3,
   TrendingUp,
+  ShoppingCart,
   Menu
 } from "lucide-react";
 
@@ -5296,9 +5297,8 @@ export default function PickPack() {
                               </div>
                             </div>
                             <Button 
-                              variant="outline" 
                               size="sm" 
-                              className="min-w-[100px] max-w-[140px]"
+                              className="min-w-[100px] max-w-[140px] bg-amber-500 hover:bg-amber-600 text-white font-semibold"
                               onClick={() => {
                                 // Resume picking by setting the active order and switching to picking view
                                 setActivePickingOrder(order);
