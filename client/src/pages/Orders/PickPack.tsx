@@ -5600,10 +5600,14 @@ export default function PickPack() {
                                     <Icon className="h-4 w-4 text-gray-700" />
                                   </div>
                                   <div className="flex-1">
-                                    <h3 className="font-bold text-base text-gray-800 tracking-wide uppercase text-shadow-sm">
+                                    <h3 className={`font-bold text-base tracking-wide uppercase text-shadow-sm ${
+                                      !collapsedSections.has(section.title) ? 'text-gray-800' : 'text-gray-700'
+                                    }`}>
                                       {section.title}
                                     </h3>
-                                    <p className="text-xs text-gray-600 mt-0.5 font-medium">
+                                    <p className={`text-xs mt-0.5 font-medium ${
+                                      !collapsedSections.has(section.title) ? 'text-gray-600' : 'text-gray-500'
+                                    }`}>
                                       {section.orders.length} {section.orders.length === 1 ? 'order ready' : 'orders ready'}
                                     </p>
                                   </div>
