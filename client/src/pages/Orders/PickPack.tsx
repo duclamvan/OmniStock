@@ -5541,10 +5541,10 @@ export default function PickPack() {
                         { 
                           title: 'Czechia & Slovakia', 
                           icon: MapPin,
-                          color: 'bg-blue-50 border-blue-200',
-                          headerColor: 'from-blue-50 via-blue-50 to-white',
-                          iconBg: 'from-white to-blue-50 border-blue-200',
-                          buttonColor: 'bg-blue-600 hover:bg-blue-700',
+                          color: 'bg-teal-50 border-teal-200',
+                          headerColor: 'from-teal-50 via-teal-50 to-white',
+                          iconBg: 'from-white to-teal-50 border-teal-200',
+                          buttonColor: 'bg-teal-600 hover:bg-teal-700',
                           orders: czechiaSlovakia 
                         },
                         { 
@@ -5577,10 +5577,10 @@ export default function PickPack() {
                         { 
                           title: 'Other Destinations', 
                           icon: Package,
-                          color: 'bg-teal-50 border-teal-200',
-                          headerColor: 'from-teal-50 via-teal-50 to-white',
-                          iconBg: 'from-white to-teal-50 border-teal-200',
-                          buttonColor: 'bg-teal-600 hover:bg-teal-700',
+                          color: 'bg-blue-50 border-blue-200',
+                          headerColor: 'from-blue-50 via-blue-50 to-white',
+                          iconBg: 'from-white to-blue-50 border-blue-200',
+                          buttonColor: 'bg-blue-600 hover:bg-blue-700',
                           orders: otherOrders 
                         },
                       ].filter(section => section.orders.length > 0);
