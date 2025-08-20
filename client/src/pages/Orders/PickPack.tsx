@@ -431,25 +431,6 @@ export default function PickPack() {
   
   // Track orders being sent back to pick (for instant UI update)
   const [ordersSentBack, setOrdersSentBack] = useState<Set<string>>(new Set());
-  
-  // Clean up sent back orders when data refreshes
-  useEffect(() => {
-    if (ordersSentBack.size > 0) {
-      const packingOrders = getOrdersByStatus('packing');
-      const packingOrderIds = new Set(packingOrders.map(o => o.id));
-      
-      // Remove orders from sentBack set if they're no longer in packing
-      setOrdersSentBack(prev => {
-        const newSet = new Set<string>();
-        prev.forEach(orderId => {
-          if (packingOrderIds.has(orderId)) {
-            newSet.add(orderId);
-          }
-        });
-        return newSet;
-      });
-    }
-  }, [transformedOrders]);
 
   // Toggle section collapse state
   const toggleSectionCollapse = (sectionName: string) => {
@@ -1561,6 +1542,30 @@ export default function PickPack() {
       notes: order.notes
     }))
   )];
+  
+  // Clean up sent back orders when data refreshes
+  useEffect(() => {
+    if (ordersSentBack.size > 0) {
+      const packingOrders = transformedOrders.filter(order => {
+        if (order.status === 'to_fulfill' && (order.packStatus === 'in_progress' || (order.pickStatus === 'completed' && order.packStatus === 'not_started'))) {
+          return true;
+        }
+        return false;
+      });
+      const packingOrderIds = new Set(packingOrders.map(o => o.id));
+      
+      // Remove orders from sentBack set if they're no longer in packing
+      setOrdersSentBack(prev => {
+        const newSet = new Set<string>();
+        prev.forEach(orderId => {
+          if (packingOrderIds.has(orderId)) {
+            newSet.add(orderId);
+          }
+        });
+        return newSet;
+      });
+    }
+  }, [transformedOrders]);
 
   // Handle returning order to packing
   const returnToPacking = async (order: PickPackOrder) => {
