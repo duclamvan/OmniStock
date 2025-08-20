@@ -6107,6 +6107,19 @@ export default function PickPack() {
               Close
             </Button>
             
+            {/* Go to Order Details Button */}
+            <Link href={`/orders/${previewOrder?.id}`}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-[10px] sm:text-sm px-2 sm:px-3 py-1 sm:py-2 h-7 sm:h-9"
+              >
+                <FileText className="h-3 sm:h-4 w-3 sm:w-4 mr-0.5 sm:mr-2" />
+                <span className="hidden sm:inline">View Full Details</span>
+                <span className="sm:hidden">Details</span>
+              </Button>
+            </Link>
+            
             {/* Show Print Label button for ready orders */}
             {previewOrder?.packStatus === 'completed' && (
               <Button
