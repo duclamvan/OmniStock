@@ -428,6 +428,9 @@ export default function PickPack() {
     // Load preference from localStorage
     return localStorage.getItem('pickPackExpandedImages') === 'true';
   });
+  
+  // Track orders being sent back to pick (for instant UI update)
+  const [ordersSentBack, setOrdersSentBack] = useState<Set<string>>(new Set());
 
   // Toggle section collapse state
   const toggleSectionCollapse = (sectionName: string) => {
@@ -1652,16 +1655,16 @@ export default function PickPack() {
   // Handle sending order back to pick
   const sendBackToPick = async (order: PickPackOrder) => {
     try {
+      // Immediately add order to the sent back set (instant UI update)
+      setOrdersSentBack(prev => new Set(prev).add(order.id));
+      
       // Show immediate feedback if not in active mode
       if (!activePickingOrder && !activePackingOrder) {
         toast({
-          title: 'Processing...',
-          description: `Sending order ${order.orderId} back to pick`
+          title: 'Success',
+          description: `Order ${order.orderId} sent back to pick`
         });
       }
-      
-      // Invalidate queries immediately for UI update
-      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
       
       // Create all API promises at once (parallel execution)
       const promises = [];
@@ -1697,18 +1700,25 @@ export default function PickPack() {
       // Execute all API calls in parallel
       Promise.all(promises)
         .then(() => {
-          // Success notification after completion
-          if (!activePickingOrder && !activePackingOrder) {
-            toast({
-              title: 'Order sent back to pending',
-              description: `Order ${order.orderId} has been moved back to pending pick status`
-            });
-          }
           // Refresh data after successful update
           queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+          // Remove from sent back set after data refresh
+          setTimeout(() => {
+            setOrdersSentBack(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(order.id);
+              return newSet;
+            });
+          }, 1000);
         })
         .catch(error => {
           console.error('Error sending order back to pick:', error);
+          // Remove from sent back set on error
+          setOrdersSentBack(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(order.id);
+            return newSet;
+          });
           if (!activePickingOrder && !activePackingOrder) {
             toast({
               title: 'Error',
@@ -1720,6 +1730,12 @@ export default function PickPack() {
       
     } catch (error) {
       console.error('Error initiating send back to pick:', error);
+      // Remove from sent back set on error
+      setOrdersSentBack(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(order.id);
+        return newSet;
+      });
     }
   };
 
@@ -5371,7 +5387,9 @@ export default function PickPack() {
                   </div>
                 ) : (
                   <div className="space-y-2 sm:space-y-3 stagger-animation">
-                    {getOrdersByStatus('packing').map(order => (
+                    {getOrdersByStatus('packing')
+                      .filter(order => !ordersSentBack.has(order.id)) // Filter out orders being sent back
+                      .map(order => (
                       <Card key={order.id} className="transition-shadow">
                         <CardContent className="p-3 sm:p-4">
                           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
