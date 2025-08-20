@@ -558,10 +558,10 @@ export async function seedPickPackData() {
       // Order ready to ship
       {
         id: 'ord-ready-1',
-        orderId: `ORD-${getCurrentDateString()}-${String(orderCounter++).padStart(3, '0')}`,
+        orderId: `ORD-${getCurrentDateString()}-PD002`,
         customerId: 'cust-3',
         currency: 'CZK',
-        orderStatus: 'to_fulfill',
+        orderStatus: 'ready_to_ship',
         paymentStatus: 'paid',
         priority: 'high',
         subtotal: '8500',
@@ -571,7 +571,7 @@ export async function seedPickPackData() {
         paymentMethod: 'Bank Transfer',
         shippingCost: '150',
         grandTotal: '10435',
-        notes: 'Ready for collection',
+        notes: 'Ready for personal delivery - Prague area',
         pickStatus: 'completed',
         packStatus: 'completed',
         pickedBy: 'Employee #002',
