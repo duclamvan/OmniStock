@@ -5825,8 +5825,8 @@ export default function PickPack() {
                                             <span className="truncate">{order.customerName}</span>
                                           </div>
                                           <div className="flex items-center gap-1">
-                                            <MapPin className="h-3 sm:h-4 w-3 sm:w-4" />
-                                            <span className="truncate">{order.items?.[0]?.warehouseLocation || 'N/A'}</span>
+                                            <Globe className="h-3 sm:h-4 w-3 sm:w-4" />
+                                            <span className="font-semibold">{getOrderCountryCode(order)}</span>
                                           </div>
                                           <div className="flex items-center gap-1 col-span-2 sm:col-span-1">
                                             <PackageCheck className="h-3 sm:h-4 w-3 sm:w-4 text-green-500" />
