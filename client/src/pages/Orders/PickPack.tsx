@@ -5020,14 +5020,28 @@ export default function PickPack() {
                   <CardTitle className="text-base sm:text-lg">Quick Actions</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 sm:space-y-3">
-                  <Button 
-                    className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base" 
-                    size="lg"
-                    onClick={startNextPriorityOrder}
-                  >
-                    <PlayCircle className="h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3" />
-                    Start Next Priority Order
-                  </Button>
+                  {
+                    (() => {
+                      // Count orders to pick (not started + in progress)
+                      const ordersToPickCount = transformedOrders.filter(o => 
+                        o.pickStatus === 'not_started' || o.pickStatus === 'in_progress'
+                      ).length;
+                      const hasOrders = ordersToPickCount > 0;
+                      
+                      return (
+                        <Button 
+                          className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base" 
+                          size="lg"
+                          variant={hasOrders ? "default" : "secondary"}
+                          onClick={startNextPriorityOrder}
+                          disabled={!hasOrders}
+                        >
+                          <PlayCircle className="h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3" />
+                          Start Next Priority Order {hasOrders && `(${ordersToPickCount})`}
+                        </Button>
+                      );
+                    })()
+                  }
                   <Button 
                     className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base" 
                     variant={batchPickingMode ? "default" : "outline"} 
