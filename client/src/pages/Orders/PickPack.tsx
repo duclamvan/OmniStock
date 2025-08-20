@@ -5588,10 +5588,10 @@ export default function PickPack() {
                       return sections.map((section, sectionIndex) => {
                         const Icon = section.icon;
                         return (
-                          <div key={sectionIndex} className="rounded-xl border border-gray-200 overflow-hidden shadow-sm bg-white">
+                          <div key={sectionIndex} className={`rounded-xl border overflow-hidden shadow-sm ${section.color}`}>
                             {/* Section Header */}
                             <div 
-                              className="px-4 py-3 border-b border-gray-200 cursor-pointer select-none bg-gray-50 hover:bg-gray-100 transition-all"
+                              className="px-4 py-3 border-b border-gray-200 cursor-pointer select-none bg-white/70 hover:bg-white/90 transition-all"
                               onClick={() => toggleSectionCollapse(section.title)}
                             >
                               <div className="flex items-center justify-between">
@@ -5616,7 +5616,7 @@ export default function PickPack() {
                                 </div>
                                 <Button
                                   size="sm"
-                                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm text-xs sm:text-sm px-3 py-2 font-medium hover:shadow-md transition-all duration-200 ml-3 min-w-[80px] max-w-[120px]"
+                                  className={`${section.buttonColor} text-white shadow-sm text-xs sm:text-sm px-3 py-2 font-medium hover:shadow-md transition-all duration-200 ml-3 min-w-[80px] max-w-[120px]`}
                                   onClick={async (e) => {
                                     e.stopPropagation(); // Prevent collapse when clicking Ship All
                                     
@@ -5670,7 +5670,7 @@ export default function PickPack() {
                             
                             {/* Section Content - Collapsible */}
                             {!collapsedSections.has(section.title) && (
-                              <div className="p-4 bg-gray-50/30">
+                              <div className="p-4">
                               {/* Section Orders */}
                               <div className="space-y-2">
                               {section.orders.map(order => (
