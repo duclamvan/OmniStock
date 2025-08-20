@@ -6032,7 +6032,7 @@ export default function PickPack() {
                         {showPricing && (
                           <div className="text-[10px] sm:text-xs text-green-600 mt-1 font-medium">
                             {(item as any).price ? 
-                              `Unit Price: ${previewOrder?.currency || '$'}${(item as any).price.toFixed(2)}` :
+                              `Unit Price: ${previewOrder?.currency || '$'}${Number((item as any).price).toFixed(2)}` :
                               'Unit Price: Not set'
                             }
                           </div>
@@ -6043,7 +6043,7 @@ export default function PickPack() {
                         {showPricing && (
                           <div className="text-xs sm:text-sm font-medium text-green-700">
                             {(item as any).price ? 
-                              `${previewOrder?.currency || '$'}${((item as any).price * item.quantity).toFixed(2)}` :
+                              `${previewOrder?.currency || '$'}${(Number((item as any).price) * item.quantity).toFixed(2)}` :
                               'Price: Not set'
                             }
                           </div>
@@ -6081,7 +6081,7 @@ export default function PickPack() {
                     <span className="text-base sm:text-lg font-bold text-indigo-900">
                       {(() => {
                         const total = previewOrder?.items.reduce((total, item) => {
-                          return total + (((item as any).price || 0) * item.quantity);
+                          return total + ((Number((item as any).price) || 0) * item.quantity);
                         }, 0) || 0;
                         const hasAnyPrices = previewOrder?.items.some(item => (item as any).price);
                         
