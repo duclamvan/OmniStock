@@ -4529,15 +4529,20 @@ export default function PickPack() {
                         size="lg" 
                         variant="outline"
                         onClick={async () => {
+                          // Store the current order ID to exclude it from next order search
+                          const justCompletedOrderId = activePickingOrder?.id;
+                          
                           // Hide modal immediately and reset state
                           setShowPickingCompletionModal(false);
                           setActivePickingOrder(null);
                           setPickingTimer(0);
                           setManualItemIndex(0);
                           
-                          // Find next order immediately from existing data
+                          // Find next order immediately from existing data, excluding the just-completed order
                           const pendingOrders = transformedOrders.filter(o => 
-                            o.pickStatus === 'not_started' && o.status === 'to_fulfill'
+                            o.id !== justCompletedOrderId && // Exclude the order we just completed
+                            o.pickStatus === 'not_started' && 
+                            o.status === 'to_fulfill'
                           );
                           
                           // Sort by priority to get the highest priority order
