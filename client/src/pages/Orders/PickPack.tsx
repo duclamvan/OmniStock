@@ -5983,8 +5983,20 @@ export default function PickPack() {
               </h3>
               <div className="space-y-2">
                 {previewOrder?.items.map((item, index) => {
-                  const showPricing = previewOrder?.shippingMethod?.toLowerCase().includes('pickup') || 
-                                     previewOrder?.shippingMethod?.toLowerCase().includes('personal');
+                  // Check if this is a Personal Delivery or Pickup order based on the same logic used in Ready tab
+                  const orderId = previewOrder?.orderId?.toLowerCase() || '';
+                  const notes = previewOrder?.notes?.toLowerCase() || '';
+                  const method = previewOrder?.shippingMethod?.toLowerCase() || '';
+                  
+                  const isPersonalDelivery = orderId.includes('-pd') || 
+                                           notes.includes('personal') ||
+                                           method.includes('personal') || method.includes('hand deliver');
+                  
+                  const isPickup = orderId.includes('-pu') || 
+                                 notes.includes('pickup') ||
+                                 method.includes('pickup') || method.includes('collect');
+                  
+                  const showPricing = isPersonalDelivery || isPickup;
                   return (
                     <div key={item.id || index} className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 border rounded-lg bg-gray-50">
                       {item.image && (
@@ -6004,17 +6016,23 @@ export default function PickPack() {
                             📍 {item.warehouseLocation}
                           </div>
                         )}
-                        {showPricing && (item as any).price && (
-                          <div className="text-[10px] sm:text-xs text-gray-600 mt-1">
-                            Unit Price: ${(item as any).price.toFixed(2)}
+                        {showPricing && (
+                          <div className="text-[10px] sm:text-xs text-green-600 mt-1 font-medium">
+                            {(item as any).price ? 
+                              `Unit Price: ${previewOrder?.currency || '$'}${(item as any).price.toFixed(2)}` :
+                              'Unit Price: Not set'
+                            }
                           </div>
                         )}
                       </div>
                       <div className="text-right flex-shrink-0">
                         <div className="text-xs sm:text-sm font-semibold">Qty: {item.quantity}</div>
-                        {showPricing && (item as any).price && (
-                          <div className="text-xs sm:text-sm font-medium text-gray-700">
-                            ${((item as any).price * item.quantity).toFixed(2)}
+                        {showPricing && (
+                          <div className="text-xs sm:text-sm font-medium text-green-700">
+                            {(item as any).price ? 
+                              `${previewOrder?.currency || '$'}${((item as any).price * item.quantity).toFixed(2)}` :
+                              'Price: Not set'
+                            }
                           </div>
                         )}
                         <div className="text-[10px] sm:text-xs text-green-600">
@@ -6029,15 +6047,36 @@ export default function PickPack() {
               </div>
               
               {/* Order Total for Pickup/Personal Delivery */}
-              {(previewOrder?.shippingMethod?.toLowerCase().includes('pickup') || 
-                previewOrder?.shippingMethod?.toLowerCase().includes('personal')) && (
+              {(() => {
+                const orderId = previewOrder?.orderId?.toLowerCase() || '';
+                const notes = previewOrder?.notes?.toLowerCase() || '';
+                const method = previewOrder?.shippingMethod?.toLowerCase() || '';
+                
+                const isPersonalDelivery = orderId.includes('-pd') || 
+                                         notes.includes('personal') ||
+                                         method.includes('personal') || method.includes('hand deliver');
+                
+                const isPickup = orderId.includes('-pu') || 
+                               notes.includes('pickup') ||
+                               method.includes('pickup') || method.includes('collect');
+                
+                return (isPersonalDelivery || isPickup);
+              })() && (
                 <div className="mt-3 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
                   <div className="flex justify-between items-center">
                     <span className="text-sm sm:text-base font-semibold text-indigo-900">Order Total:</span>
                     <span className="text-base sm:text-lg font-bold text-indigo-900">
-                      ${previewOrder?.items.reduce((total, item) => {
-                        return total + (((item as any).price || 0) * item.quantity);
-                      }, 0).toFixed(2)}
+                      {(() => {
+                        const total = previewOrder?.items.reduce((total, item) => {
+                          return total + (((item as any).price || 0) * item.quantity);
+                        }, 0) || 0;
+                        const hasAnyPrices = previewOrder?.items.some(item => (item as any).price);
+                        
+                        if (!hasAnyPrices) {
+                          return 'Prices not set';
+                        }
+                        return `${previewOrder?.currency || '$'}${total.toFixed(2)}`;
+                      })()}
                     </span>
                   </div>
                   {(previewOrder as any)?.paymentStatus && (
@@ -6045,6 +6084,9 @@ export default function PickPack() {
                       Payment Status: <span className="font-medium capitalize">{(previewOrder as any).paymentStatus}</span>
                     </div>
                   )}
+                  <div className="mt-2 text-xs text-indigo-600">
+                    This pricing section appears for Personal Delivery and Pickup orders
+                  </div>
                 </div>
               )}
             </div>
