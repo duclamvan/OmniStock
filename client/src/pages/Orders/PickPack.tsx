@@ -1700,16 +1700,18 @@ export default function PickPack() {
       // Execute all API calls in parallel
       Promise.all(promises)
         .then(() => {
-          // Refresh data after successful update
-          queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
-          // Remove from sent back set after data refresh
+          // Wait a bit to ensure backend has processed, then refresh data
           setTimeout(() => {
-            setOrdersSentBack(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(order.id);
-              return newSet;
-            });
-          }, 1000);
+            queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+            // Keep the order hidden until after the query refresh completes
+            setTimeout(() => {
+              setOrdersSentBack(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(order.id);
+                return newSet;
+              });
+            }, 500);
+          }, 200);
         })
         .catch(error => {
           console.error('Error sending order back to pick:', error);
