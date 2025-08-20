@@ -2100,17 +2100,7 @@ export default function PickPack() {
   // Start picking an order
   const startPicking = async (order: PickPackOrder) => {
     try {
-      // Only update database for real orders (not mock orders)
-      if (!order.id.startsWith('mock-')) {
-        // Keep order status as 'to_fulfill' and update pickStatus
-        await updateOrderStatusMutation.mutateAsync({
-          orderId: order.id,
-          status: 'to_fulfill',
-          pickStatus: 'in_progress',
-          pickedBy: currentEmployee
-        });
-      }
-
+      // Set UI state immediately for instant feedback
       const updatedOrder = {
         ...order,
         status: 'to_fulfill' as const,
@@ -2119,8 +2109,11 @@ export default function PickPack() {
         pickedBy: currentEmployee,
         items: order.items || [] // Ensure items array exists
       };
+      
+      // Update UI immediately
       setActivePickingOrder(updatedOrder);
       setSelectedTab('picking');
+      
       // Find first unpicked item or start at 0
       const firstUnpickedIndex = updatedOrder.items.findIndex(item => 
         (item.pickedQuantity || 0) < item.quantity
@@ -2129,6 +2122,19 @@ export default function PickPack() {
       setPickingTimer(0);
       setIsTimerRunning(true);
       playSound('success');
+      
+      // Update database in background (non-blocking) for real orders
+      if (!order.id.startsWith('mock-')) {
+        updateOrderStatusMutation.mutateAsync({
+          orderId: order.id,
+          status: 'to_fulfill',
+          pickStatus: 'in_progress',
+          pickedBy: currentEmployee
+        }).catch(error => {
+          console.error('Error updating order status:', error);
+          playSound('error');
+        });
+      }
     } catch (error) {
       console.error('Error starting picking:', error);
       playSound('error');
@@ -2164,22 +2170,23 @@ export default function PickPack() {
     if (!activePickingOrder) return;
 
     try {
+      setIsTimerRunning(false);
+      playSound('complete');
+      
       // Only update database for real orders (not mock orders)
       if (!activePickingOrder.id.startsWith('mock-')) {
-        // Update order to mark picking as completed
-        await apiRequest(`/api/orders/${activePickingOrder.id}`, 'PATCH', {
+        // Update order to mark picking as completed (non-blocking)
+        apiRequest(`/api/orders/${activePickingOrder.id}`, 'PATCH', {
           pickStatus: 'completed',
           pickEndTime: new Date().toISOString(),
           pickedBy: currentEmployee
+        }).catch(error => {
+          console.error('Error updating order status:', error);
         });
       }
-
-      setIsTimerRunning(false);
       
       // Invalidate queries in background without awaiting
       queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
-      
-      playSound('complete');
       
     } catch (error) {
       console.error('Error completing picking:', error);
@@ -4476,80 +4483,42 @@ export default function PickPack() {
                         size="lg" 
                         variant="outline"
                         onClick={async () => {
-                          // Hide modal immediately
+                          // Hide modal immediately and reset state
                           setShowPickingCompletionModal(false);
-                          setSelectedTab('pending');
-                          
-                          await completePicking();
-                          // Pick next order
                           setActivePickingOrder(null);
                           setPickingTimer(0);
                           setManualItemIndex(0);
                           
-                          // After completing, refetch and start the next priority order if available
-                          await queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+                          // Find next order immediately from existing data
+                          const pendingOrders = transformedOrders.filter(o => 
+                            o.pickStatus === 'not_started' && o.status === 'to_fulfill'
+                          );
                           
-                          // Wait a moment for the data to refresh
-                          setTimeout(async () => {
-                            // Refetch the latest orders
-                            const result = await queryClient.fetchQuery({ 
-                              queryKey: ['/api/orders/pick-pack'] 
-                            });
+                          // Sort by priority to get the highest priority order
+                          const nextOrder = pendingOrders.sort((a, b) => {
+                            const priorityWeight = { high: 3, medium: 2, low: 1 };
+                            return priorityWeight[b.priority] - priorityWeight[a.priority];
+                          })[0];
+                          
+                          if (nextOrder) {
+                            console.log('Starting next order:', nextOrder);
+                            // Start picking the next order immediately
+                            startPicking(nextOrder);
                             
-                            // Transform the fresh data same as transformedOrders logic
-                            const freshOrders = (result as any[])
-                              .filter((order: any) => 
-                                order.status === 'to_fulfill' && 
-                                (order.pickStatus === 'not_started' || !order.pickStatus)
-                              )
-                              .map((order: any) => ({
-                                id: order.id,
-                                orderId: order.orderId,
-                                customerName: order.customerName || 'Walk-in Customer',
-                                shippingMethod: order.shippingMethod || 'Standard',
-                                shippingAddress: order.shippingAddress,
-                                priority: order.priority || 'medium',
-                                status: order.status || 'to_fulfill',
-                                pickStatus: order.pickStatus || 'not_started',
-                                packStatus: order.packStatus || 'not_started',
-                                items: order.items?.map((item: any) => ({
-                                  id: item.id,
-                                  productId: item.productId,
-                                  productName: item.productName,
-                                  sku: item.sku,
-                                  quantity: item.quantity,
-                                  pickedQuantity: item.pickedQuantity || 0,
-                                  packedQuantity: item.packedQuantity || 0,
-                                  warehouseLocation: item.warehouseLocation || generateMockLocation(),
-                                  barcode: item.barcode || generateMockBarcode(item.sku),
-                                  image: item.image || generateMockImage(item.productName),
-                                  isBundle: item.isBundle || false,
-                                  bundleItems: item.bundleItems || undefined,
-                                  dimensions: item.dimensions,
-                                  isFragile: item.isFragile
-                                })) || [],
-                                totalItems: order.items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0,
-                                pickedItems: order.items?.reduce((sum: number, item: any) => sum + (item.pickedQuantity || 0), 0) || 0,
-                                packedItems: order.items?.reduce((sum: number, item: any) => sum + (item.packedQuantity || 0), 0) || 0,
-                                createdAt: order.createdAt,
-                                pickStartTime: order.pickStartTime,
-                                pickEndTime: order.pickEndTime,
-                                packStartTime: order.packStartTime,
-                                packEndTime: order.packEndTime,
-                                pickedBy: order.pickedBy,
-                                packedBy: order.packedBy,
-                                notes: order.notes
-                              }));
+                            // Complete the previous order in background (non-blocking)
+                            completePicking().catch(console.error);
                             
-                            if (freshOrders.length > 0) {
-                              const nextOrder = freshOrders[0];
-                              console.log('Starting next order:', nextOrder);
-                              // Start picking the next order
-                              startPicking(nextOrder);
-                            } else {
-                              console.log('No pending orders available to pick');
-                            }
-                          }, 300);
+                            // Invalidate queries in background to refresh data (non-blocking)
+                            queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+                          } else {
+                            console.log('No pending orders available to pick');
+                            // Only switch to pending tab if no orders available
+                            setSelectedTab('pending');
+                            
+                            // Complete picking in background
+                            completePicking().catch(console.error);
+                            queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+                          }
                         }}
                         className="w-full h-12 sm:h-14 lg:h-16 text-base sm:text-lg lg:text-xl font-bold border-2 border-blue-600 text-blue-600 hover:bg-blue-50 shadow-lg"
                       >
