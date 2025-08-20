@@ -1581,30 +1581,13 @@ export default function PickPack() {
   // Handle repacking of modified orders
   const handleRepack = async (order: PickPackOrder) => {
     try {
-      // Clear modification flag and return to packing
-      await apiRequest(`/api/orders/${order.id}`, 'PATCH', {
-        orderStatus: 'to_fulfill',
-        packStatus: 'not_started',
-        packStartTime: null,
-        packEndTime: null,
-        packedBy: null,
-        modifiedAfterPacking: false,
-        modificationNotes: null
-      });
+      // Switch to packing tab immediately for instant feedback
+      setSelectedTab('packing');
       
-      // Reset packed quantities if they exist
-      if (order.items && order.items.length > 0) {
-        for (const item of order.items) {
-          if (item.id) {
-            await apiRequest(`/api/orders/${order.id}/items/${item.id}`, 'PATCH', {
-              packedQuantity: 0
-            });
-          }
-        }
-      }
+      // Play sound immediately
+      playSound('error');
       
-      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
-      
+      // Show immediate notification
       const notificationMessage = order.modificationNotes 
         ? `Modifications: ${order.modificationNotes}` 
         : "Order has been sent for repacking";
@@ -1614,66 +1597,129 @@ export default function PickPack() {
         description: notificationMessage,
       });
       
-      // Play error sound for repacking
-      playSound('error');
+      // Invalidate queries immediately for UI update
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
       
-      // Switch to packing tab
-      setSelectedTab('packing');
+      // Create all API promises at once (parallel execution)
+      const promises = [];
+      
+      // Clear modification flag and return to packing (non-blocking)
+      promises.push(
+        apiRequest(`/api/orders/${order.id}`, 'PATCH', {
+          orderStatus: 'to_fulfill',
+          packStatus: 'not_started',
+          packStartTime: null,
+          packEndTime: null,
+          packedBy: null,
+          modifiedAfterPacking: false,
+          modificationNotes: null
+        })
+      );
+      
+      // Reset all packed quantities in parallel (non-blocking)
+      if (order.items && order.items.length > 0) {
+        for (const item of order.items) {
+          if (item.id) {
+            promises.push(
+              apiRequest(`/api/orders/${order.id}/items/${item.id}`, 'PATCH', {
+                packedQuantity: 0
+              })
+            );
+          }
+        }
+      }
+      
+      // Execute all API calls in parallel
+      Promise.all(promises)
+        .then(() => {
+          // Refresh data after successful update
+          queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+        })
+        .catch(error => {
+          console.error('Error repacking order:', error);
+          toast({
+            title: "Error",
+            description: "Failed to initiate repacking",
+            variant: "destructive"
+          });
+        });
+      
     } catch (error) {
-      console.error('Error repacking order:', error);
-      toast({
-        title: "Error",
-        description: "Failed to initiate repacking",
-        variant: "destructive"
-      });
+      console.error('Error initiating repack:', error);
     }
   };
   
   // Handle sending order back to pick
   const sendBackToPick = async (order: PickPackOrder) => {
     try {
-      // Reset pick and pack status to move order back to pending
-      await apiRequest(`/api/orders/${order.id}`, 'PATCH', {
-        pickStatus: 'not_started',
-        packStatus: 'not_started',
-        pickStartTime: null,
-        pickEndTime: null,
-        packStartTime: null,
-        packEndTime: null,
-        pickedBy: null,
-        packedBy: null
-      });
+      // Show immediate feedback if not in active mode
+      if (!activePickingOrder && !activePackingOrder) {
+        toast({
+          title: 'Processing...',
+          description: `Sending order ${order.orderId} back to pick`
+        });
+      }
       
-      // Reset item quantities if they exist
+      // Invalidate queries immediately for UI update
+      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+      
+      // Create all API promises at once (parallel execution)
+      const promises = [];
+      
+      // Reset order status (non-blocking)
+      promises.push(
+        apiRequest(`/api/orders/${order.id}`, 'PATCH', {
+          pickStatus: 'not_started',
+          packStatus: 'not_started',
+          pickStartTime: null,
+          pickEndTime: null,
+          packStartTime: null,
+          packEndTime: null,
+          pickedBy: null,
+          packedBy: null
+        })
+      );
+      
+      // Reset all item quantities in parallel (non-blocking)
       if (order.items && order.items.length > 0) {
         for (const item of order.items) {
           if (item.id) {
-            await apiRequest(`/api/orders/${order.id}/items/${item.id}`, 'PATCH', {
-              pickedQuantity: 0,
-              packedQuantity: 0
-            });
+            promises.push(
+              apiRequest(`/api/orders/${order.id}/items/${item.id}`, 'PATCH', {
+                pickedQuantity: 0,
+                packedQuantity: 0
+              })
+            );
           }
         }
       }
       
-      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
-      // Suppress notifications in picking/packing mode
-      if (!activePickingOrder && !activePackingOrder) {
-        toast({
-          title: 'Order sent back to pending',
-          description: `Order ${order.orderId} has been moved back to pending pick status`
+      // Execute all API calls in parallel
+      Promise.all(promises)
+        .then(() => {
+          // Success notification after completion
+          if (!activePickingOrder && !activePackingOrder) {
+            toast({
+              title: 'Order sent back to pending',
+              description: `Order ${order.orderId} has been moved back to pending pick status`
+            });
+          }
+          // Refresh data after successful update
+          queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+        })
+        .catch(error => {
+          console.error('Error sending order back to pick:', error);
+          if (!activePickingOrder && !activePackingOrder) {
+            toast({
+              title: 'Error',
+              description: 'Failed to send order back to pick',
+              variant: 'destructive'
+            });
+          }
         });
-      }
+      
     } catch (error) {
-      console.error('Error sending order back to pick:', error);
-      // Suppress notifications in picking/packing mode
-      if (!activePickingOrder && !activePackingOrder) {
-        toast({
-          title: 'Error',
-          description: 'Failed to send order back to pick',
-          variant: 'destructive'
-        });
-      }
+      console.error('Error initiating send back to pick:', error);
     }
   };
 
