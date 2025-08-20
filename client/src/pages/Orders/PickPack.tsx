@@ -1529,7 +1529,15 @@ export default function PickPack() {
           isBundle: item.isBundle || false,
           bundleItems: item.bundleItems || undefined,
           dimensions: item.dimensions,
-          isFragile: item.isFragile
+          isFragile: item.isFragile,
+          // Include pricing information from backend
+          price: item.price || item.appliedPrice || item.unitPrice,
+          unitPrice: item.unitPrice,
+          appliedPrice: item.appliedPrice,
+          currency: item.currency,
+          discount: item.discount,
+          tax: item.tax,
+          total: item.total
         };
       }) || [],
       totalItems: order.items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0,
@@ -1542,7 +1550,12 @@ export default function PickPack() {
       packEndTime: order.packEndTime,
       pickedBy: order.pickedBy,
       packedBy: order.packedBy,
-      notes: order.notes
+      notes: order.notes,
+      // Include order-level pricing information
+      currency: order.currency || '$',
+      subtotal: order.subtotal,
+      grandTotal: order.grandTotal,
+      paymentStatus: order.paymentStatus
     }))
   )];
   
