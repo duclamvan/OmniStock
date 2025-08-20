@@ -5591,11 +5591,12 @@ export default function PickPack() {
                           <div key={sectionIndex} className="rounded-xl border border-gray-200 overflow-hidden shadow-sm bg-white">
                             {/* Section Header - Stone Carved Style */}
                             <div 
-                              className="px-4 py-3 border-b cursor-pointer select-none bg-gradient-to-r from-gray-50 via-gray-50 to-white hover:from-gray-100 hover:to-gray-50 transition-all"
+                              className={`px-4 py-3 border-b cursor-pointer select-none bg-gradient-to-r ${section.headerColor} hover:brightness-95 transition-all`}
+                              onClick={() => toggleSectionCollapse(section.title)}
                             >
-                              <div className="flex items-center justify-between" onClick={() => toggleSectionCollapse(section.title)}>
+                              <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3 flex-1">
-                                  <div className="p-2.5 rounded-lg bg-gradient-to-br from-white to-gray-50 shadow-inner border border-gray-300">
+                                  <div className={`p-2.5 rounded-lg bg-gradient-to-br shadow-inner border ${section.iconBg}`}>
                                     <Icon className="h-4 w-4 text-gray-700" />
                                   </div>
                                   <div className="flex-1">
