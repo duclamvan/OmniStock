@@ -431,6 +431,9 @@ export default function PickPack() {
   
   // Track orders being sent back to pick (for instant UI update)
   const [ordersSentBack, setOrdersSentBack] = useState<Set<string>>(new Set());
+  
+  // Track orders being returned to packing (for instant UI update)
+  const [ordersReturnedToPacking, setOrdersReturnedToPacking] = useState<Set<string>>(new Set());
 
   // Toggle section collapse state
   const toggleSectionCollapse = (sectionName: string) => {
@@ -1565,42 +1568,93 @@ export default function PickPack() {
         return newSet;
       });
     }
+    
+    // Clean up returned to packing orders
+    if (ordersReturnedToPacking.size > 0) {
+      const readyOrders = transformedOrders.filter(order => 
+        order.status === 'ready_to_ship' && order.packStatus === 'completed'
+      );
+      const readyOrderIds = new Set(readyOrders.map(o => o.id));
+      
+      // Remove orders from returned set if they're no longer in ready
+      setOrdersReturnedToPacking(prev => {
+        const newSet = new Set<string>();
+        prev.forEach(orderId => {
+          if (readyOrderIds.has(orderId)) {
+            newSet.add(orderId);
+          }
+        });
+        return newSet;
+      });
+    }
   }, [transformedOrders]);
 
   // Handle returning order to packing
   const returnToPacking = async (order: PickPackOrder) => {
     try {
-      // Reset pack status to move order back to packing
-      await apiRequest(`/api/orders/${order.id}`, 'PATCH', {
-        orderStatus: 'to_fulfill',
-        packStatus: 'not_started',
-        packStartTime: null,
-        packEndTime: null,
-        packedBy: null
+      // Immediately add order to the returned set (instant UI update)
+      setOrdersReturnedToPacking(prev => new Set(prev).add(order.id));
+      
+      // Show immediate success feedback
+      toast({
+        title: 'Success',
+        description: `Order ${order.orderId} returned to packing`
       });
       
-      // Reset packed quantities if they exist
+      // Create all API promises at once (parallel execution)
+      const promises = [];
+      
+      // Reset pack status to move order back to packing (non-blocking)
+      promises.push(
+        apiRequest(`/api/orders/${order.id}`, 'PATCH', {
+          orderStatus: 'to_fulfill',
+          packStatus: 'not_started',
+          packStartTime: null,
+          packEndTime: null,
+          packedBy: null
+        })
+      );
+      
+      // Reset packed quantities in parallel (non-blocking)
       if (order.items && order.items.length > 0) {
         for (const item of order.items) {
           if (item.id) {
-            await apiRequest(`/api/orders/${order.id}/items/${item.id}`, 'PATCH', {
-              packedQuantity: 0
-            });
+            promises.push(
+              apiRequest(`/api/orders/${order.id}/items/${item.id}`, 'PATCH', {
+                packedQuantity: 0
+              })
+            );
           }
         }
       }
       
-      queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
-      toast({
-        title: 'Order returned to packing',
-        description: `Order ${order.orderId} is now available for packing again`
-      });
+      // Execute all API calls in parallel
+      Promise.all(promises)
+        .then(() => {
+          // Just refresh the data - the useEffect will handle cleanup
+          queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
+        })
+        .catch(error => {
+          console.error('Error returning order to packing:', error);
+          // Remove from returned set on error
+          setOrdersReturnedToPacking(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(order.id);
+            return newSet;
+          });
+          toast({
+            title: 'Error',
+            description: 'Failed to return order to packing',
+            variant: 'destructive'
+          });
+        });
     } catch (error) {
-      console.error('Error returning order to packing:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to return order to packing',
-        variant: 'destructive'
+      console.error('Error initiating return to packing:', error);
+      // Remove from returned set on error
+      setOrdersReturnedToPacking(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(order.id);
+        return newSet;
       });
     }
   };
@@ -5533,7 +5587,8 @@ export default function PickPack() {
                   <div className="space-y-4 sm:space-y-6">
                     {/* Categorize orders by shipping location */}
                     {(() => {
-                      const readyOrders = getOrdersByStatus('ready');
+                      const readyOrders = getOrdersByStatus('ready')
+                        .filter(order => !ordersReturnedToPacking.has(order.id)); // Filter out orders being returned
                       
                       // Categorize orders
                       const czechiaSlovakia = readyOrders.filter(order => {
@@ -5741,7 +5796,9 @@ export default function PickPack() {
                               <div className="p-4">
                               {/* Section Orders */}
                               <div className="space-y-2">
-                              {section.orders.map(order => (
+                              {section.orders
+                                .filter(order => !ordersReturnedToPacking.has(order.id)) // Filter out orders being returned
+                                .map(order => (
                                 <Card 
                                   key={order.id} 
                                   className="bg-white border shadow-sm cursor-pointer hover:shadow-md transition-shadow"
