@@ -5588,7 +5588,7 @@ export default function PickPack() {
                       return sections.map((section, sectionIndex) => {
                         const Icon = section.icon;
                         return (
-                          <div key={sectionIndex} className={`rounded-xl border overflow-hidden shadow-sm bg-white ${section.color}`}>
+                          <div key={sectionIndex} className="rounded-xl border border-gray-200 overflow-hidden shadow-sm bg-white">
                             {/* Section Header - Stone Carved Style */}
                             <div 
                               className={`px-4 py-3 border-b cursor-pointer select-none bg-gradient-to-r ${section.headerColor} hover:brightness-95 transition-all`}
@@ -5670,13 +5670,13 @@ export default function PickPack() {
                             
                             {/* Section Content - Collapsible */}
                             {!collapsedSections.has(section.title) && (
-                              <div className="p-4">
+                              <div className="p-4 bg-gray-50/30">
                               {/* Section Orders */}
                               <div className="space-y-2">
                               {section.orders.map(order => (
                                 <Card 
                                   key={order.id} 
-                                  className="bg-white cursor-pointer hover:shadow-md transition-shadow"
+                                  className="bg-white border shadow-sm cursor-pointer hover:shadow-md transition-shadow"
                                   onClick={() => setPreviewOrder(order)}
                                 >
                                   <CardContent className="p-3 sm:p-4">
