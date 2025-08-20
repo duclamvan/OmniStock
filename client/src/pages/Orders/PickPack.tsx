@@ -431,6 +431,25 @@ export default function PickPack() {
   
   // Track orders being sent back to pick (for instant UI update)
   const [ordersSentBack, setOrdersSentBack] = useState<Set<string>>(new Set());
+  
+  // Clean up sent back orders when data refreshes
+  useEffect(() => {
+    if (ordersSentBack.size > 0) {
+      const packingOrders = getOrdersByStatus('packing');
+      const packingOrderIds = new Set(packingOrders.map(o => o.id));
+      
+      // Remove orders from sentBack set if they're no longer in packing
+      setOrdersSentBack(prev => {
+        const newSet = new Set<string>();
+        prev.forEach(orderId => {
+          if (packingOrderIds.has(orderId)) {
+            newSet.add(orderId);
+          }
+        });
+        return newSet;
+      });
+    }
+  }, [transformedOrders]);
 
   // Toggle section collapse state
   const toggleSectionCollapse = (sectionName: string) => {
@@ -1700,18 +1719,8 @@ export default function PickPack() {
       // Execute all API calls in parallel
       Promise.all(promises)
         .then(() => {
-          // Wait a bit to ensure backend has processed, then refresh data
-          setTimeout(() => {
-            queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
-            // Keep the order hidden until after the query refresh completes
-            setTimeout(() => {
-              setOrdersSentBack(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(order.id);
-                return newSet;
-              });
-            }, 500);
-          }, 200);
+          // Just refresh the data - the useEffect will handle cleanup
+          queryClient.invalidateQueries({ queryKey: ['/api/orders/pick-pack'] });
         })
         .catch(error => {
           console.error('Error sending order back to pick:', error);
