@@ -5589,25 +5589,21 @@ export default function PickPack() {
                         const Icon = section.icon;
                         return (
                           <div key={sectionIndex} className="rounded-xl border border-gray-200 overflow-hidden shadow-sm bg-white">
-                            {/* Section Header - Stone Carved Style */}
+                            {/* Section Header */}
                             <div 
-                              className={`px-4 py-3 border-b cursor-pointer select-none bg-gradient-to-r ${section.headerColor} hover:brightness-95 transition-all`}
+                              className="px-4 py-3 border-b border-gray-200 cursor-pointer select-none bg-gray-50 hover:bg-gray-100 transition-all"
                               onClick={() => toggleSectionCollapse(section.title)}
                             >
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3 flex-1">
-                                  <div className={`p-2.5 rounded-lg bg-gradient-to-br shadow-inner border ${section.iconBg}`}>
-                                    <Icon className="h-4 w-4 text-gray-700" />
+                                  <div className="p-2.5 rounded-lg bg-white border border-gray-300">
+                                    <Icon className="h-4 w-4 text-gray-600" />
                                   </div>
                                   <div className="flex-1">
-                                    <h3 className={`font-bold text-base tracking-wide uppercase text-shadow-sm ${
-                                      !collapsedSections.has(section.title) ? 'text-gray-800' : 'text-gray-700'
-                                    }`}>
+                                    <h3 className="font-bold text-base text-gray-900 tracking-wide uppercase">
                                       {section.title}
                                     </h3>
-                                    <p className={`text-xs mt-0.5 font-medium ${
-                                      !collapsedSections.has(section.title) ? 'text-gray-600' : 'text-gray-500'
-                                    }`}>
+                                    <p className="text-xs text-gray-600 mt-0.5 font-medium">
                                       {section.orders.length} {section.orders.length === 1 ? 'order ready' : 'orders ready'}
                                     </p>
                                   </div>
@@ -5620,7 +5616,7 @@ export default function PickPack() {
                                 </div>
                                 <Button
                                   size="sm"
-                                  className={`${section.buttonColor} shadow-sm text-xs sm:text-sm px-3 py-2 font-medium hover:shadow-md transition-all duration-200 ml-3 min-w-[80px] max-w-[120px]`}
+                                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm text-xs sm:text-sm px-3 py-2 font-medium hover:shadow-md transition-all duration-200 ml-3 min-w-[80px] max-w-[120px]"
                                   onClick={async (e) => {
                                     e.stopPropagation(); // Prevent collapse when clicking Ship All
                                     
