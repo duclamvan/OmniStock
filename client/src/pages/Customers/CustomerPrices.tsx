@@ -192,65 +192,79 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
       key: 'productId',
       header: 'Product',
       accessorKey: 'productId',
+      className: 'min-w-[120px]',
       cell: (row: any) => {
         const product = products.find(p => p.id === row.productId);
-        return product?.name || row.productId;
+        return <span className="text-xs sm:text-sm">{product?.name || row.productId}</span>;
       },
     },
     {
       key: 'variantId',
-      header: 'Variant',
+      header: <span className="hidden sm:inline">Variant</span>,
       accessorKey: 'variantId',
+      className: 'hidden sm:table-cell',
       cell: (row: any) => {
-        if (!row.variantId) return '-';
-        // Would need to fetch variant details here
-        return row.variantId;
+        if (!row.variantId) return <span className="text-xs text-muted-foreground">-</span>;
+        return <span className="text-xs">{row.variantId}</span>;
       },
     },
     {
       key: 'price',
       header: 'Price',
       accessorKey: 'price',
+      className: 'text-right',
       cell: (row: any) => (
-        <div className="font-medium">
+        <div className="font-medium text-xs sm:text-sm text-right">
           {row.price} {row.currency}
         </div>
       ),
     },
     {
       key: 'validFrom',
-      header: 'Valid From',
+      header: <span className="hidden sm:inline">Valid From</span>,
       accessorKey: 'validFrom',
-      cell: (row: any) => format(new Date(row.validFrom), 'dd/MM/yyyy'),
+      className: 'hidden sm:table-cell',
+      cell: (row: any) => (
+        <span className="text-xs">{format(new Date(row.validFrom), 'dd/MM/yy')}</span>
+      ),
     },
     {
       key: 'validTo',
-      header: 'Valid To',
+      header: <span className="hidden lg:inline">Valid To</span>,
       accessorKey: 'validTo',
-      cell: (row: any) => 
-        row.validTo ? format(new Date(row.validTo), 'dd/MM/yyyy') : 'No expiry',
+      className: 'hidden lg:table-cell',
+      cell: (row: any) => (
+        <span className="text-xs">
+          {row.validTo ? format(new Date(row.validTo), 'dd/MM/yy') : 'No expiry'}
+        </span>
+      ),
     },
     {
       key: 'isActive',
       header: 'Status',
       accessorKey: 'isActive',
       cell: (row: any) => (
-        <Badge variant={row.isActive ? 'default' : 'secondary'}>
+        <Badge 
+          variant={row.isActive ? 'default' : 'secondary'}
+          className="text-xs px-1.5 py-0"
+        >
           {row.isActive ? 'Active' : 'Inactive'}
         </Badge>
       ),
     },
     {
       key: 'actions',
-      header: 'Actions',
+      header: '',
       id: 'actions',
+      className: 'w-10',
       cell: (row: any) => (
         <Button
           variant="ghost"
-          size="sm"
+          size="icon"
+          className="h-8 w-8"
           onClick={() => deletePriceMutation.mutate(row.id)}
         >
-          <Trash2 className="h-4 w-4" />
+          <Trash2 className="h-3 w-3" />
         </Button>
       ),
     },
@@ -260,10 +274,10 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Custom Prices</h3>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+        <h3 className="text-base sm:text-lg font-semibold">Custom Prices</h3>
         <TooltipProvider>
-          <div className="flex gap-1">
+          <div className="flex gap-1 self-end">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -275,7 +289,7 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
                   <Download className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>
+              <TooltipContent side="bottom">
                 <p>Download Template</p>
               </TooltipContent>
             </Tooltip>
@@ -509,15 +523,15 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
         </TooltipProvider>
       </div>
 
-      <Card>
+      <Card className="overflow-hidden">
         <CardContent className="p-0">
-          <DataTable
-            columns={columns}
-            data={prices}
-            getRowKey={(price) => price.id}
-            searchKey="productId"
-            searchPlaceholder="Search products..."
-          />
+          <div className="overflow-x-auto">
+            <DataTable
+              columns={columns}
+              data={prices}
+              getRowKey={(price) => price.id}
+            />
+          </div>
         </CardContent>
       </Card>
 

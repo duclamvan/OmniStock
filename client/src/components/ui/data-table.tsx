@@ -338,34 +338,39 @@ export function DataTable<T>({
 
       {/* Pagination */}
       {showPagination && (
-        <div className="flex items-center justify-between px-2">
-          <div className="flex items-center space-x-2">
-            <p className="text-sm text-muted-foreground">
-              Showing {((currentPage - 1) * itemsPerPage) + 1} to{" "}
-              {Math.min(currentPage * itemsPerPage, sortedData.length)} of{" "}
-              {sortedData.length} entries
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-2 py-2">
+          {/* Mobile Pagination Info */}
+          <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+            <p className="text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
+              <span className="hidden sm:inline">Showing </span>
+              {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, sortedData.length)}
+              <span className="hidden sm:inline"> of</span>
+              <span className="inline sm:hidden">/</span>
+              {" "}{sortedData.length}
             </p>
             <Select
               value={itemsPerPage.toString()}
               onValueChange={handleItemsPerPageChange}
             >
-              <SelectTrigger className="h-8 w-[100px]">
+              <SelectTrigger className="h-8 w-[70px] sm:w-[100px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {itemsPerPageOptions.map((option) => (
                   <SelectItem key={option} value={option.toString()}>
-                    {option} / page
+                    {option}<span className="hidden sm:inline"> / page</span>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           
-          <div className="flex items-center space-x-2">
+          {/* Navigation Buttons */}
+          <div className="flex items-center gap-1 sm:gap-2">
             <Button
               variant="outline"
               size="sm"
+              className="hidden sm:flex"
               onClick={() => setCurrentPage(1)}
               disabled={currentPage === 1}
             >
@@ -373,30 +378,33 @@ export function DataTable<T>({
             </Button>
             <Button
               variant="outline"
-              size="sm"
+              size="icon"
+              className="h-8 w-8"
               onClick={() => setCurrentPage(currentPage - 1)}
               disabled={currentPage === 1}
             >
               <ChevronLeft className="h-4 w-4" />
-              Previous
+              <span className="sr-only">Previous</span>
             </Button>
-            <div className="flex items-center gap-1">
-              <span className="text-sm">
-                Page {currentPage} of {totalPages}
+            <div className="flex items-center px-2">
+              <span className="text-xs sm:text-sm whitespace-nowrap">
+                {currentPage}/{totalPages}
               </span>
             </div>
             <Button
               variant="outline"
-              size="sm"
+              size="icon"
+              className="h-8 w-8"
               onClick={() => setCurrentPage(currentPage + 1)}
               disabled={currentPage === totalPages}
             >
-              Next
               <ChevronRight className="h-4 w-4" />
+              <span className="sr-only">Next</span>
             </Button>
             <Button
               variant="outline"
               size="sm"
+              className="hidden sm:flex"
               onClick={() => setCurrentPage(totalPages)}
               disabled={currentPage === totalPages}
             >
