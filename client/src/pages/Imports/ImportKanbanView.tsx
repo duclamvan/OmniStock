@@ -80,6 +80,12 @@ interface OrderItem {
   currency?: string;
 }
 
+interface ConsolidationGroup {
+  id: string;
+  items: OrderItem[];
+  shipmentId?: string;
+}
+
 interface ImportOrder {
   id: string;
   orderNumber: string;
@@ -350,9 +356,9 @@ export default function ImportKanbanView() {
     }
   ]);
   
-  const [consolidationGroups, setConsolidationGroups] = useState<{ [key: string]: OrderItem[] }>({});
+  const [consolidationGroups, setConsolidationGroups] = useState<{ [key: string]: ConsolidationGroup }>({});
   const [orderGroups, setOrderGroups] = useState<{ [key: string]: OrderItem[] }>({});
-  const [shipmentGroups, setShipmentGroups] = useState<{ [key: string]: OrderItem[] }>({});
+  const [shipmentGroups, setShipmentGroups] = useState<{ [key: string]: string[] }>({}); // Maps shipmentId to consolidationIds
 
   // Transform orders to items and initialize columns
   const getAllItems = (): OrderItem[] => {
@@ -506,52 +512,52 @@ export default function ImportKanbanView() {
     
     if (!draggedItem || draggedItem.id === targetItem.id) return;
     
-    let groupId = '';
-    let groupType = '';
-    
-    // Determine group type based on column
+    // Only allow grouping in processing and warehouse columns
     if (columnId === 'processing') {
-      groupId = targetItem.orderGroupId || `ORDER-${Date.now().toString(36).toUpperCase()}`;
-      groupType = 'orderGroupId';
-    } else if (columnId === 'at_warehouse') {
-      groupId = targetItem.consolidationId || `CONSOL-${Date.now().toString(36).toUpperCase()}`;
-      groupType = 'consolidationId';
-    } else if (columnId === 'international') {
-      groupId = targetItem.shipmentId || `SHIP-${Date.now().toString(36).toUpperCase()}`;
-      groupType = 'shipmentId';
-    }
-    
-    // Update both items to have the same group ID
-    const newColumns = columns.map(col => ({
-      ...col,
-      items: col.items.map(item => {
-        if (item.id === draggedItem.id || item.id === targetItem.id) {
-          return { ...item, [groupType]: groupId };
-        }
-        return item;
-      })
-    }));
-    
-    setColumns(newColumns);
-    setDraggedItem(null);
-    
-    // Update appropriate group state
-    if (groupType === 'orderGroupId') {
+      const groupId = targetItem.orderGroupId || `ORDER-${Date.now().toString(36).toUpperCase()}`;
+      
+      const newColumns = columns.map(col => ({
+        ...col,
+        items: col.items.map(item => {
+          if (item.id === draggedItem.id || item.id === targetItem.id) {
+            return { ...item, orderGroupId: groupId };
+          }
+          return item;
+        })
+      }));
+      
+      setColumns(newColumns);
+      setDraggedItem(null);
+      
       const groups = { ...orderGroups };
       if (!groups[groupId]) groups[groupId] = [];
       groups[groupId].push(draggedItem, targetItem);
       setOrderGroups(groups);
-    } else if (groupType === 'consolidationId') {
+      
+    } else if (columnId === 'at_warehouse') {
+      const groupId = targetItem.consolidationId || `CONSOL-${Date.now().toString(36).toUpperCase()}`;
+      
+      const newColumns = columns.map(col => ({
+        ...col,
+        items: col.items.map(item => {
+          if (item.id === draggedItem.id || item.id === targetItem.id) {
+            return { ...item, consolidationId: groupId };
+          }
+          return item;
+        })
+      }));
+      
+      setColumns(newColumns);
+      setDraggedItem(null);
+      
       const groups = { ...consolidationGroups };
-      if (!groups[groupId]) groups[groupId] = [];
-      groups[groupId].push(draggedItem, targetItem);
+      if (!groups[groupId]) {
+        groups[groupId] = { id: groupId, items: [], shipmentId: undefined };
+      }
+      groups[groupId].items.push(draggedItem, targetItem);
       setConsolidationGroups(groups);
-    } else if (groupType === 'shipmentId') {
-      const groups = { ...shipmentGroups };
-      if (!groups[groupId]) groups[groupId] = [];
-      groups[groupId].push(draggedItem, targetItem);
-      setShipmentGroups(groups);
     }
+    // No grouping for international transit column
   };
 
   const getPriorityColor = (priority: string) => {
@@ -1200,9 +1206,8 @@ export default function ImportKanbanView() {
                                   groupKey = item.orderGroupId;
                                 } else if (column.id === 'at_warehouse' && item.consolidationId) {
                                   groupKey = item.consolidationId;
-                                } else if (column.id === 'international' && item.shipmentId) {
-                                  groupKey = item.shipmentId;
                                 }
+                                // No grouping for international transit
                                 
                                 if (groupKey) {
                                   if (!groups[groupKey]) {
@@ -1219,9 +1224,10 @@ export default function ImportKanbanView() {
                                   {/* Render grouped items */}
                                   {Object.entries(groups).map(([groupId, items]) => {
                                     const isOrderGroup = groupId.startsWith('ORDER-');
-                                    const isShipment = groupId.startsWith('SHIP-');
                                     const isConsolidation = groupId.startsWith('CONSOL-');
                                     const isExpanded = expandedGroups.includes(groupId);
+                                    const consolidationGroup = column.id === 'at_warehouse' && isConsolidation ? consolidationGroups[groupId] : null;
+                                    const hasShipment = consolidationGroup?.shipmentId;
                                     
                                     // Calculate group totals
                                     const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -1233,7 +1239,7 @@ export default function ImportKanbanView() {
                                         className={`
                                           border-2 rounded-lg overflow-hidden transition-all duration-200
                                           ${isOrderGroup ? 'border-blue-300 bg-blue-50/20 dark:bg-blue-900/10' :
-                                            isShipment ? 'border-orange-300 bg-orange-50/20 dark:bg-orange-900/10' :
+                                            hasShipment ? 'border-orange-300 bg-gradient-to-br from-purple-50/20 to-orange-50/20 dark:from-purple-900/10 dark:to-orange-900/10' :
                                             'border-purple-300 bg-purple-50/20 dark:bg-purple-900/10'}
                                           ${dragOverItem === groupId ? 'ring-2 ring-offset-1' : ''}
                                         `}
@@ -1248,8 +1254,7 @@ export default function ImportKanbanView() {
                                           e.stopPropagation();
                                           if (draggedItem && !items.some(i => i.id === draggedItem.id)) {
                                             // Add item to existing group
-                                            const groupType = isOrderGroup ? 'orderGroupId' : 
-                                                            isShipment ? 'shipmentId' : 'consolidationId';
+                                            const groupType = isOrderGroup ? 'orderGroupId' : 'consolidationId';
                                             
                                             const newColumns = columns.map(col => ({
                                               ...col,
@@ -1269,7 +1274,7 @@ export default function ImportKanbanView() {
                                           className={`
                                             px-2 py-1 cursor-pointer select-none
                                             ${isOrderGroup ? 'bg-blue-100/50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/40' :
-                                              isShipment ? 'bg-orange-100/50 dark:bg-orange-900/30 hover:bg-orange-100 dark:hover:bg-orange-900/40' :
+                                              hasShipment ? 'bg-gradient-to-r from-purple-100/50 to-orange-100/50 dark:from-purple-900/30 dark:to-orange-900/30' :
                                               'bg-purple-100/50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/40'}
                                             transition-colors
                                           `}
@@ -1284,15 +1289,20 @@ export default function ImportKanbanView() {
                                                 variant="outline" 
                                                 className={`text-[9px] px-1 h-4 font-bold
                                                   ${isOrderGroup ? 'border-blue-500 bg-blue-100 text-blue-700' :
-                                                    isShipment ? 'border-orange-500 bg-orange-100 text-orange-700' :
+                                                    hasShipment ? 'border-orange-500 bg-orange-100 text-orange-700' :
                                                     'border-purple-500 bg-purple-100 text-purple-700'}
                                                 `}
                                               >
                                                 {isOrderGroup ? <Hash className="h-2.5 w-2.5 mr-0.5" /> :
-                                                 isShipment ? <Plane className="h-2.5 w-2.5 mr-0.5" /> :
+                                                 hasShipment ? <><Package className="h-2.5 w-2.5 mr-0.5" /><Plane className="h-2.5 w-2.5 mr-0.5" /></> :
                                                  <Package className="h-2.5 w-2.5 mr-0.5" />}
                                                 {items.length} items • {totalQuantity} pcs
                                               </Badge>
+                                              {hasShipment && (
+                                                <Badge variant="secondary" className="text-[8px] px-1 h-3">
+                                                  Shipment #{consolidationGroup?.shipmentId?.slice(-6)}
+                                                </Badge>
+                                              )}
                                               <span className="text-[10px] font-medium text-muted-foreground">
                                                 #{groupId.slice(-6)}
                                               </span>
@@ -1311,8 +1321,7 @@ export default function ImportKanbanView() {
                                                 onClick={(e) => {
                                                   e.stopPropagation();
                                                   // Ungroup items
-                                                  const groupType = isOrderGroup ? 'orderGroupId' : 
-                                                                   isShipment ? 'shipmentId' : 'consolidationId';
+                                                  const groupType = isOrderGroup ? 'orderGroupId' : 'consolidationId';
                                                   
                                                   const newColumns = columns.map(col => ({
                                                     ...col,
@@ -1324,6 +1333,15 @@ export default function ImportKanbanView() {
                                                   }));
                                                   
                                                   setColumns(newColumns);
+                                                  
+                                                  // Also clear shipment if it's a consolidation with shipment
+                                                  if (isConsolidation && hasShipment) {
+                                                    const groups = { ...consolidationGroups };
+                                                    if (groups[groupId]) {
+                                                      groups[groupId] = { ...groups[groupId], shipmentId: undefined };
+                                                      setConsolidationGroups(groups);
+                                                    }
+                                                  }
                                                 }}
                                               >
                                                 <X className="h-3 w-3" />
