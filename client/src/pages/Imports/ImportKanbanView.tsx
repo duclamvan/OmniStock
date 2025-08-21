@@ -185,7 +185,7 @@ export default function ImportKanbanView() {
       supplier: "Ho Chi Minh Supplies",
       supplierCountry: "Vietnam",
       destination: "Vietnam Warehouse",
-      status: "customs",
+      status: "in_transit",
       priority: "medium",
       totalItems: 350,
       totalValue: 12000,
@@ -254,13 +254,6 @@ export default function ImportKanbanView() {
       title: "In Transit",
       color: "bg-purple-50 dark:bg-purple-900/20",
       icon: <Truck className="h-3.5 w-3.5" />,
-      orders: []
-    },
-    {
-      id: "customs",
-      title: "Customs",
-      color: "bg-orange-50 dark:bg-orange-900/20",
-      icon: <AlertCircle className="h-3.5 w-3.5" />,
       orders: []
     },
     {
@@ -672,13 +665,13 @@ export default function ImportKanbanView() {
       {viewMode === "kanban" ? (
         /* Kanban View */
         <ScrollArea className="w-full px-4 md:px-0">
-          <div className="flex gap-4 pb-4">
+          <div className="flex gap-3 pb-4">
             {columns.map((column) => {
               const filteredOrders = filterOrders(column.orders);
               return (
                 <div
                   key={column.id}
-                  className="flex-shrink-0 w-72"
+                  className="flex-shrink-0 w-64"
                   onDragOver={(e) => handleDragOver(e, column.id)}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, column.id)}
@@ -695,8 +688,8 @@ export default function ImportKanbanView() {
                         </Badge>
                       </div>
                     </CardHeader>
-                    <CardContent className="p-2">
-                      <ScrollArea className="h-[calc(100vh-22rem)]">
+                    <CardContent className="p-1.5">
+                      <ScrollArea className="h-[calc(100vh-20rem)]">
                         {filteredOrders.length === 0 ? (
                           <div className="flex flex-col items-center justify-center py-8 text-center">
                             <Package className="h-8 w-8 text-muted-foreground mb-2" />
