@@ -46,6 +46,13 @@ import {
   FileText
 } from "lucide-react";
 
+interface OrderItem {
+  id: string;
+  name: string;
+  quantity: number;
+  sku?: string;
+}
+
 interface ImportOrder {
   id: string;
   orderNumber: string;
@@ -67,6 +74,7 @@ interface ImportOrder {
   comments: number;
   trackingNumber?: string;
   shippingMethod?: string;
+  items: OrderItem[];
 }
 
 interface KanbanColumn {
@@ -107,7 +115,13 @@ export default function ImportKanbanView() {
       tags: ["Electronics", "Urgent"],
       progress: 0,
       documents: 3,
-      comments: 2
+      comments: 2,
+      items: [
+        { id: "1", name: "USB-C Cables", quantity: 200, sku: "USB-C-001" },
+        { id: "2", name: "Wireless Chargers", quantity: 150, sku: "WC-002" },
+        { id: "3", name: "Phone Cases", quantity: 100, sku: "PC-003" },
+        { id: "4", name: "Screen Protectors", quantity: 50, sku: "SP-004" }
+      ]
     },
     {
       id: "imp-002",
@@ -128,7 +142,14 @@ export default function ImportKanbanView() {
       progress: 25,
       documents: 5,
       comments: 4,
-      trackingNumber: "VN2025TRACK001"
+      trackingNumber: "VN2025TRACK001",
+      items: [
+        { id: "5", name: "Cotton T-Shirts", quantity: 500, sku: "CT-001" },
+        { id: "6", name: "Denim Jeans", quantity: 300, sku: "DJ-002" },
+        { id: "7", name: "Hoodies", quantity: 200, sku: "HD-003" },
+        { id: "8", name: "Baseball Caps", quantity: 150, sku: "BC-004" },
+        { id: "9", name: "Socks Pack", quantity: 50, sku: "SK-005" }
+      ]
     },
     {
       id: "imp-003",
@@ -149,7 +170,14 @@ export default function ImportKanbanView() {
       documents: 8,
       comments: 6,
       trackingNumber: "CN2025SHIP445",
-      shippingMethod: "Sea Freight"
+      shippingMethod: "Sea Freight",
+      items: [
+        { id: "10", name: "CPU Processors", quantity: 200, sku: "CPU-001" },
+        { id: "11", name: "RAM Modules 16GB", quantity: 300, sku: "RAM-002" },
+        { id: "12", name: "SSD Drives 512GB", quantity: 150, sku: "SSD-003" },
+        { id: "13", name: "Graphics Cards", quantity: 100, sku: "GPU-004" },
+        { id: "14", name: "Motherboards", quantity: 50, sku: "MB-005" }
+      ]
     },
     {
       id: "imp-004",
@@ -170,7 +198,12 @@ export default function ImportKanbanView() {
       progress: 75,
       documents: 10,
       comments: 8,
-      trackingNumber: "VN2025CUS889"
+      trackingNumber: "VN2025CUS889",
+      items: [
+        { id: "15", name: "Bamboo Fabric Rolls", quantity: 100, sku: "BF-001" },
+        { id: "16", name: "Organic Cotton", quantity: 150, sku: "OC-002" },
+        { id: "17", name: "Recycled Polyester", quantity: 100, sku: "RP-003" }
+      ]
     },
     {
       id: "imp-005",
@@ -192,7 +225,12 @@ export default function ImportKanbanView() {
       documents: 12,
       comments: 10,
       trackingNumber: "CN2025DEL112",
-      shippingMethod: "Air Freight"
+      shippingMethod: "Air Freight",
+      items: [
+        { id: "18", name: "Smart Watches", quantity: 50, sku: "SW-001" },
+        { id: "19", name: "Bluetooth Earbuds", quantity: 75, sku: "BE-002" },
+        { id: "20", name: "Power Banks", quantity: 25, sku: "PB-003" }
+      ]
     }
   ];
 
@@ -377,8 +415,20 @@ export default function ImportKanbanView() {
               <span className="text-[10px] text-muted-foreground">{order.progress}%</span>
             </div>
 
+            {/* Compact Items List */}
+            <div className="text-[10px] text-muted-foreground space-y-0.5">
+              {order.items.slice(0, 3).map((item, idx) => (
+                <div key={item.id} className="truncate">
+                  {item.quantity}x {item.name}
+                </div>
+              ))}
+              {order.items.length > 3 && (
+                <div className="text-muted-foreground/70">+{order.items.length - 3} more items</div>
+              )}
+            </div>
+
             {/* Compact Footer */}
-            <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+            <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t">
               <span>{order.totalItems} items</span>
               <span>{getDaysUntilArrival(order.estimatedArrival)}</span>
             </div>
@@ -451,6 +501,22 @@ export default function ImportKanbanView() {
               <FileText className="h-3 w-3 text-muted-foreground" />
               <span>{order.documents} docs</span>
             </div>
+          </div>
+
+          {/* Items List */}
+          <div className="space-y-1 p-2 bg-muted/30 rounded text-xs">
+            <div className="font-medium text-xs mb-1">Items:</div>
+            {order.items.slice(0, 5).map((item) => (
+              <div key={item.id} className="flex justify-between items-center">
+                <span className="truncate flex-1">{item.name}</span>
+                <span className="text-muted-foreground ml-2">{item.quantity}</span>
+              </div>
+            ))}
+            {order.items.length > 5 && (
+              <div className="text-muted-foreground text-center pt-1">
+                +{order.items.length - 5} more items...
+              </div>
+            )}
           </div>
 
           {/* Tags */}
@@ -595,7 +661,7 @@ export default function ImportKanbanView() {
               return (
                 <div
                   key={column.id}
-                  className="flex-shrink-0 w-80"
+                  className="flex-shrink-0 w-72"
                   onDragOver={(e) => handleDragOver(e, column.id)}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, column.id)}
@@ -612,8 +678,8 @@ export default function ImportKanbanView() {
                         </Badge>
                       </div>
                     </CardHeader>
-                    <CardContent className="p-3">
-                      <ScrollArea className="h-[calc(100vh-24rem)]">
+                    <CardContent className="p-2">
+                      <ScrollArea className="h-[calc(100vh-22rem)]">
                         {filteredOrders.length === 0 ? (
                           <div className="flex flex-col items-center justify-center py-8 text-center">
                             <Package className="h-8 w-8 text-muted-foreground mb-2" />
