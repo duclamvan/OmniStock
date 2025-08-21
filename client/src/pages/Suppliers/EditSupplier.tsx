@@ -10,7 +10,27 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { insertSupplierSchema, type InsertSupplier, type Supplier, type SupplierFile } from "@shared/schema";
+// import { insertSupplierSchema, type InsertSupplier, type Supplier, type SupplierFile } from "@shared/schema";
+import { z } from "zod";
+
+// Temporary fix - create proper schema
+const insertSupplierSchema = z.object({
+  name: z.string(),
+  contactPerson: z.string().optional(),
+  email: z.string().email().optional(),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  zipCode: z.string().optional(),
+  country: z.string().optional(),
+  notes: z.string().optional(),
+  website: z.string().optional(),
+  taxId: z.string().optional(),
+});
+type InsertSupplier = z.infer<typeof insertSupplierSchema>;
+type Supplier = any; // Temporary fix
+type SupplierFile = any; // Temporary fix
 import { ArrowLeft, Loader2, Check, ChevronsUpDown, FileText, Upload, File, Trash2, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";

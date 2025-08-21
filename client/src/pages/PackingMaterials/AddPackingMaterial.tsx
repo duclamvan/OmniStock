@@ -3,7 +3,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { z } from "zod";
-import { insertPackingMaterialSchema } from "@shared/schema";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -15,6 +14,23 @@ import { ArrowLeft, Save } from "lucide-react";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+
+// Temporary fix - create proper schema
+const insertPackingMaterialSchema = z.object({
+  name: z.string(),
+  type: z.string(),
+  size: z.string().optional(),
+  description: z.string().optional(),
+  dimensions: z.string().optional(),
+  weight: z.string().optional(),
+  stockQuantity: z.number().optional(),
+  minStockLevel: z.number().optional(),
+  cost: z.string().optional(),
+  isFragile: z.boolean().optional(),
+  isReusable: z.boolean().optional(),
+  code: z.string(),
+  imageUrl: z.string().optional(),
+});
 
 const formSchema = insertPackingMaterialSchema.extend({
   stockQuantity: z.coerce.number().min(0).default(0),

@@ -55,16 +55,21 @@ import PackingMaterials from "@/pages/PackingMaterials";
 import AddPackingMaterial from "@/pages/PackingMaterials/AddPackingMaterial";
 import EditPackingMaterial from "@/pages/PackingMaterials/EditPackingMaterial";
 import Files from "@/pages/Files/Files";
-import AllImports from "@/pages/Imports/AllImports";
-import AddImportOrder from "@/pages/Imports/AddImportOrder";
-import EditImportOrder from "@/pages/Imports/EditImportOrder";
-import ImportOrderDetails from "@/pages/Imports/ImportOrderDetails";
-import ReceiveImport from "@/pages/Imports/ReceiveImport";
-import ImportItemsTracking from "@/pages/Imports/ImportItemsTracking";
-import ConsolidatedView from "@/pages/Imports/ConsolidatedView";
-import ConsolidatedWarehouseView from "@/pages/Imports/ConsolidatedWarehouseView";
-import ShipmentTracking from "@/pages/Imports/ShipmentTracking";
-import ImportKanbanView from "@/pages/Imports/ImportKanbanView";
+// Import pages
+import SupplierProcessing from "@/pages/Imports/SupplierProcessing";
+import AtWarehouse from "@/pages/Imports/AtWarehouse";
+import InternationalTransit from "@/pages/Imports/InternationalTransit";
+// Legacy imports - commented out
+// import AllImports from "@/pages/Imports/AllImports";
+// import AddImportOrder from "@/pages/Imports/AddImportOrder";
+// import EditImportOrder from "@/pages/Imports/EditImportOrder";
+// import ImportOrderDetails from "@/pages/Imports/ImportOrderDetails";
+// import ReceiveImport from "@/pages/Imports/ReceiveImport";
+// import ImportItemsTracking from "@/pages/Imports/ImportItemsTracking";
+// import ConsolidatedView from "@/pages/Imports/ConsolidatedView";
+// import ConsolidatedWarehouseView from "@/pages/Imports/ConsolidatedWarehouseView";
+// import ShipmentTracking from "@/pages/Imports/ShipmentTracking";
+// import ImportKanbanView from "@/pages/Imports/ImportKanbanView";
 
 function Router() {
   return (
@@ -134,15 +139,13 @@ function Router() {
         <Route path="/pos" component={POS} />
         <Route path="/shipping" component={ShippingManagement} />
         <Route path="/files" component={Files} />
-        <Route path="/imports" component={AllImports} />
-        <Route path="/imports/kanban" component={ImportKanbanView} />
-        <Route path="/imports/items" component={ImportItemsTracking} />
-        <Route path="/imports/consolidated" component={ConsolidatedWarehouseView} />
-        <Route path="/imports/shipments" component={ShipmentTracking} />
-        <Route path="/imports/orders/new" component={AddImportOrder} />
-        <Route path="/imports/orders/:id/edit" component={EditImportOrder} />
-        <Route path="/imports/orders/:id/receive" component={ReceiveImport} />
-        <Route path="/imports/orders/:id" component={ImportOrderDetails} />
+        {/* Import Management Routes */}
+        <Route path="/imports/supplier-processing" component={SupplierProcessing} />
+        <Route path="/imports/at-warehouse" component={AtWarehouse} />
+        <Route path="/imports/international-transit" component={InternationalTransit} />
+        <Route path="/imports">
+          {() => <SupplierProcessing />}
+        </Route>
         <Route path="/reports">
           {() => <div>Reports page coming soon</div>}
         </Route>

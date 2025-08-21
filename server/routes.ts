@@ -6,20 +6,20 @@ import { seedMockData } from "./mockData";
 import multer from "multer";
 import path from "path";
 import { promises as fs } from "fs";
-import {
-  insertProductSchema,
-  insertProductVariantSchema,
-  insertOrderSchema,
-  insertCustomerSchema,
-  insertCategorySchema,
-  insertWarehouseSchema,
-  insertSupplierSchema,
-  insertSupplierFileSchema,
-  insertExpenseSchema,
-  insertPreOrderSchema,
-  insertSaleSchema,
-  insertCustomerPriceSchema,
-} from "@shared/schema";
+// import {
+//   insertProductSchema,
+//   insertProductVariantSchema,
+//   insertOrderSchema,
+//   insertCustomerSchema,
+//   insertCategorySchema,
+//   insertWarehouseSchema,
+//   insertSupplierSchema,
+//   insertSupplierFileSchema,
+//   insertExpenseSchema,
+//   insertPreOrderSchema,
+//   insertSaleSchema,
+//   insertCustomerPriceSchema,
+// } from "@shared/schema";
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import {
@@ -27,9 +27,10 @@ import {
   ObjectNotFoundError,
 } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
-import { locationsRouter } from "./routes/locations";
-import { putawayRouter } from "./routes/putaway";
-import { importOrdersRouter } from "./routes/importOrders";
+// import { locationsRouter } from "./routes/locations";
+// import { putawayRouter } from "./routes/putaway";
+// import { importOrdersRouter } from "./routes/importOrders";
+import importsRouter from './routes/imports';
 import { weightCalculationService } from "./services/weightCalculation";
 import { ImageCompressionService } from "./services/imageCompression";
 
@@ -3759,9 +3760,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Register warehouse location routes
-  app.use('/api', locationsRouter);
-  app.use('/api', putawayRouter);
-  app.use('/api', importOrdersRouter);
+  // app.use('/api', locationsRouter);
+  // app.use('/api', putawayRouter);
+  // app.use('/api', importOrdersRouter);
+  
+  // Register new imports routes
+  app.use('/api', importsRouter);
 
   // Reports endpoints
   app.get('/api/reports/sales-summary', async (req, res) => {

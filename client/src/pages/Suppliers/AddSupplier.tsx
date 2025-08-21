@@ -10,13 +10,29 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { insertSupplierSchema, type InsertSupplier } from "@shared/schema";
 import { ArrowLeft, Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { countries } from "@/lib/countries";
+import { z } from "zod";
 
+// Temporary fix - create proper schema
+const insertSupplierSchema = z.object({
+  name: z.string(),
+  contactPerson: z.string().optional(),
+  email: z.string().email().optional(),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  zipCode: z.string().optional(),
+  country: z.string().optional(),
+  notes: z.string().optional(),
+  website: z.string().optional(),
+  taxId: z.string().optional(),
+});
+type InsertSupplier = z.infer<typeof insertSupplierSchema>;
 
 const formSchema = insertSupplierSchema.extend({});
 

@@ -1,6 +1,6 @@
 import express from "express";
 import { storage } from "../storage";
-import { insertWarehouseLocationSchema, insertInventoryBalanceSchema } from "@shared/schema";
+// import { insertWarehouseLocationSchema, insertInventoryBalanceSchema } from "@shared/schema";
 import { z } from "zod";
 
 export const locationsRouter = express.Router();

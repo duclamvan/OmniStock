@@ -27,7 +27,25 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ArrowLeft, Save, MapPin, Search } from "lucide-react";
-import { insertCustomerSchema } from "@shared/schema";
+// import { insertCustomerSchema } from "@shared/schema";
+// Temporary fix - create a proper schema
+const insertCustomerSchema = z.object({
+  name: z.string(),
+  email: z.string().email().optional(),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  zipCode: z.string().optional(),
+  country: z.string().optional(),
+  notes: z.string().optional(),
+  payLater: z.boolean().optional(),
+  defaultDiscountType: z.string().optional(),
+  defaultDiscountValue: z.number().optional(),
+  currency: z.string().optional(),
+  companyName: z.string().optional(),
+  taxId: z.string().optional(),
+});
 
 // Extend the schema for form validation
 const editCustomerSchema = insertCustomerSchema.extend({
