@@ -82,8 +82,14 @@ interface ImportOrder {
   documents: number;
   comments: number;
   trackingNumber?: string;
+  localTrackingNumber?: string; // Tracking from supplier to warehouse
+  internationalTrackingNumber?: string; // Tracking from warehouse to final destination
   shippingMethod?: string;
   items: OrderItem[];
+  consolidationId?: string; // ID to group orders for consolidation
+  warehouseLocation?: string; // Which consolidation warehouse
+  consolidatedWith?: string[]; // Other order IDs consolidated together
+  stage?: 'supplier_processing' | 'to_warehouse' | 'at_warehouse' | 'consolidating' | 'international_transit' | 'customs' | 'final_delivery';
 }
 
 interface KanbanColumn {
@@ -115,7 +121,8 @@ export default function ImportKanbanView() {
       supplier: "Shenzhen Electronics Co",
       supplierCountry: "China",
       destination: "USA Warehouse",
-      status: "pending",
+      status: "processing",
+      stage: "supplier_processing",
       priority: "high",
       totalItems: 500,
       totalValue: 25000,
@@ -125,9 +132,10 @@ export default function ImportKanbanView() {
       lastUpdated: new Date().toISOString(),
       assignee: "John Doe",
       tags: ["Electronics", "Urgent"],
-      progress: 0,
+      progress: 15,
       documents: 3,
       comments: 2,
+      warehouseLocation: "Shenzhen Consolidation Center",
       items: [
         { id: "1", name: "USB-C Cables", quantity: 200, sku: "USB-C-001" },
         { id: "2", name: "Wireless Chargers", quantity: 150, sku: "WC-002" },
@@ -138,10 +146,11 @@ export default function ImportKanbanView() {
     {
       id: "imp-002",
       orderNumber: "IMP-2025-002",
-      supplier: "Vietnam Textiles Ltd",
-      supplierCountry: "Vietnam",
+      supplier: "Guangzhou Fashion Co",
+      supplierCountry: "China",
       destination: "USA Warehouse",
-      status: "processing",
+      status: "to_warehouse",
+      stage: "to_warehouse",
       priority: "medium",
       totalItems: 1200,
       totalValue: 18000,
@@ -151,10 +160,11 @@ export default function ImportKanbanView() {
       lastUpdated: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
       assignee: "Jane Smith",
       tags: ["Textiles"],
-      progress: 25,
+      progress: 30,
       documents: 5,
       comments: 4,
-      trackingNumber: "VN2025TRACK001",
+      localTrackingNumber: "SF2025LOCAL001",
+      warehouseLocation: "Guangzhou Consolidation Hub",
       items: [
         { id: "5", name: "Cotton T-Shirts", quantity: 500, sku: "CT-001" },
         { id: "6", name: "Denim Jeans", quantity: 300, sku: "DJ-002" },
@@ -168,8 +178,9 @@ export default function ImportKanbanView() {
       orderNumber: "IMP-2025-003",
       supplier: "Shanghai Manufacturing",
       supplierCountry: "China",
-      destination: "China Warehouse",
-      status: "in_transit",
+      destination: "USA Warehouse",
+      status: "at_warehouse",
+      stage: "at_warehouse",
       priority: "high",
       totalItems: 800,
       totalValue: 45000,
@@ -177,12 +188,13 @@ export default function ImportKanbanView() {
       estimatedArrival: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
       createdDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
       lastUpdated: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-      tags: ["Components", "Priority"],
-      progress: 60,
+      tags: ["Components", "Priority", "Ready to Consolidate"],
+      progress: 45,
       documents: 8,
       comments: 6,
-      trackingNumber: "CN2025SHIP445",
-      shippingMethod: "Sea Freight",
+      localTrackingNumber: "YTO2025LOCAL445",
+      warehouseLocation: "Shanghai Consolidation Center",
+      consolidationId: "CONSOL-2025-001",
       items: [
         { id: "10", name: "CPU Processors", quantity: 200, sku: "CPU-001" },
         { id: "11", name: "RAM Modules 16GB", quantity: 300, sku: "RAM-002" },
@@ -194,10 +206,11 @@ export default function ImportKanbanView() {
     {
       id: "imp-004",
       orderNumber: "IMP-2025-004",
-      supplier: "Ho Chi Minh Supplies",
-      supplierCountry: "Vietnam",
-      destination: "Vietnam Warehouse",
-      status: "in_transit",
+      supplier: "Beijing Tech Ltd",
+      supplierCountry: "China",
+      destination: "USA Warehouse",
+      status: "consolidating",
+      stage: "consolidating",
       priority: "medium",
       totalItems: 350,
       totalValue: 12000,
@@ -206,66 +219,118 @@ export default function ImportKanbanView() {
       createdDate: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
       lastUpdated: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
       assignee: "Mike Chen",
-      tags: ["Materials"],
-      progress: 75,
+      tags: ["Materials", "Being Packed"],
+      progress: 60,
       documents: 10,
       comments: 8,
-      trackingNumber: "VN2025CUS889",
+      localTrackingNumber: "ZTO2025LOCAL889",
+      warehouseLocation: "Beijing Consolidation Hub",
+      consolidationId: "CONSOL-2025-001",
+      consolidatedWith: ["imp-003", "imp-006"],
       items: [
-        { id: "15", name: "Bamboo Fabric Rolls", quantity: 100, sku: "BF-001" },
-        { id: "16", name: "Organic Cotton", quantity: 150, sku: "OC-002" },
-        { id: "17", name: "Recycled Polyester", quantity: 100, sku: "RP-003" }
+        { id: "15", name: "Laptop Batteries", quantity: 100, sku: "BAT-001" },
+        { id: "16", name: "Keyboard Switches", quantity: 150, sku: "KS-002" },
+        { id: "17", name: "LED Panels", quantity: 100, sku: "LED-003" }
       ]
     },
     {
       id: "imp-005",
       orderNumber: "IMP-2025-005",
-      supplier: "Beijing Tech Solutions",
+      supplier: "Dongguan Electronics",
       supplierCountry: "China",
       destination: "USA Warehouse",
-      status: "delivered",
+      status: "international",
+      stage: "international_transit",
       priority: "low",
       totalItems: 150,
       totalValue: 8500,
       currency: "USD",
-      estimatedArrival: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+      estimatedArrival: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
       createdDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
       lastUpdated: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
       assignee: "Sarah Lee",
-      tags: ["Completed"],
-      progress: 100,
+      tags: ["In Transit", "Express"],
+      progress: 75,
       documents: 12,
       comments: 10,
-      trackingNumber: "CN2025DEL112",
-      shippingMethod: "Air Freight",
+      internationalTrackingNumber: "DHL2025INT112",
+      trackingNumber: "DHL2025INT112",
+      shippingMethod: "DHL Express",
+      consolidationId: "CONSOL-2025-002",
       items: [
         { id: "18", name: "Smart Watches", quantity: 50, sku: "SW-001" },
         { id: "19", name: "Bluetooth Earbuds", quantity: 75, sku: "BE-002" },
         { id: "20", name: "Power Banks", quantity: 25, sku: "PB-003" }
+      ]
+    },
+    {
+      id: "imp-006",
+      orderNumber: "IMP-2025-006",
+      supplier: "Hangzhou Fashion",
+      supplierCountry: "China",
+      destination: "USA Warehouse",
+      status: "delivered",
+      stage: "final_delivery",
+      priority: "high",
+      totalItems: 450,
+      totalValue: 22000,
+      currency: "USD",
+      estimatedArrival: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      createdDate: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
+      lastUpdated: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      assignee: "John Doe",
+      tags: ["Completed", "Received"],
+      progress: 100,
+      documents: 15,
+      comments: 12,
+      localTrackingNumber: "YTO2025LOCAL999",
+      internationalTrackingNumber: "FEDEX2025INT888",
+      trackingNumber: "FEDEX2025INT888",
+      shippingMethod: "FedEx Priority",
+      consolidationId: "CONSOL-2025-003",
+      warehouseLocation: "Hangzhou Consolidation Center",
+      items: [
+        { id: "21", name: "Winter Jackets", quantity: 200, sku: "WJ-001" },
+        { id: "22", name: "Scarves", quantity: 150, sku: "SC-002" },
+        { id: "23", name: "Gloves", quantity: 100, sku: "GL-003" }
       ]
     }
   ];
 
   const [columns, setColumns] = useState<KanbanColumn[]>([
     {
-      id: "pending",
-      title: "Pending",
-      color: "bg-gray-50 dark:bg-gray-900/50",
-      icon: <Clock className="h-3.5 w-3.5" />,
-      orders: []
-    },
-    {
       id: "processing",
-      title: "Processing",
-      color: "bg-blue-50 dark:bg-blue-900/20",
+      title: "Supplier Processing",
+      color: "bg-yellow-50 dark:bg-yellow-900/20",
       icon: <Activity className="h-3.5 w-3.5" />,
       orders: []
     },
     {
-      id: "in_transit",
-      title: "In Transit",
-      color: "bg-purple-50 dark:bg-purple-900/20",
+      id: "to_warehouse",
+      title: "To CN Warehouse",
+      color: "bg-blue-50 dark:bg-blue-900/20",
       icon: <Truck className="h-3.5 w-3.5" />,
+      orders: []
+    },
+    {
+      id: "at_warehouse",
+      title: "At Warehouse",
+      color: "bg-indigo-50 dark:bg-indigo-900/20",
+      icon: <Building2 className="h-3.5 w-3.5" />,
+      orders: []
+    },
+    {
+      id: "consolidating",
+      title: "Consolidating",
+      color: "bg-purple-50 dark:bg-purple-900/20",
+      icon: <Package className="h-3.5 w-3.5" />,
+      orders: []
+    },
+    {
+      id: "international",
+      title: "International Transit",
+      color: "bg-orange-50 dark:bg-orange-900/20",
+      icon: <Plane className="h-3.5 w-3.5" />,
       orders: []
     },
     {
@@ -388,9 +453,11 @@ export default function ImportKanbanView() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-gray-100 text-gray-800';
-      case 'processing': return 'bg-blue-100 text-blue-800';
-      case 'in_transit': return 'bg-purple-100 text-purple-800';
+      case 'processing': return 'bg-yellow-100 text-yellow-800';
+      case 'to_warehouse': return 'bg-blue-100 text-blue-800';
+      case 'at_warehouse': return 'bg-indigo-100 text-indigo-800';
+      case 'consolidating': return 'bg-purple-100 text-purple-800';
+      case 'international': return 'bg-orange-100 text-orange-800';
       case 'delivered': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
@@ -520,11 +587,43 @@ export default function ImportKanbanView() {
             <span className="text-xs font-semibold">{formatCurrency(order.totalValue, order.currency)}</span>
           </div>
 
-          {/* Supplier */}
-          <div className="flex items-center gap-1 text-[11px]">
-            <span>{getCountryFlag(order.supplierCountry)}</span>
-            <span className="truncate">{order.supplier}</span>
+          {/* Supplier & Warehouse */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1 text-[11px]">
+              <span>{getCountryFlag(order.supplierCountry)}</span>
+              <span className="truncate">{order.supplier}</span>
+            </div>
+            {order.warehouseLocation && (
+              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                <Building2 className="h-3 w-3" />
+                <span className="truncate">{order.warehouseLocation}</span>
+              </div>
+            )}
           </div>
+
+          {/* Tracking Numbers */}
+          {(order.localTrackingNumber || order.internationalTrackingNumber || order.consolidationId) && (
+            <div className="flex flex-wrap gap-0.5">
+              {order.localTrackingNumber && (
+                <Badge variant="secondary" className="h-3.5 px-1 text-[9px]">
+                  <Truck className="h-2.5 w-2.5 mr-0.5" />
+                  Local: {order.localTrackingNumber.slice(-6)}
+                </Badge>
+              )}
+              {order.internationalTrackingNumber && (
+                <Badge variant="secondary" className="h-3.5 px-1 text-[9px]">
+                  <Plane className="h-2.5 w-2.5 mr-0.5" />
+                  Int'l: {order.internationalTrackingNumber.slice(-6)}
+                </Badge>
+              )}
+              {order.consolidationId && (
+                <Badge variant="outline" className="h-3.5 px-1 text-[9px] bg-purple-50">
+                  <Package className="h-2.5 w-2.5 mr-0.5" />
+                  {order.consolidationId.slice(-3)}
+                </Badge>
+              )}
+            </div>
+          )}
 
           {/* Progress */}
           <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
@@ -593,16 +692,16 @@ export default function ImportKanbanView() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-lg md:text-2xl font-semibold">Import Orders Kanban</h1>
+              <h1 className="text-lg md:text-2xl font-semibold">Import Order Workflow</h1>
               <p className="text-xs md:text-sm text-muted-foreground">
-                Drag and drop to update order status
+                Track orders from supplier → warehouse → consolidation → delivery
               </p>
             </div>
           </div>
           <div className="flex gap-2">
             <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)}>
               <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="kanban">Kanban</TabsTrigger>
+                <TabsTrigger value="kanban">Workflow</TabsTrigger>
                 <TabsTrigger value="table">Table</TabsTrigger>
                 <TabsTrigger value="timeline">Timeline</TabsTrigger>
               </TabsList>
@@ -611,6 +710,12 @@ export default function ImportKanbanView() {
               <RefreshCw className="h-4 w-4 md:mr-2" />
               <span className="hidden md:inline">Refresh</span>
             </Button>
+            <Link href="/imports/consolidate">
+              <Button variant="outline" size="sm">
+                <Package className="h-4 w-4 md:mr-2" />
+                <span className="hidden md:inline">Consolidate</span>
+              </Button>
+            </Link>
             <Link href="/imports/orders/new">
               <Button size="sm">
                 <Plus className="h-4 w-4 md:mr-2" />
