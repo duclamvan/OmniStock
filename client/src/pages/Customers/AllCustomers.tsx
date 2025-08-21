@@ -80,64 +80,76 @@ export default function AllCustomers() {
   const columns: DataTableColumn<any>[] = [
     {
       key: "name",
-      header: "Customer Name",
+      header: "Customer",
       sortable: true,
+      className: "min-w-[150px]",
       cell: (customer) => (
         <div>
           <Link href={`/customers/${customer.id}`}>
-            <div className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer flex items-center gap-2">
-              {customer.name}
+            <div className="font-medium text-xs lg:text-sm text-blue-600 hover:text-blue-800 cursor-pointer flex items-center gap-1 lg:gap-2">
+              <span className="truncate max-w-[120px] lg:max-w-none">{customer.name}</span>
               {customer.hasPayLaterBadge && (
-                <Badge variant="outline" className="text-xs bg-yellow-50 border-yellow-300 text-yellow-700">
+                <Badge variant="outline" className="text-xs px-1 py-0 h-5 bg-yellow-50 border-yellow-300 text-yellow-700 hidden sm:flex">
                   Pay Later
                 </Badge>
               )}
             </div>
           </Link>
           {customer.facebookName && (
-            <div className="text-sm text-gray-500">FB: {customer.facebookName}</div>
+            <div className="text-xs text-gray-500 truncate max-w-[120px] lg:max-w-none">FB: {customer.facebookName}</div>
           )}
         </div>
       ),
     },
     {
       key: "country",
-      header: "Country",
+      header: <span className="hidden lg:inline">Country</span>,
       sortable: true,
+      className: "hidden lg:table-cell",
       cell: (customer) => customer.country ? (
-        <div className="flex items-center gap-1">
-          <MapPin className="h-4 w-4 text-gray-400" />
+        <div className="flex items-center gap-1 text-xs">
+          <MapPin className="h-3 w-3 text-gray-400" />
           {customer.country}
         </div>
       ) : '-',
     },
     {
       key: "lastOrderDate",
-      header: "Last Purchase",
+      header: <span className="hidden md:inline">Last Purchase</span>,
       sortable: true,
-      cell: (customer) => customer.lastOrderDate 
-        ? new Date(customer.lastOrderDate).toLocaleDateString() 
-        : '-',
+      className: "hidden md:table-cell",
+      cell: (customer) => (
+        <span className="text-xs">
+          {customer.lastOrderDate 
+            ? new Date(customer.lastOrderDate).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' }) 
+            : '-'}
+        </span>
+      ),
     },
     {
       key: "orderCount",
-      header: "Total Orders",
+      header: <span className="text-xs lg:text-sm">Orders</span>,
       sortable: true,
       className: "text-center",
       cell: (customer) => (
-        <div className="text-center">{customer.orderCount || 0}</div>
+        <div className="text-center text-xs lg:text-sm">{customer.orderCount || 0}</div>
       ),
     },
     {
       key: "totalSpent",
-      header: "Total Sales",
+      header: <span className="text-xs lg:text-sm">Sales</span>,
       sortable: true,
-      cell: (customer) => formatCurrency(parseFloat(customer.totalSpent || '0'), 'EUR'),
       className: "text-right",
+      cell: (customer) => (
+        <span className="text-xs lg:text-sm font-medium">
+          {formatCurrency(parseFloat(customer.totalSpent || '0'), 'EUR')}
+        </span>
+      ),
     },
     {
       key: "actions",
-      header: "Actions",
+      header: "",
+      className: "w-20",
       cell: (customer) => {
         // Extract Facebook ID from URL if available
         const getFacebookId = (fbId: string | null, fbName: string | null) => {
@@ -150,12 +162,25 @@ export default function AllCustomers() {
         const facebookId = getFacebookId(customer.facebookId, customer.facebookName);
         
         return (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5">
             {facebookId && (
               <a
                 href={`https://m.me/${facebookId}`}
                 target="_blank"
                 rel="noopener noreferrer"
+                className="lg:hidden"
+              >
+                <Button size="icon" variant="ghost" className="h-7 w-7" title="Open in Messenger">
+                  <MessageCircle className="h-3 w-3" />
+                </Button>
+              </a>
+            )}
+            {facebookId && (
+              <a
+                href={`https://m.me/${facebookId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hidden lg:block"
               >
                 <Button size="sm" variant="ghost" title="Open in Messenger">
                   <MessageCircle className="h-4 w-4" />
@@ -164,8 +189,8 @@ export default function AllCustomers() {
             )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button size="sm" variant="ghost" className="ml-auto">
-                  <MoreVertical className="h-4 w-4" />
+                <Button size="icon" variant="ghost" className="h-7 w-7 lg:h-8 lg:w-8 ml-auto">
+                  <MoreVertical className="h-3 w-3 lg:h-4 lg:w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -246,39 +271,39 @@ export default function AllCustomers() {
   // Remove loading state to prevent UI refresh indicators
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 lg:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">Customers</h1>
+        <h1 className="text-xl lg:text-2xl font-bold text-slate-900">Customers</h1>
         <Link href="/customers/add">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Customer
+          <Button size="sm" className="lg:size-default">
+            <Plus className="h-4 w-4" />
+            <span className="ml-2 hidden sm:inline">Add Customer</span>
           </Button>
         </Link>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <User className="h-8 w-8 text-blue-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-slate-600">Total Customers</p>
-                <p className="text-2xl font-bold text-slate-900">{customers?.length || 0}</p>
+          <CardContent className="p-4 lg:p-6">
+            <div className="flex flex-col lg:flex-row lg:items-center">
+              <User className="h-6 w-6 lg:h-8 lg:w-8 text-blue-600 mb-2 lg:mb-0" />
+              <div className="lg:ml-4">
+                <p className="text-xs lg:text-sm font-medium text-slate-600">Total Customers</p>
+                <p className="text-lg lg:text-2xl font-bold text-slate-900">{customers?.length || 0}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Star className="h-8 w-8 text-yellow-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-slate-600">VIP Customers</p>
-                <p className="text-2xl font-bold text-slate-900">
+          <CardContent className="p-4 lg:p-6">
+            <div className="flex flex-col lg:flex-row lg:items-center">
+              <Star className="h-6 w-6 lg:h-8 lg:w-8 text-yellow-600 mb-2 lg:mb-0" />
+              <div className="lg:ml-4">
+                <p className="text-xs lg:text-sm font-medium text-slate-600">VIP</p>
+                <p className="text-lg lg:text-2xl font-bold text-slate-900">
                   {customers?.filter((c: any) => c.type === 'vip').length || 0}
                 </p>
               </div>
@@ -287,12 +312,12 @@ export default function AllCustomers() {
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <User className="h-8 w-8 text-green-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-slate-600">Regular Customers</p>
-                <p className="text-2xl font-bold text-slate-900">
+          <CardContent className="p-4 lg:p-6">
+            <div className="flex flex-col lg:flex-row lg:items-center">
+              <User className="h-6 w-6 lg:h-8 lg:w-8 text-green-600 mb-2 lg:mb-0" />
+              <div className="lg:ml-4">
+                <p className="text-xs lg:text-sm font-medium text-slate-600">Regular</p>
+                <p className="text-lg lg:text-2xl font-bold text-slate-900">
                   {customers?.filter((c: any) => c.type === 'regular').length || 0}
                 </p>
               </div>
@@ -301,12 +326,12 @@ export default function AllCustomers() {
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <User className="h-8 w-8 text-purple-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-slate-600">Total Revenue</p>
-                <p className="text-2xl font-bold text-slate-900">
+          <CardContent className="p-4 lg:p-6">
+            <div className="flex flex-col lg:flex-row lg:items-center">
+              <User className="h-6 w-6 lg:h-8 lg:w-8 text-purple-600 mb-2 lg:mb-0" />
+              <div className="lg:ml-4">
+                <p className="text-xs lg:text-sm font-medium text-slate-600">Revenue</p>
+                <p className="text-lg lg:text-2xl font-bold text-slate-900">
                   {formatCurrency(
                     customers?.reduce((sum: number, c: any) => 
                       sum + parseFloat(c.totalSpent || '0'), 0) || 0, 
@@ -321,33 +346,35 @@ export default function AllCustomers() {
 
       {/* Filters */}
       <Card>
-        <CardContent className="p-6">
+        <CardContent className="p-3 lg:p-6">
           <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-2.5 lg:top-3 h-4 w-4 text-slate-400" />
             <Input
-              placeholder="Search customers by name, email, or phone..."
+              placeholder="Search customers..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 h-9 lg:h-10 text-sm lg:text-base"
             />
           </div>
         </CardContent>
       </Card>
 
       {/* Customers Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Customers ({customers?.length || 0})</CardTitle>
+      <Card className="overflow-hidden">
+        <CardHeader className="px-4 lg:px-6">
+          <CardTitle className="text-base lg:text-xl">Customers ({customers?.length || 0})</CardTitle>
         </CardHeader>
-        <CardContent>
-          <DataTable
-            data={customers}
-            columns={columns}
-            bulkActions={bulkActions}
-            getRowKey={(customer) => customer.id}
-            itemsPerPageOptions={[10, 20, 50, 100]}
-            defaultItemsPerPage={20}
-          />
+        <CardContent className="px-2 lg:px-6">
+          <div className="overflow-x-auto">
+            <DataTable
+              data={customers}
+              columns={columns}
+              bulkActions={bulkActions}
+              getRowKey={(customer) => customer.id}
+              itemsPerPageOptions={[10, 20, 50, 100]}
+              defaultItemsPerPage={20}
+            />
+          </div>
         </CardContent>
       </Card>
 
