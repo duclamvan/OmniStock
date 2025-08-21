@@ -270,6 +270,18 @@ export const customers = pgTable("customers", {
   country: varchar("country", { length: 100 }),
   type: varchar("type", { length: 50 }).default("regular"), // regular, vip, wholesale
   notes: text("notes"),
+  // Tax identification fields
+  vatId: varchar("vat_id", { length: 50 }), // VAT ID for EU countries
+  taxId: varchar("tax_id", { length: 50 }), // IČO for Czech Republic or other tax IDs
+  // Customer relationship fields
+  firstOrderDate: timestamp("first_order_date"),
+  lastOrderDate: timestamp("last_order_date"),
+  totalOrders: integer("total_orders").default(0),
+  totalSpent: decimal("total_spent", { precision: 12, scale: 2 }).default('0'),
+  averageOrderValue: decimal("average_order_value", { precision: 12, scale: 2 }).default('0'),
+  customerRank: varchar("customer_rank", { length: 20 }), // TOP10, TOP50, TOP100, etc.
+  lastContactDate: timestamp("last_contact_date"),
+  preferredLanguage: varchar("preferred_language", { length: 10 }).default('cs'), // cs, de, en, etc.
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

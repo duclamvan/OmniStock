@@ -17,7 +17,14 @@ import {
   User,
   MessageCircle,
   Star,
-  Tag
+  Tag,
+  Trophy,
+  Clock,
+  TrendingUp,
+  AlertCircle,
+  Award,
+  CreditCard,
+  Building
 } from "lucide-react";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { CustomerPrices } from "./CustomerPrices";
@@ -58,6 +65,76 @@ export default function CustomerDetails() {
   // Calculate total spent
   const totalSpent = orders.reduce((sum, order) => sum + (order.total || 0), 0);
   const customerCurrency = orders[0]?.currency || 'EUR';
+  
+  // Calculate customer relationship duration
+  const getCustomerDuration = () => {
+    if (!customer.createdAt) return null;
+    const created = new Date(customer.createdAt);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - created.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    const years = Math.floor(diffDays / 365);
+    const months = Math.floor((diffDays % 365) / 30);
+    const days = diffDays % 30;
+    
+    if (years > 0) {
+      return `${years} year${years > 1 ? 's' : ''} ${months} month${months !== 1 ? 's' : ''}`;
+    } else if (months > 0) {
+      return `${months} month${months > 1 ? 's' : ''} ${days} day${days !== 1 ? 's' : ''}`;
+    } else {
+      return `${days} day${days !== 1 ? 's' : ''}`;
+    }
+  };
+  
+  // Determine customer badges
+  const getCustomerBadges = () => {
+    const badges = [];
+    
+    // Ranking badges
+    if (customer.customerRank === 'TOP10') {
+      badges.push({ label: 'TOP 10', variant: 'default', icon: Trophy, color: 'text-yellow-600 bg-yellow-50 border-yellow-300' });
+    } else if (customer.customerRank === 'TOP50') {
+      badges.push({ label: 'TOP 50', variant: 'secondary', icon: Award, color: 'text-blue-600 bg-blue-50 border-blue-300' });
+    } else if (customer.customerRank === 'TOP100') {
+      badges.push({ label: 'TOP 100', variant: 'outline', icon: Star, color: 'text-gray-600 bg-gray-50 border-gray-300' });
+    }
+    
+    // Activity badges
+    const lastOrderDate = orders[0]?.createdAt ? new Date(orders[0].createdAt) : null;
+    if (lastOrderDate) {
+      const daysSinceLastOrder = Math.floor((Date.now() - lastOrderDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (daysSinceLastOrder > 180) {
+        badges.push({ label: 'Long Lost', variant: 'destructive', icon: AlertCircle, color: 'text-red-600 bg-red-50 border-red-300' });
+      } else if (daysSinceLastOrder < 30) {
+        badges.push({ label: 'Active', variant: 'default', icon: TrendingUp, color: 'text-green-600 bg-green-50 border-green-300' });
+      } else if (daysSinceLastOrder < 90) {
+        badges.push({ label: 'Regular', variant: 'secondary', icon: Clock, color: 'text-indigo-600 bg-indigo-50 border-indigo-300' });
+      }
+    }
+    
+    // Order volume badges
+    if (orders.length >= 50) {
+      badges.push({ label: 'Loyal', variant: 'default', icon: Star, color: 'text-purple-600 bg-purple-50 border-purple-300' });
+    } else if (orders.length >= 20) {
+      badges.push({ label: 'Frequent', variant: 'secondary', icon: Package, color: 'text-cyan-600 bg-cyan-50 border-cyan-300' });
+    } else if (orders.length === 1) {
+      badges.push({ label: 'New', variant: 'outline', icon: User, color: 'text-gray-600 bg-gray-50 border-gray-300' });
+    }
+    
+    // Type badges
+    if (customer.type === 'vip') {
+      badges.push({ label: 'VIP', variant: 'default', icon: Star, color: 'text-amber-600 bg-amber-50 border-amber-300' });
+    } else if (customer.type === 'wholesale') {
+      badges.push({ label: 'Wholesale', variant: 'secondary', icon: Building, color: 'text-slate-600 bg-slate-50 border-slate-300' });
+    }
+    
+    return badges;
+  };
+  
+  const customerBadges = getCustomerBadges();
+  const customerDuration = getCustomerDuration();
 
   return (
     <div className="space-y-6">
@@ -72,17 +149,45 @@ export default function CustomerDetails() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mb-2">
               <h1 className="text-2xl font-bold text-slate-900">{customer.name}</h1>
               {customer.hasPayLaterBadge && (
                 <Badge variant="outline" className="bg-yellow-50 border-yellow-300 text-yellow-700">
+                  <CreditCard className="mr-1 h-3 w-3" />
                   Pay Later
                 </Badge>
               )}
             </div>
-            {customer.facebookName && (
-              <p className="text-sm text-slate-500">Facebook: {customer.facebookName}</p>
+            {/* Customer badges */}
+            {customerBadges.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {customerBadges.map((badge, index) => {
+                  const Icon = badge.icon;
+                  return (
+                    <Badge
+                      key={index}
+                      variant="outline"
+                      className={badge.color}
+                    >
+                      <Icon className="mr-1 h-3 w-3" />
+                      {badge.label}
+                    </Badge>
+                  );
+                })}
+              </div>
             )}
+            {/* Customer duration and metadata */}
+            <div className="flex items-center gap-4 text-sm text-slate-500">
+              {customerDuration && (
+                <div className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  <span>Customer for {customerDuration}</span>
+                </div>
+              )}
+              {customer.facebookName && (
+                <span>Facebook: {customer.facebookName}</span>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex gap-2">
@@ -157,41 +262,72 @@ export default function CustomerDetails() {
             </Card>
           </div>
 
-          {/* Contact & Address Information */}
+          {/* Contact & Business Information */}
           <Card>
-        <CardHeader>
-          <CardTitle>Contact & Address Information</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {customer.email && (
-              <div className="flex items-center gap-2 text-sm">
-                <Mail className="h-4 w-4 text-slate-400" />
-                <span>{customer.email}</span>
+            <CardHeader>
+              <CardTitle>Contact & Business Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Tax IDs based on country */}
+              {(customer.country || customer.vatId || customer.taxId) && (
+                <div className="pb-4 border-b">
+                  <h4 className="text-sm font-medium text-slate-700 mb-2">Tax Identification</h4>
+                  <div className="space-y-2">
+                    {customer.country === 'Czech Republic' && customer.taxId && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Building className="h-4 w-4 text-slate-400" />
+                        <span className="text-slate-600">IČO:</span>
+                        <span className="font-medium">{customer.taxId}</span>
+                      </div>
+                    )}
+                    {(customer.country === 'Germany' || customer.country === 'Austria' || 
+                      customer.country === 'France' || customer.country === 'Italy') && customer.vatId && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Building className="h-4 w-4 text-slate-400" />
+                        <span className="text-slate-600">VAT ID:</span>
+                        <span className="font-medium">{customer.vatId}</span>
+                      </div>
+                    )}
+                    {customer.country && !customer.taxId && !customer.vatId && (
+                      <div className="text-sm text-slate-500 italic">
+                        No tax ID registered
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {/* Contact Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {customer.email && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Mail className="h-4 w-4 text-slate-400" />
+                    <span>{customer.email}</span>
+                  </div>
+                )}
+                {customer.phone && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Phone className="h-4 w-4 text-slate-400" />
+                    <span>{customer.phone}</span>
+                  </div>
+                )}
               </div>
-            )}
-            {customer.phone && (
-              <div className="flex items-center gap-2 text-sm">
-                <Phone className="h-4 w-4 text-slate-400" />
-                <span>{customer.phone}</span>
-              </div>
-            )}
-          </div>
-          
-          {(customer.address || customer.city || customer.country) && (
-            <div className="flex items-start gap-2 text-sm">
-              <MapPin className="h-4 w-4 text-slate-400 mt-0.5" />
-              <div>
-                {customer.address && <p>{customer.address}</p>}
-                <p>
-                  {[customer.city, customer.state, customer.zipCode].filter(Boolean).join(', ')}
-                  {customer.country && <>, {customer.country}</>}
-                </p>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              
+              {/* Address */}
+              {(customer.address || customer.city || customer.country) && (
+                <div className="flex items-start gap-2 text-sm">
+                  <MapPin className="h-4 w-4 text-slate-400 mt-0.5" />
+                  <div>
+                    {customer.address && <p>{customer.address}</p>}
+                    <p>
+                      {[customer.city, customer.state, customer.zipCode].filter(Boolean).join(', ')}
+                      {customer.country && <>, {customer.country}</>}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
       {/* Notes */}
       {customer.notes && (
