@@ -350,47 +350,65 @@ export default function CustomerDetails() {
               {orders.length === 0 ? (
                 <p className="text-sm text-slate-500">No orders found for this customer.</p>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {orders.map((order: any) => (
                     <Link key={order.id} href={`/orders/${order.id}`}>
-                      <div className="border rounded-lg p-4 hover:bg-slate-50 cursor-pointer transition-colors">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <Package className="h-5 w-5 text-slate-400" />
-                          <div>
-                            <p className="font-medium text-sm">Order #{order.id.slice(0, 8)}</p>
-                            <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
-                              <Calendar className="h-3 w-3" />
-                              <span>{new Date(order.createdAt).toLocaleDateString()}</span>
+                      <div className="border border-slate-200 rounded-md p-4 hover:bg-slate-50 cursor-pointer transition-colors">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-start gap-3">
+                            <div className="mt-0.5">
+                              <Package className="h-4 w-4 text-slate-400" />
+                            </div>
+                            <div className="space-y-1">
+                              <p className="font-medium text-sm text-slate-900">
+                                Order #{order.orderId || order.id}
+                              </p>
+                              <div className="flex items-center gap-2 text-xs text-slate-500">
+                                <Calendar className="h-3 w-3" />
+                                <span>{new Date(order.createdAt).toLocaleDateString()}</span>
+                              </div>
                             </div>
                           </div>
+                          <div className="text-right space-y-2">
+                            <p className="font-semibold text-sm text-slate-900">
+                              {formatCurrency(order.grandTotal || order.total || 0, order.currency || 'EUR')}
+                            </p>
+                            <Badge 
+                              variant={
+                                order.orderStatus === 'ready_to_ship' ? 'outline' :
+                                order.orderStatus === 'delivered' ? 'default' :
+                                order.orderStatus === 'shipped' ? 'secondary' :
+                                order.orderStatus === 'to_fulfill' ? 'secondary' :
+                                order.orderStatus === 'pending' ? 'secondary' :
+                                order.orderStatus === 'cancelled' ? 'destructive' :
+                                'secondary'
+                              }
+                              className="text-xs px-2 py-0.5"
+                            >
+                              {order.orderStatus === 'to_fulfill' ? 'To Fulfill' :
+                               order.orderStatus === 'ready_to_ship' ? 'Ready to Ship' :
+                               order.orderStatus === 'delivered' ? 'Delivered' :
+                               order.orderStatus === 'shipped' ? 'Shipped' :
+                               order.orderStatus === 'pending' ? 'Pending' :
+                               order.orderStatus === 'cancelled' ? 'Cancelled' :
+                               order.orderStatus || 'Unknown'}
+                            </Badge>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-medium text-sm">{formatCurrency(order.total || 0, order.currency || 'EUR')}</p>
-                          <Badge 
-                            variant={
-                              order.status === 'delivered' ? 'default' :
-                              order.status === 'shipped' ? 'outline' :
-                              order.status === 'to_fulfill' ? 'secondary' :
-                              order.status === 'pending' ? 'secondary' :
-                              order.status === 'cancelled' ? 'destructive' :
-                              'secondary'
-                            }
-                            className="mt-1"
-                          >
-                            {order.status === 'to_fulfill' ? 'To Fulfill' :
-                             order.status === 'delivered' ? 'Delivered' :
-                             order.status === 'shipped' ? 'Shipped' :
-                             order.status === 'pending' ? 'Pending' :
-                             order.status === 'cancelled' ? 'Cancelled' :
-                             order.status}
-                          </Badge>
+                        <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                          <span className="text-xs text-slate-500">
+                            {order.items?.length || 0} items
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-slate-500">Payment:</span>
+                            <Badge 
+                              variant={order.paymentStatus === 'paid' ? 'outline' : 'secondary'}
+                              className="text-xs px-2 py-0 h-5"
+                            >
+                              {order.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}
+                            </Badge>
+                          </div>
                         </div>
-                      </div>
-                      <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
-                        <span>{order.items?.length || 0} items</span>
-                        <span>Payment: {order.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}</span>
-                      </div>
                       </div>
                     </Link>
                   ))}
