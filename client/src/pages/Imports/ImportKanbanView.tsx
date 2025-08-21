@@ -60,6 +60,18 @@ interface OrderItem {
   name: string;
   quantity: number;
   sku?: string;
+  orderId: string;
+  orderNumber: string;
+  supplier: string;
+  supplierCountry: string;
+  status: string;
+  consolidationId?: string;
+  warehouseLocation?: string;
+  localTrackingNumber?: string;
+  internationalTrackingNumber?: string;
+  estimatedArrival?: string;
+  value?: number;
+  currency?: string;
 }
 
 interface ImportOrder {
@@ -97,7 +109,8 @@ interface KanbanColumn {
   title: string;
   color: string;
   icon: React.ReactNode;
-  orders: ImportOrder[];
+  items: OrderItem[];
+  isConsolidationArea?: boolean;
 }
 
 export default function ImportKanbanView() {
@@ -105,10 +118,10 @@ export default function ImportKanbanView() {
   const [filterWarehouse, setFilterWarehouse] = useState("all");
   const [filterPriority, setFilterPriority] = useState("all");
   const [viewMode, setViewMode] = useState<"kanban" | "table" | "timeline">("kanban");
-  const [draggedOrder, setDraggedOrder] = useState<ImportOrder | null>(null);
+  const [draggedItem, setDraggedItem] = useState<OrderItem | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
-  const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
-  const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
   const [, navigate] = useLocation();
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -303,75 +316,107 @@ export default function ImportKanbanView() {
       title: "Supplier Processing",
       color: "bg-yellow-50 dark:bg-yellow-900/20",
       icon: <Activity className="h-3.5 w-3.5" />,
-      orders: []
-    },
-    {
-      id: "to_warehouse",
-      title: "To CN Warehouse",
-      color: "bg-blue-50 dark:bg-blue-900/20",
-      icon: <Truck className="h-3.5 w-3.5" />,
-      orders: []
+      items: []
     },
     {
       id: "at_warehouse",
       title: "At Warehouse",
       color: "bg-indigo-50 dark:bg-indigo-900/20",
       icon: <Building2 className="h-3.5 w-3.5" />,
-      orders: []
-    },
-    {
-      id: "consolidating",
-      title: "Consolidating",
-      color: "bg-purple-50 dark:bg-purple-900/20",
-      icon: <Package className="h-3.5 w-3.5" />,
-      orders: []
+      items: []
     },
     {
       id: "international",
       title: "International Transit",
       color: "bg-orange-50 dark:bg-orange-900/20",
       icon: <Plane className="h-3.5 w-3.5" />,
-      orders: []
+      items: []
     },
     {
       id: "delivered",
       title: "Delivered",
       color: "bg-green-50 dark:bg-green-900/20",
       icon: <CheckCircle className="h-3.5 w-3.5" />,
-      orders: []
+      items: []
     }
   ]);
+  
+  const [consolidationGroups, setConsolidationGroups] = useState<{ [key: string]: OrderItem[] }>({});
 
-  // Initialize columns with orders
+  // Transform orders to items and initialize columns
+  const getAllItems = (): OrderItem[] => {
+    const allItems: OrderItem[] = [];
+    mockOrders.forEach(order => {
+      order.items.forEach(item => {
+        allItems.push({
+          ...item,
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          supplier: order.supplier,
+          supplierCountry: order.supplierCountry,
+          status: order.status,
+          consolidationId: order.consolidationId,
+          warehouseLocation: order.warehouseLocation,
+          localTrackingNumber: order.localTrackingNumber,
+          internationalTrackingNumber: order.internationalTrackingNumber,
+          estimatedArrival: order.estimatedArrival,
+          value: (order.totalValue / order.totalItems) * item.quantity,
+          currency: order.currency
+        });
+      });
+    });
+    return allItems;
+  };
+
+  // Initialize columns with items
   useEffect(() => {
+    const items = getAllItems();
     const newColumns = columns.map(col => ({
       ...col,
-      orders: mockOrders.filter(order => order.status === col.id)
+      items: items.filter(item => {
+        // Map order status to column id
+        if (col.id === 'processing' && ['processing', 'to_warehouse'].includes(item.status)) return true;
+        if (col.id === 'at_warehouse' && ['at_warehouse', 'consolidating'].includes(item.status)) return true;
+        if (col.id === 'international' && ['international'].includes(item.status)) return true;
+        if (col.id === 'delivered' && ['delivered'].includes(item.status)) return true;
+        return false;
+      })
     }));
     setColumns(newColumns);
+    
+    // Initialize consolidation groups
+    const groups: { [key: string]: OrderItem[] } = {};
+    items.forEach(item => {
+      if (item.consolidationId) {
+        if (!groups[item.consolidationId]) {
+          groups[item.consolidationId] = [];
+        }
+        groups[item.consolidationId].push(item);
+      }
+    });
+    setConsolidationGroups(groups);
   }, []);
 
-  // Filter orders based on search and filters
-  const filterOrders = (orders: ImportOrder[]) => {
-    return orders.filter(order => {
+  // Filter items based on search and filters
+  const filterItems = (items: OrderItem[]) => {
+    if (!items) return [];
+    return items.filter(item => {
       const matchesSearch = searchQuery === "" || 
-        order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.supplier.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.supplier.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.sku && item.sku.toLowerCase().includes(searchQuery.toLowerCase()));
       
       const matchesWarehouse = filterWarehouse === "all" || 
-        order.destination.toLowerCase().includes(filterWarehouse.toLowerCase());
+        (item.warehouseLocation && item.warehouseLocation.toLowerCase().includes(filterWarehouse.toLowerCase()));
       
-      const matchesPriority = filterPriority === "all" || 
-        order.priority === filterPriority;
-      
-      return matchesSearch && matchesWarehouse && matchesPriority;
+      return matchesSearch && matchesWarehouse;
     });
   };
 
   // Drag and drop handlers
-  const handleDragStart = (e: React.DragEvent, order: ImportOrder) => {
-    setDraggedOrder(order);
+  const handleDragStart = (e: React.DragEvent, item: OrderItem) => {
+    setDraggedItem(item);
     e.dataTransfer.effectAllowed = "move";
   };
 
@@ -389,32 +434,32 @@ export default function ImportKanbanView() {
     e.preventDefault();
     setDragOverColumn(null);
     
-    if (!draggedOrder) return;
+    if (!draggedItem) return;
     
-    // Update the order status
-    const updatedOrder = { ...draggedOrder, status: targetColumnId };
+    // Update the item status
+    const updatedItem = { ...draggedItem, status: targetColumnId };
     
     // Update columns
     const newColumns = columns.map(col => {
-      if (col.id === draggedOrder.status) {
+      if (col.id === draggedItem.status) {
         // Remove from old column
         return {
           ...col,
-          orders: col.orders.filter(o => o.id !== draggedOrder.id)
+          items: col.items.filter(i => i.id !== draggedItem.id)
         };
       }
       if (col.id === targetColumnId) {
         // Add to new column
         return {
           ...col,
-          orders: [...col.orders, updatedOrder]
+          items: [...col.items, updatedItem]
         };
       }
       return col;
     });
     
     setColumns(newColumns);
-    setDraggedOrder(null);
+    setDraggedItem(null);
   };
 
   const getPriorityColor = (priority: string) => {
@@ -443,11 +488,74 @@ export default function ImportKanbanView() {
     return `${days} days`;
   };
 
-  const toggleItemsExpanded = (orderId: string) => {
-    setExpandedItems(prev => 
-      prev.includes(orderId) 
-        ? prev.filter(id => id !== orderId)
-        : [...prev, orderId]
+  const toggleGroupExpanded = (groupId: string) => {
+    setExpandedGroups(prev => 
+      prev.includes(groupId) 
+        ? prev.filter(id => id !== groupId)
+        : [...prev, groupId]
+    );
+  };
+
+  // Item Card Component
+  const ItemCard = ({ item }: { item: OrderItem }) => {
+    const [, navigate] = useLocation();
+    
+    return (
+      <Card 
+        draggable
+        onDragStart={(e) => handleDragStart(e, item)}
+        className="cursor-move hover:shadow-sm transition-all"
+      >
+        <CardContent className="p-2 space-y-1">
+          {/* Item Name & SKU */}
+          <div className="flex items-start justify-between gap-1">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold truncate">{item.name}</p>
+              {item.sku && (
+                <p className="text-[10px] text-muted-foreground">SKU: {item.sku}</p>
+              )}
+            </div>
+            <Badge variant="secondary" className="text-[10px] px-1 h-4">
+              {item.quantity}
+            </Badge>
+          </div>
+
+          {/* Order & Supplier Info */}
+          <div className="text-[10px] text-muted-foreground space-y-0.5">
+            <div className="flex items-center gap-1">
+              <Hash className="h-2.5 w-2.5" />
+              <span className="truncate">{item.orderNumber}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span>{getCountryFlag(item.supplierCountry)}</span>
+              <span className="truncate">{item.supplier}</span>
+            </div>
+          </div>
+
+          {/* Consolidation Group */}
+          {item.consolidationId && (
+            <Badge variant="outline" className="text-[9px] px-1 bg-purple-50 dark:bg-purple-900/20">
+              <Package className="h-2.5 w-2.5 mr-0.5" />
+              {item.consolidationId}
+            </Badge>
+          )}
+
+          {/* Warehouse Location */}
+          {item.warehouseLocation && (
+            <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
+              <Building2 className="h-2.5 w-2.5" />
+              <span className="truncate">{item.warehouseLocation}</span>
+            </div>
+          )}
+
+          {/* Value */}
+          {item.value && (
+            <div className="text-[10px] font-medium text-right">
+              {formatCurrency(item.value, item.currency || 'USD')}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     );
   };
 
@@ -463,7 +571,8 @@ export default function ImportKanbanView() {
     }
   };
 
-  const filteredAllOrders = mockOrders.filter(order => filterOrders([order]).length > 0);
+  const allItems = getAllItems();
+  const filteredAllItems = filterItems(allItems);
 
   // Sorting function
   const sortData = (data: ImportOrder[]) => {
@@ -525,7 +634,7 @@ export default function ImportKanbanView() {
     }
   };
 
-  const sortedOrders = sortData(filteredAllOrders);
+  const sortedOrders = sortData(mockOrders); // Temporarily using mockOrders for table view
 
   const SortableHeader = ({ column, children, align = 'left' }: { column: string; children: React.ReactNode; align?: 'left' | 'right' | 'center' }) => {
     const isActive = sortColumn === column;
@@ -771,7 +880,7 @@ export default function ImportKanbanView() {
         <ScrollArea className="w-full px-4 md:px-0">
           <div className="flex gap-3 pb-4">
             {columns.map((column) => {
-              const filteredOrders = filterOrders(column.orders);
+              const filteredItems = filterItems(column.items || []);
               return (
                 <div
                   key={column.id}
@@ -788,21 +897,23 @@ export default function ImportKanbanView() {
                           <CardTitle className="text-sm font-medium">{column.title}</CardTitle>
                         </div>
                         <Badge variant="secondary" className="text-xs h-5 px-1.5">
-                          {filteredOrders.length}
+                          {filteredItems.length}
                         </Badge>
                       </div>
                     </CardHeader>
                     <CardContent className="p-1.5">
                       <ScrollArea className="h-[calc(100vh-20rem)]">
-                        {filteredOrders.length === 0 ? (
+                        {filteredItems.length === 0 ? (
                           <div className="flex flex-col items-center justify-center py-8 text-center">
                             <Package className="h-8 w-8 text-muted-foreground mb-2" />
-                            <p className="text-sm text-muted-foreground">No orders</p>
+                            <p className="text-sm text-muted-foreground">No items</p>
                           </div>
                         ) : (
-                          filteredOrders.map((order) => (
-                            <OrderCard key={order.id} order={order} />
-                          ))
+                          <div className="space-y-1">
+                            {filteredItems.map((item) => (
+                              <ItemCard key={item.id} item={item} />
+                            ))}
+                          </div>
                         )}
                       </ScrollArea>
                     </CardContent>
