@@ -16,7 +16,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, Plus, Upload, Edit, FileSpreadsheet } from 'lucide-react';
+import { Trash2, Plus, Upload, Edit, FileSpreadsheet, Download } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import type { CustomerPrice, Product, ProductVariant } from '@shared/schema';
 
 const createCustomerPriceSchema = z.object({
@@ -256,23 +262,37 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Custom Prices</h3>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={downloadTemplate}
-          >
-            <FileSpreadsheet className="h-4 w-4 mr-2" />
-            Download Template
-          </Button>
-          
-          <Dialog open={isBulkDialogOpen} onOpenChange={setIsBulkDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Upload className="h-4 w-4 mr-2" />
-                Bulk Import
-              </Button>
-            </DialogTrigger>
+        <TooltipProvider>
+          <div className="flex gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={downloadTemplate}
+                  className="h-8 w-8"
+                >
+                  <Download className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Download Template</p>
+              </TooltipContent>
+            </Tooltip>
+            
+            <Dialog open={isBulkDialogOpen} onOpenChange={setIsBulkDialogOpen}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="icon" className="h-8 w-8">
+                      <Upload className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Bulk Import</p>
+                </TooltipContent>
+              </Tooltip>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Bulk Import Customer Prices</DialogTitle>
@@ -307,12 +327,18 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
           </Dialog>
 
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Price
-              </Button>
-            </DialogTrigger>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <DialogTrigger asChild>
+                  <Button size="icon" className="h-8 w-8">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </DialogTrigger>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Add Price</p>
+              </TooltipContent>
+            </Tooltip>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Add Custom Price</DialogTitle>
@@ -479,7 +505,8 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
               </Form>
             </DialogContent>
           </Dialog>
-        </div>
+          </div>
+        </TooltipProvider>
       </div>
 
       <Card>
