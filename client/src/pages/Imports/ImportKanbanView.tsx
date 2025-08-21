@@ -37,6 +37,7 @@ import {
   Activity,
   Timer,
   ChevronRight,
+  ChevronDown,
   Grip,
   Eye,
   Edit,
@@ -92,8 +93,8 @@ export default function ImportKanbanView() {
   const [viewMode, setViewMode] = useState<"kanban" | "table" | "timeline">("kanban");
   const [draggedOrder, setDraggedOrder] = useState<ImportOrder | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
-  const [isCompactView, setIsCompactView] = useState(false);
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
+  const [expandedItems, setExpandedItems] = useState<string[]>([]);
 
   // Mock data for import orders
   const mockOrders: ImportOrder[] = [
@@ -366,201 +367,103 @@ export default function ImportKanbanView() {
     return `${days} days`;
   };
 
+  const toggleItemsExpanded = (orderId: string) => {
+    setExpandedItems(prev => 
+      prev.includes(orderId) 
+        ? prev.filter(id => id !== orderId)
+        : [...prev, orderId]
+    );
+  };
+
   const OrderCard = ({ order }: { order: ImportOrder }) => {
-    if (isCompactView) {
-      return (
-        <Card 
-          draggable
-          onDragStart={(e) => handleDragStart(e, order)}
-          className="cursor-move hover:shadow-sm transition-all mb-1.5 group border-l-2"
-          style={{
-            borderLeftColor: 
-              order.priority === 'high' ? '#ef4444' : 
-              order.priority === 'medium' ? '#f59e0b' : 
-              '#10b981'
-          }}
-        >
-          <CardContent className="p-2.5 space-y-1.5">
-            {/* Compact Header */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                <span className="text-xs font-medium truncate">{order.orderNumber}</span>
-                <Badge className={`${getPriorityColor(order.priority)} h-5`} variant="secondary">
-                  <span className="text-[10px]">{order.priority[0].toUpperCase()}</span>
-                </Badge>
-              </div>
-              <Link href={`/imports/orders/${order.id}`}>
-                <Eye className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-              </Link>
-            </div>
-
-            {/* Compact Info */}
-            <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-1">
-                <span>{getCountryFlag(order.supplierCountry)}</span>
-                <span className="truncate max-w-[100px]">{order.supplier}</span>
-              </div>
-              <span className="font-medium">{formatCurrency(order.totalValue, order.currency)}</span>
-            </div>
-
-            {/* Compact Progress */}
-            <div className="flex items-center gap-2">
-              <div className="flex-1 h-1 bg-gray-200 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-primary transition-all"
-                  style={{ width: `${order.progress}%` }}
-                />
-              </div>
-              <span className="text-[10px] text-muted-foreground">{order.progress}%</span>
-            </div>
-
-            {/* Compact Items List */}
-            <div className="text-[10px] text-muted-foreground space-y-0 bg-muted/10 rounded p-1">
-              {order.items.slice(0, 2).map((item, idx) => (
-                <div key={item.id} className="truncate">
-                  <span className="font-medium">{item.quantity}</span> {item.name}
-                </div>
-              ))}
-              {order.items.length > 2 && (
-                <div className="text-muted-foreground/70 text-[9px]">+{order.items.length - 2} more</div>
-              )}
-            </div>
-
-            {/* Compact Footer */}
-            <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t">
-              <span>{order.totalItems} items</span>
-              <span>{getDaysUntilArrival(order.estimatedArrival)}</span>
-            </div>
-          </CardContent>
-        </Card>
-      );
-    }
-
+    const isExpanded = expandedItems.includes(order.id);
+    
     return (
       <Card 
         draggable
         onDragStart={(e) => handleDragStart(e, order)}
-        className="cursor-move hover:shadow-md transition-shadow mb-2.5 border-l-2"
-        style={{
-          borderLeftColor: 
-            order.priority === 'high' ? '#ef4444' : 
-            order.priority === 'medium' ? '#f59e0b' : 
-            '#10b981'
-        }}
+        className="cursor-move hover:shadow-sm transition-all mb-1.5 group"
       >
-        <CardContent className="p-3 space-y-2.5">
+        <CardContent className="p-2 space-y-1.5">
           {/* Header */}
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">{order.orderNumber}</span>
-              <Badge className={getPriorityColor(order.priority)} variant="secondary">
-                {order.priority}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 flex-1 min-w-0">
+              <Badge 
+                className="h-4 px-1 text-[10px] font-bold"
+                style={{
+                  backgroundColor: 
+                    order.priority === 'high' ? '#ef4444' : 
+                    order.priority === 'medium' ? '#f59e0b' : 
+                    '#10b981',
+                  color: 'white'
+                }}
+              >
+                {order.priority[0].toUpperCase()}
               </Badge>
+              <span className="text-xs font-semibold truncate">{order.orderNumber}</span>
             </div>
-            <Button variant="ghost" size="icon" className="h-6 w-6">
-              <MoreVertical className="h-3 w-3" />
-            </Button>
+            <Link href={`/imports/orders/${order.id}`}>
+              <Eye className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+            </Link>
           </div>
 
-          {/* Supplier Info */}
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-sm">
+          {/* Supplier & Value */}
+          <div className="flex items-center justify-between text-[11px]">
+            <div className="flex items-center gap-1 truncate">
               <span>{getCountryFlag(order.supplierCountry)}</span>
-              <span className="font-medium truncate">{order.supplier}</span>
+              <span className="truncate">{order.supplier}</span>
             </div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <MapPin className="h-3 w-3" />
-              <span>{order.destination}</span>
-            </div>
+            <span className="font-semibold">{formatCurrency(order.totalValue, order.currency)}</span>
           </div>
 
-          {/* Progress Bar */}
-          <div className="space-y-1">
-            <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">Progress</span>
-              <span className="font-medium">{order.progress}%</span>
-            </div>
-            <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-primary transition-all"
-                style={{ width: `${order.progress}%` }}
-              />
-            </div>
+          {/* Progress */}
+          <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-green-500 transition-all"
+              style={{ width: `${order.progress}%` }}
+            />
           </div>
 
-          {/* Metrics */}
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="flex items-center gap-1">
-              <Package className="h-3 w-3 text-muted-foreground" />
-              <span>{order.totalItems.toLocaleString()} items</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <DollarSign className="h-3 w-3 text-muted-foreground" />
-              <span>{formatCurrency(order.totalValue, order.currency)}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Calendar className="h-3 w-3 text-muted-foreground" />
-              <span>{getDaysUntilArrival(order.estimatedArrival)}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <FileText className="h-3 w-3 text-muted-foreground" />
-              <span>{order.documents} docs</span>
-            </div>
-          </div>
-
-          {/* Items List */}
-          <div className="space-y-0.5 p-2 bg-muted/20 rounded-md text-xs">
-            <div className="font-medium text-xs mb-1 flex items-center gap-1">
-              <Package className="h-3 w-3" />
-              Items ({order.items.length})
-            </div>
-            <div className="space-y-0.5">
-              {order.items.slice(0, 4).map((item) => (
-                <div key={item.id} className="flex justify-between items-center text-[11px]">
-                  <span className="truncate flex-1 text-muted-foreground">{item.name}</span>
-                  <span className="font-medium ml-2">{item.quantity}</span>
-                </div>
-              ))}
-              {order.items.length > 4 && (
-                <div className="text-muted-foreground text-center text-[10px] pt-0.5 border-t">
-                  +{order.items.length - 4} more items
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Tags */}
-          {order.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {order.tags.map((tag, index) => (
-                <Badge key={index} variant="outline" className="text-xs">
-                  {tag}
-                </Badge>
-              ))}
-            </div>
-          )}
-
-          {/* Footer */}
-          <div className="flex items-center justify-between pt-2 border-t">
-            {order.assignee ? (
+          {/* Items List with Toggle */}
+          <div className="bg-gray-50 dark:bg-gray-900/30 rounded p-1.5">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleItemsExpanded(order.id);
+              }}
+              className="flex items-center justify-between w-full text-left hover:bg-gray-100 dark:hover:bg-gray-800/50 rounded px-1 py-0.5 transition-colors"
+            >
               <div className="flex items-center gap-1">
-                <Avatar className="h-5 w-5">
-                  <AvatarFallback className="text-xs">
-                    {order.assignee.split(' ').map(n => n[0]).join('')}
-                  </AvatarFallback>
-                </Avatar>
-                <span className="text-xs text-muted-foreground">{order.assignee}</span>
+                <ChevronDown 
+                  className={`h-3 w-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`} 
+                />
+                <span className="text-[11px] font-medium">
+                  {order.items.length} items
+                </span>
               </div>
-            ) : (
-              <span className="text-xs text-muted-foreground">Unassigned</span>
+              <span className="text-[10px] text-muted-foreground">
+                {order.totalItems} total
+              </span>
+            </button>
+            
+            {isExpanded && (
+              <div className="mt-1 space-y-0.5 px-1">
+                {order.items.map((item) => (
+                  <div key={item.id} className="flex justify-between items-center text-[10px]">
+                    <span className="truncate flex-1 text-muted-foreground">{item.name}</span>
+                    <span className="font-medium ml-1">{item.quantity}</span>
+                  </div>
+                ))}
+              </div>
             )}
-            <div className="flex items-center gap-2">
-              <Link href={`/imports/orders/${order.id}`}>
-                <Button variant="ghost" size="icon" className="h-6 w-6">
-                  <Eye className="h-3 w-3" />
-                </Button>
-              </Link>
-            </div>
+          </div>
+
+          {/* Footer Info */}
+          <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+            <span>{getDaysUntilArrival(order.estimatedArrival)}</span>
+            {order.assignee && (
+              <span>{order.assignee.split(' ').map(n => n[0]).join('')}</span>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -646,18 +549,7 @@ export default function ImportKanbanView() {
                 <SelectItem value="low">Low</SelectItem>
               </SelectContent>
             </Select>
-            {viewMode === "kanban" && (
-              <div className="flex items-center gap-2">
-                <Switch
-                  id="compact-view"
-                  checked={isCompactView}
-                  onCheckedChange={setIsCompactView}
-                />
-                <Label htmlFor="compact-view" className="text-sm whitespace-nowrap">
-                  Compact
-                </Label>
-              </div>
-            )}
+
           </div>
         </CardContent>
       </Card>
@@ -676,8 +568,8 @@ export default function ImportKanbanView() {
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, column.id)}
                 >
-                  <Card className={`h-full ${dragOverColumn === column.id ? 'ring-2 ring-primary' : ''}`}>
-                    <CardHeader className={`${column.color} border-b py-3 px-3`}>
+                  <Card className={`h-full ${dragOverColumn === column.id ? 'ring-2 ring-primary' : ''} overflow-hidden`}>
+                    <CardHeader className={`${column.color} py-2.5 px-3`}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1.5">
                           {column.icon}
