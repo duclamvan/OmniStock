@@ -120,6 +120,7 @@ export default function ImportKanbanView() {
   const [viewMode, setViewMode] = useState<"kanban" | "table" | "timeline">("kanban");
   const [draggedItem, setDraggedItem] = useState<OrderItem | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
+  const [dragOverItem, setDragOverItem] = useState<string | null>(null);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
   const [, navigate] = useLocation();
@@ -347,9 +348,10 @@ export default function ImportKanbanView() {
   const getAllItems = (): OrderItem[] => {
     const allItems: OrderItem[] = [];
     mockOrders.forEach(order => {
-      order.items.forEach(item => {
+      order.items.forEach((item, index) => {
         allItems.push({
           ...item,
+          id: `${order.id}-${item.id}-${index}`, // Ensure unique ID
           orderId: order.id,
           orderNumber: order.orderNumber,
           supplier: order.supplier,
@@ -414,10 +416,11 @@ export default function ImportKanbanView() {
     });
   };
 
-  // Drag and drop handlers
+  // Enhanced Drag and Drop Handlers
   const handleDragStart = (e: React.DragEvent, item: OrderItem) => {
     setDraggedItem(item);
     e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", item.id); // For better browser support
   };
 
   const handleDragOver = (e: React.DragEvent, columnId: string) => {
@@ -426,22 +429,39 @@ export default function ImportKanbanView() {
     setDragOverColumn(columnId);
   };
 
-  const handleDragLeave = () => {
-    setDragOverColumn(null);
+  const handleDragLeave = (e: React.DragEvent) => {
+    // Only clear if leaving the column entirely
+    if (e.currentTarget === e.target) {
+      setDragOverColumn(null);
+    }
   };
 
   const handleDrop = (e: React.DragEvent, targetColumnId: string) => {
     e.preventDefault();
+    e.stopPropagation();
     setDragOverColumn(null);
     
     if (!draggedItem) return;
     
+    // Map column IDs to proper status values
+    const statusMap: { [key: string]: string } = {
+      'processing': 'processing',
+      'at_warehouse': 'at_warehouse',
+      'international': 'international',
+      'delivered': 'delivered'
+    };
+    
     // Update the item status
-    const updatedItem = { ...draggedItem, status: targetColumnId };
+    const updatedItem = { ...draggedItem, status: statusMap[targetColumnId] || targetColumnId };
     
     // Update columns
     const newColumns = columns.map(col => {
-      if (col.id === draggedItem.status) {
+      // Find source column
+      const sourceCol = columns.find(c => 
+        c.items.some(i => i.id === draggedItem.id)
+      );
+      
+      if (col.id === sourceCol?.id) {
         // Remove from old column
         return {
           ...col,
@@ -460,6 +480,46 @@ export default function ImportKanbanView() {
     
     setColumns(newColumns);
     setDraggedItem(null);
+  };
+
+  // Handle drag over item (for consolidation)
+  const handleDragOverItem = (e: React.DragEvent, itemId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverItem(itemId);
+  };
+
+  const handleDropOnItem = (e: React.DragEvent, targetItem: OrderItem) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverItem(null);
+    
+    if (!draggedItem || draggedItem.id === targetItem.id) return;
+    
+    // Create or update consolidation group
+    const consolidationId = targetItem.consolidationId || `CONSOL-${Date.now()}`;
+    
+    // Update both items to have the same consolidation ID
+    const newColumns = columns.map(col => ({
+      ...col,
+      items: col.items.map(item => {
+        if (item.id === draggedItem.id || item.id === targetItem.id) {
+          return { ...item, consolidationId };
+        }
+        return item;
+      })
+    }));
+    
+    setColumns(newColumns);
+    setDraggedItem(null);
+    
+    // Update consolidation groups
+    const updatedGroups = { ...consolidationGroups };
+    if (!updatedGroups[consolidationId]) {
+      updatedGroups[consolidationId] = [];
+    }
+    updatedGroups[consolidationId].push(draggedItem, targetItem);
+    setConsolidationGroups(updatedGroups);
   };
 
   const getPriorityColor = (priority: string) => {
@@ -496,66 +556,48 @@ export default function ImportKanbanView() {
     );
   };
 
-  // Item Card Component
-  const ItemCard = ({ item }: { item: OrderItem }) => {
-    const [, navigate] = useLocation();
+  // Compact Item Card Component
+  const ItemCard = ({ item, isDragging = false }: { item: OrderItem; isDragging?: boolean }) => {
+    const isConsolidated = !!item.consolidationId;
     
     return (
-      <Card 
+      <div 
         draggable
         onDragStart={(e) => handleDragStart(e, item)}
-        className="cursor-move hover:shadow-sm transition-all"
+        className={`
+          group relative bg-white dark:bg-gray-800 border rounded-md p-1.5 cursor-move
+          transition-all duration-200 hover:shadow-md hover:scale-[1.02] hover:z-10
+          ${isDragging ? 'opacity-50 scale-95' : ''}
+          ${isConsolidated ? 'border-purple-300 bg-purple-50/50 dark:bg-purple-900/20' : 'border-gray-200'}
+        `}
       >
-        <CardContent className="p-2 space-y-1">
-          {/* Item Name & SKU */}
-          <div className="flex items-start justify-between gap-1">
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold truncate">{item.name}</p>
-              {item.sku && (
-                <p className="text-[10px] text-muted-foreground">SKU: {item.sku}</p>
+        {/* Drag Handle Indicator */}
+        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-gray-400 to-gray-300 rounded-l-md opacity-0 group-hover:opacity-100 transition-opacity" />
+        
+        {/* Main Content - Single Row Layout */}
+        <div className="flex items-center gap-1.5 text-[10px]">
+          {/* Quantity Badge */}
+          <Badge variant="secondary" className="h-4 px-1 text-[9px] font-bold">
+            {item.quantity}
+          </Badge>
+          
+          {/* Item Name */}
+          <div className="flex-1 min-w-0">
+            <p className="font-medium truncate">{item.name}</p>
+            <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
+              <span className="truncate">{item.sku || item.orderNumber}</span>
+              {item.consolidationId && (
+                <Badge variant="outline" className="h-3 px-0.5 text-[8px] border-purple-400">
+                  C-{item.consolidationId.slice(-3)}
+                </Badge>
               )}
             </div>
-            <Badge variant="secondary" className="text-[10px] px-1 h-4">
-              {item.quantity}
-            </Badge>
           </div>
-
-          {/* Order & Supplier Info */}
-          <div className="text-[10px] text-muted-foreground space-y-0.5">
-            <div className="flex items-center gap-1">
-              <Hash className="h-2.5 w-2.5" />
-              <span className="truncate">{item.orderNumber}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <span>{getCountryFlag(item.supplierCountry)}</span>
-              <span className="truncate">{item.supplier}</span>
-            </div>
-          </div>
-
-          {/* Consolidation Group */}
-          {item.consolidationId && (
-            <Badge variant="outline" className="text-[9px] px-1 bg-purple-50 dark:bg-purple-900/20">
-              <Package className="h-2.5 w-2.5 mr-0.5" />
-              {item.consolidationId}
-            </Badge>
-          )}
-
-          {/* Warehouse Location */}
-          {item.warehouseLocation && (
-            <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
-              <Building2 className="h-2.5 w-2.5" />
-              <span className="truncate">{item.warehouseLocation}</span>
-            </div>
-          )}
-
-          {/* Value */}
-          {item.value && (
-            <div className="text-[10px] font-medium text-right">
-              {formatCurrency(item.value, item.currency || 'USD')}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          
+          {/* Country Flag */}
+          <span className="text-xs">{getCountryFlag(item.supplierCountry)}</span>
+        </div>
+      </div>
     );
   };
 
@@ -889,30 +931,158 @@ export default function ImportKanbanView() {
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, column.id)}
                 >
-                  <Card className={`h-full ${dragOverColumn === column.id ? 'ring-2 ring-primary' : ''} overflow-hidden`}>
-                    <CardHeader className={`${column.color} py-2.5 px-3`}>
+                  <Card className={`
+                    h-full overflow-hidden transition-all duration-200
+                    ${dragOverColumn === column.id ? 'ring-2 ring-blue-500 shadow-lg scale-[1.01]' : ''}
+                  `}>
+                    <CardHeader className={`${column.color} py-2 px-2.5`}>
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1">
                           {column.icon}
-                          <CardTitle className="text-sm font-medium">{column.title}</CardTitle>
+                          <CardTitle className="text-xs font-medium">{column.title}</CardTitle>
                         </div>
-                        <Badge variant="secondary" className="text-xs h-5 px-1.5">
-                          {filteredItems.length}
-                        </Badge>
+                        <div className="flex items-center gap-1">
+                          {column.id === 'at_warehouse' && (
+                            <Badge variant="outline" className="text-[8px] h-3 px-0.5 border-purple-400">
+                              <Package className="h-2 w-2" />
+                              {Object.keys(consolidationGroups).length} groups
+                            </Badge>
+                          )}
+                          <Badge variant="secondary" className="text-[10px] h-4 px-1">
+                            {filteredItems.length} items
+                          </Badge>
+                        </div>
                       </div>
                     </CardHeader>
-                    <CardContent className="p-1.5">
-                      <ScrollArea className="h-[calc(100vh-20rem)]">
+                    <CardContent className="p-1">
+                      {/* Special Consolidation Zone for Warehouse */}
+                      {column.id === 'at_warehouse' && (
+                        <div 
+                          className={`
+                            mb-2 p-2 border-2 border-dashed rounded-md transition-all
+                            ${dragOverColumn === 'consolidation-zone' ? 
+                              'border-purple-500 bg-purple-50 dark:bg-purple-900/20' : 
+                              'border-gray-300 bg-gray-50/50 dark:bg-gray-800/50'}
+                          `}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setDragOverColumn('consolidation-zone');
+                          }}
+                          onDragLeave={() => setDragOverColumn(null)}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (draggedItem) {
+                              // Create new consolidation group
+                              const newConsolId = `CONSOL-${Date.now().toString(36).toUpperCase()}`;
+                              const updatedItem = { ...draggedItem, consolidationId: newConsolId };
+                              
+                              // Update columns
+                              const newColumns = columns.map(col => {
+                                if (col.items.some(i => i.id === draggedItem.id)) {
+                                  return {
+                                    ...col,
+                                    items: col.items.map(i => 
+                                      i.id === draggedItem.id ? updatedItem : i
+                                    )
+                                  };
+                                }
+                                return col;
+                              });
+                              
+                              setColumns(newColumns);
+                              setDraggedItem(null);
+                              setDragOverColumn(null);
+                            }
+                          }}
+                        >
+                          <div className="flex items-center justify-center gap-1">
+                            <Package className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="text-[10px] font-medium text-muted-foreground">
+                              {dragOverColumn === 'consolidation-zone' ? 
+                                'Drop to create consolidation' : 
+                                'Drag items here to consolidate'}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      
+                      <ScrollArea className="h-[calc(100vh-22rem)]">
                         {filteredItems.length === 0 ? (
-                          <div className="flex flex-col items-center justify-center py-8 text-center">
-                            <Package className="h-8 w-8 text-muted-foreground mb-2" />
-                            <p className="text-sm text-muted-foreground">No items</p>
+                          <div className={`
+                            flex flex-col items-center justify-center py-8 text-center rounded-md
+                            ${dragOverColumn === column.id ? 'bg-blue-50 dark:bg-blue-900/20 border-2 border-dashed border-blue-300' : ''}
+                          `}>
+                            <Package className="h-6 w-6 text-muted-foreground mb-1" />
+                            <p className="text-xs text-muted-foreground">
+                              {dragOverColumn === column.id ? 'Drop here' : 'No items'}
+                            </p>
                           </div>
                         ) : (
-                          <div className="space-y-1">
-                            {filteredItems.map((item) => (
-                              <ItemCard key={item.id} item={item} />
-                            ))}
+                          <div className="space-y-0.5">
+                            {/* Group items by consolidation ID */}
+                            {(() => {
+                              const groups: { [key: string]: OrderItem[] } = {};
+                              const standalone: OrderItem[] = [];
+                              
+                              filteredItems.forEach(item => {
+                                if (item.consolidationId) {
+                                  if (!groups[item.consolidationId]) {
+                                    groups[item.consolidationId] = [];
+                                  }
+                                  groups[item.consolidationId].push(item);
+                                } else {
+                                  standalone.push(item);
+                                }
+                              });
+                              
+                              return (
+                                <>
+                                  {/* Render consolidated groups */}
+                                  {Object.entries(groups).map(([consolId, items]) => (
+                                    <div 
+                                      key={consolId}
+                                      className="border border-purple-300 bg-purple-50/30 dark:bg-purple-900/10 rounded-md p-1 space-y-0.5"
+                                    >
+                                      <div className="flex items-center justify-between mb-0.5">
+                                        <Badge variant="outline" className="text-[8px] px-0.5 h-3 border-purple-400">
+                                          <Package className="h-2 w-2 mr-0.5" />
+                                          Consolidated ({items.length})
+                                        </Badge>
+                                      </div>
+                                      {items.map(item => (
+                                        <ItemCard 
+                                          key={item.id} 
+                                          item={item}
+                                          isDragging={draggedItem?.id === item.id}
+                                        />
+                                      ))}
+                                    </div>
+                                  ))}
+                                  
+                                  {/* Render standalone items */}
+                                  {standalone.map(item => (
+                                    <div
+                                      key={item.id}
+                                      onDragOver={(e) => handleDragOverItem(e, item.id)}
+                                      onDragLeave={() => setDragOverItem(null)}
+                                      onDrop={(e) => handleDropOnItem(e, item)}
+                                      className={`
+                                        transition-all duration-200
+                                        ${dragOverItem === item.id && draggedItem?.id !== item.id ? 
+                                          'ring-2 ring-purple-400 rounded-md p-0.5 bg-purple-50/50' : ''}
+                                      `}
+                                    >
+                                      <ItemCard 
+                                        item={item}
+                                        isDragging={draggedItem?.id === item.id}
+                                      />
+                                    </div>
+                                  ))}
+                                </>
+                              );
+                            })()}
                           </div>
                         )}
                       </ScrollArea>
