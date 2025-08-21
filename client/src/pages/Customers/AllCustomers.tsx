@@ -103,7 +103,7 @@ export default function AllCustomers() {
     },
     {
       key: "country",
-      header: <span className="hidden lg:inline">Country</span>,
+      header: "Country",
       sortable: true,
       className: "hidden lg:table-cell",
       cell: (customer) => customer.country ? (
@@ -115,7 +115,7 @@ export default function AllCustomers() {
     },
     {
       key: "lastOrderDate",
-      header: <span className="hidden md:inline">Last Purchase</span>,
+      header: "Last Purchase",
       sortable: true,
       className: "hidden md:table-cell",
       cell: (customer) => (
@@ -128,7 +128,7 @@ export default function AllCustomers() {
     },
     {
       key: "orderCount",
-      header: <span className="text-xs lg:text-sm">Orders</span>,
+      header: "Orders",
       sortable: true,
       className: "text-center",
       cell: (customer) => (
@@ -137,7 +137,7 @@ export default function AllCustomers() {
     },
     {
       key: "totalSpent",
-      header: <span className="text-xs lg:text-sm">Sales</span>,
+      header: "Sales",
       sortable: true,
       className: "text-right",
       cell: (customer) => (

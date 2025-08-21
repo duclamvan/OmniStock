@@ -87,13 +87,14 @@ export default function AllWarehouses() {
   const columns: DataTableColumn<any>[] = [
     {
       key: "name",
-      header: "Warehouse Name",
+      header: "Warehouse",
       sortable: true,
+      className: "min-w-[120px]",
       cell: (warehouse) => (
-        <div className="flex items-center gap-2">
-          <Warehouse className="h-5 w-5 text-gray-400" />
+        <div className="flex items-center gap-1 lg:gap-2">
+          <Warehouse className="h-3 w-3 lg:h-4 lg:w-4 text-gray-400 hidden sm:block" />
           <Link href={`/warehouses/${warehouse.id}`}>
-            <span className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer">
+            <span className="font-medium text-xs lg:text-sm text-blue-600 hover:text-blue-800 cursor-pointer truncate max-w-[100px] lg:max-w-none">
               {warehouse.name}
             </span>
           </Link>
@@ -104,12 +105,15 @@ export default function AllWarehouses() {
       key: "location",
       header: "Location",
       sortable: true,
+      className: "hidden md:table-cell",
       cell: (warehouse) => (
-        <div className="flex items-center gap-2">
-          <MapPin className="h-4 w-4 text-gray-400" />
+        <div className="flex items-center gap-1 text-xs">
+          <MapPin className="h-3 w-3 text-gray-400 hidden lg:block" />
           <div>
-            <div>{warehouse.location || warehouse.address}</div>
-            <div className="text-xs text-gray-500">{warehouse.city || ''}{warehouse.city && warehouse.country ? ', ' : ''}{warehouse.country || ''}</div>
+            <div className="truncate max-w-[150px]">{warehouse.location || warehouse.address}</div>
+            <div className="text-xs text-gray-500 truncate max-w-[150px]">
+              {warehouse.city || ''}{warehouse.city && warehouse.country ? ', ' : ''}{warehouse.country || ''}
+            </div>
           </div>
         </div>
       ),
@@ -118,23 +122,32 @@ export default function AllWarehouses() {
       key: "manager",
       header: "Manager",
       sortable: true,
+      className: "hidden lg:table-cell",
+      cell: (warehouse) => (
+        <span className="text-xs">{warehouse.manager || '-'}</span>
+      ),
     },
     {
       key: "phone",
       header: "Phone",
+      className: "hidden lg:table-cell",
       cell: (warehouse) => warehouse.phone ? (
-        <div className="flex items-center gap-1">
-          <Phone className="h-4 w-4 text-gray-400" />
-          {warehouse.phone}
+        <div className="flex items-center gap-1 text-xs">
+          <Phone className="h-3 w-3 text-gray-400" />
+          <span className="truncate max-w-[100px]">{warehouse.phone}</span>
         </div>
-      ) : '-',
+      ) : <span className="text-xs text-gray-400">-</span>,
     },
     {
       key: "capacity",
       header: "Capacity",
       sortable: true,
-      cell: (warehouse) => warehouse.capacity ? `${warehouse.capacity} units` : '-',
-      className: "text-right",
+      className: "text-right hidden sm:table-cell",
+      cell: (warehouse) => (
+        <span className="text-xs lg:text-sm">
+          {warehouse.capacity ? `${warehouse.capacity.toLocaleString()}` : '-'}
+        </span>
+      ),
     },
     {
       key: "type",
@@ -144,23 +157,26 @@ export default function AllWarehouses() {
         const types: Record<string, { label: string; color: string }> = {
           'main': { label: 'Main', color: 'bg-blue-100 text-blue-800' },
           'branch': { label: 'Branch', color: 'bg-green-100 text-green-800' },
-          'temporary': { label: 'Temporary', color: 'bg-yellow-100 text-yellow-800' },
+          'temporary': { label: 'Temp', color: 'bg-yellow-100 text-yellow-800' },
         };
         const type = types[warehouse.type] || { label: warehouse.type, color: 'bg-gray-100 text-gray-800' };
-        return <Badge className={type.color}>{type.label}</Badge>;
+        return (
+          <Badge className={`${type.color} text-xs px-1.5 py-0 h-5`}>
+            {type.label}
+          </Badge>
+        );
       },
     },
     {
       key: "actions",
-      header: "Actions",
+      header: "",
+      className: "w-10",
       cell: (warehouse) => (
-        <div className="flex items-center gap-1">
-          <Link href={`/warehouses/${warehouse.id}/edit`}>
-            <Button size="sm" variant="ghost">
-              <Edit className="h-4 w-4" />
-            </Button>
-          </Link>
-        </div>
+        <Link href={`/warehouses/${warehouse.id}/edit`}>
+          <Button size="icon" variant="ghost" className="h-7 w-7 lg:h-8 lg:w-8">
+            <Edit className="h-3 w-3 lg:h-4 lg:w-4" />
+          </Button>
+        </Link>
       ),
     },
   ];
@@ -203,39 +219,39 @@ export default function AllWarehouses() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 lg:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">Warehouses</h1>
+        <h1 className="text-xl lg:text-2xl font-bold text-slate-900">Warehouses</h1>
         <Link href="/warehouses/add">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Warehouse
+          <Button size="sm" className="lg:size-default">
+            <Plus className="h-4 w-4" />
+            <span className="ml-2 hidden sm:inline">Add Warehouse</span>
           </Button>
         </Link>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-6">
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Warehouse className="h-8 w-8 text-blue-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-slate-600">Total Warehouses</p>
-                <p className="text-2xl font-bold text-slate-900">{warehouses?.length || 0}</p>
+          <CardContent className="p-4 lg:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center">
+              <Warehouse className="h-6 w-6 lg:h-8 lg:w-8 text-blue-600 mb-2 sm:mb-0" />
+              <div className="sm:ml-4">
+                <p className="text-xs lg:text-sm font-medium text-slate-600">Total</p>
+                <p className="text-lg lg:text-2xl font-bold text-slate-900">{warehouses?.length || 0}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <MapPin className="h-8 w-8 text-green-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-slate-600">Main Warehouses</p>
-                <p className="text-2xl font-bold text-slate-900">
+          <CardContent className="p-4 lg:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center">
+              <MapPin className="h-6 w-6 lg:h-8 lg:w-8 text-green-600 mb-2 sm:mb-0" />
+              <div className="sm:ml-4">
+                <p className="text-xs lg:text-sm font-medium text-slate-600">Main</p>
+                <p className="text-lg lg:text-2xl font-bold text-slate-900">
                   {warehouses?.filter((w: any) => w.type === 'main').length || 0}
                 </p>
               </div>
@@ -244,13 +260,14 @@ export default function AllWarehouses() {
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Warehouse className="h-8 w-8 text-purple-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-slate-600">Total Capacity</p>
-                <p className="text-2xl font-bold text-slate-900">
-                  {warehouses?.reduce((sum: number, w: any) => sum + (w.capacity || 0), 0).toLocaleString()} units
+          <CardContent className="p-4 lg:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center">
+              <Warehouse className="h-6 w-6 lg:h-8 lg:w-8 text-purple-600 mb-2 sm:mb-0" />
+              <div className="sm:ml-4">
+                <p className="text-xs lg:text-sm font-medium text-slate-600">Capacity</p>
+                <p className="text-lg lg:text-2xl font-bold text-slate-900">
+                  {warehouses?.reduce((sum: number, w: any) => sum + (w.capacity || 0), 0).toLocaleString()}
+                  <span className="text-xs lg:text-sm font-normal text-slate-600 ml-1">units</span>
                 </p>
               </div>
             </div>
@@ -260,33 +277,35 @@ export default function AllWarehouses() {
 
       {/* Filters */}
       <Card>
-        <CardContent className="p-6">
+        <CardContent className="p-3 lg:p-6">
           <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-2.5 lg:top-3 h-4 w-4 text-slate-400" />
             <Input
-              placeholder="Search warehouses by name, address, city, or manager..."
+              placeholder="Search warehouses..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 h-9 lg:h-10 text-sm lg:text-base"
             />
           </div>
         </CardContent>
       </Card>
 
       {/* Warehouses Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Warehouses ({filteredWarehouses?.length || 0})</CardTitle>
+      <Card className="overflow-hidden">
+        <CardHeader className="px-4 lg:px-6">
+          <CardTitle className="text-base lg:text-xl">Warehouses ({filteredWarehouses?.length || 0})</CardTitle>
         </CardHeader>
-        <CardContent>
-          <DataTable
-            data={filteredWarehouses}
-            columns={columns}
-            bulkActions={bulkActions}
-            getRowKey={(warehouse) => warehouse.id}
-            itemsPerPageOptions={[10, 20, 50, 100]}
-            defaultItemsPerPage={20}
-          />
+        <CardContent className="px-2 lg:px-6">
+          <div className="overflow-x-auto">
+            <DataTable
+              data={filteredWarehouses}
+              columns={columns}
+              bulkActions={bulkActions}
+              getRowKey={(warehouse) => warehouse.id}
+              itemsPerPageOptions={[10, 20, 50, 100]}
+              defaultItemsPerPage={20}
+            />
+          </div>
         </CardContent>
       </Card>
 
