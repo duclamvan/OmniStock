@@ -24,7 +24,10 @@ import {
   AlertCircle,
   Award,
   CreditCard,
-  Building
+  Building,
+  ShoppingCart,
+  DollarSign,
+  Activity
 } from "lucide-react";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { CustomerPrices } from "./CustomerPrices";
@@ -49,7 +52,7 @@ export default function CustomerDetails() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-64">
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-slate-600">Loading customer details...</p>
@@ -59,12 +62,21 @@ export default function CustomerDetails() {
   }
 
   if (!customer) {
-    return null;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-slate-600">Customer not found</p>
+        </div>
+      </div>
+    );
   }
 
-  // Calculate total spent
-  const totalSpent = orders.reduce((sum, order) => sum + (order.total || 0), 0);
+  // Calculate statistics
+  const totalSpent = customer.totalSpent || orders.reduce((sum, order) => sum + (Number(order.grandTotal) || 0), 0);
   const customerCurrency = orders[0]?.currency || 'EUR';
+  const averageOrderValue = orders.length > 0 ? totalSpent / orders.length : 0;
+  const unpaidOrders = orders.filter(order => order.paymentStatus !== 'paid').length;
+  const lastOrderDate = orders[0]?.createdAt ? new Date(orders[0].createdAt) : null;
   
   // Calculate customer relationship duration
   const getCustomerDuration = () => {
@@ -79,11 +91,11 @@ export default function CustomerDetails() {
     const days = diffDays % 30;
     
     if (years > 0) {
-      return `${years} year${years > 1 ? 's' : ''} ${months} month${months !== 1 ? 's' : ''}`;
+      return `${years}y ${months}m`;
     } else if (months > 0) {
-      return `${months} month${months > 1 ? 's' : ''} ${days} day${days !== 1 ? 's' : ''}`;
+      return `${months}m ${days}d`;
     } else {
-      return `${days} day${days !== 1 ? 's' : ''}`;
+      return `${days}d`;
     }
   };
   
@@ -93,41 +105,29 @@ export default function CustomerDetails() {
     
     // Ranking badges
     if (customer.customerRank === 'TOP10') {
-      badges.push({ label: 'TOP 10', variant: 'default', icon: Trophy, color: 'text-yellow-600 bg-yellow-50 border-yellow-300' });
+      badges.push({ label: 'TOP 10', icon: Trophy, color: 'bg-yellow-50 border-yellow-300 text-yellow-700' });
     } else if (customer.customerRank === 'TOP50') {
-      badges.push({ label: 'TOP 50', variant: 'secondary', icon: Award, color: 'text-blue-600 bg-blue-50 border-blue-300' });
+      badges.push({ label: 'TOP 50', icon: Award, color: 'bg-blue-50 border-blue-300 text-blue-700' });
     } else if (customer.customerRank === 'TOP100') {
-      badges.push({ label: 'TOP 100', variant: 'outline', icon: Star, color: 'text-gray-600 bg-gray-50 border-gray-300' });
+      badges.push({ label: 'TOP 100', icon: Star, color: 'bg-gray-50 border-gray-300 text-gray-700' });
     }
     
     // Activity badges
-    const lastOrderDate = orders[0]?.createdAt ? new Date(orders[0].createdAt) : null;
     if (lastOrderDate) {
       const daysSinceLastOrder = Math.floor((Date.now() - lastOrderDate.getTime()) / (1000 * 60 * 60 * 24));
       
-      if (daysSinceLastOrder > 180) {
-        badges.push({ label: 'Long Lost', variant: 'destructive', icon: AlertCircle, color: 'text-red-600 bg-red-50 border-red-300' });
-      } else if (daysSinceLastOrder < 30) {
-        badges.push({ label: 'Active', variant: 'default', icon: TrendingUp, color: 'text-green-600 bg-green-50 border-green-300' });
-      } else if (daysSinceLastOrder < 90) {
-        badges.push({ label: 'Regular', variant: 'secondary', icon: Clock, color: 'text-indigo-600 bg-indigo-50 border-indigo-300' });
+      if (daysSinceLastOrder < 30) {
+        badges.push({ label: 'Active', icon: Activity, color: 'bg-green-50 border-green-300 text-green-700' });
+      } else if (daysSinceLastOrder > 180) {
+        badges.push({ label: 'Inactive', icon: AlertCircle, color: 'bg-red-50 border-red-300 text-red-700' });
       }
     }
     
-    // Order volume badges
-    if (orders.length >= 50) {
-      badges.push({ label: 'Loyal', variant: 'default', icon: Star, color: 'text-purple-600 bg-purple-50 border-purple-300' });
-    } else if (orders.length >= 20) {
-      badges.push({ label: 'Frequent', variant: 'secondary', icon: Package, color: 'text-cyan-600 bg-cyan-50 border-cyan-300' });
-    } else if (orders.length === 1) {
-      badges.push({ label: 'New', variant: 'outline', icon: User, color: 'text-gray-600 bg-gray-50 border-gray-300' });
-    }
-    
     // Type badges
-    if (customer.type === 'vip') {
-      badges.push({ label: 'VIP', variant: 'default', icon: Star, color: 'text-amber-600 bg-amber-50 border-amber-300' });
-    } else if (customer.type === 'wholesale') {
-      badges.push({ label: 'Wholesale', variant: 'secondary', icon: Building, color: 'text-slate-600 bg-slate-50 border-slate-300' });
+    if (customer.type === 'wholesale') {
+      badges.push({ label: 'Wholesale', icon: Building, color: 'bg-slate-50 border-slate-300 text-slate-700' });
+    } else if (customer.type === 'vip') {
+      badges.push({ label: 'VIP', icon: Star, color: 'bg-purple-50 border-purple-300 text-purple-700' });
     }
     
     return badges;
@@ -137,20 +137,102 @@ export default function CustomerDetails() {
   const customerDuration = getCustomerDuration();
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => navigate("/customers")}
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <h1 className="text-2xl font-bold text-slate-900">{customer.name}</h1>
+    <div className="min-h-screen bg-gray-50">
+      {/* Mobile Header */}
+      <div className="sticky top-0 z-10 bg-white border-b lg:hidden">
+        <div className="px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate("/customers")}
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <div>
+                <h1 className="text-lg font-semibold text-slate-900">{customer.name}</h1>
+                <p className="text-xs text-slate-500">ID: {customer.id}</p>
+              </div>
+            </div>
+            <Link href={`/customers/${id}/edit`}>
+              <Button size="sm" variant="outline">
+                <Edit className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop Header */}
+      <div className="hidden lg:block bg-white border-b">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => navigate("/customers")}
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div>
+                <h1 className="text-2xl font-bold text-slate-900">{customer.name}</h1>
+                <div className="flex items-center gap-4 mt-1">
+                  <span className="text-sm text-slate-500">Customer ID: {customer.id}</span>
+                  {customerDuration && (
+                    <span className="text-sm text-slate-500">• Customer for {customerDuration}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <Link href={`/customers/${id}/edit`}>
+              <Button>
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Customer
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Customer Badges - Mobile */}
+      {customerBadges.length > 0 && (
+        <div className="px-4 py-3 bg-white border-b lg:hidden">
+          <div className="flex flex-wrap gap-2">
+            {customerBadges.map((badge, index) => {
+              const Icon = badge.icon;
+              return (
+                <Badge key={index} variant="outline" className={badge.color}>
+                  <Icon className="mr-1 h-3 w-3" />
+                  {badge.label}
+                </Badge>
+              );
+            })}
+            {customer.hasPayLaterBadge && (
+              <Badge variant="outline" className="bg-yellow-50 border-yellow-300 text-yellow-700">
+                <CreditCard className="mr-1 h-3 w-3" />
+                Pay Later
+              </Badge>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Customer Badges - Desktop */}
+      {customerBadges.length > 0 && (
+        <div className="hidden lg:block bg-gray-50 border-b">
+          <div className="container mx-auto px-6 py-3">
+            <div className="flex flex-wrap gap-2">
+              {customerBadges.map((badge, index) => {
+                const Icon = badge.icon;
+                return (
+                  <Badge key={index} variant="outline" className={badge.color}>
+                    <Icon className="mr-1 h-3 w-3" />
+                    {badge.label}
+                  </Badge>
+                );
+              })}
               {customer.hasPayLaterBadge && (
                 <Badge variant="outline" className="bg-yellow-50 border-yellow-300 text-yellow-700">
                   <CreditCard className="mr-1 h-3 w-3" />
@@ -158,209 +240,193 @@ export default function CustomerDetails() {
                 </Badge>
               )}
             </div>
-            {/* Customer badges */}
-            {customerBadges.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-2">
-                {customerBadges.map((badge, index) => {
-                  const Icon = badge.icon;
-                  return (
-                    <Badge
-                      key={index}
-                      variant="outline"
-                      className={badge.color}
-                    >
-                      <Icon className="mr-1 h-3 w-3" />
-                      {badge.label}
-                    </Badge>
-                  );
-                })}
-              </div>
-            )}
-            {/* Customer duration and metadata */}
-            <div className="flex items-center gap-4 text-sm text-slate-500">
-              {customerDuration && (
-                <div className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  <span>Customer for {customerDuration}</span>
-                </div>
-              )}
-              {customer.facebookName && (
-                <span>Facebook: {customer.facebookName}</span>
-              )}
-            </div>
           </div>
         </div>
-        <div className="flex gap-2">
-          {customer.facebookId && (
-            <a
-              href={`https://m.me/${customer.facebookId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Button variant="outline" size="sm">
-                <MessageCircle className="mr-2 h-4 w-4" />
-                Message
-              </Button>
-            </a>
-          )}
-          <Button onClick={() => navigate(`/customers/${id}/edit`)}>
-            <Edit className="mr-2 h-4 w-4" />
-            Edit Customer
-          </Button>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <Tabs defaultValue="details" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="details">Details</TabsTrigger>
-          <TabsTrigger value="prices">
-            <Tag className="mr-2 h-4 w-4" />
-            Custom Prices
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="details" className="space-y-6">
-          {/* Customer Info Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-slate-600">Customer Type</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  {customer.type === 'vip' ? (
-                    <Star className="h-5 w-5 text-yellow-500" />
-                  ) : (
-                    <User className="h-5 w-5 text-slate-400" />
-                  )}
-                  <Badge variant={customer.type === 'vip' ? 'default' : 'secondary'}>
-                    {customer.type?.toUpperCase() || 'REGULAR'}
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-slate-600">Total Orders</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold text-slate-900">{orders.length}</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-slate-600">Total Spent</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold text-slate-900">
-                  {formatCurrency(totalSpent, customerCurrency)}
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Contact & Business Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Contact & Business Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Tax IDs based on country */}
-              {(customer.country || customer.vatId || customer.taxId) && (
-                <div className="pb-4 border-b">
-                  <h4 className="text-sm font-medium text-slate-700 mb-2">Tax Identification</h4>
-                  <div className="space-y-2">
-                    {customer.country === 'Czech Republic' && customer.taxId && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <Building className="h-4 w-4 text-slate-400" />
-                        <span className="text-slate-600">IČO:</span>
-                        <span className="font-medium">{customer.taxId}</span>
-                      </div>
-                    )}
-                    {(customer.country === 'Germany' || customer.country === 'Austria' || 
-                      customer.country === 'France' || customer.country === 'Italy') && customer.vatId && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <Building className="h-4 w-4 text-slate-400" />
-                        <span className="text-slate-600">VAT ID:</span>
-                        <span className="font-medium">{customer.vatId}</span>
-                      </div>
-                    )}
-                    {customer.country && !customer.taxId && !customer.vatId && (
-                      <div className="text-sm text-slate-500 italic">
-                        No tax ID registered
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-              
-              {/* Contact Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {customer.email && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Mail className="h-4 w-4 text-slate-400" />
-                    <span>{customer.email}</span>
-                  </div>
-                )}
-                {customer.phone && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Phone className="h-4 w-4 text-slate-400" />
-                    <span>{customer.phone}</span>
-                  </div>
-                )}
-              </div>
-              
-              {/* Address */}
-              {(customer.address || customer.city || customer.country) && (
-                <div className="flex items-start gap-2 text-sm">
-                  <MapPin className="h-4 w-4 text-slate-400 mt-0.5" />
-                  <div>
-                    {customer.address && <p>{customer.address}</p>}
-                    <p>
-                      {[customer.city, customer.state, customer.zipCode].filter(Boolean).join(', ')}
-                      {customer.country && <>, {customer.country}</>}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-      {/* Notes */}
-      {customer.notes && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Notes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-slate-600 whitespace-pre-wrap">{customer.notes}</p>
-          </CardContent>
-        </Card>
       )}
 
-          {/* Order History */}
+      {/* Main Content */}
+      <div className="container mx-auto px-4 lg:px-6 py-4 lg:py-6">
+        {/* Quick Stats - Mobile */}
+        <div className="grid grid-cols-2 gap-3 mb-4 lg:hidden">
           <Card>
-            <CardHeader>
-              <CardTitle>Order History</CardTitle>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <Package className="h-8 w-8 text-blue-500" />
+                <div>
+                  <p className="text-2xl font-bold">{orders.length}</p>
+                  <p className="text-xs text-slate-500">Total Orders</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <DollarSign className="h-8 w-8 text-green-500" />
+                <div>
+                  <p className="text-lg font-bold">{formatCurrency(totalSpent, customerCurrency)}</p>
+                  <p className="text-xs text-slate-500">Total Spent</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Quick Stats - Desktop */}
+        <div className="hidden lg:grid lg:grid-cols-4 gap-4 mb-6">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-slate-600">Total Orders</CardTitle>
             </CardHeader>
             <CardContent>
-              {orders.length === 0 ? (
-                <p className="text-sm text-slate-500">No orders found for this customer.</p>
-              ) : (
-                <div className="space-y-3">
-                  {orders.map((order: any) => (
-                    <Link key={order.id} href={`/orders/${order.id}`}>
-                      <div className="border border-slate-200 rounded-md p-4 hover:bg-slate-50 cursor-pointer transition-colors">
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex items-start gap-3">
-                            <div className="mt-0.5">
-                              <Package className="h-4 w-4 text-slate-400" />
-                            </div>
+              <div className="flex items-center gap-2">
+                <Package className="h-5 w-5 text-blue-500" />
+                <p className="text-2xl font-bold">{orders.length}</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-slate-600">Total Spent</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5 text-green-500" />
+                <p className="text-xl font-bold">{formatCurrency(totalSpent, customerCurrency)}</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-slate-600">Average Order</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2">
+                <ShoppingCart className="h-5 w-5 text-purple-500" />
+                <p className="text-xl font-bold">{formatCurrency(averageOrderValue, customerCurrency)}</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-slate-600">Unpaid Orders</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-orange-500" />
+                <p className="text-2xl font-bold">{unpaidOrders}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Tabs */}
+        <Tabs defaultValue="details" className="space-y-4">
+          <TabsList className="w-full lg:w-auto">
+            <TabsTrigger value="details" className="flex-1 lg:flex-none">Details</TabsTrigger>
+            <TabsTrigger value="orders" className="flex-1 lg:flex-none">Orders</TabsTrigger>
+            <TabsTrigger value="prices" className="flex-1 lg:flex-none">Prices</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="details" className="space-y-4">
+            {/* Contact Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base lg:text-lg">Contact Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Tax Information */}
+                {(customer.vatId || customer.taxId) && (
+                  <div className="pb-4 border-b">
+                    <h4 className="text-sm font-medium text-slate-700 mb-2">Business Information</h4>
+                    <div className="space-y-2">
+                      {customer.country === 'Czech Republic' && customer.taxId && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Building className="h-4 w-4 text-slate-400" />
+                          <span className="text-slate-600">IČO:</span>
+                          <span className="font-medium">{customer.taxId}</span>
+                        </div>
+                      )}
+                      {customer.vatId && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Building className="h-4 w-4 text-slate-400" />
+                          <span className="text-slate-600">VAT ID:</span>
+                          <span className="font-medium">{customer.vatId}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Contact Details */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {customer.email && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Mail className="h-4 w-4 text-slate-400" />
+                      <span className="truncate">{customer.email}</span>
+                    </div>
+                  )}
+                  {customer.phone && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Phone className="h-4 w-4 text-slate-400" />
+                      <span>{customer.phone}</span>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Address */}
+                {(customer.address || customer.city || customer.country) && (
+                  <div className="flex items-start gap-2 text-sm">
+                    <MapPin className="h-4 w-4 text-slate-400 mt-0.5" />
+                    <div>
+                      {customer.address && <p>{customer.address}</p>}
+                      <p>
+                        {[customer.city, customer.state, customer.zipCode].filter(Boolean).join(', ')}
+                        {customer.country && <>, {customer.country}</>}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Facebook */}
+                {customer.facebookName && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <MessageCircle className="h-4 w-4 text-slate-400" />
+                    <span>Facebook: {customer.facebookName}</span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Notes */}
+            {customer.notes && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base lg:text-lg">Notes</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-slate-600 whitespace-pre-wrap">{customer.notes}</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="orders" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base lg:text-lg">Order History</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {orders.length === 0 ? (
+                  <p className="text-sm text-slate-500 text-center py-8">No orders found</p>
+                ) : (
+                  <div className="space-y-3">
+                    {orders.map((order: any) => (
+                      <Link key={order.id} href={`/orders/${order.id}`}>
+                        <div className="border border-slate-200 rounded-md p-3 lg:p-4 hover:bg-slate-50 cursor-pointer transition-colors">
+                          <div className="flex items-start justify-between mb-2">
                             <div className="space-y-1">
-                              <p className="font-medium text-sm text-slate-900">
+                              <p className="font-medium text-sm">
                                 Order #{order.orderId || order.id}
                               </p>
                               <div className="flex items-center gap-2 text-xs text-slate-500">
@@ -368,60 +434,49 @@ export default function CustomerDetails() {
                                 <span>{new Date(order.createdAt).toLocaleDateString()}</span>
                               </div>
                             </div>
+                            <div className="text-right">
+                              <p className="font-semibold text-sm">
+                                {formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}
+                              </p>
+                              <Badge 
+                                variant={
+                                  order.orderStatus === 'ready_to_ship' ? 'outline' :
+                                  order.orderStatus === 'delivered' ? 'default' :
+                                  order.orderStatus === 'shipped' ? 'secondary' :
+                                  order.orderStatus === 'cancelled' ? 'destructive' :
+                                  'secondary'
+                                }
+                                className="text-xs mt-1"
+                              >
+                                {order.orderStatus?.replace(/_/g, ' ').toUpperCase() || 'PENDING'}
+                              </Badge>
+                            </div>
                           </div>
-                          <div className="text-right space-y-2">
-                            <p className="font-semibold text-sm text-slate-900">
-                              {formatCurrency(order.grandTotal || order.total || 0, order.currency || 'EUR')}
-                            </p>
-                            <Badge 
-                              variant={
-                                order.orderStatus === 'ready_to_ship' ? 'outline' :
-                                order.orderStatus === 'delivered' ? 'default' :
-                                order.orderStatus === 'shipped' ? 'secondary' :
-                                order.orderStatus === 'to_fulfill' ? 'secondary' :
-                                order.orderStatus === 'pending' ? 'secondary' :
-                                order.orderStatus === 'cancelled' ? 'destructive' :
-                                'secondary'
-                              }
-                              className="text-xs px-2 py-0.5"
-                            >
-                              {order.orderStatus === 'to_fulfill' ? 'To Fulfill' :
-                               order.orderStatus === 'ready_to_ship' ? 'Ready to Ship' :
-                               order.orderStatus === 'delivered' ? 'Delivered' :
-                               order.orderStatus === 'shipped' ? 'Shipped' :
-                               order.orderStatus === 'pending' ? 'Pending' :
-                               order.orderStatus === 'cancelled' ? 'Cancelled' :
-                               order.orderStatus || 'Unknown'}
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                          <span className="text-xs text-slate-500">
-                            {order.items?.length || 0} items
-                          </span>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-slate-500">Payment:</span>
+                          <div className="flex items-center justify-between pt-2 border-t">
+                            <span className="text-xs text-slate-500">
+                              {order.items?.length || 0} items
+                            </span>
                             <Badge 
                               variant={order.paymentStatus === 'paid' ? 'outline' : 'secondary'}
-                              className="text-xs px-2 py-0 h-5"
+                              className="text-xs"
                             >
                               {order.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}
                             </Badge>
                           </div>
                         </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        <TabsContent value="prices">
-          <CustomerPrices customerId={id || ''} />
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="prices" className="space-y-4">
+            <CustomerPrices customerId={id || ''} />
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }
