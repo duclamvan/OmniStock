@@ -230,7 +230,7 @@ export default function AllImports() {
         <Link href="/imports/consolidated">
           <Button variant="outline" size="sm">
             <BarChart3 className="h-4 w-4 mr-2" />
-            Consolidated View
+            Warehouse View
           </Button>
         </Link>
         <Link href="/imports/shipments">

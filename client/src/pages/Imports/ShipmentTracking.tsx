@@ -27,7 +27,8 @@ import {
   Navigation,
   Timer,
   Activity,
-  ChevronRight
+  ChevronRight,
+  X
 } from "lucide-react";
 
 interface Shipment {

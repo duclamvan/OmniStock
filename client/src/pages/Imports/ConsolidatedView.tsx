@@ -8,7 +8,10 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { formatCurrency } from "@/lib/currencyUtils";
+import { format } from "date-fns";
 import { 
   Package,
   ArrowLeft,
@@ -23,7 +26,22 @@ import {
   Activity,
   Calculator,
   Hash,
-  Building2
+  Building2,
+  MapPin,
+  Truck,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  Globe,
+  Ship,
+  Plane,
+  Filter,
+  Calendar,
+  Box,
+  Archive,
+  Users,
+  FileText,
+  Info
 } from "lucide-react";
 
 interface ConsolidatedItem {
