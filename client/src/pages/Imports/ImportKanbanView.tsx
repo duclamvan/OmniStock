@@ -66,6 +66,8 @@ interface OrderItem {
   supplierCountry: string;
   status: string;
   consolidationId?: string;
+  orderGroupId?: string;
+  shipmentId?: string;
   warehouseLocation?: string;
   localTrackingNumber?: string;
   internationalTrackingNumber?: string;
@@ -123,6 +125,8 @@ export default function ImportKanbanView() {
   const [dragOverItem, setDragOverItem] = useState<string | null>(null);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
+  const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [, navigate] = useLocation();
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -343,6 +347,8 @@ export default function ImportKanbanView() {
   ]);
   
   const [consolidationGroups, setConsolidationGroups] = useState<{ [key: string]: OrderItem[] }>({});
+  const [orderGroups, setOrderGroups] = useState<{ [key: string]: OrderItem[] }>({});
+  const [shipmentGroups, setShipmentGroups] = useState<{ [key: string]: OrderItem[] }>({});
 
   // Transform orders to items and initialize columns
   const getAllItems = (): OrderItem[] => {
@@ -489,22 +495,34 @@ export default function ImportKanbanView() {
     setDragOverItem(itemId);
   };
 
-  const handleDropOnItem = (e: React.DragEvent, targetItem: OrderItem) => {
+  const handleDropOnItem = (e: React.DragEvent, targetItem: OrderItem, columnId: string) => {
     e.preventDefault();
     e.stopPropagation();
     setDragOverItem(null);
     
     if (!draggedItem || draggedItem.id === targetItem.id) return;
     
-    // Create or update consolidation group
-    const consolidationId = targetItem.consolidationId || `CONSOL-${Date.now()}`;
+    let groupId = '';
+    let groupType = '';
     
-    // Update both items to have the same consolidation ID
+    // Determine group type based on column
+    if (columnId === 'processing') {
+      groupId = targetItem.orderGroupId || `ORDER-${Date.now().toString(36).toUpperCase()}`;
+      groupType = 'orderGroupId';
+    } else if (columnId === 'at_warehouse') {
+      groupId = targetItem.consolidationId || `CONSOL-${Date.now().toString(36).toUpperCase()}`;
+      groupType = 'consolidationId';
+    } else if (columnId === 'international') {
+      groupId = targetItem.shipmentId || `SHIP-${Date.now().toString(36).toUpperCase()}`;
+      groupType = 'shipmentId';
+    }
+    
+    // Update both items to have the same group ID
     const newColumns = columns.map(col => ({
       ...col,
       items: col.items.map(item => {
         if (item.id === draggedItem.id || item.id === targetItem.id) {
-          return { ...item, consolidationId };
+          return { ...item, [groupType]: groupId };
         }
         return item;
       })
@@ -513,13 +531,23 @@ export default function ImportKanbanView() {
     setColumns(newColumns);
     setDraggedItem(null);
     
-    // Update consolidation groups
-    const updatedGroups = { ...consolidationGroups };
-    if (!updatedGroups[consolidationId]) {
-      updatedGroups[consolidationId] = [];
+    // Update appropriate group state
+    if (groupType === 'orderGroupId') {
+      const groups = { ...orderGroups };
+      if (!groups[groupId]) groups[groupId] = [];
+      groups[groupId].push(draggedItem, targetItem);
+      setOrderGroups(groups);
+    } else if (groupType === 'consolidationId') {
+      const groups = { ...consolidationGroups };
+      if (!groups[groupId]) groups[groupId] = [];
+      groups[groupId].push(draggedItem, targetItem);
+      setConsolidationGroups(groups);
+    } else if (groupType === 'shipmentId') {
+      const groups = { ...shipmentGroups };
+      if (!groups[groupId]) groups[groupId] = [];
+      groups[groupId].push(draggedItem, targetItem);
+      setShipmentGroups(groups);
     }
-    updatedGroups[consolidationId].push(draggedItem, targetItem);
-    setConsolidationGroups(updatedGroups);
   };
 
   const getPriorityColor = (priority: string) => {
@@ -553,6 +581,14 @@ export default function ImportKanbanView() {
       prev.includes(groupId) 
         ? prev.filter(id => id !== groupId)
         : [...prev, groupId]
+    );
+  };
+  
+  const toggleItemsExpanded = (itemId: string) => {
+    setExpandedItems(prev => 
+      prev.includes(itemId) 
+        ? prev.filter(id => id !== itemId)
+        : [...prev, itemId]
     );
   };
 
@@ -955,7 +991,65 @@ export default function ImportKanbanView() {
                       </div>
                     </CardHeader>
                     <CardContent className="p-1">
-                      {/* Special Consolidation Zone for Warehouse */}
+                      {/* Special Grouping Zones based on column */}
+                      {column.id === 'processing' && (
+                        <div 
+                          className={`
+                            mb-2 p-2 border-2 border-dashed rounded-md transition-all
+                            ${dragOverColumn === 'order-group-zone' ? 
+                              'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 
+                              'border-gray-300 bg-gray-50/50 dark:bg-gray-800/50'}
+                          `}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setDragOverColumn('order-group-zone');
+                          }}
+                          onDragLeave={() => setDragOverColumn(null)}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (draggedItem) {
+                              // Create new order group
+                              const newOrderId = `ORDER-${Date.now().toString(36).toUpperCase()}`;
+                              const updatedItem = { ...draggedItem, orderGroupId: newOrderId };
+                              
+                              // Update columns
+                              const newColumns = columns.map(col => {
+                                if (col.items.some(i => i.id === draggedItem.id)) {
+                                  return {
+                                    ...col,
+                                    items: col.items.map(i => 
+                                      i.id === draggedItem.id ? updatedItem : i
+                                    )
+                                  };
+                                }
+                                return col;
+                              });
+                              
+                              setColumns(newColumns);
+                              setDraggedItem(null);
+                              setDragOverColumn(null);
+                              
+                              // Update order groups
+                              const groups = { ...orderGroups };
+                              if (!groups[newOrderId]) groups[newOrderId] = [];
+                              groups[newOrderId].push(updatedItem);
+                              setOrderGroups(groups);
+                            }
+                          }}
+                        >
+                          <div className="flex items-center justify-center gap-1">
+                            <Package className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="text-[10px] font-medium text-muted-foreground">
+                              {dragOverColumn === 'order-group-zone' ? 
+                                'Drop to group as order' : 
+                                'Drag items here to create order'}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      
                       {column.id === 'at_warehouse' && (
                         <div 
                           className={`
@@ -1008,6 +1102,64 @@ export default function ImportKanbanView() {
                         </div>
                       )}
                       
+                      {column.id === 'international' && (
+                        <div 
+                          className={`
+                            mb-2 p-2 border-2 border-dashed rounded-md transition-all
+                            ${dragOverColumn === 'shipment-group-zone' ? 
+                              'border-orange-500 bg-orange-50 dark:bg-orange-900/20' : 
+                              'border-gray-300 bg-gray-50/50 dark:bg-gray-800/50'}
+                          `}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setDragOverColumn('shipment-group-zone');
+                          }}
+                          onDragLeave={() => setDragOverColumn(null)}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (draggedItem) {
+                              // Create new shipment group
+                              const newShipmentId = `SHIP-${Date.now().toString(36).toUpperCase()}`;
+                              const updatedItem = { ...draggedItem, shipmentId: newShipmentId };
+                              
+                              // Update columns
+                              const newColumns = columns.map(col => {
+                                if (col.items.some(i => i.id === draggedItem.id)) {
+                                  return {
+                                    ...col,
+                                    items: col.items.map(i => 
+                                      i.id === draggedItem.id ? updatedItem : i
+                                    )
+                                  };
+                                }
+                                return col;
+                              });
+                              
+                              setColumns(newColumns);
+                              setDraggedItem(null);
+                              setDragOverColumn(null);
+                              
+                              // Update shipment groups
+                              const groups = { ...shipmentGroups };
+                              if (!groups[newShipmentId]) groups[newShipmentId] = [];
+                              groups[newShipmentId].push(updatedItem);
+                              setShipmentGroups(groups);
+                            }
+                          }}
+                        >
+                          <div className="flex items-center justify-center gap-1">
+                            <Plane className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="text-[10px] font-medium text-muted-foreground">
+                              {dragOverColumn === 'shipment-group-zone' ? 
+                                'Drop to create shipment' : 
+                                'Drag items here to group shipment'}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      
                       <ScrollArea className="h-[calc(100vh-22rem)]">
                         {filteredItems.length === 0 ? (
                           <div className={`
@@ -1021,17 +1173,28 @@ export default function ImportKanbanView() {
                           </div>
                         ) : (
                           <div className="space-y-0.5">
-                            {/* Group items by consolidation ID */}
+                            {/* Group items based on column type */}
                             {(() => {
                               const groups: { [key: string]: OrderItem[] } = {};
                               const standalone: OrderItem[] = [];
                               
+                              // Group by different IDs based on column
                               filteredItems.forEach(item => {
-                                if (item.consolidationId) {
-                                  if (!groups[item.consolidationId]) {
-                                    groups[item.consolidationId] = [];
+                                let groupKey = null;
+                                
+                                if (column.id === 'processing' && item.orderGroupId) {
+                                  groupKey = item.orderGroupId;
+                                } else if (column.id === 'at_warehouse' && item.consolidationId) {
+                                  groupKey = item.consolidationId;
+                                } else if (column.id === 'international' && item.shipmentId) {
+                                  groupKey = item.shipmentId;
+                                }
+                                
+                                if (groupKey) {
+                                  if (!groups[groupKey]) {
+                                    groups[groupKey] = [];
                                   }
-                                  groups[item.consolidationId].push(item);
+                                  groups[groupKey].push(item);
                                 } else {
                                   standalone.push(item);
                                 }
@@ -1039,27 +1202,52 @@ export default function ImportKanbanView() {
                               
                               return (
                                 <>
-                                  {/* Render consolidated groups */}
-                                  {Object.entries(groups).map(([consolId, items]) => (
-                                    <div 
-                                      key={consolId}
-                                      className="border border-purple-300 bg-purple-50/30 dark:bg-purple-900/10 rounded-md p-1 space-y-0.5"
-                                    >
-                                      <div className="flex items-center justify-between mb-0.5">
-                                        <Badge variant="outline" className="text-[8px] px-0.5 h-3 border-purple-400">
-                                          <Package className="h-2 w-2 mr-0.5" />
-                                          Consolidated ({items.length})
-                                        </Badge>
+                                  {/* Render grouped items */}
+                                  {Object.entries(groups).map(([groupId, items]) => {
+                                    const isOrderGroup = groupId.startsWith('ORDER-');
+                                    const isShipment = groupId.startsWith('SHIP-');
+                                    const isConsolidation = groupId.startsWith('CONSOL-');
+                                    
+                                    return (
+                                      <div 
+                                        key={groupId}
+                                        className={`
+                                          border rounded-md p-1 space-y-0.5
+                                          ${isOrderGroup ? 'border-blue-300 bg-blue-50/30 dark:bg-blue-900/10' :
+                                            isShipment ? 'border-orange-300 bg-orange-50/30 dark:bg-orange-900/10' :
+                                            'border-purple-300 bg-purple-50/30 dark:bg-purple-900/10'}
+                                        `}
+                                      >
+                                        <div className="flex items-center justify-between mb-0.5">
+                                          <Badge 
+                                            variant="outline" 
+                                            className={`text-[8px] px-0.5 h-3 
+                                              ${isOrderGroup ? 'border-blue-400' :
+                                                isShipment ? 'border-orange-400' :
+                                                'border-purple-400'}
+                                            `}
+                                          >
+                                            {isOrderGroup ? <Hash className="h-2 w-2 mr-0.5" /> :
+                                             isShipment ? <Plane className="h-2 w-2 mr-0.5" /> :
+                                             <Package className="h-2 w-2 mr-0.5" />}
+                                            {isOrderGroup ? `Order (${items.length})` :
+                                             isShipment ? `Shipment (${items.length})` :
+                                             `Consolidated (${items.length})`}
+                                          </Badge>
+                                          <span className="text-[8px] text-muted-foreground">
+                                            {groupId.slice(-6)}
+                                          </span>
+                                        </div>
+                                        {items.map(item => (
+                                          <ItemCard 
+                                            key={item.id} 
+                                            item={item}
+                                            isDragging={draggedItem?.id === item.id}
+                                          />
+                                        ))}
                                       </div>
-                                      {items.map(item => (
-                                        <ItemCard 
-                                          key={item.id} 
-                                          item={item}
-                                          isDragging={draggedItem?.id === item.id}
-                                        />
-                                      ))}
-                                    </div>
-                                  ))}
+                                    );
+                                  })}
                                   
                                   {/* Render standalone items */}
                                   {standalone.map(item => (
@@ -1067,10 +1255,12 @@ export default function ImportKanbanView() {
                                       key={item.id}
                                       onDragOver={(e) => handleDragOverItem(e, item.id)}
                                       onDragLeave={() => setDragOverItem(null)}
-                                      onDrop={(e) => handleDropOnItem(e, item)}
+                                      onDrop={(e) => handleDropOnItem(e, item, column.id)}
                                       className={`
                                         transition-all duration-200
                                         ${dragOverItem === item.id && draggedItem?.id !== item.id ? 
+                                          column.id === 'processing' ? 'ring-2 ring-blue-400 rounded-md p-0.5 bg-blue-50/50' :
+                                          column.id === 'international' ? 'ring-2 ring-orange-400 rounded-md p-0.5 bg-orange-50/50' :
                                           'ring-2 ring-purple-400 rounded-md p-0.5 bg-purple-50/50' : ''}
                                       `}
                                     >
