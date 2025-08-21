@@ -41,6 +41,8 @@ import {
   Timer,
   ChevronRight,
   ChevronDown,
+  ChevronUp,
+  ChevronsUpDown,
   Grip,
   Eye,
   Edit,
@@ -102,6 +104,8 @@ export default function ImportKanbanView() {
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [, navigate] = useLocation();
+  const [sortColumn, setSortColumn] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   // Mock data for import orders
   const mockOrders: ImportOrder[] = [
@@ -394,6 +398,94 @@ export default function ImportKanbanView() {
 
   const filteredAllOrders = mockOrders.filter(order => filterOrders([order]).length > 0);
 
+  // Sorting function
+  const sortData = (data: ImportOrder[]) => {
+    if (!sortColumn) return data;
+    
+    return [...data].sort((a, b) => {
+      let aValue: any, bValue: any;
+      
+      switch (sortColumn) {
+        case 'order':
+          aValue = a.orderNumber;
+          bValue = b.orderNumber;
+          break;
+        case 'supplier':
+          aValue = a.supplier;
+          bValue = b.supplier;
+          break;
+        case 'status':
+          aValue = a.status;
+          bValue = b.status;
+          break;
+        case 'priority':
+          const priorityOrder = { high: 0, medium: 1, low: 2 };
+          aValue = priorityOrder[a.priority as keyof typeof priorityOrder];
+          bValue = priorityOrder[b.priority as keyof typeof priorityOrder];
+          break;
+        case 'items':
+          aValue = a.totalItems;
+          bValue = b.totalItems;
+          break;
+        case 'value':
+          aValue = a.totalValue;
+          bValue = b.totalValue;
+          break;
+        case 'progress':
+          aValue = a.progress;
+          bValue = b.progress;
+          break;
+        case 'eta':
+          aValue = new Date(a.estimatedArrival).getTime();
+          bValue = new Date(b.estimatedArrival).getTime();
+          break;
+        default:
+          return 0;
+      }
+      
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
+
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const sortedOrders = sortData(filteredAllOrders);
+
+  const SortableHeader = ({ column, children, align = 'left' }: { column: string; children: React.ReactNode; align?: 'left' | 'right' | 'center' }) => {
+    const isActive = sortColumn === column;
+    
+    return (
+      <TableHead 
+        className={`font-semibold cursor-pointer hover:bg-muted/50 select-none ${align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : ''}`}
+        onClick={() => handleSort(column)}
+      >
+        <div className={`flex items-center gap-1 ${align === 'right' ? 'justify-end' : align === 'center' ? 'justify-center' : ''}`}>
+          {children}
+          <div className="flex flex-col">
+            {isActive ? (
+              sortDirection === 'asc' ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )
+            ) : (
+              <ChevronsUpDown className="h-4 w-4 text-muted-foreground" />
+            )}
+          </div>
+        </div>
+      </TableHead>
+    );
+  };
+
   const OrderCard = ({ order }: { order: ImportOrder }) => {
     const isExpanded = expandedItems.includes(order.id);
     const [, navigate] = useLocation();
@@ -627,30 +719,30 @@ export default function ImportKanbanView() {
                     <TableHead className="w-8"></TableHead>
                     <TableHead className="w-12">
                       <Checkbox 
-                        checked={selectedOrders.length === filteredAllOrders.length && filteredAllOrders.length > 0}
+                        checked={selectedOrders.length === sortedOrders.length && sortedOrders.length > 0}
                         onCheckedChange={(checked) => {
                           if (checked) {
-                            setSelectedOrders(filteredAllOrders.map(o => o.id));
+                            setSelectedOrders(sortedOrders.map(o => o.id));
                           } else {
                             setSelectedOrders([]);
                           }
                         }}
                       />
                     </TableHead>
-                    <TableHead className="font-semibold">Order</TableHead>
-                    <TableHead className="font-semibold">Supplier</TableHead>
-                    <TableHead className="font-semibold">Status</TableHead>
-                    <TableHead className="font-semibold">Priority</TableHead>
-                    <TableHead className="font-semibold text-right">Items</TableHead>
-                    <TableHead className="font-semibold text-right">Value</TableHead>
-                    <TableHead className="font-semibold">Progress</TableHead>
-                    <TableHead className="font-semibold">ETA</TableHead>
+                    <SortableHeader column="order">Order</SortableHeader>
+                    <SortableHeader column="supplier">Supplier</SortableHeader>
+                    <SortableHeader column="status">Status</SortableHeader>
+                    <SortableHeader column="priority">Priority</SortableHeader>
+                    <SortableHeader column="items" align="right">Items</SortableHeader>
+                    <SortableHeader column="value" align="right">Value</SortableHeader>
+                    <SortableHeader column="progress">Progress</SortableHeader>
+                    <SortableHeader column="eta">ETA</SortableHeader>
                     <TableHead className="w-10"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredAllOrders.map((order) => (
-                    <>
+                  {sortedOrders.map((order) => (
+                    <React.Fragment key={order.id}>
                       <TableRow 
                         key={order.id}
                         className="group hover:bg-muted/50 cursor-pointer"
@@ -808,11 +900,11 @@ export default function ImportKanbanView() {
                           </TableCell>
                         </TableRow>
                       )}
-                    </>
+                    </React.Fragment>
                   ))}
                 </TableBody>
               </Table>
-              {filteredAllOrders.length === 0 && (
+              {sortedOrders.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-12">
                   <Package className="h-12 w-12 text-muted-foreground mb-3" />
                   <p className="text-lg font-medium">No import orders found</p>
