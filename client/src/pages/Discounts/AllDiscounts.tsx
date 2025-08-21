@@ -95,14 +95,14 @@ export default function AllDiscounts() {
   const columns: DataTableColumn<any>[] = [
     {
       key: "name",
-      header: "Discount Name",
+      header: "Discount",
       sortable: true,
-      width: "250px",
+      className: "min-w-[120px]",
       cell: (sale) => (
-        <div className="flex items-center gap-2 min-w-[200px]">
-          <Tag className="h-5 w-5 text-gray-400 flex-shrink-0" />
+        <div className="flex items-center gap-1 lg:gap-2">
+          <Tag className="h-3 w-3 lg:h-4 lg:w-4 text-gray-400 flex-shrink-0 hidden sm:block" />
           <Link href={`/discounts/${sale.id}/edit`}>
-            <span className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer">
+            <span className="font-medium text-xs lg:text-sm text-blue-600 hover:text-blue-800 cursor-pointer truncate max-w-[100px] lg:max-w-none">
               {sale.name}
             </span>
           </Link>
@@ -111,50 +111,61 @@ export default function AllDiscounts() {
     },
     {
       key: "discountType",
-      header: "Discount",
+      header: "Value",
       sortable: true,
+      className: "text-right",
       cell: (sale) => {
         if (sale.discountType === 'percentage') {
-          return <span className="font-medium">{sale.percentage}%</span>;
+          return <span className="font-medium text-xs lg:text-sm">{sale.percentage}%</span>;
         } else if (sale.discountType === 'fixed_amount') {
-          return <span className="font-medium">${sale.fixedAmount}</span>;
+          return <span className="font-medium text-xs lg:text-sm">${sale.fixedAmount}</span>;
         } else if (sale.discountType === 'buy_x_get_y') {
-          return <span className="font-medium text-sm">Buy {sale.buyQuantity} Get {sale.getQuantity}</span>;
+          return <span className="font-medium text-xs">B{sale.buyQuantity}G{sale.getQuantity}</span>;
         }
-        return <span className="text-gray-500">-</span>;
+        return <span className="text-gray-500 text-xs">-</span>;
       },
     },
     {
       key: "applicationScope",
-      header: "Application Scope",
+      header: "Scope",
       sortable: true,
+      className: "hidden md:table-cell",
       cell: (sale) => {
-        const scopes: Record<string, { label: string; color: string }> = {
-          'specific_product': { label: 'Specific Product', color: 'bg-blue-100 text-blue-800' },
-          'all_products': { label: 'All Products', color: 'bg-green-100 text-green-800' },
-          'specific_category': { label: 'Specific Category', color: 'bg-purple-100 text-purple-800' },
-          'selected_products': { label: 'Selected Products', color: 'bg-orange-100 text-orange-800' },
+        const scopes: Record<string, { label: string; shortLabel: string; color: string }> = {
+          'specific_product': { label: 'Specific Product', shortLabel: 'Product', color: 'bg-blue-100 text-blue-800' },
+          'all_products': { label: 'All Products', shortLabel: 'All', color: 'bg-green-100 text-green-800' },
+          'specific_category': { label: 'Specific Category', shortLabel: 'Category', color: 'bg-purple-100 text-purple-800' },
+          'selected_products': { label: 'Selected Products', shortLabel: 'Selected', color: 'bg-orange-100 text-orange-800' },
         };
-        const scope = scopes[sale.applicationScope] || { label: sale.applicationScope, color: 'bg-gray-100 text-gray-800' };
-        return <Badge className={scope.color}>{scope.label}</Badge>;
+        const scope = scopes[sale.applicationScope] || { label: sale.applicationScope, shortLabel: sale.applicationScope, color: 'bg-gray-100 text-gray-800' };
+        return (
+          <Badge className={`${scope.color} text-xs px-1.5 py-0 h-5`}>
+            <span className="lg:hidden">{scope.shortLabel}</span>
+            <span className="hidden lg:inline">{scope.label}</span>
+          </Badge>
+        );
       },
     },
     {
       key: "startDate",
-      header: "Start Date",
+      header: "Start",
       sortable: true,
+      className: "hidden lg:table-cell",
       cell: (sale) => (
-        <div className="flex items-center gap-1">
-          <Calendar className="h-4 w-4 text-gray-400" />
-          {format(new Date(sale.startDate), 'dd/MM/yyyy')}
+        <div className="flex items-center gap-1 text-xs">
+          <Calendar className="h-3 w-3 text-gray-400 hidden xl:block" />
+          {format(new Date(sale.startDate), 'dd/MM/yy')}
         </div>
       ),
     },
     {
       key: "endDate",
-      header: "End Date",
+      header: "End",
       sortable: true,
-      cell: (sale) => format(new Date(sale.endDate), 'dd/MM/yyyy'),
+      className: "hidden lg:table-cell",
+      cell: (sale) => (
+        <span className="text-xs">{format(new Date(sale.endDate), 'dd/MM/yy')}</span>
+      ),
     },
     {
       key: "status",
@@ -166,20 +177,23 @@ export default function AllDiscounts() {
           'finished': { label: 'Finished', color: 'bg-red-100 text-red-800' },
         };
         const status = statusMap[sale.status] || { label: sale.status, color: 'bg-gray-100 text-gray-800' };
-        return <Badge className={status.color}>{status.label}</Badge>;
+        return (
+          <Badge className={`${status.color} text-xs px-1.5 py-0 h-5`}>
+            {status.label}
+          </Badge>
+        );
       },
     },
     {
       key: "actions",
-      header: "Actions",
+      header: "",
+      className: "w-10",
       cell: (sale) => (
-        <div className="flex items-center gap-1">
-          <Link href={`/discounts/${sale.id}/edit`}>
-            <Button size="sm" variant="ghost">
-              <Edit className="h-4 w-4" />
-            </Button>
-          </Link>
-        </div>
+        <Link href={`/discounts/${sale.id}/edit`}>
+          <Button size="icon" variant="ghost" className="h-7 w-7 lg:h-8 lg:w-8">
+            <Edit className="h-3 w-3 lg:h-4 lg:w-4" />
+          </Button>
+        </Link>
       ),
     },
   ];
@@ -231,39 +245,39 @@ export default function AllDiscounts() {
   // Remove loading state to prevent UI refresh indicators
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 lg:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">Discounts</h1>
+        <h1 className="text-xl lg:text-2xl font-bold text-slate-900">Discounts</h1>
         <Link href="/discounts/add">
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Discount
+          <Button size="sm" className="lg:size-default">
+            <Plus className="h-4 w-4" />
+            <span className="ml-2 hidden sm:inline">Add Discount</span>
           </Button>
         </Link>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Tag className="h-8 w-8 text-blue-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-slate-600">Total Discounts</p>
-                <p className="text-2xl font-bold text-slate-900">{sales?.length || 0}</p>
+          <CardContent className="p-4 lg:p-6">
+            <div className="flex flex-col lg:flex-row lg:items-center">
+              <Tag className="h-6 w-6 lg:h-8 lg:w-8 text-blue-600 mb-2 lg:mb-0" />
+              <div className="lg:ml-4">
+                <p className="text-xs lg:text-sm font-medium text-slate-600">Total</p>
+                <p className="text-lg lg:text-2xl font-bold text-slate-900">{sales?.length || 0}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Tag className="h-8 w-8 text-green-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-slate-600">Active Discounts</p>
-                <p className="text-2xl font-bold text-slate-900">
+          <CardContent className="p-4 lg:p-6">
+            <div className="flex flex-col lg:flex-row lg:items-center">
+              <Tag className="h-6 w-6 lg:h-8 lg:w-8 text-green-600 mb-2 lg:mb-0" />
+              <div className="lg:ml-4">
+                <p className="text-xs lg:text-sm font-medium text-slate-600">Active</p>
+                <p className="text-lg lg:text-2xl font-bold text-slate-900">
                   {sales?.filter((s: any) => isSaleActive(s)).length || 0}
                 </p>
               </div>
@@ -272,12 +286,12 @@ export default function AllDiscounts() {
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Percent className="h-8 w-8 text-purple-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-slate-600">All Products</p>
-                <p className="text-2xl font-bold text-slate-900">
+          <CardContent className="p-4 lg:p-6">
+            <div className="flex flex-col lg:flex-row lg:items-center">
+              <Percent className="h-6 w-6 lg:h-8 lg:w-8 text-purple-600 mb-2 lg:mb-0" />
+              <div className="lg:ml-4">
+                <p className="text-xs lg:text-sm font-medium text-slate-600">All Items</p>
+                <p className="text-lg lg:text-2xl font-bold text-slate-900">
                   {sales?.filter((s: any) => s.applicationScope === 'all_products').length || 0}
                 </p>
               </div>
@@ -286,12 +300,12 @@ export default function AllDiscounts() {
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Tag className="h-8 w-8 text-orange-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-slate-600">Product Specific</p>
-                <p className="text-2xl font-bold text-slate-900">
+          <CardContent className="p-4 lg:p-6">
+            <div className="flex flex-col lg:flex-row lg:items-center">
+              <Tag className="h-6 w-6 lg:h-8 lg:w-8 text-orange-600 mb-2 lg:mb-0" />
+              <div className="lg:ml-4">
+                <p className="text-xs lg:text-sm font-medium text-slate-600">Specific</p>
+                <p className="text-lg lg:text-2xl font-bold text-slate-900">
                   {sales?.filter((s: any) => s.applicationScope === 'specific_product' || s.applicationScope === 'selected_products').length || 0}
                 </p>
               </div>
@@ -302,33 +316,35 @@ export default function AllDiscounts() {
 
       {/* Filters */}
       <Card>
-        <CardContent className="p-6">
+        <CardContent className="p-3 lg:p-6">
           <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-2.5 lg:top-3 h-4 w-4 text-slate-400" />
             <Input
-              placeholder="Search discounts by name, description, or discount ID..."
+              placeholder="Search discounts..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 h-9 lg:h-10 text-sm lg:text-base"
             />
           </div>
         </CardContent>
       </Card>
 
       {/* Sales Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Discounts ({filteredSales?.length || 0})</CardTitle>
+      <Card className="overflow-hidden">
+        <CardHeader className="px-4 lg:px-6">
+          <CardTitle className="text-base lg:text-xl">Discounts ({filteredSales?.length || 0})</CardTitle>
         </CardHeader>
-        <CardContent>
-          <DataTable
-            data={filteredSales}
-            columns={columns}
-            bulkActions={bulkActions}
-            getRowKey={(sale) => sale.id}
-            itemsPerPageOptions={[10, 20, 50, 100]}
-            defaultItemsPerPage={20}
-          />
+        <CardContent className="px-2 lg:px-6">
+          <div className="overflow-x-auto">
+            <DataTable
+              data={filteredSales}
+              columns={columns}
+              bulkActions={bulkActions}
+              getRowKey={(sale) => sale.id}
+              itemsPerPageOptions={[10, 20, 50, 100]}
+              defaultItemsPerPage={20}
+            />
+          </div>
         </CardContent>
       </Card>
 
