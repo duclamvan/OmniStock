@@ -9,8 +9,11 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { format, differenceInDays } from "date-fns";
 import { 
@@ -44,7 +47,10 @@ import {
   Trash2,
   RefreshCw,
   Download,
-  FileText
+  FileText,
+  LayoutGrid,
+  TableIcon,
+  Columns
 } from "lucide-react";
 
 interface OrderItem {
@@ -95,6 +101,7 @@ export default function ImportKanbanView() {
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  const [, navigate] = useLocation();
 
   // Mock data for import orders
   const mockOrders: ImportOrder[] = [
@@ -375,6 +382,18 @@ export default function ImportKanbanView() {
     );
   };
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending': return 'bg-gray-100 text-gray-800';
+      case 'processing': return 'bg-blue-100 text-blue-800';
+      case 'in_transit': return 'bg-purple-100 text-purple-800';
+      case 'delivered': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const filteredAllOrders = mockOrders.filter(order => filterOrders([order]).length > 0);
+
   const OrderCard = ({ order }: { order: ImportOrder }) => {
     const isExpanded = expandedItems.includes(order.id);
     const [, navigate] = useLocation();
@@ -604,46 +623,58 @@ export default function ImportKanbanView() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="w-8"></TableHead>
                     <TableHead className="w-12">
-                      <input
-                        type="checkbox"
-                        className="rounded border-gray-300"
-                        checked={selectedOrders.length === mockOrders.length && mockOrders.length > 0}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedOrders(mockOrders.map(o => o.id));
+                      <Checkbox 
+                        checked={selectedOrders.length === filteredAllOrders.length && filteredAllOrders.length > 0}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedOrders(filteredAllOrders.map(o => o.id));
                           } else {
                             setSelectedOrders([]);
                           }
                         }}
                       />
                     </TableHead>
-                    <TableHead>Order #</TableHead>
-                    <TableHead>Supplier</TableHead>
-                    <TableHead>Destination</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Priority</TableHead>
-                    <TableHead>Items</TableHead>
-                    <TableHead>Value</TableHead>
-                    <TableHead>Progress</TableHead>
-                    <TableHead>ETA</TableHead>
-                    <TableHead>Assignee</TableHead>
-                    <TableHead className="w-20">Actions</TableHead>
+                    <TableHead className="font-semibold">Order</TableHead>
+                    <TableHead className="font-semibold">Supplier</TableHead>
+                    <TableHead className="font-semibold">Status</TableHead>
+                    <TableHead className="font-semibold">Priority</TableHead>
+                    <TableHead className="font-semibold text-right">Items</TableHead>
+                    <TableHead className="font-semibold text-right">Value</TableHead>
+                    <TableHead className="font-semibold">Progress</TableHead>
+                    <TableHead className="font-semibold">ETA</TableHead>
+                    <TableHead className="w-10"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockOrders
-                    .filter(order => filterOrders([order]).length > 0)
-                    .map((order) => (
-                      <TableRow key={order.id} className="hover:bg-muted/50">
-                        <TableCell>
-                          <input
-                            type="checkbox"
-                            className="rounded border-gray-300"
+                  {filteredAllOrders.map((order) => (
+                    <>
+                      <TableRow 
+                        key={order.id}
+                        className="group hover:bg-muted/50 cursor-pointer"
+                        onClick={() => navigate(`/imports/orders/${order.id}`)}
+                      >
+                        <TableCell className="px-2" onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => toggleItemsExpanded(order.id)}
+                          >
+                            <ChevronDown 
+                              className={`h-3.5 w-3.5 transition-transform ${
+                                expandedItems.includes(order.id) ? 'rotate-180' : ''
+                              }`}
+                            />
+                          </Button>
+                        </TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <Checkbox 
                             checked={selectedOrders.includes(order.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
+                            onCheckedChange={(checked) => {
+                              if (checked) {
                                 setSelectedOrders([...selectedOrders, order.id]);
                               } else {
                                 setSelectedOrders(selectedOrders.filter(id => id !== order.id));
@@ -651,43 +682,48 @@ export default function ImportKanbanView() {
                             }}
                           />
                         </TableCell>
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-2">
-                            <span>{order.orderNumber}</span>
-                            {order.trackingNumber && (
-                              <Badge variant="outline" className="text-xs">
-                                {order.trackingNumber}
-                              </Badge>
-                            )}
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{order.orderNumber}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {order.destination}
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <span>{getCountryFlag(order.supplierCountry)}</span>
-                            <span>{order.supplier}</span>
+                            <span className="text-lg">{getCountryFlag(order.supplierCountry)}</span>
+                            <span className="truncate max-w-[150px]">{order.supplier}</span>
                           </div>
                         </TableCell>
-                        <TableCell>{order.destination}</TableCell>
                         <TableCell>
-                          <Badge variant="outline" className="capitalize">
+                          <Badge className={getStatusColor(order.status)} variant="secondary">
                             {order.status.replace('_', ' ')}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge className={getPriorityColor(order.priority)} variant="secondary">
+                          <Badge 
+                            className="font-semibold"
+                            style={{
+                              backgroundColor: 
+                                order.priority === 'high' ? '#ef4444' : 
+                                order.priority === 'medium' ? '#f59e0b' : 
+                                '#10b981',
+                              color: 'white'
+                            }}
+                          >
                             {order.priority}
                           </Badge>
                         </TableCell>
-                        <TableCell>{order.totalItems.toLocaleString()}</TableCell>
-                        <TableCell>{formatCurrency(order.totalValue, order.currency)}</TableCell>
+                        <TableCell className="text-right font-medium">
+                          {order.totalItems.toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold">
+                          {formatCurrency(order.totalValue, order.currency)}
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <div className="w-20 h-2 bg-gray-200 rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-primary transition-all"
-                                style={{ width: `${order.progress}%` }}
-                              />
-                            </div>
+                            <Progress value={order.progress} className="h-1.5 w-16" />
                             <span className="text-xs text-muted-foreground">{order.progress}%</span>
                           </div>
                         </TableCell>
@@ -699,36 +735,90 @@ export default function ImportKanbanView() {
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell>
-                          {order.assignee ? (
-                            <div className="flex items-center gap-1">
-                              <Avatar className="h-6 w-6">
-                                <AvatarFallback className="text-xs">
-                                  {order.assignee.split(' ').map(n => n[0]).join('')}
-                                </AvatarFallback>
-                              </Avatar>
-                              <span className="text-sm">{order.assignee}</span>
-                            </div>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-1">
-                            <Link href={`/imports/orders/${order.id}`}>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <Eye className="h-4 w-4" />
+                                <MoreVertical className="h-4 w-4" />
                               </Button>
-                            </Link>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </div>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => navigate(`/imports/orders/${order.id}`)}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => navigate(`/imports/orders/${order.id}/edit`)}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit Order
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => navigate(`/imports/orders/${order.id}/receive`)}>
+                                <Package className="h-4 w-4 mr-2" />
+                                Receive Items
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="text-red-600">
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete Order
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
-                    ))}
+                      {/* Expandable Items Row */}
+                      {expandedItems.includes(order.id) && (
+                        <TableRow>
+                          <TableCell colSpan={11} className="bg-muted/30 p-0">
+                            <div className="px-8 py-4">
+                              <div className="mb-2 text-sm font-medium text-muted-foreground">
+                                Order Items ({order.items.length})
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                                {order.items.map((item) => (
+                                  <div 
+                                    key={item.id} 
+                                    className="flex items-center justify-between p-2 bg-background rounded-md border"
+                                  >
+                                    <div className="flex-1">
+                                      <p className="text-sm font-medium">{item.name}</p>
+                                      {item.sku && (
+                                        <p className="text-xs text-muted-foreground">SKU: {item.sku}</p>
+                                      )}
+                                    </div>
+                                    <Badge variant="secondary" className="ml-2">
+                                      {item.quantity}
+                                    </Badge>
+                                  </div>
+                                ))}
+                              </div>
+                              {order.trackingNumber && (
+                                <div className="mt-3 pt-3 border-t flex items-center gap-4 text-sm">
+                                  <div className="flex items-center gap-2">
+                                    <Truck className="h-4 w-4 text-muted-foreground" />
+                                    <span className="text-muted-foreground">Tracking:</span>
+                                    <span className="font-medium">{order.trackingNumber}</span>
+                                  </div>
+                                  {order.shippingMethod && (
+                                    <div className="flex items-center gap-2">
+                                      <Ship className="h-4 w-4 text-muted-foreground" />
+                                      <span className="font-medium">{order.shippingMethod}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </>
+                  ))}
                 </TableBody>
               </Table>
+              {filteredAllOrders.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <Package className="h-12 w-12 text-muted-foreground mb-3" />
+                  <p className="text-lg font-medium">No import orders found</p>
+                  <p className="text-sm text-muted-foreground">Try adjusting your filters or create a new order</p>
+                </div>
+              )}
             </div>
             {selectedOrders.length > 0 && (
               <div className="flex items-center justify-between p-4 border-t bg-muted/50">
