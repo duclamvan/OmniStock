@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -52,7 +52,11 @@ import {
   FileText,
   LayoutGrid,
   TableIcon,
-  Columns
+  Columns,
+  X,
+  Zap,
+  BoxSelect,
+  Copy
 } from "lucide-react";
 
 interface OrderItem {
@@ -592,9 +596,9 @@ export default function ImportKanbanView() {
     );
   };
 
-  // Compact Item Card Component
-  const ItemCard = ({ item, isDragging = false }: { item: OrderItem; isDragging?: boolean }) => {
-    const isConsolidated = !!item.consolidationId;
+  // Enhanced Compact Item Card Component
+  const ItemCard = ({ item, isDragging = false, showGroupBadge = true }: { item: OrderItem; isDragging?: boolean; showGroupBadge?: boolean }) => {
+    const hasGroup = !!(item.consolidationId || item.orderGroupId || item.shipmentId);
     
     return (
       <div 
@@ -604,16 +608,24 @@ export default function ImportKanbanView() {
           group relative bg-white dark:bg-gray-800 border rounded-md p-1.5 cursor-move
           transition-all duration-200 hover:shadow-md hover:scale-[1.02] hover:z-10
           ${isDragging ? 'opacity-50 scale-95' : ''}
-          ${isConsolidated ? 'border-purple-300 bg-purple-50/50 dark:bg-purple-900/20' : 'border-gray-200'}
+          ${hasGroup ? 'pl-3' : ''}
+          border-gray-200 dark:border-gray-700
         `}
       >
         {/* Drag Handle Indicator */}
-        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-gray-400 to-gray-300 rounded-l-md opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className={`
+          absolute left-0 top-0 bottom-0 w-1.5 rounded-l-md
+          ${item.orderGroupId ? 'bg-blue-400' : 
+            item.shipmentId ? 'bg-orange-400' : 
+            item.consolidationId ? 'bg-purple-400' : 
+            'bg-gradient-to-b from-gray-400 to-gray-300 opacity-0 group-hover:opacity-100'}
+          transition-opacity
+        `} />
         
         {/* Main Content - Single Row Layout */}
         <div className="flex items-center gap-1.5 text-[10px]">
           {/* Quantity Badge */}
-          <Badge variant="secondary" className="h-4 px-1 text-[9px] font-bold">
+          <Badge variant="secondary" className="h-4 px-1 text-[9px] font-bold min-w-[20px] text-center">
             {item.quantity}
           </Badge>
           
@@ -622,13 +634,15 @@ export default function ImportKanbanView() {
             <p className="font-medium truncate">{item.name}</p>
             <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
               <span className="truncate">{item.sku || item.orderNumber}</span>
-              {item.consolidationId && (
-                <Badge variant="outline" className="h-3 px-0.5 text-[8px] border-purple-400">
-                  C-{item.consolidationId.slice(-3)}
-                </Badge>
-              )}
             </div>
           </div>
+          
+          {/* Value if available */}
+          {item.value && (
+            <span className="text-[9px] font-medium text-muted-foreground">
+              {formatCurrency(item.value, item.currency || 'USD')}
+            </span>
+          )}
           
           {/* Country Flag */}
           <span className="text-xs">{getCountryFlag(item.supplierCountry)}</span>
@@ -1207,44 +1221,130 @@ export default function ImportKanbanView() {
                                     const isOrderGroup = groupId.startsWith('ORDER-');
                                     const isShipment = groupId.startsWith('SHIP-');
                                     const isConsolidation = groupId.startsWith('CONSOL-');
+                                    const isExpanded = expandedGroups.includes(groupId);
+                                    
+                                    // Calculate group totals
+                                    const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+                                    const totalValue = items.reduce((sum, item) => sum + (item.value || 0), 0);
                                     
                                     return (
                                       <div 
                                         key={groupId}
                                         className={`
-                                          border rounded-md p-1 space-y-0.5
-                                          ${isOrderGroup ? 'border-blue-300 bg-blue-50/30 dark:bg-blue-900/10' :
-                                            isShipment ? 'border-orange-300 bg-orange-50/30 dark:bg-orange-900/10' :
-                                            'border-purple-300 bg-purple-50/30 dark:bg-purple-900/10'}
+                                          border-2 rounded-lg overflow-hidden transition-all duration-200
+                                          ${isOrderGroup ? 'border-blue-300 bg-blue-50/20 dark:bg-blue-900/10' :
+                                            isShipment ? 'border-orange-300 bg-orange-50/20 dark:bg-orange-900/10' :
+                                            'border-purple-300 bg-purple-50/20 dark:bg-purple-900/10'}
+                                          ${dragOverItem === groupId ? 'ring-2 ring-offset-1' : ''}
                                         `}
+                                        onDragOver={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          setDragOverItem(groupId);
+                                        }}
+                                        onDragLeave={() => setDragOverItem(null)}
+                                        onDrop={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          if (draggedItem && !items.some(i => i.id === draggedItem.id)) {
+                                            // Add item to existing group
+                                            const groupType = isOrderGroup ? 'orderGroupId' : 
+                                                            isShipment ? 'shipmentId' : 'consolidationId';
+                                            
+                                            const newColumns = columns.map(col => ({
+                                              ...col,
+                                              items: col.items.map(item => 
+                                                item.id === draggedItem.id ? { ...item, [groupType]: groupId } : item
+                                              )
+                                            }));
+                                            
+                                            setColumns(newColumns);
+                                            setDraggedItem(null);
+                                            setDragOverItem(null);
+                                          }
+                                        }}
                                       >
-                                        <div className="flex items-center justify-between mb-0.5">
-                                          <Badge 
-                                            variant="outline" 
-                                            className={`text-[8px] px-0.5 h-3 
-                                              ${isOrderGroup ? 'border-blue-400' :
-                                                isShipment ? 'border-orange-400' :
-                                                'border-purple-400'}
-                                            `}
-                                          >
-                                            {isOrderGroup ? <Hash className="h-2 w-2 mr-0.5" /> :
-                                             isShipment ? <Plane className="h-2 w-2 mr-0.5" /> :
-                                             <Package className="h-2 w-2 mr-0.5" />}
-                                            {isOrderGroup ? `Order (${items.length})` :
-                                             isShipment ? `Shipment (${items.length})` :
-                                             `Consolidated (${items.length})`}
-                                          </Badge>
-                                          <span className="text-[8px] text-muted-foreground">
-                                            {groupId.slice(-6)}
-                                          </span>
+                                        {/* Group Header */}
+                                        <div 
+                                          className={`
+                                            px-2 py-1 cursor-pointer select-none
+                                            ${isOrderGroup ? 'bg-blue-100/50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/40' :
+                                              isShipment ? 'bg-orange-100/50 dark:bg-orange-900/30 hover:bg-orange-100 dark:hover:bg-orange-900/40' :
+                                              'bg-purple-100/50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/40'}
+                                            transition-colors
+                                          `}
+                                          onClick={() => toggleGroupExpanded(groupId)}
+                                        >
+                                          <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-1">
+                                              <ChevronDown 
+                                                className={`h-3 w-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                                              />
+                                              <Badge 
+                                                variant="outline" 
+                                                className={`text-[9px] px-1 h-4 font-bold
+                                                  ${isOrderGroup ? 'border-blue-500 bg-blue-100 text-blue-700' :
+                                                    isShipment ? 'border-orange-500 bg-orange-100 text-orange-700' :
+                                                    'border-purple-500 bg-purple-100 text-purple-700'}
+                                                `}
+                                              >
+                                                {isOrderGroup ? <Hash className="h-2.5 w-2.5 mr-0.5" /> :
+                                                 isShipment ? <Plane className="h-2.5 w-2.5 mr-0.5" /> :
+                                                 <Package className="h-2.5 w-2.5 mr-0.5" />}
+                                                {items.length} items • {totalQuantity} pcs
+                                              </Badge>
+                                              <span className="text-[10px] font-medium text-muted-foreground">
+                                                #{groupId.slice(-6)}
+                                              </span>
+                                            </div>
+                                            
+                                            <div className="flex items-center gap-1">
+                                              {totalValue > 0 && (
+                                                <span className="text-[10px] font-bold">
+                                                  {formatCurrency(totalValue, items[0]?.currency || 'USD')}
+                                                </span>
+                                              )}
+                                              <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  // Ungroup items
+                                                  const groupType = isOrderGroup ? 'orderGroupId' : 
+                                                                   isShipment ? 'shipmentId' : 'consolidationId';
+                                                  
+                                                  const newColumns = columns.map(col => ({
+                                                    ...col,
+                                                    items: col.items.map(item => 
+                                                      items.some(gi => gi.id === item.id) 
+                                                        ? { ...item, [groupType]: undefined } 
+                                                        : item
+                                                    )
+                                                  }));
+                                                  
+                                                  setColumns(newColumns);
+                                                }}
+                                              >
+                                                <X className="h-3 w-3" />
+                                              </Button>
+                                            </div>
+                                          </div>
                                         </div>
-                                        {items.map(item => (
-                                          <ItemCard 
-                                            key={item.id} 
-                                            item={item}
-                                            isDragging={draggedItem?.id === item.id}
-                                          />
-                                        ))}
+                                        
+                                        {/* Group Items */}
+                                        {isExpanded && (
+                                          <div className="p-1 space-y-0.5">
+                                            {items.map(item => (
+                                              <ItemCard 
+                                                key={item.id} 
+                                                item={item}
+                                                isDragging={draggedItem?.id === item.id}
+                                                showGroupBadge={false}
+                                              />
+                                            ))}
+                                          </div>
+                                        )}
                                       </div>
                                     );
                                   })}
