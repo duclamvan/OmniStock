@@ -144,8 +144,14 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
     },
     {
       name: "Imports",
-      href: "/imports",
       icon: Globe,
+      children: [
+        { name: "All Import Orders", href: "/imports" },
+        { name: "Track Items", href: "/imports/items" },
+        { name: "Warehouse View", href: "/imports/consolidated" },
+        { name: "Track Shipments", href: "/imports/shipments" },
+        { name: "Add Import Order", href: "/imports/orders/new" },
+      ],
     },
     {
       name: "Shipping",

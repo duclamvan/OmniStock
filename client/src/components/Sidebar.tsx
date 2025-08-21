@@ -13,7 +13,8 @@ import {
   Plus,
   Truck,
   Ship,
-  FileText
+  FileText,
+  Globe
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -66,6 +67,17 @@ const navigation = [
     icon: FileText,
   },
   {
+    name: "Imports",
+    icon: Globe,
+    children: [
+      { name: "All Import Orders", href: "/imports" },
+      { name: "Track Items", href: "/imports/items" },
+      { name: "Warehouse View", href: "/imports/consolidated" },
+      { name: "Track Shipments", href: "/imports/shipments" },
+      { name: "Add Import Order", href: "/imports/orders/new" },
+    ],
+  },
+  {
     name: "Reports",
     href: "/reports",
     icon: BarChart3,
@@ -79,7 +91,7 @@ const navigation = [
 
 export function Sidebar() {
   const [location] = useLocation();
-  const [openItems, setOpenItems] = useState<string[]>(["Orders", "Warehouse"]);
+  const [openItems, setOpenItems] = useState<string[]>(["Orders", "Warehouse", "Imports"]);
 
   const toggleItem = (name: string) => {
     setOpenItems(prev => 
