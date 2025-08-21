@@ -8,6 +8,9 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { format, differenceInDays } from "date-fns";
 import { 
@@ -78,9 +81,11 @@ export default function ImportKanbanView() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterWarehouse, setFilterWarehouse] = useState("all");
   const [filterPriority, setFilterPriority] = useState("all");
-  const [viewMode, setViewMode] = useState<"kanban" | "timeline">("kanban");
+  const [viewMode, setViewMode] = useState<"kanban" | "table" | "timeline">("kanban");
   const [draggedOrder, setDraggedOrder] = useState<ImportOrder | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
+  const [isCompactView, setIsCompactView] = useState(false);
+  const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
 
   // Mock data for import orders
   const mockOrders: ImportOrder[] = [
@@ -330,108 +335,161 @@ export default function ImportKanbanView() {
     return `${days} days`;
   };
 
-  const OrderCard = ({ order }: { order: ImportOrder }) => (
-    <Card 
-      draggable
-      onDragStart={(e) => handleDragStart(e, order)}
-      className="cursor-move hover:shadow-md transition-shadow mb-3"
-    >
-      <CardContent className="p-4 space-y-3">
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">{order.orderNumber}</span>
-            <Badge className={getPriorityColor(order.priority)} variant="secondary">
-              {order.priority}
-            </Badge>
-          </div>
-          <Button variant="ghost" size="icon" className="h-6 w-6">
-            <MoreVertical className="h-3 w-3" />
-          </Button>
-        </div>
-
-        {/* Supplier Info */}
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-sm">
-            <span>{getCountryFlag(order.supplierCountry)}</span>
-            <span className="font-medium truncate">{order.supplier}</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <MapPin className="h-3 w-3" />
-            <span>{order.destination}</span>
-          </div>
-        </div>
-
-        {/* Progress Bar */}
-        <div className="space-y-1">
-          <div className="flex justify-between text-xs">
-            <span className="text-muted-foreground">Progress</span>
-            <span className="font-medium">{order.progress}%</span>
-          </div>
-          <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-primary transition-all"
-              style={{ width: `${order.progress}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Metrics */}
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="flex items-center gap-1">
-            <Package className="h-3 w-3 text-muted-foreground" />
-            <span>{order.totalItems.toLocaleString()} items</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <DollarSign className="h-3 w-3 text-muted-foreground" />
-            <span>{formatCurrency(order.totalValue, order.currency)}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Calendar className="h-3 w-3 text-muted-foreground" />
-            <span>{getDaysUntilArrival(order.estimatedArrival)}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <FileText className="h-3 w-3 text-muted-foreground" />
-            <span>{order.documents} docs</span>
-          </div>
-        </div>
-
-        {/* Tags */}
-        {order.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {order.tags.map((tag, index) => (
-              <Badge key={index} variant="outline" className="text-xs">
-                {tag}
-              </Badge>
-            ))}
-          </div>
-        )}
-
-        {/* Footer */}
-        <div className="flex items-center justify-between pt-2 border-t">
-          {order.assignee ? (
-            <div className="flex items-center gap-1">
-              <Avatar className="h-5 w-5">
-                <AvatarFallback className="text-xs">
-                  {order.assignee.split(' ').map(n => n[0]).join('')}
-                </AvatarFallback>
-              </Avatar>
-              <span className="text-xs text-muted-foreground">{order.assignee}</span>
+  const OrderCard = ({ order }: { order: ImportOrder }) => {
+    if (isCompactView) {
+      return (
+        <Card 
+          draggable
+          onDragStart={(e) => handleDragStart(e, order)}
+          className="cursor-move hover:shadow-md transition-all mb-2 group"
+        >
+          <CardContent className="p-3 space-y-2">
+            {/* Compact Header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <span className="text-xs font-medium truncate">{order.orderNumber}</span>
+                <Badge className={`${getPriorityColor(order.priority)} h-5`} variant="secondary">
+                  <span className="text-[10px]">{order.priority[0].toUpperCase()}</span>
+                </Badge>
+              </div>
+              <Link href={`/imports/orders/${order.id}`}>
+                <Eye className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </Link>
             </div>
-          ) : (
-            <span className="text-xs text-muted-foreground">Unassigned</span>
-          )}
-          <div className="flex items-center gap-2">
-            <Link href={`/imports/orders/${order.id}`}>
-              <Button variant="ghost" size="icon" className="h-6 w-6">
-                <Eye className="h-3 w-3" />
-              </Button>
-            </Link>
+
+            {/* Compact Info */}
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-1">
+                <span>{getCountryFlag(order.supplierCountry)}</span>
+                <span className="truncate max-w-[100px]">{order.supplier}</span>
+              </div>
+              <span className="font-medium">{formatCurrency(order.totalValue, order.currency)}</span>
+            </div>
+
+            {/* Compact Progress */}
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-1 bg-gray-200 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-primary transition-all"
+                  style={{ width: `${order.progress}%` }}
+                />
+              </div>
+              <span className="text-[10px] text-muted-foreground">{order.progress}%</span>
+            </div>
+
+            {/* Compact Footer */}
+            <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+              <span>{order.totalItems} items</span>
+              <span>{getDaysUntilArrival(order.estimatedArrival)}</span>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    return (
+      <Card 
+        draggable
+        onDragStart={(e) => handleDragStart(e, order)}
+        className="cursor-move hover:shadow-md transition-shadow mb-3"
+      >
+        <CardContent className="p-4 space-y-3">
+          {/* Header */}
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">{order.orderNumber}</span>
+              <Badge className={getPriorityColor(order.priority)} variant="secondary">
+                {order.priority}
+              </Badge>
+            </div>
+            <Button variant="ghost" size="icon" className="h-6 w-6">
+              <MoreVertical className="h-3 w-3" />
+            </Button>
           </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
+
+          {/* Supplier Info */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-sm">
+              <span>{getCountryFlag(order.supplierCountry)}</span>
+              <span className="font-medium truncate">{order.supplier}</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <MapPin className="h-3 w-3" />
+              <span>{order.destination}</span>
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Progress</span>
+              <span className="font-medium">{order.progress}%</span>
+            </div>
+            <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-primary transition-all"
+                style={{ width: `${order.progress}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Metrics */}
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="flex items-center gap-1">
+              <Package className="h-3 w-3 text-muted-foreground" />
+              <span>{order.totalItems.toLocaleString()} items</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <DollarSign className="h-3 w-3 text-muted-foreground" />
+              <span>{formatCurrency(order.totalValue, order.currency)}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Calendar className="h-3 w-3 text-muted-foreground" />
+              <span>{getDaysUntilArrival(order.estimatedArrival)}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <FileText className="h-3 w-3 text-muted-foreground" />
+              <span>{order.documents} docs</span>
+            </div>
+          </div>
+
+          {/* Tags */}
+          {order.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {order.tags.map((tag, index) => (
+                <Badge key={index} variant="outline" className="text-xs">
+                  {tag}
+                </Badge>
+              ))}
+            </div>
+          )}
+
+          {/* Footer */}
+          <div className="flex items-center justify-between pt-2 border-t">
+            {order.assignee ? (
+              <div className="flex items-center gap-1">
+                <Avatar className="h-5 w-5">
+                  <AvatarFallback className="text-xs">
+                    {order.assignee.split(' ').map(n => n[0]).join('')}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-xs text-muted-foreground">{order.assignee}</span>
+              </div>
+            ) : (
+              <span className="text-xs text-muted-foreground">Unassigned</span>
+            )}
+            <div className="flex items-center gap-2">
+              <Link href={`/imports/orders/${order.id}`}>
+                <Button variant="ghost" size="icon" className="h-6 w-6">
+                  <Eye className="h-3 w-3" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <div className="space-y-4 md:space-y-6 pb-20 md:pb-6">
@@ -457,8 +515,9 @@ export default function ImportKanbanView() {
           </div>
           <div className="flex gap-2">
             <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)}>
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="kanban">Kanban</TabsTrigger>
+                <TabsTrigger value="table">Table</TabsTrigger>
                 <TabsTrigger value="timeline">Timeline</TabsTrigger>
               </TabsList>
             </Tabs>
@@ -511,6 +570,18 @@ export default function ImportKanbanView() {
                 <SelectItem value="low">Low</SelectItem>
               </SelectContent>
             </Select>
+            {viewMode === "kanban" && (
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="compact-view"
+                  checked={isCompactView}
+                  onCheckedChange={setIsCompactView}
+                />
+                <Label htmlFor="compact-view" className="text-sm whitespace-nowrap">
+                  Compact
+                </Label>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -562,6 +633,162 @@ export default function ImportKanbanView() {
           </div>
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
+      ) : viewMode === "table" ? (
+        /* Table View */
+        <Card className="mx-4 md:mx-0">
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12">
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300"
+                        checked={selectedOrders.length === mockOrders.length && mockOrders.length > 0}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedOrders(mockOrders.map(o => o.id));
+                          } else {
+                            setSelectedOrders([]);
+                          }
+                        }}
+                      />
+                    </TableHead>
+                    <TableHead>Order #</TableHead>
+                    <TableHead>Supplier</TableHead>
+                    <TableHead>Destination</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Priority</TableHead>
+                    <TableHead>Items</TableHead>
+                    <TableHead>Value</TableHead>
+                    <TableHead>Progress</TableHead>
+                    <TableHead>ETA</TableHead>
+                    <TableHead>Assignee</TableHead>
+                    <TableHead className="w-20">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {mockOrders
+                    .filter(order => filterOrders([order]).length > 0)
+                    .map((order) => (
+                      <TableRow key={order.id} className="hover:bg-muted/50">
+                        <TableCell>
+                          <input
+                            type="checkbox"
+                            className="rounded border-gray-300"
+                            checked={selectedOrders.includes(order.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedOrders([...selectedOrders, order.id]);
+                              } else {
+                                setSelectedOrders(selectedOrders.filter(id => id !== order.id));
+                              }
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            <span>{order.orderNumber}</span>
+                            {order.trackingNumber && (
+                              <Badge variant="outline" className="text-xs">
+                                {order.trackingNumber}
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span>{getCountryFlag(order.supplierCountry)}</span>
+                            <span>{order.supplier}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>{order.destination}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="capitalize">
+                            {order.status.replace('_', ' ')}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={getPriorityColor(order.priority)} variant="secondary">
+                            {order.priority}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{order.totalItems.toLocaleString()}</TableCell>
+                        <TableCell>{formatCurrency(order.totalValue, order.currency)}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div className="w-20 h-2 bg-gray-200 rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-primary transition-all"
+                                style={{ width: `${order.progress}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-muted-foreground">{order.progress}%</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            <div>{format(new Date(order.estimatedArrival), 'MMM d')}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {getDaysUntilArrival(order.estimatedArrival)}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {order.assignee ? (
+                            <div className="flex items-center gap-1">
+                              <Avatar className="h-6 w-6">
+                                <AvatarFallback className="text-xs">
+                                  {order.assignee.split(' ').map(n => n[0]).join('')}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="text-sm">{order.assignee}</span>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            <Link href={`/imports/orders/${order.id}`}>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </Link>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                </TableBody>
+              </Table>
+            </div>
+            {selectedOrders.length > 0 && (
+              <div className="flex items-center justify-between p-4 border-t bg-muted/50">
+                <span className="text-sm font-medium">
+                  {selectedOrders.length} order{selectedOrders.length > 1 ? 's' : ''} selected
+                </span>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm">
+                    <Download className="h-4 w-4 mr-2" />
+                    Export
+                  </Button>
+                  <Button variant="outline" size="sm">
+                    <Edit className="h-4 w-4 mr-2" />
+                    Bulk Edit
+                  </Button>
+                  <Button variant="outline" size="sm">
+                    <Archive className="h-4 w-4 mr-2" />
+                    Archive
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       ) : (
         /* Timeline View */
         <Card className="mx-4 md:mx-0">
