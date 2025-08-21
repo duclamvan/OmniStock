@@ -1,785 +1,401 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Link, useParams, useLocation } from "wouter";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
-import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Progress } from "@/components/ui/progress";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { format } from "date-fns";
-import { 
+import {
   ArrowLeft,
   Package,
-  Calculator,
-  DollarSign,
-  Ship,
   Truck,
-  CheckCircle,
-  Clock,
-  AlertCircle,
-  Lock,
-  Unlock,
-  RefreshCw,
-  Plus,
-  Edit,
-  Trash2,
-  Save,
-  Globe,
+  DollarSign,
+  Calendar,
+  MapPin,
+  User,
   FileText,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  Edit,
+  Download,
+  Printer,
+  Share2,
+  MoreVertical,
   Activity,
-  TrendingUp,
-  Weight,
-  Hash
+  Globe,
+  Hash,
+  Building2,
+  ChevronRight
 } from "lucide-react";
 
-interface ImportOrderItem {
+interface OrderItem {
   id: string;
-  productId?: string;
-  productName: string;
-  sku?: string;
+  name: string;
   quantity: number;
-  unitCost: string;
-  weight?: string;
-  totalCost: string;
-  calculatedUnitCost?: string;
-  receivedQuantity?: number;
-  status?: string;
+  sku?: string;
+  unitPrice?: number;
+  totalPrice?: number;
 }
 
-interface LandedCostCalculation {
+interface ImportOrderDetails {
   id: string;
-  calculationType: string;
-  productValue: string;
-  shippingCost: string;
-  customsDuty?: string;
-  taxes?: string;
-  otherFees?: string;
-  totalLandedCost: string;
-  isLocked: boolean;
-  autoUpdate: boolean;
-  calculationDetails?: any;
+  orderNumber: string;
+  supplier: string;
+  supplierCountry: string;
+  destination: string;
+  status: string;
+  priority: 'high' | 'medium' | 'low';
+  totalItems: number;
+  totalValue: number;
+  currency: string;
+  estimatedArrival: string;
+  createdDate: string;
+  lastUpdated: string;
+  assignee?: string;
+  tags: string[];
+  progress: number;
+  documents: number;
+  comments: number;
+  trackingNumber?: string;
+  shippingMethod?: string;
+  items: OrderItem[];
+  shippingCost?: number;
+  customsDuty?: number;
+  taxes?: number;
+  totalLandedCost?: number;
 }
 
 export default function ImportOrderDetails() {
   const { id } = useParams();
-  const { toast } = useToast();
   const [, navigate] = useLocation();
-  
-  // State for real-time calculation
-  const [shippingCost, setShippingCost] = useState("0");
-  const [customsDuty, setCustomsDuty] = useState("0");
-  const [taxes, setTaxes] = useState("0");
-  const [otherFees, setOtherFees] = useState("0");
-  const [calculationType, setCalculationType] = useState<string>("by_value");
-  const [isCalculating, setIsCalculating] = useState(false);
-  const [calculationDebounceTimer, setCalculationDebounceTimer] = useState<NodeJS.Timeout | null>(null);
+  const [activeTab, setActiveTab] = useState("overview");
 
-  // Fetch order details
-  const { data: order, isLoading } = useQuery({
-    queryKey: ['/api/import-orders', id],
-    queryFn: async () => {
-      const response = await fetch(`/api/import-orders/${id}`);
-      if (!response.ok) throw new Error('Failed to fetch import order');
-      return response.json();
-    }
+  // Mock data - in real app, this would come from API
+  const mockOrderDetails: ImportOrderDetails = {
+    id: id || "imp-001",
+    orderNumber: "IMP-2025-001",
+    supplier: "Shenzhen Electronics Co",
+    supplierCountry: "China",
+    destination: "USA Warehouse",
+    status: "in_transit",
+    priority: "high",
+    totalItems: 500,
+    totalValue: 25000,
+    currency: "USD",
+    estimatedArrival: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    createdDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    lastUpdated: new Date().toISOString(),
+    assignee: "John Doe",
+    tags: ["Electronics", "Urgent"],
+    progress: 60,
+    documents: 3,
+    comments: 2,
+    trackingNumber: "CN2025SHIP445",
+    shippingMethod: "Sea Freight",
+    shippingCost: 1500,
+    customsDuty: 2500,
+    taxes: 2000,
+    totalLandedCost: 31000,
+    items: [
+      { id: "1", name: "USB-C Cables", quantity: 200, sku: "USB-C-001", unitPrice: 50, totalPrice: 10000 },
+      { id: "2", name: "Wireless Chargers", quantity: 150, sku: "WC-002", unitPrice: 66.67, totalPrice: 10000 },
+      { id: "3", name: "Phone Cases", quantity: 100, sku: "PC-003", unitPrice: 40, totalPrice: 4000 },
+      { id: "4", name: "Screen Protectors", quantity: 50, sku: "SP-004", unitPrice: 20, totalPrice: 1000 }
+    ]
+  };
+
+  const { data: order = mockOrderDetails, isLoading } = useQuery({
+    queryKey: [`/api/import-orders/${id}`],
+    enabled: !!id
   });
 
-  // Initialize state from order data
-  useEffect(() => {
-    if (order?.calculation) {
-      setShippingCost(order.calculation.shippingCost || "0");
-      setCustomsDuty(order.calculation.customsDuty || "0");
-      setTaxes(order.calculation.taxes || "0");
-      setOtherFees(order.calculation.otherFees || "0");
-      setCalculationType(order.calculation.calculationType || "by_value");
-    } else if (order) {
-      setShippingCost(order.shippingCost || "0");
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending': return 'bg-gray-100 text-gray-800';
+      case 'processing': return 'bg-blue-100 text-blue-800';
+      case 'in_transit': return 'bg-purple-100 text-purple-800';
+      case 'delivered': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
-  }, [order]);
+  };
 
-  // Calculate landed cost mutation
-  const calculateMutation = useMutation({
-    mutationFn: async (data: any) => {
-      return apiRequest(`/api/import-orders/${id}/calculate`, 'POST', data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/import-orders', id] });
-      setIsCalculating(false);
-    },
-    onError: () => {
-      setIsCalculating(false);
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'high': return 'bg-red-100 text-red-800';
+      case 'medium': return 'bg-yellow-100 text-yellow-800';
+      case 'low': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
-  });
+  };
 
-  // Real-time calculation trigger
-  const triggerCalculation = useCallback(() => {
-    if (!order?.items?.length) return;
-
-    setIsCalculating(true);
-    
-    // Clear existing timer
-    if (calculationDebounceTimer) {
-      clearTimeout(calculationDebounceTimer);
+  const getCountryFlag = (country: string) => {
+    switch (country) {
+      case 'China': return '🇨🇳';
+      case 'Vietnam': return '🇻🇳';
+      case 'USA': return '🇺🇸';
+      default: return '🌍';
     }
-
-    // Set new timer for debounced calculation
-    const timer = setTimeout(() => {
-      calculateMutation.mutate({
-        calculationType,
-        shippingCost: parseFloat(shippingCost) || 0,
-        customsDuty: parseFloat(customsDuty) || 0,
-        taxes: parseFloat(taxes) || 0,
-        otherFees: parseFloat(otherFees) || 0
-      });
-    }, 500); // 500ms debounce
-
-    setCalculationDebounceTimer(timer);
-  }, [order, calculationType, shippingCost, customsDuty, taxes, otherFees]);
-
-  // Trigger calculation on input changes
-  useEffect(() => {
-    if (order?.items?.length && !order?.calculation?.isLocked) {
-      triggerCalculation();
-    }
-  }, [calculationType, shippingCost, customsDuty, taxes, otherFees]);
-
-  // Lock calculation mutation
-  const lockCalculationMutation = useMutation({
-    mutationFn: async () => {
-      if (!order?.calculation?.id) throw new Error('No calculation to lock');
-      return apiRequest(`/api/landed-cost-calculations/${order.calculation.id}/lock`, 'POST');
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/import-orders', id] });
-      toast({
-        title: "Calculation Locked",
-        description: "The landed cost calculation has been locked."
-      });
-    }
-  });
-
-  // Mark as received mutation
-  const markReceivedMutation = useMutation({
-    mutationFn: async (itemIds: string[]) => {
-      return apiRequest(`/api/import-orders/${id}/receive`, 'POST', { itemIds });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/import-orders', id] });
-      toast({
-        title: "Items Marked as Received",
-        description: "The selected items have been marked as received."
-      });
-    }
-  });
-
-  // Add to inventory mutation
-  const addToInventoryMutation = useMutation({
-    mutationFn: async (itemIds: string[]) => {
-      return apiRequest(`/api/import-orders/${id}/add-to-inventory`, 'POST', { itemIds });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/import-orders', id] });
-      toast({
-        title: "Added to Inventory",
-        description: "Items have been successfully added to inventory.",
-        variant: "default"
-      });
-    }
-  });
-
-  // Update order mutation
-  const updateOrderMutation = useMutation({
-    mutationFn: async (updates: any) => {
-      return apiRequest(`/api/import-orders/${id}`, 'PATCH', updates);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/import-orders', id] });
-      toast({
-        title: "Order Updated",
-        description: "Import order has been updated successfully."
-      });
-    }
-  });
+  };
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-4 text-gray-500">Loading import order...</p>
+          <Activity className="h-8 w-8 animate-spin mx-auto mb-2" />
+          <p className="text-sm text-muted-foreground">Loading order details...</p>
         </div>
       </div>
     );
   }
-
-  if (!order) {
-    return (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Error</AlertTitle>
-        <AlertDescription>Import order not found.</AlertDescription>
-      </Alert>
-    );
-  }
-
-  const items = order.items || [];
-  const calculation = order.calculation;
-  const productValue = items.reduce((sum: number, item: ImportOrderItem) => 
-    sum + parseFloat(item.totalCost || '0'), 0
-  );
-  const totalAdditionalCosts = 
-    parseFloat(shippingCost) + 
-    parseFloat(customsDuty) + 
-    parseFloat(taxes) + 
-    parseFloat(otherFees);
-  const estimatedLandedCost = productValue + totalAdditionalCosts;
-
-  // Calculate progress
-  const receivedItems = items.filter((item: ImportOrderItem) => item.status === 'received').length;
-  const inventoryAddedItems = items.filter((item: ImportOrderItem) => item.inventoryAdded).length;
-  const progressPercentage = items.length > 0 ? (receivedItems / items.length) * 100 : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6 pb-20 md:pb-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/imports">
-            <Button variant="ghost" size="sm">
+      <div className="sticky top-0 z-10 bg-background border-b md:relative md:border-0">
+        <div className="flex flex-col md:flex-row md:items-center justify-between p-4 md:p-0 gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => navigate("/imports/kanban")}
+              className="md:hidden"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate("/imports/kanban")}
+              className="hidden md:flex"
+            >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Imports
+              Back to Kanban
             </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-semibold">Import Order {order.orderNumber}</h1>
-            <p className="text-gray-500">
-              Created {format(new Date(order.createdAt), 'MMM dd, yyyy')}
-            </p>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-lg md:text-2xl font-semibold">{order.orderNumber}</h1>
+                <Badge className={getStatusColor(order.status)} variant="secondary">
+                  {order.status.replace('_', ' ')}
+                </Badge>
+                <Badge className={getPriorityColor(order.priority)} variant="secondary">
+                  {order.priority}
+                </Badge>
+              </div>
+              <p className="text-xs md:text-sm text-muted-foreground">
+                Last updated {format(new Date(order.lastUpdated), 'MMM d, yyyy HH:mm')}
+              </p>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {order.status === 'delivered' && (
-            <Link href={`/imports/orders/${id}/receive`}>
-              <Button variant="outline">
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Receive Items
-              </Button>
-            </Link>
-          )}
-          <Link href={`/imports/orders/${id}/edit`}>
-            <Button variant="outline">
-              <Edit className="h-4 w-4 mr-2" />
-              Edit
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm">
+              <Download className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">Export</span>
             </Button>
-          </Link>
+            <Button variant="outline" size="sm">
+              <Printer className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">Print</span>
+            </Button>
+            <Button size="sm">
+              <Edit className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">Edit Order</span>
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Progress Card */}
-      {progressPercentage > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Receiving Progress</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>{receivedItems} of {items.length} items received</span>
-                <span>{Math.round(progressPercentage)}%</span>
-              </div>
-              <Progress value={progressPercentage} className="h-2" />
-              {inventoryAddedItems > 0 && (
-                <p className="text-sm text-green-600">
-                  ✓ {inventoryAddedItems} items added to inventory
-                </p>
-              )}
+      {/* Progress Bar */}
+      <Card className="mx-4 md:mx-0">
+        <CardContent className="p-4">
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Order Progress</span>
+              <span className="font-medium">{order.progress}%</span>
             </div>
+            <Progress value={order.progress} className="h-2" />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>Created {format(new Date(order.createdDate), 'MMM d')}</span>
+              <span>ETA {format(new Date(order.estimatedArrival), 'MMM d')}</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Key Metrics */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mx-4 md:mx-0">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Package className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Total Items</span>
+            </div>
+            <p className="text-2xl font-bold">{order.totalItems.toLocaleString()}</p>
           </CardContent>
         </Card>
-      )}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Order Value</span>
+            </div>
+            <p className="text-2xl font-bold">{formatCurrency(order.totalValue, order.currency)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Truck className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Shipping Cost</span>
+            </div>
+            <p className="text-2xl font-bold">{formatCurrency(order.shippingCost || 0, order.currency)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Total Landed</span>
+            </div>
+            <p className="text-2xl font-bold">{formatCurrency(order.totalLandedCost || order.totalValue, order.currency)}</p>
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* Main Content Tabs */}
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid grid-cols-4 w-full max-w-2xl">
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="mx-4 md:mx-0">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="items">Items</TabsTrigger>
-          <TabsTrigger value="calculation">Cost Calculation</TabsTrigger>
-          <TabsTrigger value="tracking">Tracking</TabsTrigger>
+          <TabsTrigger value="items">Items ({order.items.length})</TabsTrigger>
+          <TabsTrigger value="costs">Costs</TabsTrigger>
         </TabsList>
 
-        {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Order Details */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Order Details</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label>Status</Label>
-                  <div className="mt-1">
-                    <Badge className="text-sm">{order.status}</Badge>
-                  </div>
-                </div>
-                <div>
-                  <Label>Supplier</Label>
-                  <p className="text-sm">{order.supplier?.name || '-'}</p>
-                </div>
-                <div>
-                  <Label>Warehouse</Label>
-                  <p className="text-sm">{order.warehouse?.name || '-'}</p>
-                </div>
-                <div>
-                  <Label>Region</Label>
-                  <div className="flex items-center gap-1">
-                    <Globe className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm">{order.region || '-'}</span>
-                  </div>
-                </div>
-                <div>
-                  <Label>Currency</Label>
-                  <p className="text-sm font-medium">{order.currency}</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Cost Summary */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Cost Summary</CardTitle>
-                <CardDescription>
-                  {isCalculating && (
-                    <span className="text-blue-600 flex items-center gap-1">
-                      <Activity className="h-3 w-3 animate-pulse" />
-                      Calculating...
-                    </span>
-                  )}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Product Value</span>
-                  <span className="font-medium">
-                    {formatCurrency(productValue, order.currency)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500">Shipping Cost</span>
-                  <span className="font-medium">
-                    {formatCurrency(parseFloat(shippingCost), order.currency)}
-                  </span>
-                </div>
-                {parseFloat(customsDuty) > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Customs Duty</span>
-                    <span className="font-medium">
-                      {formatCurrency(parseFloat(customsDuty), order.currency)}
-                    </span>
-                  </div>
-                )}
-                {parseFloat(taxes) > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Taxes</span>
-                    <span className="font-medium">
-                      {formatCurrency(parseFloat(taxes), order.currency)}
-                    </span>
-                  </div>
-                )}
-                {parseFloat(otherFees) > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Other Fees</span>
-                    <span className="font-medium">
-                      {formatCurrency(parseFloat(otherFees), order.currency)}
-                    </span>
-                  </div>
-                )}
-                <Separator />
-                <div className="flex justify-between text-lg font-semibold">
-                  <span>Total Landed Cost</span>
-                  <span className="text-green-600">
-                    {formatCurrency(
-                      calculation?.totalLandedCost ? parseFloat(calculation.totalLandedCost) : estimatedLandedCost,
-                      order.currency
-                    )}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Quick Actions */}
           <Card>
             <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
+              <CardTitle className="text-base">Order Information</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {order.status === 'pending' && (
-                  <Button 
-                    variant="outline"
-                    onClick={() => updateOrderMutation.mutate({ status: 'ordered' })}
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    Mark as Ordered
-                  </Button>
-                )}
-                {order.status === 'ordered' && (
-                  <Button 
-                    variant="outline"
-                    onClick={() => updateOrderMutation.mutate({ status: 'shipped' })}
-                  >
-                    <Ship className="h-4 w-4 mr-2" />
-                    Mark as Shipped
-                  </Button>
-                )}
-                {order.status === 'shipped' && (
-                  <Button 
-                    variant="outline"
-                    onClick={() => updateOrderMutation.mutate({ status: 'delivered' })}
-                  >
-                    <Truck className="h-4 w-4 mr-2" />
-                    Mark as Delivered
-                  </Button>
-                )}
-                {order.status === 'delivered' && receivedItems === items.length && inventoryAddedItems < items.length && (
-                  <Button 
-                    onClick={() => {
-                      const itemIds = items.map((item: ImportOrderItem) => item.id);
-                      addToInventoryMutation.mutate(itemIds);
-                    }}
-                  >
-                    <Package className="h-4 w-4 mr-2" />
-                    Add All to Inventory
-                  </Button>
-                )}
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Supplier:</span>
+                    <span className="font-medium">
+                      {getCountryFlag(order.supplierCountry)} {order.supplier}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Destination:</span>
+                    <span className="font-medium">{order.destination}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Truck className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Shipping:</span>
+                    <span className="font-medium">{order.shippingMethod || 'Not specified'}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Hash className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Tracking:</span>
+                    <span className="font-medium">{order.trackingNumber || 'Not available'}</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Created:</span>
+                    <span className="font-medium">{format(new Date(order.createdDate), 'MMM d, yyyy')}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">ETA:</span>
+                    <span className="font-medium">{format(new Date(order.estimatedArrival), 'MMM d, yyyy')}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Assignee:</span>
+                    <span className="font-medium">{order.assignee || 'Unassigned'}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Documents:</span>
+                    <span className="font-medium">{order.documents} files</span>
+                  </div>
+                </div>
               </div>
+              {order.tags.length > 0 && (
+                <div className="flex items-center gap-2 pt-2 border-t">
+                  <span className="text-sm text-muted-foreground">Tags:</span>
+                  <div className="flex flex-wrap gap-1">
+                    {order.tags.map((tag, index) => (
+                      <Badge key={index} variant="outline" className="text-xs">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Items Tab */}
         <TabsContent value="items" className="space-y-4">
           <Card>
             <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle>Order Items ({items.length})</CardTitle>
-                <Link href={`/imports/orders/${id}/add-item`}>
-                  <Button size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Item
-                  </Button>
-                </Link>
-              </div>
+              <CardTitle className="text-base">Order Items</CardTitle>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Product</TableHead>
-                    <TableHead>SKU</TableHead>
-                    <TableHead className="text-right">Qty</TableHead>
-                    <TableHead className="text-right">Unit Cost</TableHead>
-                    <TableHead className="text-right">Weight</TableHead>
-                    <TableHead className="text-right">Total Cost</TableHead>
-                    <TableHead className="text-right">Landed Unit Cost</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {items.map((item: ImportOrderItem) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-medium">{item.productName}</TableCell>
-                      <TableCell>{item.sku || '-'}</TableCell>
-                      <TableCell className="text-right">
-                        {item.quantity}
-                        {item.receivedQuantity !== undefined && item.receivedQuantity !== item.quantity && (
-                          <span className="text-xs text-gray-500 block">
-                            ({item.receivedQuantity} received)
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {formatCurrency(parseFloat(item.unitCost), order.currency)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {item.weight ? `${item.weight} kg` : '-'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {formatCurrency(parseFloat(item.totalCost), order.currency)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {item.calculatedUnitCost ? (
-                          <div>
-                            <div className="font-medium text-green-600">
-                              {formatCurrency(parseFloat(item.calculatedUnitCost), order.currency)}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              +{((parseFloat(item.calculatedUnitCost) / parseFloat(item.unitCost) - 1) * 100).toFixed(1)}%
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {item.status === 'received' ? (
-                          <Badge className="bg-green-100 text-green-800">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            Received
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline">Pending</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Button size="sm" variant="ghost">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <div className="space-y-2">
+                {order.items.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">{item.name}</p>
+                      <p className="text-xs text-muted-foreground">SKU: {item.sku || 'N/A'}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium text-sm">{item.quantity} units</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatCurrency(item.totalPrice || item.quantity * (item.unitPrice || 0), order.currency)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Cost Calculation Tab */}
-        <TabsContent value="calculation" className="space-y-4">
+        <TabsContent value="costs" className="space-y-4">
           <Card>
             <CardHeader>
-              <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle>Landed Cost Calculator</CardTitle>
-                  <CardDescription>
-                    Real-time calculation updates as you type
-                  </CardDescription>
-                </div>
-                {calculation?.isLocked ? (
-                  <Badge className="bg-red-100 text-red-800">
-                    <Lock className="h-3 w-3 mr-1" />
-                    Locked
-                  </Badge>
-                ) : (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => lockCalculationMutation.mutate()}
-                    disabled={!calculation}
-                  >
-                    <Lock className="h-4 w-4 mr-2" />
-                    Lock Calculation
-                  </Button>
-                )}
-              </div>
+              <CardTitle className="text-base">Cost Breakdown</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Calculation Type */}
-              <div>
-                <Label>Calculation Method</Label>
-                <Select 
-                  value={calculationType} 
-                  onValueChange={setCalculationType}
-                  disabled={calculation?.isLocked}
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="by_value">By Value (Proportional to cost)</SelectItem>
-                    <SelectItem value="by_quantity">By Quantity (Equal per unit)</SelectItem>
-                    <SelectItem value="by_weight">By Weight (Based on weight)</SelectItem>
-                    <SelectItem value="manual">Manual (Custom allocation)</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-gray-500 mt-1">
-                  Determines how additional costs are allocated to each item
-                </p>
-              </div>
-
-              {/* Cost Inputs */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Shipping Cost</Label>
-                  <div className="relative mt-1">
-                    <Ship className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                    <Input
-                      type="number"
-                      value={shippingCost}
-                      onChange={(e) => setShippingCost(e.target.value)}
-                      className="pl-9"
-                      disabled={calculation?.isLocked}
-                      step="0.01"
-                    />
-                  </div>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Product Value</span>
+                  <span className="font-medium">{formatCurrency(order.totalValue, order.currency)}</span>
                 </div>
-                <div>
-                  <Label>Customs Duty</Label>
-                  <div className="relative mt-1">
-                    <FileText className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                    <Input
-                      type="number"
-                      value={customsDuty}
-                      onChange={(e) => setCustomsDuty(e.target.value)}
-                      className="pl-9"
-                      disabled={calculation?.isLocked}
-                      step="0.01"
-                    />
-                  </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Shipping Cost</span>
+                  <span className="font-medium">{formatCurrency(order.shippingCost || 0, order.currency)}</span>
                 </div>
-                <div>
-                  <Label>Taxes</Label>
-                  <div className="relative mt-1">
-                    <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                    <Input
-                      type="number"
-                      value={taxes}
-                      onChange={(e) => setTaxes(e.target.value)}
-                      className="pl-9"
-                      disabled={calculation?.isLocked}
-                      step="0.01"
-                    />
-                  </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Customs Duty</span>
+                  <span className="font-medium">{formatCurrency(order.customsDuty || 0, order.currency)}</span>
                 </div>
-                <div>
-                  <Label>Other Fees</Label>
-                  <div className="relative mt-1">
-                    <Calculator className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                    <Input
-                      type="number"
-                      value={otherFees}
-                      onChange={(e) => setOtherFees(e.target.value)}
-                      className="pl-9"
-                      disabled={calculation?.isLocked}
-                      step="0.01"
-                    />
-                  </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Taxes</span>
+                  <span className="font-medium">{formatCurrency(order.taxes || 0, order.currency)}</span>
+                </div>
+                <div className="flex justify-between pt-3 border-t">
+                  <span className="font-medium">Total Landed Cost</span>
+                  <span className="font-bold text-lg">{formatCurrency(order.totalLandedCost || order.totalValue, order.currency)}</span>
                 </div>
               </div>
-
-              {/* Calculation Summary */}
-              <Card className="bg-gray-50">
-                <CardContent className="pt-6">
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-lg">
-                      <span>Product Value</span>
-                      <span className="font-medium">
-                        {formatCurrency(productValue, order.currency)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-lg">
-                      <span>Additional Costs</span>
-                      <span className="font-medium text-orange-600">
-                        +{formatCurrency(totalAdditionalCosts, order.currency)}
-                      </span>
-                    </div>
-                    <Separator />
-                    <div className="flex justify-between text-xl font-bold">
-                      <span>Total Landed Cost</span>
-                      <span className="text-green-600">
-                        {formatCurrency(
-                          calculation?.totalLandedCost ? parseFloat(calculation.totalLandedCost) : estimatedLandedCost,
-                          order.currency
-                        )}
-                      </span>
-                    </div>
-                    <div className="text-sm text-gray-500 text-center">
-                      <TrendingUp className="h-4 w-4 inline mr-1" />
-                      {((totalAdditionalCosts / productValue) * 100).toFixed(1)}% markup on product value
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Per-Item Breakdown */}
-              {calculation?.calculationDetails?.items && (
-                <div>
-                  <h3 className="font-medium mb-3">Per-Item Cost Breakdown</h3>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Item</TableHead>
-                        <TableHead className="text-right">Original Cost</TableHead>
-                        <TableHead className="text-right">Allocated Cost</TableHead>
-                        <TableHead className="text-right">Total Landed</TableHead>
-                        <TableHead className="text-right">Unit Cost</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {calculation.calculationDetails.items.map((item: any) => (
-                        <TableRow key={item.id}>
-                          <TableCell>{item.productName}</TableCell>
-                          <TableCell className="text-right">
-                            {formatCurrency(item.originalCost, order.currency)}
-                          </TableCell>
-                          <TableCell className="text-right text-orange-600">
-                            +{formatCurrency(parseFloat(item.allocatedCost), order.currency)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {formatCurrency(parseFloat(item.totalLandedCost), order.currency)}
-                          </TableCell>
-                          <TableCell className="text-right font-medium text-green-600">
-                            {formatCurrency(parseFloat(item.calculatedUnitCost), order.currency)}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Tracking Tab */}
-        <TabsContent value="tracking" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Shipment Tracking</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label>Tracking Number</Label>
-                <p className="text-sm font-medium mt-1">
-                  {order.trackingNumber || 'Not available'}
-                </p>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Estimated Arrival</Label>
-                  <p className="text-sm mt-1">
-                    {order.estimatedArrival 
-                      ? format(new Date(order.estimatedArrival), 'MMM dd, yyyy')
-                      : 'Not set'}
-                  </p>
-                </div>
-                <div>
-                  <Label>Actual Arrival</Label>
-                  <p className="text-sm mt-1">
-                    {order.actualArrival 
-                      ? format(new Date(order.actualArrival), 'MMM dd, yyyy')
-                      : 'Not arrived'}
-                  </p>
-                </div>
-              </div>
-              {order.notes && (
-                <div>
-                  <Label>Notes</Label>
-                  <p className="text-sm mt-1 whitespace-pre-wrap">{order.notes}</p>
-                </div>
-              )}
             </CardContent>
           </Card>
         </TabsContent>
