@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -377,12 +377,16 @@ export default function ImportKanbanView() {
 
   const OrderCard = ({ order }: { order: ImportOrder }) => {
     const isExpanded = expandedItems.includes(order.id);
+    const [, navigate] = useLocation();
+    const displayItems = isExpanded ? order.items : order.items.slice(0, 5);
+    const hasMoreItems = order.items.length > 5;
     
     return (
       <Card 
         draggable
         onDragStart={(e) => handleDragStart(e, order)}
-        className="cursor-move hover:shadow-sm transition-all mb-1.5 group"
+        onClick={() => navigate(`/imports/orders/${order.id}`)}
+        className="cursor-move hover:shadow-md transition-all mb-1.5 group"
       >
         <CardContent className="p-2 space-y-1.5">
           {/* Header */}
@@ -402,18 +406,13 @@ export default function ImportKanbanView() {
               </Badge>
               <span className="text-xs font-semibold truncate">{order.orderNumber}</span>
             </div>
-            <Link href={`/imports/orders/${order.id}`}>
-              <Eye className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-            </Link>
+            <span className="text-xs font-semibold">{formatCurrency(order.totalValue, order.currency)}</span>
           </div>
 
-          {/* Supplier & Value */}
-          <div className="flex items-center justify-between text-[11px]">
-            <div className="flex items-center gap-1 truncate">
-              <span>{getCountryFlag(order.supplierCountry)}</span>
-              <span className="truncate">{order.supplier}</span>
-            </div>
-            <span className="font-semibold">{formatCurrency(order.totalValue, order.currency)}</span>
+          {/* Supplier */}
+          <div className="flex items-center gap-1 text-[11px]">
+            <span>{getCountryFlag(order.supplierCountry)}</span>
+            <span className="truncate">{order.supplier}</span>
           </div>
 
           {/* Progress */}
@@ -424,37 +423,34 @@ export default function ImportKanbanView() {
             />
           </div>
 
-          {/* Items List with Toggle */}
-          <div className="bg-gray-50 dark:bg-gray-900/30 rounded p-1.5">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleItemsExpanded(order.id);
-              }}
-              className="flex items-center justify-between w-full text-left hover:bg-gray-100 dark:hover:bg-gray-800/50 rounded px-1 py-0.5 transition-colors"
-            >
-              <div className="flex items-center gap-1">
+          {/* Items List */}
+          <div className="bg-gray-50 dark:bg-gray-900/30 rounded p-1.5 space-y-0.5">
+            <div className="text-[11px] font-medium mb-0.5">
+              {order.items.length} items ({order.totalItems} total)
+            </div>
+            {displayItems.map((item) => (
+              <div key={item.id} className="flex justify-between items-center text-[10px]">
+                <span className="truncate flex-1 text-muted-foreground">{item.name}</span>
+                <span className="font-medium ml-1">{item.quantity}</span>
+              </div>
+            ))}
+            
+            {/* Expand/Collapse button only if more than 5 items */}
+            {hasMoreItems && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleItemsExpanded(order.id);
+                }}
+                className="flex items-center justify-center w-full hover:bg-gray-100 dark:hover:bg-gray-800/50 rounded px-1 py-0.5 mt-1 transition-colors"
+              >
                 <ChevronDown 
                   className={`h-3 w-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`} 
                 />
-                <span className="text-[11px] font-medium">
-                  {order.items.length} items
+                <span className="text-[10px] text-muted-foreground ml-1">
+                  {isExpanded ? 'Show less' : `+${order.items.length - 5} more`}
                 </span>
-              </div>
-              <span className="text-[10px] text-muted-foreground">
-                {order.totalItems} total
-              </span>
-            </button>
-            
-            {isExpanded && (
-              <div className="mt-1 space-y-0.5 px-1">
-                {order.items.map((item) => (
-                  <div key={item.id} className="flex justify-between items-center text-[10px]">
-                    <span className="truncate flex-1 text-muted-foreground">{item.name}</span>
-                    <span className="font-medium ml-1">{item.quantity}</span>
-                  </div>
-                ))}
-              </div>
+              </button>
             )}
           </div>
 
