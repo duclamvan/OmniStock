@@ -71,6 +71,7 @@ const navigation = [
     icon: Globe,
     children: [
       { name: "All Import Orders", href: "/imports" },
+      { name: "Kanban View", href: "/imports/kanban" },
       { name: "Track Items", href: "/imports/items" },
       { name: "Warehouse View", href: "/imports/consolidated" },
       { name: "Track Shipments", href: "/imports/shipments" },

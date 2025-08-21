@@ -64,6 +64,7 @@ import ImportItemsTracking from "@/pages/Imports/ImportItemsTracking";
 import ConsolidatedView from "@/pages/Imports/ConsolidatedView";
 import ConsolidatedWarehouseView from "@/pages/Imports/ConsolidatedWarehouseView";
 import ShipmentTracking from "@/pages/Imports/ShipmentTracking";
+import ImportKanbanView from "@/pages/Imports/ImportKanbanView";
 
 function Router() {
   return (
@@ -134,6 +135,7 @@ function Router() {
         <Route path="/shipping" component={ShippingManagement} />
         <Route path="/files" component={Files} />
         <Route path="/imports" component={AllImports} />
+        <Route path="/imports/kanban" component={ImportKanbanView} />
         <Route path="/imports/items" component={ImportItemsTracking} />
         <Route path="/imports/consolidated" component={ConsolidatedWarehouseView} />
         <Route path="/imports/shipments" component={ShipmentTracking} />
