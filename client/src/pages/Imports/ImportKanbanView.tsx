@@ -238,36 +238,36 @@ export default function ImportKanbanView() {
     {
       id: "pending",
       title: "Pending",
-      color: "bg-gray-100",
-      icon: <Clock className="h-4 w-4" />,
+      color: "bg-gray-50 dark:bg-gray-900/50",
+      icon: <Clock className="h-3.5 w-3.5" />,
       orders: []
     },
     {
       id: "processing",
       title: "Processing",
-      color: "bg-blue-100",
-      icon: <Activity className="h-4 w-4" />,
+      color: "bg-blue-50 dark:bg-blue-900/20",
+      icon: <Activity className="h-3.5 w-3.5" />,
       orders: []
     },
     {
       id: "in_transit",
       title: "In Transit",
-      color: "bg-purple-100",
-      icon: <Truck className="h-4 w-4" />,
+      color: "bg-purple-50 dark:bg-purple-900/20",
+      icon: <Truck className="h-3.5 w-3.5" />,
       orders: []
     },
     {
       id: "customs",
       title: "Customs",
-      color: "bg-orange-100",
-      icon: <AlertCircle className="h-4 w-4" />,
+      color: "bg-orange-50 dark:bg-orange-900/20",
+      icon: <AlertCircle className="h-3.5 w-3.5" />,
       orders: []
     },
     {
       id: "delivered",
       title: "Delivered",
-      color: "bg-green-100",
-      icon: <CheckCircle className="h-4 w-4" />,
+      color: "bg-green-50 dark:bg-green-900/20",
+      icon: <CheckCircle className="h-3.5 w-3.5" />,
       orders: []
     }
   ]);
@@ -379,9 +379,15 @@ export default function ImportKanbanView() {
         <Card 
           draggable
           onDragStart={(e) => handleDragStart(e, order)}
-          className="cursor-move hover:shadow-md transition-all mb-2 group"
+          className="cursor-move hover:shadow-sm transition-all mb-1.5 group border-l-2"
+          style={{
+            borderLeftColor: 
+              order.priority === 'high' ? '#ef4444' : 
+              order.priority === 'medium' ? '#f59e0b' : 
+              '#10b981'
+          }}
         >
-          <CardContent className="p-3 space-y-2">
+          <CardContent className="p-2.5 space-y-1.5">
             {/* Compact Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -416,14 +422,14 @@ export default function ImportKanbanView() {
             </div>
 
             {/* Compact Items List */}
-            <div className="text-[10px] text-muted-foreground space-y-0.5">
-              {order.items.slice(0, 3).map((item, idx) => (
+            <div className="text-[10px] text-muted-foreground space-y-0 bg-muted/10 rounded p-1">
+              {order.items.slice(0, 2).map((item, idx) => (
                 <div key={item.id} className="truncate">
-                  {item.quantity}x {item.name}
+                  <span className="font-medium">{item.quantity}</span> {item.name}
                 </div>
               ))}
-              {order.items.length > 3 && (
-                <div className="text-muted-foreground/70">+{order.items.length - 3} more items</div>
+              {order.items.length > 2 && (
+                <div className="text-muted-foreground/70 text-[9px]">+{order.items.length - 2} more</div>
               )}
             </div>
 
@@ -441,9 +447,15 @@ export default function ImportKanbanView() {
       <Card 
         draggable
         onDragStart={(e) => handleDragStart(e, order)}
-        className="cursor-move hover:shadow-md transition-shadow mb-3"
+        className="cursor-move hover:shadow-md transition-shadow mb-2.5 border-l-2"
+        style={{
+          borderLeftColor: 
+            order.priority === 'high' ? '#ef4444' : 
+            order.priority === 'medium' ? '#f59e0b' : 
+            '#10b981'
+        }}
       >
-        <CardContent className="p-4 space-y-3">
+        <CardContent className="p-3 space-y-2.5">
           {/* Header */}
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-2">
@@ -504,19 +516,24 @@ export default function ImportKanbanView() {
           </div>
 
           {/* Items List */}
-          <div className="space-y-1 p-2 bg-muted/30 rounded text-xs">
-            <div className="font-medium text-xs mb-1">Items:</div>
-            {order.items.slice(0, 5).map((item) => (
-              <div key={item.id} className="flex justify-between items-center">
-                <span className="truncate flex-1">{item.name}</span>
-                <span className="text-muted-foreground ml-2">{item.quantity}</span>
-              </div>
-            ))}
-            {order.items.length > 5 && (
-              <div className="text-muted-foreground text-center pt-1">
-                +{order.items.length - 5} more items...
-              </div>
-            )}
+          <div className="space-y-0.5 p-2 bg-muted/20 rounded-md text-xs">
+            <div className="font-medium text-xs mb-1 flex items-center gap-1">
+              <Package className="h-3 w-3" />
+              Items ({order.items.length})
+            </div>
+            <div className="space-y-0.5">
+              {order.items.slice(0, 4).map((item) => (
+                <div key={item.id} className="flex justify-between items-center text-[11px]">
+                  <span className="truncate flex-1 text-muted-foreground">{item.name}</span>
+                  <span className="font-medium ml-2">{item.quantity}</span>
+                </div>
+              ))}
+              {order.items.length > 4 && (
+                <div className="text-muted-foreground text-center text-[10px] pt-0.5 border-t">
+                  +{order.items.length - 4} more items
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Tags */}
@@ -667,13 +684,13 @@ export default function ImportKanbanView() {
                   onDrop={(e) => handleDrop(e, column.id)}
                 >
                   <Card className={`h-full ${dragOverColumn === column.id ? 'ring-2 ring-primary' : ''}`}>
-                    <CardHeader className={`${column.color} border-b`}>
+                    <CardHeader className={`${column.color} border-b py-3 px-3`}>
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
                           {column.icon}
-                          <CardTitle className="text-base">{column.title}</CardTitle>
+                          <CardTitle className="text-sm font-medium">{column.title}</CardTitle>
                         </div>
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge variant="secondary" className="text-xs h-5 px-1.5">
                           {filteredOrders.length}
                         </Badge>
                       </div>
