@@ -81,6 +81,18 @@ import {
   type PickPackLog,
   type InsertPickPackLog,
   productFiles,
+  importOrders,
+  importOrderItems,
+  landedCostCalculations,
+  importInventoryEntries,
+  type ImportOrder,
+  type InsertImportOrder,
+  type ImportOrderItem,
+  type InsertImportOrderItem,
+  type LandedCostCalculation,
+  type InsertLandedCostCalculation,
+  type ImportInventoryEntry,
+  type InsertImportInventoryEntry,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, asc, and, or, like, sql, gte, lte, count, inArray, isNotNull } from "drizzle-orm";
@@ -2453,6 +2465,173 @@ export class DatabaseStorage implements IStorage {
       .set({ isActive: false })
       .where(eq(productFiles.id, id));
     return true;
+  }
+
+  // Import Orders Implementation
+  async getImportOrders(): Promise<ImportOrder[]> {
+    return await db.select()
+      .from(importOrders)
+      .orderBy(desc(importOrders.createdAt));
+  }
+
+  async getImportOrderById(id: string): Promise<ImportOrder | undefined> {
+    const [order] = await db.select()
+      .from(importOrders)
+      .where(eq(importOrders.id, id));
+    return order;
+  }
+
+  async generateImportOrderNumber(): Promise<string> {
+    const now = new Date();
+    const year = now.getFullYear().toString().substr(-2);
+    const month = (now.getMonth() + 1).toString().padStart(2, '0');
+    const day = now.getDate().toString().padStart(2, '0');
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    return `IMP${year}${month}${day}-${random}`;
+  }
+
+  async createImportOrder(order: InsertImportOrder): Promise<ImportOrder> {
+    const orderData = {
+      ...order,
+      orderNumber: order.orderNumber || await this.generateImportOrderNumber(),
+    };
+    const [newOrder] = await db.insert(importOrders).values(orderData).returning();
+    return newOrder;
+  }
+
+  async updateImportOrder(id: string, order: Partial<InsertImportOrder>): Promise<ImportOrder> {
+    const [updatedOrder] = await db
+      .update(importOrders)
+      .set({ ...order, updatedAt: new Date() })
+      .where(eq(importOrders.id, id))
+      .returning();
+    return updatedOrder;
+  }
+
+  async deleteImportOrder(id: string): Promise<void> {
+    await db.delete(importOrders).where(eq(importOrders.id, id));
+  }
+
+  // Import Order Items
+  async getImportOrderItems(orderId: string): Promise<ImportOrderItem[]> {
+    return await db.select()
+      .from(importOrderItems)
+      .where(eq(importOrderItems.importOrderId, orderId))
+      .orderBy(importOrderItems.createdAt);
+  }
+
+  async createImportOrderItem(item: InsertImportOrderItem): Promise<ImportOrderItem> {
+    const [newItem] = await db.insert(importOrderItems).values(item).returning();
+    return newItem;
+  }
+
+  async updateImportOrderItem(id: string, item: Partial<InsertImportOrderItem>): Promise<ImportOrderItem> {
+    const [updatedItem] = await db
+      .update(importOrderItems)
+      .set({ ...item, updatedAt: new Date() })
+      .where(eq(importOrderItems.id, id))
+      .returning();
+    return updatedItem;
+  }
+
+  async deleteImportOrderItem(id: string): Promise<void> {
+    await db.delete(importOrderItems).where(eq(importOrderItems.id, id));
+  }
+
+  async markItemsReceived(orderItemIds: string[], receivedQuantities?: number[]): Promise<void> {
+    for (let i = 0; i < orderItemIds.length; i++) {
+      const itemId = orderItemIds[i];
+      const receivedQty = receivedQuantities?.[i];
+      
+      await db.update(importOrderItems)
+        .set({
+          status: 'received',
+          receivedDate: new Date(),
+          receivedQuantity: receivedQty || sql`${importOrderItems.quantity}`,
+          updatedAt: new Date()
+        })
+        .where(eq(importOrderItems.id, itemId));
+    }
+  }
+
+  // Landed Cost Calculations
+  async getLatestCalculation(orderId: string): Promise<LandedCostCalculation | undefined> {
+    const [calculation] = await db.select()
+      .from(landedCostCalculations)
+      .where(eq(landedCostCalculations.importOrderId, orderId))
+      .orderBy(desc(landedCostCalculations.createdAt))
+      .limit(1);
+    return calculation;
+  }
+
+  async createLandedCostCalculation(calculation: InsertLandedCostCalculation): Promise<LandedCostCalculation> {
+    const [newCalculation] = await db.insert(landedCostCalculations).values(calculation).returning();
+    return newCalculation;
+  }
+
+  async updateLandedCostCalculation(id: string, calculation: Partial<InsertLandedCostCalculation>): Promise<LandedCostCalculation> {
+    const [updatedCalculation] = await db
+      .update(landedCostCalculations)
+      .set({ ...calculation, updatedAt: new Date() })
+      .where(eq(landedCostCalculations.id, id))
+      .returning();
+    return updatedCalculation;
+  }
+
+  async lockCalculation(id: string): Promise<void> {
+    await db.update(landedCostCalculations)
+      .set({
+        isLocked: true,
+        lockedAt: new Date(),
+        autoUpdate: false,
+        updatedAt: new Date()
+      })
+      .where(eq(landedCostCalculations.id, id));
+  }
+
+  // Automatic Inventory Population
+  async addImportItemsToInventory(orderItemIds: string[]): Promise<void> {
+    const items = await db.select()
+      .from(importOrderItems)
+      .where(and(
+        sql`${importOrderItems.id} IN ${sql.raw(`(${orderItemIds.map(id => `'${id}'`).join(',')})`)}`,
+        eq(importOrderItems.inventoryAdded, false)
+      ));
+
+    for (const item of items) {
+      if (item.productId && item.receivedQuantity && item.receivedQuantity > 0) {
+        // Update product quantity
+        await db.update(products)
+          .set({
+            quantity: sql`${products.quantity} + ${item.receivedQuantity}`,
+            importCostUsd: item.calculatedUnitCost || item.unitCost,
+            updatedAt: new Date()
+          })
+          .where(eq(products.id, item.productId));
+
+        // Mark as added to inventory
+        await db.update(importOrderItems)
+          .set({
+            inventoryAdded: true,
+            updatedAt: new Date()
+          })
+          .where(eq(importOrderItems.id, item.id));
+
+        // Create inventory entry record
+        await db.insert(importInventoryEntries).values({
+          importOrderItemId: item.id,
+          productId: item.productId,
+          quantity: item.receivedQuantity,
+          costPrice: item.calculatedUnitCost || item.unitCost,
+        });
+      }
+    }
+  }
+
+  async getImportInventoryEntries(orderItemId: string): Promise<ImportInventoryEntry[]> {
+    return await db.select()
+      .from(importInventoryEntries)
+      .where(eq(importInventoryEntries.importOrderItemId, orderItemId));
   }
 }
 

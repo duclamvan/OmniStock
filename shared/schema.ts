@@ -50,6 +50,8 @@ export const recurringEnum = pgEnum('recurring', ['daily', 'weekly', 'monthly', 
 export const shippingMethodEnum = pgEnum('shipping_method', ['GLS', 'PPL', 'DHL', 'DPD']);
 export const paymentMethodEnum = pgEnum('payment_method', ['Bank Transfer', 'PayPal', 'COD', 'Cash']);
 export const warehouseStatusEnum = pgEnum('warehouse_status', ['active', 'inactive', 'maintenance', 'rented']);
+export const importOrderStatusEnum = pgEnum('import_order_status', ['pending', 'ordered', 'shipped', 'delivered', 'received', 'cancelled']);
+export const calculationTypeEnum = pgEnum('calculation_type', ['by_weight', 'by_quantity', 'by_value', 'manual']);
 
 // Categories
 export const categories = pgTable("categories", {
@@ -92,6 +94,79 @@ export const warehouseFiles = pgTable("warehouse_files", {
   fileUrl: text("file_url").notNull(),
   fileSize: integer("file_size"),
   uploadedBy: varchar("uploaded_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Import Orders
+export const importOrders = pgTable("import_orders", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  orderNumber: varchar("order_number", { length: 100 }).unique().notNull(),
+  supplierId: varchar("supplier_id").references(() => suppliers.id),
+  warehouseId: varchar("warehouse_id").references(() => warehouses.id),
+  status: importOrderStatusEnum("status").default("pending"),
+  currency: currencyEnum("currency").default("USD"),
+  productValue: decimal("product_value", { precision: 12, scale: 2 }).default("0"),
+  shippingCost: decimal("shipping_cost", { precision: 12, scale: 2 }).default("0"),
+  totalLandedCost: decimal("total_landed_cost", { precision: 12, scale: 2 }).default("0"),
+  calculationType: calculationTypeEnum("calculation_type").default("by_value"),
+  region: varchar("region", { length: 100 }),
+  trackingNumber: varchar("tracking_number", { length: 200 }),
+  estimatedArrival: timestamp("estimated_arrival"),
+  actualArrival: timestamp("actual_arrival"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Import Order Items
+export const importOrderItems = pgTable("import_order_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  importOrderId: varchar("import_order_id").references(() => importOrders.id, { onDelete: 'cascade' }).notNull(),
+  productId: varchar("product_id").references(() => products.id),
+  productName: varchar("product_name", { length: 255 }).notNull(),
+  sku: varchar("sku", { length: 100 }),
+  quantity: integer("quantity").notNull().default(1),
+  unitCost: decimal("unit_cost", { precision: 12, scale: 2 }).notNull(),
+  weight: decimal("weight", { precision: 10, scale: 3 }), // in kg
+  totalCost: decimal("total_cost", { precision: 12, scale: 2 }).notNull(),
+  calculatedUnitCost: decimal("calculated_unit_cost", { precision: 12, scale: 2 }),
+  receivedQuantity: integer("received_quantity").default(0),
+  receivedDate: timestamp("received_date"),
+  inventoryAdded: boolean("inventory_added").default(false),
+  status: varchar("status", { length: 50 }).default("pending"), // pending, received, partial
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Landed Cost Calculations
+export const landedCostCalculations = pgTable("landed_cost_calculations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  importOrderId: varchar("import_order_id").references(() => importOrders.id, { onDelete: 'cascade' }).notNull(),
+  calculationType: calculationTypeEnum("calculation_type").notNull(),
+  productValue: decimal("product_value", { precision: 12, scale: 2 }).notNull(),
+  shippingCost: decimal("shipping_cost", { precision: 12, scale: 2 }).notNull(),
+  customsDuty: decimal("customs_duty", { precision: 12, scale: 2 }).default("0"),
+  taxes: decimal("taxes", { precision: 12, scale: 2 }).default("0"),
+  otherFees: decimal("other_fees", { precision: 12, scale: 2 }).default("0"),
+  totalLandedCost: decimal("total_landed_cost", { precision: 12, scale: 2 }).notNull(),
+  isLocked: boolean("is_locked").default(false),
+  lockedAt: timestamp("locked_at"),
+  autoUpdate: boolean("auto_update").default(true),
+  calculationDetails: jsonb("calculation_details"), // Store detailed breakdown
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Import Inventory Entries (tracking link between import and inventory)
+export const importInventoryEntries = pgTable("import_inventory_entries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  importOrderItemId: varchar("import_order_item_id").references(() => importOrderItems.id, { onDelete: 'cascade' }).notNull(),
+  inventoryBalanceId: varchar("inventory_balance_id").references(() => inventoryBalances.id),
+  productId: varchar("product_id").references(() => products.id),
+  locationId: varchar("location_id").references(() => warehouseLocations.id),
+  quantity: integer("quantity").notNull(),
+  costPrice: decimal("cost_price", { precision: 12, scale: 2 }),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -707,6 +782,35 @@ export const userActivitiesRelations = relations(userActivities, ({ one }) => ({
 export const insertCategorySchema = createInsertSchema(categories).omit({ id: true, createdAt: true });
 export const insertWarehouseSchema = createInsertSchema(warehouses).omit({ id: true, createdAt: true });
 export const insertWarehouseFileSchema = createInsertSchema(warehouseFiles).omit({ id: true, createdAt: true });
+export const insertImportOrderSchema = createInsertSchema(importOrders).omit({ id: true, createdAt: true, updatedAt: true }).extend({
+  productValue: z.coerce.string().optional(),
+  shippingCost: z.coerce.string().optional(),
+  totalLandedCost: z.coerce.string().optional(),
+  estimatedArrival: z.string().or(z.date()).optional(),
+  actualArrival: z.string().or(z.date()).optional(),
+});
+export const insertImportOrderItemSchema = createInsertSchema(importOrderItems).omit({ id: true, createdAt: true, updatedAt: true }).extend({
+  quantity: z.coerce.number().min(1),
+  unitCost: z.coerce.string(),
+  weight: z.coerce.string().optional(),
+  totalCost: z.coerce.string(),
+  calculatedUnitCost: z.coerce.string().optional(),
+  receivedQuantity: z.coerce.number().min(0).optional(),
+  receivedDate: z.string().or(z.date()).optional(),
+});
+export const insertLandedCostCalculationSchema = createInsertSchema(landedCostCalculations).omit({ id: true, createdAt: true, updatedAt: true }).extend({
+  productValue: z.coerce.string(),
+  shippingCost: z.coerce.string(),
+  customsDuty: z.coerce.string().optional(),
+  taxes: z.coerce.string().optional(),
+  otherFees: z.coerce.string().optional(),
+  totalLandedCost: z.coerce.string(),
+  lockedAt: z.string().or(z.date()).optional(),
+});
+export const insertImportInventoryEntrySchema = createInsertSchema(importInventoryEntries).omit({ id: true, createdAt: true }).extend({
+  quantity: z.coerce.number().min(1),
+  costPrice: z.coerce.string().optional(),
+});
 export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true, createdAt: true });
 export const insertSupplierFileSchema = createInsertSchema(supplierFiles).omit({ id: true, createdAt: true });
 export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true, updatedAt: true }).extend({
@@ -785,6 +889,14 @@ export type Warehouse = typeof warehouses.$inferSelect;
 export type InsertWarehouse = z.infer<typeof insertWarehouseSchema>;
 export type WarehouseFile = typeof warehouseFiles.$inferSelect;
 export type InsertWarehouseFile = z.infer<typeof insertWarehouseFileSchema>;
+export type ImportOrder = typeof importOrders.$inferSelect;
+export type InsertImportOrder = z.infer<typeof insertImportOrderSchema>;
+export type ImportOrderItem = typeof importOrderItems.$inferSelect;
+export type InsertImportOrderItem = z.infer<typeof insertImportOrderItemSchema>;
+export type LandedCostCalculation = typeof landedCostCalculations.$inferSelect;
+export type InsertLandedCostCalculation = z.infer<typeof insertLandedCostCalculationSchema>;
+export type ImportInventoryEntry = typeof importInventoryEntries.$inferSelect;
+export type InsertImportInventoryEntry = z.infer<typeof insertImportInventoryEntrySchema>;
 export type Supplier = typeof suppliers.$inferSelect;
 export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
 export type SupplierFile = typeof supplierFiles.$inferSelect;

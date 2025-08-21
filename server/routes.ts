@@ -29,6 +29,7 @@ import {
 import { ObjectPermission } from "./objectAcl";
 import { locationsRouter } from "./routes/locations";
 import { putawayRouter } from "./routes/putaway";
+import { importOrdersRouter } from "./routes/importOrders";
 import { weightCalculationService } from "./services/weightCalculation";
 import { ImageCompressionService } from "./services/imageCompression";
 
@@ -3760,6 +3761,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register warehouse location routes
   app.use('/api', locationsRouter);
   app.use('/api', putawayRouter);
+  app.use('/api', importOrdersRouter);
 
   // Reports endpoints
   app.get('/api/reports/sales-summary', async (req, res) => {

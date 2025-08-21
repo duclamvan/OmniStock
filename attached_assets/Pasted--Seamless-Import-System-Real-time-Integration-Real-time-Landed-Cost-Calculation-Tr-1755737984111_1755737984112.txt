@@ -1,0 +1,205 @@
+# Seamless Import System - Real-time Integration
+
+## **Real-time Landed Cost Calculation**
+
+### **Trigger Points**
+```
+Auto-calculate on:
+- Shipping cost entry/change
+- Item quantity/weight change
+- Region selection change
+- Calculation type selection
+- Currency change
+```
+
+### **Live Calculation Logic**
+```javascript
+// Trigger on every input change
+const calculateLandedCost = (orderData) => {
+  const calculation = selectedCalculationType(orderData);
+  updateUI_immediately(calculation);
+  saveCalculation_debounced(calculation); // Save after 500ms pause
+}
+
+// Real-time updates
+onShippingCostChange → recalculate → update display
+onItemChange → recalculate → update per-item costs
+onWeightChange → recalculate → update shipping allocation
+```
+
+### **Progressive Calculation Display**
+```
+Before shipping cost: "Enter shipping cost to calculate..."
+After shipping cost: Real-time total updates
+Visual indicators: ✓ Complete | ⚡ Calculating | ❌ Missing data
+```
+
+## **Automatic Inventory Population**
+
+### **Trigger Workflow**
+```
+Order Status: "Delivered" → Mark items received → Auto-populate inventory
+
+Manual trigger options:
+- "Mark All Received" button
+- Individual item checkboxes  
+- Partial delivery (some items received)
+- Quality control pass/fail
+```
+
+### **Inventory Integration Process**
+```sql
+-- When items marked received
+UPDATE import_order_items SET status = 'received', received_date = NOW()
+WHERE import_order_id = :orderId
+
+-- Auto-create inventory entries
+INSERT INTO inventory (product_id, quantity, cost_price, location, source)
+SELECT product_id, quantity, calculated_unit_cost, default_location, 'import'
+FROM import_order_items 
+WHERE status = 'received' AND import_order_id = :orderId
+
+-- Update product costs with new landed costs
+UPDATE products SET cost_price = calculated_unit_cost
+WHERE id IN (SELECT product_id FROM import_order_items WHERE...)
+```
+
+## **Enhanced Page Structure**
+
+### **Order Details Page** (`/imports/orders/:id`)
+**Live Calculation Section:**
+- Real-time cost breakdown (updates as you type)
+- Visual progress: Items → Shipping → Costs → Total
+- "Lock Calculation" button to freeze costs
+- "Recalculate" button for manual refresh
+
+**Inventory Integration Section:**
+- "Mark Received" checkboxes per item
+- "Mark All Received" bulk action
+- "Add to Inventory" confirmation modal
+- Inventory location selector
+
+### **Receiving Page** (`/imports/orders/:id/receive`)
+**Item Receiving Interface:**
+- Checklist of all items in order
+- Quantity received vs quantity ordered
+- Quality control notes
+- Immediate inventory impact preview
+- "Complete Receiving" button
+
+**Auto-Inventory Features:**
+- Default warehouse location assignment
+- Batch/lot number generation
+- Expiry date entry (if applicable)
+- Cost allocation per item
+
+## **Database Schema Updates**
+
+```sql
+-- Add real-time calculation tracking
+ALTER TABLE import_order_items ADD COLUMN 
+  calculated_unit_cost DECIMAL(10,2),
+  received_quantity INTEGER DEFAULT 0,
+  received_date TIMESTAMP,
+  inventory_added BOOLEAN DEFAULT FALSE;
+
+-- Add calculation locks
+ALTER TABLE landed_cost_calculations ADD COLUMN
+  is_locked BOOLEAN DEFAULT FALSE,
+  locked_at TIMESTAMP,
+  auto_update BOOLEAN DEFAULT TRUE;
+
+-- Inventory integration
+CREATE TABLE import_inventory_entries (
+  id SERIAL PRIMARY KEY,
+  import_order_item_id INTEGER REFERENCES import_order_items(id),
+  inventory_id INTEGER REFERENCES inventory(id),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+## **Frontend Components**
+
+### **Live Calculator Component**
+```jsx
+const LiveCalculator = ({ orderData, onCalculationChange }) => {
+  const [calculation, setCalculation] = useState({});
+  
+  // Auto-calculate on any change
+  useEffect(() => {
+    const newCalculation = calculateLandedCost(orderData);
+    setCalculation(newCalculation);
+    onCalculationChange(newCalculation);
+  }, [orderData.shippingCost, orderData.items, orderData.region]);
+
+  return (
+    <div className="live-calculator">
+      <div className="cost-breakdown">
+        <div>Product Value: ${calculation.productValue}</div>
+        <div>Shipping Cost: ${calculation.shippingCost}</div>
+        <div>Total Landed: ${calculation.totalLanded}</div>
+        <div>Per Unit: ${calculation.perUnit}</div>
+      </div>
+    </div>
+  );
+};
+```
+
+### **Receiving Interface Component**
+```jsx
+const ReceivingInterface = ({ orderItems, onReceive }) => {
+  const [receivedItems, setReceivedItems] = useState([]);
+  
+  const markAllReceived = () => {
+    // Mark all items as received
+    // Trigger inventory population
+    addToInventory(receivedItems);
+  };
+
+  return (
+    <div className="receiving-interface">
+      {orderItems.map(item => (
+        <ReceivingItem 
+          key={item.id} 
+          item={item} 
+          onReceive={markItemReceived}
+        />
+      ))}
+      <button onClick={markAllReceived}>
+        Mark All Received & Add to Inventory
+      </button>
+    </div>
+  );
+};
+```
+
+## **User Experience Flow**
+
+### **Seamless Calculation Flow**
+1. User enters shipping cost
+2. **Instant** total landed cost appears
+3. Per-item costs update automatically
+4. Visual feedback: "Calculation complete ✓"
+5. Option to lock costs or keep auto-updating
+
+### **Seamless Inventory Flow**
+1. Order status changes to "Delivered"
+2. "Receive Items" button appears
+3. User marks items as received
+4. **Automatic** inventory creation
+5. Confirmation: "Items added to inventory ✓"
+6. Direct link to view updated inventory
+
+## **Smart Features**
+
+### **Calculation Memory**
+- Remember preferred calculation type per supplier
+- Auto-suggest shipping costs based on historical data
+- Warn if costs seem unusually high/low
+
+### **Inventory Intelligence**
+- Auto-assign optimal warehouse locations
+- Suggest reorder points based on import frequency
+- Flag duplicate products for consolidation
+
+This creates a smooth, automated workflow from import order to inventory without manual intervention points.

@@ -26,7 +26,8 @@ import {
   Truck,
   RotateCcw,
   DollarSign,
-  Store
+  Store,
+  Globe
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -140,6 +141,11 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
       name: "POS",
       href: "/pos",
       icon: Store,
+    },
+    {
+      name: "Imports",
+      href: "/imports",
+      icon: Globe,
     },
     {
       name: "Shipping",

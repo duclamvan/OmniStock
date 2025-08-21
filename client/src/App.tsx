@@ -55,6 +55,9 @@ import PackingMaterials from "@/pages/PackingMaterials";
 import AddPackingMaterial from "@/pages/PackingMaterials/AddPackingMaterial";
 import EditPackingMaterial from "@/pages/PackingMaterials/EditPackingMaterial";
 import Files from "@/pages/Files/Files";
+import AllImports from "@/pages/Imports/AllImports";
+import ImportOrderDetails from "@/pages/Imports/ImportOrderDetails";
+import ReceiveImport from "@/pages/Imports/ReceiveImport";
 
 function Router() {
   return (
@@ -124,6 +127,9 @@ function Router() {
         <Route path="/pos" component={POS} />
         <Route path="/shipping" component={ShippingManagement} />
         <Route path="/files" component={Files} />
+        <Route path="/imports" component={AllImports} />
+        <Route path="/imports/orders/:id/receive" component={ReceiveImport} />
+        <Route path="/imports/orders/:id" component={ImportOrderDetails} />
         <Route path="/reports">
           {() => <div>Reports page coming soon</div>}
         </Route>
