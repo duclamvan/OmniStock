@@ -23,7 +23,8 @@ import {
   ArrowRight,
   Globe,
   Ship,
-  FileText
+  FileText,
+  BarChart3
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -214,6 +215,28 @@ export default function AllImports() {
           <Button>
             <Plus className="h-4 w-4 mr-2" />
             New Import Order
+          </Button>
+        </Link>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="flex gap-2 overflow-x-auto pb-2">
+        <Link href="/imports/items">
+          <Button variant="outline" size="sm">
+            <Package className="h-4 w-4 mr-2" />
+            Track Items
+          </Button>
+        </Link>
+        <Link href="/imports/consolidated">
+          <Button variant="outline" size="sm">
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Consolidated View
+          </Button>
+        </Link>
+        <Link href="/imports/shipments">
+          <Button variant="outline" size="sm">
+            <Truck className="h-4 w-4 mr-2" />
+            Track Shipments
           </Button>
         </Link>
       </div>

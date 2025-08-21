@@ -60,6 +60,9 @@ import AddImportOrder from "@/pages/Imports/AddImportOrder";
 import EditImportOrder from "@/pages/Imports/EditImportOrder";
 import ImportOrderDetails from "@/pages/Imports/ImportOrderDetails";
 import ReceiveImport from "@/pages/Imports/ReceiveImport";
+import ImportItemsTracking from "@/pages/Imports/ImportItemsTracking";
+import ConsolidatedView from "@/pages/Imports/ConsolidatedView";
+import ShipmentTracking from "@/pages/Imports/ShipmentTracking";
 
 function Router() {
   return (
@@ -130,6 +133,9 @@ function Router() {
         <Route path="/shipping" component={ShippingManagement} />
         <Route path="/files" component={Files} />
         <Route path="/imports" component={AllImports} />
+        <Route path="/imports/items" component={ImportItemsTracking} />
+        <Route path="/imports/consolidated" component={ConsolidatedView} />
+        <Route path="/imports/shipments" component={ShipmentTracking} />
         <Route path="/imports/orders/new" component={AddImportOrder} />
         <Route path="/imports/orders/:id/edit" component={EditImportOrder} />
         <Route path="/imports/orders/:id/receive" component={ReceiveImport} />
