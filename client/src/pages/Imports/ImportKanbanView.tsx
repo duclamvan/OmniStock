@@ -602,7 +602,7 @@ export default function ImportKanbanView() {
     );
   };
 
-  // Enhanced Compact Item Card Component
+  // Enhanced Compact Item Card Component with Improved Visuals
   const ItemCard = ({ item, isDragging = false, showGroupBadge = true }: { item: OrderItem; isDragging?: boolean; showGroupBadge?: boolean }) => {
     const hasGroup = !!(item.consolidationId || item.orderGroupId || item.shipmentId);
     
@@ -611,47 +611,71 @@ export default function ImportKanbanView() {
         draggable
         onDragStart={(e) => handleDragStart(e, item)}
         className={`
-          group relative bg-white dark:bg-gray-800 border rounded-md p-1.5 cursor-move
-          transition-all duration-200 hover:shadow-md hover:scale-[1.02] hover:z-10
-          ${isDragging ? 'opacity-50 scale-95' : ''}
-          ${hasGroup ? 'pl-3' : ''}
-          border-gray-200 dark:border-gray-700
+          group relative bg-white dark:bg-gray-800 rounded-lg p-2 cursor-move
+          transition-all duration-200 hover:shadow-lg hover:scale-[1.02] hover:z-20
+          shadow-sm border
+          ${isDragging ? 'opacity-50 scale-95 rotate-2' : ''}
+          ${hasGroup ? 'pl-3.5' : ''}
+          border-gray-100 dark:border-gray-700
+          hover:border-gray-300 dark:hover:border-gray-600
         `}
       >
         {/* Drag Handle Indicator */}
         <div className={`
-          absolute left-0 top-0 bottom-0 w-1.5 rounded-l-md
-          ${item.orderGroupId ? 'bg-blue-400' : 
-            item.shipmentId ? 'bg-orange-400' : 
-            item.consolidationId ? 'bg-purple-400' : 
+          absolute left-0 top-0 bottom-0 w-2 rounded-l-lg
+          ${item.orderGroupId ? 'bg-gradient-to-b from-blue-500 to-blue-400' : 
+            item.shipmentId ? 'bg-gradient-to-b from-orange-500 to-orange-400' : 
+            item.consolidationId ? 'bg-gradient-to-b from-purple-500 to-purple-400' : 
             'bg-gradient-to-b from-gray-400 to-gray-300 opacity-0 group-hover:opacity-100'}
-          transition-opacity
+          transition-opacity shadow-sm
         `} />
         
-        {/* Main Content - Single Row Layout */}
-        <div className="flex items-center gap-1.5 text-[10px]">
-          {/* Quantity Badge */}
-          <Badge variant="secondary" className="h-4 px-1 text-[9px] font-bold min-w-[20px] text-center">
-            {item.quantity}
-          </Badge>
+        {/* Main Content - Enhanced Layout */}
+        <div className="flex items-center gap-2">
+          {/* Quantity Badge with Better Styling */}
+          <div className="flex-shrink-0">
+            <Badge 
+              variant="secondary" 
+              className="h-5 px-1.5 text-[10px] font-bold min-w-[28px] text-center bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 border border-gray-200 dark:border-gray-600"
+            >
+              {item.quantity}
+            </Badge>
+          </div>
           
-          {/* Item Name */}
+          {/* Item Details */}
           <div className="flex-1 min-w-0">
-            <p className="font-medium truncate">{item.name}</p>
-            <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
-              <span className="truncate">{item.sku || item.orderNumber}</span>
+            <p className="font-semibold truncate text-[11px] text-gray-900 dark:text-gray-100">
+              {item.name}
+            </p>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className="text-[9px] text-gray-500 dark:text-gray-400 truncate">
+                {item.sku || item.orderNumber}
+              </span>
+              {item.supplier && (
+                <span className="text-[8px] text-gray-400 dark:text-gray-500">
+                  • {item.supplier}
+                </span>
+              )}
             </div>
           </div>
           
-          {/* Value if available */}
-          {item.value && (
-            <span className="text-[9px] font-medium text-muted-foreground">
-              {formatCurrency(item.value, item.currency || 'USD')}
-            </span>
-          )}
-          
-          {/* Country Flag */}
-          <span className="text-xs">{getCountryFlag(item.supplierCountry)}</span>
+          {/* Right Side Info */}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {/* Value Badge */}
+            {item.value && (
+              <Badge 
+                variant="outline" 
+                className="h-4 px-1 text-[9px] font-semibold border-green-200 text-green-700 dark:border-green-800 dark:text-green-400 bg-green-50 dark:bg-green-950/20"
+              >
+                {formatCurrency(item.value, item.currency || 'USD')}
+              </Badge>
+            )}
+            
+            {/* Country Flag with Circle Background */}
+            <div className="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-xs shadow-inner">
+              {getCountryFlag(item.supplierCountry)}
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -1237,11 +1261,11 @@ export default function ImportKanbanView() {
                                       <div 
                                         key={groupId}
                                         className={`
-                                          border-2 rounded-lg overflow-hidden transition-all duration-200
-                                          ${isOrderGroup ? 'border-blue-300 bg-blue-50/20 dark:bg-blue-900/10' :
-                                            hasShipment ? 'border-orange-300 bg-gradient-to-br from-purple-50/20 to-orange-50/20 dark:from-purple-900/10 dark:to-orange-900/10' :
-                                            'border-purple-300 bg-purple-50/20 dark:bg-purple-900/10'}
-                                          ${dragOverItem === groupId ? 'ring-2 ring-offset-1' : ''}
+                                          border-2 rounded-xl overflow-hidden transition-all duration-200 shadow-md hover:shadow-lg
+                                          ${isOrderGroup ? 'border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100/50 dark:from-blue-900/20 dark:to-blue-800/10' :
+                                            hasShipment ? 'border-transparent bg-gradient-to-br from-purple-100 via-purple-50 to-orange-100 dark:from-purple-900/30 dark:via-purple-800/20 dark:to-orange-900/30' :
+                                            'border-purple-200 bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-purple-900/20 dark:to-purple-800/10'}
+                                          ${dragOverItem === groupId ? 'ring-4 ring-offset-2 ring-purple-400/50 scale-[1.01]' : ''}
                                         `}
                                         onDragOver={(e) => {
                                           e.preventDefault();
@@ -1269,55 +1293,92 @@ export default function ImportKanbanView() {
                                           }
                                         }}
                                       >
-                                        {/* Group Header */}
+                                        {/* Enhanced Group Header */}
                                         <div 
                                           className={`
-                                            px-2 py-1 cursor-pointer select-none
-                                            ${isOrderGroup ? 'bg-blue-100/50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/40' :
-                                              hasShipment ? 'bg-gradient-to-r from-purple-100/50 to-orange-100/50 dark:from-purple-900/30 dark:to-orange-900/30' :
-                                              'bg-purple-100/50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/40'}
-                                            transition-colors
+                                            px-3 py-2 cursor-pointer select-none backdrop-blur-sm
+                                            ${isOrderGroup ? 'bg-gradient-to-r from-blue-200/70 to-blue-100/70 dark:from-blue-900/40 dark:to-blue-800/40 hover:from-blue-200 hover:to-blue-100' :
+                                              hasShipment ? 'bg-gradient-to-r from-purple-200/70 via-purple-100/70 to-orange-200/70 dark:from-purple-900/40 dark:via-purple-800/40 dark:to-orange-900/40' :
+                                              'bg-gradient-to-r from-purple-200/70 to-purple-100/70 dark:from-purple-900/40 dark:to-purple-800/40 hover:from-purple-200 hover:to-purple-100'}
+                                            transition-all duration-200
                                           `}
                                           onClick={() => toggleGroupExpanded(groupId)}
                                         >
                                           <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-1">
-                                              <ChevronDown 
-                                                className={`h-3 w-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                                              />
-                                              <Badge 
-                                                variant="outline" 
-                                                className={`text-[9px] px-1 h-4 font-bold
-                                                  ${isOrderGroup ? 'border-blue-500 bg-blue-100 text-blue-700' :
-                                                    hasShipment ? 'border-orange-500 bg-orange-100 text-orange-700' :
-                                                    'border-purple-500 bg-purple-100 text-purple-700'}
-                                                `}
-                                              >
-                                                {isOrderGroup ? <Hash className="h-2.5 w-2.5 mr-0.5" /> :
-                                                 hasShipment ? <><Package className="h-2.5 w-2.5 mr-0.5" /><Plane className="h-2.5 w-2.5 mr-0.5" /></> :
-                                                 <Package className="h-2.5 w-2.5 mr-0.5" />}
-                                                {items.length} items • {totalQuantity} pcs
-                                              </Badge>
+                                            <div className="flex items-center gap-2">
+                                              <div className={`
+                                                p-1 rounded-full transition-all duration-200
+                                                ${isExpanded ? 'bg-white/50 dark:bg-gray-800/50 rotate-180' : 'bg-white/30 dark:bg-gray-800/30'}
+                                              `}>
+                                                <ChevronDown 
+                                                  className={`h-3.5 w-3.5 transition-transform ${
+                                                    isOrderGroup ? 'text-blue-700 dark:text-blue-400' :
+                                                    hasShipment ? 'text-orange-700 dark:text-orange-400' :
+                                                    'text-purple-700 dark:text-purple-400'
+                                                  }`}
+                                                />
+                                              </div>
+                                              
+                                              <div className="flex items-center gap-1.5">
+                                                <Badge 
+                                                  variant="outline" 
+                                                  className={`text-[10px] px-2 h-5 font-bold shadow-sm border-2
+                                                    ${isOrderGroup ? 'border-blue-400 bg-blue-50 text-blue-800 dark:bg-blue-950/50 dark:text-blue-300' :
+                                                      hasShipment ? 'border-orange-400 bg-gradient-to-r from-purple-50 to-orange-50 text-orange-800 dark:from-purple-950/50 dark:to-orange-950/50 dark:text-orange-300' :
+                                                      'border-purple-400 bg-purple-50 text-purple-800 dark:bg-purple-950/50 dark:text-purple-300'}
+                                                  `}
+                                                >
+                                                  {isOrderGroup ? (
+                                                    <><Hash className="h-3 w-3 mr-1" />Order</>
+                                                  ) : hasShipment ? (
+                                                    <><Package className="h-3 w-3 mr-1" /><Plane className="h-3 w-3 mr-1" />Shipment</>
+                                                  ) : (
+                                                    <><Package className="h-3 w-3 mr-1" />Consolidation</>
+                                                  )}
+                                                </Badge>
+                                                
+                                                <div className="flex items-center gap-1">
+                                                  <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300">
+                                                    {items.length} items
+                                                  </span>
+                                                  <span className="text-[10px] text-gray-500 dark:text-gray-400">•</span>
+                                                  <span className="text-[11px] font-semibold text-gray-600 dark:text-gray-400">
+                                                    {totalQuantity} pcs
+                                                  </span>
+                                                </div>
+                                                
+                                                <Badge 
+                                                  variant="secondary" 
+                                                  className="text-[9px] px-1.5 h-4 font-mono bg-white/50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700"
+                                                >
+                                                  #{groupId.slice(-6).toUpperCase()}
+                                                </Badge>
+                                              </div>
+                                              
                                               {hasShipment && (
-                                                <Badge variant="secondary" className="text-[8px] px-1 h-3">
-                                                  Shipment #{consolidationGroup?.shipmentId?.slice(-6)}
+                                                <Badge 
+                                                  variant="secondary" 
+                                                  className="text-[9px] px-1.5 h-4 bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border border-orange-200 dark:border-orange-800"
+                                                >
+                                                  <Plane className="h-2.5 w-2.5 mr-0.5" />
+                                                  Ship #{consolidationGroup?.shipmentId?.slice(-6)}
                                                 </Badge>
                                               )}
-                                              <span className="text-[10px] font-medium text-muted-foreground">
-                                                #{groupId.slice(-6)}
-                                              </span>
                                             </div>
                                             
-                                            <div className="flex items-center gap-1">
+                                            <div className="flex items-center gap-2">
                                               {totalValue > 0 && (
-                                                <span className="text-[10px] font-bold">
+                                                <Badge 
+                                                  variant="outline" 
+                                                  className="text-[10px] px-1.5 h-4 font-bold bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-400 border-green-300 dark:border-green-800"
+                                                >
                                                   {formatCurrency(totalValue, items[0]?.currency || 'USD')}
-                                                </span>
+                                                </Badge>
                                               )}
                                               <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                className="h-6 w-6 rounded-full opacity-70 hover:opacity-100 transition-all hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400"
                                                 onClick={(e) => {
                                                   e.stopPropagation();
                                                   // Ungroup items
@@ -1344,22 +1405,29 @@ export default function ImportKanbanView() {
                                                   }
                                                 }}
                                               >
-                                                <X className="h-3 w-3" />
+                                                <X className="h-3.5 w-3.5" />
                                               </Button>
                                             </div>
                                           </div>
                                         </div>
                                         
-                                        {/* Group Items */}
+                                        {/* Group Items with Enhanced Styling */}
                                         {isExpanded && (
-                                          <div className="p-1 space-y-0.5">
-                                            {items.map(item => (
-                                              <ItemCard 
-                                                key={item.id} 
-                                                item={item}
-                                                isDragging={draggedItem?.id === item.id}
-                                                showGroupBadge={false}
-                                              />
+                                          <div className="p-2 space-y-1 bg-white/30 dark:bg-gray-900/30">
+                                            {items.map((item, index) => (
+                                              <div
+                                                key={item.id}
+                                                className={`
+                                                  ${index === 0 ? 'mt-0' : ''}
+                                                  ${index === items.length - 1 ? 'mb-0' : ''}
+                                                `}
+                                              >
+                                                <ItemCard 
+                                                  item={item}
+                                                  isDragging={draggedItem?.id === item.id}
+                                                  showGroupBadge={false}
+                                                />
+                                              </div>
                                             ))}
                                           </div>
                                         )}
@@ -1367,8 +1435,8 @@ export default function ImportKanbanView() {
                                     );
                                   })}
                                   
-                                  {/* Render standalone items */}
-                                  {standalone.map(item => (
+                                  {/* Render standalone items with better spacing */}
+                                  {standalone.map((item, index) => (
                                     <div
                                       key={item.id}
                                       onDragOver={(e) => handleDragOverItem(e, item.id)}
@@ -1376,10 +1444,11 @@ export default function ImportKanbanView() {
                                       onDrop={(e) => handleDropOnItem(e, item, column.id)}
                                       className={`
                                         transition-all duration-200
+                                        ${index > 0 ? 'mt-1' : ''}
                                         ${dragOverItem === item.id && draggedItem?.id !== item.id ? 
-                                          column.id === 'processing' ? 'ring-2 ring-blue-400 rounded-md p-0.5 bg-blue-50/50' :
-                                          column.id === 'international' ? 'ring-2 ring-orange-400 rounded-md p-0.5 bg-orange-50/50' :
-                                          'ring-2 ring-purple-400 rounded-md p-0.5 bg-purple-50/50' : ''}
+                                          column.id === 'processing' ? 'ring-4 ring-blue-400/50 rounded-lg p-1 bg-blue-50/50 scale-[1.01]' :
+                                          column.id === 'international' ? 'ring-4 ring-orange-400/50 rounded-lg p-1 bg-orange-50/50 scale-[1.01]' :
+                                          'ring-4 ring-purple-400/50 rounded-lg p-1 bg-purple-50/50 scale-[1.01]' : ''}
                                       `}
                                     >
                                       <ItemCard 
