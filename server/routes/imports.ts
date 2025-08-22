@@ -1,53 +1,50 @@
-import { Router } from 'express';
-import { db } from '../db';
+import { Router } from "express";
+import { db } from "../db";
 import { 
   importPurchases, 
   purchaseItems, 
   consolidations, 
-  shipments,
+  consolidationItems,
   customItems,
-  deliveryHistory,
-  insertImportPurchaseSchema,
-  insertPurchaseItemSchema,
-  insertConsolidationSchema,
-  insertShipmentSchema,
-  insertCustomItemSchema
-} from '@shared/schema';
-import { eq, desc, and, gte, lte, sql } from 'drizzle-orm';
+  shipments,
+  shipmentItems,
+  deliveryHistory
+} from "@shared/schema";
+import { eq, desc, sql, and } from "drizzle-orm";
+import { addDays, differenceInDays } from "date-fns";
 
 const router = Router();
 
-// Import Purchases endpoints
-router.get('/purchases', async (req, res) => {
+// Get all import purchases with items
+router.get("/purchases", async (req, res) => {
   try {
-    const purchases = await db
-      .select()
-      .from(importPurchases)
-      .orderBy(desc(importPurchases.createdAt));
+    const purchaseList = await db.select().from(importPurchases).orderBy(desc(importPurchases.createdAt));
     
-    // Get item counts for each purchase
-    const purchasesWithCounts = await Promise.all(
-      purchases.map(async (purchase) => {
+    // Get items for each purchase
+    const purchasesWithItems = await Promise.all(
+      purchaseList.map(async (purchase) => {
         const items = await db
-          .select({ count: sql<number>`count(*)` })
+          .select()
           .from(purchaseItems)
           .where(eq(purchaseItems.purchaseId, purchase.id));
         
         return {
           ...purchase,
-          itemCount: items[0]?.count || 0
+          items,
+          itemCount: items.length
         };
       })
     );
     
-    res.json(purchasesWithCounts);
+    res.json(purchasesWithItems);
   } catch (error) {
-    console.error('Error fetching purchases:', error);
-    res.status(500).json({ error: 'Failed to fetch purchases' });
+    console.error("Error fetching purchases:", error);
+    res.status(500).json({ message: "Failed to fetch purchases" });
   }
 });
 
-router.get('/purchases/:id', async (req, res) => {
+// Get single purchase with items
+router.get("/purchases/:id", async (req, res) => {
   try {
     const purchaseId = parseInt(req.params.id);
     
@@ -57,7 +54,7 @@ router.get('/purchases/:id', async (req, res) => {
       .where(eq(importPurchases.id, purchaseId));
     
     if (!purchase) {
-      return res.status(404).json({ error: 'Purchase not found' });
+      return res.status(404).json({ message: "Purchase not found" });
     }
     
     const items = await db
@@ -67,351 +64,493 @@ router.get('/purchases/:id', async (req, res) => {
     
     res.json({ ...purchase, items });
   } catch (error) {
-    console.error('Error fetching purchase:', error);
-    res.status(500).json({ error: 'Failed to fetch purchase' });
+    console.error("Error fetching purchase:", error);
+    res.status(500).json({ message: "Failed to fetch purchase" });
   }
 });
 
-router.post('/purchases', async (req, res) => {
+// Create import purchase
+router.post("/purchases", async (req, res) => {
   try {
-    const purchaseData = insertImportPurchaseSchema.parse(req.body.purchase);
-    const itemsData = req.body.items?.map((item: any) => 
-      insertPurchaseItemSchema.parse(item)
-    ) || [];
+    const purchaseData = {
+      supplier: req.body.supplier,
+      trackingNumber: req.body.trackingNumber || null,
+      estimatedArrival: req.body.estimatedArrival ? new Date(req.body.estimatedArrival) : null,
+      notes: req.body.notes || null,
+      shippingCost: req.body.shippingCost || 0,
+      totalCost: req.body.totalCost || 0,
+      status: "pending",
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
     
-    // Generate purchase number if not provided
-    if (!purchaseData.purchaseNumber) {
-      purchaseData.purchaseNumber = `PO-${Date.now().toString(36).toUpperCase()}`;
-    }
+    const [purchase] = await db.insert(importPurchases).values(purchaseData).returning();
+    res.json(purchase);
+  } catch (error) {
+    console.error("Error creating purchase:", error);
+    res.status(500).json({ message: "Failed to create purchase" });
+  }
+});
+
+// Add item to purchase
+router.post("/purchases/:id/items", async (req, res) => {
+  try {
+    const purchaseId = parseInt(req.params.id);
+    const itemData = {
+      purchaseId,
+      name: req.body.name,
+      sku: req.body.sku || null,
+      quantity: req.body.quantity || 1,
+      unitPrice: req.body.unitPrice || 0,
+      weight: req.body.weight || 0,
+      dimensions: req.body.dimensions || null,
+      notes: req.body.notes || null,
+      createdAt: new Date()
+    };
     
-    // Insert purchase
-    const [newPurchase] = await db
-      .insert(importPurchases)
-      .values(purchaseData)
+    const [item] = await db.insert(purchaseItems).values(itemData).returning();
+    res.json(item);
+  } catch (error) {
+    console.error("Error adding item:", error);
+    res.status(500).json({ message: "Failed to add item" });
+  }
+});
+
+// Update purchase status
+router.patch("/purchases/:id/status", async (req, res) => {
+  try {
+    const purchaseId = parseInt(req.params.id);
+    const { status } = req.body;
+    
+    const [updated] = await db
+      .update(importPurchases)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(importPurchases.id, purchaseId))
       .returning();
     
-    // Insert items if provided
-    if (itemsData.length > 0) {
-      const itemsWithPurchaseId = itemsData.map((item: any) => ({
-        ...item,
-        purchaseId: newPurchase.id
-      }));
-      
-      await db.insert(purchaseItems).values(itemsWithPurchaseId);
-    }
-    
-    res.json(newPurchase);
+    res.json(updated);
   } catch (error) {
-    console.error('Error creating purchase:', error);
-    res.status(500).json({ error: 'Failed to create purchase' });
+    console.error("Error updating purchase status:", error);
+    res.status(500).json({ message: "Failed to update purchase status" });
   }
 });
 
-// Purchase Items endpoints
-router.get('/purchases/:purchaseId/items', async (req, res) => {
+// Delete purchase
+router.delete("/purchases/:id", async (req, res) => {
   try {
-    const purchaseId = parseInt(req.params.purchaseId);
+    const purchaseId = parseInt(req.params.id);
     
-    const items = await db
-      .select()
-      .from(purchaseItems)
-      .where(eq(purchaseItems.purchaseId, purchaseId));
+    // Delete associated items first
+    await db.delete(purchaseItems).where(eq(purchaseItems.purchaseId, purchaseId));
     
-    res.json(items);
+    // Then delete the purchase
+    await db.delete(importPurchases).where(eq(importPurchases.id, purchaseId));
+    
+    res.json({ message: "Purchase deleted successfully" });
   } catch (error) {
-    console.error('Error fetching purchase items:', error);
-    res.status(500).json({ error: 'Failed to fetch purchase items' });
+    console.error("Error deleting purchase:", error);
+    res.status(500).json({ message: "Failed to delete purchase" });
   }
 });
 
-router.post('/purchases/:purchaseId/items', async (req, res) => {
+// Get all consolidations with items
+router.get("/consolidations", async (req, res) => {
   try {
-    const purchaseId = parseInt(req.params.purchaseId);
-    const itemData = insertPurchaseItemSchema.parse(req.body);
-    
-    const [newItem] = await db
-      .insert(purchaseItems)
-      .values({ ...itemData, purchaseId })
-      .returning();
-    
-    res.json(newItem);
-  } catch (error) {
-    console.error('Error creating purchase item:', error);
-    res.status(500).json({ error: 'Failed to create purchase item' });
-  }
-});
-
-// Consolidations endpoints
-router.get('/consolidations', async (req, res) => {
-  try {
-    const consolidationList = await db
-      .select()
-      .from(consolidations)
-      .orderBy(desc(consolidations.createdAt));
+    const consolidationList = await db.select().from(consolidations).orderBy(desc(consolidations.createdAt));
     
     // Get items for each consolidation
     const consolidationsWithItems = await Promise.all(
       consolidationList.map(async (consolidation) => {
-        const purchaseItemsList = await db
+        const items = await db
           .select()
-          .from(purchaseItems)
-          .where(eq(purchaseItems.consolidationId, consolidation.id));
-        
-        const customItemsList = await db
-          .select()
-          .from(customItems)
-          .where(eq(customItems.consolidationId, consolidation.id));
+          .from(consolidationItems)
+          .where(eq(consolidationItems.consolidationId, consolidation.id));
         
         return {
           ...consolidation,
-          purchaseItems: purchaseItemsList,
-          customItems: customItemsList,
-          totalItems: purchaseItemsList.length + customItemsList.length
+          items,
+          itemCount: items.length
         };
       })
     );
     
     res.json(consolidationsWithItems);
   } catch (error) {
-    console.error('Error fetching consolidations:', error);
-    res.status(500).json({ error: 'Failed to fetch consolidations' });
+    console.error("Error fetching consolidations:", error);
+    res.status(500).json({ message: "Failed to fetch consolidations" });
   }
 });
 
-router.post('/consolidations', async (req, res) => {
+// Create consolidation
+router.post("/consolidations", async (req, res) => {
   try {
-    const consolidationData = insertConsolidationSchema.parse(req.body);
+    const consolidationData = {
+      name: req.body.name,
+      shippingMethod: req.body.shippingMethod,
+      warehouse: req.body.warehouse,
+      notes: req.body.notes || null,
+      targetWeight: req.body.targetWeight || null,
+      maxItems: req.body.maxItems || null,
+      status: "preparing",
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
     
-    // Generate consolidation number if not provided
-    if (!consolidationData.consolidationNumber) {
-      consolidationData.consolidationNumber = `CONSOL-${Date.now().toString(36).toUpperCase()}`;
+    const [consolidation] = await db.insert(consolidations).values(consolidationData).returning();
+    
+    // Add items to consolidation if provided
+    if (req.body.itemIds && req.body.itemIds.length > 0) {
+      const itemsToAdd = req.body.itemIds.map((itemId: number) => ({
+        consolidationId: consolidation.id,
+        itemId: itemId,
+        createdAt: new Date()
+      }));
+      
+      await db.insert(consolidationItems).values(itemsToAdd);
     }
     
-    const [newConsolidation] = await db
-      .insert(consolidations)
-      .values(consolidationData)
-      .returning();
-    
-    res.json(newConsolidation);
+    res.json(consolidation);
   } catch (error) {
-    console.error('Error creating consolidation:', error);
-    res.status(500).json({ error: 'Failed to create consolidation' });
+    console.error("Error creating consolidation:", error);
+    res.status(500).json({ message: "Failed to create consolidation" });
   }
 });
 
-router.put('/consolidations/:id/add-items', async (req, res) => {
+// Delete consolidation
+router.delete("/consolidations/:id", async (req, res) => {
   try {
     const consolidationId = parseInt(req.params.id);
-    const { purchaseItemIds, customItemIds } = req.body;
     
-    // Update purchase items
-    if (purchaseItemIds?.length > 0) {
-      await db
-        .update(purchaseItems)
-        .set({ consolidationId })
-        .where(sql`${purchaseItems.id} = ANY(${purchaseItemIds})`);
-    }
+    // Delete associated items first
+    await db.delete(consolidationItems).where(eq(consolidationItems.consolidationId, consolidationId));
     
-    // Update custom items
-    if (customItemIds?.length > 0) {
-      await db
-        .update(customItems)
-        .set({ consolidationId })
-        .where(sql`${customItems.id} = ANY(${customItemIds})`);
-    }
+    // Then delete the consolidation
+    await db.delete(consolidations).where(eq(consolidations.id, consolidationId));
     
-    res.json({ success: true });
+    res.json({ message: "Consolidation deleted successfully" });
   } catch (error) {
-    console.error('Error adding items to consolidation:', error);
-    res.status(500).json({ error: 'Failed to add items to consolidation' });
+    console.error("Error deleting consolidation:", error);
+    res.status(500).json({ message: "Failed to delete consolidation" });
   }
 });
 
-// Custom Items endpoints
-router.get('/custom-items', async (req, res) => {
+// Get all custom items
+router.get("/custom-items", async (req, res) => {
   try {
-    const items = await db
-      .select()
-      .from(customItems)
-      .orderBy(desc(customItems.createdAt));
-    
-    res.json(items);
+    const result = await db.select().from(customItems).orderBy(desc(customItems.createdAt));
+    res.json(result);
   } catch (error) {
-    console.error('Error fetching custom items:', error);
-    res.status(500).json({ error: 'Failed to fetch custom items' });
+    console.error("Error fetching custom items:", error);
+    res.status(500).json({ message: "Failed to fetch custom items" });
   }
 });
 
-router.post('/custom-items', async (req, res) => {
+// Create custom item
+router.post("/custom-items", async (req, res) => {
   try {
-    const itemData = insertCustomItemSchema.parse(req.body);
+    const itemData = {
+      name: req.body.name,
+      source: req.body.source,
+      orderNumber: req.body.orderNumber || null,
+      quantity: req.body.quantity || 1,
+      unitPrice: req.body.unitPrice || 0,
+      weight: req.body.weight || 0,
+      dimensions: req.body.dimensions || null,
+      trackingNumber: req.body.trackingNumber || null,
+      notes: req.body.notes || null,
+      customerName: req.body.customerName || null,
+      customerEmail: req.body.customerEmail || null,
+      status: "available",
+      createdAt: new Date()
+    };
     
-    const [newItem] = await db
-      .insert(customItems)
-      .values(itemData)
-      .returning();
-    
-    res.json(newItem);
+    const [item] = await db.insert(customItems).values(itemData).returning();
+    res.json(item);
   } catch (error) {
-    console.error('Error creating custom item:', error);
-    res.status(500).json({ error: 'Failed to create custom item' });
+    console.error("Error creating custom item:", error);
+    res.status(500).json({ message: "Failed to create custom item" });
   }
 });
 
-// Shipments endpoints
-router.get('/shipments', async (req, res) => {
+// Get all shipments with details
+router.get("/shipments", async (req, res) => {
   try {
-    const shipmentList = await db
-      .select()
-      .from(shipments)
-      .orderBy(desc(shipments.createdAt));
+    const shipmentList = await db.select().from(shipments).orderBy(desc(shipments.createdAt));
     
-    // Get consolidations for each shipment
+    // Get items for each shipment
     const shipmentsWithDetails = await Promise.all(
       shipmentList.map(async (shipment) => {
-        const consolidationList = await db
+        const items = await db
           .select()
-          .from(consolidations)
-          .where(eq(consolidations.shipmentId, shipment.id));
-        
-        // Get all items from consolidations
-        let allItems: any[] = [];
-        for (const consolidation of consolidationList) {
-          const purchaseItemsList = await db
-            .select()
-            .from(purchaseItems)
-            .where(eq(purchaseItems.consolidationId, consolidation.id));
-          
-          const customItemsList = await db
-            .select()
-            .from(customItems)
-            .where(eq(customItems.consolidationId, consolidation.id));
-          
-          allItems = [...allItems, ...purchaseItemsList, ...customItemsList];
-        }
+          .from(shipmentItems)
+          .where(eq(shipmentItems.shipmentId, shipment.id));
         
         return {
           ...shipment,
-          consolidations: consolidationList,
-          totalItems: allItems.length,
-          items: allItems
+          items,
+          itemCount: items.length
         };
       })
     );
     
     res.json(shipmentsWithDetails);
   } catch (error) {
-    console.error('Error fetching shipments:', error);
-    res.status(500).json({ error: 'Failed to fetch shipments' });
+    console.error("Error fetching shipments:", error);
+    res.status(500).json({ message: "Failed to fetch shipments" });
   }
 });
 
-router.post('/shipments', async (req, res) => {
+// Create shipment
+router.post("/shipments", async (req, res) => {
   try {
-    const shipmentData = insertShipmentSchema.parse(req.body.shipment);
-    const consolidationIds = req.body.consolidationIds || [];
+    const shipmentData = {
+      consolidationId: req.body.consolidationId,
+      carrier: req.body.carrier,
+      trackingNumber: req.body.trackingNumber,
+      origin: req.body.origin,
+      destination: req.body.destination,
+      shippingCost: req.body.shippingCost || 0,
+      insuranceValue: req.body.insuranceValue || 0,
+      notes: req.body.notes || null,
+      status: "dispatched",
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
     
-    // Generate shipment number if not provided
-    if (!shipmentData.shipmentNumber) {
-      shipmentData.shipmentNumber = `SHIP-${Date.now().toString(36).toUpperCase()}`;
-    }
+    const [shipment] = await db.insert(shipments).values(shipmentData).returning();
     
-    const [newShipment] = await db
-      .insert(shipments)
-      .values(shipmentData)
-      .returning();
+    // Update consolidation status to "shipped"
+    await db
+      .update(consolidations)
+      .set({ status: "shipped", updatedAt: new Date() })
+      .where(eq(consolidations.id, req.body.consolidationId));
     
-    // Update consolidations with shipment ID
-    if (consolidationIds.length > 0) {
-      await db
-        .update(consolidations)
-        .set({ shipmentId: newShipment.id })
-        .where(sql`${consolidations.id} = ANY(${consolidationIds})`);
-    }
-    
-    res.json(newShipment);
+    res.json(shipment);
   } catch (error) {
-    console.error('Error creating shipment:', error);
-    res.status(500).json({ error: 'Failed to create shipment' });
+    console.error("Error creating shipment:", error);
+    res.status(500).json({ message: "Failed to create shipment" });
   }
 });
 
-// AI Delivery Prediction endpoint
-router.get('/shipments/:id/predict-delivery', async (req, res) => {
+// Update shipment tracking
+router.patch("/shipments/:id/tracking", async (req, res) => {
   try {
     const shipmentId = parseInt(req.params.id);
+    const updateData: any = {
+      updatedAt: new Date()
+    };
     
+    if (req.body.status) updateData.status = req.body.status;
+    if (req.body.location) updateData.currentLocation = req.body.location;
+    if (req.body.notes) updateData.notes = req.body.notes;
+    if (req.body.estimatedDelivery) updateData.estimatedDelivery = new Date(req.body.estimatedDelivery);
+    
+    // If status is "delivered", set deliveredAt
+    if (req.body.status === "delivered") {
+      updateData.deliveredAt = new Date();
+    }
+    
+    const [updated] = await db
+      .update(shipments)
+      .set(updateData)
+      .where(eq(shipments.id, shipmentId))
+      .returning();
+    
+    res.json(updated);
+  } catch (error) {
+    console.error("Error updating shipment tracking:", error);
+    res.status(500).json({ message: "Failed to update shipment tracking" });
+  }
+});
+
+// AI Delivery Prediction Endpoint
+router.post("/shipments/predict-delivery", async (req, res) => {
+  try {
+    const { 
+      shipmentId, 
+      origin, 
+      destination, 
+      shippingMethod, 
+      carrier, 
+      dispatchDate 
+    } = req.body;
+    
+    // Get historical delivery data for AI learning
+    const historicalData = await db
+      .select()
+      .from(deliveryHistory)
+      .where(
+        and(
+          eq(deliveryHistory.carrier, carrier),
+          eq(deliveryHistory.origin, origin),
+          eq(deliveryHistory.destination, destination)
+        )
+      )
+      .orderBy(desc(deliveryHistory.deliveredAt))
+      .limit(100);
+    
+    // Base delivery times by shipping method
+    const baseDeliveryDays: { [key: string]: number } = {
+      "air_express": 3,
+      "air_standard": 7,
+      "sea_freight": 30,
+      "rail_freight": 20,
+      "road_freight": 15,
+      "priority": 2
+    };
+    
+    // Carrier performance modifiers
+    const carrierModifiers: { [key: string]: number } = {
+      "DHL": -1,
+      "FedEx": -1,
+      "UPS": 0,
+      "USPS": 2,
+      "China Post": 3,
+      "SF Express": 1
+    };
+    
+    // Calculate base delivery time
+    let estimatedDays = baseDeliveryDays[shippingMethod] || 10;
+    
+    // Apply carrier modifier
+    estimatedDays += carrierModifiers[carrier] || 0;
+    
+    // AI learning from historical data
+    if (historicalData.length > 0) {
+      const avgHistoricalDays = historicalData.reduce((sum, record) => {
+        const days = record.actualDays || estimatedDays;
+        return sum + days;
+      }, 0) / historicalData.length;
+      
+      // Blend historical average with base estimate (60% historical, 40% base)
+      estimatedDays = Math.round((avgHistoricalDays * 0.6) + (estimatedDays * 0.4));
+    }
+    
+    // Seasonal adjustments
+    const currentMonth = new Date().getMonth();
+    const seasonalDelay = currentMonth >= 9 && currentMonth <= 11; // Q4 holiday season
+    if (seasonalDelay) {
+      estimatedDays += 2;
+    }
+    
+    // Weather/customs delays for international routes
+    const isInternational = !origin.includes(destination.split(',').pop()?.trim() || '');
+    const customsDelay = isInternational && (origin.includes("China") || destination.includes("USA"));
+    if (customsDelay) {
+      estimatedDays += 3;
+    }
+    
+    // Calculate confidence based on historical data quality
+    let confidence = 75; // Base confidence
+    if (historicalData.length >= 10) {
+      confidence = Math.min(95, 75 + (historicalData.length / 5));
+    } else if (historicalData.length < 5) {
+      confidence = Math.max(60, confidence - 10);
+    }
+    
+    // Variance analysis for confidence adjustment
+    if (historicalData.length >= 5) {
+      const avgDays = historicalData.reduce((sum, r) => sum + (r.actualDays || 0), 0) / historicalData.length;
+      const variance = historicalData.reduce((sum, r) => {
+        const diff = (r.actualDays || 0) - avgDays;
+        return sum + (diff * diff);
+      }, 0) / historicalData.length;
+      
+      // Higher variance = lower confidence
+      confidence -= Math.min(20, variance * 2);
+    }
+    
+    // Calculate estimated delivery date
+    const dispatchDateObj = new Date(dispatchDate || Date.now());
+    const estimatedDelivery = addDays(dispatchDateObj, estimatedDays);
+    
+    const prediction = {
+      estimatedDelivery: estimatedDelivery.toISOString(),
+      estimatedDays,
+      confidence: Math.round(Math.max(60, Math.min(95, confidence))),
+      factors: {
+        seasonalDelay,
+        customsDelay,
+        customsDays: customsDelay ? 3 : 0,
+        fastRoute: shippingMethod === "air_express" || shippingMethod === "priority",
+        weatherDelay: false, // Could be enhanced with weather API
+        historicalAccuracy: historicalData.length >= 10
+      },
+      historicalAverage: historicalData.length > 0 ? Math.round(
+        historicalData.reduce((sum, r) => sum + (r.actualDays || 0), 0) / historicalData.length
+      ) : estimatedDays,
+      historicalShipments: historicalData.length,
+      lastUpdated: new Date().toISOString()
+    };
+    
+    // Update shipment with AI prediction
+    if (shipmentId) {
+      await db
+        .update(shipments)
+        .set({ 
+          estimatedDelivery,
+          updatedAt: new Date()
+        })
+        .where(eq(shipments.id, shipmentId));
+    }
+    
+    res.json(prediction);
+  } catch (error) {
+    console.error("Error predicting delivery:", error);
+    res.status(500).json({ message: "Failed to predict delivery" });
+  }
+});
+
+// Record actual delivery for AI learning
+router.post("/shipments/:id/delivered", async (req, res) => {
+  try {
+    const shipmentId = parseInt(req.params.id);
+    const deliveredAt = new Date();
+    
+    // Get shipment details
     const [shipment] = await db
       .select()
       .from(shipments)
       .where(eq(shipments.id, shipmentId));
     
     if (!shipment) {
-      return res.status(404).json({ error: 'Shipment not found' });
+      return res.status(404).json({ message: "Shipment not found" });
     }
     
-    // Get historical data for similar shipments
-    const currentMonth = new Date().getMonth() + 1;
-    const currentSeason = getSeason(currentMonth);
+    // Calculate actual delivery days
+    const actualDays = differenceInDays(deliveredAt, new Date(shipment.createdAt));
     
-    const historicalData = await db
-      .select({
-        avgDays: sql<number>`AVG(actual_days)`,
-        avgDelay: sql<number>`AVG(delay_days)`,
-        count: sql<number>`COUNT(*)`
-      })
-      .from(deliveryHistory)
-      .where(
-        and(
-          eq(deliveryHistory.carrier, shipment.carrier),
-          eq(deliveryHistory.origin, shipment.origin),
-          eq(deliveryHistory.destination, shipment.destination),
-          eq(deliveryHistory.shippingMethod, shipment.shippingMethod),
-          eq(deliveryHistory.season, currentSeason)
-        )
-      );
-    
-    const avgDays = historicalData[0]?.avgDays || getDefaultEstimate(shipment.shippingMethod);
-    const avgDelay = historicalData[0]?.avgDelay || 0;
-    const confidence = historicalData[0]?.count ? Math.min(historicalData[0].count / 10, 1) : 0.3;
-    
-    const estimatedDays = Math.round(avgDays + avgDelay * 0.5);
-    const estimatedArrival = new Date();
-    estimatedArrival.setDate(estimatedArrival.getDate() + estimatedDays);
-    
-    // Update shipment with prediction
+    // Update shipment status
     await db
       .update(shipments)
-      .set({ estimatedArrival })
+      .set({ 
+        status: "delivered",
+        deliveredAt,
+        updatedAt: new Date()
+      })
       .where(eq(shipments.id, shipmentId));
     
-    res.json({
-      estimatedDays,
-      estimatedArrival,
-      confidence,
-      basedOnSamples: historicalData[0]?.count || 0
+    // Record in delivery history for AI learning
+    await db.insert(deliveryHistory).values({
+      shipmentId,
+      carrier: shipment.carrier,
+      origin: shipment.origin,
+      destination: shipment.destination,
+      shippingMethod: "unknown", // Would need to get from consolidation
+      dispatchedAt: new Date(shipment.createdAt),
+      deliveredAt,
+      estimatedDays: shipment.estimatedDelivery ? 
+        differenceInDays(new Date(shipment.estimatedDelivery), new Date(shipment.createdAt)) : null,
+      actualDays,
+      seasonalFactor: new Date().getMonth() >= 9 && new Date().getMonth() <= 11,
+      createdAt: new Date()
     });
+    
+    res.json({ message: "Delivery recorded successfully", actualDays });
   } catch (error) {
-    console.error('Error predicting delivery:', error);
-    res.status(500).json({ error: 'Failed to predict delivery' });
+    console.error("Error recording delivery:", error);
+    res.status(500).json({ message: "Failed to record delivery" });
   }
 });
-
-// Helper functions
-function getSeason(month: number): string {
-  if (month >= 3 && month <= 5) return 'spring';
-  if (month >= 6 && month <= 8) return 'summer';
-  if (month >= 9 && month <= 11) return 'fall';
-  return 'winter';
-}
-
-function getDefaultEstimate(shippingMethod: string): number {
-  switch (shippingMethod) {
-    case 'express': return 5;
-    case 'air': return 10;
-    case 'sea': return 30;
-    default: return 15;
-  }
-}
 
 export default router;

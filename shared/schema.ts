@@ -17,16 +17,13 @@ export const users = pgTable('users', {
 // Import Purchases (formerly orders from suppliers)
 export const importPurchases = pgTable('import_purchases', {
   id: serial('id').primaryKey(),
-  purchaseNumber: text('purchase_number').notNull().unique(),
   supplier: text('supplier').notNull(),
-  supplierCountry: text('supplier_country').notNull(),
-  status: text('status').notNull().default('processing'), // processing, at_warehouse, shipped, delivered
-  totalAmount: decimal('total_amount', { precision: 10, scale: 2 }),
-  currency: text('currency').default('USD'),
-  orderDate: timestamp('order_date').notNull().defaultNow(),
-  estimatedArrival: date('estimated_arrival'),
+  trackingNumber: text('tracking_number'),
+  estimatedArrival: timestamp('estimated_arrival'),
   notes: text('notes'),
-  metadata: jsonb('metadata'),
+  shippingCost: decimal('shipping_cost', { precision: 10, scale: 2 }).default('0'),
+  totalCost: decimal('total_cost', { precision: 10, scale: 2 }).default('0'),
+  status: text('status').notNull().default('pending'), // pending, processing, at_warehouse, shipped, delivered
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow()
 });
@@ -55,16 +52,13 @@ export const purchaseItems = pgTable('purchase_items', {
 // Consolidations (grouping items at warehouse)
 export const consolidations = pgTable('consolidations', {
   id: serial('id').primaryKey(),
-  consolidationNumber: text('consolidation_number').notNull().unique(),
-  warehouseLocation: text('warehouse_location').notNull(),
-  status: text('status').notNull().default('pending'), // pending, ready, shipped
-  shippingType: text('shipping_type'), // air, sea, express
-  estimatedWeight: decimal('estimated_weight', { precision: 10, scale: 3 }),
-  actualWeight: decimal('actual_weight', { precision: 10, scale: 3 }),
-  dimensions: jsonb('dimensions'),
-  shipmentId: integer('shipment_id').references(() => shipments.id),
+  name: text('name').notNull(),
+  shippingMethod: text('shipping_method').notNull(), // air, sea, express, priority
+  warehouse: text('warehouse').notNull(),
   notes: text('notes'),
-  color: text('color'), // for visual grouping
+  targetWeight: decimal('target_weight', { precision: 10, scale: 3 }),
+  maxItems: integer('max_items'),
+  status: text('status').notNull().default('preparing'), // preparing, ready, shipped
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow()
 });
@@ -72,21 +66,18 @@ export const consolidations = pgTable('consolidations', {
 // Shipments (international transit)
 export const shipments = pgTable('shipments', {
   id: serial('id').primaryKey(),
-  shipmentNumber: text('shipment_number').notNull().unique(),
+  consolidationId: integer('consolidation_id').references(() => consolidations.id),
   carrier: text('carrier').notNull(),
   trackingNumber: text('tracking_number').notNull(),
   origin: text('origin').notNull(),
   destination: text('destination').notNull(),
-  status: text('status').notNull().default('in_transit'), // preparing, in_transit, customs, delivered
-  shippingMethod: text('shipping_method').notNull(), // air, sea, express
-  departureDate: timestamp('departure_date'),
-  estimatedArrival: timestamp('estimated_arrival'),
-  actualArrival: timestamp('actual_arrival'),
-  totalWeight: decimal('total_weight', { precision: 10, scale: 3 }),
-  totalCost: decimal('total_cost', { precision: 10, scale: 2 }),
-  currency: text('currency').default('USD'),
-  trackingEvents: jsonb('tracking_events'), // Array of tracking events
-  customsInfo: jsonb('customs_info'),
+  status: text('status').notNull().default('dispatched'), // dispatched, in_transit, customs, delivered
+  shippingCost: decimal('shipping_cost', { precision: 10, scale: 2 }).default('0'),
+  insuranceValue: decimal('insurance_value', { precision: 10, scale: 2 }).default('0'),
+  estimatedDelivery: timestamp('estimated_delivery'),
+  deliveredAt: timestamp('delivered_at'),
+  currentLocation: text('current_location'),
+  notes: text('notes'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow()
 });
@@ -99,14 +90,11 @@ export const deliveryHistory = pgTable('delivery_history', {
   origin: text('origin').notNull(),
   destination: text('destination').notNull(),
   shippingMethod: text('shipping_method').notNull(),
-  season: text('season').notNull(), // spring, summer, fall, winter
-  month: integer('month').notNull(),
-  year: integer('year').notNull(),
+  dispatchedAt: timestamp('dispatched_at').notNull(),
+  deliveredAt: timestamp('delivered_at').notNull(),
   estimatedDays: integer('estimated_days'),
   actualDays: integer('actual_days').notNull(),
-  delayDays: integer('delay_days'),
-  weatherImpact: boolean('weather_impact').default(false),
-  holidayImpact: boolean('holiday_impact').default(false),
+  seasonalFactor: boolean('seasonal_factor').default(false),
   createdAt: timestamp('created_at').notNull().defaultNow()
 });
 
@@ -114,21 +102,34 @@ export const deliveryHistory = pgTable('delivery_history', {
 export const customItems = pgTable('custom_items', {
   id: serial('id').primaryKey(),
   name: text('name').notNull(),
-  platform: text('platform').notNull(), // taobao, pinduoduo, 1688, etc.
+  source: text('source').notNull(), // taobao, pinduoduo, 1688, etc.
   orderNumber: text('order_number'),
   quantity: integer('quantity').notNull().default(1),
-  price: decimal('price', { precision: 10, scale: 2 }),
-  currency: text('currency').default('CNY'),
-  weight: decimal('weight', { precision: 10, scale: 3 }),
-  dimensions: jsonb('dimensions'),
-  warehouseLocation: text('warehouse_location'),
-  consolidationId: integer('consolidation_id').references(() => consolidations.id),
-  status: text('status').notNull().default('pending'),
-  imageUrl: text('image_url'),
+  unitPrice: decimal('unit_price', { precision: 10, scale: 2 }).default('0'),
+  weight: decimal('weight', { precision: 10, scale: 3 }).default('0'),
+  dimensions: text('dimensions'),
   trackingNumber: text('tracking_number'),
   notes: text('notes'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow()
+  customerName: text('customer_name'),
+  customerEmail: text('customer_email'),
+  status: text('status').notNull().default('available'), // available, assigned, shipped
+  createdAt: timestamp('created_at').notNull().defaultNow()
+});
+
+// Junction tables for many-to-many relationships
+export const consolidationItems = pgTable('consolidation_items', {
+  id: serial('id').primaryKey(),
+  consolidationId: integer('consolidation_id').notNull().references(() => consolidations.id, { onDelete: 'cascade' }),
+  itemId: integer('item_id').notNull(), // References either purchaseItems.id or customItems.id
+  itemType: text('item_type').notNull(), // 'purchase' or 'custom'
+  createdAt: timestamp('created_at').notNull().defaultNow()
+});
+
+export const shipmentItems = pgTable('shipment_items', {
+  id: serial('id').primaryKey(),
+  shipmentId: integer('shipment_id').notNull().references(() => shipments.id, { onDelete: 'cascade' }),
+  consolidationId: integer('consolidation_id').notNull().references(() => consolidations.id),
+  createdAt: timestamp('created_at').notNull().defaultNow()
 });
 
 // Relations
@@ -147,13 +148,10 @@ export const purchaseItemsRelations = relations(purchaseItems, ({ one }) => ({
   })
 }));
 
-export const consolidationsRelations = relations(consolidations, ({ many, one }) => ({
+export const consolidationsRelations = relations(consolidations, ({ many }) => ({
   purchaseItems: many(purchaseItems),
   customItems: many(customItems),
-  shipment: one(shipments, {
-    fields: [consolidations.shipmentId],
-    references: [shipments.id]
-  })
+  shipments: many(shipments)
 }));
 
 export const shipmentsRelations = relations(shipments, ({ many }) => ({
@@ -167,7 +165,7 @@ export const insertImportPurchaseSchema = createInsertSchema(importPurchases).om
 export const insertPurchaseItemSchema = createInsertSchema(purchaseItems).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertConsolidationSchema = createInsertSchema(consolidations).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertShipmentSchema = createInsertSchema(shipments).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertCustomItemSchema = createInsertSchema(customItems).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCustomItemSchema = createInsertSchema(customItems).omit({ id: true, createdAt: true });
 export const insertDeliveryHistorySchema = createInsertSchema(deliveryHistory).omit({ id: true, createdAt: true });
 
 // Export types

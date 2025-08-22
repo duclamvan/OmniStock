@@ -30,7 +30,7 @@ import { ObjectPermission } from "./objectAcl";
 // import { locationsRouter } from "./routes/locations";
 // import { putawayRouter } from "./routes/putaway";
 // import { importOrdersRouter } from "./routes/importOrders";
-import importsRouter from './routes/imports';
+import imports from './routes/imports';
 import { weightCalculationService } from "./services/weightCalculation";
 import { ImageCompressionService } from "./services/imageCompression";
 
@@ -3471,16 +3471,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Purchases endpoints
-  app.get('/api/purchases', async (req, res) => {
-    try {
-      const purchases = await storage.getPurchases();
-      res.json(purchases);
-    } catch (error) {
-      console.error("Error fetching purchases:", error);
-      res.status(500).json({ message: "Failed to fetch purchases" });
-    }
-  });
+  // Import routes
+  app.use('/api/imports', imports);
   
   // Returns endpoints
   app.get('/api/returns', async (req, res) => {
@@ -3764,8 +3756,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // app.use('/api', putawayRouter);
   // app.use('/api', importOrdersRouter);
   
-  // Register new imports routes
-  app.use('/api', importsRouter);
+  // Imports routes registered above
 
   // Reports endpoints
   app.get('/api/reports/sales-summary', async (req, res) => {
