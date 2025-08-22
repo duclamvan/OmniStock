@@ -146,6 +146,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
       name: "Imports",
       icon: Globe,
       children: [
+        { name: "Kanban Dashboard", href: "/imports/kanban" },
         { name: "Supplier Processing", href: "/imports/supplier-processing" },
         { name: "At Warehouse", href: "/imports/at-warehouse" },
         { name: "International Transit", href: "/imports/international-transit" },
