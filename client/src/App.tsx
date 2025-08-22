@@ -59,7 +59,7 @@ import Files from "@/pages/Files/Files";
 import SupplierProcessing from "@/pages/Imports/SupplierProcessing";
 import AtWarehouse from "@/pages/Imports/AtWarehouse";
 import InternationalTransit from "@/pages/Imports/InternationalTransit";
-import ImportKanbanView from "@/pages/Imports/ImportKanbanView";
+import ImportKanbanDashboard from "@/pages/Imports/ImportKanbanDashboard";
 // Legacy imports - commented out
 // import AllImports from "@/pages/Imports/AllImports";
 // import AddImportOrder from "@/pages/Imports/AddImportOrder";
@@ -140,12 +140,12 @@ function Router() {
         <Route path="/shipping" component={ShippingManagement} />
         <Route path="/files" component={Files} />
         {/* Import Management Routes */}
-        <Route path="/imports/kanban" component={ImportKanbanView} />
+        <Route path="/imports/kanban" component={ImportKanbanDashboard} />
         <Route path="/imports/supplier-processing" component={SupplierProcessing} />
         <Route path="/imports/at-warehouse" component={AtWarehouse} />
         <Route path="/imports/international-transit" component={InternationalTransit} />
         <Route path="/imports">
-          {() => <ImportKanbanView />}
+          {() => <ImportKanbanDashboard />}
         </Route>
         <Route path="/reports">
           {() => <div>Reports page coming soon</div>}
