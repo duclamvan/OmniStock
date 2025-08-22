@@ -59,6 +59,7 @@ import Files from "@/pages/Files/Files";
 import SupplierProcessing from "@/pages/Imports/SupplierProcessing";
 import AtWarehouse from "@/pages/Imports/AtWarehouse";
 import InternationalTransit from "@/pages/Imports/InternationalTransit";
+import ImportKanbanView from "@/pages/Imports/ImportKanbanView";
 // Legacy imports - commented out
 // import AllImports from "@/pages/Imports/AllImports";
 // import AddImportOrder from "@/pages/Imports/AddImportOrder";
@@ -69,7 +70,6 @@ import InternationalTransit from "@/pages/Imports/InternationalTransit";
 // import ConsolidatedView from "@/pages/Imports/ConsolidatedView";
 // import ConsolidatedWarehouseView from "@/pages/Imports/ConsolidatedWarehouseView";
 // import ShipmentTracking from "@/pages/Imports/ShipmentTracking";
-// import ImportKanbanView from "@/pages/Imports/ImportKanbanView";
 
 function Router() {
   return (
@@ -140,11 +140,12 @@ function Router() {
         <Route path="/shipping" component={ShippingManagement} />
         <Route path="/files" component={Files} />
         {/* Import Management Routes */}
+        <Route path="/imports/kanban" component={ImportKanbanView} />
         <Route path="/imports/supplier-processing" component={SupplierProcessing} />
         <Route path="/imports/at-warehouse" component={AtWarehouse} />
         <Route path="/imports/international-transit" component={InternationalTransit} />
         <Route path="/imports">
-          {() => <SupplierProcessing />}
+          {() => <ImportKanbanView />}
         </Route>
         <Route path="/reports">
           {() => <div>Reports page coming soon</div>}
