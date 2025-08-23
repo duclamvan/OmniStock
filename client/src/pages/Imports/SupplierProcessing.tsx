@@ -535,6 +535,15 @@ export default function SupplierProcessing() {
                               <SelectItem value="delivered">Delivered</SelectItem>
                             </SelectContent>
                           </Select>
+                          <Link href={`/imports/supplier-processing/edit/${purchase.id}`}>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              data-testid={`button-edit-${purchase.id}`}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </Link>
                           <Button
                             variant="outline"
                             size="sm"

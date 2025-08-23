@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useParams } from "wouter";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { normalizeVietnamese } from "@/lib/searchUtils";
@@ -64,6 +64,9 @@ interface Product {
 
 export default function CreatePurchase() {
   const [, navigate] = useLocation();
+  const params = useParams();
+  const purchaseId = params.id ? parseInt(params.id) : null;
+  const isEditMode = !!purchaseId;
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const supplierDropdownRef = useRef<HTMLDivElement>(null);
@@ -321,6 +324,32 @@ export default function CreatePurchase() {
     }
   });
 
+  // Update purchase mutation
+  const updatePurchaseMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await apiRequest(`/api/imports/purchases/${purchaseId}`, 'PATCH', data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases'] });
+      toast({ title: "Success", description: "Purchase updated successfully" });
+      navigate('/imports/supplier-processing');
+    },
+    onError: (error) => {
+      toast({ 
+        title: "Error", 
+        description: "Failed to update purchase", 
+        variant: "destructive" 
+      });
+    }
+  });
+
+  // Fetch purchase data for editing
+  const { data: existingPurchase, isLoading: loadingPurchase } = useQuery<any>({
+    queryKey: [`/api/imports/purchases/${purchaseId}`],
+    enabled: isEditMode
+  });
+
   const handleAddNewSupplier = () => {
     if (!newSupplierName.trim()) {
       toast({ 
@@ -406,6 +435,49 @@ export default function CreatePurchase() {
       .then(data => setFrequentSuppliers(data))
       .catch(err => console.error("Error loading frequent suppliers:", err));
   }, []);
+
+  // Load existing purchase data for editing
+  useEffect(() => {
+    if (isEditMode && existingPurchase) {
+      // Set basic fields
+      setSupplier(existingPurchase.supplier || "");
+      setSupplierId(existingPurchase.supplierId || null);
+      setSupplierLink(existingPurchase.supplierLink || "");
+      setSupplierLocation(existingPurchase.supplierLocation || "");
+      setTrackingNumber(existingPurchase.trackingNumber || "");
+      setNotes(existingPurchase.notes || "");
+      setShippingCost(parseFloat(existingPurchase.shippingCost) || 0);
+      
+      // Set currencies
+      setPurchaseCurrency(existingPurchase.purchaseCurrency || existingPurchase.paymentCurrency || "USD");
+      setPaymentCurrency(existingPurchase.paymentCurrency || "USD");
+      setTotalPaid(parseFloat(existingPurchase.totalPaid) || 0);
+      
+      // Set purchase date
+      if (existingPurchase.createdAt) {
+        const date = new Date(existingPurchase.createdAt);
+        const localDateTime = date.toISOString().slice(0, 16);
+        setPurchaseDate(localDateTime);
+      }
+      
+      // Load items
+      if (existingPurchase.items && existingPurchase.items.length > 0) {
+        const loadedItems = existingPurchase.items.map((item: any) => ({
+          id: item.id.toString(),
+          name: item.name,
+          sku: item.sku || "",
+          quantity: item.quantity,
+          unitPrice: parseFloat(item.unitPrice),
+          weight: parseFloat(item.weight) || 0,
+          dimensions: item.dimensions || "",
+          notes: item.notes || "",
+          totalPrice: item.quantity * parseFloat(item.unitPrice),
+          costWithShipping: 0
+        }));
+        setItems(loadedItems);
+      }
+    }
+  }, [isEditMode, existingPurchase]);
 
   const addItem = () => {
     if (!currentItem.name || !currentItem.quantity || currentItem.unitPrice === undefined) {
@@ -610,7 +682,11 @@ export default function CreatePurchase() {
       }))
     };
 
-    createPurchaseMutation.mutate(purchaseData);
+    if (isEditMode) {
+      updatePurchaseMutation.mutate(purchaseData);
+    } else {
+      createPurchaseMutation.mutate(purchaseData);
+    }
   };
 
   return (
@@ -627,8 +703,8 @@ export default function CreatePurchase() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">Create Purchase Order</h1>
-            <p className="text-muted-foreground">Add supplier purchase with multiple items</p>
+            <h1 className="text-3xl font-bold">{isEditMode ? 'Edit Purchase Order' : 'Create Purchase Order'}</h1>
+            <p className="text-muted-foreground">{isEditMode ? 'Update purchase details' : 'Add supplier purchase with multiple items'}</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -641,11 +717,11 @@ export default function CreatePurchase() {
           </Button>
           <Button 
             onClick={handleSubmit}
-            disabled={createPurchaseMutation.isPending}
+            disabled={createPurchaseMutation.isPending || updatePurchaseMutation.isPending}
             data-testid="button-save-purchase"
           >
             <Save className="h-4 w-4 mr-2" />
-            {createPurchaseMutation.isPending ? "Creating..." : "Create Purchase"}
+            {(createPurchaseMutation.isPending || updatePurchaseMutation.isPending) ? (isEditMode ? "Updating..." : "Creating...") : (isEditMode ? "Update Purchase" : "Create Purchase")}
           </Button>
         </div>
       </div>
