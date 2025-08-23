@@ -42,6 +42,7 @@ interface DataTableProps<T> {
   };
   onRowClick?: (item: T) => void;
   defaultExpandAll?: boolean;
+  compact?: boolean;
 }
 
 type SortDirection = "asc" | "desc" | null;
@@ -58,6 +59,7 @@ export function DataTable<T>({
   expandable,
   onRowClick,
   defaultExpandAll = false,
+  compact = false,
 }: DataTableProps<T>) {
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
@@ -231,6 +233,7 @@ export function DataTable<T>({
                   key={column.key}
                   className={cn(
                     column.sortable && "cursor-pointer select-none",
+                    compact && "h-8 py-1 px-3",
                     column.className
                   )}
                   onClick={() => column.sortable && handleSort(column.key)}
@@ -301,7 +304,10 @@ export function DataTable<T>({
                       {columns.map((column) => (
                         <TableCell 
                           key={column.key} 
-                          className={column.className}
+                          className={cn(
+                            compact && "py-1 px-3",
+                            column.className
+                          )}
                           onClick={() => onRowClick && onRowClick(item)}
                         >
                           {column.cell ? column.cell(item) : (item as any)[column.key]}

@@ -179,9 +179,9 @@ export default function SupplierProcessing() {
         header: "Item",
         sortable: true,
         cell: (item) => (
-          <div className="py-1">
-            <div className="font-medium text-sm">{item.name}</div>
-            {item.sku && <div className="text-xs text-muted-foreground">SKU: {item.sku}</div>}
+          <div>
+            <div className="font-medium text-sm leading-tight">{item.name}</div>
+            {item.sku && <div className="text-xs text-muted-foreground leading-tight">SKU: {item.sku}</div>}
           </div>
         ),
         className: itemCount > 6 ? "min-w-[200px]" : "min-w-[150px]"
@@ -191,7 +191,7 @@ export default function SupplierProcessing() {
         header: "Qty",
         sortable: true,
         cell: (item) => (
-          <span className="font-medium">{item.quantity}</span>
+          <span className="font-medium text-sm">{item.quantity}</span>
         ),
         className: "w-[60px] text-center"
       },
@@ -610,6 +610,7 @@ export default function SupplierProcessing() {
                                 showPagination={false}
                                 className="text-sm"
                                 defaultExpandAll={false}
+                                compact={true}
                               />
                             </div>
                           )}
