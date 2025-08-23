@@ -21,7 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   Plus, Package, Trash2, Calculator, DollarSign, 
   Truck, Calendar, FileText, Save, ArrowLeft, AlertCircle,
-  Check, UserPlus, Clock, Search, MoreVertical
+  Check, UserPlus, Clock, Search, MoreVertical, Edit
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -971,14 +971,35 @@ export default function CreatePurchase() {
                             </span>
                           </TableCell>
                           <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => removeItem(item.id)}
-                              data-testid={`button-remove-${item.id}`}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  // Edit functionality can be added here
+                                  console.log('Edit item:', item.id);
+                                }}
+                                data-testid={`button-edit-${item.id}`}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem 
+                                    onClick={() => removeItem(item.id)}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete Item
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
