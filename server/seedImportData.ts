@@ -1,17 +1,26 @@
-import { pool } from "./db";
+import { db } from "./db";
+import {
+  importPurchases,
+  purchaseItems,
+  customItems,
+  consolidations,
+  shipments,
+  consolidationItems,
+  shipmentItems
+} from "@shared/schema";
 
 async function seedImportData() {
   console.log("🌱 Seeding import data...");
 
   try {
     // Clear existing data
-    await pool.query(`DELETE FROM shipment_items`);
-    await pool.query(`DELETE FROM consolidation_items`);
-    await pool.query(`DELETE FROM purchase_items`);
-    await pool.query(`DELETE FROM shipments`);
-    await pool.query(`DELETE FROM consolidations`);
-    await pool.query(`DELETE FROM custom_items`);
-    await pool.query(`DELETE FROM import_purchases`);
+    await db.delete(shipmentItems);
+    await db.delete(consolidationItems);
+    await db.delete(purchaseItems);
+    await db.delete(shipments);
+    await db.delete(consolidations);
+    await db.delete(customItems);
+    await db.delete(importPurchases);
 
     // Seed Purchases (Supplier Processing)
     const purchases = [
