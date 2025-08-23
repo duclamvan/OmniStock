@@ -183,9 +183,6 @@ router.patch("/purchases/:id", async (req, res) => {
   try {
     const purchaseId = parseInt(req.params.id);
     
-    console.log("Update purchase request:", purchaseId);
-    console.log("Request body keys:", Object.keys(req.body));
-    
     // Update purchase data
     const purchaseUpdate: any = {
       updatedAt: new Date()
@@ -205,8 +202,6 @@ router.patch("/purchases/:id", async (req, res) => {
     if (req.body.exchangeRate !== undefined) purchaseUpdate.exchangeRate = req.body.exchangeRate;
     if (req.body.status !== undefined) purchaseUpdate.status = req.body.status;
     
-    console.log("Purchase update object:", purchaseUpdate);
-    
     // Handle purchaseDate if provided (should be stored in createdAt for existing records)
     // We don't update createdAt but can update estimatedArrival based on it
     
@@ -215,8 +210,6 @@ router.patch("/purchases/:id", async (req, res) => {
       .set(purchaseUpdate)
       .where(eq(importPurchases.id, purchaseId))
       .returning();
-    
-    console.log("Updated purchase:", updated);
     
     // Handle items update if provided
     if (req.body.items && Array.isArray(req.body.items)) {

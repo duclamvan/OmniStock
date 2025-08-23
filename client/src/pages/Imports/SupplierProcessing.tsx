@@ -24,6 +24,11 @@ interface Purchase {
   notes: string | null;
   shippingCost: string;
   totalCost: string;
+  purchaseCurrency?: string;
+  paymentCurrency?: string;
+  totalPaid?: string;
+  purchaseTotal?: string;
+  exchangeRate?: string;
   status: string;
   createdAt: string;
   updatedAt: string;
@@ -571,24 +576,32 @@ export default function SupplierProcessing() {
                         <div className="flex items-center gap-1">
                           <Clock className="h-3 w-3 text-muted-foreground" />
                           <span className="text-muted-foreground">
-                            {purchase.estimatedArrival 
+                            ETA: {purchase.estimatedArrival 
                               ? format(new Date(purchase.estimatedArrival), 'MMM dd')
-                              : 'No ETA'
+                              : 'TBD'
                             }
                           </span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <DollarSign className="h-3 w-3 text-muted-foreground" />
+                          <Truck className="h-3 w-3 text-muted-foreground" />
                           <span className="text-muted-foreground">
-                            Shipping: ${purchase.shippingCost}
+                            Shipping: {purchase.purchaseCurrency || 'USD'} {purchase.shippingCost}
                           </span>
                         </div>
                         <div className="flex items-center gap-1">
                           <DollarSign className="h-3 w-3 text-muted-foreground" />
                           <span className="font-semibold">
-                            Total: ${purchase.totalCost}
+                            Grand Total: {purchase.purchaseCurrency || 'USD'} {purchase.totalCost}
                           </span>
                         </div>
+                        {purchase.paymentCurrency && purchase.paymentCurrency !== purchase.purchaseCurrency && (
+                          <div className="flex items-center gap-1">
+                            <DollarSign className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-muted-foreground">
+                              Paid: {purchase.paymentCurrency} {purchase.totalPaid || '0'}
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Items Table - Always visible when expanded */}
