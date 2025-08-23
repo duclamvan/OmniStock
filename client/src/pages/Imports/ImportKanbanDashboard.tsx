@@ -135,7 +135,7 @@ function PurchaseCard({
     <Card
       draggable
       onDragStart={(e) => onDragStart(e, purchase, 'purchase')}
-      className="cursor-move hover:shadow-md transition-all bg-white dark:bg-gray-800 w-full overflow-hidden"
+      className="cursor-move hover:shadow-md transition-all bg-white dark:bg-gray-800 w-full max-w-full overflow-hidden"
       data-testid={`purchase-${purchase.id}`}
     >
       <CardContent className="p-3 space-y-2 overflow-hidden">
@@ -226,7 +226,7 @@ function CustomItemCard({
     <Card
       draggable
       onDragStart={(e) => onDragStart(e, item, 'custom')}
-      className="cursor-move hover:shadow-md transition-all bg-white dark:bg-gray-800 w-full overflow-hidden"
+      className="cursor-move hover:shadow-md transition-all bg-white dark:bg-gray-800 w-full max-w-full overflow-hidden"
       data-testid={`custom-${item.id}`}
     >
       <CardContent className="p-3 space-y-2 overflow-hidden">
@@ -286,7 +286,7 @@ function ConsolidationCard({
     <Card
       draggable
       onDragStart={(e) => onDragStart(e, consolidation, 'consolidation')}
-      className={`cursor-move hover:shadow-md transition-all bg-white dark:bg-gray-800 border-2 ${borderColor} w-full overflow-hidden`}
+      className={`cursor-move hover:shadow-md transition-all bg-white dark:bg-gray-800 border-2 ${borderColor} w-full max-w-full overflow-hidden`}
       data-testid={`consolidation-${consolidation.id}`}
     >
       <CardContent className="p-3 space-y-2 overflow-hidden">
@@ -381,7 +381,7 @@ function ShipmentCard({
     <Card
       draggable={!isDelivered}
       onDragStart={onDragStart ? (e) => onDragStart(e, shipment, 'shipment') : undefined}
-      className={`${!isDelivered ? 'cursor-move' : ''} hover:shadow-md transition-all bg-white dark:bg-gray-800 w-full overflow-hidden`}
+      className={`${!isDelivered ? 'cursor-move' : ''} hover:shadow-md transition-all bg-white dark:bg-gray-800 w-full max-w-full overflow-hidden`}
       data-testid={`shipment-${shipment.id}`}
     >
       <CardContent className="p-3 space-y-2 overflow-hidden">
