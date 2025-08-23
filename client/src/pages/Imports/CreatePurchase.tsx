@@ -10,8 +10,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -58,6 +56,7 @@ export default function CreatePurchase() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const supplierDropdownRef = useRef<HTMLDivElement>(null);
+  const productDropdownRef = useRef<HTMLDivElement>(null);
 
   // Form state
   const [supplier, setSupplier] = useState("");
@@ -80,8 +79,7 @@ export default function CreatePurchase() {
   const [newSupplierWebsite, setNewSupplierWebsite] = useState("");
   
   // Product search state
-  const [productOpen, setProductOpen] = useState(false);
-  const [productSearch, setProductSearch] = useState("");
+  const [productDropdownOpen, setProductDropdownOpen] = useState(false);
   
   // Items state
   const [items, setItems] = useState<PurchaseItem[]>([]);
@@ -104,11 +102,14 @@ export default function CreatePurchase() {
     setPurchaseDate(localDateTime);
   }, []);
 
-  // Click outside to close supplier dropdown
+  // Click outside to close dropdowns
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (supplierDropdownRef.current && !supplierDropdownRef.current.contains(event.target as Node)) {
         setSupplierDropdownOpen(false);
+      }
+      if (productDropdownRef.current && !productDropdownRef.current.contains(event.target as Node)) {
+        setProductDropdownOpen(false);
       }
     };
 
@@ -136,15 +137,15 @@ export default function CreatePurchase() {
 
   // Filter products based on search with Vietnamese diacritics support
   const filteredProducts = products.filter(product => {
-    if (!productSearch) return true;
-    const normalizedSearch = normalizeVietnamese(productSearch.toLowerCase());
+    if (!currentItem.name) return false;
+    const normalizedSearch = normalizeVietnamese(currentItem.name.toLowerCase());
     const normalizedName = normalizeVietnamese(product.name.toLowerCase());
     const normalizedSku = product.sku ? normalizeVietnamese(product.sku.toLowerCase()) : '';
     
     return normalizedName.includes(normalizedSearch) || 
            normalizedSku.includes(normalizedSearch) ||
-           product.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-           (product.sku && product.sku.toLowerCase().includes(productSearch.toLowerCase()));
+           product.name.toLowerCase().includes(currentItem.name.toLowerCase()) ||
+           (product.sku && product.sku.toLowerCase().includes(currentItem.name.toLowerCase()));
   });
 
   // Calculated values
@@ -230,8 +231,7 @@ export default function CreatePurchase() {
       weight: product.weight || currentItem.weight || 0,
       dimensions: product.dimensions || currentItem.dimensions || ""
     });
-    setProductOpen(false);
-    setProductSearch("");
+    setProductDropdownOpen(false);
   };
 
   const addItem = () => {
@@ -563,60 +563,31 @@ export default function CreatePurchase() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="itemName">Item Name *</Label>
-                  <Popover open={productOpen} onOpenChange={setProductOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={productOpen}
-                        className="w-full justify-between font-normal"
-                        data-testid="input-item-name"
-                      >
-                        {currentItem.name || "Search or enter product name..."}
-                        <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-full p-0">
-                      <Command>
-                        <CommandInput 
-                          placeholder="Search products..." 
-                          value={productSearch}
-                          onValueChange={(value) => {
-                            setProductSearch(value);
-                            setCurrentItem({...currentItem, name: value});
-                          }}
-                        />
-                        <CommandList>
-                          {filteredProducts.length === 0 && productSearch && (
-                            <CommandEmpty>
-                              <div className="p-2">
-                                <p className="text-sm text-muted-foreground mb-2">No product found</p>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => {
-                                    setCurrentItem({...currentItem, name: productSearch});
-                                    setProductOpen(false);
-                                    setProductSearch("");
-                                  }}
-                                  className="w-full"
-                                >
-                                  <Plus className="mr-2 h-4 w-4" />
-                                  Use "{productSearch}" as new product
-                                </Button>
-                              </div>
-                            </CommandEmpty>
-                          )}
-                          <CommandGroup>
+                  <div className="relative" ref={productDropdownRef}>
+                    <Input
+                      id="itemName"
+                      value={currentItem.name}
+                      onChange={(e) => {
+                        setCurrentItem({...currentItem, name: e.target.value, sku: ""});
+                        setProductDropdownOpen(true);
+                      }}
+                      onFocus={() => setProductDropdownOpen(true)}
+                      placeholder="Type to search products..."
+                      data-testid="input-item-name"
+                    />
+                    {productDropdownOpen && currentItem.name && (
+                      <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
+                        {filteredProducts.length > 0 ? (
+                          <div>
                             {filteredProducts.slice(0, 10).map((product) => (
-                              <CommandItem
+                              <button
                                 key={product.id}
-                                value={product.name}
-                                onSelect={() => selectProduct(product)}
+                                className="w-full px-3 py-2 text-left hover:bg-accent flex items-start"
+                                onClick={() => selectProduct(product)}
                               >
                                 <Check
                                   className={cn(
-                                    "mr-2 h-4 w-4",
+                                    "mr-2 h-4 w-4 mt-0.5",
                                     currentItem.name === product.name ? "opacity-100" : "opacity-0"
                                   )}
                                 />
@@ -626,13 +597,28 @@ export default function CreatePurchase() {
                                     <div className="text-xs text-muted-foreground">SKU: {product.sku}</div>
                                   )}
                                 </div>
-                              </CommandItem>
+                              </button>
                             ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
+                          </div>
+                        ) : (
+                          <div className="p-2">
+                            <p className="text-sm text-muted-foreground mb-2">No product found</p>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setProductDropdownOpen(false);
+                              }}
+                              className="w-full"
+                            >
+                              <Plus className="mr-2 h-4 w-4" />
+                              Use "{currentItem.name}" as new product
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="sku">SKU/Code</Label>
