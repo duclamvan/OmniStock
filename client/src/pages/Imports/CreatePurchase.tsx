@@ -45,6 +45,7 @@ interface Supplier {
   email?: string;
   phone?: string;
   website?: string;
+  location?: string;
 }
 
 interface Product {
@@ -96,6 +97,7 @@ export default function CreatePurchase() {
   const [newSupplierEmail, setNewSupplierEmail] = useState("");
   const [newSupplierPhone, setNewSupplierPhone] = useState("");
   const [newSupplierWebsite, setNewSupplierWebsite] = useState("");
+  const [newSupplierLocation, setNewSupplierLocation] = useState("");
   
   // Product search state
   const [productDropdownOpen, setProductDropdownOpen] = useState(false);
@@ -254,12 +256,14 @@ export default function CreatePurchase() {
       setSupplier(newSupplier.name);
       setSupplierId(newSupplier.id);
       setSupplierLink(newSupplier.website || "");
+      setSupplierLocation(newSupplier.location || "");
       setNewSupplierDialogOpen(false);
       setNewSupplierName("");
       setNewSupplierContact("");
       setNewSupplierEmail("");
       setNewSupplierPhone("");
       setNewSupplierWebsite("");
+      setNewSupplierLocation("");
       toast({ title: "Success", description: "Supplier added successfully" });
     },
     onError: () => {
@@ -306,7 +310,8 @@ export default function CreatePurchase() {
       contactPerson: newSupplierContact || null,
       email: newSupplierEmail || null,
       phone: newSupplierPhone || null,
-      website: newSupplierWebsite || null
+      website: newSupplierWebsite || null,
+      location: newSupplierLocation || null
     });
   };
 
@@ -610,6 +615,7 @@ export default function CreatePurchase() {
                                 setSupplier(s.name);
                                 setSupplierId(s.id);
                                 setSupplierLink(s.website || "");
+                                setSupplierLocation(s.location || "");
                                 setSupplierDropdownOpen(false);
                               }}
                             >
@@ -1175,6 +1181,16 @@ export default function CreatePurchase() {
                 data-testid="input-new-supplier-website"
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-supplier-location">Location</Label>
+              <Input
+                id="new-supplier-location"
+                value={newSupplierLocation}
+                onChange={(e) => setNewSupplierLocation(e.target.value)}
+                placeholder="e.g., Shenzhen, China"
+                data-testid="input-new-supplier-location"
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button 
@@ -1186,6 +1202,7 @@ export default function CreatePurchase() {
                 setNewSupplierEmail("");
                 setNewSupplierPhone("");
                 setNewSupplierWebsite("");
+                setNewSupplierLocation("");
               }}
             >
               Cancel
