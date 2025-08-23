@@ -16,12 +16,16 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Plus, Package, Trash2, Calculator, DollarSign, 
   Truck, Calendar, FileText, Save, ArrowLeft, AlertCircle,
-  Check, UserPlus, Clock, Search, MoreVertical, Edit, X
+  Check, UserPlus, Clock, Search, MoreVertical, Edit, X, RotateCcw
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -151,6 +155,7 @@ export default function CreatePurchase() {
   // Edit state
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<Partial<PurchaseItem>>({});
+  const [itemCurrencyDisplay, setItemCurrencyDisplay] = useState<{[key: string]: string}>({});
 
   // Set default purchase date to now
   useEffect(() => {
@@ -1180,9 +1185,25 @@ export default function CreatePurchase() {
                               </span>
                             </TableCell>
                             <TableCell className="text-right">
-                              <span className="text-green-600 font-medium text-sm">
-                                {currencySymbol}{item.costWithShipping.toFixed(2)}
-                              </span>
+                              {(() => {
+                                const selectedCurrency = itemCurrencyDisplay[item.id] || purchaseCurrency;
+                                const rate = exchangeRates[selectedCurrency] / exchangeRates[purchaseCurrency];
+                                const convertedCost = item.costWithShipping * rate;
+                                const symbol = getCurrencySymbol(selectedCurrency);
+                                
+                                return (
+                                  <div className="space-y-1">
+                                    <span className="text-green-600 font-medium text-sm">
+                                      {symbol}{convertedCost.toFixed(2)}
+                                    </span>
+                                    {selectedCurrency !== purchaseCurrency && (
+                                      <div className="text-xs text-muted-foreground">
+                                        {selectedCurrency}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })()}
                             </TableCell>
                             <TableCell>
                               {isEditing ? (
@@ -1221,6 +1242,46 @@ export default function CreatePurchase() {
                                         <Edit className="mr-2 h-4 w-4" />
                                         Edit Item
                                       </DropdownMenuItem>
+                                      <DropdownMenuSub>
+                                        <DropdownMenuSubTrigger>
+                                          <DollarSign className="mr-2 h-4 w-4" />
+                                          Show Cost in Currency
+                                        </DropdownMenuSubTrigger>
+                                        <DropdownMenuSubContent>
+                                          <DropdownMenuItem onClick={() => setItemCurrencyDisplay(prev => ({...prev, [item.id]: "USD"}))}>
+                                            <Check className={cn("mr-2 h-4 w-4", itemCurrencyDisplay[item.id] === "USD" ? "opacity-100" : "opacity-0")} />
+                                            USD
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => setItemCurrencyDisplay(prev => ({...prev, [item.id]: "EUR"}))}>
+                                            <Check className={cn("mr-2 h-4 w-4", itemCurrencyDisplay[item.id] === "EUR" ? "opacity-100" : "opacity-0")} />
+                                            EUR
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => setItemCurrencyDisplay(prev => ({...prev, [item.id]: "CZK"}))}>
+                                            <Check className={cn("mr-2 h-4 w-4", itemCurrencyDisplay[item.id] === "CZK" ? "opacity-100" : "opacity-0")} />
+                                            CZK
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => setItemCurrencyDisplay(prev => ({...prev, [item.id]: "VND"}))}>
+                                            <Check className={cn("mr-2 h-4 w-4", itemCurrencyDisplay[item.id] === "VND" ? "opacity-100" : "opacity-0")} />
+                                            VND
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem onClick={() => setItemCurrencyDisplay(prev => ({...prev, [item.id]: "CNY"}))}>
+                                            <Check className={cn("mr-2 h-4 w-4", itemCurrencyDisplay[item.id] === "CNY" ? "opacity-100" : "opacity-0")} />
+                                            CNY
+                                          </DropdownMenuItem>
+                                          {customCurrencies.map(currency => (
+                                            <DropdownMenuItem key={currency} onClick={() => setItemCurrencyDisplay(prev => ({...prev, [item.id]: currency}))}>
+                                              <Check className={cn("mr-2 h-4 w-4", itemCurrencyDisplay[item.id] === currency ? "opacity-100" : "opacity-0")} />
+                                              {currency}
+                                            </DropdownMenuItem>
+                                          ))}
+                                          <DropdownMenuSeparator />
+                                          <DropdownMenuItem onClick={() => setItemCurrencyDisplay(prev => ({...prev, [item.id]: purchaseCurrency}))}>
+                                            <RotateCcw className="mr-2 h-4 w-4" />
+                                            Reset to Original
+                                          </DropdownMenuItem>
+                                        </DropdownMenuSubContent>
+                                      </DropdownMenuSub>
+                                      <DropdownMenuSeparator />
                                       <DropdownMenuItem 
                                         onClick={() => removeItem(item.id)}
                                         className="text-destructive focus:text-destructive"
