@@ -307,7 +307,7 @@ export default function SupplierProcessing() {
 
   if (isLoading) {
     return (
-      <div className="p-6">
+      <div className="px-4 py-4 md:p-6">
         <div className="flex items-center justify-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
@@ -316,15 +316,15 @@ export default function SupplierProcessing() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="px-4 py-4 md:p-6 space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Supplier Processing</h1>
-          <p className="text-muted-foreground">Manage import purchases from suppliers</p>
+          <h1 className="text-2xl md:text-3xl font-bold">Supplier Processing</h1>
+          <p className="text-sm md:text-base text-muted-foreground">Manage import purchases from suppliers</p>
         </div>
-        <Link href="/imports/supplier-processing/create">
-          <Button data-testid="button-create-purchase">
+        <Link href="/imports/supplier-processing/create" className="w-full sm:w-auto">
+          <Button data-testid="button-create-purchase" className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             Create Purchase
           </Button>
@@ -332,45 +332,45 @@ export default function SupplierProcessing() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Purchases</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium">Total Purchases</CardTitle>
             <Package2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-total-purchases">{purchases.length}</div>
+            <div className="text-xl sm:text-2xl font-bold" data-testid="text-total-purchases">{purchases.length}</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium">Pending</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">
+            <div className="text-xl sm:text-2xl font-bold text-yellow-600">
               {purchases.filter(p => p.status === 'pending').length}
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">At Warehouse</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium">At Warehouse</CardTitle>
             <MapPin className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-xl sm:text-2xl font-bold text-green-600">
               {purchases.filter(p => p.status === 'at_warehouse').length}
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Items</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium">Total Items</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-xl sm:text-2xl font-bold">
               {purchases.reduce((sum, p) => sum + p.itemCount, 0)}
             </div>
           </CardContent>
@@ -380,26 +380,26 @@ export default function SupplierProcessing() {
       {/* Filters and Search */}
       <Card>
         <CardHeader>
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
-              <CardTitle>Purchase Orders</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-lg md:text-xl">Purchase Orders</CardTitle>
+              <CardDescription className="text-sm">
                 Manage your supplier purchases and their items
               </CardDescription>
             </div>
-            <div className="flex flex-col md:flex-row gap-2">
+            <div className="flex flex-col sm:flex-row flex-wrap gap-2">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search orders..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 w-full md:w-[200px]"
+                  className="pl-9 w-full sm:w-[200px]"
                   data-testid="input-search"
                 />
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full md:w-[150px]" data-testid="select-status-filter">
+                <SelectTrigger className="w-full sm:w-[150px]" data-testid="select-status-filter">
                   <Filter className="h-4 w-4 mr-2" />
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
@@ -413,7 +413,7 @@ export default function SupplierProcessing() {
                 </SelectContent>
               </Select>
               <Select value={locationFilter} onValueChange={setLocationFilter}>
-                <SelectTrigger className="w-full md:w-[150px]" data-testid="select-location-filter">
+                <SelectTrigger className="w-full sm:w-[150px]" data-testid="select-location-filter">
                   <MapPin className="h-4 w-4 mr-2" />
                   <SelectValue placeholder="Filter by location" />
                 </SelectTrigger>
@@ -430,6 +430,7 @@ export default function SupplierProcessing() {
                 size="sm"
                 onClick={toggleAllExpanded}
                 data-testid="button-toggle-all"
+                className="w-full sm:w-auto"
               >
                 {expandedPurchases.size === filteredPurchases.length ? (
                   <>
@@ -477,8 +478,8 @@ export default function SupplierProcessing() {
                   <Card key={purchase.id} className="border hover:shadow-md transition-shadow">
                     <CardContent className="p-4">
                       {/* Purchase Header */}
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+                        <div className="flex items-center gap-2 sm:gap-3">
                           <Button
                             variant="ghost"
                             size="sm"
@@ -498,7 +499,7 @@ export default function SupplierProcessing() {
                           </Button>
                           <div>
                             <div className="flex items-center gap-2">
-                              <h3 className="font-semibold text-base" data-testid={`text-supplier-${purchase.id}`}>
+                              <h3 className="font-semibold text-sm sm:text-base" data-testid={`text-supplier-${purchase.id}`}>
                                 {purchase.location === 'Europe' && '🇪🇺 '}
                                 {purchase.location === 'USA' && '🇺🇸 '}
                                 {purchase.location === 'China' && '🇨🇳 '}
@@ -509,7 +510,7 @@ export default function SupplierProcessing() {
                                 {purchase.status.replace('_', ' ').toUpperCase()}
                               </Badge>
                             </div>
-                            <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
+                            <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-muted-foreground mt-1">
                               <span>{purchase.itemCount} items</span>
                               <span>•</span>
                               <span>Created {format(new Date(purchase.createdAt), 'MMM dd, yyyy')}</span>
@@ -522,12 +523,12 @@ export default function SupplierProcessing() {
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap justify-end">
                           <Select
                             value={purchase.status}
                             onValueChange={(status) => updateStatusMutation.mutate({ purchaseId: purchase.id, status })}
                           >
-                            <SelectTrigger className="w-[140px] h-8 text-sm">
+                            <SelectTrigger className="w-[120px] sm:w-[140px] h-8 text-xs sm:text-sm">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -549,7 +550,8 @@ export default function SupplierProcessing() {
                           </Link>
                           <Button
                             variant="outline"
-                            size="sm"
+                            size="icon"
+                            className="h-8 w-8"
                             onClick={() => {
                               setSelectedPurchase(purchase);
                               setIsAddItemModalOpen(true);
@@ -570,7 +572,7 @@ export default function SupplierProcessing() {
                       </div>
 
                       {/* Purchase Info Bar */}
-                      <div className="flex items-center gap-6 text-sm mb-3 pl-7">
+                      <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-xs sm:text-sm mb-3 sm:pl-7">
                         <div className="flex items-center gap-1">
                           <Clock className="h-3 w-3 text-muted-foreground" />
                           <span className="text-muted-foreground">
@@ -604,14 +606,14 @@ export default function SupplierProcessing() {
 
                       {/* Items Table - Always visible when expanded */}
                       {isExpanded && (
-                        <div className="pl-7">
+                        <div className="sm:pl-7">
                           {purchase.items.length === 0 ? (
                             <div className="text-center py-6 bg-muted/30 rounded-lg">
                               <p className="text-muted-foreground text-sm">No items added yet</p>
                             </div>
                           ) : (
                             <div className={cn(
-                              "rounded-lg border bg-card",
+                              "rounded-lg border bg-card overflow-x-auto",
                               purchase.items.length > 12 && "max-h-[400px] overflow-y-auto"
                             )}>
                               <DataTable
@@ -630,7 +632,7 @@ export default function SupplierProcessing() {
 
                       {/* Notes */}
                       {purchase.notes && isExpanded && (
-                        <div className="mt-3 pl-7">
+                        <div className="mt-3 sm:pl-7">
                           <div className="p-3 bg-muted/50 rounded-lg">
                             <p className="text-xs text-muted-foreground mb-1">Notes:</p>
                             <p className="text-sm">{purchase.notes}</p>
@@ -648,7 +650,7 @@ export default function SupplierProcessing() {
 
       {/* Add Item Modal */}
       <Dialog open={isAddItemModalOpen} onOpenChange={setIsAddItemModalOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="w-[95vw] max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add Item to Purchase</DialogTitle>
             <DialogDescription>
@@ -656,7 +658,7 @@ export default function SupplierProcessing() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleAddItem} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Item Name *</Label>
                 <Input 
@@ -677,7 +679,7 @@ export default function SupplierProcessing() {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="quantity">Quantity *</Label>
                 <Input 
