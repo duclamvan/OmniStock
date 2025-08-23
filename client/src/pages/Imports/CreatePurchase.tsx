@@ -67,7 +67,9 @@ export default function CreatePurchase() {
   const locationDropdownRef = useRef<HTMLDivElement>(null);
 
   // Form state
-  const [currency, setCurrency] = useState("USD");
+  const [purchaseCurrency, setPurchaseCurrency] = useState("USD");
+  const [paymentCurrency, setPaymentCurrency] = useState("USD");
+  const [totalPaid, setTotalPaid] = useState(0);
   const [displayCurrency, setDisplayCurrency] = useState("USD");
   const [supplier, setSupplier] = useState("");
   const [supplierId, setSupplierId] = useState<string | null>(null);
@@ -220,7 +222,7 @@ export default function CreatePurchase() {
     CZK: "Kč",
     VND: "₫",
     CNY: "¥"
-  }[currency] || "$";
+  }[purchaseCurrency] || "$";
   
   // Convert to USD
   const convertToUSD = (amount: number, fromCurrency: string) => {
@@ -236,14 +238,14 @@ export default function CreatePurchase() {
   };
   
   // USD equivalents
-  const subtotalUSD = convertToUSD(subtotal, currency);
-  const shippingCostUSD = convertToUSD(shippingCost, currency);
-  const grandTotalUSD = convertToUSD(grandTotal, currency);
+  const subtotalUSD = convertToUSD(subtotal, purchaseCurrency);
+  const shippingCostUSD = convertToUSD(shippingCost, purchaseCurrency);
+  const grandTotalUSD = convertToUSD(grandTotal, purchaseCurrency);
   
   // Display currency conversions
-  const displaySubtotal = displayCurrency === currency ? subtotal : convertFromUSD(subtotalUSD, displayCurrency);
-  const displayShippingCost = displayCurrency === currency ? shippingCost : convertFromUSD(shippingCostUSD, displayCurrency);
-  const displayGrandTotal = displayCurrency === currency ? grandTotal : convertFromUSD(grandTotalUSD, displayCurrency);
+  const displaySubtotal = displayCurrency === purchaseCurrency ? subtotal : convertFromUSD(subtotalUSD, displayCurrency);
+  const displayShippingCost = displayCurrency === purchaseCurrency ? shippingCost : convertFromUSD(shippingCostUSD, displayCurrency);
+  const displayGrandTotal = displayCurrency === purchaseCurrency ? grandTotal : convertFromUSD(grandTotalUSD, displayCurrency);
   const displayCurrencySymbol = {
     USD: "$",
     EUR: "€",
@@ -523,7 +525,9 @@ export default function CreatePurchase() {
     }
 
     const purchaseData = {
-      currency,
+      purchaseCurrency,
+      paymentCurrency,
+      totalPaid,
       supplier,
       supplierId,
       supplierLink: supplierLink || null,
@@ -538,7 +542,7 @@ export default function CreatePurchase() {
       // Store converted prices
       prices: {
         original: {
-          currency,
+          currency: purchaseCurrency,
           subtotal,
           shippingCost,
           total: grandTotal
@@ -568,7 +572,7 @@ export default function CreatePurchase() {
         sku: item.sku || null,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
-        unitPriceUSD: convertToUSD(item.unitPrice, currency),
+        unitPriceUSD: convertToUSD(item.unitPrice, purchaseCurrency),
         weight: item.weight,
         dimensions: item.dimensions || null,
         notes: item.notes || null
@@ -625,20 +629,75 @@ export default function CreatePurchase() {
               <CardDescription>Basic details about the supplier and order</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="currency">Currency *</Label>
-                <Select value={currency} onValueChange={setCurrency}>
-                  <SelectTrigger data-testid="select-currency">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="USD">USD - US Dollar</SelectItem>
-                    <SelectItem value="EUR">EUR - Euro</SelectItem>
-                    <SelectItem value="CZK">CZK - Czech Koruna</SelectItem>
-                    <SelectItem value="VND">VND - Vietnamese Dong</SelectItem>
-                    <SelectItem value="CNY">CNY - Chinese Yuan</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="purchase-currency">Purchase Currency *</Label>
+                  <Select value={purchaseCurrency} onValueChange={setPurchaseCurrency}>
+                    <SelectTrigger data-testid="select-purchase-currency">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USD">USD - US Dollar</SelectItem>
+                      <SelectItem value="EUR">EUR - Euro</SelectItem>
+                      <SelectItem value="CZK">CZK - Czech Koruna</SelectItem>
+                      <SelectItem value="VND">VND - Vietnamese Dong</SelectItem>
+                      <SelectItem value="CNY">CNY - Chinese Yuan</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="payment-currency">Payment Currency *</Label>
+                  <div className="flex gap-2">
+                    <Select value={paymentCurrency} onValueChange={setPaymentCurrency}>
+                      <SelectTrigger className="flex-1" data-testid="select-payment-currency">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="USD">USD</SelectItem>
+                        <SelectItem value="EUR">EUR</SelectItem>
+                        <SelectItem value="CZK">CZK</SelectItem>
+                        <SelectItem value="VND">VND</SelectItem>
+                        <SelectItem value="CNY">CNY</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <div className="relative w-36">
+                      <Input
+                        type="number"
+                        value={totalPaid}
+                        onChange={(e) => setTotalPaid(parseFloat(e.target.value) || 0)}
+                        placeholder="Total Paid"
+                        className="pl-8"
+                        step="0.01"
+                        min="0"
+                        data-testid="input-total-paid"
+                      />
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm">
+                        {
+                          {
+                            USD: "$",
+                            EUR: "€",
+                            CZK: "Kč",
+                            VND: "₫",
+                            CNY: "¥"
+                          }[paymentCurrency] || "$"
+                        }
+                      </span>
+                    </div>
+                  </div>
+                  {purchaseCurrency !== paymentCurrency && grandTotal > 0 && (
+                    <div className="text-xs text-muted-foreground">
+                      Grand total in {paymentCurrency}: {
+                        {
+                          USD: "$",
+                          EUR: "€",
+                          CZK: "Kč",
+                          VND: "₫",
+                          CNY: "¥"
+                        }[paymentCurrency] || "$"
+                      }{(grandTotal * exchangeRates[paymentCurrency] / exchangeRates[purchaseCurrency]).toFixed(2)}
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -814,7 +873,7 @@ export default function CreatePurchase() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="shipping">Shipping Cost ({currency})</Label>
+                  <Label htmlFor="shipping">Shipping Cost ({purchaseCurrency})</Label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">{currencySymbol}</span>
                     <Input
@@ -1164,40 +1223,45 @@ export default function CreatePurchase() {
           {/* Order Summary */}
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="space-y-2">
                 <CardTitle className="flex items-center gap-2">
                   <Calculator className="h-5 w-5" />
                   Order Summary
                 </CardTitle>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setDisplayCurrency("USD")}>
-                      <Check className={cn("mr-2 h-4 w-4", displayCurrency === "USD" ? "opacity-100" : "opacity-0")} />
-                      View in USD{currency === "USD" ? " (original)" : ""}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setDisplayCurrency("EUR")}>
-                      <Check className={cn("mr-2 h-4 w-4", displayCurrency === "EUR" ? "opacity-100" : "opacity-0")} />
-                      View in EUR{currency === "EUR" ? " (original)" : ""}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setDisplayCurrency("CZK")}>
-                      <Check className={cn("mr-2 h-4 w-4", displayCurrency === "CZK" ? "opacity-100" : "opacity-0")} />
-                      View in CZK{currency === "CZK" ? " (original)" : ""}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setDisplayCurrency("VND")}>
-                      <Check className={cn("mr-2 h-4 w-4", displayCurrency === "VND" ? "opacity-100" : "opacity-0")} />
-                      View in VND{currency === "VND" ? " (original)" : ""}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setDisplayCurrency("CNY")}>
-                      <Check className={cn("mr-2 h-4 w-4", displayCurrency === "CNY" ? "opacity-100" : "opacity-0")} />
-                      View in CNY{currency === "CNY" ? " (original)" : ""}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">{purchaseCurrency}</span>
+                  <span>→</span>
+                  <span className="font-medium text-foreground">{paymentCurrency}</span>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 ml-auto">
+                        <MoreVertical className="h-3 w-3" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setDisplayCurrency("USD")}>
+                        <Check className={cn("mr-2 h-4 w-4", displayCurrency === "USD" ? "opacity-100" : "opacity-0")} />
+                        View in USD{purchaseCurrency === "USD" ? " (purchase)" : paymentCurrency === "USD" ? " (payment)" : ""}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setDisplayCurrency("EUR")}>
+                        <Check className={cn("mr-2 h-4 w-4", displayCurrency === "EUR" ? "opacity-100" : "opacity-0")} />
+                        View in EUR{purchaseCurrency === "EUR" ? " (purchase)" : paymentCurrency === "EUR" ? " (payment)" : ""}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setDisplayCurrency("CZK")}>
+                        <Check className={cn("mr-2 h-4 w-4", displayCurrency === "CZK" ? "opacity-100" : "opacity-0")} />
+                        View in CZK{purchaseCurrency === "CZK" ? " (purchase)" : paymentCurrency === "CZK" ? " (payment)" : ""}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setDisplayCurrency("VND")}>
+                        <Check className={cn("mr-2 h-4 w-4", displayCurrency === "VND" ? "opacity-100" : "opacity-0")} />
+                        View in VND{purchaseCurrency === "VND" ? " (purchase)" : paymentCurrency === "VND" ? " (payment)" : ""}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setDisplayCurrency("CNY")}>
+                        <Check className={cn("mr-2 h-4 w-4", displayCurrency === "CNY" ? "opacity-100" : "opacity-0")} />
+                        View in CNY{purchaseCurrency === "CNY" ? " (purchase)" : paymentCurrency === "CNY" ? " (payment)" : ""}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -1234,10 +1298,37 @@ export default function CreatePurchase() {
                   <span className="font-bold">Grand Total:</span>
                   <span className="font-bold text-green-600">{displayCurrencySymbol}{displayGrandTotal.toFixed(2)}</span>
                 </div>
-                {displayCurrency !== currency && (
+                {displayCurrency !== purchaseCurrency && (
                   <div className="flex justify-between text-xs mt-1">
-                    <span className="text-muted-foreground">Original ({currency}):</span>
+                    <span className="text-muted-foreground">Original ({purchaseCurrency}):</span>
                     <span className="text-muted-foreground">{currencySymbol}{grandTotal.toFixed(2)}</span>
+                  </div>
+                )}
+              </div>
+              
+              {/* Payment Section */}
+              <div className="border-t pt-3 bg-muted/30 -mx-6 px-6 pb-3 -mb-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Total Paid ({paymentCurrency}):</span>
+                  <span className="font-bold text-blue-600">
+                    {
+                      {
+                        USD: "$",
+                        EUR: "€",
+                        CZK: "Kč",
+                        VND: "₫",
+                        CNY: "¥"
+                      }[paymentCurrency] || "$"
+                    }
+                    {totalPaid.toFixed(2)}
+                  </span>
+                </div>
+                {paymentCurrency !== purchaseCurrency && (
+                  <div className="flex justify-between text-xs mt-1">
+                    <span className="text-muted-foreground">Exchange Rate:</span>
+                    <span className="text-muted-foreground">
+                      1 {purchaseCurrency} = {(exchangeRates[paymentCurrency] / exchangeRates[purchaseCurrency]).toFixed(4)} {paymentCurrency}
+                    </span>
                   </div>
                 )}
               </div>
