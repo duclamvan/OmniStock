@@ -15,6 +15,28 @@ import { addDays, differenceInDays } from "date-fns";
 
 const router = Router();
 
+// Get frequent suppliers
+router.get("/suppliers/frequent", async (req, res) => {
+  try {
+    // Get suppliers ordered by frequency of use
+    const suppliers = await db
+      .select({
+        name: importPurchases.supplier,
+        count: sql<number>`count(*)::int`,
+        lastUsed: sql<Date>`max(${importPurchases.createdAt})`
+      })
+      .from(importPurchases)
+      .groupBy(importPurchases.supplier)
+      .orderBy(desc(sql`count(*)`))
+      .limit(10);
+    
+    res.json(suppliers);
+  } catch (error) {
+    console.error("Error fetching frequent suppliers:", error);
+    res.status(500).json({ message: "Failed to fetch frequent suppliers" });
+  }
+});
+
 // Get all import purchases with items
 router.get("/purchases", async (req, res) => {
   try {
@@ -69,23 +91,57 @@ router.get("/purchases/:id", async (req, res) => {
   }
 });
 
-// Create import purchase
+// Create import purchase with items
 router.post("/purchases", async (req, res) => {
   try {
+    // Calculate total cost from items
+    const items = req.body.items || [];
+    const shippingCost = parseFloat(req.body.shippingCost) || 0;
+    const subtotal = items.reduce((sum: number, item: any) => 
+      sum + (parseFloat(item.unitPrice) || 0) * (parseInt(item.quantity) || 0), 0);
+    const totalCost = subtotal + shippingCost;
+    
     const purchaseData = {
       supplier: req.body.supplier,
       trackingNumber: req.body.trackingNumber || null,
       estimatedArrival: req.body.estimatedArrival ? new Date(req.body.estimatedArrival) : null,
       notes: req.body.notes || null,
-      shippingCost: req.body.shippingCost || 0,
-      totalCost: req.body.totalCost || 0,
+      shippingCost: shippingCost.toString(),
+      totalCost: totalCost.toString(),
       status: "pending",
       createdAt: new Date(),
       updatedAt: new Date()
     };
     
     const [purchase] = await db.insert(importPurchases).values(purchaseData).returning();
-    res.json(purchase);
+    
+    // Create purchase items
+    if (items.length > 0) {
+      const purchaseItemsData = items.map((item: any) => ({
+        purchaseId: purchase.id,
+        name: item.name,
+        sku: item.sku || null,
+        quantity: parseInt(item.quantity) || 1,
+        unitPrice: (parseFloat(item.unitPrice) || 0).toString(),
+        totalPrice: ((parseFloat(item.unitPrice) || 0) * (parseInt(item.quantity) || 1)).toString(),
+        weight: item.weight ? parseFloat(item.weight).toString() : null,
+        dimensions: item.dimensions || null,
+        notes: item.notes || null,
+        status: "ordered",
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }));
+      
+      await db.insert(purchaseItems).values(purchaseItemsData);
+    }
+    
+    // Return purchase with items
+    const createdItems = await db
+      .select()
+      .from(purchaseItems)
+      .where(eq(purchaseItems.purchaseId, purchase.id));
+    
+    res.json({ ...purchase, items: createdItems });
   } catch (error) {
     console.error("Error creating purchase:", error);
     res.status(500).json({ message: "Failed to create purchase" });

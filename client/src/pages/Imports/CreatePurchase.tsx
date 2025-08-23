@@ -119,6 +119,9 @@ export default function CreatePurchase() {
     notes: ""
   });
   
+  // Purchase creation state  
+  const [frequentSuppliers, setFrequentSuppliers] = useState<Array<{ name: string; count: number; lastUsed: string }>>([]);
+  
   // Edit state
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<Partial<PurchaseItem>>({});
@@ -376,6 +379,14 @@ export default function CreatePurchase() {
     
     setLocationSearchTimeout(timeout);
   };
+
+  // Load frequent suppliers on mount
+  useEffect(() => {
+    fetch("/api/imports/suppliers/frequent")
+      .then(res => res.json())
+      .then(data => setFrequentSuppliers(data))
+      .catch(err => console.error("Error loading frequent suppliers:", err));
+  }, []);
 
   const addItem = () => {
     if (!currentItem.name || !currentItem.quantity || currentItem.unitPrice === undefined) {
@@ -646,47 +657,74 @@ export default function CreatePurchase() {
                       placeholder="Type to search suppliers..."
                       data-testid="input-supplier"
                     />
-                    {supplierDropdownOpen && supplier && (
+                    {supplierDropdownOpen && (
                       <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
-                        {filteredSuppliers.length > 0 ? (
-                          filteredSuppliers.map((s) => (
-                            <button
-                              key={s.id}
-                              className="w-full px-3 py-2 text-left hover:bg-accent flex items-center"
-                              onClick={() => {
-                                setSupplier(s.name);
-                                setSupplierId(s.id);
-                                setSupplierLink(s.website || "");
-                                setSupplierLocation(s.location || "");
-                                setSupplierDropdownOpen(false);
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  supplierId === s.id ? "opacity-100" : "opacity-0"
-                                )}
-                              />
-                              {s.name}
-                            </button>
-                          ))
-                        ) : (
-                          <div className="p-2">
-                            <p className="text-sm text-muted-foreground mb-2">No supplier found</p>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setNewSupplierName(supplier);
-                                setNewSupplierDialogOpen(true);
-                                setSupplierDropdownOpen(false);
-                              }}
-                              className="w-full"
-                            >
-                              <UserPlus className="mr-2 h-4 w-4" />
-                              Add new supplier "{supplier}"
-                            </Button>
-                          </div>
+                        {/* Show frequent suppliers when no search term */}
+                        {!supplier && frequentSuppliers.length > 0 && (
+                          <>
+                            <div className="px-3 py-2 text-xs font-semibold text-muted-foreground bg-muted/50">
+                              Frequent Suppliers
+                            </div>
+                            {frequentSuppliers.slice(0, 5).map((s) => (
+                              <button
+                                key={`freq-${s.name}`}
+                                className="w-full px-3 py-2 text-left hover:bg-accent flex items-center justify-between"
+                                onClick={() => {
+                                  setSupplier(s.name);
+                                  setSupplierDropdownOpen(false);
+                                }}
+                              >
+                                <span>{s.name}</span>
+                                <span className="text-xs text-muted-foreground">Used {s.count}x</span>
+                              </button>
+                            ))}
+                          </>
+                        )}
+                        
+                        {/* Show filtered suppliers when searching */}
+                        {supplier && (
+                          <>
+                            {filteredSuppliers.length > 0 ? (
+                              filteredSuppliers.map((s) => (
+                                <button
+                                  key={s.id}
+                                  className="w-full px-3 py-2 text-left hover:bg-accent flex items-center"
+                                  onClick={() => {
+                                    setSupplier(s.name);
+                                    setSupplierId(s.id);
+                                    setSupplierLink(s.website || "");
+                                    setSupplierLocation(s.location || "");
+                                    setSupplierDropdownOpen(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      supplierId === s.id ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  {s.name}
+                                </button>
+                              ))
+                            ) : (
+                              <div className="p-2">
+                                <p className="text-sm text-muted-foreground mb-2">No supplier found</p>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setNewSupplierName(supplier);
+                                    setNewSupplierDialogOpen(true);
+                                    setSupplierDropdownOpen(false);
+                                  }}
+                                  className="w-full"
+                                >
+                                  <UserPlus className="mr-2 h-4 w-4" />
+                                  Add new supplier "{supplier}"
+                                </Button>
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
                     )}

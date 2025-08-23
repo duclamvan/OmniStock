@@ -697,7 +697,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/suppliers', async (req: any, res) => {
     try {
-      const data = insertSupplierSchema.parse(req.body);
+      // Define supplier schema inline since we're not using a separate suppliers table
+      const supplierSchema = z.object({
+        name: z.string(),
+        location: z.string().optional(),
+        contactEmail: z.string().email().optional(),
+        contactPhone: z.string().optional(),
+        notes: z.string().optional()
+      });
+      
+      const data = supplierSchema.parse(req.body);
       const supplier = await storage.createSupplier(data);
       
       await storage.createUserActivity({
