@@ -238,19 +238,19 @@ function CustomItemCard({
         </div>
 
         {/* Source Info */}
-        <div className="flex items-center justify-between">
-          <Badge className="text-xs" variant="secondary">
+        <div className="flex items-center justify-between gap-1 min-w-0">
+          <Badge className="text-[10px] truncate max-w-[60%]" variant="secondary">
             {item.source}
           </Badge>
           {item.orderNumber && (
-            <span className="text-xs text-muted-foreground">
+            <span className="text-[10px] text-muted-foreground truncate max-w-[35%]">
               #{item.orderNumber}
             </span>
           )}
         </div>
 
         {/* Quantity and Weight */}
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
           <span className="flex-shrink-0">Qty: {item.quantity}</span>
           <span className="flex-shrink-0">•</span>
           <span className="flex-shrink-0">{item.weight}kg</span>
@@ -258,8 +258,8 @@ function CustomItemCard({
 
         {/* Customer Info */}
         {item.customerName && (
-          <div className="flex items-center text-xs min-w-0">
-            <Users className="h-3 w-3 mr-1 flex-shrink-0" />
+          <div className="flex items-center text-[10px] min-w-0">
+            <Users className="h-2.5 w-2.5 mr-0.5 flex-shrink-0" />
             <span className="truncate min-w-0">{item.customerName}</span>
           </div>
         )}
@@ -296,21 +296,21 @@ function ConsolidationCard({
             <Icon className="h-4 w-4 flex-shrink-0" />
             <h4 className="font-bold text-sm truncate">{consolidation.name}</h4>
           </div>
-          <Badge className="text-xs bg-green-100 text-green-800 flex-shrink-0">
+          <Badge className="text-[10px] bg-green-100 text-green-800 flex-shrink-0">
             {consolidation.items.length} items
           </Badge>
         </div>
 
         {/* Warehouse Info */}
-        <div className="flex items-center text-xs text-muted-foreground">
-          <Building2 className="h-3 w-3 mr-1" />
-          <span>{consolidation.warehouse}</span>
+        <div className="flex items-center text-[10px] text-muted-foreground min-w-0">
+          <Building2 className="h-2.5 w-2.5 mr-0.5 flex-shrink-0" />
+          <span className="truncate">{consolidation.warehouse}</span>
         </div>
 
         {/* Shipping Method */}
-        <div className="flex items-center text-xs">
-          <Target className="h-3 w-3 mr-1" />
-          <span>{consolidation.shippingMethod.replace('_', ' ')}</span>
+        <div className="flex items-center text-[10px] min-w-0">
+          <Target className="h-2.5 w-2.5 mr-0.5 flex-shrink-0" />
+          <span className="truncate">{consolidation.shippingMethod.replace('_', ' ')}</span>
         </div>
 
         {/* Items List */}
@@ -386,30 +386,30 @@ function ShipmentCard({
     >
       <CardContent className="p-2.5 space-y-1.5">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-1 min-w-0">
           <Badge 
             variant={isDelivered ? "default" : "outline"} 
-            className={`text-xs ${isDelivered ? 'bg-green-100 text-green-800' : ''}`}
+            className={`text-[10px] flex-shrink-0 ${isDelivered ? 'bg-green-100 text-green-800' : ''}`}
           >
             {isDelivered ? 'Delivered' : shipment.status}
           </Badge>
-          <span className="text-xs font-bold">{shipment.carrier}</span>
+          <span className="text-[10px] font-bold truncate">{shipment.carrier}</span>
         </div>
 
         {/* Tracking Number */}
-        <h4 className="font-semibold text-sm truncate">{shipment.trackingNumber}</h4>
+        <h4 className="font-semibold text-xs truncate">{shipment.trackingNumber}</h4>
 
         {/* Route */}
-        <div className="flex items-center text-xs text-muted-foreground gap-1 min-w-0">
-          <span className="truncate flex-1">{shipment.origin}</span>
-          <ArrowRight className="h-3 w-3 flex-shrink-0" />
-          <span className="truncate flex-1">{shipment.destination}</span>
+        <div className="flex items-center text-[10px] text-muted-foreground gap-0.5 min-w-0">
+          <span className="truncate flex-1 max-w-[35%]">{shipment.origin}</span>
+          <ArrowRight className="h-2.5 w-2.5 flex-shrink-0" />
+          <span className="truncate flex-1 max-w-[35%]">{shipment.destination}</span>
         </div>
 
         {/* Current Location */}
         {shipment.currentLocation && !isDelivered && (
-          <div className="flex items-center text-xs min-w-0">
-            <MapPin className="h-3 w-3 mr-1 flex-shrink-0" />
+          <div className="flex items-center text-[10px] min-w-0">
+            <MapPin className="h-2.5 w-2.5 mr-0.5 flex-shrink-0" />
             <span className="truncate min-w-0">{shipment.currentLocation}</span>
           </div>
         )}
@@ -429,11 +429,11 @@ function ShipmentCard({
             </>
           ) : (
             <>
-              <span className="text-xs font-semibold flex-shrink-0">
-                ${parseFloat(shipment.shippingCost).toFixed(2)}
+              <span className="text-[10px] font-semibold flex-shrink-0">
+                ${parseFloat(shipment.shippingCost).toFixed(0)}
               </span>
               {shipment.estimatedDelivery && (
-                <span className="text-xs text-muted-foreground flex-shrink-0">
+                <span className="text-[10px] text-muted-foreground flex-shrink-0">
                   {getDaysUntil(shipment.estimatedDelivery)}
                 </span>
               )}
