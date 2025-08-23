@@ -138,21 +138,21 @@ function PurchaseCard({
       className="cursor-move hover:shadow-md transition-all bg-white dark:bg-gray-800 overflow-hidden"
       data-testid={`purchase-${purchase.id}`}
     >
-      <CardContent className="p-2.5 space-y-1.5">
+      <CardContent className="p-2 md:p-2.5 lg:p-3 space-y-1 md:space-y-1.5">
         {/* Header */}
         <div className="flex items-center justify-between gap-2 min-w-0">
-          <h4 className="font-semibold text-sm truncate min-w-0">
+          <h4 className="font-semibold text-xs md:text-sm truncate min-w-0">
             {purchase.supplier}
           </h4>
-          <Badge variant="outline" className="text-xs flex-shrink-0">
+          <Badge variant="outline" className="text-[10px] md:text-xs flex-shrink-0">
             {purchase.status}
           </Badge>
         </div>
 
         {/* Tracking Info */}
         {purchase.trackingNumber && (
-          <div className="flex items-center text-xs text-muted-foreground min-w-0">
-            <Hash className="h-3 w-3 mr-1 flex-shrink-0" />
+          <div className="flex items-center text-[10px] md:text-xs text-muted-foreground min-w-0">
+            <Hash className="h-2.5 w-2.5 md:h-3 md:w-3 mr-0.5 md:mr-1 flex-shrink-0" />
             <span className="truncate min-w-0">{purchase.trackingNumber}</span>
           </div>
         )}
@@ -162,10 +162,10 @@ function PurchaseCard({
           <div className="space-y-0.5 pt-1">
             {displayItems.map((item, idx) => (
               <div key={item.id} className="flex items-center justify-between text-xs gap-1 min-w-0">
-                <span className="text-muted-foreground truncate min-w-0 text-[11px]">
+                <span className="text-muted-foreground truncate min-w-0 text-[10px] md:text-[11px]">
                   {idx + 1}. {item.name}
                 </span>
-                <span className="text-muted-foreground flex-shrink-0 text-[11px]">
+                <span className="text-muted-foreground flex-shrink-0 text-[10px] md:text-[11px]">
                   x{item.quantity}
                 </span>
               </div>
@@ -182,16 +182,16 @@ function PurchaseCard({
               e.stopPropagation();
               setExpanded(!expanded);
             }}
-            className="w-full h-5 text-[10px] py-0"
+            className="w-full h-5 md:h-6 text-[10px] md:text-xs py-0"
           >
             {expanded ? (
               <>
-                <ChevronUp className="h-3 w-3 mr-0.5" />
+                <ChevronUp className="h-2.5 w-2.5 md:h-3 md:w-3 mr-0.5" />
                 Show Less
               </>
             ) : (
               <>
-                <ChevronDown className="h-3 w-3 mr-0.5" />
+                <ChevronDown className="h-2.5 w-2.5 md:h-3 md:w-3 mr-0.5" />
                 +{purchase.items.length - 5} More
               </>
             )}
@@ -200,11 +200,11 @@ function PurchaseCard({
 
         {/* Footer */}
         <div className="flex items-center justify-between pt-1.5 border-t mt-1.5">
-          <span className="text-xs font-semibold flex-shrink-0">
+          <span className="text-[10px] md:text-xs font-semibold flex-shrink-0">
             ${parseFloat(purchase.totalCost).toFixed(2)}
           </span>
           {purchase.estimatedArrival && (
-            <span className="text-xs text-muted-foreground flex-shrink-0">
+            <span className="text-[10px] md:text-xs text-muted-foreground flex-shrink-0">
               {differenceInDays(new Date(purchase.estimatedArrival), new Date())}d
             </span>
           )}
@@ -229,28 +229,28 @@ function CustomItemCard({
       className="cursor-move hover:shadow-md transition-all bg-white dark:bg-gray-800 overflow-hidden"
       data-testid={`custom-${item.id}`}
     >
-      <CardContent className="p-2.5 space-y-1.5">
+      <CardContent className="p-2 md:p-2.5 lg:p-3 space-y-1 md:space-y-1.5">
         {/* Header */}
         <div className="flex items-center justify-between min-w-0">
-          <h4 className="font-semibold text-sm truncate min-w-0">
+          <h4 className="font-semibold text-xs md:text-sm truncate min-w-0">
             {item.name}
           </h4>
         </div>
 
         {/* Source Info */}
         <div className="flex items-center justify-between gap-1 min-w-0">
-          <Badge className="text-[10px] truncate max-w-[60%]" variant="secondary">
+          <Badge className="text-[10px] md:text-xs truncate max-w-[60%]" variant="secondary">
             {item.source}
           </Badge>
           {item.orderNumber && (
-            <span className="text-[10px] text-muted-foreground truncate max-w-[35%]">
+            <span className="text-[10px] md:text-xs text-muted-foreground truncate max-w-[35%]">
               #{item.orderNumber}
             </span>
           )}
         </div>
 
         {/* Quantity and Weight */}
-        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+        <div className="flex items-center gap-1 text-[10px] md:text-xs text-muted-foreground">
           <span className="flex-shrink-0">Qty: {item.quantity}</span>
           <span className="flex-shrink-0">•</span>
           <span className="flex-shrink-0">{item.weight}kg</span>
@@ -258,8 +258,8 @@ function CustomItemCard({
 
         {/* Customer Info */}
         {item.customerName && (
-          <div className="flex items-center text-[10px] min-w-0">
-            <Users className="h-2.5 w-2.5 mr-0.5 flex-shrink-0" />
+          <div className="flex items-center text-[10px] md:text-xs min-w-0">
+            <Users className="h-2.5 w-2.5 md:h-3 md:w-3 mr-0.5 md:mr-1 flex-shrink-0" />
             <span className="truncate min-w-0">{item.customerName}</span>
           </div>
         )}
@@ -289,27 +289,27 @@ function ConsolidationCard({
       className={`cursor-move hover:shadow-md transition-all bg-white dark:bg-gray-800 border-2 ${borderColor} overflow-hidden`}
       data-testid={`consolidation-${consolidation.id}`}
     >
-      <CardContent className="p-2.5 space-y-1.5">
+      <CardContent className="p-2 md:p-2.5 lg:p-3 space-y-1 md:space-y-1.5">
         {/* Header */}
         <div className="flex items-center justify-between gap-2 min-w-0">
           <div className="flex items-center gap-2 min-w-0">
             <Icon className="h-4 w-4 flex-shrink-0" />
-            <h4 className="font-bold text-sm truncate">{consolidation.name}</h4>
+            <h4 className="font-bold text-xs md:text-sm truncate">{consolidation.name}</h4>
           </div>
-          <Badge className="text-[10px] bg-green-100 text-green-800 flex-shrink-0">
+          <Badge className="text-[10px] md:text-xs bg-green-100 text-green-800 flex-shrink-0">
             {consolidation.items.length} items
           </Badge>
         </div>
 
         {/* Warehouse Info */}
-        <div className="flex items-center text-[10px] text-muted-foreground min-w-0">
-          <Building2 className="h-2.5 w-2.5 mr-0.5 flex-shrink-0" />
+        <div className="flex items-center text-[10px] md:text-xs text-muted-foreground min-w-0">
+          <Building2 className="h-2.5 w-2.5 md:h-3 md:w-3 mr-0.5 md:mr-1 flex-shrink-0" />
           <span className="truncate">{consolidation.warehouse}</span>
         </div>
 
         {/* Shipping Method */}
-        <div className="flex items-center text-[10px] min-w-0">
-          <Target className="h-2.5 w-2.5 mr-0.5 flex-shrink-0" />
+        <div className="flex items-center text-[10px] md:text-xs min-w-0">
+          <Target className="h-2.5 w-2.5 md:h-3 md:w-3 mr-0.5 md:mr-1 flex-shrink-0" />
           <span className="truncate">{consolidation.shippingMethod.replace('_', ' ')}</span>
         </div>
 
@@ -318,10 +318,10 @@ function ConsolidationCard({
           <div className="space-y-0.5 pt-1 border-t">
             {displayItems.map((item, idx) => (
               <div key={item.id} className="flex items-center justify-between text-xs gap-1 min-w-0">
-                <span className="text-muted-foreground truncate min-w-0 text-[11px]">
+                <span className="text-muted-foreground truncate min-w-0 text-[10px] md:text-[11px]">
                   {idx + 1}. {item.name}
                 </span>
-                <span className="text-muted-foreground flex-shrink-0 text-[11px]">
+                <span className="text-muted-foreground flex-shrink-0 text-[10px] md:text-[11px]">
                   x{item.quantity}
                 </span>
               </div>
@@ -338,16 +338,16 @@ function ConsolidationCard({
               e.stopPropagation();
               setExpanded(!expanded);
             }}
-            className="w-full h-5 text-[10px] py-0"
+            className="w-full h-5 md:h-6 text-[10px] md:text-xs py-0"
           >
             {expanded ? (
               <>
-                <ChevronUp className="h-3 w-3 mr-0.5" />
+                <ChevronUp className="h-2.5 w-2.5 md:h-3 md:w-3 mr-0.5" />
                 Show Less
               </>
             ) : (
               <>
-                <ChevronDown className="h-3 w-3 mr-0.5" />
+                <ChevronDown className="h-2.5 w-2.5 md:h-3 md:w-3 mr-0.5" />
                 +{consolidation.items.length - 5} More
               </>
             )}
@@ -384,32 +384,32 @@ function ShipmentCard({
       className={`${!isDelivered ? 'cursor-move' : ''} hover:shadow-md transition-all bg-white dark:bg-gray-800 overflow-hidden`}
       data-testid={`shipment-${shipment.id}`}
     >
-      <CardContent className="p-2.5 space-y-1.5">
+      <CardContent className="p-2 md:p-2.5 lg:p-3 space-y-1 md:space-y-1.5">
         {/* Header */}
         <div className="flex items-center justify-between gap-1 min-w-0">
           <Badge 
             variant={isDelivered ? "default" : "outline"} 
-            className={`text-[10px] flex-shrink-0 ${isDelivered ? 'bg-green-100 text-green-800' : ''}`}
+            className={`text-[10px] md:text-xs flex-shrink-0 ${isDelivered ? 'bg-green-100 text-green-800' : ''}`}
           >
             {isDelivered ? 'Delivered' : shipment.status}
           </Badge>
-          <span className="text-[10px] font-bold truncate">{shipment.carrier}</span>
+          <span className="text-[10px] md:text-xs font-bold truncate">{shipment.carrier}</span>
         </div>
 
         {/* Tracking Number */}
-        <h4 className="font-semibold text-xs truncate">{shipment.trackingNumber}</h4>
+        <h4 className="font-semibold text-xs md:text-sm truncate">{shipment.trackingNumber}</h4>
 
         {/* Route */}
-        <div className="flex items-center text-[10px] text-muted-foreground gap-0.5 min-w-0">
-          <span className="truncate flex-1 max-w-[35%]">{shipment.origin}</span>
-          <ArrowRight className="h-2.5 w-2.5 flex-shrink-0" />
-          <span className="truncate flex-1 max-w-[35%]">{shipment.destination}</span>
+        <div className="flex items-center text-[10px] md:text-xs text-muted-foreground gap-0.5 md:gap-1 min-w-0">
+          <span className="truncate flex-1 max-w-[35%] md:max-w-[40%]">{shipment.origin}</span>
+          <ArrowRight className="h-2.5 w-2.5 md:h-3 md:w-3 flex-shrink-0" />
+          <span className="truncate flex-1 max-w-[35%] md:max-w-[40%]">{shipment.destination}</span>
         </div>
 
         {/* Current Location */}
         {shipment.currentLocation && !isDelivered && (
-          <div className="flex items-center text-[10px] min-w-0">
-            <MapPin className="h-2.5 w-2.5 mr-0.5 flex-shrink-0" />
+          <div className="flex items-center text-[10px] md:text-xs min-w-0">
+            <MapPin className="h-2.5 w-2.5 md:h-3 md:w-3 mr-0.5 md:mr-1 flex-shrink-0" />
             <span className="truncate min-w-0">{shipment.currentLocation}</span>
           </div>
         )}
@@ -418,22 +418,22 @@ function ShipmentCard({
         <div className="flex items-center justify-between pt-1.5 border-t mt-1.5">
           {isDelivered && shipment.deliveredAt ? (
             <>
-              <span className="text-xs">
-                <Calendar className="h-3 w-3 inline mr-1" />
+              <span className="text-[10px] md:text-xs">
+                <Calendar className="h-2.5 w-2.5 md:h-3 md:w-3 inline mr-0.5 md:mr-1" />
                 {format(new Date(shipment.deliveredAt), 'MMM d, yyyy')}
               </span>
-              <Button variant="ghost" size="sm" className="h-6 px-2 text-xs">
-                <Eye className="h-3 w-3 mr-1" />
+              <Button variant="ghost" size="sm" className="h-5 md:h-6 px-1 md:px-2 text-[10px] md:text-xs py-0">
+                <Eye className="h-2.5 w-2.5 md:h-3 md:w-3 mr-0.5 md:mr-1" />
                 View
               </Button>
             </>
           ) : (
             <>
-              <span className="text-[10px] font-semibold flex-shrink-0">
+              <span className="text-[10px] md:text-xs font-semibold flex-shrink-0">
                 ${parseFloat(shipment.shippingCost).toFixed(0)}
               </span>
               {shipment.estimatedDelivery && (
-                <span className="text-[10px] text-muted-foreground flex-shrink-0">
+                <span className="text-[10px] md:text-xs text-muted-foreground flex-shrink-0">
                   {getDaysUntil(shipment.estimatedDelivery)}
                 </span>
               )}
@@ -690,7 +690,7 @@ export default function ImportKanbanDashboard() {
       </Card>
 
       {/* Kanban Board */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3 lg:gap-4">
         {columns.map((column) => (
           <div
             key={column.id}
@@ -715,8 +715,8 @@ export default function ImportKanbanDashboard() {
             </div>
 
             {/* Column Content */}
-            <ScrollArea className="h-[600px]">
-              <div className="space-y-3 px-3 py-2">
+            <ScrollArea className="h-[400px] md:h-[500px] lg:h-[600px]">
+              <div className="space-y-2 md:space-y-3 px-2 md:px-3 py-2">
                 {/* Supplier Processing Column */}
                 {column.id === 'processing' && filteredPurchases.map((purchase) => (
                   <PurchaseCard 
