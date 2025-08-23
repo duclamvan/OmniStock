@@ -73,6 +73,15 @@ export default function CreatePurchase() {
   const [notes, setNotes] = useState("");
   const [shippingCost, setShippingCost] = useState(0);
   
+  // Exchange rates state
+  const [exchangeRates, setExchangeRates] = useState<{[key: string]: number}>({
+    USD: 1,
+    EUR: 0.92,
+    CZK: 23.5,
+    VND: 24500,
+    CNY: 7.2
+  });
+  
   // New supplier dialog
   const [newSupplierDialogOpen, setNewSupplierDialogOpen] = useState(false);
   const [newSupplierName, setNewSupplierName] = useState("");
@@ -108,6 +117,28 @@ export default function CreatePurchase() {
       .toISOString()
       .slice(0, 16);
     setPurchaseDate(localDateTime);
+  }, []);
+  
+  // Fetch exchange rates
+  useEffect(() => {
+    const fetchExchangeRates = async () => {
+      try {
+        const response = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json');
+        const data = await response.json();
+        
+        setExchangeRates({
+          USD: 1,
+          EUR: data.usd.eur || 0.92,
+          CZK: data.usd.czk || 23.5,
+          VND: data.usd.vnd || 24500,
+          CNY: data.usd.cny || 7.2
+        });
+      } catch (error) {
+        console.error('Error fetching exchange rates:', error);
+      }
+    };
+    
+    fetchExchangeRates();
   }, []);
 
   // Click outside to close dropdowns
@@ -174,6 +205,24 @@ export default function CreatePurchase() {
     VND: "₫",
     CNY: "¥"
   }[currency] || "$";
+  
+  // Convert to USD
+  const convertToUSD = (amount: number, fromCurrency: string) => {
+    if (fromCurrency === "USD") return amount;
+    const fromRate = exchangeRates[fromCurrency] || 1;
+    return amount / fromRate;
+  };
+  
+  // Convert from USD to any currency
+  const convertFromUSD = (amountInUSD: number, toCurrency: string) => {
+    const toRate = exchangeRates[toCurrency] || 1;
+    return amountInUSD * toRate;
+  };
+  
+  // USD equivalents
+  const subtotalUSD = convertToUSD(subtotal, currency);
+  const shippingCostUSD = convertToUSD(shippingCost, currency);
+  const grandTotalUSD = convertToUSD(grandTotal, currency);
 
   // Create new supplier mutation
   const createSupplierMutation = useMutation({
@@ -409,11 +458,40 @@ export default function CreatePurchase() {
       notes: notes || null,
       shippingCost,
       totalCost: grandTotal,
+      // Store converted prices
+      prices: {
+        original: {
+          currency,
+          subtotal,
+          shippingCost,
+          total: grandTotal
+        },
+        usd: {
+          subtotal: subtotalUSD,
+          shippingCost: shippingCostUSD,
+          total: grandTotalUSD
+        },
+        eur: {
+          subtotal: convertFromUSD(subtotalUSD, "EUR"),
+          shippingCost: convertFromUSD(shippingCostUSD, "EUR"),
+          total: convertFromUSD(grandTotalUSD, "EUR")
+        },
+        czk: {
+          subtotal: convertFromUSD(subtotalUSD, "CZK"),
+          shippingCost: convertFromUSD(shippingCostUSD, "CZK"),
+          total: convertFromUSD(grandTotalUSD, "CZK")
+        }
+      },
+      exchangeRates: {
+        ...exchangeRates,
+        date: new Date().toISOString()
+      },
       items: items.map(item => ({
         name: item.name,
         sku: item.sku || null,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
+        unitPriceUSD: convertToUSD(item.unitPrice, currency),
         weight: item.weight,
         dimensions: item.dimensions || null,
         notes: item.notes || null
@@ -762,7 +840,7 @@ export default function CreatePurchase() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="unitPrice">Unit Price ({currency}) *</Label>
+                  <Label htmlFor="unitPrice">Unit Price *</Label>
                   <Input
                     id="unitPrice"
                     type="number"
@@ -937,6 +1015,12 @@ export default function CreatePurchase() {
                   <span className="font-bold">Grand Total:</span>
                   <span className="font-bold text-green-600">{currencySymbol}{grandTotal.toFixed(2)}</span>
                 </div>
+                {currency !== "USD" && (
+                  <div className="flex justify-between text-sm mt-1">
+                    <span className="text-muted-foreground">USD Equivalent:</span>
+                    <span className="text-muted-foreground">${grandTotalUSD.toFixed(2)}</span>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -969,6 +1053,15 @@ export default function CreatePurchase() {
                 <div>
                   <p className="font-medium">Processing Time</p>
                   <p className="text-muted-foreground">Estimated arrival calculated from purchase date + processing time</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <Calculator className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                <div>
+                  <p className="font-medium">Exchange Rates</p>
+                  <p className="text-muted-foreground text-xs">
+                    1 USD = {exchangeRates.EUR.toFixed(3)} EUR / {exchangeRates.CZK.toFixed(1)} CZK
+                  </p>
                 </div>
               </div>
             </CardContent>
