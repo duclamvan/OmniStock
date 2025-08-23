@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -58,23 +59,15 @@ export default function SupplierProcessing() {
   const queryClient = useQueryClient();
 
   // Fetch purchases
-  const { data: purchases = [], isLoading } = useQuery({
-    queryKey: ['/api/imports/purchases'],
-    queryFn: async () => {
-      const response = await apiRequest('/api/imports/purchases');
-      return response.json() as Promise<Purchase[]>;
-    }
+  const { data: purchases = [], isLoading } = useQuery<Purchase[]>({
+    queryKey: ['/api/imports/purchases']
   });
 
 
   // Add item mutation
   const addItemMutation = useMutation({
     mutationFn: async ({ purchaseId, item }: { purchaseId: number; item: any }) => {
-      const response = await apiRequest(`/api/imports/purchases/${purchaseId}/items`, {
-        method: 'POST',
-        body: JSON.stringify(item),
-        headers: { 'Content-Type': 'application/json' }
-      });
+      const response = await apiRequest('/api/imports/purchases/' + purchaseId + '/items', 'POST', item);
       return response.json();
     },
     onSuccess: () => {
@@ -91,11 +84,7 @@ export default function SupplierProcessing() {
   // Update status mutation
   const updateStatusMutation = useMutation({
     mutationFn: async ({ purchaseId, status }: { purchaseId: number; status: string }) => {
-      const response = await apiRequest(`/api/imports/purchases/${purchaseId}/status`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status }),
-        headers: { 'Content-Type': 'application/json' }
-      });
+      const response = await apiRequest('/api/imports/purchases/' + purchaseId + '/status', 'PATCH', { status });
       return response.json();
     },
     onSuccess: () => {
@@ -110,9 +99,7 @@ export default function SupplierProcessing() {
   // Delete purchase mutation
   const deletePurchaseMutation = useMutation({
     mutationFn: async (purchaseId: number) => {
-      const response = await apiRequest(`/api/imports/purchases/${purchaseId}`, {
-        method: 'DELETE'
-      });
+      const response = await apiRequest('/api/imports/purchases/' + purchaseId, 'DELETE');
       return response.json();
     },
     onSuccess: () => {
