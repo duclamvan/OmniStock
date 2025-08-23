@@ -1015,23 +1015,23 @@ export default function CreatePurchase() {
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => setDisplayCurrency("USD")}>
                       <Check className={cn("mr-2 h-4 w-4", displayCurrency === "USD" ? "opacity-100" : "opacity-0")} />
-                      View in USD
+                      View in USD{currency === "USD" ? " (original)" : ""}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setDisplayCurrency("EUR")}>
                       <Check className={cn("mr-2 h-4 w-4", displayCurrency === "EUR" ? "opacity-100" : "opacity-0")} />
-                      View in EUR
+                      View in EUR{currency === "EUR" ? " (original)" : ""}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setDisplayCurrency("CZK")}>
                       <Check className={cn("mr-2 h-4 w-4", displayCurrency === "CZK" ? "opacity-100" : "opacity-0")} />
-                      View in CZK
+                      View in CZK{currency === "CZK" ? " (original)" : ""}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setDisplayCurrency("VND")}>
                       <Check className={cn("mr-2 h-4 w-4", displayCurrency === "VND" ? "opacity-100" : "opacity-0")} />
-                      View in VND
+                      View in VND{currency === "VND" ? " (original)" : ""}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setDisplayCurrency("CNY")}>
                       <Check className={cn("mr-2 h-4 w-4", displayCurrency === "CNY" ? "opacity-100" : "opacity-0")} />
-                      View in CNY
+                      View in CNY{currency === "CNY" ? " (original)" : ""}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
