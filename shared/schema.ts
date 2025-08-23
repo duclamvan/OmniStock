@@ -18,6 +18,7 @@ export const users = pgTable('users', {
 export const importPurchases = pgTable('import_purchases', {
   id: serial('id').primaryKey(),
   supplier: text('supplier').notNull(),
+  location: text('location').notNull().default('China'), // Europe, USA, China, Vietnam
   trackingNumber: text('tracking_number'),
   estimatedArrival: timestamp('estimated_arrival'),
   notes: text('notes'),
