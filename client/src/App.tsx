@@ -57,6 +57,7 @@ import EditPackingMaterial from "@/pages/PackingMaterials/EditPackingMaterial";
 import Files from "@/pages/Files/Files";
 // Import pages
 import SupplierProcessing from "@/pages/Imports/SupplierProcessing";
+import CreatePurchase from "@/pages/Imports/CreatePurchase";
 import AtWarehouse from "@/pages/Imports/AtWarehouse";
 import InternationalTransit from "@/pages/Imports/InternationalTransit";
 import ImportKanbanDashboard from "@/pages/Imports/ImportKanbanDashboard";
@@ -141,6 +142,7 @@ function Router() {
         <Route path="/files" component={Files} />
         {/* Import Management Routes */}
         <Route path="/imports/kanban" component={ImportKanbanDashboard} />
+        <Route path="/imports/supplier-processing/create" component={CreatePurchase} />
         <Route path="/imports/supplier-processing" component={SupplierProcessing} />
         <Route path="/imports/at-warehouse" component={AtWarehouse} />
         <Route path="/imports/international-transit" component={InternationalTransit} />

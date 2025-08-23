@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -6,8 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Package2, Truck, MapPin, Clock, DollarSign, Users, Edit, Trash2 } from "lucide-react";
@@ -51,7 +51,6 @@ const statusColors: Record<string, string> = {
 };
 
 export default function SupplierProcessing() {
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
   const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
   const [expandedPurchase, setExpandedPurchase] = useState<number | null>(null);
@@ -67,25 +66,6 @@ export default function SupplierProcessing() {
     }
   });
 
-  // Create purchase mutation
-  const createPurchaseMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const response = await apiRequest('/api/imports/purchases', {
-        method: 'POST',
-        body: JSON.stringify(data),
-        headers: { 'Content-Type': 'application/json' }
-      });
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases'] });
-      setIsCreateModalOpen(false);
-      toast({ title: "Success", description: "Purchase created successfully" });
-    },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to create purchase", variant: "destructive" });
-    }
-  });
 
   // Add item mutation
   const addItemMutation = useMutation({
@@ -144,21 +124,6 @@ export default function SupplierProcessing() {
     }
   });
 
-  const handleCreatePurchase = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    
-    const data = {
-      supplier: formData.get('supplier') as string,
-      trackingNumber: formData.get('trackingNumber') as string || null,
-      estimatedArrival: formData.get('estimatedArrival') ? new Date(formData.get('estimatedArrival') as string).toISOString() : null,
-      notes: formData.get('notes') as string || null,
-      shippingCost: parseFloat(formData.get('shippingCost') as string) || 0,
-      totalCost: parseFloat(formData.get('totalCost') as string) || 0,
-    };
-    
-    createPurchaseMutation.mutate(data);
-  };
 
   const handleAddItem = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -213,95 +178,12 @@ export default function SupplierProcessing() {
           <h1 className="text-3xl font-bold">Supplier Processing</h1>
           <p className="text-muted-foreground">Manage import purchases from suppliers</p>
         </div>
-        <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-          <DialogTrigger asChild>
-            <Button data-testid="button-create-purchase">
-              <Plus className="h-4 w-4 mr-2" />
-              Create Purchase
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
-              <DialogTitle>Create New Purchase</DialogTitle>
-              <DialogDescription>
-                Create a new purchase order from a supplier
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleCreatePurchase} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="supplier">Supplier Name *</Label>
-                  <Input 
-                    id="supplier" 
-                    name="supplier" 
-                    required 
-                    data-testid="input-supplier"
-                    placeholder="Enter supplier name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="trackingNumber">Tracking Number</Label>
-                  <Input 
-                    id="trackingNumber" 
-                    name="trackingNumber" 
-                    data-testid="input-tracking"
-                    placeholder="Optional tracking number"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="shippingCost">Shipping Cost ($)</Label>
-                  <Input 
-                    id="shippingCost" 
-                    name="shippingCost" 
-                    type="number" 
-                    step="0.01" 
-                    data-testid="input-shipping-cost"
-                    placeholder="0.00"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="totalCost">Total Cost ($)</Label>
-                  <Input 
-                    id="totalCost" 
-                    name="totalCost" 
-                    type="number" 
-                    step="0.01" 
-                    data-testid="input-total-cost"
-                    placeholder="0.00"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="estimatedArrival">Estimated Arrival</Label>
-                <Input 
-                  id="estimatedArrival" 
-                  name="estimatedArrival" 
-                  type="datetime-local" 
-                  data-testid="input-estimated-arrival"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
-                <Textarea 
-                  id="notes" 
-                  name="notes" 
-                  data-testid="textarea-notes"
-                  placeholder="Additional notes about this purchase..."
-                />
-              </div>
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsCreateModalOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={createPurchaseMutation.isPending} data-testid="button-submit-purchase">
-                  {createPurchaseMutation.isPending ? "Creating..." : "Create Purchase"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <Link href="/imports/supplier-processing/create">
+          <Button data-testid="button-create-purchase">
+            <Plus className="h-4 w-4 mr-2" />
+            Create Purchase
+          </Button>
+        </Link>
       </div>
 
       {/* Stats Cards */}
@@ -364,10 +246,12 @@ export default function SupplierProcessing() {
               <Package2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">No purchases found</h3>
               <p className="text-muted-foreground mb-4">Create your first purchase order to get started</p>
-              <Button onClick={() => setIsCreateModalOpen(true)} data-testid="button-create-first-purchase">
-                <Plus className="h-4 w-4 mr-2" />
-                Create Purchase
-              </Button>
+              <Link href="/imports/supplier-processing/create">
+                <Button data-testid="button-create-first-purchase">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Purchase
+                </Button>
+              </Link>
             </div>
           ) : (
             <div className="space-y-4">
