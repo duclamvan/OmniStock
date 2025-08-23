@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DataTable, DataTableColumn } from "@/components/ui/data-table";
-import { Plus, Package2, Truck, MapPin, Clock, DollarSign, Users, Edit, Trash2, ChevronDown, ChevronUp, Filter, Search } from "lucide-react";
+import { Plus, Package2, Truck, MapPin, Clock, CreditCard, Users, Edit, Trash2, ChevronDown, ChevronUp, Filter, Search } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -414,7 +414,7 @@ export default function SupplierProcessing() {
               </Select>
               <Select value={locationFilter} onValueChange={setLocationFilter}>
                 <SelectTrigger className="w-full md:w-[150px]" data-testid="select-location-filter">
-                  <Globe className="h-4 w-4 mr-2" />
+                  <MapPin className="h-4 w-4 mr-2" />
                   <SelectValue placeholder="Filter by location" />
                 </SelectTrigger>
                 <SelectContent>
@@ -587,14 +587,14 @@ export default function SupplierProcessing() {
                           </span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <DollarSign className="h-3 w-3 text-muted-foreground" />
+                          <CreditCard className="h-3 w-3 text-muted-foreground" />
                           <span className="font-semibold">
                             Grand Total: {purchase.purchaseCurrency || 'USD'} {purchase.totalCost}
                           </span>
                         </div>
                         {purchase.paymentCurrency && purchase.paymentCurrency !== purchase.purchaseCurrency && (
                           <div className="flex items-center gap-1">
-                            <DollarSign className="h-3 w-3 text-muted-foreground" />
+                            <CreditCard className="h-3 w-3 text-muted-foreground" />
                             <span className="text-muted-foreground">
                               Paid: {purchase.paymentCurrency} {purchase.totalPaid || '0'}
                             </span>
