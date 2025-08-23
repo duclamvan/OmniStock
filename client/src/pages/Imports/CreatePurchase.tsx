@@ -57,6 +57,7 @@ export default function CreatePurchase() {
   const queryClient = useQueryClient();
   const supplierDropdownRef = useRef<HTMLDivElement>(null);
   const productDropdownRef = useRef<HTMLDivElement>(null);
+  const locationDropdownRef = useRef<HTMLDivElement>(null);
 
   // Form state
   const [currency, setCurrency] = useState("USD");
@@ -82,6 +83,11 @@ export default function CreatePurchase() {
   
   // Product search state
   const [productDropdownOpen, setProductDropdownOpen] = useState(false);
+  
+  // Location search state
+  const [locationDropdownOpen, setLocationDropdownOpen] = useState(false);
+  const [locationSuggestions, setLocationSuggestions] = useState<any[]>([]);
+  const [locationSearchTimeout, setLocationSearchTimeout] = useState<NodeJS.Timeout | null>(null);
   
   // Items state
   const [items, setItems] = useState<PurchaseItem[]>([]);
@@ -112,6 +118,9 @@ export default function CreatePurchase() {
       }
       if (productDropdownRef.current && !productDropdownRef.current.contains(event.target as Node)) {
         setProductDropdownOpen(false);
+      }
+      if (locationDropdownRef.current && !locationDropdownRef.current.contains(event.target as Node)) {
+        setLocationDropdownOpen(false);
       }
     };
 
@@ -243,6 +252,52 @@ export default function CreatePurchase() {
       dimensions: product.dimensions || currentItem.dimensions || ""
     });
     setProductDropdownOpen(false);
+  };
+
+  // Search for locations using Nominatim API
+  const searchLocations = async (query: string) => {
+    if (query.length < 2) {
+      setLocationSuggestions([]);
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`
+      );
+      const data = await response.json();
+      
+      // Format suggestions to show city and country
+      const formatted = data.map((item: any) => ({
+        display_name: item.display_name,
+        city: item.address?.city || item.address?.town || item.address?.village || item.address?.state || '',
+        country: item.address?.country || '',
+        formatted: `${item.address?.city || item.address?.town || item.address?.village || item.address?.state || ''}, ${item.address?.country || ''}`.replace(/^, |, $/, '')
+      })).filter((item: any) => item.formatted && item.formatted !== ', ');
+      
+      setLocationSuggestions(formatted);
+    } catch (error) {
+      console.error('Error fetching location suggestions:', error);
+      setLocationSuggestions([]);
+    }
+  };
+
+  // Handle location input change with debouncing
+  const handleLocationChange = (value: string) => {
+    setSupplierLocation(value);
+    setLocationDropdownOpen(true);
+    
+    // Clear existing timeout
+    if (locationSearchTimeout) {
+      clearTimeout(locationSearchTimeout);
+    }
+    
+    // Set new timeout for debounced search
+    const timeout = setTimeout(() => {
+      searchLocations(value);
+    }, 300);
+    
+    setLocationSearchTimeout(timeout);
   };
 
   const addItem = () => {
@@ -505,13 +560,37 @@ export default function CreatePurchase() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="supplier-location">Supplier Location</Label>
-                <Input
-                  id="supplier-location"
-                  value={supplierLocation}
-                  onChange={(e) => setSupplierLocation(e.target.value)}
-                  placeholder="e.g., Shenzhen, China"
-                  data-testid="input-supplier-location"
-                />
+                <div className="relative" ref={locationDropdownRef}>
+                  <Input
+                    id="supplier-location"
+                    value={supplierLocation}
+                    onChange={(e) => handleLocationChange(e.target.value)}
+                    onFocus={() => {
+                      setLocationDropdownOpen(true);
+                      if (supplierLocation) searchLocations(supplierLocation);
+                    }}
+                    placeholder="e.g., Shenzhen, China"
+                    data-testid="input-supplier-location"
+                  />
+                  {locationDropdownOpen && locationSuggestions.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
+                      {locationSuggestions.map((location, index) => (
+                        <button
+                          key={index}
+                          className="w-full px-3 py-2 text-left hover:bg-accent"
+                          onClick={() => {
+                            setSupplierLocation(location.formatted);
+                            setLocationDropdownOpen(false);
+                            setLocationSuggestions([]);
+                          }}
+                        >
+                          <div className="font-medium">{location.formatted}</div>
+                          <div className="text-xs text-muted-foreground">{location.display_name}</div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
