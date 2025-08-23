@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -17,7 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   Plus, Package, Trash2, Calculator, DollarSign, 
   Truck, Calendar, FileText, Save, ArrowLeft, AlertCircle,
-  Check, ChevronsUpDown, UserPlus, Clock, Search
+  Check, UserPlus, Clock, Search
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -57,13 +57,13 @@ export default function CreatePurchase() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const supplierDropdownRef = useRef<HTMLDivElement>(null);
 
   // Form state
   const [supplier, setSupplier] = useState("");
   const [supplierId, setSupplierId] = useState<string | null>(null);
   const [supplierLink, setSupplierLink] = useState("");
-  const [supplierOpen, setSupplierOpen] = useState(false);
-  const [supplierSearch, setSupplierSearch] = useState("");
+  const [supplierDropdownOpen, setSupplierDropdownOpen] = useState(false);
   const [trackingNumber, setTrackingNumber] = useState("");
   const [purchaseDate, setPurchaseDate] = useState("");
   const [processingTime, setProcessingTime] = useState("");
@@ -104,6 +104,20 @@ export default function CreatePurchase() {
     setPurchaseDate(localDateTime);
   }, []);
 
+  // Click outside to close supplier dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (supplierDropdownRef.current && !supplierDropdownRef.current.contains(event.target as Node)) {
+        setSupplierDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   // Fetch suppliers
   const { data: suppliers = [] } = useQuery<Supplier[]>({
     queryKey: ['/api/suppliers']
@@ -112,6 +126,12 @@ export default function CreatePurchase() {
   // Fetch products
   const { data: products = [] } = useQuery<Product[]>({
     queryKey: ['/api/products']
+  });
+
+  // Filter suppliers based on search
+  const filteredSuppliers = suppliers.filter(s => {
+    if (!supplier) return false;
+    return s.name.toLowerCase().includes(supplier.toLowerCase());
   });
 
   // Filter products based on search with Vietnamese diacritics support
@@ -384,71 +404,64 @@ export default function CreatePurchase() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="supplier">Supplier Name *</Label>
-                  <Popover open={supplierOpen} onOpenChange={setSupplierOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={supplierOpen}
-                        className="w-full justify-between"
-                        data-testid="input-supplier"
-                      >
-                        {supplier || "Select supplier..."}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-full p-0">
-                      <Command>
-                        <CommandInput 
-                          placeholder="Search suppliers..." 
-                          value={supplierSearch}
-                          onValueChange={setSupplierSearch}
-                        />
-                        <CommandList>
-                          <CommandEmpty>No supplier found.</CommandEmpty>
-                          <CommandGroup>
-                            {suppliers
-                              .filter(s => s.name.toLowerCase().includes(supplierSearch.toLowerCase()))
-                              .map((s) => (
-                                <CommandItem
-                                  key={s.id}
-                                  value={s.name}
-                                  onSelect={() => {
-                                    setSupplier(s.name);
-                                    setSupplierId(s.id);
-                                    setSupplierLink(s.website || "");
-                                    setSupplierOpen(false);
-                                    setSupplierSearch("");
-                                  }}
-                                >
-                                  <Check
-                                    className={cn(
-                                      "mr-2 h-4 w-4",
-                                      supplier === s.name ? "opacity-100" : "opacity-0"
-                                    )}
-                                  />
-                                  {s.name}
-                                </CommandItem>
-                              ))}
-                          </CommandGroup>
-                          <CommandGroup>
-                            <CommandItem
-                              onSelect={() => {
-                                setNewSupplierName(supplierSearch);
-                                setNewSupplierDialogOpen(true);
-                                setSupplierOpen(false);
-                                setSupplierSearch("");
+                  <div className="relative" ref={supplierDropdownRef}>
+                    <Input
+                      id="supplier"
+                      value={supplier}
+                      onChange={(e) => {
+                        setSupplier(e.target.value);
+                        setSupplierId(null);
+                        setSupplierLink("");
+                        setSupplierDropdownOpen(true);
+                      }}
+                      onFocus={() => setSupplierDropdownOpen(true)}
+                      placeholder="Type to search suppliers..."
+                      data-testid="input-supplier"
+                    />
+                    {supplierDropdownOpen && supplier && (
+                      <div className="absolute z-10 w-full mt-1 bg-background border rounded-md shadow-lg max-h-60 overflow-auto">
+                        {filteredSuppliers.length > 0 ? (
+                          filteredSuppliers.map((s) => (
+                            <button
+                              key={s.id}
+                              className="w-full px-3 py-2 text-left hover:bg-accent flex items-center"
+                              onClick={() => {
+                                setSupplier(s.name);
+                                setSupplierId(s.id);
+                                setSupplierLink(s.website || "");
+                                setSupplierDropdownOpen(false);
                               }}
-                              className="text-primary"
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  supplierId === s.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {s.name}
+                            </button>
+                          ))
+                        ) : (
+                          <div className="p-2">
+                            <p className="text-sm text-muted-foreground mb-2">No supplier found</p>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setNewSupplierName(supplier);
+                                setNewSupplierDialogOpen(true);
+                                setSupplierDropdownOpen(false);
+                              }}
+                              className="w-full"
                             >
                               <UserPlus className="mr-2 h-4 w-4" />
-                              Add new supplier "{supplierSearch || "..."}"
-                            </CommandItem>
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
+                              Add new supplier "{supplier}"
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="supplier-link">Supplier Link</Label>
