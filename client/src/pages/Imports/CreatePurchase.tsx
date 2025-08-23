@@ -973,11 +973,11 @@ export default function CreatePurchase() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Item</TableHead>
-                        <TableHead className="text-center w-24">Qty</TableHead>
-                        <TableHead className="text-right w-32">Unit Price</TableHead>
-                        <TableHead className="text-right w-32">Total</TableHead>
-                        <TableHead className="text-right w-36">Cost w/ Shipping</TableHead>
-                        <TableHead className="w-20"></TableHead>
+                        <TableHead className="text-center w-16">Qty</TableHead>
+                        <TableHead className="text-right w-24">Unit Price</TableHead>
+                        <TableHead className="text-right w-24">Total</TableHead>
+                        <TableHead className="text-right w-28">Cost w/ Shipping</TableHead>
+                        <TableHead className="w-12"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
