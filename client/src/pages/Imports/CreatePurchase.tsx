@@ -21,7 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   Plus, Package, Trash2, Calculator, DollarSign, 
   Truck, Calendar, FileText, Save, ArrowLeft, AlertCircle,
-  Check, UserPlus, Clock, Search, MoreVertical, Edit
+  Check, UserPlus, Clock, Search, MoreVertical, Edit, X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -118,6 +118,10 @@ export default function CreatePurchase() {
     dimensions: "",
     notes: ""
   });
+  
+  // Edit state
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editingItem, setEditingItem] = useState<Partial<PurchaseItem>>({});
 
   // Set default purchase date to now
   useEffect(() => {
@@ -414,6 +418,44 @@ export default function CreatePurchase() {
   const removeItem = (id: string) => {
     const updatedItems = items.filter(item => item.id !== id);
     updateItemsWithShipping(updatedItems);
+  };
+  
+  const startEditItem = (item: PurchaseItem) => {
+    setEditingItemId(item.id);
+    setEditingItem({
+      name: item.name,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice
+    });
+  };
+  
+  const saveEditItem = () => {
+    if (!editingItemId) return;
+    
+    const updatedItems = items.map(item => {
+      if (item.id === editingItemId) {
+        const totalPrice = (editingItem.quantity || 0) * (editingItem.unitPrice || 0);
+        
+        return {
+          ...item,
+          name: editingItem.name || item.name,
+          quantity: editingItem.quantity || item.quantity,
+          unitPrice: editingItem.unitPrice || item.unitPrice,
+          totalPrice,
+          costWithShipping: 0 // Will be recalculated by updateItemsWithShipping
+        };
+      }
+      return item;
+    });
+    
+    updateItemsWithShipping(updatedItems);
+    setEditingItemId(null);
+    setEditingItem({});
+  };
+  
+  const cancelEditItem = () => {
+    setEditingItemId(null);
+    setEditingItem({});
   };
 
   const updateItemsWithShipping = (updatedItems: PurchaseItem[]) => {
@@ -940,69 +982,127 @@ export default function CreatePurchase() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {items.map((item) => (
-                        <TableRow key={item.id}>
-                          <TableCell className="font-medium">
-                            <div className="space-y-1">
-                              <div className="font-semibold">{item.name}</div>
-                              {item.notes && (
-                                <div className="text-xs text-muted-foreground">{item.notes}</div>
+                      {items.map((item) => {
+                        const isEditing = editingItemId === item.id;
+                        
+                        return (
+                          <TableRow key={item.id}>
+                            <TableCell className="font-medium">
+                              {isEditing ? (
+                                <Input
+                                  value={editingItem.name || ''}
+                                  onChange={(e) => setEditingItem({...editingItem, name: e.target.value})}
+                                  className="h-8"
+                                  autoFocus
+                                />
+                              ) : (
+                                <div className="space-y-1">
+                                  <div className="font-semibold">{item.name}</div>
+                                  {item.notes && (
+                                    <div className="text-xs text-muted-foreground">{item.notes}</div>
+                                  )}
+                                  {item.dimensions && (
+                                    <div className="text-xs text-muted-foreground">Dimensions: {item.dimensions}</div>
+                                  )}
+                                </div>
                               )}
-                              {item.dimensions && (
-                                <div className="text-xs text-muted-foreground">Dimensions: {item.dimensions}</div>
+                            </TableCell>
+                            <TableCell>
+                              <span className="font-mono text-sm">{item.sku || '-'}</span>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              {isEditing ? (
+                                <Input
+                                  type="number"
+                                  value={editingItem.quantity || 0}
+                                  onChange={(e) => setEditingItem({...editingItem, quantity: parseInt(e.target.value) || 0})}
+                                  className="h-8 w-20 mx-auto"
+                                  min="1"
+                                />
+                              ) : (
+                                <span className="font-semibold">{item.quantity}</span>
                               )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <span className="font-mono text-sm">{item.sku || '-'}</span>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <span className="font-semibold">{item.quantity}</span>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <span className="font-mono">{currencySymbol}{item.unitPrice.toFixed(2)}</span>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <span className="font-semibold">{currencySymbol}{item.totalPrice.toFixed(2)}</span>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <span className="text-green-600 font-semibold">
-                              {currencySymbol}{item.costWithShipping.toFixed(2)}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  // Edit functionality can be added here
-                                  console.log('Edit item:', item.id);
-                                }}
-                                data-testid={`button-edit-${item.id}`}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon">
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem 
-                                    onClick={() => removeItem(item.id)}
-                                    className="text-destructive focus:text-destructive"
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {isEditing ? (
+                                <Input
+                                  type="number"
+                                  value={editingItem.unitPrice || 0}
+                                  onChange={(e) => setEditingItem({...editingItem, unitPrice: parseFloat(e.target.value) || 0})}
+                                  className="h-8 w-24 ml-auto"
+                                  step="0.01"
+                                  min="0"
+                                />
+                              ) : (
+                                <span className="font-mono">{currencySymbol}{item.unitPrice.toFixed(2)}</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <span className="font-semibold">
+                                {currencySymbol}
+                                {isEditing 
+                                  ? ((editingItem.quantity || 0) * (editingItem.unitPrice || 0)).toFixed(2)
+                                  : item.totalPrice.toFixed(2)
+                                }
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <span className="text-green-600 font-semibold">
+                                {currencySymbol}{item.costWithShipping.toFixed(2)}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              {isEditing ? (
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={saveEditItem}
+                                    data-testid={`button-save-${item.id}`}
                                   >
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Delete Item
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                                    <Check className="h-4 w-4 text-green-600" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={cancelEditItem}
+                                    data-testid={`button-cancel-${item.id}`}
+                                  >
+                                    <X className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => startEditItem(item)}
+                                    data-testid={`button-edit-${item.id}`}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="icon">
+                                        <MoreVertical className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem 
+                                        onClick={() => removeItem(item.id)}
+                                        className="text-destructive focus:text-destructive"
+                                      >
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Delete Item
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                     <TableFooter>
                       <TableRow>
