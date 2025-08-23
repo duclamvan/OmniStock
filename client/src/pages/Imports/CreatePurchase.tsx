@@ -31,7 +31,6 @@ interface PurchaseItem {
   sku: string;
   quantity: number;
   unitPrice: number;
-  weight: number;
   dimensions: string;
   notes: string;
   totalPrice: number;
@@ -114,7 +113,6 @@ export default function CreatePurchase() {
     sku: "",
     quantity: 1,
     unitPrice: 0,
-    weight: 0,
     dimensions: "",
     notes: ""
   });
@@ -201,7 +199,6 @@ export default function CreatePurchase() {
 
   // Calculated values
   const subtotal = items.reduce((sum, item) => sum + item.totalPrice, 0);
-  const totalWeight = items.reduce((sum, item) => sum + (item.weight * item.quantity), 0);
   const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
   const shippingPerItem = totalQuantity > 0 ? shippingCost / totalQuantity : 0;
   const grandTotal = subtotal + shippingCost;
@@ -321,7 +318,6 @@ export default function CreatePurchase() {
       name: product.name,
       sku: product.sku || "",
       unitPrice: product.price || currentItem.unitPrice || 0,
-      weight: product.weight || currentItem.weight || 0,
       dimensions: product.dimensions || currentItem.dimensions || ""
     });
     setProductDropdownOpen(false);
@@ -389,7 +385,6 @@ export default function CreatePurchase() {
       sku: currentItem.sku || "",
       quantity: currentItem.quantity || 1,
       unitPrice: currentItem.unitPrice || 0,
-      weight: currentItem.weight || 0,
       dimensions: currentItem.dimensions || "",
       notes: currentItem.notes || "",
       totalPrice: (currentItem.quantity || 1) * (currentItem.unitPrice || 0),
@@ -405,7 +400,6 @@ export default function CreatePurchase() {
       sku: "",
       quantity: 1,
       unitPrice: 0,
-      weight: 0,
       dimensions: "",
       notes: ""
     });
@@ -413,6 +407,21 @@ export default function CreatePurchase() {
 
   const removeItem = (id: string) => {
     const updatedItems = items.filter(item => item.id !== id);
+    updateItemsWithShipping(updatedItems);
+  };
+  
+  const updateItem = (id: string, field: keyof PurchaseItem, value: any) => {
+    const updatedItems = items.map(item => {
+      if (item.id === id) {
+        const updatedItem = { ...item, [field]: value };
+        // Recalculate total price when quantity or unit price changes
+        if (field === 'quantity' || field === 'unitPrice') {
+          updatedItem.totalPrice = updatedItem.quantity * updatedItem.unitPrice;
+        }
+        return updatedItem;
+      }
+      return item;
+    });
     updateItemsWithShipping(updatedItems);
   };
 
@@ -516,7 +525,6 @@ export default function CreatePurchase() {
         quantity: item.quantity,
         unitPrice: item.unitPrice,
         unitPriceUSD: convertToUSD(item.unitPrice, currency),
-        weight: item.weight,
         dimensions: item.dimensions || null,
         notes: item.notes || null
       }))
@@ -876,17 +884,6 @@ export default function CreatePurchase() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="weight">Weight (kg)</Label>
-                  <Input
-                    id="weight"
-                    type="number"
-                    step="0.01"
-                    value={currentItem.weight}
-                    onChange={(e) => setCurrentItem({...currentItem, weight: parseFloat(e.target.value) || 0})}
-                    data-testid="input-weight"
-                  />
-                </div>
-                <div className="space-y-2">
                   <Label htmlFor="dimensions">Dimensions</Label>
                   <Input
                     id="dimensions"
@@ -935,7 +932,6 @@ export default function CreatePurchase() {
                         <TableHead className="text-right">Qty</TableHead>
                         <TableHead className="text-right">Unit Price</TableHead>
                         <TableHead className="text-right">Total</TableHead>
-                        <TableHead className="text-right">Weight</TableHead>
                         <TableHead className="text-right">Cost w/ Shipping</TableHead>
                         <TableHead></TableHead>
                       </TableRow>
@@ -944,21 +940,53 @@ export default function CreatePurchase() {
                       {items.map((item) => (
                         <TableRow key={item.id}>
                           <TableCell className="font-medium">
-                            <div>
-                              <div>{item.name}</div>
-                              {item.notes && (
-                                <div className="text-xs text-muted-foreground">{item.notes}</div>
-                              )}
+                            <div className="space-y-1">
+                              <Input
+                                value={item.name}
+                                onChange={(e) => updateItem(item.id, 'name', e.target.value)}
+                                className="h-8"
+                                placeholder="Item name"
+                              />
+                              <Input
+                                value={item.notes || ''}
+                                onChange={(e) => updateItem(item.id, 'notes', e.target.value)}
+                                className="h-7 text-xs"
+                                placeholder="Notes (optional)"
+                              />
                             </div>
                           </TableCell>
-                          <TableCell>{item.sku || '-'}</TableCell>
-                          <TableCell className="text-right">{item.quantity}</TableCell>
-                          <TableCell className="text-right">{currencySymbol}{item.unitPrice.toFixed(2)}</TableCell>
-                          <TableCell className="text-right font-medium">
-                            {currencySymbol}{item.totalPrice.toFixed(2)}
+                          <TableCell>
+                            <Input
+                              value={item.sku || ''}
+                              onChange={(e) => updateItem(item.id, 'sku', e.target.value)}
+                              className="h-8 w-24"
+                              placeholder="SKU"
+                            />
                           </TableCell>
                           <TableCell className="text-right">
-                            {(item.weight * item.quantity).toFixed(2)}kg
+                            <Input
+                              type="number"
+                              value={item.quantity}
+                              onChange={(e) => updateItem(item.id, 'quantity', parseInt(e.target.value) || 0)}
+                              className="h-8 w-16 text-right"
+                              min="1"
+                            />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <span>{currencySymbol}</span>
+                              <Input
+                                type="number"
+                                value={item.unitPrice}
+                                onChange={(e) => updateItem(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
+                                className="h-8 w-20 text-right"
+                                step="0.01"
+                                min="0"
+                              />
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            {currencySymbol}{item.totalPrice.toFixed(2)}
                           </TableCell>
                           <TableCell className="text-right text-green-600 font-medium">
                             {currencySymbol}{item.costWithShipping.toFixed(2)}
@@ -982,9 +1010,8 @@ export default function CreatePurchase() {
                         <TableCell className="text-right font-bold">{totalQuantity}</TableCell>
                         <TableCell></TableCell>
                         <TableCell className="text-right font-bold">{currencySymbol}{subtotal.toFixed(2)}</TableCell>
-                        <TableCell className="text-right font-bold">{totalWeight.toFixed(2)}kg</TableCell>
                         <TableCell className="text-right font-bold text-green-600">
-                          ${grandTotal.toFixed(2)}
+                          {currencySymbol}{grandTotal.toFixed(2)}
                         </TableCell>
                         <TableCell></TableCell>
                       </TableRow>
@@ -1045,10 +1072,6 @@ export default function CreatePurchase() {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Total Quantity:</span>
                 <span className="font-medium">{totalQuantity}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Total Weight:</span>
-                <span className="font-medium">{totalWeight.toFixed(2)} kg</span>
               </div>
               <div className="border-t pt-3">
                 <div className="flex justify-between">
