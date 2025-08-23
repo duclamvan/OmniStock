@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -10,10 +10,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Package2, Truck, MapPin, Clock, DollarSign, Users, Edit, Trash2 } from "lucide-react";
+import { DataTable, DataTableColumn } from "@/components/ui/data-table";
+import { Plus, Package2, Truck, MapPin, Clock, DollarSign, Users, Edit, Trash2, ChevronDown, ChevronUp, Filter, Search, Globe } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 interface Purchase {
   id: number;
@@ -28,6 +29,7 @@ interface Purchase {
   updatedAt: string;
   items: PurchaseItem[];
   itemCount: number;
+  location?: string;
 }
 
 interface PurchaseItem {
@@ -44,17 +46,22 @@ interface PurchaseItem {
 }
 
 const statusColors: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-  processing: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-  at_warehouse: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-  shipped: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-  delivered: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200"
-};
+  pending: "warning",
+  processing: "info",
+  at_warehouse: "default",
+  shipped: "secondary",
+  delivered: "default"
+} as const;
+
+const locations = ["Europe", "USA", "China", "Vietnam"];
 
 export default function SupplierProcessing() {
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
   const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
-  const [expandedPurchase, setExpandedPurchase] = useState<number | null>(null);
+  const [expandedPurchases, setExpandedPurchases] = useState<Set<number>>(new Set());
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [locationFilter, setLocationFilter] = useState<string>("all");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -62,7 +69,6 @@ export default function SupplierProcessing() {
   const { data: purchases = [], isLoading } = useQuery<Purchase[]>({
     queryKey: ['/api/imports/purchases']
   });
-
 
   // Add item mutation
   const addItemMutation = useMutation({
@@ -111,7 +117,6 @@ export default function SupplierProcessing() {
     }
   });
 
-
   const handleAddItem = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!selectedPurchase) return;
@@ -131,21 +136,169 @@ export default function SupplierProcessing() {
     addItemMutation.mutate({ purchaseId: selectedPurchase.id, item });
   };
 
-  const getStatusBadge = (status: string) => (
-    <Badge className={statusColors[status] || "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"}>
-      {status.replace('_', ' ').toUpperCase()}
-    </Badge>
-  );
+  // Filter and search logic
+  const filteredPurchases = useMemo(() => {
+    let filtered = [...purchases];
+    
+    // Add mock location data for demonstration
+    filtered = filtered.map(p => ({
+      ...p,
+      location: locations[p.id % locations.length]
+    }));
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'pending': return <Clock className="h-4 w-4" />;
-      case 'processing': return <Package2 className="h-4 w-4" />;
-      case 'at_warehouse': return <MapPin className="h-4 w-4" />;
-      case 'shipped': return <Truck className="h-4 w-4" />;
-      default: return <Package2 className="h-4 w-4" />;
+    // Search filter
+    if (searchTerm) {
+      filtered = filtered.filter(p => 
+        p.supplier.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.trackingNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.items.some(item => 
+          item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.sku?.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      );
+    }
+
+    // Status filter
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(p => p.status === statusFilter);
+    }
+
+    // Location filter
+    if (locationFilter !== "all") {
+      filtered = filtered.filter(p => p.location === locationFilter);
+    }
+
+    return filtered;
+  }, [purchases, searchTerm, statusFilter, locationFilter]);
+
+  // DataTable columns for purchase items
+  const getItemColumns = (itemCount: number): DataTableColumn<PurchaseItem>[] => {
+    const baseColumns: DataTableColumn<PurchaseItem>[] = [
+      {
+        key: "name",
+        header: "Item",
+        sortable: true,
+        cell: (item) => (
+          <div className="py-1">
+            <div className="font-medium text-sm">{item.name}</div>
+            {item.sku && <div className="text-xs text-muted-foreground">SKU: {item.sku}</div>}
+          </div>
+        ),
+        className: itemCount > 6 ? "min-w-[200px]" : "min-w-[150px]"
+      },
+      {
+        key: "quantity",
+        header: "Qty",
+        sortable: true,
+        cell: (item) => (
+          <span className="font-medium">{item.quantity}</span>
+        ),
+        className: "w-[60px] text-center"
+      },
+      {
+        key: "unitPrice",
+        header: "Price",
+        sortable: true,
+        cell: (item) => (
+          <span className="text-sm">${item.unitPrice}</span>
+        ),
+        className: "w-[80px] text-right"
+      }
+    ];
+
+    // Add more columns based on item count for smart layout
+    if (itemCount <= 6) {
+      // Show all columns for fewer items
+      baseColumns.push(
+        {
+          key: "weight",
+          header: "Weight",
+          sortable: true,
+          cell: (item) => (
+            <span className="text-sm">{item.weight}kg</span>
+          ),
+          className: "w-[80px] text-right"
+        },
+        {
+          key: "dimensions",
+          header: "Dimensions",
+          cell: (item) => (
+            <span className="text-xs text-muted-foreground">
+              {item.dimensions || '-'}
+            </span>
+          ),
+          className: "w-[120px]"
+        },
+        {
+          key: "notes",
+          header: "Notes",
+          cell: (item) => (
+            <span className="text-xs text-muted-foreground truncate max-w-[150px] block">
+              {item.notes || '-'}
+            </span>
+          ),
+          className: "w-[150px]"
+        }
+      );
+    } else if (itemCount <= 12) {
+      // Medium layout - hide dimensions
+      baseColumns.push(
+        {
+          key: "weight",
+          header: "Weight",
+          sortable: true,
+          cell: (item) => (
+            <span className="text-sm">{item.weight}kg</span>
+          ),
+          className: "w-[80px] text-right"
+        },
+        {
+          key: "total",
+          header: "Total",
+          sortable: true,
+          cell: (item) => (
+            <span className="text-sm font-medium">
+              ${(item.quantity * parseFloat(item.unitPrice)).toFixed(2)}
+            </span>
+          ),
+          className: "w-[90px] text-right"
+        }
+      );
+    } else {
+      // Compact layout for many items
+      baseColumns.push(
+        {
+          key: "total",
+          header: "Total",
+          sortable: true,
+          cell: (item) => (
+            <span className="text-sm font-medium">
+              ${(item.quantity * parseFloat(item.unitPrice)).toFixed(2)}
+            </span>
+          ),
+          className: "w-[90px] text-right"
+        }
+      );
+    }
+
+    return baseColumns;
+  };
+
+  // Toggle all expanded state
+  const toggleAllExpanded = () => {
+    if (expandedPurchases.size === filteredPurchases.length) {
+      setExpandedPurchases(new Set());
+    } else {
+      setExpandedPurchases(new Set(filteredPurchases.map(p => p.id)));
     }
   };
+
+  // Initialize with all purchases expanded
+  useMemo(() => {
+    if (purchases.length > 0 && expandedPurchases.size === 0) {
+      setExpandedPurchases(new Set(purchases.map(p => p.id)));
+    }
+  }, [purchases]);
 
   if (isLoading) {
     return (
@@ -219,173 +372,254 @@ export default function SupplierProcessing() {
         </Card>
       </div>
 
-      {/* Purchases Table */}
+      {/* Filters and Search */}
       <Card>
         <CardHeader>
-          <CardTitle>Purchase Orders</CardTitle>
-          <CardDescription>
-            Manage your supplier purchases and their items
-          </CardDescription>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <CardTitle>Purchase Orders</CardTitle>
+              <CardDescription>
+                Manage your supplier purchases and their items
+              </CardDescription>
+            </div>
+            <div className="flex flex-col md:flex-row gap-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search orders..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9 w-full md:w-[200px]"
+                  data-testid="input-search"
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full md:w-[150px]" data-testid="select-status-filter">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="processing">Processing</SelectItem>
+                  <SelectItem value="at_warehouse">At Warehouse</SelectItem>
+                  <SelectItem value="shipped">Shipped</SelectItem>
+                  <SelectItem value="delivered">Delivered</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={locationFilter} onValueChange={setLocationFilter}>
+                <SelectTrigger className="w-full md:w-[150px]" data-testid="select-location-filter">
+                  <Globe className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Filter by location" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Locations</SelectItem>
+                  <SelectItem value="Europe">Europe</SelectItem>
+                  <SelectItem value="USA">USA</SelectItem>
+                  <SelectItem value="China">China</SelectItem>
+                  <SelectItem value="Vietnam">Vietnam</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={toggleAllExpanded}
+                data-testid="button-toggle-all"
+              >
+                {expandedPurchases.size === filteredPurchases.length ? (
+                  <>
+                    <ChevronUp className="h-4 w-4 mr-2" />
+                    Collapse All
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="h-4 w-4 mr-2" />
+                    Expand All
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          {purchases.length === 0 ? (
+          {filteredPurchases.length === 0 ? (
             <div className="text-center py-8">
               <Package2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No purchases found</h3>
-              <p className="text-muted-foreground mb-4">Create your first purchase order to get started</p>
-              <Link href="/imports/supplier-processing/create">
-                <Button data-testid="button-create-first-purchase">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Purchase
-                </Button>
-              </Link>
+              <h3 className="text-lg font-semibold mb-2">
+                {purchases.length === 0 ? "No purchases found" : "No matching purchases"}
+              </h3>
+              <p className="text-muted-foreground mb-4">
+                {purchases.length === 0 
+                  ? "Create your first purchase order to get started"
+                  : "Try adjusting your filters or search term"
+                }
+              </p>
+              {purchases.length === 0 && (
+                <Link href="/imports/supplier-processing/create">
+                  <Button data-testid="button-create-first-purchase">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Purchase
+                  </Button>
+                </Link>
+              )}
             </div>
           ) : (
             <div className="space-y-4">
-              {purchases.map((purchase) => (
-                <Card key={purchase.id} className="border-2 hover:shadow-md transition-shadow">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center space-x-4">
-                        {getStatusIcon(purchase.status)}
-                        <div>
-                          <h3 className="font-semibold text-lg" data-testid={`text-supplier-${purchase.id}`}>
-                            {purchase.supplier}
-                          </h3>
-                          <p className="text-sm text-muted-foreground">
-                            {purchase.itemCount} items • Created {format(new Date(purchase.createdAt), 'MMM dd, yyyy')}
-                          </p>
+              {filteredPurchases.map((purchase) => {
+                const isExpanded = expandedPurchases.has(purchase.id);
+                
+                return (
+                  <Card key={purchase.id} className="border hover:shadow-md transition-shadow">
+                    <CardContent className="p-4">
+                      {/* Purchase Header */}
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="p-1"
+                            onClick={() => {
+                              const newExpanded = new Set(expandedPurchases);
+                              if (isExpanded) {
+                                newExpanded.delete(purchase.id);
+                              } else {
+                                newExpanded.add(purchase.id);
+                              }
+                              setExpandedPurchases(newExpanded);
+                            }}
+                            data-testid={`button-toggle-${purchase.id}`}
+                          >
+                            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          </Button>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-semibold text-base" data-testid={`text-supplier-${purchase.id}`}>
+                                {purchase.supplier}
+                              </h3>
+                              {purchase.location && (
+                                <Badge variant="outline" className="text-xs">
+                                  <Globe className="h-3 w-3 mr-1" />
+                                  {purchase.location}
+                                </Badge>
+                              )}
+                              <Badge variant={statusColors[purchase.status] as any}>
+                                {purchase.status.replace('_', ' ').toUpperCase()}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
+                              <span>{purchase.itemCount} items</span>
+                              <span>•</span>
+                              <span>Created {format(new Date(purchase.createdAt), 'MMM dd, yyyy')}</span>
+                              {purchase.trackingNumber && (
+                                <>
+                                  <span>•</span>
+                                  <span>Tracking: {purchase.trackingNumber}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Select
+                            value={purchase.status}
+                            onValueChange={(status) => updateStatusMutation.mutate({ purchaseId: purchase.id, status })}
+                          >
+                            <SelectTrigger className="w-[140px] h-8 text-sm">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pending">Pending</SelectItem>
+                              <SelectItem value="processing">Processing</SelectItem>
+                              <SelectItem value="at_warehouse">At Warehouse</SelectItem>
+                              <SelectItem value="shipped">Shipped</SelectItem>
+                              <SelectItem value="delivered">Delivered</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedPurchase(purchase);
+                              setIsAddItemModalOpen(true);
+                            }}
+                            data-testid={`button-add-item-${purchase.id}`}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => deletePurchaseMutation.mutate(purchase.id)}
+                            data-testid={`button-delete-${purchase.id}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        {getStatusBadge(purchase.status)}
-                        <Select
-                          value={purchase.status}
-                          onValueChange={(status) => updateStatusMutation.mutate({ purchaseId: purchase.id, status })}
-                        >
-                          <SelectTrigger className="w-32">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pending">Pending</SelectItem>
-                            <SelectItem value="processing">Processing</SelectItem>
-                            <SelectItem value="at_warehouse">At Warehouse</SelectItem>
-                            <SelectItem value="shipped">Shipped</SelectItem>
-                            <SelectItem value="delivered">Delivered</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedPurchase(purchase);
-                            setIsAddItemModalOpen(true);
-                          }}
-                          data-testid={`button-add-item-${purchase.id}`}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => deletePurchaseMutation.mutate(purchase.id)}
-                          data-testid={`button-delete-${purchase.id}`}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
 
-                    {/* Purchase Details */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                      <div className="flex items-center space-x-2">
-                        <Truck className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">
-                          {purchase.trackingNumber || 'No tracking'}
-                        </span>
+                      {/* Purchase Info Bar */}
+                      <div className="flex items-center gap-6 text-sm mb-3 pl-7">
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-muted-foreground">
+                            {purchase.estimatedArrival 
+                              ? format(new Date(purchase.estimatedArrival), 'MMM dd')
+                              : 'No ETA'
+                            }
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <DollarSign className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-muted-foreground">
+                            Shipping: ${purchase.shippingCost}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <DollarSign className="h-3 w-3 text-muted-foreground" />
+                          <span className="font-semibold">
+                            Total: ${purchase.totalCost}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">
-                          {purchase.estimatedArrival 
-                            ? format(new Date(purchase.estimatedArrival), 'MMM dd, yyyy')
-                            : 'No ETA'
-                          }
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">
-                          Shipping: ${purchase.shippingCost}
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-semibold">
-                          Total: ${purchase.totalCost}
-                        </span>
-                      </div>
-                    </div>
 
-                    {/* Expandable Items Section */}
-                    <div className="border-t pt-4">
-                      <Button
-                        variant="ghost"
-                        className="w-full"
-                        onClick={() => setExpandedPurchase(
-                          expandedPurchase === purchase.id ? null : purchase.id
-                        )}
-                        data-testid={`button-expand-${purchase.id}`}
-                      >
-                        <Package2 className="h-4 w-4 mr-2" />
-                        {expandedPurchase === purchase.id ? 'Hide' : 'Show'} Items ({purchase.itemCount})
-                      </Button>
-                      
-                      {expandedPurchase === purchase.id && (
-                        <div className="mt-4">
+                      {/* Items Table - Always visible when expanded */}
+                      {isExpanded && (
+                        <div className="pl-7">
                           {purchase.items.length === 0 ? (
-                            <p className="text-muted-foreground text-center py-4">No items added yet</p>
+                            <div className="text-center py-6 bg-muted/30 rounded-lg">
+                              <p className="text-muted-foreground text-sm">No items added yet</p>
+                            </div>
                           ) : (
-                            <Table>
-                              <TableHeader>
-                                <TableRow>
-                                  <TableHead>Item Name</TableHead>
-                                  <TableHead>SKU</TableHead>
-                                  <TableHead>Quantity</TableHead>
-                                  <TableHead>Unit Price</TableHead>
-                                  <TableHead>Weight</TableHead>
-                                  <TableHead>Notes</TableHead>
-                                </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                {purchase.items.map((item) => (
-                                  <TableRow key={item.id}>
-                                    <TableCell className="font-medium" data-testid={`item-name-${item.id}`}>
-                                      {item.name}
-                                    </TableCell>
-                                    <TableCell>{item.sku || '-'}</TableCell>
-                                    <TableCell>{item.quantity}</TableCell>
-                                    <TableCell>${item.unitPrice}</TableCell>
-                                    <TableCell>{item.weight}kg</TableCell>
-                                    <TableCell>{item.notes || '-'}</TableCell>
-                                  </TableRow>
-                                ))}
-                              </TableBody>
-                            </Table>
+                            <div className={cn(
+                              "rounded-lg border bg-card",
+                              purchase.items.length > 12 && "max-h-[400px] overflow-y-auto"
+                            )}>
+                              <DataTable
+                                data={purchase.items}
+                                columns={getItemColumns(purchase.items.length)}
+                                getRowKey={(item) => item.id.toString()}
+                                showPagination={false}
+                                className="text-sm"
+                                defaultExpandAll={false}
+                              />
+                            </div>
                           )}
                         </div>
                       )}
-                    </div>
 
-                    {purchase.notes && (
-                      <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                        <p className="text-sm text-muted-foreground mb-1">Notes:</p>
-                        <p className="text-sm">{purchase.notes}</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
+                      {/* Notes */}
+                      {purchase.notes && isExpanded && (
+                        <div className="mt-3 pl-7">
+                          <div className="p-3 bg-muted/50 rounded-lg">
+                            <p className="text-xs text-muted-foreground mb-1">Notes:</p>
+                            <p className="text-sm">{purchase.notes}</p>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </CardContent>
