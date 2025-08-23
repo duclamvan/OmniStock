@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
@@ -135,16 +134,16 @@ function PurchaseCard({
     <Card
       draggable
       onDragStart={(e) => onDragStart(e, purchase, 'purchase')}
-      className="cursor-move hover:shadow-md transition-all bg-white dark:bg-gray-800 overflow-hidden"
+      className="cursor-move hover:shadow-md transition-all bg-white dark:bg-gray-800 overflow-hidden w-full"
       data-testid={`purchase-${purchase.id}`}
     >
-      <CardContent className="p-2 md:p-2.5 lg:p-3 space-y-1 md:space-y-1.5">
+      <CardContent className="p-1.5 sm:p-2 md:p-2.5 lg:p-3 space-y-1 md:space-y-1.5">
         {/* Header */}
-        <div className="flex items-center justify-between gap-2 min-w-0">
-          <h4 className="font-semibold text-xs md:text-sm truncate min-w-0">
+        <div className="flex items-center justify-between gap-1 sm:gap-2 min-w-0">
+          <h4 className="font-semibold text-[10px] sm:text-xs md:text-sm truncate min-w-0">
             {purchase.supplier}
           </h4>
-          <Badge variant="outline" className="text-[10px] md:text-xs flex-shrink-0">
+          <Badge variant="outline" className="text-[9px] sm:text-[10px] md:text-xs flex-shrink-0 px-1 sm:px-1.5">
             {purchase.status}
           </Badge>
         </div>
@@ -199,12 +198,12 @@ function PurchaseCard({
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-1.5 border-t mt-1.5">
-          <span className="text-[10px] md:text-xs font-semibold flex-shrink-0">
-            ${parseFloat(purchase.totalCost).toFixed(2)}
+        <div className="flex items-center justify-between pt-1 sm:pt-1.5 border-t mt-1 sm:mt-1.5">
+          <span className="text-[9px] sm:text-[10px] md:text-xs font-semibold flex-shrink-0">
+            ${parseFloat(purchase.totalCost).toFixed(1)}
           </span>
           {purchase.estimatedArrival && (
-            <span className="text-[10px] md:text-xs text-muted-foreground flex-shrink-0">
+            <span className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground flex-shrink-0">
               {differenceInDays(new Date(purchase.estimatedArrival), new Date())}d
             </span>
           )}
@@ -226,24 +225,24 @@ function CustomItemCard({
     <Card
       draggable
       onDragStart={(e) => onDragStart(e, item, 'custom')}
-      className="cursor-move hover:shadow-md transition-all bg-white dark:bg-gray-800 overflow-hidden"
+      className="cursor-move hover:shadow-md transition-all bg-white dark:bg-gray-800 overflow-hidden w-full"
       data-testid={`custom-${item.id}`}
     >
-      <CardContent className="p-2 md:p-2.5 lg:p-3 space-y-1 md:space-y-1.5">
+      <CardContent className="p-1.5 sm:p-2 md:p-2.5 lg:p-3 space-y-1 md:space-y-1.5">
         {/* Header */}
         <div className="flex items-center justify-between min-w-0">
-          <h4 className="font-semibold text-xs md:text-sm truncate min-w-0">
+          <h4 className="font-semibold text-[10px] sm:text-xs md:text-sm truncate min-w-0">
             {item.name}
           </h4>
         </div>
 
         {/* Source Info */}
         <div className="flex items-center justify-between gap-1 min-w-0">
-          <Badge className="text-[10px] md:text-xs truncate max-w-[60%]" variant="secondary">
+          <Badge className="text-[10px] sm:text-[10px] md:text-xs truncate max-w-[50%] sm:max-w-[55%] md:max-w-[60%]" variant="secondary">
             {item.source}
           </Badge>
           {item.orderNumber && (
-            <span className="text-[10px] md:text-xs text-muted-foreground truncate max-w-[35%]">
+            <span className="text-[10px] sm:text-[10px] md:text-xs text-muted-foreground truncate max-w-[30%] sm:max-w-[35%] md:max-w-[40%]">
               #{item.orderNumber}
             </span>
           )}
@@ -286,17 +285,17 @@ function ConsolidationCard({
     <Card
       draggable
       onDragStart={(e) => onDragStart(e, consolidation, 'consolidation')}
-      className={`cursor-move hover:shadow-md transition-all bg-white dark:bg-gray-800 border-2 ${borderColor} overflow-hidden`}
+      className={`cursor-move hover:shadow-md transition-all bg-white dark:bg-gray-800 border-2 ${borderColor} overflow-hidden w-full`}
       data-testid={`consolidation-${consolidation.id}`}
     >
-      <CardContent className="p-2 md:p-2.5 lg:p-3 space-y-1 md:space-y-1.5">
+      <CardContent className="p-1.5 sm:p-2 md:p-2.5 lg:p-3 space-y-1 md:space-y-1.5">
         {/* Header */}
-        <div className="flex items-center justify-between gap-2 min-w-0">
-          <div className="flex items-center gap-2 min-w-0">
-            <Icon className="h-4 w-4 flex-shrink-0" />
-            <h4 className="font-bold text-xs md:text-sm truncate">{consolidation.name}</h4>
+        <div className="flex items-center justify-between gap-1 sm:gap-2 min-w-0">
+          <div className="flex items-center gap-0.5 sm:gap-1 md:gap-2 min-w-0">
+            <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 flex-shrink-0" />
+            <h4 className="font-bold text-[10px] sm:text-xs md:text-sm truncate">{consolidation.name}</h4>
           </div>
-          <Badge className="text-[10px] md:text-xs bg-green-100 text-green-800 flex-shrink-0">
+          <Badge className="text-[9px] sm:text-[10px] md:text-xs bg-green-100 text-green-800 flex-shrink-0 px-1 sm:px-1.5">
             {consolidation.items.length} items
           </Badge>
         </div>
@@ -381,10 +380,10 @@ function ShipmentCard({
     <Card
       draggable={!isDelivered}
       onDragStart={onDragStart ? (e) => onDragStart(e, shipment, 'shipment') : undefined}
-      className={`${!isDelivered ? 'cursor-move' : ''} hover:shadow-md transition-all bg-white dark:bg-gray-800 overflow-hidden`}
+      className={`${!isDelivered ? 'cursor-move' : ''} hover:shadow-md transition-all bg-white dark:bg-gray-800 overflow-hidden w-full`}
       data-testid={`shipment-${shipment.id}`}
     >
-      <CardContent className="p-2 md:p-2.5 lg:p-3 space-y-1 md:space-y-1.5">
+      <CardContent className="p-1.5 sm:p-2 md:p-2.5 lg:p-3 space-y-1 md:space-y-1.5">
         {/* Header */}
         <div className="flex items-center justify-between gap-1 min-w-0">
           <Badge 
@@ -397,13 +396,13 @@ function ShipmentCard({
         </div>
 
         {/* Tracking Number */}
-        <h4 className="font-semibold text-xs md:text-sm truncate">{shipment.trackingNumber}</h4>
+        <h4 className="font-semibold text-[10px] sm:text-xs md:text-sm truncate">{shipment.trackingNumber}</h4>
 
         {/* Route */}
         <div className="flex items-center text-[10px] md:text-xs text-muted-foreground gap-0.5 md:gap-1 min-w-0">
-          <span className="truncate flex-1 max-w-[35%] md:max-w-[40%]">{shipment.origin}</span>
+          <span className="truncate flex-1 max-w-[30%] sm:max-w-[35%] md:max-w-[40%]">{shipment.origin}</span>
           <ArrowRight className="h-2.5 w-2.5 md:h-3 md:w-3 flex-shrink-0" />
-          <span className="truncate flex-1 max-w-[35%] md:max-w-[40%]">{shipment.destination}</span>
+          <span className="truncate flex-1 max-w-[30%] sm:max-w-[35%] md:max-w-[40%]">{shipment.destination}</span>
         </div>
 
         {/* Current Location */}
@@ -415,7 +414,7 @@ function ShipmentCard({
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-1.5 border-t mt-1.5">
+        <div className="flex items-center justify-between pt-1 sm:pt-1.5 border-t mt-1 sm:mt-1.5">
           {isDelivered && shipment.deliveredAt ? (
             <>
               <span className="text-[10px] md:text-xs">
@@ -429,11 +428,11 @@ function ShipmentCard({
             </>
           ) : (
             <>
-              <span className="text-[10px] md:text-xs font-semibold flex-shrink-0">
+              <span className="text-[9px] sm:text-[10px] md:text-xs font-semibold flex-shrink-0">
                 ${parseFloat(shipment.shippingCost).toFixed(0)}
               </span>
               {shipment.estimatedDelivery && (
-                <span className="text-[10px] md:text-xs text-muted-foreground flex-shrink-0">
+                <span className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground flex-shrink-0">
                   {getDaysUntil(shipment.estimatedDelivery)}
                 </span>
               )}
@@ -690,11 +689,11 @@ export default function ImportKanbanDashboard() {
       </Card>
 
       {/* Kanban Board */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3 lg:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-2 md:gap-3 lg:gap-4 w-full">
         {columns.map((column) => (
           <div
             key={column.id}
-            className={`rounded-lg border-2 overflow-hidden ${column.bgColor} ${column.borderColor} ${
+            className={`rounded-lg border-2 overflow-hidden min-w-0 ${column.bgColor} ${column.borderColor} ${
               dragOverColumn === column.id ? 'ring-2 ring-primary ring-offset-2' : ''
             }`}
             onDragOver={(e) => handleDragOver(e, column.id)}
@@ -715,8 +714,8 @@ export default function ImportKanbanDashboard() {
             </div>
 
             {/* Column Content */}
-            <ScrollArea className="h-[400px] md:h-[500px] lg:h-[600px]">
-              <div className="space-y-2 md:space-y-3 px-2 md:px-3 py-2">
+            <div className="h-[400px] md:h-[500px] lg:h-[600px] overflow-y-auto overflow-x-hidden w-full">
+              <div className="space-y-2 md:space-y-3 px-1.5 sm:px-2 md:px-2.5 lg:px-3 py-2 pr-2">
                 {/* Supplier Processing Column */}
                 {column.id === 'processing' && filteredPurchases.map((purchase) => (
                   <PurchaseCard 
@@ -764,7 +763,7 @@ export default function ImportKanbanDashboard() {
                   />
                 ))}
               </div>
-            </ScrollArea>
+            </div>
           </div>
         ))}
       </div>
