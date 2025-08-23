@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DataTable, DataTableColumn } from "@/components/ui/data-table";
-import { Plus, Package2, Truck, MapPin, Clock, DollarSign, Users, Edit, Trash2, ChevronDown, ChevronUp, Filter, Search, Globe } from "lucide-react";
+import { Plus, Package2, Truck, MapPin, Clock, DollarSign, Users, Edit, Trash2, ChevronDown, ChevronUp, Filter, Search } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -499,14 +499,12 @@ export default function SupplierProcessing() {
                           <div>
                             <div className="flex items-center gap-2">
                               <h3 className="font-semibold text-base" data-testid={`text-supplier-${purchase.id}`}>
+                                {purchase.location === 'Europe' && '🇪🇺 '}
+                                {purchase.location === 'USA' && '🇺🇸 '}
+                                {purchase.location === 'China' && '🇨🇳 '}
+                                {purchase.location === 'Vietnam' && '🇻🇳 '}
                                 {purchase.supplier}
                               </h3>
-                              {purchase.location && (
-                                <Badge variant="outline" className="text-xs">
-                                  <Globe className="h-3 w-3 mr-1" />
-                                  {purchase.location}
-                                </Badge>
-                              )}
                               <Badge variant={statusColors[purchase.status] as any}>
                                 {purchase.status.replace('_', ' ').toUpperCase()}
                               </Badge>
