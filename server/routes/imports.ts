@@ -178,6 +178,74 @@ router.post("/purchases/:id/items", async (req, res) => {
   }
 });
 
+// Update complete purchase
+router.patch("/purchases/:id", async (req, res) => {
+  try {
+    const purchaseId = parseInt(req.params.id);
+    
+    // Update purchase data
+    const purchaseUpdate: any = {
+      updatedAt: new Date()
+    };
+    
+    // Only update fields that are provided
+    if (req.body.supplier !== undefined) purchaseUpdate.supplier = req.body.supplier;
+    if (req.body.supplierId !== undefined) purchaseUpdate.supplierId = req.body.supplierId;
+    if (req.body.supplierLink !== undefined) purchaseUpdate.supplierLink = req.body.supplierLink;
+    if (req.body.supplierLocation !== undefined) purchaseUpdate.supplierLocation = req.body.supplierLocation;
+    if (req.body.trackingNumber !== undefined) purchaseUpdate.trackingNumber = req.body.trackingNumber;
+    if (req.body.estimatedArrival !== undefined) purchaseUpdate.estimatedArrival = req.body.estimatedArrival;
+    if (req.body.notes !== undefined) purchaseUpdate.notes = req.body.notes;
+    if (req.body.shippingCost !== undefined) purchaseUpdate.shippingCost = req.body.shippingCost;
+    if (req.body.totalCost !== undefined) purchaseUpdate.totalCost = req.body.totalCost;
+    if (req.body.purchaseCurrency !== undefined) purchaseUpdate.purchaseCurrency = req.body.purchaseCurrency;
+    if (req.body.paymentCurrency !== undefined) purchaseUpdate.paymentCurrency = req.body.paymentCurrency;
+    if (req.body.totalPaid !== undefined) purchaseUpdate.totalPaid = req.body.totalPaid;
+    if (req.body.purchaseTotal !== undefined) purchaseUpdate.purchaseTotal = req.body.purchaseTotal;
+    if (req.body.exchangeRate !== undefined) purchaseUpdate.exchangeRate = req.body.exchangeRate;
+    if (req.body.status !== undefined) purchaseUpdate.status = req.body.status;
+    
+    const [updated] = await db
+      .update(importPurchases)
+      .set(purchaseUpdate)
+      .where(eq(importPurchases.id, purchaseId))
+      .returning();
+    
+    // Handle items update if provided
+    if (req.body.items && Array.isArray(req.body.items)) {
+      // Delete existing items
+      await db.delete(purchaseItems).where(eq(purchaseItems.purchaseId, purchaseId));
+      
+      // Insert new items
+      if (req.body.items.length > 0) {
+        const itemsToInsert = req.body.items.map((item: any) => ({
+          purchaseId,
+          name: item.name,
+          sku: item.sku || null,
+          quantity: item.quantity || 1,
+          unitPrice: item.unitPrice || 0,
+          weight: item.weight || 0,
+          dimensions: item.dimensions || null,
+          notes: item.notes || null,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }));
+        
+        await db.insert(purchaseItems).values(itemsToInsert);
+      }
+    }
+    
+    // Fetch updated purchase with items
+    const updatedPurchase = await db.select().from(importPurchases).where(eq(importPurchases.id, purchaseId)).limit(1);
+    const items = await db.select().from(purchaseItems).where(eq(purchaseItems.purchaseId, purchaseId));
+    
+    res.json({ ...updatedPurchase[0], items });
+  } catch (error) {
+    console.error("Error updating purchase:", error);
+    res.status(500).json({ message: "Failed to update purchase" });
+  }
+});
+
 // Update purchase status
 router.patch("/purchases/:id/status", async (req, res) => {
   try {
