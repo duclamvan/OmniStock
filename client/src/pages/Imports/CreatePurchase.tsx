@@ -476,16 +476,6 @@ export default function CreatePurchase() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="tracking">Tracking Number</Label>
-                  <Input
-                    id="tracking"
-                    value={trackingNumber}
-                    onChange={(e) => setTrackingNumber(e.target.value)}
-                    placeholder="Optional tracking number"
-                    data-testid="input-tracking"
-                  />
-                </div>
-                <div className="space-y-2">
                   <Label htmlFor="purchase-date">Purchase Date *</Label>
                   <Input
                     id="purchase-date"
@@ -537,6 +527,16 @@ export default function CreatePurchase() {
                       data-testid="input-shipping"
                     />
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="tracking">Tracking Number</Label>
+                  <Input
+                    id="tracking"
+                    value={trackingNumber}
+                    onChange={(e) => setTrackingNumber(e.target.value)}
+                    placeholder="Optional tracking number"
+                    data-testid="input-tracking"
+                  />
                 </div>
               </div>
               <div className="space-y-2">
