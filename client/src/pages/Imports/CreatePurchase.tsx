@@ -972,8 +972,7 @@ export default function CreatePurchase() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[35%]">Item</TableHead>
-                        <TableHead className="w-[15%]">SKU</TableHead>
+                        <TableHead className="w-[50%]">Item</TableHead>
                         <TableHead className="text-center w-[10%]">Qty</TableHead>
                         <TableHead className="text-right w-[15%]">Unit Price</TableHead>
                         <TableHead className="text-right w-[15%]">Total</TableHead>
@@ -1006,9 +1005,6 @@ export default function CreatePurchase() {
                                   )}
                                 </div>
                               )}
-                            </TableCell>
-                            <TableCell>
-                              <span className="font-mono text-sm">{item.sku || '-'}</span>
                             </TableCell>
                             <TableCell className="text-center">
                               {isEditing ? (
@@ -1106,7 +1102,7 @@ export default function CreatePurchase() {
                     </TableBody>
                     <TableFooter>
                       <TableRow>
-                        <TableCell colSpan={2} className="font-bold text-base">Totals</TableCell>
+                        <TableCell className="font-bold text-base">Totals</TableCell>
                         <TableCell className="text-center font-bold text-base">{totalQuantity}</TableCell>
                         <TableCell></TableCell>
                         <TableCell className="text-right font-bold text-base">
