@@ -183,16 +183,16 @@ router.patch("/purchases/:id", async (req, res) => {
   try {
     const purchaseId = parseInt(req.params.id);
     
+    console.log("Update purchase request:", purchaseId);
+    console.log("Request body keys:", Object.keys(req.body));
+    
     // Update purchase data
     const purchaseUpdate: any = {
       updatedAt: new Date()
     };
     
-    // Only update fields that are provided
+    // Only update fields that are provided and exist in the database schema
     if (req.body.supplier !== undefined) purchaseUpdate.supplier = req.body.supplier;
-    if (req.body.supplierId !== undefined) purchaseUpdate.supplierId = req.body.supplierId;
-    if (req.body.supplierLink !== undefined) purchaseUpdate.supplierLink = req.body.supplierLink;
-    if (req.body.supplierLocation !== undefined) purchaseUpdate.supplierLocation = req.body.supplierLocation;
     if (req.body.trackingNumber !== undefined) purchaseUpdate.trackingNumber = req.body.trackingNumber;
     if (req.body.estimatedArrival !== undefined) purchaseUpdate.estimatedArrival = req.body.estimatedArrival;
     if (req.body.notes !== undefined) purchaseUpdate.notes = req.body.notes;
@@ -205,11 +205,18 @@ router.patch("/purchases/:id", async (req, res) => {
     if (req.body.exchangeRate !== undefined) purchaseUpdate.exchangeRate = req.body.exchangeRate;
     if (req.body.status !== undefined) purchaseUpdate.status = req.body.status;
     
+    console.log("Purchase update object:", purchaseUpdate);
+    
+    // Handle purchaseDate if provided (should be stored in createdAt for existing records)
+    // We don't update createdAt but can update estimatedArrival based on it
+    
     const [updated] = await db
       .update(importPurchases)
       .set(purchaseUpdate)
       .where(eq(importPurchases.id, purchaseId))
       .returning();
+    
+    console.log("Updated purchase:", updated);
     
     // Handle items update if provided
     if (req.body.items && Array.isArray(req.body.items)) {
