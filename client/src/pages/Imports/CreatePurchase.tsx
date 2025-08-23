@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,11 +8,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Plus, Package, Trash2, Calculator, DollarSign, 
-  Truck, Calendar, FileText, Save, ArrowLeft, AlertCircle 
+  Truck, Calendar, FileText, Save, ArrowLeft, AlertCircle,
+  Check, ChevronsUpDown, UserPlus, Clock
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface PurchaseItem {
   id: string;
@@ -27,6 +33,14 @@ interface PurchaseItem {
   costWithShipping: number;
 }
 
+interface Supplier {
+  id: string;
+  name: string;
+  contactPerson?: string;
+  email?: string;
+  phone?: string;
+}
+
 export default function CreatePurchase() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
@@ -34,10 +48,22 @@ export default function CreatePurchase() {
 
   // Form state
   const [supplier, setSupplier] = useState("");
+  const [supplierId, setSupplierId] = useState<string | null>(null);
+  const [supplierOpen, setSupplierOpen] = useState(false);
+  const [supplierSearch, setSupplierSearch] = useState("");
   const [trackingNumber, setTrackingNumber] = useState("");
-  const [estimatedArrival, setEstimatedArrival] = useState("");
+  const [purchaseDate, setPurchaseDate] = useState("");
+  const [processingTime, setProcessingTime] = useState("");
+  const [processingUnit, setProcessingUnit] = useState("days");
   const [notes, setNotes] = useState("");
   const [shippingCost, setShippingCost] = useState(0);
+  
+  // New supplier dialog
+  const [newSupplierDialogOpen, setNewSupplierDialogOpen] = useState(false);
+  const [newSupplierName, setNewSupplierName] = useState("");
+  const [newSupplierContact, setNewSupplierContact] = useState("");
+  const [newSupplierEmail, setNewSupplierEmail] = useState("");
+  const [newSupplierPhone, setNewSupplierPhone] = useState("");
   
   // Items state
   const [items, setItems] = useState<PurchaseItem[]>([]);
@@ -51,12 +77,52 @@ export default function CreatePurchase() {
     notes: ""
   });
 
+  // Set default purchase date to now
+  useEffect(() => {
+    const now = new Date();
+    const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16);
+    setPurchaseDate(localDateTime);
+  }, []);
+
+  // Fetch suppliers
+  const { data: suppliers = [] } = useQuery<Supplier[]>({
+    queryKey: ['/api/suppliers']
+  });
+
   // Calculated values
   const subtotal = items.reduce((sum, item) => sum + item.totalPrice, 0);
   const totalWeight = items.reduce((sum, item) => sum + (item.weight * item.quantity), 0);
   const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
   const shippingPerItem = totalQuantity > 0 ? shippingCost / totalQuantity : 0;
   const grandTotal = subtotal + shippingCost;
+
+  // Create new supplier mutation
+  const createSupplierMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await apiRequest('/api/suppliers', 'POST', data);
+      return response.json();
+    },
+    onSuccess: (newSupplier) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/suppliers'] });
+      setSupplier(newSupplier.name);
+      setSupplierId(newSupplier.id);
+      setNewSupplierDialogOpen(false);
+      setNewSupplierName("");
+      setNewSupplierContact("");
+      setNewSupplierEmail("");
+      setNewSupplierPhone("");
+      toast({ title: "Success", description: "Supplier added successfully" });
+    },
+    onError: () => {
+      toast({ 
+        title: "Error", 
+        description: "Failed to add supplier", 
+        variant: "destructive" 
+      });
+    }
+  });
 
   // Create purchase mutation
   const createPurchaseMutation = useMutation({
@@ -77,6 +143,24 @@ export default function CreatePurchase() {
       });
     }
   });
+
+  const handleAddNewSupplier = () => {
+    if (!newSupplierName.trim()) {
+      toast({ 
+        title: "Validation Error", 
+        description: "Please enter supplier name", 
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    createSupplierMutation.mutate({
+      name: newSupplierName,
+      contactPerson: newSupplierContact || null,
+      email: newSupplierEmail || null,
+      phone: newSupplierPhone || null
+    });
+  };
 
   const addItem = () => {
     if (!currentItem.name || !currentItem.quantity || currentItem.unitPrice === undefined) {
@@ -142,7 +226,7 @@ export default function CreatePurchase() {
     if (!supplier) {
       toast({ 
         title: "Validation Error", 
-        description: "Please enter supplier name", 
+        description: "Please select or add a supplier", 
         variant: "destructive" 
       });
       return;
@@ -157,10 +241,30 @@ export default function CreatePurchase() {
       return;
     }
 
+    let estimatedArrival = null;
+    if (processingTime && purchaseDate) {
+      const purchaseDateObj = new Date(purchaseDate);
+      const timeValue = parseInt(processingTime);
+      
+      if (!isNaN(timeValue)) {
+        if (processingUnit === 'days') {
+          purchaseDateObj.setDate(purchaseDateObj.getDate() + timeValue);
+        } else if (processingUnit === 'weeks') {
+          purchaseDateObj.setDate(purchaseDateObj.getDate() + (timeValue * 7));
+        } else if (processingUnit === 'months') {
+          purchaseDateObj.setMonth(purchaseDateObj.getMonth() + timeValue);
+        }
+        estimatedArrival = purchaseDateObj.toISOString();
+      }
+    }
+
     const purchaseData = {
       supplier,
+      supplierId,
+      purchaseDate: purchaseDate ? new Date(purchaseDate).toISOString() : new Date().toISOString(),
       trackingNumber: trackingNumber || null,
-      estimatedArrival: estimatedArrival ? new Date(estimatedArrival).toISOString() : null,
+      estimatedArrival,
+      processingTime: processingTime ? `${processingTime} ${processingUnit}` : null,
       notes: notes || null,
       shippingCost,
       totalCost: grandTotal,
@@ -228,13 +332,70 @@ export default function CreatePurchase() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="supplier">Supplier Name *</Label>
-                  <Input
-                    id="supplier"
-                    value={supplier}
-                    onChange={(e) => setSupplier(e.target.value)}
-                    placeholder="Enter supplier name"
-                    data-testid="input-supplier"
-                  />
+                  <Popover open={supplierOpen} onOpenChange={setSupplierOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={supplierOpen}
+                        className="w-full justify-between"
+                        data-testid="input-supplier"
+                      >
+                        {supplier || "Select supplier..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0">
+                      <Command>
+                        <CommandInput 
+                          placeholder="Search suppliers..." 
+                          value={supplierSearch}
+                          onValueChange={setSupplierSearch}
+                        />
+                        <CommandList>
+                          <CommandEmpty>No supplier found.</CommandEmpty>
+                          <CommandGroup>
+                            {suppliers
+                              .filter(s => s.name.toLowerCase().includes(supplierSearch.toLowerCase()))
+                              .map((s) => (
+                                <CommandItem
+                                  key={s.id}
+                                  value={s.name}
+                                  onSelect={() => {
+                                    setSupplier(s.name);
+                                    setSupplierId(s.id);
+                                    setSupplierOpen(false);
+                                    setSupplierSearch("");
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      supplier === s.name ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  {s.name}
+                                </CommandItem>
+                              ))}
+                          </CommandGroup>
+                          <CommandGroup>
+                            <CommandItem
+                              onSelect={() => {
+                                setNewSupplierName(supplierSearch);
+                                setNewSupplierDialogOpen(true);
+                                setSupplierOpen(false);
+                                setSupplierSearch("");
+                              }}
+                              className="text-primary"
+                            >
+                              <UserPlus className="mr-2 h-4 w-4" />
+                              Add new supplier "{supplierSearch || "..."}"
+                            </CommandItem>
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="tracking">Tracking Number</Label>
@@ -249,15 +410,42 @@ export default function CreatePurchase() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="arrival">Estimated Arrival</Label>
+                  <Label htmlFor="purchase-date">Purchase Date *</Label>
                   <Input
-                    id="arrival"
+                    id="purchase-date"
                     type="datetime-local"
-                    value={estimatedArrival}
-                    onChange={(e) => setEstimatedArrival(e.target.value)}
-                    data-testid="input-arrival"
+                    value={purchaseDate}
+                    onChange={(e) => setPurchaseDate(e.target.value)}
+                    data-testid="input-purchase-date"
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="processing">Processing Time</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="processing"
+                      type="number"
+                      min="0"
+                      value={processingTime}
+                      onChange={(e) => setProcessingTime(e.target.value)}
+                      placeholder="0"
+                      className="flex-1"
+                      data-testid="input-processing-time"
+                    />
+                    <Select value={processingUnit} onValueChange={setProcessingUnit}>
+                      <SelectTrigger className="w-[120px]" data-testid="select-processing-unit">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="days">Days</SelectItem>
+                        <SelectItem value="weeks">Weeks</SelectItem>
+                        <SelectItem value="months">Months</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="shipping">Shipping Cost ($)</Label>
                   <div className="relative">
@@ -520,10 +708,17 @@ export default function CreatePurchase() {
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <div className="flex items-start gap-2">
-                <Package className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                <UserPlus className="h-4 w-4 mt-0.5 text-muted-foreground" />
                 <div>
-                  <p className="font-medium">Multiple Items</p>
-                  <p className="text-muted-foreground">Add unlimited items to your purchase order</p>
+                  <p className="font-medium">Dynamic Suppliers</p>
+                  <p className="text-muted-foreground">Search existing suppliers or add new ones instantly</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <Clock className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                <div>
+                  <p className="font-medium">Processing Time</p>
+                  <p className="text-muted-foreground">Estimated arrival calculated from purchase date + processing time</p>
                 </div>
               </div>
               <div className="flex items-start gap-2">
@@ -533,17 +728,83 @@ export default function CreatePurchase() {
                   <p className="text-muted-foreground">Shipping cost is distributed equally across all items</p>
                 </div>
               </div>
-              <div className="flex items-start gap-2">
-                <Calculator className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                <div>
-                  <p className="font-medium">Cost Calculation</p>
-                  <p className="text-muted-foreground">Unit cost with shipping = Unit price + (Shipping ÷ Total quantity)</p>
-                </div>
-              </div>
             </CardContent>
           </Card>
         </div>
       </div>
+
+      {/* Add New Supplier Dialog */}
+      <Dialog open={newSupplierDialogOpen} onOpenChange={setNewSupplierDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Supplier</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-supplier-name">Supplier Name *</Label>
+              <Input
+                id="new-supplier-name"
+                value={newSupplierName}
+                onChange={(e) => setNewSupplierName(e.target.value)}
+                placeholder="Enter supplier name"
+                data-testid="input-new-supplier-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-supplier-contact">Contact Person</Label>
+              <Input
+                id="new-supplier-contact"
+                value={newSupplierContact}
+                onChange={(e) => setNewSupplierContact(e.target.value)}
+                placeholder="Optional contact person"
+                data-testid="input-new-supplier-contact"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-supplier-email">Email</Label>
+              <Input
+                id="new-supplier-email"
+                type="email"
+                value={newSupplierEmail}
+                onChange={(e) => setNewSupplierEmail(e.target.value)}
+                placeholder="Optional email"
+                data-testid="input-new-supplier-email"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-supplier-phone">Phone</Label>
+              <Input
+                id="new-supplier-phone"
+                value={newSupplierPhone}
+                onChange={(e) => setNewSupplierPhone(e.target.value)}
+                placeholder="Optional phone"
+                data-testid="input-new-supplier-phone"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setNewSupplierDialogOpen(false);
+                setNewSupplierName("");
+                setNewSupplierContact("");
+                setNewSupplierEmail("");
+                setNewSupplierPhone("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleAddNewSupplier}
+              disabled={createSupplierMutation.isPending}
+              data-testid="button-create-supplier"
+            >
+              {createSupplierMutation.isPending ? "Adding..." : "Add Supplier"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
