@@ -361,13 +361,11 @@ function ConsolidationCard({
 function ShipmentCard({ 
   shipment, 
   isDelivered = false,
-  onDragStart,
-  isGrid = false 
+  onDragStart 
 }: { 
   shipment: Shipment; 
   isDelivered?: boolean;
   onDragStart?: (e: React.DragEvent, item: any, type: string) => void;
-  isGrid?: boolean;
 }) {
   const getDaysUntil = (date: string | null) => {
     if (!date) return null;
@@ -385,16 +383,16 @@ function ShipmentCard({
       className={`${!isDelivered ? 'cursor-move' : ''} hover:shadow-md transition-all bg-white dark:bg-gray-800 overflow-hidden w-full`}
       data-testid={`shipment-${shipment.id}`}
     >
-      <CardContent className={`${isGrid ? 'p-1 space-y-0.5' : 'p-1.5 sm:p-2 md:p-2.5 lg:p-3 space-y-1 md:space-y-1.5'}`}>
+      <CardContent className="p-1.5 sm:p-2 md:p-2.5 lg:p-3 space-y-1 md:space-y-1.5">
         {/* Header */}
-        <div className="flex items-center justify-between gap-0.5 min-w-0">
+        <div className="flex items-center justify-between gap-1 min-w-0">
           <Badge 
             variant={isDelivered ? "default" : "outline"} 
-            className={`${isGrid ? 'text-[7px] px-0.5 py-0' : 'text-[10px] md:text-xs'} flex-shrink-0 ${isDelivered ? 'bg-green-100 text-green-800' : ''}`}
+            className={`text-[10px] md:text-xs flex-shrink-0 ${isDelivered ? 'bg-green-100 text-green-800' : ''}`}
           >
-            {isDelivered ? 'Delivered' : isGrid && shipment.status === 'in_transit' ? 'Transit' : shipment.status}
+            {isDelivered ? 'Delivered' : shipment.status}
           </Badge>
-          {!isGrid && <span className="text-[10px] md:text-xs font-bold truncate">{shipment.carrier}</span>}
+          <span className="text-[10px] md:text-xs font-bold truncate">{shipment.carrier}</span>
         </div>
 
         {/* Tracking Number */}
@@ -748,18 +746,13 @@ export default function ImportKanbanDashboard() {
                 )}
 
                 {/* International Transit Column */}
-                {column.id === 'international' && (
-                  <div className="grid grid-cols-4 gap-1 md:gap-1.5 auto-rows-fr">
-                    {activeShipments.slice(0, 12).map((shipment) => (
-                      <ShipmentCard 
-                        key={shipment.id} 
-                        shipment={shipment} 
-                        onDragStart={handleDragStart}
-                        isGrid={true}
-                      />
-                    ))}
-                  </div>
-                )}
+                {column.id === 'international' && activeShipments.map((shipment) => (
+                  <ShipmentCard 
+                    key={shipment.id} 
+                    shipment={shipment} 
+                    onDragStart={handleDragStart}
+                  />
+                ))}
 
                 {/* Delivered Column */}
                 {column.id === 'delivered' && deliveredShipments.map((shipment) => (

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useNavigate } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,7 @@ interface PurchaseItem {
 }
 
 export default function CreatePurchase() {
-  const [, navigate] = useLocation();
+  const [, navigate] = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
