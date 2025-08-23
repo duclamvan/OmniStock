@@ -40,6 +40,7 @@ interface Supplier {
   contactPerson?: string;
   email?: string;
   phone?: string;
+  website?: string;
 }
 
 interface Product {
@@ -60,6 +61,7 @@ export default function CreatePurchase() {
   // Form state
   const [supplier, setSupplier] = useState("");
   const [supplierId, setSupplierId] = useState<string | null>(null);
+  const [supplierLink, setSupplierLink] = useState("");
   const [supplierOpen, setSupplierOpen] = useState(false);
   const [supplierSearch, setSupplierSearch] = useState("");
   const [trackingNumber, setTrackingNumber] = useState("");
@@ -75,6 +77,7 @@ export default function CreatePurchase() {
   const [newSupplierContact, setNewSupplierContact] = useState("");
   const [newSupplierEmail, setNewSupplierEmail] = useState("");
   const [newSupplierPhone, setNewSupplierPhone] = useState("");
+  const [newSupplierWebsite, setNewSupplierWebsite] = useState("");
   
   // Product search state
   const [productOpen, setProductOpen] = useState(false);
@@ -141,11 +144,13 @@ export default function CreatePurchase() {
       queryClient.invalidateQueries({ queryKey: ['/api/suppliers'] });
       setSupplier(newSupplier.name);
       setSupplierId(newSupplier.id);
+      setSupplierLink(newSupplier.website || "");
       setNewSupplierDialogOpen(false);
       setNewSupplierName("");
       setNewSupplierContact("");
       setNewSupplierEmail("");
       setNewSupplierPhone("");
+      setNewSupplierWebsite("");
       toast({ title: "Success", description: "Supplier added successfully" });
     },
     onError: () => {
@@ -191,7 +196,8 @@ export default function CreatePurchase() {
       name: newSupplierName,
       contactPerson: newSupplierContact || null,
       email: newSupplierEmail || null,
-      phone: newSupplierPhone || null
+      phone: newSupplierPhone || null,
+      website: newSupplierWebsite || null
     });
   };
 
@@ -410,6 +416,7 @@ export default function CreatePurchase() {
                                   onSelect={() => {
                                     setSupplier(s.name);
                                     setSupplierId(s.id);
+                                    setSupplierLink(s.website || "");
                                     setSupplierOpen(false);
                                     setSupplierSearch("");
                                   }}
@@ -444,6 +451,18 @@ export default function CreatePurchase() {
                   </Popover>
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="supplier-link">Supplier Link</Label>
+                  <Input
+                    id="supplier-link"
+                    value={supplierLink}
+                    onChange={(e) => setSupplierLink(e.target.value)}
+                    placeholder="Auto-filled or enter manually"
+                    data-testid="input-supplier-link"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
                   <Label htmlFor="tracking">Tracking Number</Label>
                   <Input
                     id="tracking"
@@ -453,8 +472,6 @@ export default function CreatePurchase() {
                     data-testid="input-tracking"
                   />
                 </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="purchase-date">Purchase Date *</Label>
                   <Input
@@ -890,6 +907,16 @@ export default function CreatePurchase() {
                 data-testid="input-new-supplier-phone"
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-supplier-website">Website</Label>
+              <Input
+                id="new-supplier-website"
+                value={newSupplierWebsite}
+                onChange={(e) => setNewSupplierWebsite(e.target.value)}
+                placeholder="Optional website URL"
+                data-testid="input-new-supplier-website"
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button 
@@ -900,6 +927,7 @@ export default function CreatePurchase() {
                 setNewSupplierContact("");
                 setNewSupplierEmail("");
                 setNewSupplierPhone("");
+                setNewSupplierWebsite("");
               }}
             >
               Cancel
