@@ -108,6 +108,12 @@ router.post("/purchases", async (req, res) => {
       notes: req.body.notes || null,
       shippingCost: shippingCost.toString(),
       totalCost: totalCost.toString(),
+      // New currency fields
+      paymentCurrency: req.body.paymentCurrency || "USD",
+      totalPaid: req.body.totalPaid?.toString() || totalCost.toString(),
+      purchaseCurrency: req.body.purchaseCurrency || "USD",
+      purchaseTotal: req.body.purchaseTotal?.toString() || totalCost.toString(),
+      exchangeRate: req.body.exchangeRate?.toString() || "1",
       status: "pending",
       createdAt: new Date(),
       updatedAt: new Date()

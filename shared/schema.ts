@@ -23,6 +23,12 @@ export const importPurchases = pgTable('import_purchases', {
   notes: text('notes'),
   shippingCost: decimal('shipping_cost', { precision: 10, scale: 2 }).default('0'),
   totalCost: decimal('total_cost', { precision: 10, scale: 2 }).default('0'),
+  // Currency fields - payment currency is primary
+  paymentCurrency: text('payment_currency').default('USD'),
+  totalPaid: decimal('total_paid', { precision: 10, scale: 2 }).default('0'),
+  purchaseCurrency: text('purchase_currency').default('USD'),
+  purchaseTotal: decimal('purchase_total', { precision: 10, scale: 2 }).default('0'),
+  exchangeRate: decimal('exchange_rate', { precision: 10, scale: 6 }).default('1'), // Rate from purchase to payment currency
   status: text('status').notNull().default('pending'), // pending, processing, at_warehouse, shipped, delivered
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow()

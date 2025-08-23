@@ -71,6 +71,9 @@ export default function CreatePurchase() {
   const [paymentCurrency, setPaymentCurrency] = useState("USD");
   const [totalPaid, setTotalPaid] = useState(0);
   const [displayCurrency, setDisplayCurrency] = useState("USD");
+  const [customCurrencies, setCustomCurrencies] = useState<string[]>([]);
+  const [newCurrencyCode, setNewCurrencyCode] = useState("");
+  const [addingCurrency, setAddingCurrency] = useState(false);
   const [supplier, setSupplier] = useState("");
   const [supplierId, setSupplierId] = useState<string | null>(null);
   const [supplierLink, setSupplierLink] = useState("");
@@ -91,6 +94,27 @@ export default function CreatePurchase() {
     VND: 24500,
     CNY: 7.2
   });
+  
+  // Currency symbols map
+  const getCurrencySymbol = (currency: string) => {
+    const symbols: {[key: string]: string} = {
+      USD: "$",
+      EUR: "€",
+      CZK: "Kč",
+      VND: "₫",
+      CNY: "¥",
+      GBP: "£",
+      JPY: "¥",
+      INR: "₹",
+      AUD: "A$",
+      CAD: "C$",
+      CHF: "Fr",
+      SEK: "kr",
+      NOK: "kr",
+      DKK: "kr"
+    };
+    return symbols[currency] || currency + " ";
+  };
   
   // New supplier dialog
   const [newSupplierDialogOpen, setNewSupplierDialogOpen] = useState(false);
@@ -216,13 +240,7 @@ export default function CreatePurchase() {
   const grandTotal = subtotal + shippingCost;
   
   // Currency symbol
-  const currencySymbol = {
-    USD: "$",
-    EUR: "€",
-    CZK: "Kč",
-    VND: "₫",
-    CNY: "¥"
-  }[purchaseCurrency] || "$";
+  const currencySymbol = getCurrencySymbol(purchaseCurrency);
   
   // Convert to USD
   const convertToUSD = (amount: number, fromCurrency: string) => {
@@ -246,13 +264,7 @@ export default function CreatePurchase() {
   const displaySubtotal = displayCurrency === purchaseCurrency ? subtotal : convertFromUSD(subtotalUSD, displayCurrency);
   const displayShippingCost = displayCurrency === purchaseCurrency ? shippingCost : convertFromUSD(shippingCostUSD, displayCurrency);
   const displayGrandTotal = displayCurrency === purchaseCurrency ? grandTotal : convertFromUSD(grandTotalUSD, displayCurrency);
-  const displayCurrencySymbol = {
-    USD: "$",
-    EUR: "€",
-    CZK: "Kč",
-    VND: "₫",
-    CNY: "¥"
-  }[displayCurrency] || "$";
+  const displayCurrencySymbol = getCurrencySymbol(displayCurrency);
 
   // Create new supplier mutation
   const createSupplierMutation = useMutation({
@@ -524,10 +536,24 @@ export default function CreatePurchase() {
       }
     }
 
+    // Calculate the exchange rate between purchase and payment currency
+    const exchangeRate = exchangeRates[paymentCurrency] / exchangeRates[purchaseCurrency];
+    
+    // Convert purchase total to payment currency if different
+    const purchaseTotal = grandTotal;
+    const autoConvertedTotal = purchaseCurrency !== paymentCurrency 
+      ? grandTotal * exchangeRate 
+      : grandTotal;
+
     const purchaseData = {
+      // Currency fields for database
       purchaseCurrency,
       paymentCurrency,
-      totalPaid,
+      totalPaid: totalPaid || autoConvertedTotal, // Use entered value or auto-converted
+      purchaseTotal,
+      exchangeRate,
+      
+      // Other fields
       supplier,
       supplierId,
       supplierLink: supplierLink || null,
@@ -538,7 +564,7 @@ export default function CreatePurchase() {
       processingTime: processingTime ? `${processingTime} ${processingUnit}` : null,
       notes: notes || null,
       shippingCost,
-      totalCost: grandTotal,
+      totalCost: grandTotal, // Keep for backward compatibility
       // Store converted prices
       prices: {
         original: {
@@ -632,7 +658,13 @@ export default function CreatePurchase() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="purchase-currency">Purchase Currency *</Label>
-                  <Select value={purchaseCurrency} onValueChange={setPurchaseCurrency}>
+                  <Select value={purchaseCurrency} onValueChange={(value) => {
+                    if (value === "add-new") {
+                      setAddingCurrency(true);
+                    } else {
+                      setPurchaseCurrency(value);
+                    }
+                  }}>
                     <SelectTrigger data-testid="select-purchase-currency">
                       <SelectValue />
                     </SelectTrigger>
@@ -642,13 +674,28 @@ export default function CreatePurchase() {
                       <SelectItem value="CZK">CZK - Czech Koruna</SelectItem>
                       <SelectItem value="VND">VND - Vietnamese Dong</SelectItem>
                       <SelectItem value="CNY">CNY - Chinese Yuan</SelectItem>
+                      {customCurrencies.map(currency => (
+                        <SelectItem key={currency} value={currency}>{currency}</SelectItem>
+                      ))}
+                      <div className="border-t">
+                        <SelectItem value="add-new">
+                          <Plus className="mr-2 h-4 w-4 inline" />
+                          Add New Currency
+                        </SelectItem>
+                      </div>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="payment-currency">Payment Currency *</Label>
                   <div className="flex gap-2">
-                    <Select value={paymentCurrency} onValueChange={setPaymentCurrency}>
+                    <Select value={paymentCurrency} onValueChange={(value) => {
+                      if (value === "add-new") {
+                        setAddingCurrency(true);
+                      } else {
+                        setPaymentCurrency(value);
+                      }
+                    }}>
                       <SelectTrigger className="flex-1" data-testid="select-payment-currency">
                         <SelectValue />
                       </SelectTrigger>
@@ -658,6 +705,15 @@ export default function CreatePurchase() {
                         <SelectItem value="CZK">CZK</SelectItem>
                         <SelectItem value="VND">VND</SelectItem>
                         <SelectItem value="CNY">CNY</SelectItem>
+                        {customCurrencies.map(currency => (
+                          <SelectItem key={currency} value={currency}>{currency}</SelectItem>
+                        ))}
+                        <div className="border-t">
+                          <SelectItem value="add-new">
+                            <Plus className="mr-2 h-4 w-4 inline" />
+                            Add New Currency
+                          </SelectItem>
+                        </div>
                       </SelectContent>
                     </Select>
                     <div className="relative w-36">
@@ -672,29 +728,13 @@ export default function CreatePurchase() {
                         data-testid="input-total-paid"
                       />
                       <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm">
-                        {
-                          {
-                            USD: "$",
-                            EUR: "€",
-                            CZK: "Kč",
-                            VND: "₫",
-                            CNY: "¥"
-                          }[paymentCurrency] || "$"
-                        }
+                        {getCurrencySymbol(paymentCurrency)}
                       </span>
                     </div>
                   </div>
                   {purchaseCurrency !== paymentCurrency && grandTotal > 0 && (
                     <div className="text-xs text-muted-foreground">
-                      Grand total in {paymentCurrency}: {
-                        {
-                          USD: "$",
-                          EUR: "€",
-                          CZK: "Kč",
-                          VND: "₫",
-                          CNY: "¥"
-                        }[paymentCurrency] || "$"
-                      }{(grandTotal * exchangeRates[paymentCurrency] / exchangeRates[purchaseCurrency]).toFixed(2)}
+                      Grand total in {paymentCurrency}: {getCurrencySymbol(paymentCurrency)}{(grandTotal * exchangeRates[paymentCurrency] / exchangeRates[purchaseCurrency]).toFixed(2)}
                     </div>
                   )}
                 </div>
@@ -1259,6 +1299,12 @@ export default function CreatePurchase() {
                         <Check className={cn("mr-2 h-4 w-4", displayCurrency === "CNY" ? "opacity-100" : "opacity-0")} />
                         View in CNY{purchaseCurrency === "CNY" ? " (purchase)" : paymentCurrency === "CNY" ? " (payment)" : ""}
                       </DropdownMenuItem>
+                      {customCurrencies.map(currency => (
+                        <DropdownMenuItem key={currency} onClick={() => setDisplayCurrency(currency)}>
+                          <Check className={cn("mr-2 h-4 w-4", displayCurrency === currency ? "opacity-100" : "opacity-0")} />
+                          View in {currency}{purchaseCurrency === currency ? " (purchase)" : paymentCurrency === currency ? " (payment)" : ""}
+                        </DropdownMenuItem>
+                      ))}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -1311,15 +1357,7 @@ export default function CreatePurchase() {
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium">Total Paid ({paymentCurrency}):</span>
                   <span className="font-bold text-blue-600">
-                    {
-                      {
-                        USD: "$",
-                        EUR: "€",
-                        CZK: "Kč",
-                        VND: "₫",
-                        CNY: "¥"
-                      }[paymentCurrency] || "$"
-                    }
+                    {getCurrencySymbol(paymentCurrency)}
                     {totalPaid.toFixed(2)}
                   </span>
                 </div>
@@ -1376,6 +1414,86 @@ export default function CreatePurchase() {
           </Card>
         </div>
       </div>
+
+      {/* Add New Currency Dialog */}
+      <Dialog open={addingCurrency} onOpenChange={setAddingCurrency}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Custom Currency</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-currency-code">Currency Code *</Label>
+              <Input
+                id="new-currency-code"
+                value={newCurrencyCode}
+                onChange={(e) => setNewCurrencyCode(e.target.value.toUpperCase())}
+                placeholder="e.g., GBP, JPY, AUD"
+                maxLength={3}
+                data-testid="input-new-currency-code"
+              />
+              <p className="text-xs text-muted-foreground">Enter a 3-letter currency code</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setNewCurrencyCode("");
+              setAddingCurrency(false);
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={async () => {
+              if (newCurrencyCode.length === 3 && !customCurrencies.includes(newCurrencyCode)) {
+                // Add the currency to the list
+                setCustomCurrencies([...customCurrencies, newCurrencyCode]);
+                
+                // Try to fetch exchange rate for the new currency
+                try {
+                  const response = await fetch(`https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json`);
+                  const data = await response.json();
+                  
+                  const currencyLower = newCurrencyCode.toLowerCase();
+                  if (data.usd && data.usd[currencyLower]) {
+                    setExchangeRates(prev => ({
+                      ...prev,
+                      [newCurrencyCode]: data.usd[currencyLower]
+                    }));
+                  } else {
+                    // If rate not found, default to 1
+                    setExchangeRates(prev => ({
+                      ...prev,
+                      [newCurrencyCode]: 1
+                    }));
+                    toast({ 
+                      title: "Note", 
+                      description: `Exchange rate not found for ${newCurrencyCode}, defaulting to 1:1 with USD` 
+                    });
+                  }
+                } catch (error) {
+                  // If API fails, default to 1
+                  setExchangeRates(prev => ({
+                    ...prev,
+                    [newCurrencyCode]: 1
+                  }));
+                }
+                
+                setPurchaseCurrency(newCurrencyCode);
+                setNewCurrencyCode("");
+                setAddingCurrency(false);
+                toast({ title: "Success", description: `Added ${newCurrencyCode} to currency list` });
+              } else {
+                toast({ 
+                  title: "Error", 
+                  description: "Please enter a valid 3-letter currency code",
+                  variant: "destructive"
+                });
+              }
+            }}>
+              Add Currency
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Add New Supplier Dialog */}
       <Dialog open={newSupplierDialogOpen} onOpenChange={setNewSupplierDialogOpen}>
