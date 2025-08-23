@@ -11,11 +11,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Plus, Package, Trash2, Calculator, DollarSign, 
   Truck, Calendar, FileText, Save, ArrowLeft, AlertCircle,
-  Check, UserPlus, Clock, Search
+  Check, UserPlus, Clock, Search, MoreVertical
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -61,6 +67,7 @@ export default function CreatePurchase() {
 
   // Form state
   const [currency, setCurrency] = useState("USD");
+  const [displayCurrency, setDisplayCurrency] = useState("USD");
   const [supplier, setSupplier] = useState("");
   const [supplierId, setSupplierId] = useState<string | null>(null);
   const [supplierLink, setSupplierLink] = useState("");
@@ -223,6 +230,18 @@ export default function CreatePurchase() {
   const subtotalUSD = convertToUSD(subtotal, currency);
   const shippingCostUSD = convertToUSD(shippingCost, currency);
   const grandTotalUSD = convertToUSD(grandTotal, currency);
+  
+  // Display currency conversions
+  const displaySubtotal = displayCurrency === currency ? subtotal : convertFromUSD(subtotalUSD, displayCurrency);
+  const displayShippingCost = displayCurrency === currency ? shippingCost : convertFromUSD(shippingCostUSD, displayCurrency);
+  const displayGrandTotal = displayCurrency === currency ? grandTotal : convertFromUSD(grandTotalUSD, displayCurrency);
+  const displayCurrencySymbol = {
+    USD: "$",
+    EUR: "€",
+    CZK: "Kč",
+    VND: "₫",
+    CNY: "¥"
+  }[displayCurrency] || "$";
 
   // Create new supplier mutation
   const createSupplierMutation = useMutation({
@@ -976,10 +995,41 @@ export default function CreatePurchase() {
           {/* Order Summary */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calculator className="h-5 w-5" />
-                Order Summary
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Calculator className="h-5 w-5" />
+                  Order Summary
+                </CardTitle>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setDisplayCurrency("USD")}>
+                      <Check className={cn("mr-2 h-4 w-4", displayCurrency === "USD" ? "opacity-100" : "opacity-0")} />
+                      View in USD
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setDisplayCurrency("EUR")}>
+                      <Check className={cn("mr-2 h-4 w-4", displayCurrency === "EUR" ? "opacity-100" : "opacity-0")} />
+                      View in EUR
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setDisplayCurrency("CZK")}>
+                      <Check className={cn("mr-2 h-4 w-4", displayCurrency === "CZK" ? "opacity-100" : "opacity-0")} />
+                      View in CZK
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setDisplayCurrency("VND")}>
+                      <Check className={cn("mr-2 h-4 w-4", displayCurrency === "VND" ? "opacity-100" : "opacity-0")} />
+                      View in VND
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setDisplayCurrency("CNY")}>
+                      <Check className={cn("mr-2 h-4 w-4", displayCurrency === "CNY" ? "opacity-100" : "opacity-0")} />
+                      View in CNY
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex justify-between">
@@ -997,28 +1047,28 @@ export default function CreatePurchase() {
               <div className="border-t pt-3">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal:</span>
-                  <span className="font-medium">{currencySymbol}{subtotal.toFixed(2)}</span>
+                  <span className="font-medium">{displayCurrencySymbol}{displaySubtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between mt-2">
                   <span className="text-muted-foreground">Shipping:</span>
-                  <span className="font-medium">{currencySymbol}{shippingCost.toFixed(2)}</span>
+                  <span className="font-medium">{displayCurrencySymbol}{displayShippingCost.toFixed(2)}</span>
                 </div>
                 {totalQuantity > 0 && (
                   <div className="flex justify-between mt-2 text-sm">
                     <span className="text-muted-foreground">Per Item Shipping:</span>
-                    <span>{currencySymbol}{shippingPerItem.toFixed(2)}</span>
+                    <span>{displayCurrencySymbol}{(displayShippingCost / totalQuantity).toFixed(2)}</span>
                   </div>
                 )}
               </div>
               <div className="border-t pt-3">
                 <div className="flex justify-between text-lg">
                   <span className="font-bold">Grand Total:</span>
-                  <span className="font-bold text-green-600">{currencySymbol}{grandTotal.toFixed(2)}</span>
+                  <span className="font-bold text-green-600">{displayCurrencySymbol}{displayGrandTotal.toFixed(2)}</span>
                 </div>
-                {currency !== "USD" && (
-                  <div className="flex justify-between text-sm mt-1">
-                    <span className="text-muted-foreground">USD Equivalent:</span>
-                    <span className="text-muted-foreground">${grandTotalUSD.toFixed(2)}</span>
+                {displayCurrency !== currency && (
+                  <div className="flex justify-between text-xs mt-1">
+                    <span className="text-muted-foreground">Original ({currency}):</span>
+                    <span className="text-muted-foreground">{currencySymbol}{grandTotal.toFixed(2)}</span>
                   </div>
                 )}
               </div>
@@ -1058,10 +1108,8 @@ export default function CreatePurchase() {
               <div className="flex items-start gap-2">
                 <Calculator className="h-4 w-4 mt-0.5 text-muted-foreground" />
                 <div>
-                  <p className="font-medium">Exchange Rates</p>
-                  <p className="text-muted-foreground text-xs">
-                    1 USD = {exchangeRates.EUR.toFixed(3)} EUR / {exchangeRates.CZK.toFixed(1)} CZK
-                  </p>
+                  <p className="font-medium">Currency Conversion</p>
+                  <p className="text-muted-foreground">Use the ⋮ menu in Order Summary to view prices in different currencies</p>
                 </div>
               </div>
             </CardContent>
