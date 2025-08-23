@@ -59,9 +59,11 @@ export default function CreatePurchase() {
   const productDropdownRef = useRef<HTMLDivElement>(null);
 
   // Form state
+  const [currency, setCurrency] = useState("USD");
   const [supplier, setSupplier] = useState("");
   const [supplierId, setSupplierId] = useState<string | null>(null);
   const [supplierLink, setSupplierLink] = useState("");
+  const [supplierLocation, setSupplierLocation] = useState("");
   const [supplierDropdownOpen, setSupplierDropdownOpen] = useState(false);
   const [trackingNumber, setTrackingNumber] = useState("");
   const [purchaseDate, setPurchaseDate] = useState("");
@@ -154,6 +156,15 @@ export default function CreatePurchase() {
   const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
   const shippingPerItem = totalQuantity > 0 ? shippingCost / totalQuantity : 0;
   const grandTotal = subtotal + shippingCost;
+  
+  // Currency symbol
+  const currencySymbol = {
+    USD: "$",
+    EUR: "€",
+    CZK: "Kč",
+    VND: "₫",
+    CNY: "¥"
+  }[currency] || "$";
 
   // Create new supplier mutation
   const createSupplierMutation = useMutation({
@@ -331,8 +342,11 @@ export default function CreatePurchase() {
     }
 
     const purchaseData = {
+      currency,
       supplier,
       supplierId,
+      supplierLink: supplierLink || null,
+      supplierLocation: supplierLocation || null,
       purchaseDate: purchaseDate ? new Date(purchaseDate).toISOString() : new Date().toISOString(),
       trackingNumber: trackingNumber || null,
       estimatedArrival,
@@ -401,6 +415,21 @@ export default function CreatePurchase() {
               <CardDescription>Basic details about the supplier and order</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="currency">Currency *</Label>
+                <Select value={currency} onValueChange={setCurrency}>
+                  <SelectTrigger data-testid="select-currency">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USD">USD - US Dollar</SelectItem>
+                    <SelectItem value="EUR">EUR - Euro</SelectItem>
+                    <SelectItem value="CZK">CZK - Czech Koruna</SelectItem>
+                    <SelectItem value="VND">VND - Vietnamese Dong</SelectItem>
+                    <SelectItem value="CNY">CNY - Chinese Yuan</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="supplier">Supplier Name *</Label>
@@ -474,6 +503,16 @@ export default function CreatePurchase() {
                   />
                 </div>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="supplier-location">Supplier Location</Label>
+                <Input
+                  id="supplier-location"
+                  value={supplierLocation}
+                  onChange={(e) => setSupplierLocation(e.target.value)}
+                  placeholder="e.g., Shenzhen, China"
+                  data-testid="input-supplier-location"
+                />
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="purchase-date">Purchase Date *</Label>
@@ -513,9 +552,9 @@ export default function CreatePurchase() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="shipping">Shipping Cost ($)</Label>
+                  <Label htmlFor="shipping">Shipping Cost ({currency})</Label>
                   <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">{currencySymbol}</span>
                     <Input
                       id="shipping"
                       type="number"
@@ -644,7 +683,7 @@ export default function CreatePurchase() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="unitPrice">Unit Price ($) *</Label>
+                  <Label htmlFor="unitPrice">Unit Price ({currency}) *</Label>
                   <Input
                     id="unitPrice"
                     type="number"
@@ -732,15 +771,15 @@ export default function CreatePurchase() {
                           </TableCell>
                           <TableCell>{item.sku || '-'}</TableCell>
                           <TableCell className="text-right">{item.quantity}</TableCell>
-                          <TableCell className="text-right">${item.unitPrice.toFixed(2)}</TableCell>
+                          <TableCell className="text-right">{currencySymbol}{item.unitPrice.toFixed(2)}</TableCell>
                           <TableCell className="text-right font-medium">
-                            ${item.totalPrice.toFixed(2)}
+                            {currencySymbol}{item.totalPrice.toFixed(2)}
                           </TableCell>
                           <TableCell className="text-right">
                             {(item.weight * item.quantity).toFixed(2)}kg
                           </TableCell>
                           <TableCell className="text-right text-green-600 font-medium">
-                            ${item.costWithShipping.toFixed(2)}
+                            {currencySymbol}{item.costWithShipping.toFixed(2)}
                           </TableCell>
                           <TableCell>
                             <Button
@@ -760,7 +799,7 @@ export default function CreatePurchase() {
                         <TableCell colSpan={2} className="font-bold">Totals</TableCell>
                         <TableCell className="text-right font-bold">{totalQuantity}</TableCell>
                         <TableCell></TableCell>
-                        <TableCell className="text-right font-bold">${subtotal.toFixed(2)}</TableCell>
+                        <TableCell className="text-right font-bold">{currencySymbol}{subtotal.toFixed(2)}</TableCell>
                         <TableCell className="text-right font-bold">{totalWeight.toFixed(2)}kg</TableCell>
                         <TableCell className="text-right font-bold text-green-600">
                           ${grandTotal.toFixed(2)}
@@ -801,23 +840,23 @@ export default function CreatePurchase() {
               <div className="border-t pt-3">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal:</span>
-                  <span className="font-medium">${subtotal.toFixed(2)}</span>
+                  <span className="font-medium">{currencySymbol}{subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between mt-2">
                   <span className="text-muted-foreground">Shipping:</span>
-                  <span className="font-medium">${shippingCost.toFixed(2)}</span>
+                  <span className="font-medium">{currencySymbol}{shippingCost.toFixed(2)}</span>
                 </div>
                 {totalQuantity > 0 && (
                   <div className="flex justify-between mt-2 text-sm">
                     <span className="text-muted-foreground">Per Item Shipping:</span>
-                    <span>${shippingPerItem.toFixed(2)}</span>
+                    <span>{currencySymbol}{shippingPerItem.toFixed(2)}</span>
                   </div>
                 )}
               </div>
               <div className="border-t pt-3">
                 <div className="flex justify-between text-lg">
                   <span className="font-bold">Grand Total:</span>
-                  <span className="font-bold text-green-600">${grandTotal.toFixed(2)}</span>
+                  <span className="font-bold text-green-600">{currencySymbol}{grandTotal.toFixed(2)}</span>
                 </div>
               </div>
             </CardContent>
