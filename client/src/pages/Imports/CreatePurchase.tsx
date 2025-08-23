@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { normalizeVietnamese } from "@/lib/searchUtils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,7 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   Plus, Package, Trash2, Calculator, DollarSign, 
   Truck, Calendar, FileText, Save, ArrowLeft, AlertCircle,
-  Check, ChevronsUpDown, UserPlus, Clock
+  Check, ChevronsUpDown, UserPlus, Clock, Search
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -39,6 +40,16 @@ interface Supplier {
   contactPerson?: string;
   email?: string;
   phone?: string;
+}
+
+interface Product {
+  id: string;
+  name: string;
+  sku?: string;
+  barcode?: string;
+  price?: number;
+  weight?: number;
+  dimensions?: string;
 }
 
 export default function CreatePurchase() {
@@ -65,6 +76,10 @@ export default function CreatePurchase() {
   const [newSupplierEmail, setNewSupplierEmail] = useState("");
   const [newSupplierPhone, setNewSupplierPhone] = useState("");
   
+  // Product search state
+  const [productOpen, setProductOpen] = useState(false);
+  const [productSearch, setProductSearch] = useState("");
+  
   // Items state
   const [items, setItems] = useState<PurchaseItem[]>([]);
   const [currentItem, setCurrentItem] = useState<Partial<PurchaseItem>>({
@@ -89,6 +104,24 @@ export default function CreatePurchase() {
   // Fetch suppliers
   const { data: suppliers = [] } = useQuery<Supplier[]>({
     queryKey: ['/api/suppliers']
+  });
+
+  // Fetch products
+  const { data: products = [] } = useQuery<Product[]>({
+    queryKey: ['/api/products']
+  });
+
+  // Filter products based on search with Vietnamese diacritics support
+  const filteredProducts = products.filter(product => {
+    if (!productSearch) return true;
+    const normalizedSearch = normalizeVietnamese(productSearch.toLowerCase());
+    const normalizedName = normalizeVietnamese(product.name.toLowerCase());
+    const normalizedSku = product.sku ? normalizeVietnamese(product.sku.toLowerCase()) : '';
+    
+    return normalizedName.includes(normalizedSearch) || 
+           normalizedSku.includes(normalizedSearch) ||
+           product.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+           (product.sku && product.sku.toLowerCase().includes(productSearch.toLowerCase()));
   });
 
   // Calculated values
@@ -160,6 +193,19 @@ export default function CreatePurchase() {
       email: newSupplierEmail || null,
       phone: newSupplierPhone || null
     });
+  };
+
+  const selectProduct = (product: Product) => {
+    setCurrentItem({
+      ...currentItem,
+      name: product.name,
+      sku: product.sku || "",
+      unitPrice: product.price || currentItem.unitPrice || 0,
+      weight: product.weight || currentItem.weight || 0,
+      dimensions: product.dimensions || currentItem.dimensions || ""
+    });
+    setProductOpen(false);
+    setProductSearch("");
   };
 
   const addItem = () => {
@@ -487,13 +533,76 @@ export default function CreatePurchase() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="itemName">Item Name *</Label>
-                  <Input
-                    id="itemName"
-                    value={currentItem.name}
-                    onChange={(e) => setCurrentItem({...currentItem, name: e.target.value})}
-                    placeholder="Product name"
-                    data-testid="input-item-name"
-                  />
+                  <Popover open={productOpen} onOpenChange={setProductOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={productOpen}
+                        className="w-full justify-between font-normal"
+                        data-testid="input-item-name"
+                      >
+                        {currentItem.name || "Search or enter product name..."}
+                        <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0">
+                      <Command>
+                        <CommandInput 
+                          placeholder="Search products..." 
+                          value={productSearch}
+                          onValueChange={(value) => {
+                            setProductSearch(value);
+                            setCurrentItem({...currentItem, name: value});
+                          }}
+                        />
+                        <CommandList>
+                          {filteredProducts.length === 0 && productSearch && (
+                            <CommandEmpty>
+                              <div className="p-2">
+                                <p className="text-sm text-muted-foreground mb-2">No product found</p>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setCurrentItem({...currentItem, name: productSearch});
+                                    setProductOpen(false);
+                                    setProductSearch("");
+                                  }}
+                                  className="w-full"
+                                >
+                                  <Plus className="mr-2 h-4 w-4" />
+                                  Use "{productSearch}" as new product
+                                </Button>
+                              </div>
+                            </CommandEmpty>
+                          )}
+                          <CommandGroup>
+                            {filteredProducts.slice(0, 10).map((product) => (
+                              <CommandItem
+                                key={product.id}
+                                value={product.name}
+                                onSelect={() => selectProduct(product)}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    currentItem.name === product.name ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                <div className="flex-1">
+                                  <div className="font-medium">{product.name}</div>
+                                  {product.sku && (
+                                    <div className="text-xs text-muted-foreground">SKU: {product.sku}</div>
+                                  )}
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="sku">SKU/Code</Label>
@@ -501,7 +610,7 @@ export default function CreatePurchase() {
                     id="sku"
                     value={currentItem.sku}
                     onChange={(e) => setCurrentItem({...currentItem, sku: e.target.value})}
-                    placeholder="Optional SKU"
+                    placeholder="Auto-filled or enter manually"
                     data-testid="input-sku"
                   />
                 </div>
@@ -708,10 +817,17 @@ export default function CreatePurchase() {
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <div className="flex items-start gap-2">
-                <UserPlus className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                <Search className="h-4 w-4 mt-0.5 text-muted-foreground" />
                 <div>
-                  <p className="font-medium">Dynamic Suppliers</p>
-                  <p className="text-muted-foreground">Search existing suppliers or add new ones instantly</p>
+                  <p className="font-medium">Smart Product Search</p>
+                  <p className="text-muted-foreground">Search existing products with Vietnamese diacritics support</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-2">
+                <Package className="h-4 w-4 mt-0.5 text-muted-foreground" />
+                <div>
+                  <p className="font-medium">Auto-fill SKU</p>
+                  <p className="text-muted-foreground">SKU automatically filled when selecting existing products</p>
                 </div>
               </div>
               <div className="flex items-start gap-2">
@@ -719,13 +835,6 @@ export default function CreatePurchase() {
                 <div>
                   <p className="font-medium">Processing Time</p>
                   <p className="text-muted-foreground">Estimated arrival calculated from purchase date + processing time</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-2">
-                <Truck className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                <div>
-                  <p className="font-medium">Shipping Distribution</p>
-                  <p className="text-muted-foreground">Shipping cost is distributed equally across all items</p>
                 </div>
               </div>
             </CardContent>
