@@ -930,38 +930,45 @@ export default function CreatePurchase() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Item</TableHead>
-                        <TableHead>SKU</TableHead>
-                        <TableHead className="text-right">Qty</TableHead>
-                        <TableHead className="text-right">Unit Price</TableHead>
-                        <TableHead className="text-right">Total</TableHead>
-                        <TableHead className="text-right">Weight</TableHead>
-                        <TableHead className="text-right">Cost w/ Shipping</TableHead>
-                        <TableHead></TableHead>
+                        <TableHead className="w-[35%]">Item</TableHead>
+                        <TableHead className="w-[15%]">SKU</TableHead>
+                        <TableHead className="text-center w-[10%]">Qty</TableHead>
+                        <TableHead className="text-right w-[15%]">Unit Price</TableHead>
+                        <TableHead className="text-right w-[15%]">Total</TableHead>
+                        <TableHead className="text-right w-[15%]">Cost w/ Shipping</TableHead>
+                        <TableHead className="w-[5%]"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {items.map((item) => (
                         <TableRow key={item.id}>
                           <TableCell className="font-medium">
-                            <div>
-                              <div>{item.name}</div>
+                            <div className="space-y-1">
+                              <div className="font-semibold">{item.name}</div>
                               {item.notes && (
                                 <div className="text-xs text-muted-foreground">{item.notes}</div>
                               )}
+                              {item.dimensions && (
+                                <div className="text-xs text-muted-foreground">Dimensions: {item.dimensions}</div>
+                              )}
                             </div>
                           </TableCell>
-                          <TableCell>{item.sku || '-'}</TableCell>
-                          <TableCell className="text-right">{item.quantity}</TableCell>
-                          <TableCell className="text-right">{currencySymbol}{item.unitPrice.toFixed(2)}</TableCell>
-                          <TableCell className="text-right font-medium">
-                            {currencySymbol}{item.totalPrice.toFixed(2)}
+                          <TableCell>
+                            <span className="font-mono text-sm">{item.sku || '-'}</span>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <span className="font-semibold">{item.quantity}</span>
                           </TableCell>
                           <TableCell className="text-right">
-                            {(item.weight * item.quantity).toFixed(2)}kg
+                            <span className="font-mono">{currencySymbol}{item.unitPrice.toFixed(2)}</span>
                           </TableCell>
-                          <TableCell className="text-right text-green-600 font-medium">
-                            {currencySymbol}{item.costWithShipping.toFixed(2)}
+                          <TableCell className="text-right">
+                            <span className="font-semibold">{currencySymbol}{item.totalPrice.toFixed(2)}</span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span className="text-green-600 font-semibold">
+                              {currencySymbol}{item.costWithShipping.toFixed(2)}
+                            </span>
                           </TableCell>
                           <TableCell>
                             <Button
@@ -970,7 +977,7 @@ export default function CreatePurchase() {
                               onClick={() => removeItem(item.id)}
                               data-testid={`button-remove-${item.id}`}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -978,13 +985,14 @@ export default function CreatePurchase() {
                     </TableBody>
                     <TableFooter>
                       <TableRow>
-                        <TableCell colSpan={2} className="font-bold">Totals</TableCell>
-                        <TableCell className="text-right font-bold">{totalQuantity}</TableCell>
+                        <TableCell colSpan={2} className="font-bold text-base">Totals</TableCell>
+                        <TableCell className="text-center font-bold text-base">{totalQuantity}</TableCell>
                         <TableCell></TableCell>
-                        <TableCell className="text-right font-bold">{currencySymbol}{subtotal.toFixed(2)}</TableCell>
-                        <TableCell className="text-right font-bold">{totalWeight.toFixed(2)}kg</TableCell>
-                        <TableCell className="text-right font-bold text-green-600">
-                          ${grandTotal.toFixed(2)}
+                        <TableCell className="text-right font-bold text-base">
+                          {currencySymbol}{subtotal.toFixed(2)}
+                        </TableCell>
+                        <TableCell className="text-right font-bold text-green-600 text-base">
+                          {currencySymbol}{grandTotal.toFixed(2)}
                         </TableCell>
                         <TableCell></TableCell>
                       </TableRow>
