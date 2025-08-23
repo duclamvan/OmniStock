@@ -135,25 +135,25 @@ function PurchaseCard({
     <Card
       draggable
       onDragStart={(e) => onDragStart(e, purchase, 'purchase')}
-      className="cursor-move hover:shadow-md transition-all bg-white dark:bg-gray-800"
+      className="cursor-move hover:shadow-md transition-all bg-white dark:bg-gray-800 w-full overflow-hidden"
       data-testid={`purchase-${purchase.id}`}
     >
-      <CardContent className="p-3 space-y-2">
+      <CardContent className="p-3 space-y-2 overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <h4 className="font-semibold text-sm truncate flex-1 mr-2">
+        <div className="flex items-center justify-between gap-2 min-w-0">
+          <h4 className="font-semibold text-sm truncate min-w-0">
             {purchase.supplier}
           </h4>
-          <Badge variant="outline" className="text-xs">
+          <Badge variant="outline" className="text-xs flex-shrink-0">
             {purchase.status}
           </Badge>
         </div>
 
         {/* Tracking Info */}
         {purchase.trackingNumber && (
-          <div className="flex items-center text-xs text-muted-foreground">
-            <Hash className="h-3 w-3 mr-1" />
-            <span className="truncate">{purchase.trackingNumber}</span>
+          <div className="flex items-center text-xs text-muted-foreground min-w-0">
+            <Hash className="h-3 w-3 mr-1 flex-shrink-0" />
+            <span className="truncate min-w-0">{purchase.trackingNumber}</span>
           </div>
         )}
 
@@ -161,11 +161,11 @@ function PurchaseCard({
         {purchase.items.length > 0 && (
           <div className="space-y-1 pt-1">
             {displayItems.map((item, idx) => (
-              <div key={item.id} className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground truncate flex-1">
+              <div key={item.id} className="flex items-center justify-between text-xs gap-2 min-w-0">
+                <span className="text-muted-foreground truncate min-w-0">
                   {idx + 1}. {item.name}
                 </span>
-                <span className="text-muted-foreground ml-2">
+                <span className="text-muted-foreground flex-shrink-0">
                   x{item.quantity}
                 </span>
               </div>
@@ -226,13 +226,13 @@ function CustomItemCard({
     <Card
       draggable
       onDragStart={(e) => onDragStart(e, item, 'custom')}
-      className="cursor-move hover:shadow-md transition-all bg-white dark:bg-gray-800"
+      className="cursor-move hover:shadow-md transition-all bg-white dark:bg-gray-800 w-full overflow-hidden"
       data-testid={`custom-${item.id}`}
     >
-      <CardContent className="p-3 space-y-2">
+      <CardContent className="p-3 space-y-2 overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <h4 className="font-semibold text-sm truncate flex-1 mr-2">
+        <div className="flex items-center justify-between min-w-0">
+          <h4 className="font-semibold text-sm truncate min-w-0">
             {item.name}
           </h4>
         </div>
@@ -258,9 +258,9 @@ function CustomItemCard({
 
         {/* Customer Info */}
         {item.customerName && (
-          <div className="flex items-center text-xs">
-            <Users className="h-3 w-3 mr-1" />
-            <span className="truncate">{item.customerName}</span>
+          <div className="flex items-center text-xs min-w-0">
+            <Users className="h-3 w-3 mr-1 flex-shrink-0" />
+            <span className="truncate min-w-0">{item.customerName}</span>
           </div>
         )}
       </CardContent>
@@ -286,17 +286,17 @@ function ConsolidationCard({
     <Card
       draggable
       onDragStart={(e) => onDragStart(e, consolidation, 'consolidation')}
-      className={`cursor-move hover:shadow-md transition-all bg-white dark:bg-gray-800 border-2 ${borderColor}`}
+      className={`cursor-move hover:shadow-md transition-all bg-white dark:bg-gray-800 border-2 ${borderColor} w-full overflow-hidden`}
       data-testid={`consolidation-${consolidation.id}`}
     >
-      <CardContent className="p-3 space-y-2">
+      <CardContent className="p-3 space-y-2 overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Icon className="h-4 w-4" />
-            <h4 className="font-bold text-sm">{consolidation.name}</h4>
+        <div className="flex items-center justify-between gap-2 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <Icon className="h-4 w-4 flex-shrink-0" />
+            <h4 className="font-bold text-sm truncate">{consolidation.name}</h4>
           </div>
-          <Badge className="text-xs bg-green-100 text-green-800">
+          <Badge className="text-xs bg-green-100 text-green-800 flex-shrink-0">
             {consolidation.items.length} items
           </Badge>
         </div>
@@ -317,11 +317,11 @@ function ConsolidationCard({
         {consolidation.items.length > 0 && (
           <div className="space-y-1 pt-1 border-t">
             {displayItems.map((item, idx) => (
-              <div key={item.id} className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground truncate flex-1">
+              <div key={item.id} className="flex items-center justify-between text-xs gap-2 min-w-0">
+                <span className="text-muted-foreground truncate min-w-0">
                   {idx + 1}. {item.name}
                 </span>
-                <span className="text-muted-foreground ml-2">
+                <span className="text-muted-foreground flex-shrink-0">
                   x{item.quantity}
                 </span>
               </div>
@@ -381,10 +381,10 @@ function ShipmentCard({
     <Card
       draggable={!isDelivered}
       onDragStart={onDragStart ? (e) => onDragStart(e, shipment, 'shipment') : undefined}
-      className={`${!isDelivered ? 'cursor-move' : ''} hover:shadow-md transition-all bg-white dark:bg-gray-800`}
+      className={`${!isDelivered ? 'cursor-move' : ''} hover:shadow-md transition-all bg-white dark:bg-gray-800 w-full overflow-hidden`}
       data-testid={`shipment-${shipment.id}`}
     >
-      <CardContent className="p-3 space-y-2">
+      <CardContent className="p-3 space-y-2 overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between">
           <Badge 
@@ -397,20 +397,20 @@ function ShipmentCard({
         </div>
 
         {/* Tracking Number */}
-        <h4 className="font-semibold text-sm">{shipment.trackingNumber}</h4>
+        <h4 className="font-semibold text-sm truncate">{shipment.trackingNumber}</h4>
 
         {/* Route */}
-        <div className="flex items-center text-xs text-muted-foreground">
-          <span className="truncate">{shipment.origin}</span>
+        <div className="flex items-center text-xs text-muted-foreground min-w-0">
+          <span className="truncate min-w-0 max-w-[40%]">{shipment.origin}</span>
           <ArrowRight className="h-3 w-3 mx-1 flex-shrink-0" />
-          <span className="truncate">{shipment.destination}</span>
+          <span className="truncate min-w-0 max-w-[40%]">{shipment.destination}</span>
         </div>
 
         {/* Current Location */}
         {shipment.currentLocation && !isDelivered && (
-          <div className="flex items-center text-xs">
-            <MapPin className="h-3 w-3 mr-1" />
-            <span className="truncate">{shipment.currentLocation}</span>
+          <div className="flex items-center text-xs min-w-0">
+            <MapPin className="h-3 w-3 mr-1 flex-shrink-0" />
+            <span className="truncate min-w-0">{shipment.currentLocation}</span>
           </div>
         )}
 
@@ -716,7 +716,7 @@ export default function ImportKanbanDashboard() {
 
             {/* Column Content */}
             <ScrollArea className="h-[600px] p-3">
-              <div className="space-y-3">
+              <div className="space-y-3 w-full">
                 {/* Supplier Processing Column */}
                 {column.id === 'processing' && filteredPurchases.map((purchase) => (
                   <PurchaseCard 
