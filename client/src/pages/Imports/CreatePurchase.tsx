@@ -30,6 +30,7 @@ import {
   Copy, PackagePlus, ListPlus, Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 
 interface PurchaseItem {
   id: string;
@@ -199,6 +200,12 @@ export default function CreatePurchase() {
   const [newCategoryDialogOpen, setNewCategoryDialogOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [savingCategory, setSavingCategory] = useState(false);
+  
+  // Column sizes for resizable table
+  const [columnSizes, setColumnSizes] = useState<number[]>(() => {
+    const saved = localStorage.getItem('orderEdit-columnSizes');
+    return saved ? JSON.parse(saved) : [25, 20, 10, 15, 15, 15];
+  });
 
   // Set default purchase date to now
   useEffect(() => {
@@ -1766,23 +1773,58 @@ export default function CreatePurchase() {
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
+                  <ResizablePanelGroup 
+                    direction="horizontal" 
+                    className="min-h-0 border-b"
+                    onLayout={(sizes) => {
+                      setColumnSizes(sizes);
+                      localStorage.setItem('orderEdit-columnSizes', JSON.stringify(sizes));
+                    }}
+                  >
+                    <ResizablePanel defaultSize={columnSizes[0]} minSize={10}>
+                      <div className="px-2 py-2 font-semibold text-sm">Item</div>
+                    </ResizablePanel>
+                    <ResizableHandle withHandle className="mx-1" />
+                    <ResizablePanel defaultSize={columnSizes[1]} minSize={10}>
+                      <div className="px-2 py-2 font-semibold text-sm">Category</div>
+                    </ResizablePanel>
+                    <ResizableHandle withHandle className="mx-1" />
+                    <ResizablePanel defaultSize={columnSizes[2]} minSize={8}>
+                      <div className="px-2 py-2 font-semibold text-sm text-center">Qty</div>
+                    </ResizablePanel>
+                    <ResizableHandle withHandle className="mx-1" />
+                    <ResizablePanel defaultSize={columnSizes[3]} minSize={10}>
+                      <div className="px-2 py-2 font-semibold text-sm text-right">Unit Price</div>
+                    </ResizablePanel>
+                    <ResizableHandle withHandle className="mx-1 hidden sm:flex" />
+                    <ResizablePanel defaultSize={columnSizes[4]} minSize={10} className="hidden sm:block">
+                      <div className="px-2 py-2 font-semibold text-sm text-right">Total</div>
+                    </ResizablePanel>
+                    <ResizableHandle withHandle className="mx-1 hidden md:flex" />
+                    <ResizablePanel defaultSize={columnSizes[5]} minSize={10} className="hidden md:block">
+                      <div className="px-2 py-2 font-semibold text-sm text-right">Cost w/ Shipping</div>
+                    </ResizablePanel>
+                    <div className="w-10">
+                      <div className="px-2 py-2"></div>
+                    </div>
+                  </ResizablePanelGroup>
                   <Table>
-                    <TableHeader>
+                    <TableHeader className="sr-only">
                       <TableRow>
-                        <TableHead className="min-w-[120px]">Item</TableHead>
-                        <TableHead className="min-w-[140px]">Category</TableHead>
-                        <TableHead className="text-center">Qty</TableHead>
-                        <TableHead className="text-right">Unit Price</TableHead>
-                        <TableHead className="text-right hidden sm:table-cell">Total</TableHead>
-                        <TableHead className="text-right hidden md:table-cell">Cost w/ Shipping</TableHead>
-                        <TableHead className="w-10"></TableHead>
+                        <TableHead>Item</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead>Qty</TableHead>
+                        <TableHead>Unit Price</TableHead>
+                        <TableHead>Total</TableHead>
+                        <TableHead>Cost w/ Shipping</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {items.map((item) => {
                         return (
                           <TableRow key={item.id} className="hover:bg-muted/50 transition-colors">
-                            <TableCell className="font-medium">
+                            <TableCell className="font-medium" style={{ width: `${columnSizes[0]}%` }}>
                               <div className="space-y-0.5">
                                 <Input
                                   value={item.name}
@@ -1803,7 +1845,7 @@ export default function CreatePurchase() {
                                 )}
                               </div>
                             </TableCell>
-                            <TableCell>
+                            <TableCell style={{ width: `${columnSizes[1]}%` }}>
                               <Select
                                 value={item.categoryId?.toString() || ""}
                                 onValueChange={(value) => {
@@ -1839,7 +1881,7 @@ export default function CreatePurchase() {
                                 </SelectContent>
                               </Select>
                             </TableCell>
-                            <TableCell className="text-center">
+                            <TableCell className="text-center" style={{ width: `${columnSizes[2]}%` }}>
                               <Input
                                 type="number"
                                 value={item.quantity}
@@ -1853,7 +1895,7 @@ export default function CreatePurchase() {
                                 min="1"
                               />
                             </TableCell>
-                            <TableCell className="text-right">
+                            <TableCell className="text-right" style={{ width: `${columnSizes[3]}%` }}>
                               <div className="flex items-center justify-end">
                                 <span className="font-mono text-sm mr-1">{currencySymbol}</span>
                                 <Input
@@ -1871,13 +1913,13 @@ export default function CreatePurchase() {
                                 />
                               </div>
                             </TableCell>
-                            <TableCell className="text-right hidden sm:table-cell">
+                            <TableCell className="text-right hidden sm:table-cell" style={{ width: `${columnSizes[4]}%` }}>
                               <span className="font-medium text-sm">
                                 {currencySymbol}
                                 {item.totalPrice.toFixed(2)}
                               </span>
                             </TableCell>
-                            <TableCell className="text-right hidden md:table-cell">
+                            <TableCell className="text-right hidden md:table-cell" style={{ width: `${columnSizes[5]}%` }}>
                               {(() => {
                                 const selectedCurrency = itemCurrencyDisplay[item.id] || purchaseCurrency;
                                 const rate = exchangeRates[selectedCurrency] / exchangeRates[purchaseCurrency];
@@ -1898,7 +1940,7 @@ export default function CreatePurchase() {
                                 );
                               })()}
                             </TableCell>
-                            <TableCell className="px-1">
+                            <TableCell className="px-1" style={{ width: '40px' }}>
                               <div className="flex items-center justify-end">
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
@@ -1964,16 +2006,17 @@ export default function CreatePurchase() {
                     </TableBody>
                     <TableFooter>
                       <TableRow>
-                        <TableCell className="font-bold">Totals</TableCell>
-                        <TableCell className="text-center font-bold">{totalQuantity}</TableCell>
-                        <TableCell></TableCell>
-                        <TableCell className="text-right font-bold">
+                        <TableCell className="font-bold" style={{ width: `${columnSizes[0]}%` }}>Totals</TableCell>
+                        <TableCell style={{ width: `${columnSizes[1]}%` }}></TableCell>
+                        <TableCell className="text-center font-bold" style={{ width: `${columnSizes[2]}%` }}>{totalQuantity}</TableCell>
+                        <TableCell style={{ width: `${columnSizes[3]}%` }}></TableCell>
+                        <TableCell className="text-right font-bold hidden sm:table-cell" style={{ width: `${columnSizes[4]}%` }}>
                           {currencySymbol}{subtotal.toFixed(2)}
                         </TableCell>
-                        <TableCell className="text-right font-bold text-green-600">
+                        <TableCell className="text-right font-bold text-green-600 hidden md:table-cell" style={{ width: `${columnSizes[5]}%` }}>
                           {currencySymbol}{grandTotal.toFixed(2)}
                         </TableCell>
-                        <TableCell></TableCell>
+                        <TableCell style={{ width: '40px' }}></TableCell>
                       </TableRow>
                     </TableFooter>
                   </Table>
