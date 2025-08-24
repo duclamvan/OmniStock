@@ -1733,12 +1733,12 @@ export default function CreatePurchase() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Item</TableHead>
-                        <TableHead className="text-center w-16">Qty</TableHead>
-                        <TableHead className="text-right w-24">Unit Price</TableHead>
-                        <TableHead className="text-right w-24">Total</TableHead>
-                        <TableHead className="text-right w-28">Cost w/ Shipping</TableHead>
-                        <TableHead className="w-12"></TableHead>
+                        <TableHead className="min-w-[120px]">Item</TableHead>
+                        <TableHead className="text-center">Qty</TableHead>
+                        <TableHead className="text-right">Unit Price</TableHead>
+                        <TableHead className="text-right hidden sm:table-cell">Total</TableHead>
+                        <TableHead className="text-right hidden md:table-cell">Cost w/ Shipping</TableHead>
+                        <TableHead className="w-10"></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1749,12 +1749,14 @@ export default function CreatePurchase() {
                           <TableRow key={item.id} className="hover:bg-muted/50 transition-colors">
                             <TableCell className="font-medium">
                               {isEditing ? (
-                                <Input
-                                  value={editingItem.name || ''}
-                                  onChange={(e) => setEditingItem({...editingItem, name: e.target.value})}
-                                  className="h-8 text-sm"
-                                  autoFocus
-                                />
+                                <div className="flex items-center gap-1">
+                                  <Input
+                                    value={editingItem.name || ''}
+                                    onChange={(e) => setEditingItem({...editingItem, name: e.target.value})}
+                                    className="h-8 text-sm flex-1"
+                                    autoFocus
+                                  />
+                                </div>
                               ) : (
                                 <div className="space-y-0.5 py-1">
                                   <div className="font-medium text-sm">{item.name}</div>
@@ -1773,7 +1775,7 @@ export default function CreatePurchase() {
                                   type="number"
                                   value={editingItem.quantity || 0}
                                   onChange={(e) => setEditingItem({...editingItem, quantity: parseInt(e.target.value) || 0})}
-                                  className="h-8 w-16 mx-auto text-sm text-center"
+                                  className="h-8 w-12 sm:w-16 mx-auto text-sm text-center"
                                   min="1"
                                 />
                               ) : (
@@ -1786,7 +1788,7 @@ export default function CreatePurchase() {
                                   type="number"
                                   value={editingItem.unitPrice || 0}
                                   onChange={(e) => setEditingItem({...editingItem, unitPrice: parseFloat(e.target.value) || 0})}
-                                  className="h-8 w-20 ml-auto text-sm text-right"
+                                  className="h-8 w-14 sm:w-20 ml-auto text-sm text-right"
                                   step="0.01"
                                   min="0"
                                 />
@@ -1794,7 +1796,7 @@ export default function CreatePurchase() {
                                 <span className="font-mono text-sm">{currencySymbol}{item.unitPrice.toFixed(2)}</span>
                               )}
                             </TableCell>
-                            <TableCell className="text-right">
+                            <TableCell className="text-right hidden sm:table-cell">
                               <span className="font-medium text-sm">
                                 {currencySymbol}
                                 {isEditing 
@@ -1803,7 +1805,7 @@ export default function CreatePurchase() {
                                 }
                               </span>
                             </TableCell>
-                            <TableCell className="text-right">
+                            <TableCell className="text-right hidden md:table-cell">
                               {(() => {
                                 const selectedCurrency = itemCurrencyDisplay[item.id] || purchaseCurrency;
                                 const rate = exchangeRates[selectedCurrency] / exchangeRates[purchaseCurrency];
@@ -1824,14 +1826,14 @@ export default function CreatePurchase() {
                                 );
                               })()}
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="px-1">
                               {isEditing ? (
-                                <div className="flex items-center justify-end gap-1">
+                                <div className="flex items-center justify-end gap-0.5">
                                   <Button
                                     variant="ghost"
                                     size="sm"
                                     onClick={saveEditItem}
-                                    className="h-7 px-2"
+                                    className="h-7 w-7 p-0"
                                     data-testid={`button-save-${item.id}`}
                                   >
                                     <Check className="h-3.5 w-3.5 text-green-600" />
@@ -1840,7 +1842,7 @@ export default function CreatePurchase() {
                                     variant="ghost"
                                     size="sm"
                                     onClick={cancelEditItem}
-                                    className="h-7 px-2"
+                                    className="h-7 w-7 p-0"
                                     data-testid={`button-cancel-${item.id}`}
                                   >
                                     <X className="h-3.5 w-3.5 text-destructive" />
