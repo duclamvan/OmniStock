@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { Link } from "wouter";
-// import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-// import { apiRequest } from "@/lib/queryClient";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -68,7 +68,7 @@ export default function SupplierProcessing() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [locationFilter, setLocationFilter] = useState<string>("all");
   const { toast } = useToast();
-  // const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
 
   // Mock data for purchases
   const mockPurchases: Purchase[] = [
@@ -191,58 +191,71 @@ export default function SupplierProcessing() {
     }
   ];
 
-  const [purchases, setPurchases] = useState<Purchase[]>(mockPurchases);
-  const isLoading = false;
+  // Fetch purchases from API
+  const { data: purchasesData, isLoading } = useQuery<Purchase[]>({
+    queryKey: ['/api/imports/purchases']
+  });
+  
+  const purchases = purchasesData || [];
 
-  // Mock mutations - update local state instead of API calls
-  const addItemMutation = {
-    mutate: ({ purchaseId, item }: { purchaseId: number; item: any }) => {
-      setPurchases(prev => prev.map(p => {
-        if (p.id === purchaseId) {
-          const newItem = {
-            id: Date.now(),
-            purchaseId,
-            name: item.name,
-            sku: item.sku || null,
-            quantity: parseInt(item.quantity),
-            unitPrice: item.unitPrice || "0",
-            weight: item.weight || "0",
-            dimensions: item.dimensions || null,
-            notes: item.notes || null,
-            createdAt: new Date().toISOString()
-          };
-          return {
-            ...p,
-            items: [...p.items, newItem],
-            itemCount: p.items.length + 1
-          };
-        }
-        return p;
-      }));
+  // Add item mutation
+  const addItemMutation = useMutation({
+    mutationFn: async ({ purchaseId, item }: { purchaseId: number; item: any }) => {
+      const response = await apiRequest(`/api/imports/purchases/${purchaseId}/items`, 'POST', item);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases'] });
       setIsAddItemModalOpen(false);
       setSelectedPurchase(null);
       toast({ title: "Success", description: "Item added successfully" });
     },
-    isPending: false
-  };
+    onError: () => {
+      toast({ 
+        title: "Error", 
+        description: "Failed to add item", 
+        variant: "destructive" 
+      });
+    }
+  });
 
   // Update status mutation
-  const updateStatusMutation = {
-    mutate: ({ purchaseId, status }: { purchaseId: number; status: string }) => {
-      setPurchases(prev => prev.map(p => 
-        p.id === purchaseId ? { ...p, status } : p
-      ));
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ purchaseId, status }: { purchaseId: number; status: string }) => {
+      const response = await apiRequest(`/api/imports/purchases/${purchaseId}`, 'PATCH', { status });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases'] });
       toast({ title: "Success", description: "Status updated successfully" });
+    },
+    onError: () => {
+      toast({ 
+        title: "Error", 
+        description: "Failed to update status", 
+        variant: "destructive" 
+      });
     }
-  };
+  });
 
   // Delete purchase mutation
-  const deletePurchaseMutation = {
-    mutate: (purchaseId: number) => {
-      setPurchases(prev => prev.filter(p => p.id !== purchaseId));
+  const deletePurchaseMutation = useMutation({
+    mutationFn: async (purchaseId: number) => {
+      const response = await apiRequest(`/api/imports/purchases/${purchaseId}`, 'DELETE');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases'] });
       toast({ title: "Success", description: "Purchase deleted successfully" });
+    },
+    onError: () => {
+      toast({ 
+        title: "Error", 
+        description: "Failed to delete purchase", 
+        variant: "destructive" 
+      });
     }
-  };
+  });
 
   const handleAddItem = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

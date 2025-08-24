@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useLocation, useParams } from "wouter";
-// import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-// import { apiRequest } from "@/lib/queryClient";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { normalizeVietnamese } from "@/lib/searchUtils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -68,7 +68,7 @@ export default function CreatePurchase() {
   const purchaseId = params.id ? parseInt(params.id) : null;
   const isEditMode = !!purchaseId;
   const { toast } = useToast();
-  // const queryClient = useQueryClient();
+  const queryClient = useQueryClient();
   const supplierDropdownRef = useRef<HTMLDivElement>(null);
   const productDropdownRef = useRef<HTMLDivElement>(null);
   const locationDropdownRef = useRef<HTMLDivElement>(null);
@@ -211,23 +211,15 @@ export default function CreatePurchase() {
     };
   }, []);
 
-  // Mock suppliers data
-  const suppliers: Supplier[] = [
-    { id: "1", name: "Hong Kong Trading Co.", location: "China" },
-    { id: "2", name: "Shenzhen Electronics Ltd", location: "China" },
-    { id: "3", name: "Vietnam Textiles Export", location: "Vietnam" },
-    { id: "4", name: "European Luxury Goods", location: "Europe" },
-    { id: "5", name: "USA Tech Distributors", location: "USA" }
-  ];
+  // Fetch suppliers
+  const { data: suppliers = [] } = useQuery<Supplier[]>({
+    queryKey: ['/api/suppliers']
+  });
 
-  // Mock products data
-  const products: Product[] = [
-    { id: "1", name: "iPhone 15 Pro Max", sku: "IPH15PM256", price: 899 },
-    { id: "2", name: "AirPods Pro 2", sku: "APP2023", price: 189 },
-    { id: "3", name: "MacBook Air M2", sku: "MBA13M2", price: 1099 },
-    { id: "4", name: "Samsung Galaxy S24 Ultra", sku: "SGS24U512", price: 1199 },
-    { id: "5", name: "Dell XPS 15 Laptop", sku: "DXPS15I9", price: 1599 }
-  ];
+  // Fetch products
+  const { data: products = [] } = useQuery<Product[]>({
+    queryKey: ['/api/products']
+  });
 
   // Filter suppliers based on search
   const filteredSuppliers = suppliers.filter(s => {
@@ -307,25 +299,46 @@ export default function CreatePurchase() {
     isPending: false
   };
 
-  // Mock create purchase mutation
-  const createPurchaseMutation = {
-    mutate: (data: any) => {
-      // In a real app, this would save to database
-      toast({ title: "Success", description: "Purchase created successfully (mock)" });
+  // Create purchase mutation
+  const createPurchaseMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await apiRequest('/api/imports/purchases', 'POST', data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases'] });
+      toast({ title: "Success", description: "Purchase created successfully" });
       navigate('/imports/supplier-processing');
     },
-    isPending: false
-  };
+    onError: () => {
+      toast({ 
+        title: "Error", 
+        description: "Failed to create purchase order", 
+        variant: "destructive" 
+      });
+    }
+  });
 
-  // Mock update purchase mutation
-  const updatePurchaseMutation = {
-    mutate: (data: any) => {
-      // In a real app, this would update the database
-      toast({ title: "Success", description: "Purchase updated successfully (mock)" });
+  // Update purchase mutation
+  const updatePurchaseMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await apiRequest(`/api/imports/purchases/${purchaseId}`, 'PATCH', data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/imports/purchases/${purchaseId}`] });
+      toast({ title: "Success", description: "Purchase updated successfully" });
       navigate('/imports/supplier-processing');
     },
-    isPending: false
-  };
+    onError: () => {
+      toast({ 
+        title: "Error", 
+        description: "Failed to update purchase order", 
+        variant: "destructive" 
+      });
+    }
+  });
 
   // Mock data for editing - same as in SupplierProcessing
   const mockPurchases: any[] = [
@@ -443,11 +456,11 @@ export default function CreatePurchase() {
     }
   ];
 
-  // Use mock data instead of API call - memoized to prevent re-creation
-  const existingPurchase = useMemo(() => {
-    return isEditMode ? mockPurchases.find(p => p.id === purchaseId) : null;
-  }, [isEditMode, purchaseId]);
-  const loadingPurchase = false;
+  // Fetch existing purchase data from API when in edit mode
+  const { data: existingPurchase, isLoading: loadingPurchase } = useQuery({
+    queryKey: [`/api/imports/purchases/${purchaseId}`],
+    enabled: isEditMode
+  });
 
   const handleAddNewSupplier = () => {
     if (!newSupplierName.trim()) {
