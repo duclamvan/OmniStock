@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useLocation, useParams } from "wouter";
 // import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 // import { apiRequest } from "@/lib/queryClient";
@@ -443,8 +443,10 @@ export default function CreatePurchase() {
     }
   ];
 
-  // Use mock data instead of API call
-  const existingPurchase = isEditMode ? mockPurchases.find(p => p.id === purchaseId) : null;
+  // Use mock data instead of API call - memoized to prevent re-creation
+  const existingPurchase = useMemo(() => {
+    return isEditMode ? mockPurchases.find(p => p.id === purchaseId) : null;
+  }, [isEditMode, purchaseId]);
   const loadingPurchase = false;
 
   const handleAddNewSupplier = () => {
@@ -533,9 +535,12 @@ export default function CreatePurchase() {
       .catch(err => console.error("Error loading frequent suppliers:", err));
   }, []);
 
-  // Load existing purchase data for editing
+  // Flag to track if data has been loaded to prevent re-initialization
+  const [dataLoaded, setDataLoaded] = useState(false);
+  
+  // Load existing purchase data for editing - only once
   useEffect(() => {
-    if (isEditMode && existingPurchase) {
+    if (isEditMode && existingPurchase && !dataLoaded) {
       // Set basic fields with explicit type conversions to ensure state updates
       setSupplier(String(existingPurchase.supplier || ""));
       setSupplierId(existingPurchase.supplierId || null);
@@ -590,8 +595,11 @@ export default function CreatePurchase() {
         });
         setItemCurrencyDisplay(currencyDisplay);
       }
+      
+      // Mark data as loaded to prevent re-initialization
+      setDataLoaded(true);
     }
-  }, [isEditMode, existingPurchase]);
+  }, [isEditMode, existingPurchase, dataLoaded]);
 
   const addItem = () => {
     if (!currentItem.name || !currentItem.quantity || currentItem.unitPrice === undefined) {
