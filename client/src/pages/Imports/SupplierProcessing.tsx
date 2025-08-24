@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { Link } from "wouter";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+// import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+// import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -68,59 +68,181 @@ export default function SupplierProcessing() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [locationFilter, setLocationFilter] = useState<string>("all");
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  // const queryClient = useQueryClient();
 
-  // Fetch purchases
-  const { data: purchases = [], isLoading } = useQuery<Purchase[]>({
-    queryKey: ['/api/imports/purchases']
-  });
-
-  // Add item mutation
-  const addItemMutation = useMutation({
-    mutationFn: async ({ purchaseId, item }: { purchaseId: number; item: any }) => {
-      const response = await apiRequest('/api/imports/purchases/' + purchaseId + '/items', 'POST', item);
-      return response.json();
+  // Mock data for purchases
+  const mockPurchases: Purchase[] = [
+    {
+      id: 1,
+      supplier: "Hong Kong Trading Co.",
+      location: "China",
+      trackingNumber: "HK2024031501",
+      estimatedArrival: "2024-04-15T00:00:00Z",
+      notes: "Priority shipment - customer waiting",
+      shippingCost: "250.00",
+      totalCost: "5250.00",
+      paymentCurrency: "USD",
+      totalPaid: "5250.00",
+      purchaseCurrency: "USD",
+      purchaseTotal: "5000.00",
+      exchangeRate: "1.00",
+      status: "at_warehouse",
+      createdAt: "2024-03-15T10:00:00Z",
+      updatedAt: "2024-03-15T10:00:00Z",
+      items: [
+        { id: 1, purchaseId: 1, name: "iPhone 15 Pro Max", sku: "IPH15PM256", quantity: 5, unitPrice: "899.00", weight: "0.221", dimensions: "15x7x1", notes: null, createdAt: "2024-03-15T10:00:00Z" },
+        { id: 2, purchaseId: 1, name: "AirPods Pro 2", sku: "APP2023", quantity: 10, unitPrice: "189.00", weight: "0.051", dimensions: "5x5x2", notes: null, createdAt: "2024-03-15T10:00:00Z" },
+        { id: 3, purchaseId: 1, name: "MacBook Air M2", sku: "MBA13M2", quantity: 3, unitPrice: "1099.00", weight: "1.24", dimensions: "30x21x1.5", notes: null, createdAt: "2024-03-15T10:00:00Z" }
+      ],
+      itemCount: 3
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases'] });
+    {
+      id: 2,
+      supplier: "Shenzhen Electronics Ltd",
+      location: "China",
+      trackingNumber: "SZ2024031502",
+      estimatedArrival: "2024-04-20T00:00:00Z",
+      notes: "Contains fragile items",
+      shippingCost: "180.00",
+      totalCost: "3680.00",
+      paymentCurrency: "CNY",
+      totalPaid: "26500.00",
+      purchaseCurrency: "CNY",
+      purchaseTotal: "25200.00",
+      exchangeRate: "7.2",
+      status: "processing",
+      createdAt: "2024-03-16T14:30:00Z",
+      updatedAt: "2024-03-16T14:30:00Z",
+      items: [
+        { id: 4, purchaseId: 2, name: "Samsung Galaxy S24 Ultra", sku: "SGS24U512", quantity: 8, unitPrice: "7800.00", weight: "0.233", dimensions: "16x8x1", notes: null, createdAt: "2024-03-16T14:30:00Z" },
+        { id: 5, purchaseId: 2, name: "Galaxy Watch 6", sku: "GW6BT44", quantity: 15, unitPrice: "1800.00", weight: "0.059", dimensions: "4x4x1", notes: null, createdAt: "2024-03-16T14:30:00Z" }
+      ],
+      itemCount: 2
+    },
+    {
+      id: 3,
+      supplier: "Vietnam Textiles Export",
+      location: "Vietnam",
+      trackingNumber: "VN2024031503",
+      estimatedArrival: "2024-04-10T00:00:00Z",
+      notes: "Seasonal collection",
+      shippingCost: "95.00",
+      totalCost: "2095.00",
+      paymentCurrency: "VND",
+      totalPaid: "52000000",
+      purchaseCurrency: "VND",
+      purchaseTotal: "50000000",
+      exchangeRate: "24800",
+      status: "shipped",
+      createdAt: "2024-03-17T09:15:00Z",
+      updatedAt: "2024-03-17T09:15:00Z",
+      items: [
+        { id: 6, purchaseId: 3, name: "Cotton T-Shirts (Pack of 50)", sku: "CTS50BLK", quantity: 4, unitPrice: "12500000", weight: "10.0", dimensions: "60x40x30", notes: null, createdAt: "2024-03-17T09:15:00Z" },
+        { id: 7, purchaseId: 3, name: "Denim Jeans (Pack of 30)", sku: "DJ30BLU", quantity: 2, unitPrice: "15000000", weight: "15.0", dimensions: "60x40x40", notes: null, createdAt: "2024-03-17T09:15:00Z" }
+      ],
+      itemCount: 2
+    },
+    {
+      id: 4,
+      supplier: "European Luxury Goods",
+      location: "Europe",
+      trackingNumber: "EU2024031504",
+      estimatedArrival: "2024-04-25T00:00:00Z",
+      notes: "High-value items, insurance required",
+      shippingCost: "450.00",
+      totalCost: "12450.00",
+      paymentCurrency: "EUR",
+      totalPaid: "11500.00",
+      purchaseCurrency: "EUR",
+      purchaseTotal: "11000.00",
+      exchangeRate: "1.08",
+      status: "pending",
+      createdAt: "2024-03-18T16:45:00Z",
+      updatedAt: "2024-03-18T16:45:00Z",
+      items: [
+        { id: 8, purchaseId: 4, name: "Designer Handbag Collection", sku: "DHB2024SS", quantity: 5, unitPrice: "1800.00", weight: "1.2", dimensions: "35x25x15", notes: null, createdAt: "2024-03-18T16:45:00Z" },
+        { id: 9, purchaseId: 4, name: "Luxury Watch Set", sku: "LWS2024", quantity: 3, unitPrice: "3500.00", weight: "0.5", dimensions: "20x15x10", notes: null, createdAt: "2024-03-18T16:45:00Z" }
+      ],
+      itemCount: 2
+    },
+    {
+      id: 5,
+      supplier: "USA Tech Distributors",
+      location: "USA",
+      trackingNumber: "US2024031505",
+      estimatedArrival: "2024-04-18T00:00:00Z",
+      notes: "",
+      shippingCost: "320.00",
+      totalCost: "8320.00",
+      paymentCurrency: "USD",
+      totalPaid: "8320.00",
+      purchaseCurrency: "USD",
+      purchaseTotal: "8000.00",
+      exchangeRate: "1.00",
+      status: "delivered",
+      createdAt: "2024-03-10T11:20:00Z",
+      updatedAt: "2024-03-10T11:20:00Z",
+      items: [
+        { id: 10, purchaseId: 5, name: "Dell XPS 15 Laptop", sku: "DXPS15I9", quantity: 4, unitPrice: "1599.00", weight: "2.05", dimensions: "36x25x2", notes: null, createdAt: "2024-03-10T11:20:00Z" },
+        { id: 11, purchaseId: 5, name: "iPad Pro 12.9\"", sku: "IPADP13M2", quantity: 6, unitPrice: "1099.00", weight: "0.682", dimensions: "28x21x0.6", notes: null, createdAt: "2024-03-10T11:20:00Z" },
+        { id: 12, purchaseId: 5, name: "Sony WH-1000XM5", sku: "SONYWH5", quantity: 12, unitPrice: "299.00", weight: "0.250", dimensions: "23x20x5", notes: null, createdAt: "2024-03-10T11:20:00Z" }
+      ],
+      itemCount: 3
+    }
+  ];
+
+  const [purchases, setPurchases] = useState<Purchase[]>(mockPurchases);
+  const isLoading = false;
+
+  // Mock mutations - update local state instead of API calls
+  const addItemMutation = {
+    mutate: ({ purchaseId, item }: { purchaseId: number; item: any }) => {
+      setPurchases(prev => prev.map(p => {
+        if (p.id === purchaseId) {
+          const newItem = {
+            id: Date.now(),
+            purchaseId,
+            name: item.name,
+            sku: item.sku || null,
+            quantity: parseInt(item.quantity),
+            unitPrice: item.unitPrice || "0",
+            weight: item.weight || "0",
+            dimensions: item.dimensions || null,
+            notes: item.notes || null,
+            createdAt: new Date().toISOString()
+          };
+          return {
+            ...p,
+            items: [...p.items, newItem],
+            itemCount: p.items.length + 1
+          };
+        }
+        return p;
+      }));
       setIsAddItemModalOpen(false);
       setSelectedPurchase(null);
       toast({ title: "Success", description: "Item added successfully" });
     },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to add item", variant: "destructive" });
-    }
-  });
+    isPending: false
+  };
 
   // Update status mutation
-  const updateStatusMutation = useMutation({
-    mutationFn: async ({ purchaseId, status }: { purchaseId: number; status: string }) => {
-      const response = await apiRequest('/api/imports/purchases/' + purchaseId + '/status', 'PATCH', { status });
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases'] });
+  const updateStatusMutation = {
+    mutate: ({ purchaseId, status }: { purchaseId: number; status: string }) => {
+      setPurchases(prev => prev.map(p => 
+        p.id === purchaseId ? { ...p, status } : p
+      ));
       toast({ title: "Success", description: "Status updated successfully" });
-    },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to update status", variant: "destructive" });
     }
-  });
+  };
 
   // Delete purchase mutation
-  const deletePurchaseMutation = useMutation({
-    mutationFn: async (purchaseId: number) => {
-      const response = await apiRequest('/api/imports/purchases/' + purchaseId, 'DELETE');
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases'] });
+  const deletePurchaseMutation = {
+    mutate: (purchaseId: number) => {
+      setPurchases(prev => prev.filter(p => p.id !== purchaseId));
       toast({ title: "Success", description: "Purchase deleted successfully" });
-    },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to delete purchase", variant: "destructive" });
     }
-  });
+  };
 
   const handleAddItem = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
