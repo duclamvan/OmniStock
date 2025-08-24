@@ -191,7 +191,9 @@ router.patch("/purchases/:id", async (req, res) => {
     // Only update fields that are provided and exist in the database schema
     if (req.body.supplier !== undefined) purchaseUpdate.supplier = req.body.supplier;
     if (req.body.trackingNumber !== undefined) purchaseUpdate.trackingNumber = req.body.trackingNumber;
-    if (req.body.estimatedArrival !== undefined) purchaseUpdate.estimatedArrival = req.body.estimatedArrival;
+    if (req.body.estimatedArrival !== undefined) {
+      purchaseUpdate.estimatedArrival = req.body.estimatedArrival ? new Date(req.body.estimatedArrival) : null;
+    }
     if (req.body.notes !== undefined) purchaseUpdate.notes = req.body.notes;
     if (req.body.shippingCost !== undefined) purchaseUpdate.shippingCost = req.body.shippingCost;
     if (req.body.totalCost !== undefined) purchaseUpdate.totalCost = req.body.totalCost;
