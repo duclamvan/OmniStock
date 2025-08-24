@@ -1589,27 +1589,28 @@ export default function CreatePurchase() {
                       </div>
                       
                       <div className="border rounded-lg overflow-x-auto">
-                        <Table className="min-w-[800px]">
+                        <Table className="min-w-[700px] text-sm">
                           <TableHeader>
-                            <TableRow>
-                              <TableHead className="w-10">
+                            <TableRow className="h-8">
+                              <TableHead className="w-8 p-2">
                                 <Checkbox
                                   checked={selectedVariants.length === variants.length && variants.length > 0}
                                   onCheckedChange={toggleSelectAllVariants}
+                                  className="h-3 w-3"
                                 />
                               </TableHead>
-                              <TableHead className="min-w-[120px]">Variant Name</TableHead>
-                              <TableHead className="min-w-[100px]">SKU</TableHead>
-                              <TableHead className="text-center w-16">Qty</TableHead>
-                              <TableHead className="text-right w-20">Price</TableHead>
-                              <TableHead className="text-right w-20">Weight</TableHead>
-                              <TableHead className="w-10"></TableHead>
+                              <TableHead className="min-w-[100px] p-2">Variant Name</TableHead>
+                              <TableHead className="min-w-[80px] p-2">SKU</TableHead>
+                              <TableHead className="text-center w-12 p-2">Qty</TableHead>
+                              <TableHead className="text-right w-16 p-2">Price</TableHead>
+                              <TableHead className="text-right w-16 p-2">Weight</TableHead>
+                              <TableHead className="w-8 p-2"></TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
                             {variants.map((variant) => (
-                              <TableRow key={variant.id}>
-                                <TableCell>
+                              <TableRow key={variant.id} className="h-8">
+                                <TableCell className="p-2">
                                   <Checkbox
                                     checked={selectedVariants.includes(variant.id)}
                                     onCheckedChange={(checked) => {
@@ -1619,10 +1620,11 @@ export default function CreatePurchase() {
                                         setSelectedVariants(selectedVariants.filter(id => id !== variant.id));
                                       }
                                     }}
+                                    className="h-3 w-3"
                                   />
                                 </TableCell>
-                                <TableCell className="font-medium">{variant.name}</TableCell>
-                                <TableCell>
+                                <TableCell className="font-medium p-2 text-sm">{variant.name}</TableCell>
+                                <TableCell className="p-2">
                                   <Input
                                     value={variant.sku}
                                     onChange={(e) => {
@@ -1630,11 +1632,11 @@ export default function CreatePurchase() {
                                         v.id === variant.id ? {...v, sku: e.target.value} : v
                                       ));
                                     }}
-                                    className="h-8 w-full max-w-24"
+                                    className="h-6 w-full max-w-20 text-xs"
                                     placeholder="SKU"
                                   />
                                 </TableCell>
-                                <TableCell>
+                                <TableCell className="p-2">
                                   <Input
                                     type="number"
                                     value={variant.quantity}
@@ -1643,11 +1645,11 @@ export default function CreatePurchase() {
                                         v.id === variant.id ? {...v, quantity: parseInt(e.target.value) || 0} : v
                                       ));
                                     }}
-                                    className="h-8 w-14 text-center"
+                                    className="h-6 w-12 text-center text-xs"
                                     min="0"
                                   />
                                 </TableCell>
-                                <TableCell>
+                                <TableCell className="p-2">
                                   <Input
                                     type="number"
                                     value={variant.unitPrice}
@@ -1656,12 +1658,12 @@ export default function CreatePurchase() {
                                         v.id === variant.id ? {...v, unitPrice: parseFloat(e.target.value) || 0} : v
                                       ));
                                     }}
-                                    className="h-8 w-16 text-right"
+                                    className="h-6 w-14 text-right text-xs"
                                     step="0.01"
                                     min="0"
                                   />
                                 </TableCell>
-                                <TableCell>
+                                <TableCell className="p-2">
                                   <Input
                                     type="number"
                                     value={variant.weight}
@@ -1670,19 +1672,20 @@ export default function CreatePurchase() {
                                         v.id === variant.id ? {...v, weight: parseFloat(e.target.value) || 0} : v
                                       ));
                                     }}
-                                    className="h-8 w-16 text-right"
+                                    className="h-6 w-14 text-right text-xs"
                                     step="0.01"
                                     min="0"
                                   />
                                 </TableCell>
-                                <TableCell>
+                                <TableCell className="p-2">
                                   <Button
                                     type="button"
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => removeVariant(variant.id)}
+                                    className="h-6 w-6 p-1"
                                   >
-                                    <Trash2 className="h-4 w-4" />
+                                    <Trash2 className="h-3 w-3" />
                                   </Button>
                                 </TableCell>
                               </TableRow>
