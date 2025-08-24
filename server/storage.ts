@@ -650,7 +650,7 @@ export class DatabaseStorage implements IStorage {
     try {
       // Using raw SQL for now to avoid schema mismatch issues
       const result = await db.execute(sql`
-        SELECT id::integer as id, name, description, created_at, updated_at 
+        SELECT id::integer as id, name, name_en, name_cz, name_vn, description, created_at, updated_at 
         FROM categories 
         ORDER BY name
       `);
@@ -664,7 +664,7 @@ export class DatabaseStorage implements IStorage {
   async getCategoryById(id: string): Promise<Category | undefined> {
     try {
       const result = await db.execute(sql`
-        SELECT id::integer as id, name, description, created_at, updated_at 
+        SELECT id::integer as id, name, name_en, name_cz, name_vn, description, created_at, updated_at 
         FROM categories 
         WHERE id = ${parseInt(id)}
         LIMIT 1
@@ -678,10 +678,12 @@ export class DatabaseStorage implements IStorage {
 
   async createCategory(category: InsertCategory): Promise<Category> {
     try {
+      // Use English name as default name if not provided
+      const nameEn = (category as any).nameEn || category.name;
       const result = await db.execute(sql`
-        INSERT INTO categories (name, description, created_at, updated_at)
-        VALUES (${category.name}, ${category.description || null}, NOW(), NOW())
-        RETURNING id::integer as id, name, description, created_at, updated_at
+        INSERT INTO categories (name, name_en, name_cz, name_vn, description, created_at, updated_at)
+        VALUES (${nameEn}, ${nameEn}, ${(category as any).nameCz || null}, ${(category as any).nameVn || null}, ${category.description || null}, NOW(), NOW())
+        RETURNING id::integer as id, name, name_en, name_cz, name_vn, description, created_at, updated_at
       `);
       return result.rows[0] as Category;
     } catch (error) {
@@ -692,13 +694,18 @@ export class DatabaseStorage implements IStorage {
 
   async updateCategory(id: string, updates: Partial<InsertCategory>): Promise<Category | undefined> {
     try {
+      // Handle multi-language fields
+      const nameEn = (updates as any).nameEn || updates.name;
       const result = await db.execute(sql`
         UPDATE categories 
-        SET name = COALESCE(${updates.name}, name),
+        SET name = COALESCE(${nameEn}, name),
+            name_en = COALESCE(${nameEn}, name_en),
+            name_cz = COALESCE(${(updates as any).nameCz}, name_cz),
+            name_vn = COALESCE(${(updates as any).nameVn}, name_vn),
             description = COALESCE(${updates.description}, description),
             updated_at = NOW()
         WHERE id = ${parseInt(id)}
-        RETURNING id::integer as id, name, description, created_at, updated_at
+        RETURNING id::integer as id, name, name_en, name_cz, name_vn, description, created_at, updated_at
       `);
       return result.rows[0] as Category | undefined;
     } catch (error) {

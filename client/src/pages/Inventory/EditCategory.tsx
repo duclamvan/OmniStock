@@ -14,7 +14,9 @@ import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 
 const categorySchema = z.object({
-  name: z.string().min(1, 'Category name is required').max(255),
+  nameEn: z.string().min(1, 'English name is required').max(255),
+  nameCz: z.string().optional(),
+  nameVn: z.string().optional(),
   description: z.string().optional(),
 });
 
@@ -23,6 +25,9 @@ type CategoryFormData = z.infer<typeof categorySchema>;
 interface Category {
   id: string;
   name: string;
+  name_en?: string;
+  name_cz?: string;
+  name_vn?: string;
   description?: string;
   createdAt: string;
 }
@@ -35,7 +40,9 @@ export default function EditCategory() {
   const form = useForm<CategoryFormData>({
     resolver: zodResolver(categorySchema),
     defaultValues: {
-      name: '',
+      nameEn: '',
+      nameCz: '',
+      nameVn: '',
       description: '',
     },
   });
@@ -50,7 +57,9 @@ export default function EditCategory() {
   useEffect(() => {
     if (category) {
       form.reset({
-        name: category.name,
+        nameEn: category.name_en || category.name || '',
+        nameCz: category.name_cz || '',
+        nameVn: category.name_vn || '',
         description: category.description || '',
       });
     }
@@ -58,7 +67,12 @@ export default function EditCategory() {
 
   const updateMutation = useMutation({
     mutationFn: async (data: CategoryFormData) => {
-      const response = await apiRequest(`/api/categories/${id}`, 'PATCH', data);
+      // Include name for backward compatibility
+      const submitData: any = {
+        ...data,
+        name: data.nameEn
+      };
+      const response = await apiRequest(`/api/categories/${id}`, 'PATCH', submitData);
       return response.json();
     },
     onSuccess: () => {
@@ -118,14 +132,48 @@ export default function EditCategory() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
                 control={form.control}
-                name="name"
+                name="nameEn"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Category Name *</FormLabel>
+                    <FormLabel>Category Name (EN) *</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
                         placeholder="e.g., Electronics, Clothing, Beauty"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="nameCz"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category Name (CZ)</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="e.g., Elektronika, Oblečení, Krása"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="nameVn"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category Name (VN)</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="e.g., Điện tử, Quần áo, Làm đẹp"
                       />
                     </FormControl>
                     <FormMessage />

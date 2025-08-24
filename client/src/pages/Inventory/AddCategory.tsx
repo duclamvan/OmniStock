@@ -13,7 +13,9 @@ import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 
 const categorySchema = z.object({
-  name: z.string().min(1, 'Category name is required').max(255),
+  nameEn: z.string().min(1, 'English name is required').max(255),
+  nameCz: z.string().optional(),
+  nameVn: z.string().optional(),
   description: z.string().optional(),
 });
 
@@ -26,14 +28,20 @@ export default function AddCategory() {
   const form = useForm<CategoryFormData>({
     resolver: zodResolver(categorySchema),
     defaultValues: {
-      name: '',
+      nameEn: '',
+      nameCz: '',
+      nameVn: '',
       description: '',
     },
   });
 
   const createMutation = useMutation({
     mutationFn: async (data: CategoryFormData) => {
-      const response = await apiRequest('/api/categories', 'POST', data);
+      const submitData: any = {
+        ...data,
+        name: data.nameEn  // Include name for backward compatibility
+      };
+      const response = await apiRequest('/api/categories', 'POST', submitData);
       return response.json();
     },
     onSuccess: () => {
@@ -85,15 +93,51 @@ export default function AddCategory() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
                 control={form.control}
-                name="name"
+                name="nameEn"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Category Name *</FormLabel>
+                    <FormLabel>Category Name (EN) *</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
                         placeholder="e.g., Electronics, Clothing, Beauty"
-                        data-testid="input-category-name"
+                        data-testid="input-category-name-en"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="nameCz"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category Name (CZ)</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="e.g., Elektronika, Oblečení, Krása"
+                        data-testid="input-category-name-cz"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="nameVn"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category Name (VN)</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="e.g., Điện tử, Quần áo, Làm đẹp"
+                        data-testid="input-category-name-vn"
                       />
                     </FormControl>
                     <FormMessage />

@@ -17,7 +17,10 @@ export const users = pgTable('users', {
 // Categories table
 export const categories = pgTable('categories', {
   id: serial('id').primaryKey(),
-  name: text('name').notNull(),
+  name: text('name').notNull(), // Default display name
+  nameEn: text('name_en'), // English name
+  nameCz: text('name_cz'), // Czech name
+  nameVn: text('name_vn'), // Vietnamese name
   description: text('description'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow()
