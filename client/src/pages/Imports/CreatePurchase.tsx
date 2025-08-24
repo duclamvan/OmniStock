@@ -190,9 +190,7 @@ export default function CreatePurchase() {
   // Purchase creation state  
   const [frequentSuppliers, setFrequentSuppliers] = useState<Array<{ name: string; count: number; lastUsed: string }>>([]);
   
-  // Edit state
-  const [editingItemId, setEditingItemId] = useState<string | null>(null);
-  const [editingItem, setEditingItem] = useState<Partial<PurchaseItem>>({});
+  // Currency display state for items
   const [itemCurrencyDisplay, setItemCurrencyDisplay] = useState<{[key: string]: string}>({});
 
   // Set default purchase date to now
@@ -853,43 +851,11 @@ export default function CreatePurchase() {
     });
   };
   
-  const startEditItem = (item: PurchaseItem) => {
-    setEditingItemId(item.id);
-    setEditingItem({
-      name: item.name,
-      quantity: item.quantity,
-      unitPrice: item.unitPrice
-    });
-  };
-  
-  const saveEditItem = () => {
-    if (!editingItemId) return;
-    
-    const updatedItems = items.map(item => {
-      if (item.id === editingItemId) {
-        const totalPrice = (editingItem.quantity || 0) * (editingItem.unitPrice || 0);
-        
-        return {
-          ...item,
-          name: editingItem.name || item.name,
-          quantity: editingItem.quantity || item.quantity,
-          unitPrice: editingItem.unitPrice || item.unitPrice,
-          totalPrice,
-          costWithShipping: 0 // Will be recalculated by updateItemsWithShipping
-        };
-      }
-      return item;
-    });
-    
-    updateItemsWithShipping(updatedItems);
-    setEditingItemId(null);
-    setEditingItem({});
-  };
-  
-  const cancelEditItem = () => {
-    setEditingItemId(null);
-    setEditingItem({});
-  };
+  // These functions are no longer needed with inline editing
+  // Keeping them commented in case we need to revert
+  // const startEditItem = (item: PurchaseItem) => { ... }
+  // const saveEditItem = () => { ... }
+  // const cancelEditItem = () => { ... }
 
   const updateItemsWithShipping = (updatedItems: PurchaseItem[]) => {
     const totalQty = updatedItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -1743,66 +1709,65 @@ export default function CreatePurchase() {
                     </TableHeader>
                     <TableBody>
                       {items.map((item) => {
-                        const isEditing = editingItemId === item.id;
-                        
                         return (
                           <TableRow key={item.id} className="hover:bg-muted/50 transition-colors">
                             <TableCell className="font-medium">
-                              {isEditing ? (
-                                <div className="flex items-center gap-1">
-                                  <Input
-                                    value={editingItem.name || ''}
-                                    onChange={(e) => setEditingItem({...editingItem, name: e.target.value})}
-                                    className="h-8 text-sm flex-1"
-                                    autoFocus
-                                  />
-                                </div>
-                              ) : (
-                                <div className="space-y-0.5 py-1">
-                                  <div className="font-medium text-sm">{item.name}</div>
-                                  {item.notes && (
-                                    <div className="text-xs text-muted-foreground">{item.notes}</div>
-                                  )}
-                                  {item.dimensions && (
-                                    <div className="text-xs text-muted-foreground">Dimensions: {item.dimensions}</div>
-                                  )}
-                                </div>
-                              )}
+                              <div className="space-y-0.5">
+                                <Input
+                                  value={item.name}
+                                  onChange={(e) => {
+                                    const updatedItems = items.map(i => 
+                                      i.id === item.id ? {...i, name: e.target.value} : i
+                                    );
+                                    setItems(updatedItems);
+                                  }}
+                                  className="h-7 text-sm font-medium border-0 bg-transparent hover:bg-muted focus:bg-background focus:border-input px-2"
+                                  placeholder="Item name"
+                                />
+                                {item.notes && (
+                                  <div className="text-xs text-muted-foreground px-2">{item.notes}</div>
+                                )}
+                                {item.dimensions && (
+                                  <div className="text-xs text-muted-foreground px-2">Dimensions: {item.dimensions}</div>
+                                )}
+                              </div>
                             </TableCell>
                             <TableCell className="text-center">
-                              {isEditing ? (
-                                <Input
-                                  type="number"
-                                  value={editingItem.quantity || 0}
-                                  onChange={(e) => setEditingItem({...editingItem, quantity: parseInt(e.target.value) || 0})}
-                                  className="h-8 w-12 sm:w-16 mx-auto text-sm text-center"
-                                  min="1"
-                                />
-                              ) : (
-                                <span className="font-medium text-sm">{item.quantity}</span>
-                              )}
+                              <Input
+                                type="number"
+                                value={item.quantity}
+                                onChange={(e) => {
+                                  const updatedItems = items.map(i => 
+                                    i.id === item.id ? {...i, quantity: parseInt(e.target.value) || 1, totalPrice: (parseInt(e.target.value) || 1) * i.unitPrice} : i
+                                  );
+                                  updateItemsWithShipping(updatedItems);
+                                }}
+                                className="h-7 w-12 sm:w-16 mx-auto text-sm text-center border-0 bg-transparent hover:bg-muted focus:bg-background focus:border-input [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                min="1"
+                              />
                             </TableCell>
                             <TableCell className="text-right">
-                              {isEditing ? (
+                              <div className="flex items-center justify-end">
+                                <span className="font-mono text-sm mr-1">{currencySymbol}</span>
                                 <Input
                                   type="number"
-                                  value={editingItem.unitPrice || 0}
-                                  onChange={(e) => setEditingItem({...editingItem, unitPrice: parseFloat(e.target.value) || 0})}
-                                  className="h-8 w-14 sm:w-20 ml-auto text-sm text-right"
+                                  value={item.unitPrice}
+                                  onChange={(e) => {
+                                    const updatedItems = items.map(i => 
+                                      i.id === item.id ? {...i, unitPrice: parseFloat(e.target.value) || 0, totalPrice: i.quantity * (parseFloat(e.target.value) || 0)} : i
+                                    );
+                                    updateItemsWithShipping(updatedItems);
+                                  }}
+                                  className="h-7 w-14 sm:w-20 text-sm text-right border-0 bg-transparent hover:bg-muted focus:bg-background focus:border-input [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                   step="0.01"
                                   min="0"
                                 />
-                              ) : (
-                                <span className="font-mono text-sm">{currencySymbol}{item.unitPrice.toFixed(2)}</span>
-                              )}
+                              </div>
                             </TableCell>
                             <TableCell className="text-right hidden sm:table-cell">
                               <span className="font-medium text-sm">
                                 {currencySymbol}
-                                {isEditing 
-                                  ? ((editingItem.quantity || 0) * (editingItem.unitPrice || 0)).toFixed(2)
-                                  : item.totalPrice.toFixed(2)
-                                }
+                                {item.totalPrice.toFixed(2)}
                               </span>
                             </TableCell>
                             <TableCell className="text-right hidden md:table-cell">
@@ -1827,42 +1792,14 @@ export default function CreatePurchase() {
                               })()}
                             </TableCell>
                             <TableCell className="px-1">
-                              {isEditing ? (
-                                <div className="flex items-center justify-end gap-0.5">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={saveEditItem}
-                                    className="h-7 w-7 p-0"
-                                    data-testid={`button-save-${item.id}`}
-                                  >
-                                    <Check className="h-3.5 w-3.5 text-green-600" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={cancelEditItem}
-                                    className="h-7 w-7 p-0"
-                                    data-testid={`button-cancel-${item.id}`}
-                                  >
-                                    <X className="h-3.5 w-3.5 text-destructive" />
-                                  </Button>
-                                </div>
-                              ) : (
-                                <div className="flex items-center justify-end">
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                                        <MoreVertical className="h-4 w-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      <DropdownMenuItem 
-                                        onClick={() => startEditItem(item)}
-                                      >
-                                        <Edit className="mr-2 h-4 w-4" />
-                                        Edit Item
-                                      </DropdownMenuItem>
+                              <div className="flex items-center justify-end">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
                                       <DropdownMenuSub>
                                         <DropdownMenuSubTrigger>
                                           <DollarSign className="mr-2 h-4 w-4" />
@@ -1913,7 +1850,6 @@ export default function CreatePurchase() {
                                     </DropdownMenuContent>
                                   </DropdownMenu>
                                 </div>
-                              )}
                             </TableCell>
                           </TableRow>
                         );
