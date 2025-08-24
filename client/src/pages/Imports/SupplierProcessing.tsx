@@ -11,9 +11,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DataTable, DataTableColumn } from "@/components/ui/data-table";
-import { Plus, Package2, Truck, MapPin, Clock, CreditCard, Users, Edit, Trash2, ChevronDown, ChevronUp, Filter, Search, ListPlus, PackagePlus } from "lucide-react";
+import { Plus, Package2, Truck, MapPin, Clock, CreditCard, Users, Edit, Trash2, ChevronDown, ChevronUp, Filter, Search, ListPlus, PackagePlus, MoreHorizontal } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -115,6 +117,10 @@ export default function SupplierProcessing() {
     dimensions: "",
     notes: ""
   });
+
+  // Delete confirmation state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [purchaseToDelete, setPurchaseToDelete] = useState<Purchase | null>(null);
 
   // Mock data for purchases
   const mockPurchases: Purchase[] = [
@@ -293,6 +299,8 @@ export default function SupplierProcessing() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases'] });
       toast({ title: "Success", description: "Purchase deleted successfully" });
+      setDeleteDialogOpen(false);
+      setPurchaseToDelete(null);
     },
     onError: () => {
       toast({ 
@@ -300,8 +308,21 @@ export default function SupplierProcessing() {
         description: "Failed to delete purchase", 
         variant: "destructive" 
       });
+      setDeleteDialogOpen(false);
+      setPurchaseToDelete(null);
     }
   });
+
+  const handleDeleteClick = (purchase: Purchase) => {
+    setPurchaseToDelete(purchase);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (purchaseToDelete) {
+      deletePurchaseMutation.mutate(purchaseToDelete.id);
+    }
+  };
 
   // Variant functions
   const addVariant = () => {
@@ -865,14 +886,28 @@ export default function SupplierProcessing() {
                           >
                             <Plus className="h-4 w-4" />
                           </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => deletePurchaseMutation.mutate(purchase.id)}
-                            data-testid={`button-delete-${purchase.id}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                data-testid={`button-menu-${purchase.id}`}
+                              >
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteClick(purchase)}
+                                className="text-destructive focus:text-destructive"
+                                data-testid={`menu-delete-${purchase.id}`}
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete Purchase
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
 
@@ -1493,6 +1528,34 @@ export default function SupplierProcessing() {
           </Dialog>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Purchase</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the purchase from "{purchaseToDelete?.supplier}"? This action cannot be undone and will also delete all associated items.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setDeleteDialogOpen(false);
+              setPurchaseToDelete(null);
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deletePurchaseMutation.isPending}
+              data-testid="confirm-delete-purchase"
+            >
+              {deletePurchaseMutation.isPending ? "Deleting..." : "Delete Purchase"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
