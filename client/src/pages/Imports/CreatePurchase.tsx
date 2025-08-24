@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useParams } from "wouter";
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+// import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+// import { apiRequest } from "@/lib/queryClient";
 import { normalizeVietnamese } from "@/lib/searchUtils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -68,7 +68,7 @@ export default function CreatePurchase() {
   const purchaseId = params.id ? parseInt(params.id) : null;
   const isEditMode = !!purchaseId;
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  // const queryClient = useQueryClient();
   const supplierDropdownRef = useRef<HTMLDivElement>(null);
   const productDropdownRef = useRef<HTMLDivElement>(null);
   const locationDropdownRef = useRef<HTMLDivElement>(null);
@@ -211,15 +211,23 @@ export default function CreatePurchase() {
     };
   }, []);
 
-  // Fetch suppliers
-  const { data: suppliers = [] } = useQuery<Supplier[]>({
-    queryKey: ['/api/suppliers']
-  });
+  // Mock suppliers data
+  const suppliers: Supplier[] = [
+    { id: "1", name: "Hong Kong Trading Co.", location: "China" },
+    { id: "2", name: "Shenzhen Electronics Ltd", location: "China" },
+    { id: "3", name: "Vietnam Textiles Export", location: "Vietnam" },
+    { id: "4", name: "European Luxury Goods", location: "Europe" },
+    { id: "5", name: "USA Tech Distributors", location: "USA" }
+  ];
 
-  // Fetch products
-  const { data: products = [] } = useQuery<Product[]>({
-    queryKey: ['/api/products']
-  });
+  // Mock products data
+  const products: Product[] = [
+    { id: "1", name: "iPhone 15 Pro Max", sku: "IPH15PM256", price: 899 },
+    { id: "2", name: "AirPods Pro 2", sku: "APP2023", price: 189 },
+    { id: "3", name: "MacBook Air M2", sku: "MBA13M2", price: 1099 },
+    { id: "4", name: "Samsung Galaxy S24 Ultra", sku: "SGS24U512", price: 1199 },
+    { id: "5", name: "Dell XPS 15 Laptop", sku: "DXPS15I9", price: 1599 }
+  ];
 
   // Filter suppliers based on search
   const filteredSuppliers = suppliers.filter(s => {
@@ -274,14 +282,15 @@ export default function CreatePurchase() {
   const displayGrandTotal = displayCurrency === purchaseCurrency ? grandTotal : convertFromUSD(grandTotalUSD, displayCurrency);
   const displayCurrencySymbol = getCurrencySymbol(displayCurrency);
 
-  // Create new supplier mutation
-  const createSupplierMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const response = await apiRequest('/api/suppliers', 'POST', data);
-      return response.json();
-    },
-    onSuccess: (newSupplier) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/suppliers'] });
+  // Mock create new supplier mutation
+  const createSupplierMutation = {
+    mutate: (data: any) => {
+      const newSupplier = {
+        id: String(Date.now()),
+        name: data.name,
+        website: data.website || "",
+        location: data.location || ""
+      };
       setSupplier(newSupplier.name);
       setSupplierId(newSupplier.id);
       setSupplierLink(newSupplier.website || "");
@@ -293,16 +302,10 @@ export default function CreatePurchase() {
       setNewSupplierPhone("");
       setNewSupplierWebsite("");
       setNewSupplierLocation("");
-      toast({ title: "Success", description: "Supplier added successfully" });
+      toast({ title: "Success", description: "Supplier added successfully (mock)" });
     },
-    onError: () => {
-      toast({ 
-        title: "Error", 
-        description: "Failed to add supplier", 
-        variant: "destructive" 
-      });
-    }
-  });
+    isPending: false
+  };
 
   // Mock create purchase mutation
   const createPurchaseMutation = {
@@ -533,20 +536,20 @@ export default function CreatePurchase() {
   // Load existing purchase data for editing
   useEffect(() => {
     if (isEditMode && existingPurchase) {
-      // Set basic fields
-      setSupplier(existingPurchase.supplier || "");
+      // Set basic fields with explicit type conversions to ensure state updates
+      setSupplier(String(existingPurchase.supplier || ""));
       setSupplierId(existingPurchase.supplierId || null);
-      setSupplierLink(existingPurchase.supplierLink || "");
-      setSupplierLocation(existingPurchase.supplierLocation || "");
-      setTrackingNumber(existingPurchase.trackingNumber || "");
-      setNotes(existingPurchase.notes || "");
-      setShippingCost(parseFloat(existingPurchase.shippingCost) || 0);
+      setSupplierLink(String(existingPurchase.supplierLink || ""));
+      setSupplierLocation(String(existingPurchase.supplierLocation || ""));
+      setTrackingNumber(String(existingPurchase.trackingNumber || ""));
+      setNotes(String(existingPurchase.notes || ""));
+      setShippingCost(Number(existingPurchase.shippingCost) || 0);
       
       // Set currencies
-      setPurchaseCurrency(existingPurchase.purchaseCurrency || existingPurchase.paymentCurrency || "USD");
-      setPaymentCurrency(existingPurchase.paymentCurrency || "USD");
-      setTotalPaid(parseFloat(existingPurchase.totalPaid) || 0);
-      setDisplayCurrency(existingPurchase.purchaseCurrency || existingPurchase.paymentCurrency || "USD");
+      setPurchaseCurrency(String(existingPurchase.purchaseCurrency || existingPurchase.paymentCurrency || "USD"));
+      setPaymentCurrency(String(existingPurchase.paymentCurrency || "USD"));
+      setTotalPaid(Number(existingPurchase.totalPaid) || 0);
+      setDisplayCurrency(String(existingPurchase.purchaseCurrency || existingPurchase.paymentCurrency || "USD"));
       
       // Set purchase date
       if (existingPurchase.createdAt) {
@@ -560,29 +563,29 @@ export default function CreatePurchase() {
         const arrivalDate = new Date(existingPurchase.estimatedArrival);
         const purchaseDate = new Date(existingPurchase.createdAt);
         const daysDiff = Math.ceil((arrivalDate.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24));
-        setProcessingTime(daysDiff.toString());
+        setProcessingTime(String(daysDiff));
         setProcessingUnit("days");
       }
       
       // Load items with proper currency display
       if (existingPurchase.items && existingPurchase.items.length > 0) {
         const loadedItems = existingPurchase.items.map((item: any) => ({
-          id: item.id.toString(),
-          name: item.name,
-          sku: item.sku || "",
-          quantity: item.quantity,
-          unitPrice: parseFloat(item.unitPrice),
-          weight: parseFloat(item.weight) || 0,
-          dimensions: item.dimensions || "",
-          notes: item.notes || "",
-          totalPrice: item.quantity * parseFloat(item.unitPrice),
+          id: String(item.id),
+          name: String(item.name),
+          sku: String(item.sku || ""),
+          quantity: Number(item.quantity),
+          unitPrice: Number(item.unitPrice),
+          weight: Number(item.weight) || 0,
+          dimensions: String(item.dimensions || ""),
+          notes: String(item.notes || ""),
+          totalPrice: Number(item.quantity) * Number(item.unitPrice),
           costWithShipping: 0
         }));
         setItems(loadedItems);
         
         // Set item currency display for all items
         const currencyDisplay: {[key: string]: string} = {};
-        loadedItems.forEach(item => {
+        loadedItems.forEach((item: PurchaseItem) => {
           currencyDisplay[item.id] = existingPurchase.purchaseCurrency || "USD";
         });
         setItemCurrencyDisplay(currencyDisplay);
