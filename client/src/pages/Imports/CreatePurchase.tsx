@@ -35,6 +35,8 @@ interface PurchaseItem {
   id: string;
   name: string;
   sku: string;
+  category: string;
+  barcode: string;
   quantity: number;
   unitPrice: number;
   weight: number;
@@ -149,6 +151,8 @@ export default function CreatePurchase() {
   const [currentItem, setCurrentItem] = useState<Partial<PurchaseItem>>({
     name: "",
     sku: "",
+    category: "",
+    barcode: "",
     quantity: 1,
     unitPrice: 0,
     weight: 0,
@@ -659,6 +663,8 @@ export default function CreatePurchase() {
       id: Date.now().toString(),
       name: currentItem.name || "",
       sku: currentItem.sku || "",
+      category: currentItem.category || "",
+      barcode: currentItem.barcode || "",
       quantity: currentItem.quantity || 1,
       unitPrice: currentItem.unitPrice || 0,
       weight: currentItem.weight || 0,
@@ -675,6 +681,8 @@ export default function CreatePurchase() {
     setCurrentItem({
       name: "",
       sku: "",
+      category: "",
+      barcode: "",
       quantity: 1,
       unitPrice: 0,
       weight: 0,
@@ -808,6 +816,8 @@ export default function CreatePurchase() {
       id: `item-${Date.now()}-${Math.random()}`,
       name: `${currentItem.name} - ${variant.name}`,
       sku: variant.sku || currentItem.sku || "",
+      category: currentItem.category || "",
+      barcode: currentItem.barcode || "",
       quantity: variant.quantity,
       unitPrice: variant.unitPrice,
       weight: variant.weight,
@@ -826,6 +836,8 @@ export default function CreatePurchase() {
     setCurrentItem({
       name: "",
       sku: "",
+      category: "",
+      barcode: "",
       quantity: 1,
       unitPrice: 0,
       weight: 0,
@@ -1428,6 +1440,28 @@ export default function CreatePurchase() {
                     onChange={(e) => setCurrentItem({...currentItem, sku: e.target.value})}
                     placeholder="Auto-filled or enter manually"
                     data-testid="input-sku"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="category">Item Category</Label>
+                  <Input
+                    id="category"
+                    value={currentItem.category}
+                    onChange={(e) => setCurrentItem({...currentItem, category: e.target.value})}
+                    placeholder="e.g., Electronics, Clothing"
+                    data-testid="input-category"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="barcode">Barcode (EAN-13)</Label>
+                  <Input
+                    id="barcode"
+                    value={currentItem.barcode}
+                    onChange={(e) => setCurrentItem({...currentItem, barcode: e.target.value})}
+                    placeholder="e.g., 1234567890123"
+                    data-testid="input-barcode"
                   />
                 </div>
               </div>
