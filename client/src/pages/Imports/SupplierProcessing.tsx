@@ -9,9 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DataTable, DataTableColumn } from "@/components/ui/data-table";
-import { Plus, Package2, Truck, MapPin, Clock, CreditCard, Users, Edit, Trash2, ChevronDown, ChevronUp, Filter, Search } from "lucide-react";
+import { Plus, Package2, Truck, MapPin, Clock, CreditCard, Users, Edit, Trash2, ChevronDown, ChevronUp, Filter, Search, ListPlus, PackagePlus } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -42,12 +44,16 @@ interface PurchaseItem {
   purchaseId: number;
   name: string;
   sku: string | null;
+  category: string;
+  barcode: string;
   quantity: number;
   unitPrice: string;
   weight: string;
   dimensions: string | null;
   notes: string | null;
   createdAt: string;
+  isVariant?: boolean;
+  variantName?: string;
 }
 
 const statusColors: Record<string, string> = {
@@ -70,6 +76,46 @@ export default function SupplierProcessing() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Variant state for add item dialog
+  const [showVariants, setShowVariants] = useState(false);
+  const [variants, setVariants] = useState<Array<{
+    id: string;
+    name: string;
+    sku: string;
+    quantity: number;
+    unitPrice: number;
+    weight: number;
+    dimensions: string;
+  }>>([]);
+  const [variantDialogOpen, setVariantDialogOpen] = useState(false);
+  const [seriesDialogOpen, setSeriesDialogOpen] = useState(false);
+  const [newVariant, setNewVariant] = useState({
+    name: "",
+    sku: "",
+    quantity: 1,
+    unitPrice: 0,
+    weight: 0,
+    dimensions: ""
+  });
+  const [seriesInput, setSeriesInput] = useState("");
+  const [seriesQuantity, setSeriesQuantity] = useState(1);
+  const [seriesUnitPrice, setSeriesUnitPrice] = useState(0);
+  const [seriesWeight, setSeriesWeight] = useState(0);
+  const [selectedVariants, setSelectedVariants] = useState<string[]>([]);
+  
+  // Form state for add item
+  const [currentItem, setCurrentItem] = useState({
+    name: "",
+    sku: "",
+    category: "",
+    barcode: "",
+    quantity: 1,
+    unitPrice: 0,
+    weight: 0,
+    dimensions: "",
+    notes: ""
+  });
+
   // Mock data for purchases
   const mockPurchases: Purchase[] = [
     {
@@ -90,9 +136,9 @@ export default function SupplierProcessing() {
       createdAt: "2024-03-15T10:00:00Z",
       updatedAt: "2024-03-15T10:00:00Z",
       items: [
-        { id: 1, purchaseId: 1, name: "iPhone 15 Pro Max", sku: "IPH15PM256", quantity: 5, unitPrice: "899.00", weight: "0.221", dimensions: "15x7x1", notes: null, createdAt: "2024-03-15T10:00:00Z" },
-        { id: 2, purchaseId: 1, name: "AirPods Pro 2", sku: "APP2023", quantity: 10, unitPrice: "189.00", weight: "0.051", dimensions: "5x5x2", notes: null, createdAt: "2024-03-15T10:00:00Z" },
-        { id: 3, purchaseId: 1, name: "MacBook Air M2", sku: "MBA13M2", quantity: 3, unitPrice: "1099.00", weight: "1.24", dimensions: "30x21x1.5", notes: null, createdAt: "2024-03-15T10:00:00Z" }
+        { id: 1, purchaseId: 1, name: "iPhone 15 Pro Max", sku: "IPH15PM256", category: "Electronics", barcode: "1234567890123", quantity: 5, unitPrice: "899.00", weight: "0.221", dimensions: "15x7x1", notes: null, createdAt: "2024-03-15T10:00:00Z" },
+        { id: 2, purchaseId: 1, name: "AirPods Pro 2", sku: "APP2023", category: "Electronics", barcode: "1234567890124", quantity: 10, unitPrice: "189.00", weight: "0.051", dimensions: "5x5x2", notes: null, createdAt: "2024-03-15T10:00:00Z" },
+        { id: 3, purchaseId: 1, name: "MacBook Air M2", sku: "MBA13M2", category: "Electronics", barcode: "1234567890125", quantity: 3, unitPrice: "1099.00", weight: "1.24", dimensions: "30x21x1.5", notes: null, createdAt: "2024-03-15T10:00:00Z" }
       ],
       itemCount: 3
     },
@@ -114,8 +160,8 @@ export default function SupplierProcessing() {
       createdAt: "2024-03-16T14:30:00Z",
       updatedAt: "2024-03-16T14:30:00Z",
       items: [
-        { id: 4, purchaseId: 2, name: "Samsung Galaxy S24 Ultra", sku: "SGS24U512", quantity: 8, unitPrice: "7800.00", weight: "0.233", dimensions: "16x8x1", notes: null, createdAt: "2024-03-16T14:30:00Z" },
-        { id: 5, purchaseId: 2, name: "Galaxy Watch 6", sku: "GW6BT44", quantity: 15, unitPrice: "1800.00", weight: "0.059", dimensions: "4x4x1", notes: null, createdAt: "2024-03-16T14:30:00Z" }
+        { id: 4, purchaseId: 2, name: "Samsung Galaxy S24 Ultra", sku: "SGS24U512", category: "Electronics", barcode: "1234567890126", quantity: 8, unitPrice: "7800.00", weight: "0.233", dimensions: "16x8x1", notes: null, createdAt: "2024-03-16T14:30:00Z" },
+        { id: 5, purchaseId: 2, name: "Galaxy Watch 6", sku: "GW6BT44", category: "Electronics", barcode: "1234567890127", quantity: 15, unitPrice: "1800.00", weight: "0.059", dimensions: "4x4x1", notes: null, createdAt: "2024-03-16T14:30:00Z" }
       ],
       itemCount: 2
     },
@@ -257,23 +303,147 @@ export default function SupplierProcessing() {
     }
   });
 
+  // Variant functions
+  const addVariant = () => {
+    if (!newVariant.name.trim()) {
+      toast({ title: "Error", description: "Variant name is required", variant: "destructive" });
+      return;
+    }
+    
+    const variant = {
+      id: Date.now().toString(),
+      name: newVariant.name,
+      sku: newVariant.sku,
+      quantity: newVariant.quantity,
+      unitPrice: newVariant.unitPrice,
+      weight: newVariant.weight,
+      dimensions: newVariant.dimensions
+    };
+    
+    setVariants([...variants, variant]);
+    setNewVariant({ name: "", sku: "", quantity: 1, unitPrice: 0, weight: 0, dimensions: "" });
+    setVariantDialogOpen(false);
+  };
+
+  const removeVariant = (id: string) => {
+    setVariants(variants.filter(v => v.id !== id));
+    setSelectedVariants(selectedVariants.filter(v => v !== id));
+  };
+
+  const addVariantSeries = () => {
+    if (!seriesInput.trim()) {
+      toast({ title: "Error", description: "Series input is required", variant: "destructive" });
+      return;
+    }
+
+    const lines = seriesInput.split('\n').filter(line => line.trim());
+    const newVariants = lines.map((line, index) => ({
+      id: (Date.now() + index).toString(),
+      name: line.trim(),
+      sku: "",
+      quantity: seriesQuantity,
+      unitPrice: seriesUnitPrice,
+      weight: seriesWeight,
+      dimensions: ""
+    }));
+
+    setVariants([...variants, ...newVariants]);
+    setSeriesInput("");
+    setSeriesQuantity(1);
+    setSeriesUnitPrice(0);
+    setSeriesWeight(0);
+    setSeriesDialogOpen(false);
+  };
+
+  const bulkUpdateVariants = (field: string, value: number) => {
+    if (selectedVariants.length === 0) {
+      toast({ title: "Error", description: "Please select variants to update", variant: "destructive" });
+      return;
+    }
+
+    setVariants(variants.map(variant => 
+      selectedVariants.includes(variant.id) 
+        ? { ...variant, [field]: value }
+        : variant
+    ));
+  };
+
+  const removeSelectedVariants = () => {
+    if (selectedVariants.length === 0) {
+      toast({ title: "Error", description: "Please select variants to remove", variant: "destructive" });
+      return;
+    }
+
+    setVariants(variants.filter(v => !selectedVariants.includes(v.id)));
+    setSelectedVariants([]);
+  };
+
+  const resetVariants = () => {
+    setShowVariants(false);
+    setVariants([]);
+    setSelectedVariants([]);
+  };
+
   const handleAddItem = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!selectedPurchase) return;
     
-    const formData = new FormData(e.currentTarget);
-    
-    const item = {
-      name: formData.get('name') as string,
-      sku: formData.get('sku') as string || null,
-      quantity: parseInt(formData.get('quantity') as string) || 1,
-      unitPrice: parseFloat(formData.get('unitPrice') as string) || 0,
-      weight: parseFloat(formData.get('weight') as string) || 0,
-      dimensions: formData.get('dimensions') as string || null,
-      notes: formData.get('notes') as string || null,
-    };
-    
-    addItemMutation.mutate({ purchaseId: selectedPurchase.id, item });
+    if (showVariants && variants.length > 0) {
+      // Handle variant items
+      const items = variants.map(variant => ({
+        name: `${currentItem.name} - ${variant.name}`,
+        sku: variant.sku || currentItem.sku,
+        category: currentItem.category,
+        barcode: currentItem.barcode,
+        quantity: variant.quantity,
+        unitPrice: variant.unitPrice,
+        weight: variant.weight,
+        dimensions: variant.dimensions || currentItem.dimensions,
+        notes: currentItem.notes,
+        isVariant: true,
+        variantName: variant.name
+      }));
+
+      // Add each variant as a separate item
+      for (const item of items) {
+        await new Promise((resolve) => {
+          addItemMutation.mutate({ purchaseId: selectedPurchase.id, item }, {
+            onSettled: resolve
+          });
+        });
+      }
+      
+      // Reset form
+      setCurrentItem({
+        name: "",
+        sku: "",
+        category: "",
+        barcode: "",
+        quantity: 1,
+        unitPrice: 0,
+        weight: 0,
+        dimensions: "",
+        notes: ""
+      });
+      resetVariants();
+    } else {
+      // Handle single item
+      const formData = new FormData(e.currentTarget);
+      
+      const item = {
+        name: formData.get('name') as string,
+        sku: formData.get('sku') as string || null,
+        category: formData.get('category') as string,
+        barcode: formData.get('barcode') as string,
+        quantity: parseInt(formData.get('quantity') as string) || 1,
+        unitPrice: parseFloat(formData.get('unitPrice') as string) || 0,
+        weight: parseFloat(formData.get('weight') as string) || 0,
+        dimensions: formData.get('dimensions') as string || null,
+        notes: formData.get('notes') as string || null,
+      };
+      
+      addItemMutation.mutate({ purchaseId: selectedPurchase.id, item });
+    }
   };
 
   // Filter and search logic
@@ -793,6 +963,7 @@ export default function SupplierProcessing() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleAddItem} className="space-y-4">
+            {/* First row: Item Name and SKU */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Item Name *</Label>
@@ -802,6 +973,8 @@ export default function SupplierProcessing() {
                   required 
                   data-testid="input-item-name"
                   placeholder="Enter item name"
+                  value={currentItem.name}
+                  onChange={(e) => setCurrentItem(prev => ({ ...prev, name: e.target.value }))}
                 />
               </div>
               <div className="space-y-2">
@@ -811,54 +984,312 @@ export default function SupplierProcessing() {
                   name="sku" 
                   data-testid="input-item-sku"
                   placeholder="Optional SKU"
+                  value={currentItem.sku}
+                  onChange={(e) => setCurrentItem(prev => ({ ...prev, sku: e.target.value }))}
                 />
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+            {/* Second row: Category and Barcode */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="quantity">Quantity *</Label>
+                <Label htmlFor="category">Item Category</Label>
                 <Input 
-                  id="quantity" 
-                  name="quantity" 
-                  type="number" 
-                  min="1" 
-                  defaultValue="1"
-                  required 
-                  data-testid="input-item-quantity"
+                  id="category" 
+                  name="category" 
+                  data-testid="input-item-category"
+                  placeholder="e.g., Electronics, Clothing"
+                  value={currentItem.category}
+                  onChange={(e) => setCurrentItem(prev => ({ ...prev, category: e.target.value }))}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="unitPrice">Unit Price ($)</Label>
+                <Label htmlFor="barcode">Barcode (EAN-13)</Label>
                 <Input 
-                  id="unitPrice" 
-                  name="unitPrice" 
-                  type="number" 
-                  step="0.01" 
-                  data-testid="input-item-price"
-                  placeholder="0.00"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="weight">Weight (kg)</Label>
-                <Input 
-                  id="weight" 
-                  name="weight" 
-                  type="number" 
-                  step="0.001" 
-                  data-testid="input-item-weight"
-                  placeholder="0.000"
+                  id="barcode" 
+                  name="barcode" 
+                  data-testid="input-item-barcode"
+                  placeholder="e.g., 1234567890123"
+                  maxLength={13}
+                  value={currentItem.barcode}
+                  onChange={(e) => setCurrentItem(prev => ({ ...prev, barcode: e.target.value }))}
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="dimensions">Dimensions (L×W×H cm)</Label>
-              <Input 
-                id="dimensions" 
-                name="dimensions" 
-                data-testid="input-item-dimensions"
-                placeholder="e.g., 20×15×10"
-              />
+
+            {/* Variants checkbox */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="hasVariants" 
+                  checked={showVariants}
+                  onCheckedChange={(checked) => {
+                    setShowVariants(checked as boolean);
+                    if (!checked) {
+                      resetVariants();
+                    }
+                  }}
+                  data-testid="checkbox-has-variants"
+                />
+                <Label htmlFor="hasVariants" className="text-sm font-medium">
+                  This item has variants (sizes, colors, etc.)
+                </Label>
+              </div>
+
+              {/* Variants section */}
+              {showVariants && (
+                <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setVariantDialogOpen(true)}
+                      data-testid="button-add-variant"
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add Variant
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSeriesDialogOpen(true)}
+                      data-testid="button-add-series"
+                    >
+                      <ListPlus className="h-4 w-4 mr-1" />
+                      Add Series
+                    </Button>
+                  </div>
+
+                  {/* Variants table */}
+                  {variants.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="bg-background border rounded-lg overflow-hidden">
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow className="bg-muted/50">
+                                <TableHead className="w-10 p-2">
+                                  <Checkbox
+                                    checked={selectedVariants.length === variants.length}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        setSelectedVariants(variants.map(v => v.id));
+                                      } else {
+                                        setSelectedVariants([]);
+                                      }
+                                    }}
+                                    data-testid="checkbox-select-all-variants"
+                                  />
+                                </TableHead>
+                                <TableHead className="p-2 min-w-32">Variant Name</TableHead>
+                                <TableHead className="p-2 min-w-24">SKU</TableHead>
+                                <TableHead className="p-2 w-16">Qty</TableHead>
+                                <TableHead className="p-2 w-20">Price</TableHead>
+                                <TableHead className="p-2 w-16">Weight</TableHead>
+                                <TableHead className="p-2 w-10"></TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {variants.map((variant) => (
+                                <TableRow key={variant.id} className="h-10">
+                                  <TableCell className="p-2">
+                                    <Checkbox
+                                      checked={selectedVariants.includes(variant.id)}
+                                      onCheckedChange={(checked) => {
+                                        if (checked) {
+                                          setSelectedVariants([...selectedVariants, variant.id]);
+                                        } else {
+                                          setSelectedVariants(selectedVariants.filter(id => id !== variant.id));
+                                        }
+                                      }}
+                                      data-testid={`checkbox-variant-${variant.id}`}
+                                    />
+                                  </TableCell>
+                                  <TableCell className="p-2 font-medium text-sm">{variant.name}</TableCell>
+                                  <TableCell className="p-2">
+                                    <Input
+                                      type="text"
+                                      value={variant.sku}
+                                      onChange={(e) => {
+                                        setVariants(variants.map(v => 
+                                          v.id === variant.id ? {...v, sku: e.target.value} : v
+                                        ));
+                                      }}
+                                      className="h-6 text-xs"
+                                      placeholder="SKU"
+                                    />
+                                  </TableCell>
+                                  <TableCell className="p-2">
+                                    <Input
+                                      type="number"
+                                      value={variant.quantity}
+                                      onChange={(e) => {
+                                        setVariants(variants.map(v => 
+                                          v.id === variant.id ? {...v, quantity: parseInt(e.target.value) || 1} : v
+                                        ));
+                                      }}
+                                      className="h-6 w-14 text-right text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                      min="1"
+                                    />
+                                  </TableCell>
+                                  <TableCell className="p-2">
+                                    <Input
+                                      type="number"
+                                      value={variant.unitPrice}
+                                      onChange={(e) => {
+                                        setVariants(variants.map(v => 
+                                          v.id === variant.id ? {...v, unitPrice: parseFloat(e.target.value) || 0} : v
+                                        ));
+                                      }}
+                                      className="h-6 w-16 text-right text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                      step="0.01"
+                                      min="0"
+                                    />
+                                  </TableCell>
+                                  <TableCell className="p-2">
+                                    <Input
+                                      type="number"
+                                      value={variant.weight}
+                                      onChange={(e) => {
+                                        setVariants(variants.map(v => 
+                                          v.id === variant.id ? {...v, weight: parseFloat(e.target.value) || 0} : v
+                                        ));
+                                      }}
+                                      className="h-6 w-14 text-right text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                      step="0.01"
+                                      min="0"
+                                    />
+                                  </TableCell>
+                                  <TableCell className="p-2">
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => removeVariant(variant.id)}
+                                      className="h-6 w-6 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                                      data-testid={`button-remove-variant-${variant.id}`}
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </div>
+
+                      {/* Bulk actions */}
+                      {selectedVariants.length > 0 && (
+                        <div className="flex flex-wrap gap-2 text-xs">
+                          <div className="flex items-center gap-1">
+                            <span className="text-muted-foreground">Bulk update:</span>
+                            <Input
+                              type="number"
+                              placeholder="Qty"
+                              className="h-7 w-16 text-xs"
+                              onChange={(e) => {
+                                const value = parseInt(e.target.value);
+                                if (value > 0) {
+                                  bulkUpdateVariants('quantity', value);
+                                }
+                              }}
+                            />
+                            <Input
+                              type="number"
+                              placeholder="Price"
+                              className="h-7 w-16 text-xs"
+                              step="0.01"
+                              onChange={(e) => {
+                                const value = parseFloat(e.target.value);
+                                if (value >= 0) {
+                                  bulkUpdateVariants('unitPrice', value);
+                                }
+                              }}
+                            />
+                            <Input
+                              type="number"
+                              placeholder="Weight"
+                              className="h-7 w-16 text-xs"
+                              step="0.01"
+                              onChange={(e) => {
+                                const value = parseFloat(e.target.value);
+                                if (value >= 0) {
+                                  bulkUpdateVariants('weight', value);
+                                }
+                              }}
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={removeSelectedVariants}
+                              className="h-7 px-2 text-xs"
+                            >
+                              Remove Selected
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
+
+            {/* Single item fields - only show when variants are disabled */}
+            {!showVariants && (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="quantity">Quantity *</Label>
+                    <Input 
+                      id="quantity" 
+                      name="quantity" 
+                      type="number" 
+                      min="1" 
+                      defaultValue="1"
+                      required 
+                      data-testid="input-item-quantity"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="unitPrice">Unit Price ($)</Label>
+                    <Input 
+                      id="unitPrice" 
+                      name="unitPrice" 
+                      type="number" 
+                      step="0.01" 
+                      data-testid="input-item-price"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="weight">Weight (kg)</Label>
+                    <Input 
+                      id="weight" 
+                      name="weight" 
+                      type="number" 
+                      step="0.001" 
+                      data-testid="input-item-weight"
+                      placeholder="0.000"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="dimensions">Dimensions (L×W×H cm)</Label>
+                  <Input 
+                    id="dimensions" 
+                    name="dimensions" 
+                    data-testid="input-item-dimensions"
+                    placeholder="e.g., 20×15×10"
+                  />
+                </div>
+              </>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="notes">Notes</Label>
               <Textarea 
@@ -866,17 +1297,200 @@ export default function SupplierProcessing() {
                 name="notes" 
                 data-testid="textarea-item-notes"
                 placeholder="Additional notes about this item..."
+                value={currentItem.notes}
+                onChange={(e) => setCurrentItem(prev => ({ ...prev, notes: e.target.value }))}
               />
             </div>
+
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsAddItemModalOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => {
+                setIsAddItemModalOpen(false);
+                resetVariants();
+                setCurrentItem({
+                  name: "",
+                  sku: "",
+                  category: "",
+                  barcode: "",
+                  quantity: 1,
+                  unitPrice: 0,
+                  weight: 0,
+                  dimensions: "",
+                  notes: ""
+                });
+              }}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={addItemMutation.isPending} data-testid="button-submit-item">
+              <Button 
+                type="submit" 
+                disabled={addItemMutation.isPending || (showVariants && variants.length === 0)} 
+                data-testid="button-submit-item"
+              >
                 {addItemMutation.isPending ? "Adding..." : "Add Item"}
               </Button>
             </DialogFooter>
           </form>
+
+          {/* Add Variant Dialog */}
+          <Dialog open={variantDialogOpen} onOpenChange={setVariantDialogOpen}>
+            <DialogContent className="w-[95vw] max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Add Variant</DialogTitle>
+                <DialogDescription>
+                  Add a new variant for this item
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="variantName">Variant Name *</Label>
+                  <Input
+                    id="variantName"
+                    placeholder="e.g., Red - Large, 128GB, etc."
+                    value={newVariant.name}
+                    onChange={(e) => setNewVariant(prev => ({ ...prev, name: e.target.value }))}
+                    data-testid="input-variant-name"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="variantSku">SKU</Label>
+                    <Input
+                      id="variantSku"
+                      placeholder="Optional"
+                      value={newVariant.sku}
+                      onChange={(e) => setNewVariant(prev => ({ ...prev, sku: e.target.value }))}
+                      data-testid="input-variant-sku"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="variantQuantity">Quantity</Label>
+                    <Input
+                      id="variantQuantity"
+                      type="number"
+                      min="1"
+                      value={newVariant.quantity}
+                      onChange={(e) => setNewVariant(prev => ({ ...prev, quantity: parseInt(e.target.value) || 1 }))}
+                      data-testid="input-variant-quantity"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="variantPrice">Unit Price</Label>
+                    <Input
+                      id="variantPrice"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={newVariant.unitPrice}
+                      onChange={(e) => setNewVariant(prev => ({ ...prev, unitPrice: parseFloat(e.target.value) || 0 }))}
+                      data-testid="input-variant-price"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="variantWeight">Weight (kg)</Label>
+                    <Input
+                      id="variantWeight"
+                      type="number"
+                      step="0.001"
+                      min="0"
+                      value={newVariant.weight}
+                      onChange={(e) => setNewVariant(prev => ({ ...prev, weight: parseFloat(e.target.value) || 0 }))}
+                      data-testid="input-variant-weight"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="variantDimensions">Dimensions (L×W×H cm)</Label>
+                  <Input
+                    id="variantDimensions"
+                    placeholder="e.g., 20×15×10"
+                    value={newVariant.dimensions}
+                    onChange={(e) => setNewVariant(prev => ({ ...prev, dimensions: e.target.value }))}
+                    data-testid="input-variant-dimensions"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setVariantDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={addVariant} data-testid="button-confirm-variant">
+                  Add Variant
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Add Series Dialog */}
+          <Dialog open={seriesDialogOpen} onOpenChange={setSeriesDialogOpen}>
+            <DialogContent className="w-[95vw] max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Add Variant Series</DialogTitle>
+                <DialogDescription>
+                  Add multiple variants at once (one per line)
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="seriesInput">Variant Names *</Label>
+                  <Textarea
+                    id="seriesInput"
+                    placeholder="Red - Small&#10;Red - Medium&#10;Red - Large&#10;Blue - Small&#10;Blue - Medium"
+                    value={seriesInput}
+                    onChange={(e) => setSeriesInput(e.target.value)}
+                    className="min-h-24"
+                    data-testid="textarea-series-input"
+                  />
+                  <p className="text-xs text-muted-foreground">Enter one variant name per line</p>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="seriesQuantity">Quantity (each)</Label>
+                    <Input
+                      id="seriesQuantity"
+                      type="number"
+                      min="1"
+                      value={seriesQuantity}
+                      onChange={(e) => setSeriesQuantity(parseInt(e.target.value) || 1)}
+                      data-testid="input-series-quantity"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="seriesPrice">Unit Price (each)</Label>
+                    <Input
+                      id="seriesPrice"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={seriesUnitPrice}
+                      onChange={(e) => setSeriesUnitPrice(parseFloat(e.target.value) || 0)}
+                      data-testid="input-series-price"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="seriesWeight">Weight (each)</Label>
+                    <Input
+                      id="seriesWeight"
+                      type="number"
+                      step="0.001"
+                      min="0"
+                      value={seriesWeight}
+                      onChange={(e) => setSeriesWeight(parseFloat(e.target.value) || 0)}
+                      data-testid="input-series-weight"
+                    />
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setSeriesDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={addVariantSeries} data-testid="button-confirm-series">
+                  Add Series
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </DialogContent>
       </Dialog>
     </div>
