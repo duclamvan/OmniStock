@@ -13,7 +13,8 @@ import {
   Search,
   Package,
   FolderOpen,
-  Calendar
+  Calendar,
+  AlertCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -30,24 +31,33 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert";
+
 interface Category {
-  id: string;
+  id: number;
   name: string;
   description?: string;
-  createdAt: string;
+  created_at: string;
+  updated_at: string;
   productCount?: number;
 }
 
 export default function Categories() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
+  const [categoryToDelete, setCategoryToDelete] = useState<number | null>(null);
 
-  // Fetch categories
-  const { data: categories = [], isLoading } = useQuery<Category[]>({
-    queryKey: ['/api/categories']
+  // Fetch categories with better error handling
+  const { data: categories = [], isLoading, error } = useQuery<Category[]>({
+    queryKey: ['/api/categories'],
+    retry: 2,
+    retryDelay: 1000
   });
 
   // Fetch products to count products per category
@@ -69,8 +79,13 @@ export default function Categories() {
 
   // Delete mutation
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      return await apiRequest('DELETE', `/api/categories/${id}`);
+    mutationFn: async (id: number) => {
+      const response = await apiRequest(`/api/categories/${id}`, 'DELETE');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to delete category');
+      }
+      return response;
     },
     onSuccess: () => {
       toast({
@@ -90,29 +105,7 @@ export default function Categories() {
     }
   });
 
-  // Bulk delete mutation
-  const bulkDeleteMutation = useMutation({
-    mutationFn: async (ids: string[]) => {
-      await Promise.all(ids.map(id => apiRequest('DELETE', `/api/categories/${id}`)));
-    },
-    onSuccess: () => {
-      toast({
-        title: 'Success',
-        description: `${selectedCategories.length} categories deleted successfully`
-      });
-      queryClient.invalidateQueries({ queryKey: ['/api/categories'] });
-      setSelectedCategories([]);
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to delete categories',
-        variant: 'destructive'
-      });
-    }
-  });
-
-  const handleDelete = (id: string) => {
+  const handleDelete = (id: number) => {
     setCategoryToDelete(id);
     setShowDeleteDialog(true);
   };
@@ -131,11 +124,9 @@ export default function Categories() {
       cell: (item) => (
         <div className="flex items-center gap-2">
           <FolderOpen className="h-4 w-4 text-muted-foreground" />
-          <Link href={`/inventory/categories/${item.id}`}>
-            <span className="font-medium hover:underline cursor-pointer">
-              {item.name}
-            </span>
-          </Link>
+          <span className="font-medium" data-testid={`category-name-${item.id}`}>
+            {item.name}
+          </span>
         </div>
       ),
     },
@@ -162,14 +153,14 @@ export default function Categories() {
       ),
     },
     {
-      key: "createdAt",
+      key: "created_at",
       header: "Created",
       sortable: true,
       cell: (item) => (
         <div className="flex items-center gap-2 text-muted-foreground">
           <Calendar className="h-4 w-4" />
           <span className="text-sm">
-            {format(new Date(item.createdAt), 'MMM dd, yyyy')}
+            {format(new Date(item.created_at), 'MMM dd, yyyy')}
           </span>
         </div>
       ),
@@ -180,7 +171,11 @@ export default function Categories() {
       cell: (item) => (
         <div className="flex items-center gap-2">
           <Link href={`/inventory/categories/${item.id}/edit`}>
-            <Button size="sm" variant="ghost">
+            <Button 
+              size="sm" 
+              variant="ghost"
+              data-testid={`edit-category-${item.id}`}
+            >
               <Edit className="h-4 w-4" />
             </Button>
           </Link>
@@ -189,6 +184,7 @@ export default function Categories() {
             variant="ghost"
             onClick={() => handleDelete(item.id)}
             disabled={item.productCount && item.productCount > 0}
+            data-testid={`delete-category-${item.id}`}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -196,6 +192,66 @@ export default function Categories() {
       ),
     },
   ];
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <div className="h-8 w-32 mb-2 bg-gray-200 rounded animate-pulse" />
+            <div className="h-4 w-48 bg-gray-200 rounded animate-pulse" />
+          </div>
+          <div className="h-10 w-32 bg-gray-200 rounded animate-pulse" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {[1, 2, 3].map(i => (
+            <Card key={i}>
+              <CardHeader className="pb-3">
+                <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
+              </CardHeader>
+              <CardContent>
+                <div className="h-8 w-16 bg-gray-200 rounded animate-pulse" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <Card>
+          <CardContent className="p-6">
+            <div className="h-96 w-full bg-gray-200 rounded animate-pulse" />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold">Categories</h1>
+            <p className="text-muted-foreground">Manage product categories</p>
+          </div>
+          <Link href="/inventory/categories/add">
+            <Button data-testid="button-add-category">
+              <Plus className="mr-2 h-4 w-4" />
+              Add Category
+            </Button>
+          </Link>
+        </div>
+        
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error loading categories</AlertTitle>
+          <AlertDescription>
+            Unable to load categories. Please try refreshing the page.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -206,7 +262,7 @@ export default function Categories() {
           <p className="text-muted-foreground">Manage product categories</p>
         </div>
         <Link href="/inventory/categories/add">
-          <Button>
+          <Button data-testid="button-add-category">
             <Plus className="mr-2 h-4 w-4" />
             Add Category
           </Button>
@@ -225,20 +281,18 @@ export default function Categories() {
             <div className="text-2xl font-bold">{categories.length}</div>
           </CardContent>
         </Card>
-        
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Active Categories
+              Categories with Products
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {categoriesWithCount.filter(c => c.productCount && c.productCount > 0).length}
+              {categoriesWithCount.filter(c => c.productCount > 0).length}
             </div>
           </CardContent>
         </Card>
-        
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -251,45 +305,49 @@ export default function Categories() {
         </Card>
       </div>
 
-      {/* Search Bar */}
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Search categories..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        
-        {selectedCategories.length > 0 && (
-          <Button
-            variant="destructive"
-            onClick={() => bulkDeleteMutation.mutate(selectedCategories)}
-            disabled={bulkDeleteMutation.isPending}
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Delete {selectedCategories.length} Selected
-          </Button>
-        )}
-      </div>
-
-      {/* Categories Table */}
+      {/* Search and Filters */}
       <Card>
-        <CardContent className="p-0">
-          <DataTable
-            columns={columns}
-            data={filteredCategories}
-            getRowKey={(row) => row.id}
-            bulkActions={selectedCategories.length > 0 ? [
-              {
-                label: `Delete (${selectedCategories.length})`,
-                action: (items) => bulkDeleteMutation.mutate(items.map(i => i.id)),
-                variant: 'destructive' as const
-              }
-            ] : undefined}
-          />
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <CardTitle>All Categories</CardTitle>
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search categories..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8"
+                data-testid="input-search-categories"
+              />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {filteredCategories.length === 0 ? (
+            <div className="text-center py-12">
+              <FolderOpen className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">No categories found</h3>
+              <p className="text-muted-foreground mb-4">
+                {searchQuery 
+                  ? "No categories match your search criteria."
+                  : "Get started by creating your first category."}
+              </p>
+              {!searchQuery && (
+                <Link href="/inventory/categories/add">
+                  <Button data-testid="button-create-first-category">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create Category
+                  </Button>
+                </Link>
+              )}
+            </div>
+          ) : (
+            <DataTable
+              data={filteredCategories}
+              columns={columns}
+              getRowKey={(row) => row.id.toString()}
+            />
+          )}
         </CardContent>
       </Card>
 
@@ -303,9 +361,7 @@ export default function Categories() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setCategoryToDelete(null)}>
-              Cancel
-            </AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete}>
               Delete
             </AlertDialogAction>

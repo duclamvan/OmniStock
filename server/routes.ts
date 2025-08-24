@@ -411,7 +411,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/categories/:id', async (req, res) => {
     try {
-      const category = await storage.getCategoryById(req.params.id);
+      // Validate ID is a number
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid category ID" });
+      }
+      
+      const category = await storage.getCategoryById(id.toString());
       if (!category) {
         return res.status(404).json({ message: "Category not found" });
       }

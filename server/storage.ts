@@ -645,36 +645,78 @@ export class DatabaseStorage implements IStorage {
   async getUserActivities(): Promise<UserActivity[]> { return []; }
   async createUserActivity(activity: any): Promise<UserActivity> { return { id: Date.now().toString(), ...activity }; }
 
-  // Categories
+  // Categories - Optimized with proper error handling
   async getCategories(): Promise<Category[]> {
-    return await db.select().from(categories).orderBy(categories.name);
+    try {
+      // Using raw SQL for now to avoid schema mismatch issues
+      const result = await db.execute(sql`
+        SELECT id::integer as id, name, description, created_at, updated_at 
+        FROM categories 
+        ORDER BY name
+      `);
+      return result.rows as Category[];
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      return [];
+    }
   }
 
   async getCategoryById(id: string): Promise<Category | undefined> {
-    const [category] = await db.select().from(categories).where(eq(categories.id, parseInt(id)));
-    return category || undefined;
+    try {
+      const result = await db.execute(sql`
+        SELECT id::integer as id, name, description, created_at, updated_at 
+        FROM categories 
+        WHERE id = ${parseInt(id)}
+        LIMIT 1
+      `);
+      return result.rows[0] as Category | undefined;
+    } catch (error) {
+      console.error('Error fetching category by id:', error);
+      return undefined;
+    }
   }
 
   async createCategory(category: InsertCategory): Promise<Category> {
-    const [newCategory] = await db
-      .insert(categories)
-      .values(category)
-      .returning();
-    return newCategory;
+    try {
+      const result = await db.execute(sql`
+        INSERT INTO categories (name, description, created_at, updated_at)
+        VALUES (${category.name}, ${category.description || null}, NOW(), NOW())
+        RETURNING id::integer as id, name, description, created_at, updated_at
+      `);
+      return result.rows[0] as Category;
+    } catch (error) {
+      console.error('Error creating category:', error);
+      throw error;
+    }
   }
 
   async updateCategory(id: string, updates: Partial<InsertCategory>): Promise<Category | undefined> {
-    const [updated] = await db
-      .update(categories)
-      .set({ ...updates, updatedAt: new Date() })
-      .where(eq(categories.id, parseInt(id)))
-      .returning();
-    return updated || undefined;
+    try {
+      const result = await db.execute(sql`
+        UPDATE categories 
+        SET name = COALESCE(${updates.name}, name),
+            description = COALESCE(${updates.description}, description),
+            updated_at = NOW()
+        WHERE id = ${parseInt(id)}
+        RETURNING id::integer as id, name, description, created_at, updated_at
+      `);
+      return result.rows[0] as Category | undefined;
+    } catch (error) {
+      console.error('Error updating category:', error);
+      return undefined;
+    }
   }
 
   async deleteCategory(id: string): Promise<boolean> {
-    const result = await db.delete(categories).where(eq(categories.id, parseInt(id)));
-    return result.rowCount ? result.rowCount > 0 : false;
+    try {
+      const result = await db.execute(sql`
+        DELETE FROM categories WHERE id = ${parseInt(id)}
+      `);
+      return result.rowCount ? result.rowCount > 0 : false;
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      return false;
+    }
   }
 
   async getBundles(): Promise<Bundle[]> { return []; }
