@@ -1589,7 +1589,7 @@ export default function CreatePurchase() {
                       </div>
                       
                       <div className="border rounded-lg overflow-x-auto">
-                        <Table className="min-w-[700px] text-sm">
+                        <Table className="min-w-[550px] text-sm">
                           <TableHeader>
                             <TableRow className="h-8">
                               <TableHead className="w-8 p-2">
@@ -1599,8 +1599,8 @@ export default function CreatePurchase() {
                                   className="h-3 w-3"
                                 />
                               </TableHead>
-                              <TableHead className="min-w-[100px] p-2">Variant Name</TableHead>
-                              <TableHead className="min-w-[80px] p-2">SKU</TableHead>
+                              <TableHead className="w-24 p-2">Variant Name</TableHead>
+                              <TableHead className="w-16 p-2">SKU</TableHead>
                               <TableHead className="text-center w-12 p-2">Qty</TableHead>
                               <TableHead className="text-right w-16 p-2">Price</TableHead>
                               <TableHead className="text-right w-16 p-2">Weight</TableHead>
@@ -1632,7 +1632,7 @@ export default function CreatePurchase() {
                                         v.id === variant.id ? {...v, sku: e.target.value} : v
                                       ));
                                     }}
-                                    className="h-6 w-full max-w-20 text-xs"
+                                    className="h-6 w-full max-w-14 text-xs"
                                     placeholder="SKU"
                                   />
                                 </TableCell>
