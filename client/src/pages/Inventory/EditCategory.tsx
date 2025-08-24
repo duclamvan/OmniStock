@@ -58,7 +58,8 @@ export default function EditCategory() {
 
   const updateMutation = useMutation({
     mutationFn: async (data: CategoryFormData) => {
-      return await apiRequest('PUT', `/api/categories/${id}`, data);
+      const response = await apiRequest(`/api/categories/${id}`, 'PATCH', data);
+      return response.json();
     },
     onSuccess: () => {
       toast({
