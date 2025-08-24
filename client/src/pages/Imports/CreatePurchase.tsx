@@ -27,7 +27,7 @@ import {
   Plus, Package, Trash2, Calculator, DollarSign, 
   Truck, Calendar, FileText, Save, ArrowLeft, AlertCircle,
   Check, UserPlus, Clock, Search, MoreVertical, Edit, X, RotateCcw,
-  Copy, PackagePlus, ListPlus
+  Copy, PackagePlus, ListPlus, Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -36,6 +36,7 @@ interface PurchaseItem {
   name: string;
   sku: string;
   category: string;
+  categoryId?: number;
   barcode: string;
   quantity: number;
   unitPrice: number;
@@ -192,6 +193,12 @@ export default function CreatePurchase() {
   
   // Currency display state for items
   const [itemCurrencyDisplay, setItemCurrencyDisplay] = useState<{[key: string]: string}>({});
+  
+  // Categories state
+  const [categories, setCategories] = useState<Array<{ id: number; name: string; name_en?: string }>>([]);
+  const [newCategoryDialogOpen, setNewCategoryDialogOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [savingCategory, setSavingCategory] = useState(false);
 
   // Set default purchase date to now
   useEffect(() => {
@@ -200,6 +207,22 @@ export default function CreatePurchase() {
       .toISOString()
       .slice(0, 16);
     setPurchaseDate(localDateTime);
+  }, []);
+  
+  // Fetch categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('/api/categories');
+        if (response.ok) {
+          const data = await response.json();
+          setCategories(data);
+        }
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+      }
+    };
+    fetchCategories();
   }, []);
   
   // Fetch exchange rates
@@ -662,6 +685,7 @@ export default function CreatePurchase() {
       name: currentItem.name || "",
       sku: currentItem.sku || "",
       category: currentItem.category || "",
+      categoryId: currentItem.categoryId,
       barcode: currentItem.barcode || "",
       quantity: currentItem.quantity || 1,
       unitPrice: currentItem.unitPrice || 0,
@@ -692,6 +716,52 @@ export default function CreatePurchase() {
   const removeItem = (id: string) => {
     const updatedItems = items.filter(item => item.id !== id);
     updateItemsWithShipping(updatedItems);
+  };
+  
+  // Save new category
+  const saveNewCategory = async () => {
+    if (!newCategoryName.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a category name",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setSavingCategory(true);
+    try {
+      const response = await fetch('/api/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newCategoryName,
+          name_en: newCategoryName,
+          description: ""
+        })
+      });
+      
+      if (response.ok) {
+        const newCategory = await response.json();
+        setCategories([...categories, newCategory]);
+        setNewCategoryName("");
+        setNewCategoryDialogOpen(false);
+        toast({
+          title: "Success",
+          description: "Category added successfully"
+        });
+      } else {
+        throw new Error('Failed to save category');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save category",
+        variant: "destructive"
+      });
+    } finally {
+      setSavingCategory(false);
+    }
   };
   
   // Add single variant
@@ -1700,6 +1770,7 @@ export default function CreatePurchase() {
                     <TableHeader>
                       <TableRow>
                         <TableHead className="min-w-[120px]">Item</TableHead>
+                        <TableHead className="min-w-[140px]">Category</TableHead>
                         <TableHead className="text-center">Qty</TableHead>
                         <TableHead className="text-right">Unit Price</TableHead>
                         <TableHead className="text-right hidden sm:table-cell">Total</TableHead>
@@ -1731,6 +1802,42 @@ export default function CreatePurchase() {
                                   <div className="text-xs text-muted-foreground px-2">Dimensions: {item.dimensions}</div>
                                 )}
                               </div>
+                            </TableCell>
+                            <TableCell>
+                              <Select
+                                value={item.categoryId?.toString() || ""}
+                                onValueChange={(value) => {
+                                  if (value === "add-new") {
+                                    setNewCategoryDialogOpen(true);
+                                  } else {
+                                    const categoryId = parseInt(value);
+                                    const category = categories.find(c => c.id === categoryId);
+                                    const updatedItems = items.map(i => 
+                                      i.id === item.id 
+                                        ? {...i, categoryId, category: category?.name || category?.name_en || ""} 
+                                        : i
+                                    );
+                                    setItems(updatedItems);
+                                  }
+                                }}
+                              >
+                                <SelectTrigger className="h-7 border-0 bg-transparent hover:bg-muted focus:bg-background focus:border-input">
+                                  <SelectValue placeholder="Select category" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {categories.map((category) => (
+                                    <SelectItem key={category.id} value={category.id.toString()}>
+                                      {category.name || category.name_en}
+                                    </SelectItem>
+                                  ))}
+                                  <SelectItem value="add-new" className="text-primary">
+                                    <div className="flex items-center">
+                                      <Plus className="h-3 w-3 mr-1" />
+                                      Add new category
+                                    </div>
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
                             </TableCell>
                             <TableCell className="text-center">
                               <Input
@@ -2346,6 +2453,54 @@ export default function CreatePurchase() {
             </Button>
             <Button onClick={addVariantSeries}>
               Create Series
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* New Category Dialog */}
+      <Dialog open={newCategoryDialogOpen} onOpenChange={setNewCategoryDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Category</DialogTitle>
+            <DialogDescription>
+              Create a new category for your products
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="category-name">Category Name</Label>
+              <Input
+                id="category-name"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                placeholder="Enter category name"
+                autoFocus
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setNewCategoryDialogOpen(false);
+                setNewCategoryName("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={saveNewCategory}
+              disabled={savingCategory || !newCategoryName.trim()}
+            >
+              {savingCategory ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Category"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
