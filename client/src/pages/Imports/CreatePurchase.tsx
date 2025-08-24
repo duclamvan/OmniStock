@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -25,7 +26,8 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   Plus, Package, Trash2, Calculator, DollarSign, 
   Truck, Calendar, FileText, Save, ArrowLeft, AlertCircle,
-  Check, UserPlus, Clock, Search, MoreVertical, Edit, X, RotateCcw
+  Check, UserPlus, Clock, Search, MoreVertical, Edit, X, RotateCcw,
+  Copy, PackagePlus, ListPlus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -40,6 +42,8 @@ interface PurchaseItem {
   notes: string;
   totalPrice: number;
   costWithShipping: number;
+  isVariant?: boolean;
+  variantName?: string;
 }
 
 interface Supplier {
@@ -151,6 +155,33 @@ export default function CreatePurchase() {
     dimensions: "",
     notes: ""
   });
+  
+  // Variants state
+  const [showVariants, setShowVariants] = useState(false);
+  const [variants, setVariants] = useState<Array<{
+    id: string;
+    name: string;
+    sku: string;
+    quantity: number;
+    unitPrice: number;
+    weight: number;
+    dimensions: string;
+  }>>([]);
+  const [variantDialogOpen, setVariantDialogOpen] = useState(false);
+  const [seriesDialogOpen, setSeriesDialogOpen] = useState(false);
+  const [newVariant, setNewVariant] = useState({
+    name: "",
+    sku: "",
+    quantity: 1,
+    unitPrice: 0,
+    weight: 0,
+    dimensions: ""
+  });
+  const [seriesInput, setSeriesInput] = useState("");
+  const [seriesQuantity, setSeriesQuantity] = useState(1);
+  const [seriesUnitPrice, setSeriesUnitPrice] = useState(0);
+  const [seriesWeight, setSeriesWeight] = useState(0);
+  const [selectedVariants, setSelectedVariants] = useState<string[]>([]);
   
   // Purchase creation state  
   const [frequentSuppliers, setFrequentSuppliers] = useState<Array<{ name: string; count: number; lastUsed: string }>>([]);
@@ -655,6 +686,159 @@ export default function CreatePurchase() {
   const removeItem = (id: string) => {
     const updatedItems = items.filter(item => item.id !== id);
     updateItemsWithShipping(updatedItems);
+  };
+  
+  // Add single variant
+  const addVariant = () => {
+    if (newVariant.name.trim() && currentItem.name) {
+      const variantWithId = {
+        ...newVariant,
+        id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        name: newVariant.name.trim(),
+      };
+      setVariants([...variants, variantWithId]);
+      setNewVariant({
+        name: "",
+        sku: "",
+        quantity: 1,
+        unitPrice: currentItem.unitPrice || 0,
+        weight: currentItem.weight || 0,
+        dimensions: currentItem.dimensions || ""
+      });
+      setVariantDialogOpen(false);
+      toast({
+        title: "Success",
+        description: "Variant added successfully",
+      });
+    }
+  };
+  
+  // Add series of variants
+  const addVariantSeries = () => {
+    if (!seriesInput.trim() || !currentItem.name) {
+      toast({
+        title: "Error",
+        description: "Please enter a series pattern",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if input contains pattern like "Variant <1-100>"
+    const match = seriesInput.match(/<(\d+)-(\d+)>/);
+    if (match) {
+      const start = parseInt(match[1]);
+      const end = parseInt(match[2]);
+      const baseName = seriesInput.replace(/<\d+-\d+>/, '').trim();
+      
+      if (end - start > 200) {
+        toast({
+          title: "Error",
+          description: "Series range too large. Maximum 200 variants at once.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      const newVariantsArray = [];
+      for (let i = start; i <= end; i++) {
+        newVariantsArray.push({
+          id: `temp-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 9)}`,
+          name: `${baseName} ${i}`,
+          sku: "",
+          quantity: seriesQuantity,
+          unitPrice: seriesUnitPrice,
+          weight: seriesWeight,
+          dimensions: ""
+        });
+      }
+      
+      setVariants([...variants, ...newVariantsArray]);
+      // Reset series fields
+      setSeriesInput("");
+      setSeriesQuantity(1);
+      setSeriesUnitPrice(currentItem.unitPrice || 0);
+      setSeriesWeight(currentItem.weight || 0);
+      setSeriesDialogOpen(false);
+      toast({
+        title: "Success",
+        description: `Added ${newVariantsArray.length} variants`,
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "Use format like 'Size <1-10>' to create series",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  // Remove variant
+  const removeVariant = (variantId: string) => {
+    setVariants(variants.filter(v => v.id !== variantId));
+  };
+  
+  // Toggle select all variants
+  const toggleSelectAllVariants = () => {
+    if (selectedVariants.length === variants.length) {
+      setSelectedVariants([]);
+    } else {
+      setSelectedVariants(variants.map(v => v.id));
+    }
+  };
+  
+  // Bulk delete variants
+  const bulkDeleteVariants = () => {
+    setVariants(variants.filter(v => !selectedVariants.includes(v.id)));
+    setSelectedVariants([]);
+  };
+  
+  // Add all variants as items
+  const addVariantsAsItems = () => {
+    if (!currentItem.name) {
+      toast({
+        title: "Error",
+        description: "Please enter the main product name first",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const variantItems = variants.map(variant => ({
+      id: `item-${Date.now()}-${Math.random()}`,
+      name: `${currentItem.name} - ${variant.name}`,
+      sku: variant.sku || currentItem.sku || "",
+      quantity: variant.quantity,
+      unitPrice: variant.unitPrice,
+      weight: variant.weight,
+      dimensions: variant.dimensions,
+      notes: currentItem.notes || "",
+      totalPrice: variant.quantity * variant.unitPrice,
+      costWithShipping: 0,
+      isVariant: true,
+      variantName: variant.name
+    }));
+    
+    const updatedItems = [...items, ...variantItems];
+    updateItemsWithShipping(updatedItems);
+    
+    // Reset form
+    setCurrentItem({
+      name: "",
+      sku: "",
+      quantity: 1,
+      unitPrice: 0,
+      weight: 0,
+      dimensions: "",
+      notes: ""
+    });
+    setVariants([]);
+    setShowVariants(false);
+    
+    toast({
+      title: "Success",
+      description: `Added ${variantItems.length} items`,
+    });
   };
   
   const startEditItem = (item: PurchaseItem) => {
@@ -1302,14 +1486,201 @@ export default function CreatePurchase() {
                   data-testid="input-item-notes"
                 />
               </div>
-              <Button 
-                onClick={addItem} 
-                className="w-full"
-                data-testid="button-add-item"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Item
-              </Button>
+              
+              {/* Variants Toggle */}
+              {currentItem.name && (
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="show-variants"
+                    checked={showVariants}
+                    onCheckedChange={(checked) => setShowVariants(!!checked)}
+                  />
+                  <Label htmlFor="show-variants" className="text-sm font-medium">
+                    Add as multiple variants (e.g., different sizes, colors)
+                  </Label>
+                </div>
+              )}
+              
+              {/* Variants Section */}
+              {showVariants && currentItem.name && (
+                <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <h4 className="text-sm font-medium">Product Variants</h4>
+                      <p className="text-xs text-muted-foreground">
+                        Add variants of {currentItem.name}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setVariantDialogOpen(true)}
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Variant
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setSeriesDialogOpen(true)}
+                      >
+                        <ListPlus className="h-4 w-4 mr-1" />
+                        Add Series
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* Variants Table */}
+                  {variants.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            checked={selectedVariants.length === variants.length && variants.length > 0}
+                            onCheckedChange={toggleSelectAllVariants}
+                          />
+                          <span className="text-sm text-muted-foreground">
+                            {selectedVariants.length > 0 ? `${selectedVariants.length} selected` : `${variants.length} variants`}
+                          </span>
+                        </div>
+                        {selectedVariants.length > 0 && (
+                          <Button type="button" variant="destructive" size="sm" onClick={bulkDeleteVariants}>
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Delete ({selectedVariants.length})
+                          </Button>
+                        )}
+                      </div>
+                      
+                      <div className="border rounded-lg overflow-hidden">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="w-12">
+                                <Checkbox
+                                  checked={selectedVariants.length === variants.length && variants.length > 0}
+                                  onCheckedChange={toggleSelectAllVariants}
+                                />
+                              </TableHead>
+                              <TableHead>Variant Name</TableHead>
+                              <TableHead>SKU</TableHead>
+                              <TableHead className="text-center">Qty</TableHead>
+                              <TableHead className="text-right">Unit Price</TableHead>
+                              <TableHead className="text-right">Weight</TableHead>
+                              <TableHead className="w-12"></TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {variants.map((variant) => (
+                              <TableRow key={variant.id}>
+                                <TableCell>
+                                  <Checkbox
+                                    checked={selectedVariants.includes(variant.id)}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        setSelectedVariants([...selectedVariants, variant.id]);
+                                      } else {
+                                        setSelectedVariants(selectedVariants.filter(id => id !== variant.id));
+                                      }
+                                    }}
+                                  />
+                                </TableCell>
+                                <TableCell className="font-medium">{variant.name}</TableCell>
+                                <TableCell>
+                                  <Input
+                                    value={variant.sku}
+                                    onChange={(e) => {
+                                      setVariants(variants.map(v => 
+                                        v.id === variant.id ? {...v, sku: e.target.value} : v
+                                      ));
+                                    }}
+                                    className="h-8 w-32"
+                                    placeholder="SKU"
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Input
+                                    type="number"
+                                    value={variant.quantity}
+                                    onChange={(e) => {
+                                      setVariants(variants.map(v => 
+                                        v.id === variant.id ? {...v, quantity: parseInt(e.target.value) || 0} : v
+                                      ));
+                                    }}
+                                    className="h-8 w-20 text-center"
+                                    min="0"
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Input
+                                    type="number"
+                                    value={variant.unitPrice}
+                                    onChange={(e) => {
+                                      setVariants(variants.map(v => 
+                                        v.id === variant.id ? {...v, unitPrice: parseFloat(e.target.value) || 0} : v
+                                      ));
+                                    }}
+                                    className="h-8 w-24 text-right"
+                                    step="0.01"
+                                    min="0"
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Input
+                                    type="number"
+                                    value={variant.weight}
+                                    onChange={(e) => {
+                                      setVariants(variants.map(v => 
+                                        v.id === variant.id ? {...v, weight: parseFloat(e.target.value) || 0} : v
+                                      ));
+                                    }}
+                                    className="h-8 w-20 text-right"
+                                    step="0.01"
+                                    min="0"
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => removeVariant(variant.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* Add Button */}
+              {(!showVariants || variants.length === 0) ? (
+                <Button 
+                  onClick={addItem} 
+                  className="w-full"
+                  data-testid="button-add-item"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Item
+                </Button>
+              ) : (
+                <Button 
+                  onClick={addVariantsAsItems} 
+                  className="w-full"
+                  data-testid="button-add-variants"
+                >
+                  <PackagePlus className="h-4 w-4 mr-2" />
+                  Add {variants.length} Variant{variants.length > 1 ? 's' : ''} as Items
+                </Button>
+              )}
             </CardContent>
           </Card>
 
@@ -1857,6 +2228,149 @@ export default function CreatePurchase() {
               data-testid="button-create-supplier"
             >
               {createSupplierMutation.isPending ? "Adding..." : "Add Supplier"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Add Single Variant Dialog */}
+      <Dialog open={variantDialogOpen} onOpenChange={setVariantDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Product Variant</DialogTitle>
+            <DialogDescription>
+              Add a variant for {currentItem.name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Variant Name *</Label>
+              <Input
+                value={newVariant.name}
+                onChange={(e) => setNewVariant({...newVariant, name: e.target.value})}
+                placeholder="e.g., Size L, Color Red"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>SKU</Label>
+              <Input
+                value={newVariant.sku}
+                onChange={(e) => setNewVariant({...newVariant, sku: e.target.value})}
+                placeholder="Optional SKU"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Quantity</Label>
+                <Input
+                  type="number"
+                  value={newVariant.quantity}
+                  onChange={(e) => setNewVariant({...newVariant, quantity: parseInt(e.target.value) || 1})}
+                  min="1"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Unit Price</Label>
+                <Input
+                  type="number"
+                  value={newVariant.unitPrice}
+                  onChange={(e) => setNewVariant({...newVariant, unitPrice: parseFloat(e.target.value) || 0})}
+                  step="0.01"
+                  min="0"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Weight (kg)</Label>
+                <Input
+                  type="number"
+                  value={newVariant.weight}
+                  onChange={(e) => setNewVariant({...newVariant, weight: parseFloat(e.target.value) || 0})}
+                  step="0.01"
+                  min="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Dimensions</Label>
+                <Input
+                  value={newVariant.dimensions}
+                  onChange={(e) => setNewVariant({...newVariant, dimensions: e.target.value})}
+                  placeholder="L×W×H"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setVariantDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={addVariant}>
+              Add Variant
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Add Series Dialog */}
+      <Dialog open={seriesDialogOpen} onOpenChange={setSeriesDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Variant Series</DialogTitle>
+            <DialogDescription>
+              Create multiple variants for {currentItem.name} using a pattern
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Series Pattern *</Label>
+              <Input
+                value={seriesInput}
+                onChange={(e) => setSeriesInput(e.target.value)}
+                placeholder="e.g., Size <1-10> or Color <1-5>"
+              />
+              <p className="text-xs text-muted-foreground">
+                Use &lt;start-end&gt; to generate a numbered series
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Quantity per Variant</Label>
+                <Input
+                  type="number"
+                  value={seriesQuantity}
+                  onChange={(e) => setSeriesQuantity(parseInt(e.target.value) || 1)}
+                  min="1"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Unit Price</Label>
+                <Input
+                  type="number"
+                  value={seriesUnitPrice}
+                  onChange={(e) => setSeriesUnitPrice(parseFloat(e.target.value) || 0)}
+                  step="0.01"
+                  min="0"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Weight per Variant (kg)</Label>
+              <Input
+                type="number"
+                value={seriesWeight}
+                onChange={(e) => setSeriesWeight(parseFloat(e.target.value) || 0)}
+                step="0.01"
+                min="0"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSeriesDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={addVariantSeries}>
+              Create Series
             </Button>
           </DialogFooter>
         </DialogContent>
