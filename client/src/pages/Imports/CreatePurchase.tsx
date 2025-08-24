@@ -154,6 +154,7 @@ export default function CreatePurchase() {
     name: "",
     sku: "",
     category: "",
+    categoryId: undefined,
     barcode: "",
     quantity: 1,
     unitPrice: 0,
@@ -711,6 +712,7 @@ export default function CreatePurchase() {
       name: "",
       sku: "",
       category: "",
+      categoryId: undefined,
       barcode: "",
       quantity: 1,
       unitPrice: 0,
@@ -751,6 +753,14 @@ export default function CreatePurchase() {
       if (response.ok) {
         const newCategory = await response.json();
         setCategories([...categories, newCategory]);
+        
+        // Set the new category in currentItem
+        setCurrentItem({
+          ...currentItem,
+          categoryId: newCategory.id,
+          category: newCategory.name || newCategory.name_en || ""
+        });
+        
         setNewCategoryName("");
         setNewCategoryDialogOpen(false);
         toast({
@@ -912,6 +922,7 @@ export default function CreatePurchase() {
       name: "",
       sku: "",
       category: "",
+      categoryId: undefined,
       barcode: "",
       quantity: 1,
       unitPrice: 0,
@@ -1489,13 +1500,39 @@ export default function CreatePurchase() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="category">Item Category</Label>
-                  <Input
-                    id="category"
-                    value={currentItem.category}
-                    onChange={(e) => setCurrentItem({...currentItem, category: e.target.value})}
-                    placeholder="e.g., Electronics, Clothing"
-                    data-testid="input-category"
-                  />
+                  <Select
+                    value={currentItem.categoryId?.toString() || ""}
+                    onValueChange={(value) => {
+                      if (value === "add-new") {
+                        setNewCategoryDialogOpen(true);
+                      } else {
+                        const categoryId = parseInt(value);
+                        const category = categories.find(c => c.id === categoryId);
+                        setCurrentItem({
+                          ...currentItem, 
+                          categoryId, 
+                          category: category?.name || category?.name_en || ""
+                        });
+                      }
+                    }}
+                  >
+                    <SelectTrigger id="category" data-testid="select-category">
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id.toString()}>
+                          {category.name || category.name_en}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="add-new" className="text-primary">
+                        <div className="flex items-center">
+                          <Plus className="h-3 w-3 mr-1" />
+                          Add new category
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="barcode">Barcode (EAN-13)</Label>
