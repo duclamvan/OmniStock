@@ -1,5 +1,6 @@
 import {
   users,
+  categories,
   importPurchases,
   purchaseItems,
   consolidations,
@@ -8,6 +9,8 @@ import {
   deliveryHistory,
   type User,
   type InsertUser,
+  type Category,
+  type InsertCategory,
   type ImportPurchase,
   type InsertImportPurchase,
   type PurchaseItem,
@@ -642,11 +645,37 @@ export class DatabaseStorage implements IStorage {
   async getUserActivities(): Promise<UserActivity[]> { return []; }
   async createUserActivity(activity: any): Promise<UserActivity> { return { id: Date.now().toString(), ...activity }; }
 
-  async getCategories(): Promise<Category[]> { return []; }
-  async getCategoryById(id: string): Promise<Category | undefined> { return undefined; }
-  async createCategory(category: any): Promise<Category> { return { id: Date.now().toString(), ...category }; }
-  async updateCategory(id: string, category: any): Promise<Category | undefined> { return { id, ...category }; }
-  async deleteCategory(id: string): Promise<boolean> { return true; }
+  // Categories
+  async getCategories(): Promise<Category[]> {
+    return await db.select().from(categories).orderBy(categories.name);
+  }
+
+  async getCategoryById(id: string): Promise<Category | undefined> {
+    const [category] = await db.select().from(categories).where(eq(categories.id, parseInt(id)));
+    return category || undefined;
+  }
+
+  async createCategory(category: InsertCategory): Promise<Category> {
+    const [newCategory] = await db
+      .insert(categories)
+      .values(category)
+      .returning();
+    return newCategory;
+  }
+
+  async updateCategory(id: string, updates: Partial<InsertCategory>): Promise<Category | undefined> {
+    const [updated] = await db
+      .update(categories)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(categories.id, parseInt(id)))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteCategory(id: string): Promise<boolean> {
+    const result = await db.delete(categories).where(eq(categories.id, parseInt(id)));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
 
   async getBundles(): Promise<Bundle[]> { return []; }
   async getBundleById(id: string): Promise<Bundle | undefined> { return undefined; }

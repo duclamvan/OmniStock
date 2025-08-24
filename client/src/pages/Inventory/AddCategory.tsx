@@ -33,7 +33,8 @@ export default function AddCategory() {
 
   const createMutation = useMutation({
     mutationFn: async (data: CategoryFormData) => {
-      return await apiRequest('POST', '/api/categories', data);
+      const response = await apiRequest('/api/categories', 'POST', data);
+      return response.json();
     },
     onSuccess: () => {
       toast({
@@ -44,6 +45,7 @@ export default function AddCategory() {
       navigate('/inventory/categories');
     },
     onError: (error: any) => {
+      console.error('Category creation error:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to create category',
@@ -91,6 +93,7 @@ export default function AddCategory() {
                       <Input
                         {...field}
                         placeholder="e.g., Electronics, Clothing, Beauty"
+                        data-testid="input-category-name"
                       />
                     </FormControl>
                     <FormMessage />
@@ -109,6 +112,7 @@ export default function AddCategory() {
                         {...field}
                         placeholder="Optional description of the category"
                         rows={4}
+                        data-testid="input-category-description"
                       />
                     </FormControl>
                     <FormMessage />
@@ -126,7 +130,8 @@ export default function AddCategory() {
                 </Button>
                 <Button 
                   type="submit" 
-                  disabled={createMutation.isPending}
+                  disabled={createMutation.isPending || !form.formState.isValid}
+                  data-testid="button-create-category"
                 >
                   <Save className="mr-2 h-4 w-4" />
                   {createMutation.isPending ? 'Creating...' : 'Create Category'}

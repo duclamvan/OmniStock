@@ -6,20 +6,9 @@ import { seedMockData } from "./mockData";
 import multer from "multer";
 import path from "path";
 import { promises as fs } from "fs";
-// import {
-//   insertProductSchema,
-//   insertProductVariantSchema,
-//   insertOrderSchema,
-//   insertCustomerSchema,
-//   insertCategorySchema,
-//   insertWarehouseSchema,
-//   insertSupplierSchema,
-//   insertSupplierFileSchema,
-//   insertExpenseSchema,
-//   insertPreOrderSchema,
-//   insertSaleSchema,
-//   insertCustomerPriceSchema,
-// } from "@shared/schema";
+import {
+  insertCategorySchema,
+} from "@shared/schema";
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import {

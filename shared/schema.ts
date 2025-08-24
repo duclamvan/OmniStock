@@ -14,6 +14,15 @@ export const users = pgTable('users', {
   updatedAt: timestamp('updated_at').notNull().defaultNow()
 });
 
+// Categories table
+export const categories = pgTable('categories', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
 // Import Purchases (formerly orders from suppliers)
 export const importPurchases = pgTable('import_purchases', {
   id: serial('id').primaryKey(),
@@ -168,6 +177,7 @@ export const shipmentsRelations = relations(shipments, ({ many }) => ({
 
 // Export schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCategorySchema = createInsertSchema(categories).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertImportPurchaseSchema = createInsertSchema(importPurchases).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertPurchaseItemSchema = createInsertSchema(purchaseItems).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertConsolidationSchema = createInsertSchema(consolidations).omit({ id: true, createdAt: true, updatedAt: true });
@@ -178,6 +188,8 @@ export const insertDeliveryHistorySchema = createInsertSchema(deliveryHistory).o
 // Export types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type Category = typeof categories.$inferSelect;
+export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type ImportPurchase = typeof importPurchases.$inferSelect;
 export type InsertImportPurchase = z.infer<typeof insertImportPurchaseSchema>;
 export type PurchaseItem = typeof purchaseItems.$inferSelect;
