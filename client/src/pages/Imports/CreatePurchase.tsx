@@ -1588,22 +1588,22 @@ export default function CreatePurchase() {
                         )}
                       </div>
                       
-                      <div className="border rounded-lg overflow-hidden">
-                        <Table>
+                      <div className="border rounded-lg overflow-x-auto">
+                        <Table className="min-w-[800px]">
                           <TableHeader>
                             <TableRow>
-                              <TableHead className="w-12">
+                              <TableHead className="w-10">
                                 <Checkbox
                                   checked={selectedVariants.length === variants.length && variants.length > 0}
                                   onCheckedChange={toggleSelectAllVariants}
                                 />
                               </TableHead>
-                              <TableHead>Variant Name</TableHead>
-                              <TableHead>SKU</TableHead>
-                              <TableHead className="text-center">Qty</TableHead>
-                              <TableHead className="text-right">Unit Price</TableHead>
-                              <TableHead className="text-right">Weight</TableHead>
-                              <TableHead className="w-12"></TableHead>
+                              <TableHead className="min-w-[120px]">Variant Name</TableHead>
+                              <TableHead className="min-w-[100px]">SKU</TableHead>
+                              <TableHead className="text-center w-16">Qty</TableHead>
+                              <TableHead className="text-right w-20">Price</TableHead>
+                              <TableHead className="text-right w-20">Weight</TableHead>
+                              <TableHead className="w-10"></TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -1630,7 +1630,7 @@ export default function CreatePurchase() {
                                         v.id === variant.id ? {...v, sku: e.target.value} : v
                                       ));
                                     }}
-                                    className="h-8 w-32"
+                                    className="h-8 w-full max-w-24"
                                     placeholder="SKU"
                                   />
                                 </TableCell>
@@ -1643,7 +1643,7 @@ export default function CreatePurchase() {
                                         v.id === variant.id ? {...v, quantity: parseInt(e.target.value) || 0} : v
                                       ));
                                     }}
-                                    className="h-8 w-20 text-center"
+                                    className="h-8 w-14 text-center"
                                     min="0"
                                   />
                                 </TableCell>
@@ -1656,7 +1656,7 @@ export default function CreatePurchase() {
                                         v.id === variant.id ? {...v, unitPrice: parseFloat(e.target.value) || 0} : v
                                       ));
                                     }}
-                                    className="h-8 w-24 text-right"
+                                    className="h-8 w-16 text-right"
                                     step="0.01"
                                     min="0"
                                   />
@@ -1670,7 +1670,7 @@ export default function CreatePurchase() {
                                         v.id === variant.id ? {...v, weight: parseFloat(e.target.value) || 0} : v
                                       ));
                                     }}
-                                    className="h-8 w-20 text-right"
+                                    className="h-8 w-16 text-right"
                                     step="0.01"
                                     min="0"
                                   />
