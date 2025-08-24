@@ -68,10 +68,15 @@ export default function CategoryDetails() {
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Don't render if ID is "add" (this is the add route)
+  if (id === 'add') {
+    return null;
+  }
+
   // Fetch category data
   const { data: category, isLoading: categoryLoading } = useQuery<Category>({
     queryKey: [`/api/categories/${id}`],
-    enabled: !!id,
+    enabled: !!id && id !== 'add',
   });
 
   // Fetch products in this category
