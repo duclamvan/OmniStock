@@ -25,7 +25,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { 
   Plus, Package, Trash2, Calculator, DollarSign, 
-  Truck, Calendar, FileText, Save, ArrowLeft, AlertCircle,
+  Truck, Calendar, FileText, Save, ArrowLeft,
   Check, UserPlus, Clock, Search, MoreVertical, Edit, X, RotateCcw,
   Copy, PackagePlus, ListPlus, Loader2
 } from "lucide-react";
@@ -1088,7 +1088,7 @@ export default function CreatePurchase() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">{isEditMode ? 'Edit Purchase Order' : 'Create Purchase Order'}</h1>
+            <h1 className="text-2xl font-semibold">{isEditMode ? 'Edit Purchase Order' : 'Create Purchase Order'}</h1>
             <p className="text-muted-foreground">{isEditMode ? 'Update purchase details' : 'Add supplier purchase with multiple items'}</p>
           </div>
         </div>
@@ -1111,11 +1111,11 @@ export default function CreatePurchase() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-[1fr_400px] gap-8">
         {/* Left Column - Form */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="space-y-6">
           {/* Supplier Information */}
-          <Card>
+          <Card className="shadow-sm">
             <CardHeader>
               <CardTitle>Supplier Information</CardTitle>
               <CardDescription>Basic details about the supplier and order</CardDescription>
@@ -1420,7 +1420,7 @@ export default function CreatePurchase() {
           </Card>
 
           {/* Add Item Form */}
-          <Card>
+          <Card className="shadow-sm">
             <CardHeader>
               <CardTitle>Add Items</CardTitle>
               <CardDescription>Add products to this purchase order</CardDescription>
@@ -1803,7 +1803,7 @@ export default function CreatePurchase() {
 
           {/* Items Table */}
           {items.length > 0 && (
-            <Card>
+            <Card className="shadow-sm">
               <CardHeader>
                 <CardTitle>Order Items</CardTitle>
                 <CardDescription>Review and manage items in this purchase order</CardDescription>
@@ -2063,14 +2063,14 @@ export default function CreatePurchase() {
           )}
         </div>
 
-        {/* Right Column - Summary */}
-        <div className="space-y-6">
+        {/* Right Column - Summary (Sticky) */}
+        <div className="xl:sticky xl:top-6 h-fit space-y-6">
           {/* Order Summary */}
-          <Card>
-            <CardHeader>
+          <Card className="shadow-lg border-2">
+            <CardHeader className="bg-muted/30 border-b">
               <div className="space-y-2">
-                <CardTitle className="flex items-center gap-2">
-                  <Calculator className="h-5 w-5" />
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <Calculator className="h-5 w-5 text-primary" />
                   Order Summary
                 </CardTitle>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -2115,61 +2115,65 @@ export default function CreatePurchase() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Items Count:</span>
-                <span className="font-medium">{items.length}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Total Quantity:</span>
-                <span className="font-medium">{totalQuantity}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Total Weight:</span>
-                <span className="font-medium">{totalWeight.toFixed(2)} kg</span>
-              </div>
-              <div className="border-t pt-3">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Subtotal:</span>
-                  <span className="font-medium">{displayCurrencySymbol}{displaySubtotal.toFixed(2)}</span>
+            <CardContent className="space-y-4 pt-6">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-muted-foreground">Items Count</span>
+                  <span className="font-semibold text-base">{items.length}</span>
                 </div>
-                <div className="flex justify-between mt-2">
-                  <span className="text-muted-foreground">Shipping:</span>
-                  <span className="font-medium">{displayCurrencySymbol}{displayShippingCost.toFixed(2)}</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-muted-foreground">Total Quantity</span>
+                  <span className="font-semibold text-base">{totalQuantity}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-muted-foreground">Total Weight</span>
+                  <span className="font-semibold text-base">{totalWeight.toFixed(2)} kg</span>
+                </div>
+              </div>
+              <Separator />
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-muted-foreground">Subtotal</span>
+                  <span className="font-semibold text-base">{displayCurrencySymbol}{displaySubtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-muted-foreground">Shipping</span>
+                  <span className="font-semibold text-base">{displayCurrencySymbol}{displayShippingCost.toFixed(2)}</span>
                 </div>
                 {totalQuantity > 0 && (
-                  <div className="flex justify-between mt-2 text-sm">
-                    <span className="text-muted-foreground">Per Item Shipping:</span>
-                    <span>{displayCurrencySymbol}{(displayShippingCost / totalQuantity).toFixed(2)}</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-muted-foreground">Per Item Shipping</span>
+                    <span className="text-sm">{displayCurrencySymbol}{(displayShippingCost / totalQuantity).toFixed(2)}</span>
                   </div>
                 )}
               </div>
-              <div className="border-t pt-3">
-                <div className="flex justify-between text-lg">
-                  <span className="font-bold">Grand Total:</span>
-                  <span className="font-bold text-green-600">{displayCurrencySymbol}{displayGrandTotal.toFixed(2)}</span>
+              <Separator />
+              <div className="pt-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-base font-semibold">Grand Total</span>
+                  <span className="text-2xl font-bold text-green-600">{displayCurrencySymbol}{displayGrandTotal.toFixed(2)}</span>
                 </div>
                 {displayCurrency !== purchaseCurrency && (
-                  <div className="flex justify-between text-xs mt-1">
-                    <span className="text-muted-foreground">Original ({purchaseCurrency}):</span>
-                    <span className="text-muted-foreground">{currencySymbol}{grandTotal.toFixed(2)}</span>
+                  <div className="flex justify-between items-center mt-2">
+                    <span className="text-xs text-muted-foreground">Original ({purchaseCurrency})</span>
+                    <span className="text-xs text-muted-foreground">{currencySymbol}{grandTotal.toFixed(2)}</span>
                   </div>
                 )}
               </div>
               
               {/* Payment Section */}
-              <div className="border-t pt-3 bg-muted/30 -mx-6 px-6 pb-3 -mb-3">
+              <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Total Paid ({paymentCurrency}):</span>
-                  <span className="font-bold text-blue-600">
+                  <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">Total Paid ({paymentCurrency})</span>
+                  <span className="text-xl font-bold text-blue-600 dark:text-blue-400">
                     {getCurrencySymbol(paymentCurrency)}
                     {totalPaid.toFixed(2)}
                   </span>
                 </div>
                 {paymentCurrency !== purchaseCurrency && (
-                  <div className="flex justify-between text-xs mt-1">
-                    <span className="text-muted-foreground">Exchange Rate:</span>
-                    <span className="text-muted-foreground">
+                  <div className="flex justify-between items-center mt-2">
+                    <span className="text-xs text-blue-700 dark:text-blue-300">Exchange Rate</span>
+                    <span className="text-xs text-blue-700 dark:text-blue-300">
                       1 {purchaseCurrency} = {(exchangeRates[paymentCurrency] / exchangeRates[purchaseCurrency]).toFixed(4)} {paymentCurrency}
                     </span>
                   </div>
@@ -2178,45 +2182,6 @@ export default function CreatePurchase() {
             </CardContent>
           </Card>
 
-          {/* Quick Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5" />
-                Quick Info
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <div className="flex items-start gap-2">
-                <Search className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                <div>
-                  <p className="font-medium">Smart Product Search</p>
-                  <p className="text-muted-foreground">Search existing products with Vietnamese diacritics support</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-2">
-                <Package className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                <div>
-                  <p className="font-medium">Auto-fill SKU</p>
-                  <p className="text-muted-foreground">SKU automatically filled when selecting existing products</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-2">
-                <Clock className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                <div>
-                  <p className="font-medium">Processing Time</p>
-                  <p className="text-muted-foreground">Estimated arrival calculated from purchase date + processing time</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-2">
-                <Calculator className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                <div>
-                  <p className="font-medium">Currency Conversion</p>
-                  <p className="text-muted-foreground">Use the ⋮ menu in Order Summary to view prices in different currencies</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
 
