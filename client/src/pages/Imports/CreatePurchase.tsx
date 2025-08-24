@@ -1645,7 +1645,7 @@ export default function CreatePurchase() {
                                         v.id === variant.id ? {...v, quantity: parseInt(e.target.value) || 0} : v
                                       ));
                                     }}
-                                    className="h-6 w-12 text-center text-xs"
+                                    className="h-6 w-12 text-center text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     min="0"
                                   />
                                 </TableCell>
@@ -1658,7 +1658,7 @@ export default function CreatePurchase() {
                                         v.id === variant.id ? {...v, unitPrice: parseFloat(e.target.value) || 0} : v
                                       ));
                                     }}
-                                    className="h-6 w-14 text-right text-xs"
+                                    className="h-6 w-14 text-right text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     step="0.01"
                                     min="0"
                                   />
@@ -1672,7 +1672,7 @@ export default function CreatePurchase() {
                                         v.id === variant.id ? {...v, weight: parseFloat(e.target.value) || 0} : v
                                       ));
                                     }}
-                                    className="h-6 w-14 text-right text-xs"
+                                    className="h-6 w-14 text-right text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                     step="0.01"
                                     min="0"
                                   />
