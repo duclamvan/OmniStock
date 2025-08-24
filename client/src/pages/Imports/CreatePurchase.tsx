@@ -304,51 +304,145 @@ export default function CreatePurchase() {
     }
   });
 
-  // Create purchase mutation
-  const createPurchaseMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const response = await apiRequest('/api/imports/purchases', 'POST', data);
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases'] });
-      toast({ title: "Success", description: "Purchase created successfully" });
+  // Mock create purchase mutation
+  const createPurchaseMutation = {
+    mutate: (data: any) => {
+      // In a real app, this would save to database
+      toast({ title: "Success", description: "Purchase created successfully (mock)" });
       navigate('/imports/supplier-processing');
     },
-    onError: (error) => {
-      toast({ 
-        title: "Error", 
-        description: "Failed to create purchase", 
-        variant: "destructive" 
-      });
-    }
-  });
+    isPending: false
+  };
 
-  // Update purchase mutation
-  const updatePurchaseMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const response = await apiRequest(`/api/imports/purchases/${purchaseId}`, 'PATCH', data);
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases'] });
-      toast({ title: "Success", description: "Purchase updated successfully" });
+  // Mock update purchase mutation
+  const updatePurchaseMutation = {
+    mutate: (data: any) => {
+      // In a real app, this would update the database
+      toast({ title: "Success", description: "Purchase updated successfully (mock)" });
       navigate('/imports/supplier-processing');
     },
-    onError: (error) => {
-      toast({ 
-        title: "Error", 
-        description: "Failed to update purchase", 
-        variant: "destructive" 
-      });
-    }
-  });
+    isPending: false
+  };
 
-  // Fetch purchase data for editing
-  const { data: existingPurchase, isLoading: loadingPurchase } = useQuery<any>({
-    queryKey: [`/api/imports/purchases/${purchaseId}`],
-    enabled: isEditMode
-  });
+  // Mock data for editing - same as in SupplierProcessing
+  const mockPurchases: any[] = [
+    {
+      id: 1,
+      supplier: "Hong Kong Trading Co.",
+      supplierLocation: "China", 
+      trackingNumber: "HK2024031501",
+      estimatedArrival: "2024-04-15T00:00:00Z",
+      notes: "Priority shipment - customer waiting",
+      shippingCost: "250.00",
+      totalCost: "5250.00",
+      paymentCurrency: "USD",
+      totalPaid: "5250.00",
+      purchaseCurrency: "USD",
+      purchaseTotal: "5000.00",
+      exchangeRate: "1.00",
+      status: "at_warehouse",
+      createdAt: "2024-03-15T10:00:00Z",
+      updatedAt: "2024-03-15T10:00:00Z",
+      items: [
+        { id: 1, purchaseId: 1, name: "iPhone 15 Pro Max", sku: "IPH15PM256", quantity: 5, unitPrice: "899.00", weight: "0.221", dimensions: "15x7x1", notes: null },
+        { id: 2, purchaseId: 1, name: "AirPods Pro 2", sku: "APP2023", quantity: 10, unitPrice: "189.00", weight: "0.051", dimensions: "5x5x2", notes: null },
+        { id: 3, purchaseId: 1, name: "MacBook Air M2", sku: "MBA13M2", quantity: 3, unitPrice: "1099.00", weight: "1.24", dimensions: "30x21x1.5", notes: null }
+      ]
+    },
+    {
+      id: 2,
+      supplier: "Shenzhen Electronics Ltd",
+      supplierLocation: "China",
+      trackingNumber: "SZ2024031502",
+      estimatedArrival: "2024-04-20T00:00:00Z",
+      notes: "Contains fragile items",
+      shippingCost: "180.00",
+      totalCost: "3680.00",
+      paymentCurrency: "CNY",
+      totalPaid: "26500.00",
+      purchaseCurrency: "CNY",
+      purchaseTotal: "25200.00",
+      exchangeRate: "7.2",
+      status: "processing",
+      createdAt: "2024-03-16T14:30:00Z",
+      updatedAt: "2024-03-16T14:30:00Z",
+      items: [
+        { id: 4, purchaseId: 2, name: "Samsung Galaxy S24 Ultra", sku: "SGS24U512", quantity: 8, unitPrice: "7800.00", weight: "0.233", dimensions: "16x8x1", notes: null },
+        { id: 5, purchaseId: 2, name: "Galaxy Watch 6", sku: "GW6BT44", quantity: 15, unitPrice: "1800.00", weight: "0.059", dimensions: "4x4x1", notes: null }
+      ]
+    },
+    {
+      id: 3,
+      supplier: "Vietnam Textiles Export",
+      supplierLocation: "Vietnam",
+      trackingNumber: "VN2024031503",
+      estimatedArrival: "2024-04-10T00:00:00Z",
+      notes: "Seasonal collection",
+      shippingCost: "95.00",
+      totalCost: "2095.00",
+      paymentCurrency: "VND",
+      totalPaid: "52000000",
+      purchaseCurrency: "VND",
+      purchaseTotal: "50000000",
+      exchangeRate: "24800",
+      status: "shipped",
+      createdAt: "2024-03-17T09:15:00Z",
+      updatedAt: "2024-03-17T09:15:00Z",
+      items: [
+        { id: 6, purchaseId: 3, name: "Cotton T-Shirts (Pack of 50)", sku: "CTS50BLK", quantity: 4, unitPrice: "12500000", weight: "10.0", dimensions: "60x40x30", notes: null },
+        { id: 7, purchaseId: 3, name: "Denim Jeans (Pack of 30)", sku: "DJ30BLU", quantity: 2, unitPrice: "15000000", weight: "15.0", dimensions: "60x40x40", notes: null }
+      ]
+    },
+    {
+      id: 4,
+      supplier: "European Luxury Goods",
+      supplierLocation: "Europe",
+      trackingNumber: "EU2024031504",
+      estimatedArrival: "2024-04-25T00:00:00Z",
+      notes: "High-value items, insurance required",
+      shippingCost: "450.00",
+      totalCost: "12450.00",
+      paymentCurrency: "EUR",
+      totalPaid: "11500.00",
+      purchaseCurrency: "EUR",
+      purchaseTotal: "11000.00",
+      exchangeRate: "1.08",
+      status: "pending",
+      createdAt: "2024-03-18T16:45:00Z",
+      updatedAt: "2024-03-18T16:45:00Z",
+      items: [
+        { id: 8, purchaseId: 4, name: "Designer Handbag Collection", sku: "DHB2024SS", quantity: 5, unitPrice: "1800.00", weight: "1.2", dimensions: "35x25x15", notes: null },
+        { id: 9, purchaseId: 4, name: "Luxury Watch Set", sku: "LWS2024", quantity: 3, unitPrice: "3500.00", weight: "0.5", dimensions: "20x15x10", notes: null }
+      ]
+    },
+    {
+      id: 5,
+      supplier: "USA Tech Distributors",
+      supplierLocation: "USA",
+      trackingNumber: "US2024031505",
+      estimatedArrival: "2024-04-18T00:00:00Z",
+      notes: "",
+      shippingCost: "320.00",
+      totalCost: "8320.00",
+      paymentCurrency: "USD",
+      totalPaid: "8320.00",
+      purchaseCurrency: "USD",
+      purchaseTotal: "8000.00",
+      exchangeRate: "1.00",
+      status: "delivered",
+      createdAt: "2024-03-10T11:20:00Z",
+      updatedAt: "2024-03-10T11:20:00Z",
+      items: [
+        { id: 10, purchaseId: 5, name: "Dell XPS 15 Laptop", sku: "DXPS15I9", quantity: 4, unitPrice: "1599.00", weight: "2.05", dimensions: "36x25x2", notes: null },
+        { id: 11, purchaseId: 5, name: "iPad Pro 12.9\"", sku: "IPADP13M2", quantity: 6, unitPrice: "1099.00", weight: "0.682", dimensions: "28x21x0.6", notes: null },
+        { id: 12, purchaseId: 5, name: "Sony WH-1000XM5", sku: "SONYWH5", quantity: 12, unitPrice: "299.00", weight: "0.250", dimensions: "23x20x5", notes: null }
+      ]
+    }
+  ];
+
+  // Use mock data instead of API call
+  const existingPurchase = isEditMode ? mockPurchases.find(p => p.id === purchaseId) : null;
+  const loadingPurchase = false;
 
   const handleAddNewSupplier = () => {
     if (!newSupplierName.trim()) {
@@ -452,6 +546,7 @@ export default function CreatePurchase() {
       setPurchaseCurrency(existingPurchase.purchaseCurrency || existingPurchase.paymentCurrency || "USD");
       setPaymentCurrency(existingPurchase.paymentCurrency || "USD");
       setTotalPaid(parseFloat(existingPurchase.totalPaid) || 0);
+      setDisplayCurrency(existingPurchase.purchaseCurrency || existingPurchase.paymentCurrency || "USD");
       
       // Set purchase date
       if (existingPurchase.createdAt) {
@@ -460,7 +555,16 @@ export default function CreatePurchase() {
         setPurchaseDate(localDateTime);
       }
       
-      // Load items
+      // Set estimated arrival date and processing time
+      if (existingPurchase.estimatedArrival) {
+        const arrivalDate = new Date(existingPurchase.estimatedArrival);
+        const purchaseDate = new Date(existingPurchase.createdAt);
+        const daysDiff = Math.ceil((arrivalDate.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24));
+        setProcessingTime(daysDiff.toString());
+        setProcessingUnit("days");
+      }
+      
+      // Load items with proper currency display
       if (existingPurchase.items && existingPurchase.items.length > 0) {
         const loadedItems = existingPurchase.items.map((item: any) => ({
           id: item.id.toString(),
@@ -475,6 +579,13 @@ export default function CreatePurchase() {
           costWithShipping: 0
         }));
         setItems(loadedItems);
+        
+        // Set item currency display for all items
+        const currencyDisplay: {[key: string]: string} = {};
+        loadedItems.forEach(item => {
+          currencyDisplay[item.id] = existingPurchase.purchaseCurrency || "USD";
+        });
+        setItemCurrencyDisplay(currencyDisplay);
       }
     }
   }, [isEditMode, existingPurchase]);
