@@ -113,6 +113,78 @@ router.get("/unpacked-items", async (req, res) => {
   }
 });
 
+// Receive purchase order without unpacking (as a single package)
+router.post("/purchases/receive", async (req, res) => {
+  try {
+    const { purchaseId } = req.body;
+    
+    if (!purchaseId) {
+      return res.status(400).json({ message: "Purchase ID is required" });
+    }
+    
+    // Fetch the purchase order with items
+    const [purchase] = await db
+      .select()
+      .from(importPurchases)
+      .where(eq(importPurchases.id, purchaseId));
+    
+    if (!purchase) {
+      return res.status(404).json({ message: "Purchase order not found" });
+    }
+    
+    // Fetch all items for this purchase
+    const items = await db
+      .select()
+      .from(purchaseItems)
+      .where(eq(purchaseItems.purchaseId, purchaseId));
+    
+    if (!items.length) {
+      return res.status(400).json({ message: "No items found in purchase order" });
+    }
+    
+    // Calculate total weight and create a package name
+    const totalWeight = items.reduce((sum, item) => sum + (item.weight ? parseFloat(item.weight) : 0), 0);
+    const packageName = `PO #${purchaseId} - ${purchase.supplier} (${items.length} items)`;
+    
+    // Create a single custom item representing the whole order
+    const customItem = {
+      name: packageName,
+      source: 'supplier',
+      orderNumber: purchase.trackingNumber,
+      quantity: 1,
+      unitPrice: purchase.totalPaid,
+      weight: totalWeight.toString(),
+      dimensions: null,
+      trackingNumber: purchase.trackingNumber,
+      notes: `Full package from ${purchase.supplier}. Contains ${items.length} items.`,
+      customerName: null,
+      customerEmail: null,
+      status: 'available',
+      classification: 'general',
+      purchaseOrderId: purchaseId,
+      orderItems: items, // Store items as JSON
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    await db.insert(customItems).values(customItem);
+    
+    // Update purchase order status to received
+    await db
+      .update(importPurchases)
+      .set({ 
+        status: 'received',
+        updatedAt: new Date()
+      })
+      .where(eq(importPurchases.id, purchaseId));
+    
+    res.json({ message: "Purchase order received as package successfully" });
+  } catch (error) {
+    console.error("Error receiving purchase order:", error);
+    res.status(500).json({ message: "Failed to receive purchase order" });
+  }
+});
+
 // Unpack purchase order
 router.post("/purchases/unpack", async (req, res) => {
   try {

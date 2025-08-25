@@ -14,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Package, Plane, Ship, Zap, Truck, MapPin, Clock, Weight, Users, ShoppingCart, Star, Trash2, Package2, PackageOpen, AlertCircle, CheckCircle, Edit, MoreHorizontal, ArrowUp, ArrowDown, Archive, Send, RefreshCw, Flag, Shield, Grip, AlertTriangle } from "lucide-react";
+import { Plus, Package, Plane, Ship, Zap, Truck, MapPin, Clock, Weight, Users, ShoppingCart, Star, Trash2, Package2, PackageOpen, AlertCircle, CheckCircle, Edit, MoreHorizontal, ArrowUp, ArrowDown, Archive, Send, RefreshCw, Flag, Shield, Grip, AlertTriangle, ChevronDown, ChevronRight, Box } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
@@ -71,6 +71,8 @@ interface CustomItem {
   customerEmail: string | null;
   status: string;
   classification?: string;
+  purchaseOrderId?: number;
+  orderItems?: any[];
   createdAt: string;
 }
 
@@ -132,9 +134,11 @@ export default function AtWarehouse() {
   const [isCreateConsolidationOpen, setIsCreateConsolidationOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<ImportPurchase | null>(null);
   const [showUnpackDialog, setShowUnpackDialog] = useState(false);
+  const [showReceiveDialog, setShowReceiveDialog] = useState(false);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [statusTarget, setStatusTarget] = useState<{ type: 'order' | 'item', id: number, currentStatus: string } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'item' | 'consolidation', id: number, name: string } | null>(null);
+  const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -180,6 +184,30 @@ export default function AtWarehouse() {
       toast({
         title: "Error",
         description: error.message || "Failed to unpack purchase order",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Receive without unpacking mutation
+  const receiveMutation = useMutation({
+    mutationFn: async (purchaseId: number) => {
+      return apiRequest('/api/imports/purchases/receive', 'POST', { purchaseId });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Purchase order received as a single package",
+      });
+      setShowReceiveDialog(false);
+      setSelectedOrder(null);
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases/at-warehouse'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to receive purchase order",
         variant: "destructive",
       });
     },
@@ -353,9 +381,20 @@ export default function AtWarehouse() {
     setShowUnpackDialog(true);
   };
 
+  const handleReceive = (order: ImportPurchase) => {
+    setSelectedOrder(order);
+    setShowReceiveDialog(true);
+  };
+
   const confirmUnpack = () => {
     if (selectedOrder) {
       unpackMutation.mutate(selectedOrder.id);
+    }
+  };
+
+  const confirmReceive = () => {
+    if (selectedOrder) {
+      receiveMutation.mutate(selectedOrder.id);
     }
   };
 
@@ -387,6 +426,16 @@ export default function AtWarehouse() {
         deleteConsolidationMutation.mutate(deleteTarget.id);
       }
     }
+  };
+
+  const toggleItemExpanded = (itemId: number) => {
+    const newExpanded = new Set(expandedItems);
+    if (newExpanded.has(itemId)) {
+      newExpanded.delete(itemId);
+    } else {
+      newExpanded.add(itemId);
+    }
+    setExpandedItems(newExpanded);
   };
 
   const handleCreateCustomItem = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -971,6 +1020,15 @@ export default function AtWarehouse() {
                         </Button>
                         <Button 
                           size="sm"
+                          variant="outline"
+                          onClick={() => handleReceive(order)}
+                          data-testid={`button-receive-order-${order.id}`}
+                        >
+                          <Box className="h-4 w-4 mr-1" />
+                          Receive
+                        </Button>
+                        <Button 
+                          size="sm"
                           onClick={() => handleUnpack(order)}
                           data-testid={`button-unpack-order-${order.id}`}
                         >
@@ -1022,13 +1080,58 @@ export default function AtWarehouse() {
                                         <Grip className="h-4 w-4 text-muted-foreground" />
                                         <span className="font-semibold">{item.name}</span>
                                         {getClassificationIcon(item.classification)}
-                                        {getSourceBadge(item.source)}
+                                        {item.source && getSourceBadge(item.source)}
+                                        {item.purchaseOrderId && (
+                                          <Badge variant="outline" className="text-xs">
+                                            PO #{item.purchaseOrderId}
+                                          </Badge>
+                                        )}
                                       </div>
                                       <div className="flex gap-4 text-xs text-muted-foreground">
                                         <span>Qty: {item.quantity}</span>
                                         <span>{item.weight ? `${item.weight} kg` : 'No weight'}</span>
                                         {item.customerName && <span>{item.customerName}</span>}
                                       </div>
+                                      
+                                      {/* Show order items if this is a full package */}
+                                      {item.purchaseOrderId && item.orderItems && item.orderItems.length > 0 && (
+                                        <div className="mt-2">
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-6 px-2 text-xs"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              toggleItemExpanded(item.id);
+                                            }}
+                                          >
+                                            {expandedItems.has(item.id) ? (
+                                              <>
+                                                <ChevronDown className="h-3 w-3 mr-1" />
+                                                Hide items ({item.orderItems.length})
+                                              </>
+                                            ) : (
+                                              <>
+                                                <ChevronRight className="h-3 w-3 mr-1" />
+                                                Show items ({item.orderItems.length})
+                                              </>
+                                            )}
+                                          </Button>
+                                          
+                                          {expandedItems.has(item.id) && (
+                                            <div className="mt-2 pl-4 border-l-2 border-muted space-y-1">
+                                              {item.orderItems.map((orderItem: any, idx: number) => (
+                                                <div key={idx} className="text-xs text-muted-foreground flex justify-between">
+                                                  <span>
+                                                    {orderItem.name} {orderItem.sku && `(${orderItem.sku})`}
+                                                  </span>
+                                                  <span>Qty: {orderItem.quantity}</span>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
                                     </div>
                                     <div className="flex gap-1">
                                       <Button
@@ -1402,11 +1505,66 @@ export default function AtWarehouse() {
         </DialogContent>
       </Dialog>
 
+      {/* Receive without Unpacking Dialog */}
+      <Dialog open={showReceiveDialog} onOpenChange={setShowReceiveDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Receive Purchase Order as Package</DialogTitle>
+            <DialogDescription>
+              This will move the entire order as a single package to the All Items section without unpacking.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedOrder && (
+            <div className="space-y-4">
+              <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+                <div className="font-medium">{selectedOrder.supplier}</div>
+                <div className="text-sm text-muted-foreground">
+                  PO #{selectedOrder.id} • {selectedOrder.items?.length || 0} items
+                </div>
+              </div>
+
+              <div className="flex items-start gap-2">
+                <Box className="h-4 w-4 text-blue-500 mt-0.5" />
+                <div className="text-sm text-muted-foreground">
+                  The entire purchase order will be treated as a single package. 
+                  You can view the individual items inside the package in the All Items tab.
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowReceiveDialog(false)}
+              disabled={receiveMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={confirmReceive}
+              disabled={receiveMutation.isPending}
+              className="gap-2"
+            >
+              {receiveMutation.isPending ? (
+                <>Processing...</>
+              ) : (
+                <>
+                  <Box className="h-4 w-4" />
+                  Confirm Receive
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Unpack Confirmation Dialog */}
       <Dialog open={showUnpackDialog} onOpenChange={setShowUnpackDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Process & Unpack Purchase Order</DialogTitle>
+            <DialogTitle>Unpack Purchase Order</DialogTitle>
             <DialogDescription>
               This will unpack the purchase order into individual items for consolidation.
             </DialogDescription>

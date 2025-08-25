@@ -1,4 +1,4 @@
-import { pgTable, text, integer, timestamp, decimal, boolean, jsonb, varchar, serial, date } from 'drizzle-orm/pg-core';
+import { pgTable, text, integer, timestamp, decimal, boolean, jsonb, varchar, serial, date, json } from 'drizzle-orm/pg-core';
 import { createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { relations } from 'drizzle-orm';
@@ -132,7 +132,11 @@ export const customItems = pgTable('custom_items', {
   customerName: text('customer_name'),
   customerEmail: text('customer_email'),
   status: text('status').notNull().default('available'), // available, assigned, shipped
-  createdAt: timestamp('created_at').notNull().defaultNow()
+  classification: text('classification').default('general'), // general, sensitive
+  purchaseOrderId: integer('purchase_order_id'), // Reference to original PO for full packages
+  orderItems: json('order_items'), // Store items when this is a full package
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at')
 });
 
 // Junction tables for many-to-many relationships
