@@ -524,6 +524,62 @@ router.post("/custom-items", async (req, res) => {
   }
 });
 
+// Update custom item
+router.patch("/custom-items/:id", async (req, res) => {
+  try {
+    const itemId = parseInt(req.params.id);
+    
+    const updateData: any = {};
+    if (req.body.name !== undefined) updateData.name = req.body.name;
+    if (req.body.source !== undefined) updateData.source = req.body.source;
+    if (req.body.orderNumber !== undefined) updateData.orderNumber = req.body.orderNumber;
+    if (req.body.quantity !== undefined) updateData.quantity = req.body.quantity;
+    if (req.body.unitPrice !== undefined) updateData.unitPrice = req.body.unitPrice;
+    if (req.body.weight !== undefined) updateData.weight = req.body.weight;
+    if (req.body.dimensions !== undefined) updateData.dimensions = req.body.dimensions;
+    if (req.body.trackingNumber !== undefined) updateData.trackingNumber = req.body.trackingNumber;
+    if (req.body.notes !== undefined) updateData.notes = req.body.notes;
+    if (req.body.customerName !== undefined) updateData.customerName = req.body.customerName;
+    if (req.body.customerEmail !== undefined) updateData.customerEmail = req.body.customerEmail;
+    if (req.body.status !== undefined) updateData.status = req.body.status;
+    
+    const [updated] = await db
+      .update(customItems)
+      .set(updateData)
+      .where(eq(customItems.id, itemId))
+      .returning();
+    
+    if (!updated) {
+      return res.status(404).json({ message: "Custom item not found" });
+    }
+    
+    res.json(updated);
+  } catch (error) {
+    console.error("Error updating custom item:", error);
+    res.status(500).json({ message: "Failed to update custom item" });
+  }
+});
+
+// Delete custom item
+router.delete("/custom-items/:id", async (req, res) => {
+  try {
+    const itemId = parseInt(req.params.id);
+    
+    const result = await db
+      .delete(customItems)
+      .where(eq(customItems.id, itemId));
+    
+    if ((result.rowCount ?? 0) === 0) {
+      return res.status(404).json({ message: "Custom item not found" });
+    }
+    
+    res.json({ message: "Custom item deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting custom item:", error);
+    res.status(500).json({ message: "Failed to delete custom item" });
+  }
+});
+
 // Get all shipments with details
 router.get("/shipments", async (req, res) => {
   try {

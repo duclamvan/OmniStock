@@ -12,14 +12,52 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Plus, Package, Plane, Ship, Zap, Truck, MapPin, Clock, Weight, Users, ShoppingCart, Star, Trash2, Package2, PackageOpen, AlertCircle, CheckCircle } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Plus, Package, Plane, Ship, Zap, Truck, MapPin, Clock, Weight, Users, ShoppingCart, Star, Trash2, Package2, PackageOpen, AlertCircle, CheckCircle, Edit, MoreHorizontal, ArrowUp, ArrowDown, Archive, Send } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+
+interface PurchaseItem {
+  id: number;
+  purchaseId: number;
+  name: string;
+  sku: string | null;
+  quantity: number;
+  unitPrice: string;
+  totalPrice: string;
+  weight: string | null;
+  dimensions: any;
+  notes: string | null;
+  trackingNumber: string | null;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface ImportPurchase {
+  id: number;
+  supplier: string;
+  trackingNumber: string | null;
+  estimatedArrival: string | null;
+  notes: string | null;
+  shippingCost: string;
+  totalCost: string;
+  paymentCurrency: string;
+  totalPaid: string;
+  purchaseCurrency: string;
+  purchaseTotal: string;
+  exchangeRate: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  items: PurchaseItem[];
+  itemCount: number;
+}
 
 interface CustomItem {
   id: number;
   name: string;
-  source: string; // taobao, pinduoduo, 1688
+  source: string;
   orderNumber: string | null;
   quantity: number;
   unitPrice: string;
@@ -48,6 +86,18 @@ interface Consolidation {
   itemCount: number;
 }
 
+const statusColors: Record<string, string> = {
+  pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+  ordered: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+  in_transit: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+  at_warehouse: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+  unpacked: "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200",
+  available: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+  assigned: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+  consolidated: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200",
+  shipped: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+};
+
 const shippingMethodColors: Record<string, string> = {
   air_express: "bg-red-100 text-red-800 border-red-200 dark:bg-red-900 dark:text-red-200",
   air_standard: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900 dark:text-blue-200",
@@ -74,48 +124,40 @@ const sourceColors: Record<string, string> = {
 
 export default function AtWarehouse() {
   const [isAddCustomItemOpen, setIsAddCustomItemOpen] = useState(false);
+  const [isEditCustomItemOpen, setIsEditCustomItemOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<CustomItem | null>(null);
   const [isCreateConsolidationOpen, setIsCreateConsolidationOpen] = useState(false);
-  const [selectedConsolidation, setSelectedConsolidation] = useState<Consolidation | null>(null);
-  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [selectedOrder, setSelectedOrder] = useState<ImportPurchase | null>(null);
   const [showUnpackDialog, setShowUnpackDialog] = useState(false);
+  const [showStatusDialog, setShowStatusDialog] = useState(false);
+  const [statusTarget, setStatusTarget] = useState<{ type: 'order' | 'item', id: number, currentStatus: string } | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   // Fetch purchase orders at warehouse
-  const { data: atWarehouseOrders = [], isLoading: isLoadingOrders } = useQuery({
+  const { data: atWarehouseOrders = [], isLoading: isLoadingOrders } = useQuery<ImportPurchase[]>({
     queryKey: ['/api/imports/purchases/at-warehouse'],
   });
 
   // Fetch unpacked items
-  const { data: unpackedItems = [] } = useQuery({
+  const { data: unpackedItems = [] } = useQuery<CustomItem[]>({
     queryKey: ['/api/imports/unpacked-items'],
   });
 
   // Fetch custom items
-  const { data: customItems = [], isLoading: isLoadingItems } = useQuery({
+  const { data: customItems = [], isLoading: isLoadingItems } = useQuery<CustomItem[]>({
     queryKey: ['/api/imports/custom-items'],
-    queryFn: async () => {
-      const response = await apiRequest('/api/imports/custom-items');
-      return response.json() as Promise<CustomItem[]>;
-    }
   });
 
   // Fetch consolidations
-  const { data: consolidations = [], isLoading: isLoadingConsolidations } = useQuery({
+  const { data: consolidations = [], isLoading: isLoadingConsolidations } = useQuery<Consolidation[]>({
     queryKey: ['/api/imports/consolidations'],
-    queryFn: async () => {
-      const response = await apiRequest('/api/imports/consolidations');
-      return response.json() as Promise<Consolidation[]>;
-    }
   });
 
   // Unpack purchase order mutation
   const unpackMutation = useMutation({
     mutationFn: async (purchaseId: number) => {
-      return apiRequest('/api/imports/purchases/unpack', {
-        method: 'POST',
-        body: JSON.stringify({ purchaseId }),
-      });
+      return apiRequest('/api/imports/purchases/unpack', 'POST', { purchaseId });
     },
     onSuccess: () => {
       toast({
@@ -137,15 +179,58 @@ export default function AtWarehouse() {
     },
   });
 
+  // Update purchase order status mutation
+  const updateOrderStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: number, status: string }) => {
+      return apiRequest(`/api/imports/purchases/${id}`, 'PATCH', { status });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Order status updated successfully",
+      });
+      setShowStatusDialog(false);
+      setStatusTarget(null);
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases/at-warehouse'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update order status",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update custom item status mutation
+  const updateItemStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: number, status: string }) => {
+      return apiRequest(`/api/imports/custom-items/${id}`, 'PATCH', { status });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Item status updated successfully",
+      });
+      setShowStatusDialog(false);
+      setStatusTarget(null);
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/unpacked-items'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update item status",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Create custom item mutation
   const createCustomItemMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest('/api/imports/custom-items', {
-        method: 'POST',
-        body: JSON.stringify(data),
-        headers: { 'Content-Type': 'application/json' }
-      });
-      return response.json();
+      return apiRequest('/api/imports/custom-items', 'POST', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
@@ -157,15 +242,42 @@ export default function AtWarehouse() {
     }
   });
 
+  // Update custom item mutation
+  const updateCustomItemMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number, data: any }) => {
+      return apiRequest(`/api/imports/custom-items/${id}`, 'PATCH', data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/unpacked-items'] });
+      setIsEditCustomItemOpen(false);
+      setEditingItem(null);
+      toast({ title: "Success", description: "Item updated successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to update item", variant: "destructive" });
+    }
+  });
+
+  // Delete custom item mutation
+  const deleteCustomItemMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest(`/api/imports/custom-items/${id}`, 'DELETE');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/unpacked-items'] });
+      toast({ title: "Success", description: "Item deleted successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to delete item", variant: "destructive" });
+    }
+  });
+
   // Create consolidation mutation
   const createConsolidationMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest('/api/imports/consolidations', {
-        method: 'POST',
-        body: JSON.stringify(data),
-        headers: { 'Content-Type': 'application/json' }
-      });
-      return response.json();
+      return apiRequest('/api/imports/consolidations', 'POST', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/consolidations'] });
@@ -180,10 +292,7 @@ export default function AtWarehouse() {
   // Delete consolidation mutation
   const deleteConsolidationMutation = useMutation({
     mutationFn: async (consolidationId: number) => {
-      const response = await apiRequest(`/api/imports/consolidations/${consolidationId}`, {
-        method: 'DELETE'
-      });
-      return response.json();
+      return apiRequest(`/api/imports/consolidations/${consolidationId}`, 'DELETE');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/consolidations'] });
@@ -194,7 +303,7 @@ export default function AtWarehouse() {
     }
   });
 
-  const handleUnpack = (order: any) => {
+  const handleUnpack = (order: ImportPurchase) => {
     setSelectedOrder(order);
     setShowUnpackDialog(true);
   };
@@ -202,6 +311,26 @@ export default function AtWarehouse() {
   const confirmUnpack = () => {
     if (selectedOrder) {
       unpackMutation.mutate(selectedOrder.id);
+    }
+  };
+
+  const handleEditItem = (item: CustomItem) => {
+    setEditingItem(item);
+    setIsEditCustomItemOpen(true);
+  };
+
+  const handleStatusChange = (type: 'order' | 'item', id: number, currentStatus: string) => {
+    setStatusTarget({ type, id, currentStatus });
+    setShowStatusDialog(true);
+  };
+
+  const confirmStatusChange = (newStatus: string) => {
+    if (statusTarget) {
+      if (statusTarget.type === 'order') {
+        updateOrderStatusMutation.mutate({ id: statusTarget.id, status: newStatus });
+      } else {
+        updateItemStatusMutation.mutate({ id: statusTarget.id, status: newStatus });
+      }
     }
   };
 
@@ -226,6 +355,30 @@ export default function AtWarehouse() {
     createCustomItemMutation.mutate(data);
   };
 
+  const handleUpdateCustomItem = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editingItem) return;
+    
+    const formData = new FormData(e.currentTarget);
+    
+    const data = {
+      name: formData.get('name') as string,
+      source: formData.get('source') as string,
+      orderNumber: formData.get('orderNumber') as string || null,
+      quantity: parseInt(formData.get('quantity') as string) || 1,
+      unitPrice: parseFloat(formData.get('unitPrice') as string) || 0,
+      weight: parseFloat(formData.get('weight') as string) || 0,
+      dimensions: formData.get('dimensions') as string || null,
+      trackingNumber: formData.get('trackingNumber') as string || null,
+      notes: formData.get('notes') as string || null,
+      customerName: formData.get('customerName') as string || null,
+      customerEmail: formData.get('customerEmail') as string || null,
+      status: formData.get('status') as string,
+    };
+    
+    updateCustomItemMutation.mutate({ id: editingItem.id, data });
+  };
+
   const handleCreateConsolidation = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -241,6 +394,12 @@ export default function AtWarehouse() {
     
     createConsolidationMutation.mutate(data);
   };
+
+  const getStatusBadge = (status: string) => (
+    <Badge className={statusColors[status] || "bg-gray-100 text-gray-800"}>
+      {status.replace('_', ' ').toUpperCase()}
+    </Badge>
+  );
 
   const getShippingMethodBadge = (method: string) => {
     const Icon = shippingMethodIcons[method] || Package;
@@ -653,85 +812,83 @@ export default function AtWarehouse() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-4">
-              {atWarehouseOrders.map((order: any) => (
-                <Card key={order.id} className="shadow-sm">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-lg">
-                          {order.supplier}
-                        </CardTitle>
-                        <CardDescription>
-                          PO #{order.id} • {order.location}
-                        </CardDescription>
-                      </div>
-                      <div className="flex gap-2">
-                        <Badge variant="success">
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          At Warehouse
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div>
-                        <div className="text-sm text-muted-foreground">Items</div>
-                        <div className="font-semibold">{order.items?.length || 0}</div>
-                      </div>
-                      <div>
-                        <div className="text-sm text-muted-foreground">Total Value</div>
-                        <div className="font-semibold">
-                          {order.paymentCurrency} {Number(order.totalPaid || 0).toFixed(2)}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-sm text-muted-foreground">Tracking</div>
-                        <div className="font-mono text-sm">{order.trackingNumber || 'N/A'}</div>
-                      </div>
-                      <div>
-                        <div className="text-sm text-muted-foreground">Arrived</div>
-                        <div className="text-sm">
-                          {order.updatedAt ? format(new Date(order.updatedAt), 'MMM dd, yyyy') : 'N/A'}
-                        </div>
-                      </div>
-                    </div>
-
-                    {order.items && order.items.length > 0 && (
-                      <div className="border rounded-lg p-3 bg-muted/30">
-                        <div className="text-sm font-medium mb-2">Order Items:</div>
-                        <div className="space-y-1">
-                          {order.items.slice(0, 3).map((item: any, index: number) => (
-                            <div key={index} className="text-sm flex justify-between">
-                              <span className="text-muted-foreground">
-                                {item.name} {item.sku && `(${item.sku})`}
-                              </span>
-                              <span className="font-medium">Qty: {item.quantity}</span>
-                            </div>
-                          ))}
-                          {order.items.length > 3 && (
-                            <div className="text-sm text-muted-foreground">
-                              ... and {order.items.length - 3} more items
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="flex justify-end">
-                      <Button 
-                        onClick={() => handleUnpack(order)}
-                        className="gap-2"
-                      >
-                        <PackageOpen className="h-4 w-4" />
-                        Process & Unpack
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <Card>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>PO Details</TableHead>
+                      <TableHead>Supplier</TableHead>
+                      <TableHead>Items</TableHead>
+                      <TableHead>Total Value</TableHead>
+                      <TableHead>Tracking</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Arrived</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {atWarehouseOrders.map((order) => (
+                      <TableRow key={order.id}>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">PO #{order.id}</div>
+                            {order.notes && (
+                              <div className="text-xs text-muted-foreground mt-1">
+                                {order.notes.substring(0, 50)}...
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-medium">{order.supplier}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {order.items?.length || 0} items
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-medium">
+                            {order.paymentCurrency} {Number(order.totalPaid || 0).toFixed(2)}
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-mono text-xs">
+                          {order.trackingNumber || 'N/A'}
+                        </TableCell>
+                        <TableCell>{getStatusBadge(order.status)}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {order.updatedAt ? format(new Date(order.updatedAt), 'MMM dd') : 'N/A'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" data-testid={`button-actions-order-${order.id}`}>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleUnpack(order)}>
+                                <PackageOpen className="h-4 w-4 mr-2" />
+                                Process & Unpack
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleStatusChange('order', order.id, order.status)}>
+                                <ArrowUp className="h-4 w-4 mr-2" />
+                                Change Status
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit Order
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
           )}
         </TabsContent>
 
@@ -748,30 +905,89 @@ export default function AtWarehouse() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-3">
-              {unpackedItems.map((item: any) => (
-                <Card key={item.id} className="shadow-sm">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <div className="font-medium">{item.name}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {item.source} • Qty: {item.quantity} • Order: {item.orderNumber}
-                        </div>
-                        {item.notes && (
-                          <div className="text-xs text-muted-foreground mt-1">
-                            {item.notes}
+            <Card>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Item Details</TableHead>
+                      <TableHead>Source</TableHead>
+                      <TableHead>Order</TableHead>
+                      <TableHead>Quantity</TableHead>
+                      <TableHead>Weight</TableHead>
+                      <TableHead>Customer</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {unpackedItems.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{item.name}</div>
+                            {item.trackingNumber && (
+                              <div className="text-xs text-muted-foreground">
+                                Track: {item.trackingNumber}
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                      <Badge variant="outline">
-                        {item.status}
-                      </Badge>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                        </TableCell>
+                        <TableCell>{getSourceBadge(item.source)}</TableCell>
+                        <TableCell className="font-mono text-sm">
+                          {item.orderNumber || '-'}
+                        </TableCell>
+                        <TableCell>{item.quantity}</TableCell>
+                        <TableCell>{item.weight ? `${item.weight} kg` : '-'}</TableCell>
+                        <TableCell>
+                          {item.customerName ? (
+                            <div>
+                              <div className="text-sm">{item.customerName}</div>
+                              {item.customerEmail && (
+                                <div className="text-xs text-muted-foreground">{item.customerEmail}</div>
+                              )}
+                            </div>
+                          ) : '-'}
+                        </TableCell>
+                        <TableCell>{getStatusBadge(item.status)}</TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" data-testid={`button-actions-item-${item.id}`}>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleEditItem(item)}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit Item
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleStatusChange('item', item.id, item.status)}>
+                                <ArrowUp className="h-4 w-4 mr-2" />
+                                Change Status
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <Archive className="h-4 w-4 mr-2" />
+                                Add to Consolidation
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                className="text-red-600"
+                                onClick={() => deleteCustomItemMutation.mutate(item.id)}
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete Item
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
           )}
         </TabsContent>
 
@@ -804,9 +1020,11 @@ export default function AtWarehouse() {
                       <TableHead>Source</TableHead>
                       <TableHead>Order</TableHead>
                       <TableHead>Quantity</TableHead>
+                      <TableHead>Unit Price</TableHead>
                       <TableHead>Weight</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Added</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -827,14 +1045,43 @@ export default function AtWarehouse() {
                           {item.orderNumber || '-'}
                         </TableCell>
                         <TableCell>{item.quantity}</TableCell>
+                        <TableCell>${item.unitPrice}</TableCell>
                         <TableCell>{item.weight ? `${item.weight} kg` : '-'}</TableCell>
-                        <TableCell>
-                          <Badge variant={item.status === 'available' ? 'success' : 'secondary'}>
-                            {item.status}
-                          </Badge>
-                        </TableCell>
+                        <TableCell>{getStatusBadge(item.status)}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {format(new Date(item.createdAt), 'MMM dd')}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" data-testid={`button-actions-custom-${item.id}`}>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleEditItem(item)}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit Item
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleStatusChange('item', item.id, item.status)}>
+                                <ArrowUp className="h-4 w-4 mr-2" />
+                                Change Status
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <Archive className="h-4 w-4 mr-2" />
+                                Add to Consolidation
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                className="text-red-600"
+                                onClick={() => deleteCustomItemMutation.mutate(item.id)}
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete Item
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -906,7 +1153,7 @@ export default function AtWarehouse() {
                     </div>
                     <Separator className="my-3" />
                     <div className="flex justify-between items-center">
-                      <Badge variant="outline">{consolidation.status}</Badge>
+                      {getStatusBadge(consolidation.status)}
                       <Button size="sm" variant="outline">
                         View Details
                       </Button>
@@ -918,6 +1165,226 @@ export default function AtWarehouse() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Edit Custom Item Dialog */}
+      <Dialog open={isEditCustomItemOpen} onOpenChange={setIsEditCustomItemOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Edit Item</DialogTitle>
+            <DialogDescription>
+              Update item details and status
+            </DialogDescription>
+          </DialogHeader>
+          {editingItem && (
+            <form onSubmit={handleUpdateCustomItem} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-name">Item Name *</Label>
+                  <Input 
+                    id="edit-name" 
+                    name="name" 
+                    required 
+                    defaultValue={editingItem.name}
+                    data-testid="input-edit-item-name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-source">Source Platform *</Label>
+                  <Select name="source" defaultValue={editingItem.source} required>
+                    <SelectTrigger data-testid="select-edit-source">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="taobao">Taobao</SelectItem>
+                      <SelectItem value="pinduoduo">Pinduoduo</SelectItem>
+                      <SelectItem value="1688">1688</SelectItem>
+                      <SelectItem value="alibaba">Alibaba</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-orderNumber">Order Number</Label>
+                  <Input 
+                    id="edit-orderNumber" 
+                    name="orderNumber" 
+                    defaultValue={editingItem.orderNumber || ''}
+                    data-testid="input-edit-order-number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-status">Status</Label>
+                  <Select name="status" defaultValue={editingItem.status}>
+                    <SelectTrigger data-testid="select-edit-status">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="available">Available</SelectItem>
+                      <SelectItem value="assigned">Assigned</SelectItem>
+                      <SelectItem value="consolidated">Consolidated</SelectItem>
+                      <SelectItem value="shipped">Shipped</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-quantity">Quantity *</Label>
+                  <Input 
+                    id="edit-quantity" 
+                    name="quantity" 
+                    type="number" 
+                    min="1" 
+                    defaultValue={editingItem.quantity}
+                    required 
+                    data-testid="input-edit-quantity"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-unitPrice">Unit Price ($)</Label>
+                  <Input 
+                    id="edit-unitPrice" 
+                    name="unitPrice" 
+                    type="number" 
+                    step="0.01" 
+                    defaultValue={editingItem.unitPrice}
+                    data-testid="input-edit-unit-price"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-weight">Weight (kg)</Label>
+                  <Input 
+                    id="edit-weight" 
+                    name="weight" 
+                    type="number" 
+                    step="0.001" 
+                    defaultValue={editingItem.weight}
+                    data-testid="input-edit-weight"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-dimensions">Dimensions</Label>
+                <Input 
+                  id="edit-dimensions" 
+                  name="dimensions" 
+                  defaultValue={editingItem.dimensions || ''}
+                  data-testid="input-edit-dimensions"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-customerName">Customer Name</Label>
+                  <Input 
+                    id="edit-customerName" 
+                    name="customerName" 
+                    defaultValue={editingItem.customerName || ''}
+                    data-testid="input-edit-customer-name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-customerEmail">Customer Email</Label>
+                  <Input 
+                    id="edit-customerEmail" 
+                    name="customerEmail" 
+                    type="email" 
+                    defaultValue={editingItem.customerEmail || ''}
+                    data-testid="input-edit-customer-email"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-notes">Notes</Label>
+                <Textarea 
+                  id="edit-notes" 
+                  name="notes" 
+                  defaultValue={editingItem.notes || ''}
+                  data-testid="textarea-edit-notes"
+                />
+              </div>
+
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => {
+                  setIsEditCustomItemOpen(false);
+                  setEditingItem(null);
+                }}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={updateCustomItemMutation.isPending} data-testid="button-update-item">
+                  {updateCustomItemMutation.isPending ? "Updating..." : "Update Item"}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Status Change Dialog */}
+      <Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change Status</DialogTitle>
+            <DialogDescription>
+              Select a new status for this {statusTarget?.type === 'order' ? 'purchase order' : 'item'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {statusTarget && (
+            <div className="space-y-4">
+              <div className="bg-muted/50 rounded-lg p-4">
+                <div className="text-sm text-muted-foreground">Current Status</div>
+                <div className="mt-1">{getStatusBadge(statusTarget.currentStatus)}</div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>New Status</Label>
+                <Select onValueChange={confirmStatusChange}>
+                  <SelectTrigger data-testid="select-new-status">
+                    <SelectValue placeholder="Select new status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statusTarget.type === 'order' ? (
+                      <>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="ordered">Ordered</SelectItem>
+                        <SelectItem value="in_transit">In Transit</SelectItem>
+                        <SelectItem value="at_warehouse">At Warehouse</SelectItem>
+                        <SelectItem value="unpacked">Unpacked</SelectItem>
+                      </>
+                    ) : (
+                      <>
+                        <SelectItem value="available">Available</SelectItem>
+                        <SelectItem value="assigned">Assigned</SelectItem>
+                        <SelectItem value="consolidated">Consolidated</SelectItem>
+                        <SelectItem value="shipped">Shipped</SelectItem>
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowStatusDialog(false);
+                setStatusTarget(null);
+              }}
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Unpack Confirmation Dialog */}
       <Dialog open={showUnpackDialog} onOpenChange={setShowUnpackDialog}>
