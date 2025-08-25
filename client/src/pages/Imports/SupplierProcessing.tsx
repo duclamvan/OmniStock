@@ -553,11 +553,25 @@ export default function SupplierProcessing() {
         {
           key: "dimensions",
           header: "Dimensions",
-          cell: (item) => (
-            <span className="text-xs text-muted-foreground">
-              {item.dimensions || '-'}
-            </span>
-          ),
+          cell: (item) => {
+            const formatDimensions = (dim: any) => {
+              if (!dim) return '-';
+              if (typeof dim === 'string') return dim;
+              if (typeof dim === 'object' && dim !== null) {
+                const { length, width, height } = dim;
+                if (length || width || height) {
+                  return `${length || 0}×${width || 0}×${height || 0}`;
+                }
+              }
+              return '-';
+            };
+            
+            return (
+              <span className="text-xs text-muted-foreground">
+                {formatDimensions(item.dimensions)}
+              </span>
+            );
+          },
           className: "w-[120px]"
         },
         {
