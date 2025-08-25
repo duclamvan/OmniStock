@@ -13,7 +13,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Package, Plane, Ship, Zap, Truck, MapPin, Clock, Weight, Users, ShoppingCart, Star, Trash2, Package2, PackageOpen, AlertCircle, CheckCircle, Edit, MoreHorizontal, ArrowUp, ArrowDown, Archive, Send } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Plus, Package, Plane, Ship, Zap, Truck, MapPin, Clock, Weight, Users, ShoppingCart, Star, Trash2, Package2, PackageOpen, AlertCircle, CheckCircle, Edit, MoreHorizontal, ArrowUp, ArrowDown, Archive, Send, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -131,6 +132,7 @@ export default function AtWarehouse() {
   const [showUnpackDialog, setShowUnpackDialog] = useState(false);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [statusTarget, setStatusTarget] = useState<{ type: 'order' | 'item', id: number, currentStatus: string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ type: 'item' | 'consolidation', id: number, name: string } | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -268,6 +270,7 @@ export default function AtWarehouse() {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/unpacked-items'] });
       toast({ title: "Success", description: "Item deleted successfully" });
+      setDeleteTarget(null);
     },
     onError: () => {
       toast({ title: "Error", description: "Failed to delete item", variant: "destructive" });
@@ -297,6 +300,7 @@ export default function AtWarehouse() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/consolidations'] });
       toast({ title: "Success", description: "Consolidation deleted successfully" });
+      setDeleteTarget(null);
     },
     onError: () => {
       toast({ title: "Error", description: "Failed to delete consolidation", variant: "destructive" });
@@ -330,6 +334,16 @@ export default function AtWarehouse() {
         updateOrderStatusMutation.mutate({ id: statusTarget.id, status: newStatus });
       } else {
         updateItemStatusMutation.mutate({ id: statusTarget.id, status: newStatus });
+      }
+    }
+  };
+
+  const handleDelete = () => {
+    if (deleteTarget) {
+      if (deleteTarget.type === 'item') {
+        deleteCustomItemMutation.mutate(deleteTarget.id);
+      } else {
+        deleteConsolidationMutation.mutate(deleteTarget.id);
       }
     }
   };
@@ -812,83 +826,85 @@ export default function AtWarehouse() {
               </CardContent>
             </Card>
           ) : (
-            <Card>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>PO Details</TableHead>
-                      <TableHead>Supplier</TableHead>
-                      <TableHead>Items</TableHead>
-                      <TableHead>Total Value</TableHead>
-                      <TableHead>Tracking</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Arrived</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {atWarehouseOrders.map((order) => (
-                      <TableRow key={order.id}>
-                        <TableCell>
+            <div className="grid gap-4">
+              {atWarehouseOrders.map((order) => (
+                <Card key={order.id} className="shadow-sm">
+                  <CardContent className="pt-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 space-y-3">
+                        <div className="flex items-center gap-3">
+                          <h3 className="text-lg font-semibold">PO #{order.id} - {order.supplier}</h3>
+                          {getStatusBadge(order.status)}
+                        </div>
+                        
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                           <div>
-                            <div className="font-medium">PO #{order.id}</div>
-                            {order.notes && (
-                              <div className="text-xs text-muted-foreground mt-1">
-                                {order.notes.substring(0, 50)}...
-                              </div>
-                            )}
+                            <div className="text-muted-foreground">Items</div>
+                            <div className="font-medium">{order.items?.length || 0}</div>
                           </div>
-                        </TableCell>
-                        <TableCell className="font-medium">{order.supplier}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">
-                            {order.items?.length || 0} items
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="font-medium">
-                            {order.paymentCurrency} {Number(order.totalPaid || 0).toFixed(2)}
+                          <div>
+                            <div className="text-muted-foreground">Total Value</div>
+                            <div className="font-medium">
+                              {order.paymentCurrency} {Number(order.totalPaid || 0).toFixed(2)}
+                            </div>
                           </div>
-                        </TableCell>
-                        <TableCell className="font-mono text-xs">
-                          {order.trackingNumber || 'N/A'}
-                        </TableCell>
-                        <TableCell>{getStatusBadge(order.status)}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {order.updatedAt ? format(new Date(order.updatedAt), 'MMM dd') : 'N/A'}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" data-testid={`button-actions-order-${order.id}`}>
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => handleUnpack(order)}>
-                                <PackageOpen className="h-4 w-4 mr-2" />
-                                Process & Unpack
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleStatusChange('order', order.id, order.status)}>
-                                <ArrowUp className="h-4 w-4 mr-2" />
-                                Change Status
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit Order
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+                          <div>
+                            <div className="text-muted-foreground">Tracking</div>
+                            <div className="font-mono text-xs">{order.trackingNumber || 'N/A'}</div>
+                          </div>
+                          <div>
+                            <div className="text-muted-foreground">Arrived</div>
+                            <div className="text-sm">
+                              {order.updatedAt ? format(new Date(order.updatedAt), 'MMM dd, yyyy') : 'N/A'}
+                            </div>
+                          </div>
+                        </div>
+
+                        {order.items && order.items.length > 0 && (
+                          <div className="border rounded-lg p-3 bg-muted/30">
+                            <div className="text-sm font-medium mb-2">Order Items:</div>
+                            <div className="space-y-1">
+                              {order.items.slice(0, 3).map((item: any, index: number) => (
+                                <div key={index} className="text-sm flex justify-between">
+                                  <span className="text-muted-foreground">
+                                    {item.name} {item.sku && `(${item.sku})`}
+                                  </span>
+                                  <span className="font-medium">Qty: {item.quantity}</span>
+                                </div>
+                              ))}
+                              {order.items.length > 3 && (
+                                <div className="text-sm text-muted-foreground">
+                                  ... and {order.items.length - 3} more items
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex gap-2 ml-4">
+                        <Button 
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleStatusChange('order', order.id, order.status)}
+                          data-testid={`button-status-order-${order.id}`}
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          size="sm"
+                          onClick={() => handleUnpack(order)}
+                          data-testid={`button-unpack-order-${order.id}`}
+                        >
+                          <PackageOpen className="h-4 w-4 mr-1" />
+                          Unpack
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           )}
         </TabsContent>
 
@@ -905,89 +921,71 @@ export default function AtWarehouse() {
               </CardContent>
             </Card>
           ) : (
-            <Card>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Item Details</TableHead>
-                      <TableHead>Source</TableHead>
-                      <TableHead>Order</TableHead>
-                      <TableHead>Quantity</TableHead>
-                      <TableHead>Weight</TableHead>
-                      <TableHead>Customer</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {unpackedItems.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{item.name}</div>
-                            {item.trackingNumber && (
-                              <div className="text-xs text-muted-foreground">
-                                Track: {item.trackingNumber}
-                              </div>
-                            )}
+            <div className="grid gap-3">
+              {unpackedItems.map((item) => (
+                <Card key={item.id} className="shadow-sm">
+                  <CardContent className="pt-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-3">
+                          <h3 className="text-lg font-semibold">{item.name}</h3>
+                          {getSourceBadge(item.source)}
+                          {getStatusBadge(item.status)}
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                          <span>Order: {item.orderNumber || 'N/A'}</span>
+                          <span>Qty: {item.quantity}</span>
+                          <span>Weight: {item.weight ? `${item.weight} kg` : 'N/A'}</span>
+                          {item.customerName && <span>Customer: {item.customerName}</span>}
+                        </div>
+
+                        {item.notes && (
+                          <div className="text-sm text-muted-foreground mt-2 italic">
+                            {item.notes}
                           </div>
-                        </TableCell>
-                        <TableCell>{getSourceBadge(item.source)}</TableCell>
-                        <TableCell className="font-mono text-sm">
-                          {item.orderNumber || '-'}
-                        </TableCell>
-                        <TableCell>{item.quantity}</TableCell>
-                        <TableCell>{item.weight ? `${item.weight} kg` : '-'}</TableCell>
-                        <TableCell>
-                          {item.customerName ? (
-                            <div>
-                              <div className="text-sm">{item.customerName}</div>
-                              {item.customerEmail && (
-                                <div className="text-xs text-muted-foreground">{item.customerEmail}</div>
-                              )}
-                            </div>
-                          ) : '-'}
-                        </TableCell>
-                        <TableCell>{getStatusBadge(item.status)}</TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" data-testid={`button-actions-item-${item.id}`}>
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => handleEditItem(item)}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit Item
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleStatusChange('item', item.id, item.status)}>
-                                <ArrowUp className="h-4 w-4 mr-2" />
-                                Change Status
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Archive className="h-4 w-4 mr-2" />
-                                Add to Consolidation
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                className="text-red-600"
-                                onClick={() => deleteCustomItemMutation.mutate(item.id)}
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete Item
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+                        )}
+                      </div>
+
+                      <div className="flex gap-2 ml-4">
+                        <Button 
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditItem(item)}
+                          data-testid={`button-edit-item-${item.id}`}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleStatusChange('item', item.id, item.status)}
+                          data-testid={`button-status-item-${item.id}`}
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem 
+                              className="text-red-600"
+                              onClick={() => setDeleteTarget({ type: 'item', id: item.id, name: item.name })}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete Item
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           )}
         </TabsContent>
 
@@ -1011,84 +1009,74 @@ export default function AtWarehouse() {
               </CardContent>
             </Card>
           ) : (
-            <Card>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Item Details</TableHead>
-                      <TableHead>Source</TableHead>
-                      <TableHead>Order</TableHead>
-                      <TableHead>Quantity</TableHead>
-                      <TableHead>Unit Price</TableHead>
-                      <TableHead>Weight</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Added</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {customItems.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{item.name}</div>
-                            {item.customerName && (
-                              <div className="text-xs text-muted-foreground">
-                                Customer: {item.customerName}
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>{getSourceBadge(item.source)}</TableCell>
-                        <TableCell className="font-mono text-sm">
-                          {item.orderNumber || '-'}
-                        </TableCell>
-                        <TableCell>{item.quantity}</TableCell>
-                        <TableCell>${item.unitPrice}</TableCell>
-                        <TableCell>{item.weight ? `${item.weight} kg` : '-'}</TableCell>
-                        <TableCell>{getStatusBadge(item.status)}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {format(new Date(item.createdAt), 'MMM dd')}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" data-testid={`button-actions-custom-${item.id}`}>
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => handleEditItem(item)}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit Item
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleStatusChange('item', item.id, item.status)}>
-                                <ArrowUp className="h-4 w-4 mr-2" />
-                                Change Status
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Archive className="h-4 w-4 mr-2" />
-                                Add to Consolidation
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                className="text-red-600"
-                                onClick={() => deleteCustomItemMutation.mutate(item.id)}
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete Item
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+            <div className="grid gap-3">
+              {customItems.map((item) => (
+                <Card key={item.id} className="shadow-sm">
+                  <CardContent className="pt-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-3">
+                          <h3 className="text-lg font-semibold">{item.name}</h3>
+                          {getSourceBadge(item.source)}
+                          {getStatusBadge(item.status)}
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                          <span>Order: {item.orderNumber || 'N/A'}</span>
+                          <span>Qty: {item.quantity}</span>
+                          <span>Price: ${item.unitPrice}</span>
+                          <span>Weight: {item.weight ? `${item.weight} kg` : 'N/A'}</span>
+                          {item.customerName && <span>Customer: {item.customerName}</span>}
+                          <span>Added: {format(new Date(item.createdAt), 'MMM dd')}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2 ml-4">
+                        <Button 
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditItem(item)}
+                          data-testid={`button-edit-custom-${item.id}`}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleStatusChange('item', item.id, item.status)}
+                          data-testid={`button-status-custom-${item.id}`}
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          size="sm"
+                          variant="outline"
+                          data-testid={`button-consolidate-custom-${item.id}`}
+                        >
+                          <Archive className="h-4 w-4" />
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem 
+                              className="text-red-600"
+                              onClick={() => setDeleteTarget({ type: 'item', id: item.id, name: item.name })}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete Item
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           )}
         </TabsContent>
 
@@ -1121,13 +1109,22 @@ export default function AtWarehouse() {
                         <CardTitle className="text-lg">{consolidation.name}</CardTitle>
                         <div className="mt-2">{getShippingMethodBadge(consolidation.shippingMethod)}</div>
                       </div>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={() => deleteConsolidationMutation.mutate(consolidation.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem 
+                            className="text-red-600"
+                            onClick={() => setDeleteTarget({ type: 'consolidation', id: consolidation.id, name: consolidation.name })}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </CardHeader>
                   <CardContent>
@@ -1440,6 +1437,24 @@ export default function AtWarehouse() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete "{deleteTarget?.name}". This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
