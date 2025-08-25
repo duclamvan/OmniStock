@@ -11,7 +11,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Package, Plane, Ship, Zap, Truck, MapPin, Clock, Weight, Users, ShoppingCart, Star, Trash2, Package2 } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Plus, Package, Plane, Ship, Zap, Truck, MapPin, Clock, Weight, Users, ShoppingCart, Star, Trash2, Package2, PackageOpen, AlertCircle, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -75,8 +76,20 @@ export default function AtWarehouse() {
   const [isAddCustomItemOpen, setIsAddCustomItemOpen] = useState(false);
   const [isCreateConsolidationOpen, setIsCreateConsolidationOpen] = useState(false);
   const [selectedConsolidation, setSelectedConsolidation] = useState<Consolidation | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [showUnpackDialog, setShowUnpackDialog] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Fetch purchase orders at warehouse
+  const { data: atWarehouseOrders = [], isLoading: isLoadingOrders } = useQuery({
+    queryKey: ['/api/imports/purchases/at-warehouse'],
+  });
+
+  // Fetch unpacked items
+  const { data: unpackedItems = [] } = useQuery({
+    queryKey: ['/api/imports/unpacked-items'],
+  });
 
   // Fetch custom items
   const { data: customItems = [], isLoading: isLoadingItems } = useQuery({
@@ -94,6 +107,34 @@ export default function AtWarehouse() {
       const response = await apiRequest('/api/imports/consolidations');
       return response.json() as Promise<Consolidation[]>;
     }
+  });
+
+  // Unpack purchase order mutation
+  const unpackMutation = useMutation({
+    mutationFn: async (purchaseId: number) => {
+      return apiRequest('/api/imports/purchases/unpack', {
+        method: 'POST',
+        body: JSON.stringify({ purchaseId }),
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Purchase order has been unpacked successfully",
+      });
+      setShowUnpackDialog(false);
+      setSelectedOrder(null);
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/purchases/at-warehouse'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/unpacked-items'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to unpack purchase order",
+        variant: "destructive",
+      });
+    },
   });
 
   // Create custom item mutation
@@ -153,6 +194,17 @@ export default function AtWarehouse() {
     }
   });
 
+  const handleUnpack = (order: any) => {
+    setSelectedOrder(order);
+    setShowUnpackDialog(true);
+  };
+
+  const confirmUnpack = () => {
+    if (selectedOrder) {
+      unpackMutation.mutate(selectedOrder.id);
+    }
+  };
+
   const handleCreateCustomItem = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -206,7 +258,7 @@ export default function AtWarehouse() {
     </Badge>
   );
 
-  const isLoading = isLoadingItems || isLoadingConsolidations;
+  const isLoading = isLoadingItems || isLoadingConsolidations || isLoadingOrders;
 
   if (isLoading) {
     return (
@@ -224,7 +276,7 @@ export default function AtWarehouse() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">At Warehouse</h1>
-          <p className="text-muted-foreground">Manage warehouse consolidations and custom items</p>
+          <p className="text-muted-foreground">Process purchase orders and manage warehouse items</p>
         </div>
         <div className="flex space-x-2">
           <Dialog open={isAddCustomItemOpen} onOpenChange={setIsAddCustomItemOpen}>
@@ -517,7 +569,29 @@ export default function AtWarehouse() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Awaiting Process</CardTitle>
+            <Package2 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-amber-600" data-testid="text-awaiting-count">
+              {atWarehouseOrders.length}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Unpacked Items</CardTitle>
+            <PackageOpen className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600" data-testid="text-unpacked-count">
+              {unpackedItems.length}
+            </div>
+          </CardContent>
+        </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Custom Items</CardTitle>
@@ -547,182 +621,358 @@ export default function AtWarehouse() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Weight</CardTitle>
-            <Weight className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {customItems.reduce((sum, item) => sum + parseFloat(item.weight), 0).toFixed(1)}kg
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Custom Items Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Custom Items</CardTitle>
-            <CardDescription>
-              Items from external platforms ready for consolidation
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {customItems.length === 0 ? (
-              <div className="text-center py-8">
-                <ShoppingCart className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No custom items</h3>
-                <p className="text-muted-foreground mb-4">Add items from Taobao, Pinduoduo, and other platforms</p>
-                <Button onClick={() => setIsAddCustomItemOpen(true)} data-testid="button-add-first-item">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Item
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {customItems.map((item) => (
-                  <Card key={item.id} className="border hover:shadow-md transition-shadow">
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-start mb-3">
-                        <div className="flex-1">
-                          <h4 className="font-semibold" data-testid={`item-name-${item.id}`}>{item.name}</h4>
-                          <div className="flex items-center space-x-2 mt-1">
-                            {getSourceBadge(item.source)}
-                            <Badge variant="outline" className="text-xs">
-                              Qty: {item.quantity}
-                            </Badge>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold">${item.unitPrice}</p>
-                          <p className="text-sm text-muted-foreground">{item.weight}kg</p>
-                        </div>
+      {/* Main Tabs */}
+      <Tabs defaultValue="awaiting" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="awaiting">
+            Purchase Orders ({atWarehouseOrders.length})
+          </TabsTrigger>
+          <TabsTrigger value="unpacked">
+            Unpacked Items ({unpackedItems.length})
+          </TabsTrigger>
+          <TabsTrigger value="custom">
+            Custom Items ({customItems.length})
+          </TabsTrigger>
+          <TabsTrigger value="consolidations">
+            Consolidations ({consolidations.length})
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Purchase Orders Tab */}
+        <TabsContent value="awaiting" className="space-y-4">
+          {atWarehouseOrders.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Package className="h-12 w-12 text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">No purchase orders at warehouse</p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Orders with "At Warehouse" status will appear here
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {atWarehouseOrders.map((order: any) => (
+                <Card key={order.id} className="shadow-sm">
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="text-lg">
+                          {order.supplier}
+                        </CardTitle>
+                        <CardDescription>
+                          PO #{order.id} • {order.location}
+                        </CardDescription>
                       </div>
-
-                      {item.orderNumber && (
-                        <div className="text-sm text-muted-foreground mb-2">
-                          Order: {item.orderNumber}
-                        </div>
-                      )}
-
-                      {item.customerName && (
-                        <div className="text-sm text-muted-foreground mb-2">
-                          Customer: {item.customerName}
-                          {item.customerEmail && ` (${item.customerEmail})`}
-                        </div>
-                      )}
-
-                      {item.trackingNumber && (
-                        <div className="flex items-center text-sm text-muted-foreground mb-2">
-                          <Truck className="h-3 w-3 mr-1" />
-                          {item.trackingNumber}
-                        </div>
-                      )}
-
-                      {item.notes && (
-                        <div className="text-sm bg-gray-50 dark:bg-gray-800 p-2 rounded mt-2">
-                          {item.notes}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Consolidations Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Smart Consolidations</CardTitle>
-            <CardDescription>
-              Intelligently grouped shipments by method and destination
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {consolidations.length === 0 ? (
-              <div className="text-center py-8">
-                <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No consolidations</h3>
-                <p className="text-muted-foreground mb-4">Create smart shipment consolidations</p>
-                <Button onClick={() => setIsCreateConsolidationOpen(true)} data-testid="button-create-first-consolidation">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Consolidation
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {consolidations.map((consolidation) => (
-                  <Card key={consolidation.id} className="border-2 hover:shadow-md transition-shadow">
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-start mb-3">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-2">
-                            <h4 className="font-semibold" data-testid={`consolidation-name-${consolidation.id}`}>
-                              {consolidation.name}
-                            </h4>
-                            {getShippingMethodBadge(consolidation.shippingMethod)}
-                          </div>
-                          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                            <MapPin className="h-3 w-3" />
-                            <span>{consolidation.warehouse.replace('_', ' ')}</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Badge variant="outline">
-                            {consolidation.itemCount} items
-                          </Badge>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => deleteConsolidationMutation.mutate(consolidation.id)}
-                            data-testid={`button-delete-consolidation-${consolidation.id}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        {consolidation.targetWeight && (
-                          <div className="flex items-center space-x-2">
-                            <Weight className="h-3 w-3 text-muted-foreground" />
-                            <span>Target: {consolidation.targetWeight}kg</span>
-                          </div>
-                        )}
-                        {consolidation.maxItems && (
-                          <div className="flex items-center space-x-2">
-                            <Package2 className="h-3 w-3 text-muted-foreground" />
-                            <span>Max: {consolidation.maxItems} items</span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex items-center justify-between mt-3 pt-3 border-t">
-                        <span className="text-sm text-muted-foreground">
-                          Created {format(new Date(consolidation.createdAt), 'MMM dd, yyyy')}
-                        </span>
-                        <Badge variant="secondary">
-                          {consolidation.status.toUpperCase()}
+                      <div className="flex gap-2">
+                        <Badge variant="success">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          At Warehouse
                         </Badge>
                       </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div>
+                        <div className="text-sm text-muted-foreground">Items</div>
+                        <div className="font-semibold">{order.items?.length || 0}</div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-muted-foreground">Total Value</div>
+                        <div className="font-semibold">
+                          {order.paymentCurrency} {Number(order.totalPaid || 0).toFixed(2)}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-muted-foreground">Tracking</div>
+                        <div className="font-mono text-sm">{order.trackingNumber || 'N/A'}</div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-muted-foreground">Arrived</div>
+                        <div className="text-sm">
+                          {order.updatedAt ? format(new Date(order.updatedAt), 'MMM dd, yyyy') : 'N/A'}
+                        </div>
+                      </div>
+                    </div>
 
-                      {consolidation.notes && (
-                        <div className="text-sm bg-gray-50 dark:bg-gray-800 p-2 rounded mt-2">
-                          {consolidation.notes}
+                    {order.items && order.items.length > 0 && (
+                      <div className="border rounded-lg p-3 bg-muted/30">
+                        <div className="text-sm font-medium mb-2">Order Items:</div>
+                        <div className="space-y-1">
+                          {order.items.slice(0, 3).map((item: any, index: number) => (
+                            <div key={index} className="text-sm flex justify-between">
+                              <span className="text-muted-foreground">
+                                {item.name} {item.sku && `(${item.sku})`}
+                              </span>
+                              <span className="font-medium">Qty: {item.quantity}</span>
+                            </div>
+                          ))}
+                          {order.items.length > 3 && (
+                            <div className="text-sm text-muted-foreground">
+                              ... and {order.items.length - 3} more items
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex justify-end">
+                      <Button 
+                        onClick={() => handleUnpack(order)}
+                        className="gap-2"
+                      >
+                        <PackageOpen className="h-4 w-4" />
+                        Process & Unpack
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Unpacked Items Tab */}
+        <TabsContent value="unpacked" className="space-y-4">
+          {unpackedItems.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <PackageOpen className="h-12 w-12 text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">No unpacked items yet</p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Items from unpacked purchase orders will appear here
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-3">
+              {unpackedItems.map((item: any) => (
+                <Card key={item.id} className="shadow-sm">
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <div className="font-medium">{item.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {item.source} • Qty: {item.quantity} • Order: {item.orderNumber}
+                        </div>
+                        {item.notes && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {item.notes}
+                          </div>
+                        )}
+                      </div>
+                      <Badge variant="outline">
+                        {item.status}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Custom Items Tab */}
+        <TabsContent value="custom" className="space-y-4">
+          {customItems.length === 0 ? (
+            <Card>
+              <CardContent className="py-12">
+                <div className="text-center">
+                  <ShoppingCart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-lg font-semibold">No custom items yet</p>
+                  <p className="text-muted-foreground">Add items from Taobao, Pinduoduo, or other platforms</p>
+                  <Button 
+                    className="mt-4" 
+                    onClick={() => setIsAddCustomItemOpen(true)}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add First Item
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Item Details</TableHead>
+                      <TableHead>Source</TableHead>
+                      <TableHead>Order</TableHead>
+                      <TableHead>Quantity</TableHead>
+                      <TableHead>Weight</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Added</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {customItems.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{item.name}</div>
+                            {item.customerName && (
+                              <div className="text-xs text-muted-foreground">
+                                Customer: {item.customerName}
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>{getSourceBadge(item.source)}</TableCell>
+                        <TableCell className="font-mono text-sm">
+                          {item.orderNumber || '-'}
+                        </TableCell>
+                        <TableCell>{item.quantity}</TableCell>
+                        <TableCell>{item.weight ? `${item.weight} kg` : '-'}</TableCell>
+                        <TableCell>
+                          <Badge variant={item.status === 'available' ? 'success' : 'secondary'}>
+                            {item.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {format(new Date(item.createdAt), 'MMM dd')}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* Consolidations Tab */}
+        <TabsContent value="consolidations" className="space-y-4">
+          {consolidations.length === 0 ? (
+            <Card>
+              <CardContent className="py-12">
+                <div className="text-center">
+                  <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-lg font-semibold">No consolidations yet</p>
+                  <p className="text-muted-foreground">Create consolidations to group items for shipment</p>
+                  <Button 
+                    className="mt-4" 
+                    onClick={() => setIsCreateConsolidationOpen(true)}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create First Consolidation
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {consolidations.map((consolidation) => (
+                <Card key={consolidation.id} className="hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="text-lg">{consolidation.name}</CardTitle>
+                        <div className="mt-2">{getShippingMethodBadge(consolidation.shippingMethod)}</div>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => deleteConsolidationMutation.mutate(consolidation.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex items-center text-sm">
+                        <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
+                        {consolidation.warehouse.replace('_', ' - ')}
+                      </div>
+                      <div className="flex items-center text-sm">
+                        <Package className="h-4 w-4 mr-2 text-muted-foreground" />
+                        {consolidation.itemCount || 0} items
+                      </div>
+                      {consolidation.targetWeight && (
+                        <div className="flex items-center text-sm">
+                          <Weight className="h-4 w-4 mr-2 text-muted-foreground" />
+                          Target: {consolidation.targetWeight} kg
                         </div>
                       )}
-                    </CardContent>
-                  </Card>
-                ))}
+                      <div className="flex items-center text-sm">
+                        <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
+                        {format(new Date(consolidation.createdAt), 'MMM dd, yyyy')}
+                      </div>
+                    </div>
+                    <Separator className="my-3" />
+                    <div className="flex justify-between items-center">
+                      <Badge variant="outline">{consolidation.status}</Badge>
+                      <Button size="sm" variant="outline">
+                        View Details
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {/* Unpack Confirmation Dialog */}
+      <Dialog open={showUnpackDialog} onOpenChange={setShowUnpackDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Process & Unpack Purchase Order</DialogTitle>
+            <DialogDescription>
+              This will unpack the purchase order into individual items for consolidation.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedOrder && (
+            <div className="space-y-4">
+              <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+                <div className="font-medium">{selectedOrder.supplier}</div>
+                <div className="text-sm text-muted-foreground">
+                  PO #{selectedOrder.id} • {selectedOrder.items?.length || 0} items
+                </div>
               </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+
+              <div className="flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5" />
+                <div className="text-sm text-muted-foreground">
+                  Each item in this purchase order will become an individual item ready for consolidation. 
+                  The items will retain all supplier and order information.
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowUnpackDialog(false)}
+              disabled={unpackMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={confirmUnpack}
+              disabled={unpackMutation.isPending}
+              className="gap-2"
+            >
+              {unpackMutation.isPending ? (
+                <>Processing...</>
+              ) : (
+                <>
+                  <PackageOpen className="h-4 w-4" />
+                  Confirm Unpack
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

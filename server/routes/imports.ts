@@ -10,7 +10,7 @@ import {
   shipmentItems,
   deliveryHistory
 } from "@shared/schema";
-import { eq, desc, sql, and } from "drizzle-orm";
+import { eq, desc, sql, and, like } from "drizzle-orm";
 import { addDays, differenceInDays } from "date-fns";
 
 const router = Router();
@@ -62,6 +62,126 @@ router.get("/purchases", async (req, res) => {
   } catch (error) {
     console.error("Error fetching purchases:", error);
     res.status(500).json({ message: "Failed to fetch purchases" });
+  }
+});
+
+// Get purchases at warehouse
+router.get("/purchases/at-warehouse", async (req, res) => {
+  try {
+    const purchases = await db
+      .select()
+      .from(importPurchases)
+      .where(eq(importPurchases.status, 'at_warehouse'))
+      .orderBy(desc(importPurchases.createdAt));
+    
+    // Get items for each purchase
+    const purchasesWithItems = await Promise.all(
+      purchases.map(async (purchase) => {
+        const items = await db
+          .select()
+          .from(purchaseItems)
+          .where(eq(purchaseItems.purchaseId, purchase.id));
+        
+        return {
+          ...purchase,
+          items,
+          itemCount: items.length
+        };
+      })
+    );
+    
+    res.json(purchasesWithItems);
+  } catch (error) {
+    console.error("Error fetching at-warehouse purchases:", error);
+    res.status(500).json({ message: "Failed to fetch at-warehouse purchases" });
+  }
+});
+
+// Get unpacked items (custom items from unpacked purchase orders)
+router.get("/unpacked-items", async (req, res) => {
+  try {
+    const unpackedItems = await db
+      .select()
+      .from(customItems)
+      .where(like(customItems.orderNumber, 'PO-%'))
+      .orderBy(desc(customItems.createdAt));
+    
+    res.json(unpackedItems);
+  } catch (error) {
+    console.error("Error fetching unpacked items:", error);
+    res.status(500).json({ message: "Failed to fetch unpacked items" });
+  }
+});
+
+// Unpack purchase order
+router.post("/purchases/unpack", async (req, res) => {
+  try {
+    const { purchaseId } = req.body;
+    
+    if (!purchaseId) {
+      return res.status(400).json({ message: "Purchase ID is required" });
+    }
+
+    // Get the purchase order with items
+    const [purchase] = await db
+      .select()
+      .from(importPurchases)
+      .where(eq(importPurchases.id, purchaseId));
+    
+    if (!purchase) {
+      return res.status(404).json({ message: "Purchase order not found" });
+    }
+
+    if (purchase.status === 'unpacked') {
+      return res.status(400).json({ message: "Purchase order already unpacked" });
+    }
+
+    const items = await db
+      .select()
+      .from(purchaseItems)
+      .where(eq(purchaseItems.purchaseId, purchaseId));
+
+    // Create custom items from purchase items
+    const customItemsCreated = [];
+    for (const item of items) {
+      const customItem = {
+        name: item.name,
+        source: `Supplier: ${purchase.supplier}`,
+        orderNumber: `PO-${purchase.id}`,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice || '0',
+        weight: item.weight || '0',
+        dimensions: item.dimensions ? JSON.stringify(item.dimensions) : null,
+        trackingNumber: item.trackingNumber || purchase.trackingNumber,
+        notes: `From Purchase Order #${purchase.id} - ${purchase.supplier}\n${item.notes || ''}`,
+        customerName: null,
+        customerEmail: null,
+        status: 'available',
+        createdAt: new Date()
+      };
+
+      const [created] = await db.insert(customItems).values(customItem).returning();
+      customItemsCreated.push(created);
+    }
+
+    // Update purchase order status to 'unpacked'
+    await db
+      .update(importPurchases)
+      .set({ 
+        status: 'unpacked',
+        updatedAt: new Date()
+      })
+      .where(eq(importPurchases.id, purchaseId));
+
+    res.json({
+      success: true,
+      message: "Purchase order unpacked successfully",
+      itemsCreated: customItemsCreated.length,
+      customItems: customItemsCreated
+    });
+  } catch (error) {
+    console.error("Error unpacking purchase order:", error);
+    res.status(500).json({ message: "Failed to unpack purchase order" });
   }
 });
 

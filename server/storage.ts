@@ -59,9 +59,11 @@ export interface IStorage {
   // Import Purchases
   getImportPurchases(): Promise<ImportPurchase[]>;
   getImportPurchase(id: number): Promise<ImportPurchase | undefined>;
+  getImportPurchasesAtWarehouse(): Promise<any[]>;
   createImportPurchase(purchase: InsertImportPurchase): Promise<ImportPurchase>;
   updateImportPurchase(id: number, purchase: Partial<InsertImportPurchase>): Promise<ImportPurchase | undefined>;
   deleteImportPurchase(id: number): Promise<boolean>;
+  unpackPurchaseOrder(purchaseId: number): Promise<any>;
   
   // Purchase Items
   getPurchaseItems(purchaseId: number): Promise<PurchaseItem[]>;
@@ -292,6 +294,87 @@ export class DatabaseStorage implements IStorage {
       .delete(importPurchases)
       .where(eq(importPurchases.id, id));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  async getImportPurchasesAtWarehouse(): Promise<any[]> {
+    const purchases = await db
+      .select()
+      .from(importPurchases)
+      .where(eq(importPurchases.status, 'at_warehouse'))
+      .orderBy(desc(importPurchases.createdAt));
+    
+    // Get items for each purchase
+    const purchasesWithItems = await Promise.all(
+      purchases.map(async (purchase) => {
+        const items = await db
+          .select()
+          .from(purchaseItems)
+          .where(eq(purchaseItems.purchaseId, purchase.id));
+        
+        return {
+          ...purchase,
+          items,
+          itemCount: items.length
+        };
+      })
+    );
+    
+    return purchasesWithItems;
+  }
+
+  async unpackPurchaseOrder(purchaseId: number): Promise<any> {
+    // Get the purchase order with items
+    const [purchase] = await db
+      .select()
+      .from(importPurchases)
+      .where(eq(importPurchases.id, purchaseId));
+    
+    if (!purchase) {
+      throw new Error('Purchase order not found');
+    }
+
+    const items = await db
+      .select()
+      .from(purchaseItems)
+      .where(eq(purchaseItems.purchaseId, purchaseId));
+
+    // Create custom items from purchase items
+    const customItemsCreated = [];
+    for (const item of items) {
+      const customItem = {
+        name: item.name,
+        source: `Supplier: ${purchase.supplier}`,
+        orderNumber: `PO-${purchase.id}`,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice || '0',
+        weight: item.weight || '0',
+        dimensions: item.dimensions ? JSON.stringify(item.dimensions) : null,
+        trackingNumber: item.trackingNumber || purchase.trackingNumber,
+        notes: `From Purchase Order #${purchase.id} - ${purchase.supplier}\n${item.notes || ''}`,
+        customerName: null,
+        customerEmail: null,
+        status: 'available',
+        createdAt: new Date()
+      };
+
+      const [created] = await db.insert(customItems).values(customItem).returning();
+      customItemsCreated.push(created);
+    }
+
+    // Update purchase order status to 'unpacked'
+    await db
+      .update(importPurchases)
+      .set({ 
+        status: 'unpacked',
+        updatedAt: new Date()
+      })
+      .where(eq(importPurchases.id, purchaseId));
+
+    return {
+      success: true,
+      itemsCreated: customItemsCreated.length,
+      customItems: customItemsCreated
+    };
   }
   
   // Purchase Items
