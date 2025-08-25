@@ -468,6 +468,39 @@ router.post("/consolidations", async (req, res) => {
   }
 });
 
+// Add items to consolidation
+router.post("/consolidations/:id/items", async (req, res) => {
+  try {
+    const consolidationId = parseInt(req.params.id);
+    const { itemIds } = req.body;
+    
+    if (!itemIds || !Array.isArray(itemIds) || itemIds.length === 0) {
+      return res.status(400).json({ message: "Invalid item IDs" });
+    }
+    
+    // Add items to consolidation
+    const itemsToAdd = itemIds.map((itemId: number) => ({
+      consolidationId: consolidationId,
+      itemId: itemId,
+      itemType: 'custom',
+      createdAt: new Date()
+    }));
+    
+    await db.insert(consolidationItems).values(itemsToAdd);
+    
+    // Update item status to consolidated
+    await db
+      .update(customItems)
+      .set({ status: 'consolidated' })
+      .where(sql`id IN (${sql.join(itemIds.map(id => sql`${id}`), sql`, `)})`);
+    
+    res.json({ message: "Items added to consolidation successfully" });
+  } catch (error) {
+    console.error("Error adding items to consolidation:", error);
+    res.status(500).json({ message: "Failed to add items to consolidation" });
+  }
+});
+
 // Delete consolidation
 router.delete("/consolidations/:id", async (req, res) => {
   try {

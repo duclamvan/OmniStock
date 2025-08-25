@@ -9,14 +9,15 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Plus, Package, Plane, Ship, Zap, Truck, MapPin, Clock, Weight, Users, ShoppingCart, Star, Trash2, Package2, PackageOpen, AlertCircle, CheckCircle, Edit, MoreHorizontal, ArrowUp, ArrowDown, Archive, Send, RefreshCw } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Plus, Package, Plane, Ship, Zap, Truck, MapPin, Clock, Weight, Users, ShoppingCart, Star, Trash2, Package2, PackageOpen, AlertCircle, CheckCircle, Edit, MoreHorizontal, ArrowUp, ArrowDown, Archive, Send, RefreshCw, Flag, Shield, Grip, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 interface PurchaseItem {
   id: number;
@@ -69,6 +70,7 @@ interface CustomItem {
   customerName: string | null;
   customerEmail: string | null;
   status: string;
+  classification?: string;
   createdAt: string;
 }
 
@@ -141,15 +143,17 @@ export default function AtWarehouse() {
     queryKey: ['/api/imports/purchases/at-warehouse'],
   });
 
-  // Fetch unpacked items
+  // Fetch all items (unpacked + custom)
+  const { data: customItems = [], isLoading: isLoadingItems } = useQuery<CustomItem[]>({
+    queryKey: ['/api/imports/custom-items'],
+  });
+
   const { data: unpackedItems = [] } = useQuery<CustomItem[]>({
     queryKey: ['/api/imports/unpacked-items'],
   });
 
-  // Fetch custom items
-  const { data: customItems = [], isLoading: isLoadingItems } = useQuery<CustomItem[]>({
-    queryKey: ['/api/imports/custom-items'],
-  });
+  // Combine all items
+  const allItems = [...customItems, ...unpackedItems];
 
   // Fetch consolidations
   const { data: consolidations = [], isLoading: isLoadingConsolidations } = useQuery<Consolidation[]>({
@@ -229,6 +233,28 @@ export default function AtWarehouse() {
     },
   });
 
+  // Update item classification mutation
+  const updateItemClassificationMutation = useMutation({
+    mutationFn: async ({ id, classification }: { id: number, classification: string }) => {
+      return apiRequest(`/api/imports/custom-items/${id}`, 'PATCH', { classification });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Item classification updated successfully",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/unpacked-items'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update classification",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Create custom item mutation
   const createCustomItemMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -274,6 +300,21 @@ export default function AtWarehouse() {
     },
     onError: () => {
       toast({ title: "Error", description: "Failed to delete item", variant: "destructive" });
+    }
+  });
+
+  // Add items to consolidation mutation
+  const addItemsToConsolidationMutation = useMutation({
+    mutationFn: async ({ consolidationId, itemIds }: { consolidationId: number, itemIds: number[] }) => {
+      return apiRequest(`/api/imports/consolidations/${consolidationId}/items`, 'POST', { itemIds });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/consolidations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
+      toast({ title: "Success", description: "Items added to consolidation" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to add items to consolidation", variant: "destructive" });
     }
   });
 
@@ -364,6 +405,7 @@ export default function AtWarehouse() {
       notes: formData.get('notes') as string || null,
       customerName: formData.get('customerName') as string || null,
       customerEmail: formData.get('customerEmail') as string || null,
+      classification: formData.get('classification') as string || 'general',
     };
     
     createCustomItemMutation.mutate(data);
@@ -388,6 +430,7 @@ export default function AtWarehouse() {
       customerName: formData.get('customerName') as string || null,
       customerEmail: formData.get('customerEmail') as string || null,
       status: formData.get('status') as string,
+      classification: formData.get('classification') as string || 'general',
     };
     
     updateCustomItemMutation.mutate({ id: editingItem.id, data });
@@ -407,6 +450,17 @@ export default function AtWarehouse() {
     };
     
     createConsolidationMutation.mutate(data);
+  };
+
+  const handleDragEnd = (result: any) => {
+    if (!result.destination) return;
+    
+    const itemId = parseInt(result.draggableId);
+    const consolidationId = parseInt(result.destination.droppableId.replace('consolidation-', ''));
+    
+    if (consolidationId && !isNaN(consolidationId)) {
+      addItemsToConsolidationMutation.mutate({ consolidationId, itemIds: [itemId] });
+    }
   };
 
   const getStatusBadge = (status: string) => (
@@ -431,6 +485,30 @@ export default function AtWarehouse() {
     </Badge>
   );
 
+  const getClassificationIcon = (classification?: string) => {
+    if (classification === 'sensitive') {
+      return <Shield className="h-4 w-4 text-red-500" />;
+    }
+    return <Flag className="h-4 w-4 text-green-500" />;
+  };
+
+  const getClassificationBadge = (classification?: string) => {
+    if (classification === 'sensitive') {
+      return (
+        <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+          <Shield className="h-3 w-3 mr-1" />
+          Sensitive
+        </Badge>
+      );
+    }
+    return (
+      <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+        <Flag className="h-3 w-3 mr-1" />
+        General
+      </Badge>
+    );
+  };
+
   const isLoading = isLoadingItems || isLoadingConsolidations || isLoadingOrders;
 
   if (isLoading) {
@@ -449,7 +527,7 @@ export default function AtWarehouse() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">At Warehouse</h1>
-          <p className="text-muted-foreground">Process purchase orders and manage warehouse items</p>
+          <p className="text-muted-foreground">Process incoming orders and manage warehouse items</p>
         </div>
         <div className="flex space-x-2">
           <Dialog open={isAddCustomItemOpen} onOpenChange={setIsAddCustomItemOpen}>
@@ -506,13 +584,26 @@ export default function AtWarehouse() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="trackingNumber">Tracking Number</Label>
-                    <Input 
-                      id="trackingNumber" 
-                      name="trackingNumber" 
-                      data-testid="input-tracking-number"
-                      placeholder="Tracking number"
-                    />
+                    <Label htmlFor="classification">Goods Classification *</Label>
+                    <Select name="classification" defaultValue="general">
+                      <SelectTrigger data-testid="select-classification">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="general">
+                          <div className="flex items-center">
+                            <Flag className="h-4 w-4 mr-2 text-green-500" />
+                            General Goods
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="sensitive">
+                          <div className="flex items-center">
+                            <Shield className="h-4 w-4 mr-2 text-red-500" />
+                            Sensitive Goods
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
@@ -618,7 +709,7 @@ export default function AtWarehouse() {
               <DialogHeader>
                 <DialogTitle>Create New Consolidation</DialogTitle>
                 <DialogDescription>
-                  Create a new shipment consolidation with smart grouping
+                  Create a new shipment consolidation for grouping items
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleCreateConsolidation} className="space-y-4">
@@ -742,10 +833,10 @@ export default function AtWarehouse() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Awaiting Process</CardTitle>
+            <CardTitle className="text-sm font-medium">Incoming Orders</CardTitle>
             <Package2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -756,22 +847,24 @@ export default function AtWarehouse() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Unpacked Items</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Items</CardTitle>
             <PackageOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600" data-testid="text-unpacked-count">
-              {unpackedItems.length}
+            <div className="text-2xl font-bold text-blue-600" data-testid="text-total-items">
+              {allItems.length}
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Custom Items</CardTitle>
-            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Sensitive Goods</CardTitle>
+            <Shield className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-custom-items-count">{customItems.length}</div>
+            <div className="text-2xl font-bold text-red-600" data-testid="text-sensitive-count">
+              {allItems.filter(item => item.classification === 'sensitive').length}
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -780,46 +873,31 @@ export default function AtWarehouse() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold" data-testid="text-consolidations-count">{consolidations.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Available Items</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {customItems.filter(item => item.status === 'available').length}
+            <div className="text-2xl font-bold" data-testid="text-consolidations-count">
+              {consolidations.length}
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Main Tabs */}
-      <Tabs defaultValue="awaiting" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="awaiting">
-            Purchase Orders ({atWarehouseOrders.length})
+      <Tabs defaultValue="incoming" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="incoming">
+            Incoming Orders ({atWarehouseOrders.length})
           </TabsTrigger>
-          <TabsTrigger value="unpacked">
-            Unpacked Items ({unpackedItems.length})
-          </TabsTrigger>
-          <TabsTrigger value="custom">
-            Custom Items ({customItems.length})
-          </TabsTrigger>
-          <TabsTrigger value="consolidations">
-            Consolidations ({consolidations.length})
+          <TabsTrigger value="items">
+            All Items ({allItems.length})
           </TabsTrigger>
         </TabsList>
 
-        {/* Purchase Orders Tab */}
-        <TabsContent value="awaiting" className="space-y-4">
+        {/* Incoming Orders Tab */}
+        <TabsContent value="incoming" className="space-y-4">
           {atWarehouseOrders.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Package className="h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">No purchase orders at warehouse</p>
+                <p className="text-muted-foreground">No incoming orders at warehouse</p>
                 <p className="text-sm text-muted-foreground mt-2">
                   Orders with "At Warehouse" status will appear here
                 </p>
@@ -908,258 +986,186 @@ export default function AtWarehouse() {
           )}
         </TabsContent>
 
-        {/* Unpacked Items Tab */}
-        <TabsContent value="unpacked" className="space-y-4">
-          {unpackedItems.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <PackageOpen className="h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">No unpacked items yet</p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Items from unpacked purchase orders will appear here
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-3">
-              {unpackedItems.map((item) => (
-                <Card key={item.id} className="shadow-sm">
-                  <CardContent className="pt-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center gap-3">
-                          <h3 className="text-lg font-semibold">{item.name}</h3>
-                          {getSourceBadge(item.source)}
-                          {getStatusBadge(item.status)}
-                        </div>
-                        
-                        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                          <span>Order: {item.orderNumber || 'N/A'}</span>
-                          <span>Qty: {item.quantity}</span>
-                          <span>Weight: {item.weight ? `${item.weight} kg` : 'N/A'}</span>
-                          {item.customerName && <span>Customer: {item.customerName}</span>}
-                        </div>
-
-                        {item.notes && (
-                          <div className="text-sm text-muted-foreground mt-2 italic">
-                            {item.notes}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex gap-2 ml-4">
-                        <Button 
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEditItem(item)}
-                          data-testid={`button-edit-item-${item.id}`}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleStatusChange('item', item.id, item.status)}
-                          data-testid={`button-status-item-${item.id}`}
-                        >
-                          <RefreshCw className="h-4 w-4" />
-                        </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem 
-                              className="text-red-600"
-                              onClick={() => setDeleteTarget({ type: 'item', id: item.id, name: item.name })}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete Item
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        {/* Custom Items Tab */}
-        <TabsContent value="custom" className="space-y-4">
-          {customItems.length === 0 ? (
-            <Card>
-              <CardContent className="py-12">
-                <div className="text-center">
-                  <ShoppingCart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-lg font-semibold">No custom items yet</p>
-                  <p className="text-muted-foreground">Add items from Taobao, Pinduoduo, or other platforms</p>
-                  <Button 
-                    className="mt-4" 
-                    onClick={() => setIsAddCustomItemOpen(true)}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add First Item
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-3">
-              {customItems.map((item) => (
-                <Card key={item.id} className="shadow-sm">
-                  <CardContent className="pt-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center gap-3">
-                          <h3 className="text-lg font-semibold">{item.name}</h3>
-                          {getSourceBadge(item.source)}
-                          {getStatusBadge(item.status)}
-                        </div>
-                        
-                        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                          <span>Order: {item.orderNumber || 'N/A'}</span>
-                          <span>Qty: {item.quantity}</span>
-                          <span>Price: ${item.unitPrice}</span>
-                          <span>Weight: {item.weight ? `${item.weight} kg` : 'N/A'}</span>
-                          {item.customerName && <span>Customer: {item.customerName}</span>}
-                          <span>Added: {format(new Date(item.createdAt), 'MMM dd')}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-2 ml-4">
-                        <Button 
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEditItem(item)}
-                          data-testid={`button-edit-custom-${item.id}`}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleStatusChange('item', item.id, item.status)}
-                          data-testid={`button-status-custom-${item.id}`}
-                        >
-                          <RefreshCw className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          size="sm"
-                          variant="outline"
-                          data-testid={`button-consolidate-custom-${item.id}`}
-                        >
-                          <Archive className="h-4 w-4" />
-                        </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem 
-                              className="text-red-600"
-                              onClick={() => setDeleteTarget({ type: 'item', id: item.id, name: item.name })}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete Item
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        {/* Consolidations Tab */}
-        <TabsContent value="consolidations" className="space-y-4">
-          {consolidations.length === 0 ? (
-            <Card>
-              <CardContent className="py-12">
-                <div className="text-center">
-                  <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-lg font-semibold">No consolidations yet</p>
-                  <p className="text-muted-foreground">Create consolidations to group items for shipment</p>
-                  <Button 
-                    className="mt-4" 
-                    onClick={() => setIsCreateConsolidationOpen(true)}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create First Consolidation
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {consolidations.map((consolidation) => (
-                <Card key={consolidation.id} className="hover:shadow-lg transition-shadow">
+        {/* All Items Tab with Drag & Drop */}
+        <TabsContent value="items" className="space-y-4">
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* Available Items Column */}
+              <div className="lg:col-span-2">
+                <Card>
                   <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-lg">{consolidation.name}</CardTitle>
-                        <div className="mt-2">{getShippingMethodBadge(consolidation.shippingMethod)}</div>
-                      </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem 
-                            className="text-red-600"
-                            onClick={() => setDeleteTarget({ type: 'consolidation', id: consolidation.id, name: consolidation.name })}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
+                    <CardTitle className="text-lg">Available Items</CardTitle>
+                    <CardDescription>Drag items to consolidations</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-2">
-                      <div className="flex items-center text-sm">
-                        <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
-                        {consolidation.warehouse.replace('_', ' - ')}
-                      </div>
-                      <div className="flex items-center text-sm">
-                        <Package className="h-4 w-4 mr-2 text-muted-foreground" />
-                        {consolidation.itemCount || 0} items
-                      </div>
-                      {consolidation.targetWeight && (
-                        <div className="flex items-center text-sm">
-                          <Weight className="h-4 w-4 mr-2 text-muted-foreground" />
-                          Target: {consolidation.targetWeight} kg
+                    <Droppable droppableId="available-items">
+                      {(provided) => (
+                        <div 
+                          ref={provided.innerRef} 
+                          {...provided.droppableProps}
+                          className="space-y-2 min-h-[400px]"
+                        >
+                          {allItems.filter(item => item.status !== 'consolidated').map((item, index) => (
+                            <Draggable key={item.id} draggableId={String(item.id)} index={index}>
+                              {(provided, snapshot) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                  className={`border rounded-lg p-3 bg-background ${
+                                    snapshot.isDragging ? 'shadow-lg opacity-90' : ''
+                                  }`}
+                                >
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex-1 space-y-1">
+                                      <div className="flex items-center gap-2">
+                                        <Grip className="h-4 w-4 text-muted-foreground" />
+                                        <span className="font-semibold">{item.name}</span>
+                                        {getClassificationIcon(item.classification)}
+                                        {getSourceBadge(item.source)}
+                                      </div>
+                                      <div className="flex gap-4 text-xs text-muted-foreground">
+                                        <span>Qty: {item.quantity}</span>
+                                        <span>{item.weight ? `${item.weight} kg` : 'No weight'}</span>
+                                        {item.customerName && <span>{item.customerName}</span>}
+                                      </div>
+                                    </div>
+                                    <div className="flex gap-1">
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => updateItemClassificationMutation.mutate({
+                                          id: item.id,
+                                          classification: item.classification === 'sensitive' ? 'general' : 'sensitive'
+                                        })}
+                                      >
+                                        {item.classification === 'sensitive' ? (
+                                          <Flag className="h-4 w-4" />
+                                        ) : (
+                                          <Shield className="h-4 w-4" />
+                                        )}
+                                      </Button>
+                                      <Button 
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => handleEditItem(item)}
+                                      >
+                                        <Edit className="h-4 w-4" />
+                                      </Button>
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button variant="ghost" size="sm">
+                                            <MoreHorizontal className="h-4 w-4" />
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                          <DropdownMenuItem 
+                                            className="text-red-600"
+                                            onClick={() => setDeleteTarget({ type: 'item', id: item.id, name: item.name })}
+                                          >
+                                            <Trash2 className="h-4 w-4 mr-2" />
+                                            Delete
+                                          </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </Draggable>
+                          ))}
+                          {provided.placeholder}
                         </div>
                       )}
-                      <div className="flex items-center text-sm">
-                        <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
-                        {format(new Date(consolidation.createdAt), 'MMM dd, yyyy')}
-                      </div>
-                    </div>
-                    <Separator className="my-3" />
-                    <div className="flex justify-between items-center">
-                      {getStatusBadge(consolidation.status)}
-                      <Button size="sm" variant="outline">
-                        View Details
-                      </Button>
-                    </div>
+                    </Droppable>
                   </CardContent>
                 </Card>
-              ))}
+              </div>
+
+              {/* Consolidations Column */}
+              <div>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Active Consolidations</CardTitle>
+                    <CardDescription>Drop items here to consolidate</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ScrollArea className="h-[500px] pr-4">
+                      <div className="space-y-3">
+                        {consolidations.map((consolidation) => (
+                          <div key={consolidation.id}>
+                            <div className="border rounded-lg p-3 bg-muted/30">
+                              <div className="flex justify-between items-start mb-2">
+                                <div>
+                                  <div className="font-medium">{consolidation.name}</div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {consolidation.warehouse.replace('_', ' - ')}
+                                  </div>
+                                </div>
+                                {getShippingMethodBadge(consolidation.shippingMethod)}
+                              </div>
+                              
+                              <Droppable droppableId={`consolidation-${consolidation.id}`}>
+                                {(provided, snapshot) => (
+                                  <div 
+                                    ref={provided.innerRef}
+                                    {...provided.droppableProps}
+                                    className={`min-h-[60px] border-2 border-dashed rounded-md p-2 ${
+                                      snapshot.isDraggingOver ? 'border-primary bg-primary/10' : 'border-muted'
+                                    }`}
+                                  >
+                                    {consolidation.itemCount === 0 ? (
+                                      <div className="text-center text-sm text-muted-foreground py-2">
+                                        Drop items here
+                                      </div>
+                                    ) : (
+                                      <div className="space-y-1">
+                                        <div className="text-sm font-medium">{consolidation.itemCount} items</div>
+                                        {consolidation.targetWeight && (
+                                          <div className="text-xs text-muted-foreground">
+                                            Max weight: {consolidation.targetWeight} kg
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                    {provided.placeholder}
+                                  </div>
+                                )}
+                              </Droppable>
+                              
+                              <div className="flex justify-between items-center mt-2">
+                                {getStatusBadge(consolidation.status)}
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem 
+                                      className="text-red-600"
+                                      onClick={() => setDeleteTarget({ 
+                                        type: 'consolidation', 
+                                        id: consolidation.id, 
+                                        name: consolidation.name 
+                                      })}
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
-          )}
+          </DragDropContext>
         </TabsContent>
       </Tabs>
 
@@ -1204,15 +1210,6 @@ export default function AtWarehouse() {
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="edit-orderNumber">Order Number</Label>
-                  <Input 
-                    id="edit-orderNumber" 
-                    name="orderNumber" 
-                    defaultValue={editingItem.orderNumber || ''}
-                    data-testid="input-edit-order-number"
-                  />
-                </div>
-                <div className="space-y-2">
                   <Label htmlFor="edit-status">Status</Label>
                   <Select name="status" defaultValue={editingItem.status}>
                     <SelectTrigger data-testid="select-edit-status">
@@ -1223,6 +1220,28 @@ export default function AtWarehouse() {
                       <SelectItem value="assigned">Assigned</SelectItem>
                       <SelectItem value="consolidated">Consolidated</SelectItem>
                       <SelectItem value="shipped">Shipped</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-classification">Goods Classification</Label>
+                  <Select name="classification" defaultValue={editingItem.classification || 'general'}>
+                    <SelectTrigger data-testid="select-edit-classification">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="general">
+                        <div className="flex items-center">
+                          <Flag className="h-4 w-4 mr-2 text-green-500" />
+                          General Goods
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="sensitive">
+                        <div className="flex items-center">
+                          <Shield className="h-4 w-4 mr-2 text-red-500" />
+                          Sensitive Goods
+                        </div>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1329,7 +1348,7 @@ export default function AtWarehouse() {
           <DialogHeader>
             <DialogTitle>Change Status</DialogTitle>
             <DialogDescription>
-              Select a new status for this {statusTarget?.type === 'order' ? 'purchase order' : 'item'}
+              Select a new status for this {statusTarget?.type === 'order' ? 'incoming order' : 'item'}
             </DialogDescription>
           </DialogHeader>
           
