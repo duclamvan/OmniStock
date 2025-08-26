@@ -68,6 +68,82 @@
   border-radius: 8px;
 }
 
+/* Unpack animation - spreading cards effect */
+@keyframes unpack-spread {
+  0% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(0.95) translateY(-10px);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes ripple-effect {
+  0% {
+    background: radial-gradient(circle at center, rgba(59, 130, 246, 0.2) 0%, transparent 0%);
+  }
+  50% {
+    background: radial-gradient(circle at center, rgba(59, 130, 246, 0.1) 50%, transparent 50%);
+  }
+  100% {
+    background: radial-gradient(circle at center, transparent 100%, transparent 100%);
+  }
+}
+
+.unpack-animation {
+  animation: ripple-effect 1s ease-out;
+  position: relative;
+}
+
+.unpack-animation > div {
+  animation: unpack-spread 0.6s ease-out;
+}
+
+/* Stagger the animation for each card */
+.unpack-animation > div:nth-child(1) { animation-delay: 0ms; }
+.unpack-animation > div:nth-child(2) { animation-delay: 50ms; }
+.unpack-animation > div:nth-child(3) { animation-delay: 100ms; }
+.unpack-animation > div:nth-child(4) { animation-delay: 150ms; }
+.unpack-animation > div:nth-child(5) { animation-delay: 200ms; }
+.unpack-animation > div:nth-child(6) { animation-delay: 250ms; }
+.unpack-animation > div:nth-child(7) { animation-delay: 300ms; }
+.unpack-animation > div:nth-child(8) { animation-delay: 350ms; }
+.unpack-animation > div:nth-child(9) { animation-delay: 400ms; }
+.unpack-animation > div:nth-child(10) { animation-delay: 450ms; }
+
+/* Add a particle effect for unpacking */
+@keyframes particle-burst {
+  0% {
+    transform: translate(0, 0) scale(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(var(--x), var(--y)) scale(1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translate(calc(var(--x) * 2), calc(var(--y) * 2)) scale(0.5);
+    opacity: 0;
+  }
+}
+
+.unpack-particle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  border-radius: 50%;
+  animation: particle-burst 0.8s ease-out forwards;
+  pointer-events: none;
+  z-index: 100;
+}
+
 .completed-next-button {
   animation: subtle-pulse 2s ease-in-out infinite;
   background: linear-gradient(to right, #10b981, #047857);

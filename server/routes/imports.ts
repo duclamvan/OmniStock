@@ -852,6 +852,65 @@ router.post("/custom-items", async (req, res) => {
   }
 });
 
+// Unpack custom item (for items that represent whole purchase orders)
+router.post("/custom-items/:id/unpack", async (req, res) => {
+  try {
+    const itemId = parseInt(req.params.id);
+    
+    // Get the custom item
+    const [customItem] = await db
+      .select()
+      .from(customItems)
+      .where(eq(customItems.id, itemId));
+    
+    if (!customItem) {
+      return res.status(404).json({ message: "Item not found" });
+    }
+    
+    // Check if this item has orderItems (represents a whole PO)
+    if (!customItem.orderItems || !Array.isArray(customItem.orderItems) || customItem.orderItems.length === 0) {
+      return res.status(400).json({ message: "This item cannot be unpacked" });
+    }
+    
+    // Create individual custom items from the orderItems
+    const unpackedItems = [];
+    for (const orderItem of customItem.orderItems) {
+      const newItem = {
+        name: orderItem.name,
+        source: customItem.source,
+        orderNumber: customItem.orderNumber,
+        quantity: orderItem.quantity,
+        unitPrice: orderItem.unitPrice || '0',
+        weight: orderItem.weight || null,
+        dimensions: orderItem.dimensions || null,
+        trackingNumber: customItem.trackingNumber,
+        notes: `Unpacked from: ${customItem.name}`,
+        customerName: customItem.customerName,
+        customerEmail: customItem.customerEmail,
+        status: 'available',
+        classification: customItem.classification,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      const [created] = await db.insert(customItems).values(newItem).returning();
+      unpackedItems.push(created);
+    }
+    
+    // Delete the original packed item
+    await db.delete(customItems).where(eq(customItems.id, itemId));
+    
+    res.json({
+      success: true,
+      message: "Item unpacked successfully",
+      unpackedItems
+    });
+  } catch (error) {
+    console.error("Error unpacking custom item:", error);
+    res.status(500).json({ message: "Failed to unpack item" });
+  }
+});
+
 // Update custom item
 router.patch("/custom-items/:id", async (req, res) => {
   try {

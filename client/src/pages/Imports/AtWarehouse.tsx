@@ -14,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Package, Plane, Ship, Zap, Truck, MapPin, Clock, Weight, Users, ShoppingCart, Star, Trash2, Package2, PackageOpen, AlertCircle, CheckCircle, Edit, MoreHorizontal, ArrowUp, ArrowDown, Archive, Send, RefreshCw, Flag, Shield, Grip, AlertTriangle, ChevronDown, ChevronRight, Box, Sparkles, X, Search, SortAsc, CheckSquare, Square, ChevronsDown, ChevronsUp, Filter, Calendar, Hash, Camera, ArrowRightToLine } from "lucide-react";
+import { Plus, Package, Plane, Ship, Zap, Truck, MapPin, Clock, Weight, Users, ShoppingCart, Star, Trash2, Package2, PackageOpen, AlertCircle, CheckCircle, Edit, MoreHorizontal, ArrowUp, ArrowDown, Archive, Send, RefreshCw, Flag, Shield, Grip, AlertTriangle, ChevronDown, ChevronRight, Box, Sparkles, X, Search, SortAsc, CheckSquare, Square, ChevronsDown, ChevronsUp, Filter, Calendar, Hash, Camera, ArrowRightToLine, MoreVertical, Edit2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -451,6 +451,37 @@ export default function AtWarehouse() {
     },
     onError: () => {
       toast({ title: "Error", description: "Failed to delete item", variant: "destructive" });
+    }
+  });
+
+  // Unpack custom item mutation
+  const unpackItemMutation = useMutation({
+    mutationFn: async (itemId: number) => {
+      const response = await apiRequest(`/api/imports/custom-items/${itemId}/unpack`, 'POST');
+      return response;
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Success",
+        description: `Unpacked ${data.unpackedItems.length} items successfully`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
+      
+      // Animate the unpacked items
+      const container = document.querySelector('[data-testid="available-items-container"]');
+      if (container) {
+        container.classList.add('unpack-animation');
+        setTimeout(() => {
+          container.classList.remove('unpack-animation');
+        }, 1000);
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to unpack item",
+        variant: "destructive",
+      });
     }
   });
 
@@ -1803,6 +1834,7 @@ export default function AtWarehouse() {
                         <div 
                           ref={provided.innerRef} 
                           {...provided.droppableProps}
+                          data-testid="available-items-container"
                           className={`
                             space-y-2 min-h-[400px] p-2 rounded-lg transition-all duration-300
                             ${snapshot.isDraggingOver 
@@ -1946,6 +1978,54 @@ export default function AtWarehouse() {
                                       </div>
                                     </div>
                                     <div className="flex gap-1 items-start">
+                                      {/* Three dots menu for purchase orders */}
+                                      {item.purchaseOrderId && item.orderItems && item.orderItems.length > 0 && (
+                                        <DropdownMenu>
+                                          <DropdownMenuTrigger asChild>
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              className="h-8 px-2"
+                                              onClick={(e) => e.stopPropagation()}
+                                            >
+                                              <MoreVertical className="h-4 w-4" />
+                                            </Button>
+                                          </DropdownMenuTrigger>
+                                          <DropdownMenuContent align="end">
+                                            <DropdownMenuItem
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                unpackItemMutation.mutate(item.id);
+                                              }}
+                                              className="text-primary"
+                                            >
+                                              <Package2 className="h-4 w-4 mr-2" />
+                                              Unpack All Items
+                                            </DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleEditItem(item);
+                                              }}
+                                            >
+                                              <Edit2 className="h-4 w-4 mr-2" />
+                                              Edit Package
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setDeleteTarget({ type: 'item', id: item.id, name: item.name });
+                                              }}
+                                              className="text-red-600"
+                                            >
+                                              <Trash2 className="h-4 w-4 mr-2" />
+                                              Delete Package
+                                            </DropdownMenuItem>
+                                          </DropdownMenuContent>
+                                        </DropdownMenu>
+                                      )}
+                                      
                                       {/* Classification Toggle */}
                                       <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
