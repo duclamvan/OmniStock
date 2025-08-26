@@ -39,6 +39,7 @@ interface PurchaseItem {
 interface ImportPurchase {
   id: number;
   supplier: string;
+  location?: string;
   trackingNumber: string | null;
   estimatedArrival: string | null;
   notes: string | null;
@@ -140,6 +141,7 @@ export default function AtWarehouse() {
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'item' | 'consolidation', id: number, name: string } | null>(null);
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
   const [expandedOrders, setExpandedOrders] = useState<Set<number>>(new Set());
+  const [locationFilter, setLocationFilter] = useState<string>("all");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -159,6 +161,11 @@ export default function AtWarehouse() {
 
   // Combine all items
   const allItems = [...customItems, ...unpackedItems];
+
+  // Filter orders by location
+  const filteredOrders = locationFilter === "all" 
+    ? atWarehouseOrders 
+    : atWarehouseOrders.filter(order => order.location === locationFilter);
 
   // Fetch consolidations
   const { data: consolidations = [], isLoading: isLoadingConsolidations } = useQuery<Consolidation[]>({
@@ -589,7 +596,22 @@ export default function AtWarehouse() {
           <h1 className="text-3xl font-bold">At Warehouse</h1>
           <p className="text-muted-foreground">Process incoming orders and manage warehouse items</p>
         </div>
-        <div className="flex space-x-2">
+        <div className="flex items-center gap-4">
+          {/* Location Filter */}
+          <Select value={locationFilter} onValueChange={setLocationFilter}>
+            <SelectTrigger className="w-[150px]" data-testid="select-location-filter">
+              <SelectValue placeholder="All Locations" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Locations</SelectItem>
+              <SelectItem value="China">🇨🇳 China</SelectItem>
+              <SelectItem value="USA">🇺🇸 USA</SelectItem>
+              <SelectItem value="Vietnam">🇻🇳 Vietnam</SelectItem>
+              <SelectItem value="Europe">🇪🇺 Europe</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          <div className="flex space-x-2">
           <Dialog open={isAddCustomItemOpen} onOpenChange={setIsAddCustomItemOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" data-testid="button-add-custom-item">
@@ -890,6 +912,7 @@ export default function AtWarehouse() {
             </DialogContent>
           </Dialog>
         </div>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -901,7 +924,7 @@ export default function AtWarehouse() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-amber-600" data-testid="text-awaiting-count">
-              {atWarehouseOrders.length}
+              {filteredOrders.length}
             </div>
           </CardContent>
         </Card>
@@ -944,7 +967,7 @@ export default function AtWarehouse() {
       <Tabs defaultValue="incoming" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="incoming">
-            Incoming Orders ({atWarehouseOrders.length})
+            Incoming Orders ({filteredOrders.length})
           </TabsTrigger>
           <TabsTrigger value="items">
             All Items ({allItems.length})
@@ -953,7 +976,7 @@ export default function AtWarehouse() {
 
         {/* Incoming Orders Tab */}
         <TabsContent value="incoming" className="space-y-4">
-          {atWarehouseOrders.length === 0 ? (
+          {filteredOrders.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Package className="h-12 w-12 text-muted-foreground mb-4" />
@@ -965,13 +988,19 @@ export default function AtWarehouse() {
             </Card>
           ) : (
             <div className="grid gap-4">
-              {atWarehouseOrders.map((order) => (
+              {filteredOrders.map((order) => (
                 <Card key={order.id} className="shadow-sm">
                   <CardContent className="pt-6">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 space-y-3">
                         <div className="flex items-center gap-3">
-                          <Package2 className="h-5 w-5 text-blue-500" />
+                          <span className="text-xl">
+                            {order.location === 'Europe' && '🇪🇺'}
+                            {order.location === 'USA' && '🇺🇸'}
+                            {order.location === 'China' && '🇨🇳'}
+                            {order.location === 'Vietnam' && '🇻🇳'}
+                            {!order.location && '🌍'}
+                          </span>
                           <h3 className="text-lg font-semibold">PO #{order.id} - {order.supplier}</h3>
                           {getStatusBadge(order.status)}
                         </div>
