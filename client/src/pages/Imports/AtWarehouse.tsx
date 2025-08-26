@@ -1785,7 +1785,7 @@ export default function AtWarehouse() {
                                   ref={provided.innerRef}
                                   {...provided.draggableProps}
                                   {...provided.dragHandleProps}
-                                  className={`border rounded-lg p-4 bg-background hover:shadow-sm transition-all ${
+                                  className={`border rounded-lg p-3 bg-background hover:shadow-sm transition-all ${
                                     snapshot.isDragging ? 'shadow-lg opacity-90' : ''
                                   } ${
                                     selectedItemsForAI.has(item.id) ? 'ring-2 ring-purple-500 bg-purple-50' : ''
@@ -1805,10 +1805,10 @@ export default function AtWarehouse() {
                                   style={{ cursor: snapshot.isDragging ? 'grabbing' : 'pointer' }}
                                 >
                                   <div className="flex items-start justify-between">
-                                    <div className="flex-1 space-y-3">
+                                    <div className="flex-1">
                                       {/* Top row with drag handle and name */}
                                       <div className="flex items-start gap-3">
-                                        <div className="flex items-center gap-2 mt-1">
+                                        <div className="flex items-center gap-2 mt-0.5">
                                           <input
                                             type="checkbox"
                                             className="h-4 w-4 rounded border-gray-300"
@@ -1836,79 +1836,58 @@ export default function AtWarehouse() {
                                                 PO #{item.purchaseOrderId}
                                               </Badge>
                                             )}
+                                            {/* Inline items toggle for purchase orders */}
+                                            {item.purchaseOrderId && item.orderItems && item.orderItems.length > 0 && (
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-5 px-1.5 text-xs hover:bg-muted"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  toggleItemExpanded(item.id);
+                                                }}
+                                              >
+                                                <ChevronDown className={`h-3 w-3 transition-transform ${expandedItems.has(item.id) ? '' : '-rotate-90'}`} />
+                                              </Button>
+                                            )}
                                           </div>
                                           
-                                          {/* Metadata row */}
-                                          <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
+                                          {/* Compact metadata row */}
+                                          <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground flex-wrap">
                                             <span>Qty: {item.quantity}</span>
-                                            <span>{item.weight ? `${item.weight} kg` : 'No weight'}</span>
-                                            {item.customerName && (
+                                            {item.weight && <span>• {item.weight} kg</span>}
+                                            {item.source && item.source !== 'supplier' && (
                                               <>
-                                                <span className="text-muted-foreground/40">•</span>
-                                                <span>{item.customerName}</span>
+                                                <span>•</span>
+                                                {getSourceBadge(item.source)}
                                               </>
+                                            )}
+                                            {item.source === 'supplier' && item.orderNumber && (
+                                              <span>• {item.orderNumber}</span>
+                                            )}
+                                            {item.customerName && (
+                                              <span>• {item.customerName}</span>
                                             )}
                                           </div>
                                           
-                                          {/* Source badge */}
-                                          {item.source && (
-                                            <div className="mt-2">
-                                              <span className="text-xs text-muted-foreground uppercase tracking-wide">Supplier: </span>
-                                              {getSourceBadge(item.source)}
-                                            </div>
-                                          )}
-                                        </div>
-                                      </div>
-                                      
-                                      {/* Show order items if this is a full package */}
-                                      {item.purchaseOrderId && item.orderItems && item.orderItems.length > 0 && (
-                                        <div className="pl-7">
-                                          <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-7 px-2 text-xs hover:bg-muted"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              toggleItemExpanded(item.id);
-                                            }}
-                                          >
-                                            {expandedItems.has(item.id) ? (
-                                              <>
-                                                <ChevronDown className="h-3 w-3 mr-1" />
-                                                Hide items ({item.orderItems.length})
-                                              </>
-                                            ) : (
-                                              <>
-                                                <ChevronRight className="h-3 w-3 mr-1" />
-                                                Show items ({item.orderItems.length})
-                                              </>
-                                            )}
-                                          </Button>
-                                          
-                                          {expandedItems.has(item.id) && (
-                                            <div className="mt-2 bg-muted/50 rounded-md p-3 space-y-2">
+                                          {/* Show order items inline if expanded */}
+                                          {item.purchaseOrderId && item.orderItems && item.orderItems.length > 0 && expandedItems.has(item.id) && (
+                                            <div className="mt-2 ml-4 border-l-2 border-muted pl-3 space-y-1">
                                               {item.orderItems.map((orderItem: any, idx: number) => (
-                                                <div key={idx} className="flex items-center justify-between">
-                                                  <div className="flex-1">
-                                                    <span className="text-sm">
-                                                      {orderItem.name}
-                                                    </span>
+                                                <div key={idx} className="flex items-center justify-between text-xs">
+                                                  <div className="flex items-center gap-2">
+                                                    <span className="text-muted-foreground">{orderItem.name}</span>
                                                     {orderItem.sku && (
-                                                      <span className="text-xs text-muted-foreground ml-2">
-                                                        ({orderItem.sku})
-                                                      </span>
+                                                      <span className="text-muted-foreground/70">({orderItem.sku})</span>
                                                     )}
                                                   </div>
-                                                  <div className="flex items-center gap-2 text-sm">
-                                                    <span className="text-muted-foreground">Qty:</span>
-                                                    <span className="font-medium">{orderItem.quantity}</span>
-                                                  </div>
+                                                  <span className="text-muted-foreground">Qty: {orderItem.quantity}</span>
                                                 </div>
                                               ))}
                                             </div>
                                           )}
                                         </div>
-                                      )}
+                                      </div>
                                     </div>
                                     <div className="flex gap-1 items-start">
                                       {/* Classification Toggle */}
