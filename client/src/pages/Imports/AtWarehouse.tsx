@@ -14,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Package, Plane, Ship, Zap, Truck, MapPin, Clock, Weight, Users, ShoppingCart, Star, Trash2, Package2, PackageOpen, AlertCircle, CheckCircle, Edit, MoreHorizontal, ArrowUp, ArrowDown, Archive, Send, RefreshCw, Flag, Shield, Grip, AlertTriangle, ChevronDown, ChevronRight, Box } from "lucide-react";
+import { Plus, Package, Plane, Ship, Zap, Truck, MapPin, Clock, Weight, Users, ShoppingCart, Star, Trash2, Package2, PackageOpen, AlertCircle, CheckCircle, Edit, MoreHorizontal, ArrowUp, ArrowDown, Archive, Send, RefreshCw, Flag, Shield, Grip, AlertTriangle, ChevronDown, ChevronRight, Box, Sparkles, X } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
@@ -142,6 +142,8 @@ export default function AtWarehouse() {
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
   const [expandedOrders, setExpandedOrders] = useState<Set<number>>(new Set());
   const [locationFilter, setLocationFilter] = useState<string>("all");
+  const [selectedItemsForAI, setSelectedItemsForAI] = useState<Set<number>>(new Set());
+  const [isAIProcessing, setIsAIProcessing] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -271,7 +273,7 @@ export default function AtWarehouse() {
 
   // Update item classification mutation
   const updateItemClassificationMutation = useMutation({
-    mutationFn: async ({ id, classification }: { id: number, classification: string }) => {
+    mutationFn: async ({ id, classification }: { id: number, classification: string | null }) => {
       return apiRequest(`/api/imports/custom-items/${id}`, 'PATCH', { classification });
     },
     onSuccess: () => {
@@ -288,6 +290,31 @@ export default function AtWarehouse() {
         description: error.message || "Failed to update classification",
         variant: "destructive",
       });
+    },
+  });
+
+  // AI auto-classification mutation
+  const aiClassifyMutation = useMutation({
+    mutationFn: async (itemIds: number[]) => {
+      return apiRequest('/api/imports/items/auto-classify', 'POST', { itemIds });
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "AI Classification Complete",
+        description: data.message || "Items have been automatically classified",
+      });
+      setSelectedItemsForAI(new Set());
+      setIsAIProcessing(false);
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/unpacked-items'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to auto-classify items",
+        variant: "destructive",
+      });
+      setIsAIProcessing(false);
     },
   });
 
@@ -472,7 +499,7 @@ export default function AtWarehouse() {
       notes: formData.get('notes') as string || null,
       customerName: formData.get('customerName') as string || null,
       customerEmail: formData.get('customerEmail') as string || null,
-      classification: formData.get('classification') as string || 'general',
+      classification: formData.get('classification') as string || null,
     };
     
     createCustomItemMutation.mutate(data);
@@ -497,7 +524,7 @@ export default function AtWarehouse() {
       customerName: formData.get('customerName') as string || null,
       customerEmail: formData.get('customerEmail') as string || null,
       status: formData.get('status') as string,
-      classification: formData.get('classification') as string || 'general',
+      classification: formData.get('classification') as string || null,
     };
     
     updateCustomItemMutation.mutate({ id: editingItem.id, data });
@@ -552,11 +579,28 @@ export default function AtWarehouse() {
     </Badge>
   );
 
-  const getClassificationIcon = (classification?: string) => {
+  const getClassificationIcon = (classification?: string | null) => {
     if (classification === 'sensitive') {
-      return <Shield className="h-4 w-4 text-red-500" />;
+      return (
+        <div className="flex items-center gap-1">
+          <Flag className="h-4 w-4 text-red-500 fill-red-500" />
+          <span className="text-xs font-medium text-red-600">Sensitive</span>
+        </div>
+      );
+    } else if (classification === 'general') {
+      return (
+        <div className="flex items-center gap-1">
+          <Flag className="h-4 w-4 text-green-500 fill-green-500" />
+          <span className="text-xs font-medium text-green-600">General</span>
+        </div>
+      );
     }
-    return <Flag className="h-4 w-4 text-green-500" />;
+    return (
+      <div className="flex items-center gap-1">
+        <div className="h-4 w-4 border-2 border-dashed border-gray-300 rounded" />
+        <span className="text-xs font-medium text-gray-500">Unclassified</span>
+      </div>
+    );
   };
 
   const getClassificationBadge = (classification?: string) => {
@@ -1098,6 +1142,70 @@ export default function AtWarehouse() {
 
         {/* All Items Tab with Drag & Drop */}
         <TabsContent value="items" className="space-y-4">
+          {/* AI Classification Bar */}
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 border border-blue-200">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="h-5 w-5 text-purple-600" />
+                  <h3 className="font-semibold text-gray-900">AI Goods Classification</h3>
+                </div>
+                <p className="text-sm text-gray-600">
+                  Automatically classify items as sensitive or general goods based on product names, categories, and historical data.
+                  {selectedItemsForAI.size > 0 && (
+                    <span className="ml-2 font-medium text-purple-600">
+                      {selectedItemsForAI.size} item{selectedItemsForAI.size > 1 ? 's' : ''} selected
+                    </span>
+                  )}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {selectedItemsForAI.size > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedItemsForAI(new Set())}
+                  >
+                    Clear Selection
+                  </Button>
+                )}
+                <Button
+                  onClick={() => {
+                    const itemsToClassify = selectedItemsForAI.size > 0 
+                      ? Array.from(selectedItemsForAI)
+                      : allItems.filter(item => item.status !== 'consolidated').map(item => item.id);
+                    
+                    if (itemsToClassify.length === 0) {
+                      toast({
+                        title: "No items to classify",
+                        description: "All items are already consolidated or no items available",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    
+                    setIsAIProcessing(true);
+                    aiClassifyMutation.mutate(itemsToClassify);
+                  }}
+                  disabled={isAIProcessing || aiClassifyMutation.isPending}
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                >
+                  {aiClassifyMutation.isPending ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      {selectedItemsForAI.size > 0 ? `Classify Selected` : 'Auto-Classify All'}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+
           <DragDropContext onDragEnd={handleDragEnd}>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               {/* Available Items Column */}
@@ -1105,7 +1213,7 @@ export default function AtWarehouse() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg">Available Items</CardTitle>
-                    <CardDescription>Drag items to consolidations</CardDescription>
+                    <CardDescription>Drag items to consolidations or select for AI classification</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <Droppable droppableId="available-items">
@@ -1122,9 +1230,24 @@ export default function AtWarehouse() {
                                   ref={provided.innerRef}
                                   {...provided.draggableProps}
                                   {...provided.dragHandleProps}
-                                  className={`border rounded-lg p-4 bg-background hover:shadow-sm transition-shadow ${
+                                  className={`border rounded-lg p-4 bg-background hover:shadow-sm transition-all ${
                                     snapshot.isDragging ? 'shadow-lg opacity-90' : ''
+                                  } ${
+                                    selectedItemsForAI.has(item.id) ? 'ring-2 ring-purple-500 bg-purple-50' : ''
                                   }`}
+                                  onClick={(e) => {
+                                    // Only toggle selection if not dragging and not clicking on buttons
+                                    if (!snapshot.isDragging && !(e.target as HTMLElement).closest('button')) {
+                                      const newSelected = new Set(selectedItemsForAI);
+                                      if (newSelected.has(item.id)) {
+                                        newSelected.delete(item.id);
+                                      } else {
+                                        newSelected.add(item.id);
+                                      }
+                                      setSelectedItemsForAI(newSelected);
+                                    }
+                                  }}
+                                  style={{ cursor: snapshot.isDragging ? 'grabbing' : 'pointer' }}
                                 >
                                   <div className="flex items-start justify-between">
                                     <div className="flex-1 space-y-3">
@@ -1215,37 +1338,96 @@ export default function AtWarehouse() {
                                       )}
                                     </div>
                                     <div className="flex gap-1 items-start">
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        onClick={() => updateItemClassificationMutation.mutate({
-                                          id: item.id,
-                                          classification: item.classification === 'sensitive' ? 'general' : 'sensitive'
-                                        })}
-                                      >
-                                        {item.classification === 'sensitive' ? (
-                                          <Flag className="h-4 w-4" />
-                                        ) : (
-                                          <Shield className="h-4 w-4" />
-                                        )}
-                                      </Button>
+                                      {/* Classification Toggle */}
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            className="h-8 px-2"
+                                            onClick={(e) => e.stopPropagation()}
+                                          >
+                                            {item.classification === 'sensitive' ? (
+                                              <Flag className="h-4 w-4 text-red-500 fill-red-500" />
+                                            ) : item.classification === 'general' ? (
+                                              <Flag className="h-4 w-4 text-green-500 fill-green-500" />
+                                            ) : (
+                                              <div className="h-4 w-4 border-2 border-dashed border-gray-400 rounded" />
+                                            )}
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                          <DropdownMenuLabel>Set Classification</DropdownMenuLabel>
+                                          <DropdownMenuSeparator />
+                                          <DropdownMenuItem
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              updateItemClassificationMutation.mutate({
+                                                id: item.id,
+                                                classification: null
+                                              });
+                                            }}
+                                          >
+                                            <div className="h-4 w-4 border-2 border-dashed border-gray-400 rounded mr-2" />
+                                            None
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              updateItemClassificationMutation.mutate({
+                                                id: item.id,
+                                                classification: 'general'
+                                              });
+                                            }}
+                                          >
+                                            <Flag className="h-4 w-4 text-green-500 fill-green-500 mr-2" />
+                                            General Goods
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              updateItemClassificationMutation.mutate({
+                                                id: item.id,
+                                                classification: 'sensitive'
+                                              });
+                                            }}
+                                          >
+                                            <Flag className="h-4 w-4 text-red-500 fill-red-500 mr-2" />
+                                            Sensitive Goods
+                                          </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                      
                                       <Button 
                                         size="sm"
                                         variant="ghost"
-                                        onClick={() => handleEditItem(item)}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleEditItem(item);
+                                        }}
+                                        className="h-8 px-2"
                                       >
                                         <Edit className="h-4 w-4" />
                                       </Button>
+                                      
                                       <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
-                                          <Button variant="ghost" size="sm">
+                                          <Button 
+                                            variant="ghost" 
+                                            size="sm"
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="h-8 px-2"
+                                          >
                                             <MoreHorizontal className="h-4 w-4" />
                                           </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
                                           <DropdownMenuItem 
                                             className="text-red-600"
-                                            onClick={() => setDeleteTarget({ type: 'item', id: item.id, name: item.name })}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setDeleteTarget({ type: 'item', id: item.id, name: item.name });
+                                            }}
                                           >
                                             <Trash2 className="h-4 w-4 mr-2" />
                                             Delete

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'wouter';
 import { 
   Menu, 
@@ -51,6 +51,8 @@ interface MobileResponsiveLayoutProps {
 export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps) {
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const navRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<{ [key: string]: HTMLElement | null }>({});
   const [openItems, setOpenItems] = useState<string[]>([]);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -65,6 +67,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
   useEffect(() => {
     localStorage.setItem('sidebarCollapsed', JSON.stringify(isCollapsed));
   }, [isCollapsed]);
+  
 
   const toggleItem = (itemName: string) => {
     setOpenItems(prev => 
@@ -164,6 +167,53 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
     },
   ];
 
+  // Automatically open parent menus and scroll to active item when location changes
+  useEffect(() => {
+    // Find parent menus that should be open based on current location
+    const activeParentMenus: string[] = [];
+    navigation.forEach(item => {
+      if (item.children) {
+        const hasActiveChild = item.children.some(child => child.href === location);
+        if (hasActiveChild) {
+          activeParentMenus.push(item.name);
+        }
+      }
+    });
+    
+    // Open parent menus if they have active children
+    setOpenItems(prev => {
+      const newOpenItems = new Set([...prev, ...activeParentMenus]);
+      return Array.from(newOpenItems);
+    });
+    
+    // Scroll to active item after a short delay to ensure DOM is updated
+    setTimeout(() => {
+      // Find the active item key
+      let activeKey = location;
+      
+      // Check if it's a child item
+      navigation.forEach(item => {
+        if (item.children) {
+          const activeChild = item.children.find(child => child.href === location);
+          if (activeChild) {
+            activeKey = `${item.name}-${activeChild.href}`;
+          }
+        } else if (item.href === location) {
+          activeKey = item.name;
+        }
+      });
+      
+      // Scroll the active item into view
+      const activeElement = itemRefs.current[activeKey];
+      if (activeElement && navRef.current) {
+        activeElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+      }
+    }, 100);
+  }, [location]);
+
   const NavLinks = ({ collapsed = false }: { collapsed?: boolean }) => (
     <>
       {navigation.map((item) => {
@@ -203,19 +253,26 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
           }
           
           return (
-            <Collapsible
+            <div
               key={item.name}
-              open={isOpen}
-              onOpenChange={() => toggleItem(item.name)}
+              ref={el => {
+                if (isActive && el) {
+                  itemRefs.current[item.name] = el;
+                }
+              }}
             >
-              <CollapsibleTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className={cn(
-                    "w-full justify-between text-left font-medium px-3 py-2 rounded-md touch-target",
-                    isActive && "bg-emerald-50 text-primary"
-                  )}
-                >
+              <Collapsible
+                open={isOpen}
+                onOpenChange={() => toggleItem(item.name)}
+              >
+                <CollapsibleTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className={cn(
+                      "w-full justify-between text-left font-medium px-3 py-2 rounded-md touch-target",
+                      isActive && "bg-emerald-50 text-primary"
+                    )}
+                  >
                   <div className="flex items-center">
                     <item.icon className="mr-3 h-5 w-5" />
                     <span className="truncate">{item.name}</span>
@@ -228,24 +285,37 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
               </CollapsibleTrigger>
               <CollapsibleContent className="space-y-1">
                 <div className="pl-8 space-y-1">
-                  {item.children.map((child) => (
-                    <Link key={child.href} href={child.href}>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={cn(
-                          "w-full justify-start text-slate-600 px-3 py-2 rounded-md touch-target",
-                          location === child.href && "bg-slate-100 text-slate-900"
-                        )}
-                        onClick={() => setIsMobileMenuOpen(false)}
+                  {item.children.map((child) => {
+                    const isChildActive = location === child.href;
+                    return (
+                      <div
+                        key={child.href}
+                        ref={el => {
+                          if (isChildActive && el) {
+                            itemRefs.current[`${item.name}-${child.href}`] = el;
+                          }
+                        }}
                       >
-                        {child.name}
-                      </Button>
-                    </Link>
-                  ))}
+                        <Link href={child.href}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={cn(
+                              "w-full justify-start text-slate-600 px-3 py-2 rounded-md touch-target",
+                              isChildActive && "bg-slate-100 text-slate-900"
+                            )}
+                            onClick={() => setIsMobileMenuOpen(false)}
+                          >
+                            {child.name}
+                          </Button>
+                        </Link>
+                      </div>
+                    );
+                  })}
                 </div>
               </CollapsibleContent>
             </Collapsible>
+          </div>
           );
         }
 
@@ -272,19 +342,28 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
         }
         
         return (
-          <Link key={item.name} href={item.href}>
-            <Button
-              variant="ghost"
-              className={cn(
-                "w-full justify-start font-medium px-3 py-2 rounded-md touch-target",
-                isActive && "bg-emerald-50 text-primary"
-              )}
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              <item.icon className="mr-3 h-5 w-5 shrink-0" />
-              <span className="truncate">{item.name}</span>
-            </Button>
-          </Link>
+          <div
+            key={item.name}
+            ref={el => {
+              if (isActive && el) {
+                itemRefs.current[item.name] = el;
+              }
+            }}
+          >
+            <Link href={item.href}>
+              <Button
+                variant="ghost"
+                className={cn(
+                  "w-full justify-start font-medium px-3 py-2 rounded-md touch-target",
+                  isActive && "bg-emerald-50 text-primary"
+                )}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <item.icon className="mr-3 h-5 w-5 shrink-0" />
+                <span className="truncate">{item.name}</span>
+              </Button>
+            </Link>
+          </div>
         );
       })}
     </>
@@ -307,7 +386,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
               <div className="p-4 border-b flex-shrink-0">
                 <h2 className="text-lg font-semibold">Menu</h2>
               </div>
-              <nav className="p-4 space-y-2 overflow-y-auto flex-1">
+              <nav className="p-4 space-y-2 overflow-y-auto flex-1" ref={navRef}>
                 <NavLinks />
               </nav>
             </SheetContent>
@@ -343,7 +422,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
         <nav className={cn(
           "space-y-2 overflow-y-auto flex-1",
           isCollapsed ? "p-2" : "p-4"
-        )}>
+        )} ref={navRef}>
           <NavLinks collapsed={isCollapsed} />
         </nav>
       </aside>

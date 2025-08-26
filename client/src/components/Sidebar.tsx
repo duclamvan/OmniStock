@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { 
   ChartLine, 
@@ -90,7 +90,62 @@ const navigation = [
 
 export function Sidebar() {
   const [location] = useLocation();
-  const [openItems, setOpenItems] = useState<string[]>(["Orders", "Warehouse", "Imports"]);
+  const navRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<{ [key: string]: HTMLElement | null }>({});
+  
+  // Find parent menus that should be open based on current location
+  const getInitialOpenItems = () => {
+    const openMenus: string[] = [];
+    navigation.forEach(item => {
+      if (item.children) {
+        const hasActiveChild = item.children.some(child => child.href === location);
+        if (hasActiveChild) {
+          openMenus.push(item.name);
+        }
+      }
+    });
+    return openMenus;
+  };
+
+  const [openItems, setOpenItems] = useState<string[]>(getInitialOpenItems());
+
+  // Automatically open parent menus and scroll to active item when location changes
+  useEffect(() => {
+    const activeParentMenus = getInitialOpenItems();
+    
+    // Open parent menus if they have active children
+    setOpenItems(prev => {
+      const newOpenItems = new Set([...prev, ...activeParentMenus]);
+      return Array.from(newOpenItems);
+    });
+    
+    // Scroll to active item after a short delay to ensure DOM is updated
+    setTimeout(() => {
+      // Find the active item key
+      let activeKey = location;
+      
+      // Check if it's a child item
+      navigation.forEach(item => {
+        if (item.children) {
+          const activeChild = item.children.find(child => child.href === location);
+          if (activeChild) {
+            activeKey = `${item.name}-${activeChild.href}`;
+          }
+        } else if (item.href === location) {
+          activeKey = item.name;
+        }
+      });
+      
+      // Scroll the active item into view
+      const activeElement = itemRefs.current[activeKey];
+      if (activeElement) {
+        activeElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+      }
+    }, 100);
+  }, [location]);
 
   const toggleItem = (name: string) => {
     setOpenItems(prev => 
@@ -109,7 +164,7 @@ export function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-4">
+      <nav className="flex-1 py-4 overflow-y-auto" ref={navRef}>
         <div className="px-4 space-y-1">
           {navigation.map((item) => {
             if (item.children) {
@@ -117,19 +172,26 @@ export function Sidebar() {
               const isActive = item.children.some(child => location === child.href);
               
               return (
-                <Collapsible
+                <div
                   key={item.name}
-                  open={isOpen}
-                  onOpenChange={() => toggleItem(item.name)}
+                  ref={el => {
+                    if (isActive && el) {
+                      itemRefs.current[item.name] = el;
+                    }
+                  }}
                 >
-                  <CollapsibleTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className={cn(
-                        "w-full justify-between text-left font-medium",
-                        isActive && "bg-emerald-50 text-primary border-r-2 border-primary"
-                      )}
-                    >
+                  <Collapsible
+                    open={isOpen}
+                    onOpenChange={() => toggleItem(item.name)}
+                  >
+                    <CollapsibleTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className={cn(
+                          "w-full justify-between text-left font-medium",
+                          isActive && "bg-emerald-50 text-primary border-r-2 border-primary"
+                        )}
+                      >
                       <div className="flex items-center">
                         <item.icon className="mr-3 h-5 w-5" />
                         {item.name}
@@ -142,41 +204,63 @@ export function Sidebar() {
                   </CollapsibleTrigger>
                   <CollapsibleContent className="space-y-1">
                     <div className="pl-8 space-y-1">
-                      {item.children.map((child) => (
-                        <Link key={child.href} href={child.href}>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className={cn(
-                              "w-full justify-start text-slate-600",
-                              location === child.href && "bg-slate-100 text-slate-900"
-                            )}
+                      {item.children.map((child) => {
+                        const isChildActive = location === child.href;
+                        return (
+                          <div
+                            key={child.href}
+                            ref={el => {
+                              if (isChildActive && el) {
+                                itemRefs.current[`${item.name}-${child.href}`] = el;
+                              }
+                            }}
                           >
-                            {child.name}
-                          </Button>
-                        </Link>
-                      ))}
+                            <Link href={child.href}>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className={cn(
+                                  "w-full justify-start text-slate-600",
+                                  isChildActive && "bg-slate-100 text-slate-900"
+                                )}
+                              >
+                                {child.name}
+                              </Button>
+                            </Link>
+                          </div>
+                        );
+                      })}
                     </div>
                   </CollapsibleContent>
                 </Collapsible>
+              </div>
               );
             }
 
             const isActive = location === item.href;
             
             return (
-              <Link key={item.name} href={item.href}>
-                <Button
-                  variant="ghost"
-                  className={cn(
-                    "w-full justify-start font-medium",
-                    isActive && "bg-emerald-50 text-primary border-r-2 border-primary"
-                  )}
-                >
-                  <item.icon className="mr-3 h-5 w-5" />
-                  {item.name}
-                </Button>
-              </Link>
+              <div
+                key={item.name}
+                ref={el => {
+                  if (isActive && el) {
+                    itemRefs.current[item.name] = el;
+                  }
+                }}
+              >
+                <Link href={item.href}>
+                  <Button
+                    variant="ghost"
+                    className={cn(
+                      "w-full justify-start font-medium",
+                      isActive && "bg-emerald-50 text-primary border-r-2 border-primary"
+                    )}
+                  >
+                    <item.icon className="mr-3 h-5 w-5" />
+                    {item.name}
+                  </Button>
+                </Link>
+              </div>
             );
           })}
         </div>

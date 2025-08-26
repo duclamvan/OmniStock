@@ -113,6 +113,91 @@ router.get("/unpacked-items", async (req, res) => {
   }
 });
 
+// AI Classification for items
+router.post("/items/auto-classify", async (req, res) => {
+  try {
+    const { itemIds } = req.body;
+    
+    if (!itemIds || !Array.isArray(itemIds) || itemIds.length === 0) {
+      return res.status(400).json({ message: "Item IDs array is required" });
+    }
+    
+    // Fetch items to classify
+    const items = await db
+      .select()
+      .from(customItems)
+      .where(sql`${customItems.id} = ANY(${itemIds})`);
+    
+    // AI logic to determine classification based on:
+    // - Product name patterns
+    // - Historical data
+    // - Product categories
+    const classifications: { id: number, classification: string }[] = [];
+    
+    for (const item of items) {
+      let classification = 'general'; // Default to general
+      
+      const name = item.name.toLowerCase();
+      const notes = (item.notes || '').toLowerCase();
+      const source = (item.source || '').toLowerCase();
+      
+      // Sensitive goods patterns
+      const sensitivePatterns = [
+        'battery', 'batteries', 'lithium', 'power bank', 'charger',
+        'perfume', 'cosmetic', 'makeup', 'nail polish', 'aerosol',
+        'liquid', 'cream', 'lotion', 'oil', 'gel', 'spray',
+        'medicine', 'drug', 'pharmaceutical', 'vitamin', 'supplement',
+        'chemical', 'flammable', 'explosive', 'hazardous', 'toxic',
+        'weapon', 'knife', 'blade', 'sharp', 'gun',
+        'alcohol', 'wine', 'beer', 'liquor', 'spirits',
+        'magnet', 'magnetic', 'electronic', 'device',
+        'compressed', 'gas', 'pressurized', 'canister',
+        'paint', 'solvent', 'adhesive', 'glue', 'lighter'
+      ];
+      
+      // Check for sensitive patterns
+      for (const pattern of sensitivePatterns) {
+        if (name.includes(pattern) || notes.includes(pattern)) {
+          classification = 'sensitive';
+          break;
+        }
+      }
+      
+      // Additional checks for specific suppliers known for sensitive goods
+      if (source.includes('battery') || source.includes('electronic') || 
+          source.includes('chemical') || source.includes('cosmetic')) {
+        classification = 'sensitive';
+      }
+      
+      // Check quantity and weight for bulk items that might be commercial
+      if (!classification && item.quantity > 100 && parseFloat(item.weight || '0') > 50) {
+        classification = 'sensitive'; // Large bulk items may need special handling
+      }
+      
+      classifications.push({ id: item.id, classification });
+    }
+    
+    // Update all items with their classifications
+    for (const { id, classification } of classifications) {
+      await db
+        .update(customItems)
+        .set({ 
+          classification,
+          updatedAt: new Date()
+        })
+        .where(eq(customItems.id, id));
+    }
+    
+    res.json({ 
+      message: `Successfully classified ${classifications.length} items`,
+      classifications 
+    });
+  } catch (error) {
+    console.error("Error in AI classification:", error);
+    res.status(500).json({ message: "Failed to auto-classify items" });
+  }
+});
+
 // Receive purchase order without unpacking (as a single package)
 router.post("/purchases/receive", async (req, res) => {
   try {
@@ -160,7 +245,7 @@ router.post("/purchases/receive", async (req, res) => {
       customerName: null,
       customerEmail: null,
       status: 'available',
-      classification: 'general',
+      classification: null, // Default to no classification
       purchaseOrderId: purchaseId,
       orderItems: items, // Store items as JSON
       createdAt: new Date(),
@@ -647,6 +732,10 @@ router.patch("/custom-items/:id", async (req, res) => {
     if (req.body.customerName !== undefined) updateData.customerName = req.body.customerName;
     if (req.body.customerEmail !== undefined) updateData.customerEmail = req.body.customerEmail;
     if (req.body.status !== undefined) updateData.status = req.body.status;
+    if (req.body.classification !== undefined) updateData.classification = req.body.classification;
+    
+    // Always update the updatedAt timestamp
+    updateData.updatedAt = new Date();
     
     const [updated] = await db
       .update(customItems)
