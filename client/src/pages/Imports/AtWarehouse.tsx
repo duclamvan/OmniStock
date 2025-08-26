@@ -1832,11 +1832,6 @@ export default function AtWarehouse() {
                                           <div className="flex items-center gap-2 flex-wrap">
                                             <span className="font-semibold text-base">{item.name}</span>
                                             {getClassificationIcon(item.classification)}
-                                            {item.purchaseOrderId && (
-                                              <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700">
-                                                PO #{item.purchaseOrderId}
-                                              </Badge>
-                                            )}
                                             {/* Inline items toggle for purchase orders */}
                                             {item.purchaseOrderId && item.orderItems && item.orderItems.length > 0 && (
                                               <Button
@@ -1847,8 +1842,10 @@ export default function AtWarehouse() {
                                                   e.stopPropagation();
                                                   toggleItemExpanded(item.id);
                                                 }}
+                                                title={expandedItems.has(item.id) ? "Hide items" : "Show items"}
                                               >
                                                 <ChevronDown className={`h-3 w-3 transition-transform ${expandedItems.has(item.id) ? '' : '-rotate-90'}`} />
+                                                <span className="ml-1">{item.orderItems.length}</span>
                                               </Button>
                                             )}
                                           </div>
