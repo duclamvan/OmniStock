@@ -14,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Package, Plane, Ship, Zap, Truck, MapPin, Clock, Weight, Users, ShoppingCart, Star, Trash2, Package2, PackageOpen, AlertCircle, CheckCircle, Edit, MoreHorizontal, ArrowUp, ArrowDown, Archive, Send, RefreshCw, Flag, Shield, Grip, AlertTriangle, ChevronDown, ChevronRight, Box, Sparkles, X, Search, SortAsc, CheckSquare, Square, Maximize2, Minimize2, Filter, Calendar, Hash, Camera } from "lucide-react";
+import { Plus, Package, Plane, Ship, Zap, Truck, MapPin, Clock, Weight, Users, ShoppingCart, Star, Trash2, Package2, PackageOpen, AlertCircle, CheckCircle, Edit, MoreHorizontal, ArrowUp, ArrowDown, Archive, Send, RefreshCw, Flag, Shield, Grip, AlertTriangle, ChevronDown, ChevronRight, Box, Sparkles, X, Search, SortAsc, CheckSquare, Square, ChevronsDown, ChevronsUp, Filter, Calendar, Hash, Camera } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -1540,31 +1540,9 @@ export default function AtWarehouse() {
                           <CardTitle className="text-lg">Available Items</CardTitle>
                           <CardDescription>Drag items to consolidations or select for AI classification</CardDescription>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="secondary" className="font-medium">
-                            {sortedAndFilteredItems.length} items
-                          </Badge>
-                          {allItems.some(item => item.purchaseOrderId && item.orderItems && item.orderItems.length > 0) && (
-                            <>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={expandAllItems}
-                                title="Expand all items with sub-items"
-                              >
-                                <Maximize2 className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={collapseAllItems}
-                                title="Collapse all items"
-                              >
-                                <Minimize2 className="h-4 w-4" />
-                              </Button>
-                            </>
-                          )}
-                        </div>
+                        <Badge variant="secondary" className="font-medium">
+                          {sortedAndFilteredItems.length} items
+                        </Badge>
                       </div>
                       
                       {/* Search and Sort Controls */}
@@ -1707,6 +1685,28 @@ export default function AtWarehouse() {
                               </>
                             )}
                           </Button>
+                          {allItems.some(item => item.purchaseOrderId && item.orderItems && item.orderItems.length > 0) && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={expandAllItems}
+                                title="Expand all items with sub-items"
+                              >
+                                <ChevronsDown className="h-3 w-3 mr-1" />
+                                Expand All
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={collapseAllItems}
+                                title="Collapse all items"
+                              >
+                                <ChevronsUp className="h-3 w-3 mr-1" />
+                                Collapse All
+                              </Button>
+                            </>
+                          )}
                           {bulkSelectedItems.size > 0 && (
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
