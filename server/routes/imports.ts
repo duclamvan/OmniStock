@@ -681,6 +681,20 @@ router.delete("/consolidations/:id", async (req, res) => {
   try {
     const consolidationId = parseInt(req.params.id);
     
+    // First, update status of items back to 'available'
+    const itemsToRelease = await db
+      .select({ itemId: consolidationItems.itemId })
+      .from(consolidationItems)
+      .where(eq(consolidationItems.consolidationId, consolidationId));
+    
+    if (itemsToRelease.length > 0) {
+      const itemIds = itemsToRelease.map(i => i.itemId);
+      await db
+        .update(customItems)
+        .set({ status: 'available' })
+        .where(sql`id IN (${sql.join(itemIds.map(id => sql`${id}`), sql`, `)})`);
+    }
+    
     // Delete associated items first
     await db.delete(consolidationItems).where(eq(consolidationItems.consolidationId, consolidationId));
     
@@ -691,6 +705,112 @@ router.delete("/consolidations/:id", async (req, res) => {
   } catch (error) {
     console.error("Error deleting consolidation:", error);
     res.status(500).json({ message: "Failed to delete consolidation" });
+  }
+});
+
+// Remove item from consolidation
+router.delete("/consolidations/:consolidationId/items/:itemId", async (req, res) => {
+  try {
+    const consolidationId = parseInt(req.params.consolidationId);
+    const itemId = parseInt(req.params.itemId);
+    
+    // Remove item from consolidation
+    await db
+      .delete(consolidationItems)
+      .where(
+        and(
+          eq(consolidationItems.consolidationId, consolidationId),
+          eq(consolidationItems.itemId, itemId)
+        )
+      );
+    
+    // Update item status back to available
+    await db
+      .update(customItems)
+      .set({ status: 'available' })
+      .where(eq(customItems.id, itemId));
+    
+    res.json({ message: "Item removed from consolidation successfully" });
+  } catch (error) {
+    console.error("Error removing item from consolidation:", error);
+    res.status(500).json({ message: "Failed to remove item from consolidation" });
+  }
+});
+
+// Get consolidation items
+router.get("/consolidations/:id/items", async (req, res) => {
+  try {
+    const consolidationId = parseInt(req.params.id);
+    
+    const items = await db
+      .select({
+        id: customItems.id,
+        name: customItems.name,
+        source: customItems.source,
+        quantity: customItems.quantity,
+        weight: customItems.weight,
+        classification: customItems.classification,
+        unitPrice: customItems.unitPrice,
+        customerName: customItems.customerName,
+        orderNumber: customItems.orderNumber,
+      })
+      .from(consolidationItems)
+      .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
+      .where(eq(consolidationItems.consolidationId, consolidationId));
+    
+    res.json(items);
+  } catch (error) {
+    console.error("Error fetching consolidation items:", error);
+    res.status(500).json({ message: "Failed to fetch consolidation items" });
+  }
+});
+
+// Ship consolidation
+router.post("/consolidations/:id/ship", async (req, res) => {
+  try {
+    const consolidationId = parseInt(req.params.id);
+    const { trackingNumber, carrier } = req.body;
+    
+    // Update consolidation status
+    await db
+      .update(consolidations)
+      .set({ 
+        status: 'shipped',
+        updatedAt: new Date()
+      })
+      .where(eq(consolidations.id, consolidationId));
+    
+    // Update all items in consolidation to shipped
+    const itemsToUpdate = await db
+      .select({ itemId: consolidationItems.itemId })
+      .from(consolidationItems)
+      .where(eq(consolidationItems.consolidationId, consolidationId));
+    
+    if (itemsToUpdate.length > 0) {
+      const itemIds = itemsToUpdate.map(i => i.itemId);
+      await db
+        .update(customItems)
+        .set({ status: 'shipped' })
+        .where(sql`id IN (${sql.join(itemIds.map(id => sql`${id}`), sql`, `)})`);
+    }
+    
+    // Create shipment record if tracking provided
+    if (trackingNumber) {
+      await db.insert(shipments).values({
+        consolidationId,
+        trackingNumber,
+        carrier: carrier || 'unknown',
+        status: 'in_transit',
+        origin: 'warehouse',
+        destination: 'customer',
+        createdAt: new Date()
+      });
+    }
+    
+    res.json({ message: "Consolidation shipped successfully" });
+  } catch (error) {
+    console.error("Error shipping consolidation:", error);
+    res.status(500).json({ message: "Failed to ship consolidation" });
   }
 });
 

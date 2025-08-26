@@ -255,6 +255,10 @@ export default function AtWarehouse() {
   const { data: consolidations = [], isLoading: isLoadingConsolidations } = useQuery<Consolidation[]>({
     queryKey: ['/api/imports/consolidations'],
   });
+  
+  // Fetch consolidation items for expanded consolidations
+  const [expandedConsolidations, setExpandedConsolidations] = useState<Set<number>>(new Set());
+  const [consolidationItems, setConsolidationItems] = useState<Record<number, any[]>>({});
 
   // Unpack purchase order mutation
   const unpackMutation = useMutation({
@@ -448,6 +452,34 @@ export default function AtWarehouse() {
     }
   });
 
+  // Fetch items for a consolidation
+  const fetchConsolidationItems = async (consolidationId: number) => {
+    try {
+      const response = await fetch(`/api/imports/consolidations/${consolidationId}/items`);
+      if (response.ok) {
+        const items = await response.json();
+        setConsolidationItems(prev => ({ ...prev, [consolidationId]: items }));
+      }
+    } catch (error) {
+      console.error('Failed to fetch consolidation items:', error);
+    }
+  };
+  
+  // Toggle consolidation expansion
+  const toggleConsolidationExpanded = (consolidationId: number) => {
+    const newExpanded = new Set(expandedConsolidations);
+    if (newExpanded.has(consolidationId)) {
+      newExpanded.delete(consolidationId);
+    } else {
+      newExpanded.add(consolidationId);
+      // Fetch items when expanding
+      if (!consolidationItems[consolidationId]) {
+        fetchConsolidationItems(consolidationId);
+      }
+    }
+    setExpandedConsolidations(newExpanded);
+  };
+
   // Add items to consolidation mutation
   const addItemsToConsolidationMutation = useMutation({
     mutationFn: async ({ consolidationId, itemIds }: { consolidationId: number, itemIds: number[] }) => {
@@ -490,6 +522,39 @@ export default function AtWarehouse() {
     },
     onError: () => {
       toast({ title: "Error", description: "Failed to delete consolidation", variant: "destructive" });
+    }
+  });
+  
+  // Remove item from consolidation mutation
+  const removeItemFromConsolidationMutation = useMutation({
+    mutationFn: async ({ consolidationId, itemId }: { consolidationId: number, itemId: number }) => {
+      return apiRequest(`/api/imports/consolidations/${consolidationId}/items/${itemId}`, 'DELETE');
+    },
+    onSuccess: (_, { consolidationId }) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/consolidations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/unpacked-items'] });
+      // Refresh consolidation items
+      fetchConsolidationItems(consolidationId);
+      toast({ title: "Success", description: "Item removed from consolidation" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to remove item", variant: "destructive" });
+    }
+  });
+  
+  // Ship consolidation mutation
+  const shipConsolidationMutation = useMutation({
+    mutationFn: async ({ id, trackingNumber, carrier }: { id: number, trackingNumber?: string, carrier?: string }) => {
+      return apiRequest(`/api/imports/consolidations/${id}/ship`, 'POST', { trackingNumber, carrier });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/consolidations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
+      toast({ title: "Success", description: "Consolidation shipped successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to ship consolidation", variant: "destructive" });
     }
   });
 
@@ -707,10 +772,14 @@ export default function AtWarehouse() {
     if (!result.destination) return;
     
     const itemId = parseInt(result.draggableId);
-    const consolidationId = parseInt(result.destination.droppableId.replace('consolidation-', ''));
+    const destinationId = result.destination.droppableId;
     
-    if (consolidationId && !isNaN(consolidationId)) {
-      addItemsToConsolidationMutation.mutate({ consolidationId, itemIds: [itemId] });
+    // Check if dropping into a consolidation
+    if (destinationId.startsWith('consolidation-')) {
+      const consolidationId = parseInt(destinationId.replace('consolidation-', ''));
+      if (consolidationId && !isNaN(consolidationId)) {
+        addItemsToConsolidationMutation.mutate({ consolidationId, itemIds: [itemId] });
+      }
     }
   };
 
@@ -1966,7 +2035,7 @@ export default function AtWarehouse() {
                           <div key={consolidation.id}>
                             <div className="border rounded-lg p-3 bg-muted/30">
                               <div className="flex justify-between items-start mb-2">
-                                <div>
+                                <div className="flex-1">
                                   <div className="font-medium">{consolidation.name}</div>
                                   <div className="text-xs text-muted-foreground">
                                     {consolidation.warehouse.replace('_', ' - ')}
@@ -1980,7 +2049,7 @@ export default function AtWarehouse() {
                                   <div 
                                     ref={provided.innerRef}
                                     {...provided.droppableProps}
-                                    className={`min-h-[60px] border-2 border-dashed rounded-md p-2 ${
+                                    className={`min-h-[60px] border-2 border-dashed rounded-md p-2 mb-2 ${
                                       snapshot.isDraggingOver ? 'border-primary bg-primary/10' : 'border-muted'
                                     }`}
                                   >
@@ -1989,11 +2058,64 @@ export default function AtWarehouse() {
                                         Drop items here
                                       </div>
                                     ) : (
-                                      <div className="space-y-1">
-                                        <div className="text-sm font-medium">{consolidation.itemCount} items</div>
+                                      <div>
+                                        <div className="flex justify-between items-center mb-2">
+                                          <div className="text-sm font-medium">{consolidation.itemCount} items</div>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-7 px-2 text-xs"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              toggleConsolidationExpanded(consolidation.id);
+                                            }}
+                                          >
+                                            {expandedConsolidations.has(consolidation.id) ? (
+                                              <>
+                                                <ChevronDown className="h-3 w-3 mr-1" />
+                                                Hide
+                                              </>  
+                                            ) : (
+                                              <>
+                                                <ChevronRight className="h-3 w-3 mr-1" />
+                                                View
+                                              </>
+                                            )}
+                                          </Button>
+                                        </div>
                                         {consolidation.targetWeight && (
                                           <div className="text-xs text-muted-foreground">
                                             Max weight: {consolidation.targetWeight} kg
+                                          </div>
+                                        )}
+                                        
+                                        {/* Show items if expanded */}
+                                        {expandedConsolidations.has(consolidation.id) && consolidationItems[consolidation.id] && (
+                                          <div className="mt-2 space-y-1">
+                                            {consolidationItems[consolidation.id].map((item: any) => (
+                                              <div key={item.id} className="bg-background rounded p-2 flex justify-between items-center text-xs">
+                                                <div className="flex-1">
+                                                  <div className="font-medium">{item.name}</div>
+                                                  <div className="text-muted-foreground">
+                                                    Qty: {item.quantity} • {item.source}
+                                                  </div>
+                                                </div>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  className="h-6 px-2"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    removeItemFromConsolidationMutation.mutate({
+                                                      consolidationId: consolidation.id,
+                                                      itemId: item.id
+                                                    });
+                                                  }}
+                                                >
+                                                  <X className="h-3 w-3" />
+                                                </Button>
+                                              </div>
+                                            ))}
                                           </div>
                                         )}
                                       </div>
@@ -2003,7 +2125,7 @@ export default function AtWarehouse() {
                                 )}
                               </Droppable>
                               
-                              <div className="flex justify-between items-center mt-2">
+                              <div className="flex justify-between items-center">
                                 {getStatusBadge(consolidation.status)}
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
@@ -2012,6 +2134,19 @@ export default function AtWarehouse() {
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end">
+                                    {consolidation.status !== 'shipped' && (
+                                      <>
+                                        <DropdownMenuItem
+                                          onClick={() => {
+                                            shipConsolidationMutation.mutate({ id: consolidation.id });
+                                          }}
+                                        >
+                                          <Send className="h-4 w-4 mr-2" />
+                                          Ship Consolidation
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                      </>
+                                    )}
                                     <DropdownMenuItem 
                                       className="text-red-600"
                                       onClick={() => setDeleteTarget({ 
