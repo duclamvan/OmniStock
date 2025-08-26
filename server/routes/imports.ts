@@ -247,7 +247,7 @@ router.post("/purchases/receive", async (req, res) => {
     
     // Calculate total weight and create a package name
     const totalWeight = items.reduce((sum, item) => sum + (item.weight ? parseFloat(item.weight) : 0), 0);
-    const packageName = `PO #${purchaseId} - ${purchase.supplier} (${items.length} items)`;
+    const packageName = `PO #${purchaseId} - ${purchase.supplier}`;
     
     // Create a single custom item representing the whole order
     const customItem = {
