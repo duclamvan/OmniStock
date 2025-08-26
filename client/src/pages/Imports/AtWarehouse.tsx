@@ -14,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Package, Plane, Ship, Zap, Truck, MapPin, Clock, Weight, Users, ShoppingCart, Star, Trash2, Package2, PackageOpen, AlertCircle, CheckCircle, Edit, MoreHorizontal, ArrowUp, ArrowDown, Archive, Send, RefreshCw, Flag, Shield, Grip, AlertTriangle, ChevronDown, ChevronRight, Box, Sparkles, X, Search, SortAsc, CheckSquare, Square, ChevronsDown, ChevronsUp, Filter, Calendar, Hash, Camera } from "lucide-react";
+import { Plus, Package, Plane, Ship, Zap, Truck, MapPin, Clock, Weight, Users, ShoppingCart, Star, Trash2, Package2, PackageOpen, AlertCircle, CheckCircle, Edit, MoreHorizontal, ArrowUp, ArrowDown, Archive, Send, RefreshCw, Flag, Shield, Grip, AlertTriangle, ChevronDown, ChevronRight, Box, Sparkles, X, Search, SortAsc, CheckSquare, Square, ChevronsDown, ChevronsUp, Filter, Calendar, Hash, Camera, ArrowRightToLine } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -140,6 +140,7 @@ export default function AtWarehouse() {
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [statusTarget, setStatusTarget] = useState<{ type: 'order' | 'item', id: number, currentStatus: string } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'item' | 'consolidation', id: number, name: string } | null>(null);
+  const [moveToConsolidationItem, setMoveToConsolidationItem] = useState<{ id: number, name: string } | null>(null);
   const [expandedItems, setExpandedItems] = useState<Set<number>>(() => {
     const saved = localStorage.getItem('atWarehouse_expandedItems');
     return saved ? new Set(JSON.parse(saved)) : new Set();
@@ -1950,6 +1951,19 @@ export default function AtWarehouse() {
                                         </DropdownMenuContent>
                                       </DropdownMenu>
                                       
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setMoveToConsolidationItem({ id: item.id, name: item.name });
+                                        }}
+                                        className="h-8 px-2"
+                                        title="Move to consolidation"
+                                      >
+                                        <ArrowRightToLine className="h-4 w-4" />
+                                      </Button>
+                                      
                                       <Button 
                                         size="sm"
                                         variant="ghost"
@@ -2513,6 +2527,89 @@ export default function AtWarehouse() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Move to Consolidation Dialog */}
+      <Dialog open={!!moveToConsolidationItem} onOpenChange={(open) => !open && setMoveToConsolidationItem(null)}>
+        <DialogContent className="max-w-3xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>Move to Consolidation</DialogTitle>
+            <DialogDescription>
+              Select a consolidation to move "{moveToConsolidationItem?.name}"
+            </DialogDescription>
+          </DialogHeader>
+          
+          <ScrollArea className="h-[500px]">
+            <div className="space-y-3">
+              {consolidations.length === 0 ? (
+                <div className="text-center py-12">
+                  <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No consolidations available</p>
+                  <p className="text-sm text-muted-foreground mt-1">Create a consolidation first to move items</p>
+                </div>
+              ) : (
+                consolidations.filter(c => c.status !== 'shipped').map((consolidation) => (
+                  <div 
+                    key={consolidation.id}
+                    onClick={() => {
+                      if (moveToConsolidationItem) {
+                        addItemsToConsolidationMutation.mutate({
+                          consolidationId: consolidation.id,
+                          itemIds: [moveToConsolidationItem.id]
+                        }, {
+                          onSuccess: () => {
+                            setMoveToConsolidationItem(null);
+                            toast({
+                              title: "Success",
+                              description: `Item moved to ${consolidation.name}`,
+                            });
+                          }
+                        });
+                      }
+                    }}
+                    className="border rounded-lg p-4 cursor-pointer hover:border-primary hover:bg-muted/50 transition-all"
+                  >
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <div className="font-medium text-lg">{consolidation.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {consolidation.warehouse.replace('_', ' - ')}
+                        </div>
+                      </div>
+                      {getShippingMethodBadge(consolidation.shippingMethod)}
+                    </div>
+                    
+                    <div className="flex items-center gap-4 mt-3 text-sm">
+                      <div className="flex items-center gap-1">
+                        <Package className="h-4 w-4 text-muted-foreground" />
+                        <span>{consolidation.itemCount} items</span>
+                      </div>
+                      {consolidation.targetWeight && (
+                        <div className="flex items-center gap-1">
+                          <Weight className="h-4 w-4 text-muted-foreground" />
+                          <span>Max: {consolidation.targetWeight} kg</span>
+                        </div>
+                      )}
+                      <div className="ml-auto">
+                        {getStatusBadge(consolidation.status)}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </ScrollArea>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setMoveToConsolidationItem(null)}
+              disabled={addItemsToConsolidationMutation.isPending}
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
