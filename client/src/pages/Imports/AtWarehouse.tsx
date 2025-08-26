@@ -141,6 +141,7 @@ export default function AtWarehouse() {
   const [statusTarget, setStatusTarget] = useState<{ type: 'order' | 'item', id: number, currentStatus: string } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'item' | 'consolidation', id: number, name: string } | null>(null);
   const [moveToConsolidationItem, setMoveToConsolidationItem] = useState<{ id: number, name: string } | null>(null);
+  const [bulkMoveItems, setBulkMoveItems] = useState<Set<number>>(new Set());
   const [expandedItems, setExpandedItems] = useState<Set<number>>(() => {
     const saved = localStorage.getItem('atWarehouse_expandedItems');
     return saved ? new Set(JSON.parse(saved)) : new Set();
@@ -1764,6 +1765,17 @@ export default function AtWarehouse() {
                                   <Sparkles className="h-4 w-4 mr-2" />
                                   AI Classify Selected
                                 </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuLabel>Move Items</DropdownMenuLabel>
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setBulkMoveItems(new Set(bulkSelectedItems));
+                                    setBulkSelectedItems(new Set());
+                                  }}
+                                >
+                                  <ArrowRightToLine className="h-4 w-4 mr-2" />
+                                  Move to Consolidation
+                                </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
                           )}
@@ -2529,12 +2541,23 @@ export default function AtWarehouse() {
       </AlertDialog>
 
       {/* Move to Consolidation Dialog */}
-      <Dialog open={!!moveToConsolidationItem} onOpenChange={(open) => !open && setMoveToConsolidationItem(null)}>
+      <Dialog 
+        open={!!moveToConsolidationItem || bulkMoveItems.size > 0} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setMoveToConsolidationItem(null);
+            setBulkMoveItems(new Set());
+          }
+        }}
+      >
         <DialogContent className="max-w-3xl max-h-[80vh]">
           <DialogHeader>
             <DialogTitle>Move to Consolidation</DialogTitle>
             <DialogDescription>
-              Select a consolidation to move "{moveToConsolidationItem?.name}"
+              {bulkMoveItems.size > 0 
+                ? `Select a consolidation to move ${bulkMoveItems.size} item${bulkMoveItems.size > 1 ? 's' : ''}`
+                : `Select a consolidation to move "${moveToConsolidationItem?.name}"`
+              }
             </DialogDescription>
           </DialogHeader>
           
@@ -2551,16 +2574,21 @@ export default function AtWarehouse() {
                   <div 
                     key={consolidation.id}
                     onClick={() => {
-                      if (moveToConsolidationItem) {
+                      const itemIds = bulkMoveItems.size > 0 
+                        ? Array.from(bulkMoveItems)
+                        : moveToConsolidationItem ? [moveToConsolidationItem.id] : [];
+                      
+                      if (itemIds.length > 0) {
                         addItemsToConsolidationMutation.mutate({
                           consolidationId: consolidation.id,
-                          itemIds: [moveToConsolidationItem.id]
+                          itemIds: itemIds
                         }, {
                           onSuccess: () => {
                             setMoveToConsolidationItem(null);
+                            setBulkMoveItems(new Set());
                             toast({
                               title: "Success",
-                              description: `Item moved to ${consolidation.name}`,
+                              description: `${itemIds.length} item${itemIds.length > 1 ? 's' : ''} moved to ${consolidation.name}`,
                             });
                           }
                         });
