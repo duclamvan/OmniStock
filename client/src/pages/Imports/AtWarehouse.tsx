@@ -14,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Package, Plane, Ship, Zap, Truck, MapPin, Clock, Weight, Users, ShoppingCart, Star, Trash2, Package2, PackageOpen, AlertCircle, CheckCircle, Edit, MoreHorizontal, ArrowUp, ArrowDown, Archive, Send, RefreshCw, Flag, Shield, Grip, AlertTriangle, ChevronDown, ChevronRight, Box, Sparkles, X } from "lucide-react";
+import { Plus, Package, Plane, Ship, Zap, Truck, MapPin, Clock, Weight, Users, ShoppingCart, Star, Trash2, Package2, PackageOpen, AlertCircle, CheckCircle, Edit, MoreHorizontal, ArrowUp, ArrowDown, Archive, Send, RefreshCw, Flag, Shield, Grip, AlertTriangle, ChevronDown, ChevronRight, Box, Sparkles, X, Search, SortAsc, CheckSquare, Square, Maximize2, Minimize2, Filter, Calendar, Hash } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
@@ -139,11 +139,20 @@ export default function AtWarehouse() {
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [statusTarget, setStatusTarget] = useState<{ type: 'order' | 'item', id: number, currentStatus: string } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'item' | 'consolidation', id: number, name: string } | null>(null);
-  const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
-  const [expandedOrders, setExpandedOrders] = useState<Set<number>>(new Set());
+  const [expandedItems, setExpandedItems] = useState<Set<number>>(() => {
+    const saved = localStorage.getItem('atWarehouse_expandedItems');
+    return saved ? new Set(JSON.parse(saved)) : new Set();
+  });
+  const [expandedOrders, setExpandedOrders] = useState<Set<number>>(() => {
+    const saved = localStorage.getItem('atWarehouse_expandedOrders');
+    return saved ? new Set(JSON.parse(saved)) : new Set();
+  });
   const [locationFilter, setLocationFilter] = useState<string>("all");
   const [selectedItemsForAI, setSelectedItemsForAI] = useState<Set<number>>(new Set());
   const [isAIProcessing, setIsAIProcessing] = useState(false);
+  const [itemSortBy, setItemSortBy] = useState<string>("newest");
+  const [itemSearchTerm, setItemSearchTerm] = useState<string>("");
+  const [bulkSelectedItems, setBulkSelectedItems] = useState<Set<number>>(new Set());
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -163,6 +172,69 @@ export default function AtWarehouse() {
 
   // Combine all items
   const allItems = [...customItems, ...unpackedItems];
+
+  // Sort and filter items
+  const getFilteredAndSortedItems = () => {
+    let filtered = allItems.filter(item => item.status !== 'consolidated');
+    
+    // Apply search filter
+    if (itemSearchTerm) {
+      filtered = filtered.filter(item => 
+        item.name.toLowerCase().includes(itemSearchTerm.toLowerCase()) ||
+        item.orderNumber?.toLowerCase().includes(itemSearchTerm.toLowerCase()) ||
+        item.source?.toLowerCase().includes(itemSearchTerm.toLowerCase()) ||
+        item.customerName?.toLowerCase().includes(itemSearchTerm.toLowerCase())
+      );
+    }
+    
+    // Apply sorting
+    switch (itemSortBy) {
+      case 'newest':
+        filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        break;
+      case 'oldest':
+        filtered.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        break;
+      case 'sensitive-first':
+        filtered.sort((a, b) => {
+          if (a.classification === 'sensitive' && b.classification !== 'sensitive') return -1;
+          if (a.classification !== 'sensitive' && b.classification === 'sensitive') return 1;
+          return 0;
+        });
+        break;
+      case 'general-first':
+        filtered.sort((a, b) => {
+          if (a.classification === 'general' && b.classification !== 'general') return -1;
+          if (a.classification !== 'general' && b.classification === 'general') return 1;
+          return 0;
+        });
+        break;
+      case 'quantity-high':
+        filtered.sort((a, b) => b.quantity - a.quantity);
+        break;
+      case 'quantity-low':
+        filtered.sort((a, b) => a.quantity - b.quantity);
+        break;
+      case 'weight-high':
+        filtered.sort((a, b) => parseFloat(b.weight || '0') - parseFloat(a.weight || '0'));
+        break;
+      case 'weight-low':
+        filtered.sort((a, b) => parseFloat(a.weight || '0') - parseFloat(b.weight || '0'));
+        break;
+      case 'name-asc':
+        filtered.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case 'name-desc':
+        filtered.sort((a, b) => b.name.localeCompare(a.name));
+        break;
+      default:
+        break;
+    }
+    
+    return filtered;
+  };
+  
+  const sortedAndFilteredItems = getFilteredAndSortedItems();
 
   // Filter orders by location
   const filteredOrders = locationFilter === "all" 
@@ -471,6 +543,8 @@ export default function AtWarehouse() {
       newExpanded.add(itemId);
     }
     setExpandedItems(newExpanded);
+    // Save to localStorage
+    localStorage.setItem('atWarehouse_expandedItems', JSON.stringify(Array.from(newExpanded)));
   };
 
   const toggleOrderExpanded = (orderId: number) => {
@@ -481,6 +555,23 @@ export default function AtWarehouse() {
       newExpanded.add(orderId);
     }
     setExpandedOrders(newExpanded);
+    // Save to localStorage
+    localStorage.setItem('atWarehouse_expandedOrders', JSON.stringify(Array.from(newExpanded)));
+  };
+  
+  // Expand/Collapse all functions
+  const expandAllItems = () => {
+    const itemsWithSubItems = allItems.filter(item => 
+      item.purchaseOrderId && item.orderItems && item.orderItems.length > 0
+    );
+    const allIds = new Set(itemsWithSubItems.map(item => item.id));
+    setExpandedItems(allIds);
+    localStorage.setItem('atWarehouse_expandedItems', JSON.stringify(Array.from(allIds)));
+  };
+  
+  const collapseAllItems = () => {
+    setExpandedItems(new Set());
+    localStorage.setItem('atWarehouse_expandedItems', JSON.stringify([]));
   };
 
   const handleCreateCustomItem = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -1173,7 +1264,7 @@ export default function AtWarehouse() {
                   onClick={() => {
                     const itemsToClassify = selectedItemsForAI.size > 0 
                       ? Array.from(selectedItemsForAI)
-                      : allItems.filter(item => item.status !== 'consolidated').map(item => item.id);
+                      : sortedAndFilteredItems.map(item => item.id);
                     
                     if (itemsToClassify.length === 0) {
                       toast({
@@ -1212,8 +1303,241 @@ export default function AtWarehouse() {
               <div className="lg:col-span-2">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Available Items</CardTitle>
-                    <CardDescription>Drag items to consolidations or select for AI classification</CardDescription>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle className="text-lg">Available Items</CardTitle>
+                          <CardDescription>Drag items to consolidations or select for AI classification</CardDescription>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="font-medium">
+                            {sortedAndFilteredItems.length} items
+                          </Badge>
+                          {allItems.some(item => item.purchaseOrderId && item.orderItems && item.orderItems.length > 0) && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={expandAllItems}
+                                title="Expand all items with sub-items"
+                              >
+                                <Maximize2 className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={collapseAllItems}
+                                title="Collapse all items"
+                              >
+                                <Minimize2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Search and Sort Controls */}
+                      <div className="flex gap-2 flex-wrap">
+                        <div className="relative flex-1 min-w-[200px]">
+                          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder="Search items by name, order number, source..."
+                            value={itemSearchTerm}
+                            onChange={(e) => setItemSearchTerm(e.target.value)}
+                            className="pl-9"
+                          />
+                        </div>
+                        
+                        <Select value={itemSortBy} onValueChange={setItemSortBy}>
+                          <SelectTrigger className="w-[200px]">
+                            <SortAsc className="h-4 w-4 mr-2" />
+                            <SelectValue placeholder="Sort by..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="newest">
+                              <div className="flex items-center">
+                                <Calendar className="h-4 w-4 mr-2" />
+                                Newest First
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="oldest">
+                              <div className="flex items-center">
+                                <Calendar className="h-4 w-4 mr-2" />
+                                Oldest First
+                              </div>
+                            </SelectItem>
+                            <DropdownMenuSeparator />
+                            <SelectItem value="sensitive-first">
+                              <div className="flex items-center">
+                                <Flag className="h-4 w-4 text-red-500 fill-red-500 mr-2" />
+                                Sensitive First
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="general-first">
+                              <div className="flex items-center">
+                                <Flag className="h-4 w-4 text-green-500 fill-green-500 mr-2" />
+                                General First
+                              </div>
+                            </SelectItem>
+                            <DropdownMenuSeparator />
+                            <SelectItem value="name-asc">
+                              <div className="flex items-center">
+                                <ArrowUp className="h-4 w-4 mr-2" />
+                                Name (A-Z)
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="name-desc">
+                              <div className="flex items-center">
+                                <ArrowDown className="h-4 w-4 mr-2" />
+                                Name (Z-A)
+                              </div>
+                            </SelectItem>
+                            <DropdownMenuSeparator />
+                            <SelectItem value="quantity-high">
+                              <div className="flex items-center">
+                                <Hash className="h-4 w-4 mr-2" />
+                                Quantity (High-Low)
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="quantity-low">
+                              <div className="flex items-center">
+                                <Hash className="h-4 w-4 mr-2" />
+                                Quantity (Low-High)
+                              </div>
+                            </SelectItem>
+                            <DropdownMenuSeparator />
+                            <SelectItem value="weight-high">
+                              <div className="flex items-center">
+                                <Weight className="h-4 w-4 mr-2" />
+                                Weight (Heavy-Light)
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="weight-low">
+                              <div className="flex items-center">
+                                <Weight className="h-4 w-4 mr-2" />
+                                Weight (Light-Heavy)
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      {/* Quick Stats and Bulk Actions */}
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <div className="flex gap-4 text-sm">
+                          <div className="flex items-center gap-1">
+                            <Flag className="h-4 w-4 text-red-500 fill-red-500" />
+                            <span className="text-muted-foreground">
+                              {sortedAndFilteredItems.filter(i => i.classification === 'sensitive').length} Sensitive
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Flag className="h-4 w-4 text-green-500 fill-green-500" />
+                            <span className="text-muted-foreground">
+                              {sortedAndFilteredItems.filter(i => i.classification === 'general').length} General
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="h-4 w-4 border-2 border-dashed border-gray-400 rounded" />
+                            <span className="text-muted-foreground">
+                              {sortedAndFilteredItems.filter(i => !i.classification).length} Unclassified
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {/* Bulk Selection Actions */}
+                        <div className="flex items-center gap-2">
+                          {bulkSelectedItems.size > 0 && (
+                            <Badge variant="outline" className="bg-purple-50">
+                              {bulkSelectedItems.size} selected
+                            </Badge>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              if (bulkSelectedItems.size === sortedAndFilteredItems.length) {
+                                setBulkSelectedItems(new Set());
+                              } else {
+                                const allIds = new Set(sortedAndFilteredItems.map(i => i.id));
+                                setBulkSelectedItems(allIds);
+                              }
+                            }}
+                          >
+                            {bulkSelectedItems.size === sortedAndFilteredItems.length ? (
+                              <>
+                                <Square className="h-3 w-3 mr-1" />
+                                Deselect All
+                              </>
+                            ) : (
+                              <>
+                                <CheckSquare className="h-3 w-3 mr-1" />
+                                Select All ({sortedAndFilteredItems.length})
+                              </>
+                            )}
+                          </Button>
+                          {bulkSelectedItems.size > 0 && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm">
+                                  Bulk Actions
+                                  <ChevronDown className="h-4 w-4 ml-1" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Classification</DropdownMenuLabel>
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    bulkSelectedItems.forEach(id => {
+                                      updateItemClassificationMutation.mutate({ id, classification: 'general' });
+                                    });
+                                    setBulkSelectedItems(new Set());
+                                  }}
+                                >
+                                  <Flag className="h-4 w-4 text-green-500 fill-green-500 mr-2" />
+                                  Mark as General
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    bulkSelectedItems.forEach(id => {
+                                      updateItemClassificationMutation.mutate({ id, classification: 'sensitive' });
+                                    });
+                                    setBulkSelectedItems(new Set());
+                                  }}
+                                >
+                                  <Flag className="h-4 w-4 text-red-500 fill-red-500 mr-2" />
+                                  Mark as Sensitive
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    bulkSelectedItems.forEach(id => {
+                                      updateItemClassificationMutation.mutate({ id, classification: null });
+                                    });
+                                    setBulkSelectedItems(new Set());
+                                  }}
+                                >
+                                  <div className="h-4 w-4 border-2 border-dashed border-gray-400 rounded mr-2" />
+                                  Clear Classification
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuLabel>AI Actions</DropdownMenuLabel>
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setSelectedItemsForAI(bulkSelectedItems);
+                                    setBulkSelectedItems(new Set());
+                                    setIsAIProcessing(true);
+                                    aiClassifyMutation.mutate(Array.from(bulkSelectedItems));
+                                  }}
+                                >
+                                  <Sparkles className="h-4 w-4 mr-2" />
+                                  AI Classify Selected
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <Droppable droppableId="available-items">
@@ -1223,7 +1547,7 @@ export default function AtWarehouse() {
                           {...provided.droppableProps}
                           className="space-y-2 min-h-[400px]"
                         >
-                          {allItems.filter(item => item.status !== 'consolidated').map((item, index) => (
+                          {sortedAndFilteredItems.map((item, index) => (
                             <Draggable key={item.id} draggableId={String(item.id)} index={index}>
                               {(provided, snapshot) => (
                                 <div
@@ -1253,7 +1577,25 @@ export default function AtWarehouse() {
                                     <div className="flex-1 space-y-3">
                                       {/* Top row with drag handle and name */}
                                       <div className="flex items-start gap-3">
-                                        <Grip className="h-4 w-4 text-muted-foreground mt-1 flex-shrink-0" />
+                                        <div className="flex items-center gap-2 mt-1">
+                                          <input
+                                            type="checkbox"
+                                            className="h-4 w-4 rounded border-gray-300"
+                                            checked={bulkSelectedItems.has(item.id)}
+                                            onChange={(e) => {
+                                              e.stopPropagation();
+                                              const newSelected = new Set(bulkSelectedItems);
+                                              if (e.target.checked) {
+                                                newSelected.add(item.id);
+                                              } else {
+                                                newSelected.delete(item.id);
+                                              }
+                                              setBulkSelectedItems(newSelected);
+                                            }}
+                                            onClick={(e) => e.stopPropagation()}
+                                          />
+                                          <Grip className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                        </div>
                                         <div className="flex-1">
                                           <div className="flex items-center gap-2 flex-wrap">
                                             <span className="font-semibold text-base">{item.name}</span>
