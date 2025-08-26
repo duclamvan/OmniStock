@@ -139,6 +139,7 @@ export default function AtWarehouse() {
   const [statusTarget, setStatusTarget] = useState<{ type: 'order' | 'item', id: number, currentStatus: string } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'item' | 'consolidation', id: number, name: string } | null>(null);
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
+  const [expandedOrders, setExpandedOrders] = useState<Set<number>>(new Set());
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -436,6 +437,16 @@ export default function AtWarehouse() {
       newExpanded.add(itemId);
     }
     setExpandedItems(newExpanded);
+  };
+
+  const toggleOrderExpanded = (orderId: number) => {
+    const newExpanded = new Set(expandedOrders);
+    if (newExpanded.has(orderId)) {
+      newExpanded.delete(orderId);
+    } else {
+      newExpanded.add(orderId);
+    }
+    setExpandedOrders(newExpanded);
   };
 
   const handleCreateCustomItem = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -960,6 +971,7 @@ export default function AtWarehouse() {
                     <div className="flex items-start justify-between">
                       <div className="flex-1 space-y-3">
                         <div className="flex items-center gap-3">
+                          <Package2 className="h-5 w-5 text-blue-500" />
                           <h3 className="text-lg font-semibold">PO #{order.id} - {order.supplier}</h3>
                           {getStatusBadge(order.status)}
                         </div>
@@ -989,9 +1001,31 @@ export default function AtWarehouse() {
 
                         {order.items && order.items.length > 0 && (
                           <div className="border rounded-lg p-3 bg-muted/30">
-                            <div className="text-sm font-medium mb-2">Order Items:</div>
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="text-sm font-medium">Order Items:</div>
+                              {order.items.length > 3 && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 px-2 text-xs"
+                                  onClick={() => toggleOrderExpanded(order.id)}
+                                >
+                                  {expandedOrders.has(order.id) ? (
+                                    <>
+                                      <ChevronDown className="h-3 w-3 mr-1" />
+                                      Show less
+                                    </>
+                                  ) : (
+                                    <>
+                                      <ChevronRight className="h-3 w-3 mr-1" />
+                                      Show all {order.items.length} items
+                                    </>
+                                  )}
+                                </Button>
+                              )}
+                            </div>
                             <div className="space-y-1">
-                              {order.items.slice(0, 3).map((item: any, index: number) => (
+                              {(expandedOrders.has(order.id) ? order.items : order.items.slice(0, 3)).map((item: any, index: number) => (
                                 <div key={index} className="text-sm flex justify-between">
                                   <span className="text-muted-foreground">
                                     {item.name} {item.sku && `(${item.sku})`}
@@ -999,8 +1033,8 @@ export default function AtWarehouse() {
                                   <span className="font-medium">Qty: {item.quantity}</span>
                                 </div>
                               ))}
-                              {order.items.length > 3 && (
-                                <div className="text-sm text-muted-foreground">
+                              {!expandedOrders.has(order.id) && order.items.length > 3 && (
+                                <div className="text-sm text-muted-foreground pt-1">
                                   ... and {order.items.length - 3} more items
                                 </div>
                               )}
