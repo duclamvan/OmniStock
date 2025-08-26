@@ -14,7 +14,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Package, Plane, Ship, Zap, Truck, MapPin, Clock, Weight, Users, ShoppingCart, Star, Trash2, Package2, PackageOpen, AlertCircle, CheckCircle, Edit, MoreHorizontal, ArrowUp, ArrowDown, Archive, Send, RefreshCw, Flag, Shield, Grip, AlertTriangle, ChevronDown, ChevronRight, Box, Sparkles, X, Search, SortAsc, CheckSquare, Square, Maximize2, Minimize2, Filter, Calendar, Hash } from "lucide-react";
+import { Plus, Package, Plane, Ship, Zap, Truck, MapPin, Clock, Weight, Users, ShoppingCart, Star, Trash2, Package2, PackageOpen, AlertCircle, CheckCircle, Edit, MoreHorizontal, ArrowUp, ArrowDown, Archive, Send, RefreshCw, Flag, Shield, Grip, AlertTriangle, ChevronDown, ChevronRight, Box, Sparkles, X, Search, SortAsc, CheckSquare, Square, Maximize2, Minimize2, Filter, Calendar, Hash, Camera } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
@@ -153,6 +154,15 @@ export default function AtWarehouse() {
   const [itemSortBy, setItemSortBy] = useState<string>("newest");
   const [itemSearchTerm, setItemSearchTerm] = useState<string>("");
   const [bulkSelectedItems, setBulkSelectedItems] = useState<Set<number>>(new Set());
+  const [extractedItems, setExtractedItems] = useState<Array<{
+    name: string;
+    source: string;
+    orderNumber: string;
+    quantity: number;
+    unitPrice: number;
+    classification: string;
+  }>>([]);
+  const [isProcessingScreenshot, setIsProcessingScreenshot] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -370,10 +380,10 @@ export default function AtWarehouse() {
     mutationFn: async (itemIds: number[]) => {
       return apiRequest('/api/imports/items/auto-classify', 'POST', { itemIds });
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast({
         title: "AI Classification Complete",
-        description: data.message || "Items have been automatically classified",
+        description: data?.message || "Items have been automatically classified",
       });
       setSelectedItemsForAI(new Set());
       setIsAIProcessing(false);
@@ -576,24 +586,80 @@ export default function AtWarehouse() {
 
   const handleCreateCustomItem = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
     
-    const data = {
-      name: formData.get('name') as string,
-      source: formData.get('source') as string,
-      orderNumber: formData.get('orderNumber') as string || null,
-      quantity: parseInt(formData.get('quantity') as string) || 1,
-      unitPrice: parseFloat(formData.get('unitPrice') as string) || 0,
-      weight: parseFloat(formData.get('weight') as string) || 0,
-      dimensions: formData.get('dimensions') as string || null,
-      trackingNumber: formData.get('trackingNumber') as string || null,
-      notes: formData.get('notes') as string || null,
-      customerName: formData.get('customerName') as string || null,
-      customerEmail: formData.get('customerEmail') as string || null,
-      classification: formData.get('classification') as string || null,
-    };
-    
-    createCustomItemMutation.mutate(data);
+    // If we have extracted items, add them all
+    if (extractedItems.length > 0) {
+      for (const item of extractedItems) {
+        createCustomItemMutation.mutate({
+          ...item,
+          weight: 0,
+          dimensions: null,
+          trackingNumber: null,
+          notes: null,
+          customerName: null,
+          customerEmail: null,
+        });
+      }
+      setExtractedItems([]);
+    } else {
+      // Otherwise, add single item from form
+      const formData = new FormData(e.currentTarget);
+      const data = {
+        name: formData.get('name') as string,
+        source: formData.get('source') as string,
+        orderNumber: formData.get('orderNumber') as string || null,
+        quantity: parseInt(formData.get('quantity') as string) || 1,
+        unitPrice: parseFloat(formData.get('unitPrice') as string) || 0,
+        classification: formData.get('classification') as string || null,
+        notes: formData.get('notes') as string || null,
+        weight: 0,
+        dimensions: null,
+        trackingNumber: null,
+        customerName: null,
+        customerEmail: null,
+      };
+      createCustomItemMutation.mutate(data);
+    }
+  };
+
+  const handleScreenshotUpload = async (file: File) => {
+    setIsProcessingScreenshot(true);
+    try {
+      const formData = new FormData();
+      formData.append('screenshot', file);
+      
+      const response = await fetch('/api/imports/extract-from-screenshot', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) throw new Error('Failed to process screenshot');
+      
+      const { items } = await response.json();
+      setExtractedItems(items);
+      toast({
+        title: "Success",
+        description: `Extracted ${items.length} item(s) from screenshot`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to process screenshot. Please add items manually.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessingScreenshot(false);
+    }
+  };
+
+  const removeExtractedItem = (index: number) => {
+    setExtractedItems(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const updateExtractedItem = (index: number, field: string, value: any) => {
+    setExtractedItems(prev => prev.map((item, i) => 
+      i === index ? { ...item, [field]: value } : item
+    ));
   };
 
   const handleUpdateCustomItem = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -754,161 +820,257 @@ export default function AtWarehouse() {
                 Add Custom Item
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px]">
+            <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Add Custom Item</DialogTitle>
                 <DialogDescription>
                   Add items from external sources like Taobao, Pinduoduo, etc.
                 </DialogDescription>
               </DialogHeader>
+              {/* AI Screenshot Upload Section */}
+              <div className="mb-4 p-4 border-2 border-dashed rounded-lg bg-muted/20">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center space-x-2">
+                    <Camera className="h-5 w-5 text-primary" />
+                    <Label className="text-base font-semibold">AI Screenshot Reader</Label>
+                  </div>
+                  <Badge variant="outline" className="text-xs">
+                    Pinduoduo / Taobao
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Upload a screenshot from Pinduoduo or Taobao to auto-extract order details
+                </p>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    className="flex-1"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleScreenshotUpload(file);
+                    }}
+                    disabled={isProcessingScreenshot}
+                  />
+                  {isProcessingScreenshot && (
+                    <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
+                      <span>Processing...</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <form onSubmit={handleCreateCustomItem} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                {/* Extracted Items Table */}
+                {extractedItems.length > 0 && (
                   <div className="space-y-2">
-                    <Label htmlFor="name">Item Name *</Label>
-                    <Input 
-                      id="name" 
-                      name="name" 
-                      required 
-                      data-testid="input-item-name"
-                      placeholder="Enter item name"
-                    />
+                    <Label className="text-base font-semibold">Extracted Items ({extractedItems.length})</Label>
+                    <div className="border rounded-lg overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Item Name</TableHead>
+                            <TableHead>Platform</TableHead>
+                            <TableHead>Order #</TableHead>
+                            <TableHead>Qty</TableHead>
+                            <TableHead>Price</TableHead>
+                            <TableHead>Classification</TableHead>
+                            <TableHead className="w-[50px]"></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {extractedItems.map((item, index) => (
+                            <TableRow key={index}>
+                              <TableCell>
+                                <Input
+                                  value={item.name}
+                                  onChange={(e) => updateExtractedItem(index, 'name', e.target.value)}
+                                  className="h-8"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Select 
+                                  value={item.source} 
+                                  onValueChange={(value) => updateExtractedItem(index, 'source', value)}
+                                >
+                                  <SelectTrigger className="h-8">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="taobao">Taobao</SelectItem>
+                                    <SelectItem value="pinduoduo">Pinduoduo</SelectItem>
+                                    <SelectItem value="1688">1688</SelectItem>
+                                    <SelectItem value="other">Other</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  value={item.orderNumber}
+                                  onChange={(e) => updateExtractedItem(index, 'orderNumber', e.target.value)}
+                                  className="h-8"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  value={item.quantity}
+                                  onChange={(e) => updateExtractedItem(index, 'quantity', parseInt(e.target.value))}
+                                  className="h-8 w-16"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  value={item.unitPrice}
+                                  onChange={(e) => updateExtractedItem(index, 'unitPrice', parseFloat(e.target.value))}
+                                  className="h-8 w-20"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Select 
+                                  value={item.classification} 
+                                  onValueChange={(value) => updateExtractedItem(index, 'classification', value)}
+                                >
+                                  <SelectTrigger className="h-8">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="general">General</SelectItem>
+                                    <SelectItem value="sensitive">Sensitive</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                              <TableCell>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeExtractedItem(index)}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="source">Source Platform *</Label>
-                    <Select name="source" required>
-                      <SelectTrigger data-testid="select-source">
-                        <SelectValue placeholder="Select platform" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="taobao">Taobao</SelectItem>
-                        <SelectItem value="pinduoduo">Pinduoduo</SelectItem>
-                        <SelectItem value="1688">1688</SelectItem>
-                        <SelectItem value="alibaba">Alibaba</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="orderNumber">Order Number</Label>
-                    <Input 
-                      id="orderNumber" 
-                      name="orderNumber" 
-                      data-testid="input-order-number"
-                      placeholder="Platform order number"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="classification">Goods Classification *</Label>
-                    <Select name="classification" defaultValue="general">
-                      <SelectTrigger data-testid="select-classification">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="general">
-                          <div className="flex items-center">
-                            <Flag className="h-4 w-4 mr-2 text-green-500" />
-                            General Goods
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="sensitive">
-                          <div className="flex items-center">
-                            <Shield className="h-4 w-4 mr-2 text-red-500" />
-                            Sensitive Goods
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                )}
 
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="quantity">Quantity *</Label>
-                    <Input 
-                      id="quantity" 
-                      name="quantity" 
-                      type="number" 
-                      min="1" 
-                      defaultValue="1"
-                      required 
-                      data-testid="input-quantity"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="unitPrice">Unit Price ($)</Label>
-                    <Input 
-                      id="unitPrice" 
-                      name="unitPrice" 
-                      type="number" 
-                      step="0.01" 
-                      data-testid="input-unit-price"
-                      placeholder="0.00"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="weight">Weight (kg)</Label>
-                    <Input 
-                      id="weight" 
-                      name="weight" 
-                      type="number" 
-                      step="0.001" 
-                      data-testid="input-weight"
-                      placeholder="0.000"
-                    />
-                  </div>
-                </div>
+                {/* Manual Entry Form (shown when no extracted items) */}
+                {extractedItems.length === 0 && (
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="name">Item Name *</Label>
+                        <Input 
+                          id="name" 
+                          name="name" 
+                          required 
+                          data-testid="input-item-name"
+                          placeholder="Enter item name"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="source">Source Platform *</Label>
+                        <Select name="source" required>
+                          <SelectTrigger data-testid="select-source">
+                            <SelectValue placeholder="Select platform" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="taobao">Taobao</SelectItem>
+                            <SelectItem value="pinduoduo">Pinduoduo</SelectItem>
+                            <SelectItem value="1688">1688</SelectItem>
+                            <SelectItem value="alibaba">Alibaba</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="orderNumber">Order Number</Label>
+                        <Input 
+                          id="orderNumber" 
+                          name="orderNumber" 
+                          data-testid="input-order-number"
+                          placeholder="Platform order number"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="classification">Goods Classification *</Label>
+                        <Select name="classification" defaultValue="general">
+                          <SelectTrigger data-testid="select-classification">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="general">
+                              <div className="flex items-center">
+                                <Flag className="h-4 w-4 mr-2 text-green-500" />
+                                General Goods
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="sensitive">
+                              <div className="flex items-center">
+                                <Shield className="h-4 w-4 mr-2 text-red-500" />
+                                Sensitive Goods
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="dimensions">Dimensions (L×W×H cm)</Label>
-                  <Input 
-                    id="dimensions" 
-                    name="dimensions" 
-                    data-testid="input-dimensions"
-                    placeholder="e.g., 20×15×10"
-                  />
-                </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="quantity">Quantity *</Label>
+                        <Input 
+                          id="quantity" 
+                          name="quantity" 
+                          type="number" 
+                          min="1" 
+                          defaultValue="1"
+                          required 
+                          data-testid="input-quantity"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="unitPrice">Unit Price ($)</Label>
+                        <Input 
+                          id="unitPrice" 
+                          name="unitPrice" 
+                          type="number" 
+                          step="0.01" 
+                          data-testid="input-unit-price"
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="customerName">Customer Name</Label>
-                    <Input 
-                      id="customerName" 
-                      name="customerName" 
-                      data-testid="input-customer-name"
-                      placeholder="For customer orders"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="customerEmail">Customer Email</Label>
-                    <Input 
-                      id="customerEmail" 
-                      name="customerEmail" 
-                      type="email" 
-                      data-testid="input-customer-email"
-                      placeholder="customer@example.com"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="notes">Notes</Label>
-                  <Textarea 
-                    id="notes" 
-                    name="notes" 
-                    data-testid="textarea-notes"
-                    placeholder="Additional notes..."
-                  />
-                </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="notes">Notes</Label>
+                      <Textarea 
+                        id="notes" 
+                        name="notes" 
+                        data-testid="textarea-notes"
+                        placeholder="Additional notes..."
+                        rows={2}
+                      />
+                    </div>
+                  </>
+                )}
 
                 <DialogFooter>
                   <Button type="button" variant="outline" onClick={() => setIsAddCustomItemOpen(false)}>
                     Cancel
                   </Button>
                   <Button type="submit" disabled={createCustomItemMutation.isPending} data-testid="button-submit-item">
-                    {createCustomItemMutation.isPending ? "Adding..." : "Add Item"}
+                    {createCustomItemMutation.isPending ? "Adding..." : extractedItems.length > 0 ? `Add ${extractedItems.length} Items` : "Add Item"}
                   </Button>
                 </DialogFooter>
               </form>

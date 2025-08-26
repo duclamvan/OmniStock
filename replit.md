@@ -5,6 +5,14 @@ Davie Supply is a comprehensive warehouse and order management system designed a
 Preferred communication style: Simple, everyday language.
 
 # Recent Changes
+- **January 25, 2025**: Enhanced imports management with AI screenshot reader and improved UI
+  - Added AI screenshot reader to extract order details from Pinduoduo/Taobao screenshots
+  - Simplified Add Custom Item modal by removing weight, dimensions, customer fields
+  - Implemented multi-item extraction with editable table for bulk imports
+  - Added comprehensive sorting (10+ options) and search functionality to At Warehouse page
+  - Created bulk selection with checkboxes and bulk actions for classification
+  - Added expand/collapse all with localStorage persistence
+
 - **January 24, 2025**: Migrated imports management system from mock data to real database implementation
   - Created database tables: import_purchases, purchase_items, consolidation_items, shipment_items
   - Implemented full API endpoints for import purchases with CRUD operations

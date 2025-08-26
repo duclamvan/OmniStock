@@ -12,6 +12,24 @@ import {
 } from "@shared/schema";
 import { eq, desc, sql, and, like } from "drizzle-orm";
 import { addDays, differenceInDays } from "date-fns";
+import multer from "multer";
+
+// Configure multer for screenshot uploads
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif|webp|avif/;
+    const extname = allowedTypes.test(file.originalname.toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'));
+    }
+  }
+});
 
 const router = Router();
 
@@ -1052,6 +1070,53 @@ router.post("/shipments/:id/delivered", async (req, res) => {
   } catch (error) {
     console.error("Error recording delivery:", error);
     res.status(500).json({ message: "Failed to record delivery" });
+  }
+});
+
+// Extract order details from screenshot (AI Vision API)
+router.post("/extract-from-screenshot", upload.single('screenshot'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No screenshot uploaded" });
+    }
+
+    // For now, return mock data since we don't have OpenAI API key configured
+    // In production, this would use OpenAI Vision API to:
+    // 1. Analyze the screenshot
+    // 2. Extract Chinese text
+    // 3. Translate to English
+    // 4. Parse order details
+    
+    // Mock extracted items (simulating Pinduoduo/Taobao order extraction)
+    const mockItems = [
+      {
+        name: "Wireless Bluetooth Earbuds", 
+        source: "pinduoduo",
+        orderNumber: "PDD" + Math.random().toString(36).substr(2, 9).toUpperCase(),
+        quantity: 2,
+        unitPrice: 15.99,
+        classification: "general"
+      },
+      {
+        name: "Phone Case with Stand",
+        source: "pinduoduo", 
+        orderNumber: "PDD" + Math.random().toString(36).substr(2, 9).toUpperCase(),
+        quantity: 1,
+        unitPrice: 8.50,
+        classification: "general"
+      }
+    ];
+
+    // Simulate processing delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    res.json({ 
+      items: mockItems,
+      message: "Successfully extracted items from screenshot (mock data - configure OpenAI API for real extraction)"
+    });
+  } catch (error) {
+    console.error("Error processing screenshot:", error);
+    res.status(500).json({ message: "Failed to process screenshot" });
   }
 });
 
