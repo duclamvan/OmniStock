@@ -547,7 +547,7 @@ export default function AtWarehouse() {
   };
 
   const getSourceBadge = (source: string) => (
-    <Badge className={sourceColors[source.toLowerCase()] || sourceColors.other}>
+    <Badge variant="secondary" className={`text-xs ${sourceColors[source.toLowerCase()] || sourceColors.other}`}>
       {source.toUpperCase()}
     </Badge>
   );
@@ -1133,36 +1133,55 @@ export default function AtWarehouse() {
                                   ref={provided.innerRef}
                                   {...provided.draggableProps}
                                   {...provided.dragHandleProps}
-                                  className={`border rounded-lg p-3 bg-background ${
+                                  className={`border rounded-lg p-4 bg-background hover:shadow-sm transition-shadow ${
                                     snapshot.isDragging ? 'shadow-lg opacity-90' : ''
                                   }`}
                                 >
                                   <div className="flex items-start justify-between">
-                                    <div className="flex-1 space-y-1">
-                                      <div className="flex items-center gap-2">
-                                        <Grip className="h-4 w-4 text-muted-foreground" />
-                                        <span className="font-semibold">{item.name}</span>
-                                        {getClassificationIcon(item.classification)}
-                                        {item.source && getSourceBadge(item.source)}
-                                        {item.purchaseOrderId && (
-                                          <Badge variant="outline" className="text-xs">
-                                            PO #{item.purchaseOrderId}
-                                          </Badge>
-                                        )}
-                                      </div>
-                                      <div className="flex gap-4 text-xs text-muted-foreground">
-                                        <span>Qty: {item.quantity}</span>
-                                        <span>{item.weight ? `${item.weight} kg` : 'No weight'}</span>
-                                        {item.customerName && <span>{item.customerName}</span>}
+                                    <div className="flex-1 space-y-3">
+                                      {/* Top row with drag handle and name */}
+                                      <div className="flex items-start gap-3">
+                                        <Grip className="h-4 w-4 text-muted-foreground mt-1 flex-shrink-0" />
+                                        <div className="flex-1">
+                                          <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="font-semibold text-base">{item.name}</span>
+                                            {getClassificationIcon(item.classification)}
+                                            {item.purchaseOrderId && (
+                                              <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700">
+                                                PO #{item.purchaseOrderId}
+                                              </Badge>
+                                            )}
+                                          </div>
+                                          
+                                          {/* Metadata row */}
+                                          <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
+                                            <span>Qty: {item.quantity}</span>
+                                            <span>{item.weight ? `${item.weight} kg` : 'No weight'}</span>
+                                            {item.customerName && (
+                                              <>
+                                                <span className="text-muted-foreground/40">•</span>
+                                                <span>{item.customerName}</span>
+                                              </>
+                                            )}
+                                          </div>
+                                          
+                                          {/* Source badge */}
+                                          {item.source && (
+                                            <div className="mt-2">
+                                              <span className="text-xs text-muted-foreground uppercase tracking-wide">Supplier: </span>
+                                              {getSourceBadge(item.source)}
+                                            </div>
+                                          )}
+                                        </div>
                                       </div>
                                       
                                       {/* Show order items if this is a full package */}
                                       {item.purchaseOrderId && item.orderItems && item.orderItems.length > 0 && (
-                                        <div className="mt-2">
+                                        <div className="pl-7">
                                           <Button
                                             variant="ghost"
                                             size="sm"
-                                            className="h-6 px-2 text-xs"
+                                            className="h-7 px-2 text-xs hover:bg-muted"
                                             onClick={(e) => {
                                               e.stopPropagation();
                                               toggleItemExpanded(item.id);
@@ -1182,13 +1201,23 @@ export default function AtWarehouse() {
                                           </Button>
                                           
                                           {expandedItems.has(item.id) && (
-                                            <div className="mt-2 pl-4 border-l-2 border-muted space-y-1">
+                                            <div className="mt-2 bg-muted/50 rounded-md p-3 space-y-2">
                                               {item.orderItems.map((orderItem: any, idx: number) => (
-                                                <div key={idx} className="text-xs text-muted-foreground flex justify-between">
-                                                  <span>
-                                                    {orderItem.name} {orderItem.sku && `(${orderItem.sku})`}
-                                                  </span>
-                                                  <span>Qty: {orderItem.quantity}</span>
+                                                <div key={idx} className="flex items-center justify-between">
+                                                  <div className="flex-1">
+                                                    <span className="text-sm">
+                                                      {orderItem.name}
+                                                    </span>
+                                                    {orderItem.sku && (
+                                                      <span className="text-xs text-muted-foreground ml-2">
+                                                        ({orderItem.sku})
+                                                      </span>
+                                                    )}
+                                                  </div>
+                                                  <div className="flex items-center gap-2 text-sm">
+                                                    <span className="text-muted-foreground">Qty:</span>
+                                                    <span className="font-medium">{orderItem.quantity}</span>
+                                                  </div>
                                                 </div>
                                               ))}
                                             </div>
@@ -1196,7 +1225,7 @@ export default function AtWarehouse() {
                                         </div>
                                       )}
                                     </div>
-                                    <div className="flex gap-1">
+                                    <div className="flex gap-1 items-start">
                                       <Button
                                         size="sm"
                                         variant="ghost"
