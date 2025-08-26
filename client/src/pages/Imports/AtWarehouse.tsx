@@ -771,6 +771,9 @@ export default function AtWarehouse() {
   };
 
   const handleDragEnd = (result: any) => {
+    // Reset cursor
+    document.body.style.cursor = '';
+    
     if (!result.destination) return;
     
     const itemId = parseInt(result.draggableId);
@@ -1530,7 +1533,18 @@ export default function AtWarehouse() {
             </div>
           </div>
 
-          <DragDropContext onDragEnd={handleDragEnd}>
+          <DragDropContext 
+            onDragEnd={handleDragEnd}
+            onDragStart={() => {
+              document.body.style.cursor = 'grabbing';
+            }}
+            onDragUpdate={() => {
+              // Ensure cursor stays as grabbing during drag
+              if (document.body.style.cursor !== 'grabbing') {
+                document.body.style.cursor = 'grabbing';
+              }
+            }}
+          >
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               {/* Available Items Column */}
               <div className="lg:col-span-2">
@@ -1785,24 +1799,42 @@ export default function AtWarehouse() {
                   </CardHeader>
                   <CardContent>
                     <Droppable droppableId="available-items">
-                      {(provided) => (
+                      {(provided, snapshot) => (
                         <div 
                           ref={provided.innerRef} 
                           {...provided.droppableProps}
-                          className="space-y-2 min-h-[400px]"
+                          className={`
+                            space-y-2 min-h-[400px] p-2 rounded-lg transition-all duration-300
+                            ${snapshot.isDraggingOver 
+                              ? 'bg-gradient-to-b from-blue-50/30 to-transparent dark:from-blue-900/10 dark:to-transparent ring-2 ring-blue-400/30 drop-zone-active' 
+                              : ''}
+                          `}
                         >
                           {sortedAndFilteredItems.map((item, index) => (
-                            <Draggable key={item.id} draggableId={String(item.id)} index={index}>
+                            <Draggable key={`item-${item.id}`} draggableId={String(item.id)} index={index}>
                               {(provided, snapshot) => (
                                 <div
                                   ref={provided.innerRef}
                                   {...provided.draggableProps}
                                   {...provided.dragHandleProps}
-                                  className={`border rounded-lg p-3 bg-background hover:shadow-sm transition-all ${
-                                    snapshot.isDragging ? 'shadow-lg opacity-90' : ''
-                                  } ${
-                                    selectedItemsForAI.has(item.id) ? 'ring-2 ring-purple-500 bg-purple-50' : ''
-                                  }`}
+                                  className={`
+                                    draggable-item relative border rounded-lg p-3 bg-background 
+                                    ${
+                                      snapshot.isDragging 
+                                        ? 'shadow-2xl !scale-105 !rotate-2 z-50 opacity-95' 
+                                        : ''
+                                    }
+                                    ${
+                                      snapshot.draggingOver 
+                                        ? 'ring-2 ring-primary/50' 
+                                        : ''
+                                    }
+                                    ${
+                                      selectedItemsForAI.has(item.id) 
+                                        ? 'ring-2 ring-purple-500 bg-purple-50 dark:bg-purple-900/20' 
+                                        : 'hover:shadow-md hover:border-primary/30'
+                                    }
+                                  `}
                                   onClick={(e) => {
                                     // Only toggle selection if not dragging and not clicking on buttons
                                     if (!snapshot.isDragging && !(e.target as HTMLElement).closest('button')) {
@@ -1815,7 +1847,13 @@ export default function AtWarehouse() {
                                       setSelectedItemsForAI(newSelected);
                                     }
                                   }}
-                                  style={{ cursor: snapshot.isDragging ? 'grabbing' : 'pointer' }}
+                                  style={{ 
+                                    cursor: snapshot.isDragging ? 'grabbing' : 'grab',
+                                    ...provided.draggableProps.style,
+                                    transition: snapshot.isDragging 
+                                      ? 'none' 
+                                      : provided.draggableProps.style?.transition
+                                  }}
                                 >
                                   <div className="flex items-start justify-between">
                                     <div className="flex-1">
@@ -1838,7 +1876,12 @@ export default function AtWarehouse() {
                                             }}
                                             onClick={(e) => e.stopPropagation()}
                                           />
-                                          <Grip className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                          <div 
+                                            className="hover:bg-muted/50 rounded p-0.5 transition-colors"
+                                            title="Drag to move"
+                                          >
+                                            <Grip className="h-4 w-4 text-muted-foreground flex-shrink-0 hover:text-primary transition-colors cursor-grab active:cursor-grabbing" />
+                                          </div>
                                         </div>
                                         <div className="flex-1">
                                           <div className="flex items-center gap-2 flex-wrap">
@@ -2038,7 +2081,7 @@ export default function AtWarehouse() {
                       <div className="space-y-3">
                         {consolidations.map((consolidation) => (
                           <div key={consolidation.id}>
-                            <div className="border rounded-lg p-3 bg-muted/30">
+                            <div className="border rounded-lg p-3 bg-muted/30 hover:bg-muted/40 transition-colors">
                               <div className="flex justify-between items-start mb-2">
                                 <div className="flex-1">
                                   <div className="font-medium">{consolidation.name}</div>
@@ -2054,13 +2097,23 @@ export default function AtWarehouse() {
                                   <div 
                                     ref={provided.innerRef}
                                     {...provided.droppableProps}
-                                    className={`min-h-[60px] border-2 border-dashed rounded-md p-2 mb-2 ${
-                                      snapshot.isDraggingOver ? 'border-primary bg-primary/10' : 'border-muted'
-                                    }`}
+                                    className={`
+                                      min-h-[80px] border-2 border-dashed rounded-lg p-3 mb-2
+                                      transition-all duration-300 cubic-bezier(0.4, 0, 0.2, 1)
+                                      ${
+                                        snapshot.isDraggingOver 
+                                          ? 'border-primary bg-gradient-to-br from-primary/20 to-primary/5 dark:from-primary/15 dark:to-primary/5 scale-[1.02] shadow-xl drop-zone-active' 
+                                          : 'border-muted hover:border-muted-foreground/30 hover:bg-muted/5'
+                                      }
+                                    `}
                                   >
                                     {consolidation.itemCount === 0 ? (
-                                      <div className="text-center text-sm text-muted-foreground py-2">
-                                        Drop items here
+                                      <div className={`text-center text-sm py-2 transition-all duration-300 ${
+                                        snapshot.isDraggingOver 
+                                          ? 'text-primary font-medium scale-105' 
+                                          : 'text-muted-foreground'
+                                      }`}>
+                                        {snapshot.isDraggingOver ? '✨ Drop items here ✨' : '📦 Drop items here'}
                                       </div>
                                     ) : (
                                       <div>
