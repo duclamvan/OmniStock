@@ -1832,26 +1832,10 @@ export default function AtWarehouse() {
                                           <div className="flex items-center gap-2 flex-wrap">
                                             <span className="font-semibold text-base">{item.name}</span>
                                             {getClassificationIcon(item.classification)}
-                                            {/* Inline items toggle for purchase orders */}
-                                            {item.purchaseOrderId && item.orderItems && item.orderItems.length > 0 && (
-                                              <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="h-5 px-1.5 text-xs hover:bg-muted"
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  toggleItemExpanded(item.id);
-                                                }}
-                                                title={expandedItems.has(item.id) ? "Hide items" : "Show items"}
-                                              >
-                                                <ChevronDown className={`h-3 w-3 transition-transform ${expandedItems.has(item.id) ? '' : '-rotate-90'}`} />
-                                                <span className="ml-1">{item.orderItems.length}</span>
-                                              </Button>
-                                            )}
                                           </div>
                                           
                                           {/* Compact metadata row */}
-                                          <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground flex-wrap">
+                                          <div className="flex items-center gap-2 mt-1 text-sm text-gray-700 dark:text-gray-300 flex-wrap">
                                             <span>Qty: {item.quantity}</span>
                                             {item.weight && <span>• {item.weight} kg</span>}
                                             {item.source && item.source !== 'supplier' && (
@@ -1866,6 +1850,25 @@ export default function AtWarehouse() {
                                             {item.customerName && (
                                               <span>• {item.customerName}</span>
                                             )}
+                                            {/* Inline items toggle for purchase orders */}
+                                            {item.purchaseOrderId && item.orderItems && item.orderItems.length > 0 && (
+                                              <>
+                                                <span>•</span>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  className="h-5 px-1.5 -ml-1 text-xs hover:bg-muted"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    toggleItemExpanded(item.id);
+                                                  }}
+                                                  title={expandedItems.has(item.id) ? "Hide items" : "Show items"}
+                                                >
+                                                  <ChevronDown className={`h-3 w-3 transition-transform ${expandedItems.has(item.id) ? '' : '-rotate-90'}`} />
+                                                  <span className="ml-1">{item.orderItems.length} items</span>
+                                                </Button>
+                                              </>
+                                            )}
                                           </div>
                                           
                                           {/* Show order items inline if expanded */}
@@ -1874,12 +1877,12 @@ export default function AtWarehouse() {
                                               {item.orderItems.map((orderItem: any, idx: number) => (
                                                 <div key={idx} className="flex items-center justify-between text-xs">
                                                   <div className="flex items-center gap-2">
-                                                    <span className="text-muted-foreground">{orderItem.name}</span>
+                                                    <span className="text-gray-900 dark:text-gray-100">{orderItem.name}</span>
                                                     {orderItem.sku && (
-                                                      <span className="text-muted-foreground/70">({orderItem.sku})</span>
+                                                      <span className="text-gray-600 dark:text-gray-400">({orderItem.sku})</span>
                                                     )}
                                                   </div>
-                                                  <span className="text-muted-foreground">Qty: {orderItem.quantity}</span>
+                                                  <span className="text-gray-700 dark:text-gray-300">Qty: {orderItem.quantity}</span>
                                                 </div>
                                               ))}
                                             </div>
