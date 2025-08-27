@@ -951,21 +951,29 @@ export default function AtWarehouse() {
     if (destinationId.startsWith('consolidation-')) {
       const consolidationId = parseInt(destinationId.replace('consolidation-', ''));
       if (consolidationId && !isNaN(consolidationId) && !isNaN(itemId)) {
-        // Optimistic update - immediately update UI
-        queryClient.setQueryData(['/api/imports/custom-items'], (oldData: any) => {
-          return oldData?.filter((item: any) => item.id !== itemId) || [];
-        });
-        
-        queryClient.setQueryData(['/api/imports/consolidations'], (oldData: any) => {
-          return oldData?.map((consol: any) => 
-            consol.id === consolidationId 
-              ? { ...consol, itemCount: (consol.itemCount || 0) + 1 }
-              : consol
-          ) || [];
-        });
-        
-        // Make the actual API call
-        addItemsToConsolidationMutation.mutate({ consolidationId, itemIds: [itemId] });
+        // Use setTimeout to let the drag animation complete before updating
+        setTimeout(() => {
+          // Optimistic update - update UI after animation completes
+          queryClient.setQueryData(['/api/imports/custom-items'], (oldData: any) => {
+            return oldData?.filter((item: any) => item.id !== itemId) || [];
+          });
+          
+          queryClient.setQueryData(['/api/imports/consolidations'], (oldData: any) => {
+            return oldData?.map((consol: any) => 
+              consol.id === consolidationId 
+                ? { ...consol, itemCount: (consol.itemCount || 0) + 1 }
+                : consol
+            ) || [];
+          });
+          
+          // Immediately fetch the consolidation items if it's expanded
+          if (expandedConsolidations.has(consolidationId)) {
+            fetchConsolidationItems(consolidationId);
+          }
+          
+          // Make the actual API call
+          addItemsToConsolidationMutation.mutate({ consolidationId, itemIds: [itemId] });
+        }, 50); // Small delay to allow drag animation to complete
       }
     }
   };
