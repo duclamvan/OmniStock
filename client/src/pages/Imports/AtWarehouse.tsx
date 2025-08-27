@@ -157,7 +157,6 @@ export default function AtWarehouse() {
   const [itemSearchTerm, setItemSearchTerm] = useState<string>("");
   const [bulkSelectedItems, setBulkSelectedItems] = useState<Set<number>>(new Set());
   const [manualItemOrder, setManualItemOrder] = useState<string[]>([]);
-  const [isDragging, setIsDragging] = useState(false);
   const [extractedItems, setExtractedItems] = useState<Array<{
     name: string;
     source: string;
@@ -273,8 +272,7 @@ export default function AtWarehouse() {
     allItems, 
     itemSearchTerm, 
     itemSortBy, 
-    manualItemOrder,
-    isDragging
+    manualItemOrder
   ]);
 
   // Filter orders by location
@@ -963,8 +961,6 @@ export default function AtWarehouse() {
   };
 
   const handleDragEnd = (result: any) => {
-    setIsDragging(false);
-    
     if (!result.destination) return;
     
     const sourceId = result.source.droppableId;
@@ -972,11 +968,14 @@ export default function AtWarehouse() {
     
     // Handle reordering within Available Items
     if (sourceId === 'available-items' && destinationId === 'available-items') {
-      const currentOrder = manualItemOrder.length ? manualItemOrder : sortedAndFilteredItems.map(item => item.uniqueId);
-      const newOrder = Array.from(currentOrder);
-      const [removed] = newOrder.splice(result.source.index, 1);
-      newOrder.splice(result.destination.index, 0, removed);
+      if (result.source.index === result.destination.index) return;
       
+      const items = Array.from(sortedAndFilteredItems);
+      const [reorderedItem] = items.splice(result.source.index, 1);
+      items.splice(result.destination.index, 0, reorderedItem);
+      
+      // Update order based on new positions
+      const newOrder = items.map(item => item.uniqueId);
       setManualItemOrder(newOrder);
       setItemSortBy('custom');
       localStorage.setItem('atWarehouse_manualItemOrder', JSON.stringify(newOrder));
@@ -994,10 +993,6 @@ export default function AtWarehouse() {
         }
       }
     }
-  };
-
-  const handleDragStart = () => {
-    setIsDragging(true);
   };
 
   const getStatusBadge = (status: string) => (
@@ -1745,7 +1740,7 @@ export default function AtWarehouse() {
             </div>
           </div>
 
-          <DragDropContext onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
+          <DragDropContext onDragEnd={handleDragEnd}>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               {/* Available Items Column */}
               <div className="lg:col-span-2">
