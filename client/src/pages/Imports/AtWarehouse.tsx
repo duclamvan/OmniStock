@@ -250,7 +250,8 @@ export default function AtWarehouse() {
     return filtered;
   };
   
-  const sortedAndFilteredItems = getFilteredAndSortedItems();
+  const sortedAndFilteredItems = React.useMemo(() => getFilteredAndSortedItems(), 
+    [customItems, itemSearchTerm, itemSortBy]);
 
   // Filter orders by location
   const filteredOrders = locationFilter === "all" 
@@ -545,21 +546,23 @@ export default function AtWarehouse() {
     setExpandedConsolidations(newExpanded);
   };
 
-  // Add items to consolidation mutation - NO optimistic updates to avoid drag conflicts
+  // Add items to consolidation mutation - delayed updates to avoid drag conflicts
   const addItemsToConsolidationMutation = useMutation({
     mutationFn: async ({ consolidationId, itemIds }: { consolidationId: number, itemIds: number[] }) => {
       return apiRequest(`/api/imports/consolidations/${consolidationId}/items`, 'POST', { itemIds });
     },
     onSuccess: (_, { consolidationId }) => {
-      // Only refetch after successful API call
-      queryClient.invalidateQueries({ queryKey: ['/api/imports/consolidations'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/imports/unpacked-items'] });
-      
-      // Refresh consolidation items if expanded
-      if (expandedConsolidations.has(consolidationId)) {
-        fetchConsolidationItems(consolidationId);
-      }
+      // Delay query invalidation to ensure drag animation is fully complete
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['/api/imports/consolidations'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/imports/unpacked-items'] });
+        
+        // Refresh consolidation items if expanded
+        if (expandedConsolidations.has(consolidationId)) {
+          fetchConsolidationItems(consolidationId);
+        }
+      }, 300); // Wait for drag animation to complete
       
       toast({ title: "Success", description: "Items added to consolidation" });
     },
@@ -903,15 +906,26 @@ export default function AtWarehouse() {
   };
 
   const handleDragEnd = (result: any) => {
-    // Reset cursor
+    // Reset cursor and remove any dragging classes
     document.body.style.cursor = '';
     
+    // Remove dragging class from all elements to ensure clean state
+    const draggingElements = document.querySelectorAll('.dragging-active');
+    draggingElements.forEach(el => el.classList.remove('dragging-active'));
+    
     if (!result.destination) return;
+    
+    const sourceId = result.source.droppableId;
+    const destinationId = result.destination.droppableId;
+    
+    // If dropped back to the same location, just return (no action needed)
+    if (sourceId === destinationId && result.source.index === result.destination.index) {
+      return;
+    }
     
     // Extract the actual item ID from the unique draggable ID (e.g., "item-13" -> 13)
     const draggableId = result.draggableId;
     const itemId = parseInt(draggableId.replace('item-', ''));
-    const destinationId = result.destination.droppableId;
     
     // Check if dropping into a consolidation
     if (destinationId.startsWith('consolidation-')) {
@@ -921,6 +935,7 @@ export default function AtWarehouse() {
         addItemsToConsolidationMutation.mutate({ consolidationId, itemIds: [itemId] });
       }
     }
+    // If dropping back to available-items, do nothing (item stays in place)
   };
 
   const getStatusBadge = (status: string) => (
@@ -1670,20 +1685,8 @@ export default function AtWarehouse() {
 
           <DragDropContext 
             onDragEnd={handleDragEnd}
-            onDragStart={(start) => {
+            onDragStart={() => {
               document.body.style.cursor = 'grabbing';
-              // Add visual feedback immediately
-              const draggableId = start.draggableId;
-              const element = document.querySelector(`[data-rbd-draggable-id="${draggableId}"]`);
-              if (element) {
-                element.classList.add('dragging-active');
-              }
-            }}
-            onDragUpdate={() => {
-              // Ensure cursor stays as grabbing during drag
-              if (document.body.style.cursor !== 'grabbing') {
-                document.body.style.cursor = 'grabbing';
-              }
             }}
           >
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -1961,7 +1964,7 @@ export default function AtWarehouse() {
                           `}
                         >
                           {sortedAndFilteredItems.map((item, index) => (
-                            <Draggable key={item.uniqueId} draggableId={item.uniqueId} index={index}>
+                            <Draggable key={`drag-${item.id}`} draggableId={item.uniqueId} index={index}>
                               {(provided, snapshot) => (
                                 <div
                                   ref={provided.innerRef}
