@@ -960,11 +960,6 @@ export default function AtWarehouse() {
     document.body.style.cursor = '';
     document.body.style.overflow = '';
     
-    // Remove dragging class with a slight delay to prevent jump animations
-    setTimeout(() => {
-      document.body.classList.remove('is-dragging');
-    }, 50);
-    
     if (!result.destination) return;
     
     const sourceId = result.source.droppableId;
@@ -1752,8 +1747,6 @@ export default function AtWarehouse() {
               document.body.style.cursor = 'grabbing';
               // Disable auto-scroll to prevent vibrating
               document.body.style.overflow = 'hidden';
-              // Add class to disable animations during drag
-              document.body.classList.add('is-dragging');
             }}
             onDragUpdate={(update) => {
               // Only update cursor when dragging over valid drop zones
