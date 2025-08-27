@@ -1896,11 +1896,11 @@ export default function AtWarehouse() {
                               const allSelected = allFilteredIds.length > 0 && 
                                                  allFilteredIds.every(id => selectedItemsForAI.has(id));
                               
-                              if (allSelected || selectedItemsForAI.size > 0) {
+                              if (allSelected) {
                                 return (
                                   <>
                                     <Square className="h-3 w-3 mr-1" />
-                                    Deselect All {selectedItemsForAI.size > 0 && `(${selectedItemsForAI.size})`}
+                                    Deselect All ({selectedItemsForAI.size})
                                   </>
                                 );
                               } else {
