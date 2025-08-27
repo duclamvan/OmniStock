@@ -1787,11 +1787,6 @@ export default function AtWarehouse() {
                         
                         {/* Bulk Selection Actions */}
                         <div className="flex items-center gap-2">
-                          {bulkSelectedItems.size > 0 && (
-                            <Badge variant="outline" className="bg-purple-50">
-                              {bulkSelectedItems.size} selected
-                            </Badge>
-                          )}
                           <Button
                             variant="outline"
                             size="sm"
@@ -1812,11 +1807,11 @@ export default function AtWarehouse() {
                               const allSelected = allFilteredIds.length > 0 && 
                                                  allFilteredIds.every(id => bulkSelectedItems.has(id));
                               
-                              if (allSelected) {
+                              if (allSelected || bulkSelectedItems.size > 0) {
                                 return (
                                   <>
                                     <Square className="h-3 w-3 mr-1" />
-                                    Deselect All
+                                    Deselect All {bulkSelectedItems.size > 0 && `(${bulkSelectedItems.size})`}
                                   </>
                                 );
                               } else {
