@@ -2776,6 +2776,29 @@ export default function AtWarehouse() {
                 </div>
               </div>
 
+              {/* Item List */}
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-muted-foreground">Items to be unpacked:</div>
+                <div className="max-h-[200px] overflow-y-auto space-y-2 border rounded-lg p-2">
+                  {selectedOrder.items?.map((item: any, index: number) => (
+                    <div key={index} className="flex justify-between items-center py-1 px-2 hover:bg-muted/50 rounded">
+                      <div className="flex-1">
+                        <div className="text-sm font-medium">{item.name}</div>
+                        {item.sku && (
+                          <div className="text-xs text-muted-foreground">SKU: {item.sku}</div>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-medium">Qty: {item.quantity}</div>
+                        {item.unitPrice && (
+                          <div className="text-xs text-muted-foreground">¥{item.unitPrice}</div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               <div className="flex items-start gap-2">
                 <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5" />
                 <div className="text-sm text-muted-foreground">
