@@ -2047,23 +2047,7 @@ export default function AtWarehouse() {
                                     <div className="flex-1">
                                       {/* Top row with drag handle and name */}
                                       <div className="flex items-start gap-3">
-                                        <div className="flex items-center gap-2 mt-0.5">
-                                          <input
-                                            type="checkbox"
-                                            className="h-4 w-4 rounded border-gray-300"
-                                            checked={bulkSelectedItems.has(item.id)}
-                                            onChange={(e) => {
-                                              e.stopPropagation();
-                                              const newSelected = new Set(bulkSelectedItems);
-                                              if (e.target.checked) {
-                                                newSelected.add(item.id);
-                                              } else {
-                                                newSelected.delete(item.id);
-                                              }
-                                              setBulkSelectedItems(newSelected);
-                                            }}
-                                            onClick={(e) => e.stopPropagation()}
-                                          />
+                                        <div className="flex items-center mt-0.5">
                                           <div 
                                             className="hover:bg-muted/50 rounded p-0.5 transition-colors"
                                             title={itemSortBy === 'custom' ? "Drag card to reorder items" : "Drag card to consolidation"}
