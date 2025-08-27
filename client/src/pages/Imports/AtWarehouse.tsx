@@ -516,18 +516,60 @@ export default function AtWarehouse() {
     setExpandedConsolidations(newExpanded);
   };
 
-  // Add items to consolidation mutation
+  // Add items to consolidation mutation with optimistic updates
   const addItemsToConsolidationMutation = useMutation({
     mutationFn: async ({ consolidationId, itemIds }: { consolidationId: number, itemIds: number[] }) => {
       return apiRequest(`/api/imports/consolidations/${consolidationId}/items`, 'POST', { itemIds });
     },
-    onSuccess: () => {
+    onMutate: async ({ consolidationId, itemIds }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['/api/imports/consolidations'] });
+      await queryClient.cancelQueries({ queryKey: ['/api/imports/custom-items'] });
+      
+      // Snapshot the previous values
+      const previousConsolidations = queryClient.getQueryData(['/api/imports/consolidations']);
+      const previousCustomItems = queryClient.getQueryData(['/api/imports/custom-items']);
+      
+      // Optimistically update consolidations to show increased item count
+      queryClient.setQueryData(['/api/imports/consolidations'], (old: any) => {
+        if (!old) return old;
+        return old.map((consol: any) => {
+          if (consol.id === consolidationId) {
+            return {
+              ...consol,
+              itemCount: (consol.itemCount || 0) + itemIds.length
+            };
+          }
+          return consol;
+        });
+      });
+      
+      // Optimistically remove items from the custom items list
+      queryClient.setQueryData(['/api/imports/custom-items'], (old: any) => {
+        if (!old) return old;
+        return old.filter((item: any) => !itemIds.includes(item.id));
+      });
+      
+      // Return a context object with the snapshotted values
+      return { previousConsolidations, previousCustomItems };
+    },
+    onError: (err, variables, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousConsolidations) {
+        queryClient.setQueryData(['/api/imports/consolidations'], context.previousConsolidations);
+      }
+      if (context?.previousCustomItems) {
+        queryClient.setQueryData(['/api/imports/custom-items'], context.previousCustomItems);
+      }
+      toast({ title: "Error", description: "Failed to add items to consolidation", variant: "destructive" });
+    },
+    onSettled: () => {
+      // Always refetch after error or success
       queryClient.invalidateQueries({ queryKey: ['/api/imports/consolidations'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
-      toast({ title: "Success", description: "Items added to consolidation" });
     },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to add items to consolidation", variant: "destructive" });
+    onSuccess: () => {
+      toast({ title: "Success", description: "Items added to consolidation" });
     }
   });
 
@@ -561,21 +603,52 @@ export default function AtWarehouse() {
     }
   });
   
-  // Remove item from consolidation mutation
+  // Remove item from consolidation mutation with optimistic updates
   const removeItemFromConsolidationMutation = useMutation({
     mutationFn: async ({ consolidationId, itemId }: { consolidationId: number, itemId: number }) => {
       return apiRequest(`/api/imports/consolidations/${consolidationId}/items/${itemId}`, 'DELETE');
     },
-    onSuccess: (_, { consolidationId }) => {
+    onMutate: async ({ consolidationId }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['/api/imports/consolidations'] });
+      
+      // Snapshot the previous values
+      const previousConsolidations = queryClient.getQueryData(['/api/imports/consolidations']);
+      
+      // Optimistically update consolidations to show decreased item count
+      queryClient.setQueryData(['/api/imports/consolidations'], (old: any) => {
+        if (!old) return old;
+        return old.map((consol: any) => {
+          if (consol.id === consolidationId) {
+            return {
+              ...consol,
+              itemCount: Math.max(0, (consol.itemCount || 0) - 1)
+            };
+          }
+          return consol;
+        });
+      });
+      
+      // Return a context object with the snapshotted values
+      return { previousConsolidations };
+    },
+    onError: (err, variables, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousConsolidations) {
+        queryClient.setQueryData(['/api/imports/consolidations'], context.previousConsolidations);
+      }
+      toast({ title: "Error", description: "Failed to remove item", variant: "destructive" });
+    },
+    onSettled: (_, __, { consolidationId }) => {
+      // Always refetch after error or success
       queryClient.invalidateQueries({ queryKey: ['/api/imports/consolidations'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/unpacked-items'] });
       // Refresh consolidation items
       fetchConsolidationItems(consolidationId);
-      toast({ title: "Success", description: "Item removed from consolidation" });
     },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to remove item", variant: "destructive" });
+    onSuccess: () => {
+      toast({ title: "Success", description: "Item removed from consolidation" });
     }
   });
   
@@ -1571,8 +1644,14 @@ export default function AtWarehouse() {
 
           <DragDropContext 
             onDragEnd={handleDragEnd}
-            onDragStart={() => {
+            onDragStart={(start) => {
               document.body.style.cursor = 'grabbing';
+              // Add visual feedback immediately
+              const draggableId = start.draggableId;
+              const element = document.querySelector(`[data-rbd-draggable-id="${draggableId}"]`);
+              if (element) {
+                element.classList.add('dragging-active');
+              }
             }}
             onDragUpdate={() => {
               // Ensure cursor stays as grabbing during drag
