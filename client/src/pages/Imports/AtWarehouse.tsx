@@ -1717,7 +1717,7 @@ export default function AtWarehouse() {
                             variant="outline"
                             size="sm"
                             onClick={() => {
-                              if (bulkSelectedItems.size === sortedAndFilteredItems.length) {
+                              if (bulkSelectedItems.size === sortedAndFilteredItems.length && sortedAndFilteredItems.length > 0) {
                                 setBulkSelectedItems(new Set());
                               } else {
                                 const allIds = new Set(sortedAndFilteredItems.map(i => i.id));
@@ -1725,7 +1725,7 @@ export default function AtWarehouse() {
                               }
                             }}
                           >
-                            {bulkSelectedItems.size === sortedAndFilteredItems.length ? (
+                            {bulkSelectedItems.size === sortedAndFilteredItems.length && sortedAndFilteredItems.length > 0 ? (
                               <>
                                 <Square className="h-3 w-3 mr-1" />
                                 Deselect All
@@ -1745,8 +1745,8 @@ export default function AtWarehouse() {
                                 onClick={expandAllItems}
                                 title="Expand all items with sub-items"
                               >
-                                <ChevronsDown className="h-3 w-3 mr-1" />
-                                Expand All
+                                <ChevronsDown className={bulkSelectedItems.size > 0 ? "h-3 w-3" : "h-3 w-3 mr-1"} />
+                                {bulkSelectedItems.size === 0 && "Expand All"}
                               </Button>
                               <Button
                                 variant="outline"
@@ -1754,8 +1754,8 @@ export default function AtWarehouse() {
                                 onClick={collapseAllItems}
                                 title="Collapse all items"
                               >
-                                <ChevronsUp className="h-3 w-3 mr-1" />
-                                Collapse All
+                                <ChevronsUp className={bulkSelectedItems.size > 0 ? "h-3 w-3" : "h-3 w-3 mr-1"} />
+                                {bulkSelectedItems.size === 0 && "Collapse All"}
                               </Button>
                             </>
                           )}
