@@ -2325,15 +2325,35 @@ export default function AtWarehouse() {
                                 </div>
                                 
                                 <Droppable droppableId={`consolidation-${consolidation.id}`}>
-                                {(provided) => (
+                                {(provided, snapshot) => (
                                   <div 
                                     ref={provided.innerRef}
                                     {...provided.droppableProps}
-                                    className="min-h-[80px] border-2 border-dashed rounded-lg p-3 mb-2 border-muted hover:border-primary/50 hover:bg-muted/5"
+                                    className={`
+                                      min-h-[100px] rounded-xl p-4 mb-2 transition-all duration-200
+                                      ${snapshot.isDraggingOver 
+                                        ? 'border-2 border-dashed border-primary bg-primary/5 scale-[1.02]' 
+                                        : 'border-2 border-dashed border-muted-foreground/30 hover:border-muted-foreground/50'
+                                      }
+                                    `}
+                                    style={{
+                                      background: snapshot.isDraggingOver 
+                                        ? 'linear-gradient(145deg, rgba(var(--primary), 0.03), rgba(var(--primary), 0.08))' 
+                                        : ''
+                                    }}
                                   >
                                     {consolidation.itemCount === 0 ? (
-                                      <div className="text-center text-sm py-2 text-muted-foreground">
-                                        📦 Drop items here
+                                      <div className={`text-center py-4 transition-all ${
+                                        snapshot.isDraggingOver 
+                                          ? 'text-primary font-medium scale-110' 
+                                          : 'text-muted-foreground'
+                                      }`}>
+                                        <div className="text-2xl mb-2">
+                                          {snapshot.isDraggingOver ? '✨' : '📦'}
+                                        </div>
+                                        <div className="text-sm">
+                                          {snapshot.isDraggingOver ? 'Release to add' : 'Drop items here'}
+                                        </div>
                                       </div>
                                     ) : (
                                       <div>
