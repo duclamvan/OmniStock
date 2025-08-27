@@ -960,6 +960,12 @@ export default function AtWarehouse() {
     document.body.style.cursor = '';
     document.body.style.overflow = '';
     
+    // Remove dragging class to re-enable transitions
+    const container = document.querySelector('[data-testid="available-items-container"]');
+    if (container) {
+      container.classList.remove('is-dragging');
+    }
+    
     if (!result.destination) return;
     
     const sourceId = result.source.droppableId;
@@ -1747,6 +1753,11 @@ export default function AtWarehouse() {
               document.body.style.cursor = 'grabbing';
               // Disable auto-scroll to prevent vibrating
               document.body.style.overflow = 'hidden';
+              // Add class to disable transitions during drag
+              const container = document.querySelector('[data-testid="available-items-container"]');
+              if (container) {
+                container.classList.add('is-dragging');
+              }
             }}
             onDragUpdate={(update) => {
               // Only update cursor when dragging over valid drop zones
