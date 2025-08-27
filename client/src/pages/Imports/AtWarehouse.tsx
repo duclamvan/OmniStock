@@ -545,72 +545,26 @@ export default function AtWarehouse() {
     setExpandedConsolidations(newExpanded);
   };
 
-  // Add items to consolidation mutation with optimistic updates
+  // Add items to consolidation mutation - NO optimistic updates to avoid drag conflicts
   const addItemsToConsolidationMutation = useMutation({
     mutationFn: async ({ consolidationId, itemIds }: { consolidationId: number, itemIds: number[] }) => {
       return apiRequest(`/api/imports/consolidations/${consolidationId}/items`, 'POST', { itemIds });
     },
-    onMutate: async ({ consolidationId, itemIds }) => {
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ['/api/imports/consolidations'] });
-      await queryClient.cancelQueries({ queryKey: ['/api/imports/custom-items'] });
-      await queryClient.cancelQueries({ queryKey: ['/api/imports/unpacked-items'] });
-      
-      // Snapshot the previous values
-      const previousConsolidations = queryClient.getQueryData(['/api/imports/consolidations']);
-      const previousCustomItems = queryClient.getQueryData(['/api/imports/custom-items']);
-      const previousUnpackedItems = queryClient.getQueryData(['/api/imports/unpacked-items']);
-      
-      // Optimistically update consolidations to show increased item count
-      queryClient.setQueryData(['/api/imports/consolidations'], (old: any) => {
-        if (!old) return old;
-        return old.map((consol: any) => {
-          if (consol.id === consolidationId) {
-            return {
-              ...consol,
-              itemCount: (consol.itemCount || 0) + itemIds.length
-            };
-          }
-          return consol;
-        });
-      });
-      
-      // Optimistically remove items from the custom items list
-      queryClient.setQueryData(['/api/imports/custom-items'], (old: any) => {
-        if (!old) return old;
-        return old.filter((item: any) => !itemIds.includes(item.id));
-      });
-      
-      // Optimistically remove items from the unpacked items list
-      queryClient.setQueryData(['/api/imports/unpacked-items'], (old: any) => {
-        if (!old) return old;
-        return old.filter((item: any) => !itemIds.includes(item.id));
-      });
-      
-      // Return a context object with the snapshotted values
-      return { previousConsolidations, previousCustomItems, previousUnpackedItems };
-    },
-    onError: (err, variables, context) => {
-      // If the mutation fails, use the context returned from onMutate to roll back
-      if (context?.previousConsolidations) {
-        queryClient.setQueryData(['/api/imports/consolidations'], context.previousConsolidations);
-      }
-      if (context?.previousCustomItems) {
-        queryClient.setQueryData(['/api/imports/custom-items'], context.previousCustomItems);
-      }
-      if (context?.previousUnpackedItems) {
-        queryClient.setQueryData(['/api/imports/unpacked-items'], context.previousUnpackedItems);
-      }
-      toast({ title: "Error", description: "Failed to add items to consolidation", variant: "destructive" });
-    },
-    onSettled: () => {
-      // Always refetch after error or success
+    onSuccess: (_, { consolidationId }) => {
+      // Only refetch after successful API call
       queryClient.invalidateQueries({ queryKey: ['/api/imports/consolidations'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/unpacked-items'] });
-    },
-    onSuccess: () => {
+      
+      // Refresh consolidation items if expanded
+      if (expandedConsolidations.has(consolidationId)) {
+        fetchConsolidationItems(consolidationId);
+      }
+      
       toast({ title: "Success", description: "Items added to consolidation" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to add items to consolidation", variant: "destructive" });
     }
   });
 
@@ -963,16 +917,8 @@ export default function AtWarehouse() {
     if (destinationId.startsWith('consolidation-')) {
       const consolidationId = parseInt(destinationId.replace('consolidation-', ''));
       if (consolidationId && !isNaN(consolidationId) && !isNaN(itemId)) {
-        // Make the API call immediately - the mutation's onMutate will handle optimistic updates
+        // Make the API call without any immediate UI updates to avoid conflicts
         addItemsToConsolidationMutation.mutate({ consolidationId, itemIds: [itemId] });
-        
-        // Fetch consolidation items if expanded
-        if (expandedConsolidations.has(consolidationId)) {
-          // Small delay to avoid conflicting with optimistic updates
-          setTimeout(() => {
-            fetchConsolidationItems(consolidationId);
-          }, 100);
-        }
       }
     }
   };
