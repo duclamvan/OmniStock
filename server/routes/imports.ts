@@ -765,6 +765,30 @@ router.get("/consolidations/:id/items", async (req, res) => {
   }
 });
 
+// Update consolidation
+router.patch("/consolidations/:id", async (req, res) => {
+  try {
+    const consolidationId = parseInt(req.params.id);
+    const { name, shipmentType, notes, targetWeight } = req.body;
+    
+    await db
+      .update(consolidations)
+      .set({ 
+        name,
+        shipmentType,
+        notes,
+        targetWeight,
+        updatedAt: new Date()
+      })
+      .where(eq(consolidations.id, consolidationId));
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Failed to update consolidation:", error);
+    res.status(500).json({ message: "Failed to update consolidation" });
+  }
+});
+
 // Ship consolidation
 router.post("/consolidations/:id/ship", async (req, res) => {
   try {

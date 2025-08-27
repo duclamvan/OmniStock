@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -261,9 +261,10 @@ export default function AtWarehouse() {
     queryKey: ['/api/imports/consolidations'],
   });
   
-  // Fetch consolidation items for expanded consolidations
+  // Fetch consolidation items for expanded consolidations - expanded by default
   const [expandedConsolidations, setExpandedConsolidations] = useState<Set<number>>(new Set());
   const [consolidationItems, setConsolidationItems] = useState<Record<number, any[]>>({});
+  const [editingConsolidation, setEditingConsolidation] = useState<any>(null);
 
   // Unpack purchase order mutation
   const unpackMutation = useMutation({
@@ -501,6 +502,33 @@ export default function AtWarehouse() {
     }
   };
   
+  // Auto-expand and fetch items for active consolidations on mount
+  useEffect(() => {
+    const activeConsolidations = consolidations.filter(c => 
+      c.status !== 'shipped' && c.status !== 'delivered'
+    );
+    
+    // Only update if there are active consolidations and they're not already expanded
+    if (activeConsolidations.length > 0) {
+      const newExpandedIds = activeConsolidations.map(c => c.id);
+      setExpandedConsolidations(prev => {
+        const currentIds = Array.from(prev);
+        const needsUpdate = newExpandedIds.some(id => !currentIds.includes(id));
+        if (needsUpdate) {
+          // Fetch items for newly expanded consolidations
+          newExpandedIds.forEach(id => {
+            const consolidation = consolidations.find(c => c.id === id);
+            if (consolidation && consolidation.itemCount > 0 && !consolidationItems[id]) {
+              fetchConsolidationItems(id);
+            }
+          });
+          return new Set(newExpandedIds);
+        }
+        return prev;
+      });
+    }
+  }, [consolidations.length]); // Only depend on length to avoid infinite loops
+  
   // Toggle consolidation expansion
   const toggleConsolidationExpanded = (consolidationId: number) => {
     const newExpanded = new Set(expandedConsolidations);
@@ -666,10 +694,40 @@ export default function AtWarehouse() {
       toast({ title: "Error", description: "Failed to ship consolidation", variant: "destructive" });
     }
   });
+  
+  // Update consolidation mutation  
+  const updateConsolidationMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number, data: any }) => {
+      return apiRequest(`/api/imports/consolidations/${id}`, 'PATCH', data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/consolidations'] });
+      toast({ title: "Success", description: "Consolidation updated" });
+      setEditingConsolidation(null);
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to update consolidation", variant: "destructive" });
+    }
+  });
 
   const handleUnpack = (order: ImportPurchase) => {
     setSelectedOrder(order);
     setShowUnpackDialog(true);
+  };
+  
+  // Handle ship consolidation
+  const handleShipConsolidation = (consolidation: any) => {
+    // For now, directly ship without dialog
+    shipConsolidationMutation.mutate({ id: consolidation.id });
+  };
+  
+  // Handle delete consolidation
+  const handleDeleteConsolidation = (consolidation: any) => {
+    setDeleteTarget({ 
+      type: 'consolidation', 
+      id: consolidation.id, 
+      name: consolidation.name 
+    });
   };
 
   const handleReceive = (order: ImportPurchase) => {
@@ -2244,48 +2302,71 @@ export default function AtWarehouse() {
                 </Card>
               </div>
 
-              {/* Consolidations Column */}
+              {/* Active Consolidations Column - Only show active */}
               <div>
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">All Consolidations</CardTitle>
+                    <CardTitle className="text-lg">Active Consolidations</CardTitle>
                     <CardDescription>
-                      {consolidations.filter(c => c.status !== 'shipped' && c.status !== 'delivered').length} active • 
-                      {consolidations.filter(c => c.status === 'shipped' || c.status === 'delivered').length} shipped
+                      {consolidations.filter(c => c.status !== 'shipped' && c.status !== 'delivered').length} ready for items
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <ScrollArea className="h-[500px] pr-4">
-                      <div className="space-y-3">
-                        {consolidations.map((consolidation) => {
-                          const isActive = consolidation.status !== 'shipped' && consolidation.status !== 'delivered';
-                          return (
+                      <div className="space-y-2">
+                        {consolidations
+                          .filter(c => c.status !== 'shipped' && c.status !== 'delivered')
+                          .map((consolidation) => (
                             <div key={consolidation.id}>
-                              <div className={`border rounded-lg p-3 transition-colors ${
-                                isActive 
-                                  ? 'bg-muted/30 hover:bg-muted/40 border-border' 
-                                  : 'bg-muted/10 opacity-60 border-dashed'
-                              }`}>
-                                <div className="flex justify-between items-start mb-2">
+                              <div className="border rounded-lg p-2.5 bg-muted/20 hover:bg-muted/30 transition-colors">
+                                <div className="flex justify-between items-start mb-1.5">
                                   <div className="flex-1">
                                     <div className="flex items-center gap-2">
-                                      <div className="font-medium">{consolidation.name}</div>
-                                      {!isActive && (
-                                        <Badge variant="secondary" className="text-xs">
-                                          <Ship className="h-3 w-3 mr-1" />
-                                          Shipped
-                                        </Badge>
-                                      )}
+                                      <div className="font-medium text-sm">{consolidation.name}</div>
+                                      <Badge className="text-xs px-1.5 py-0" variant={consolidation.shipmentType === 'air_ddp' ? 'default' : 'secondary'}>
+                                        {consolidation.shipmentType?.replace('_', ' ').toUpperCase() || 'Not Set'}
+                                      </Badge>
                                     </div>
                                     <div className="text-xs text-muted-foreground">
-                                      {consolidation.warehouse.replace('_', ' - ')}
+                                      {consolidation.itemCount || 0} items • {consolidation.warehouse.replace('_', ' - ')}
                                     </div>
                                   </div>
-                                  {getShippingMethodBadge(consolidation.shippingMethod)}
+                                  <div className="flex items-center gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6"
+                                      onClick={() => setEditingConsolidation(consolidation)}
+                                    >
+                                      <Edit2 className="h-3 w-3" />
+                                    </Button>
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-6 w-6">
+                                          <MoreVertical className="h-3 w-3" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end">
+                                        <DropdownMenuItem
+                                          onClick={() => handleShipConsolidation(consolidation)}
+                                        >
+                                          <Ship className="h-3 w-3 mr-2" />
+                                          Ship Consolidation
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                          onClick={() => handleDeleteConsolidation(consolidation)}
+                                          className="text-destructive"
+                                        >
+                                          <Trash2 className="h-3 w-3 mr-2" />
+                                          Delete
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </div>
                                 </div>
                                 
-                                {isActive ? (
-                                  <Droppable droppableId={`consolidation-${consolidation.id}`}>
+                                <Droppable droppableId={`consolidation-${consolidation.id}`}>
                                 {(provided, snapshot) => (
                                   <div 
                                     ref={provided.innerRef}
@@ -2375,55 +2456,9 @@ export default function AtWarehouse() {
                                   </div>
                                 )}
                                   </Droppable>
-                                ) : (
-                                  <div className="min-h-[80px] border-2 border-dashed rounded-lg p-3 mb-2 border-muted bg-muted/5">
-                                    <div className="text-center text-sm py-2 text-muted-foreground">
-                                      <Ship className="h-6 w-6 mx-auto mb-2 opacity-50" />
-                                      This consolidation has been shipped
-                                    </div>
-                                  </div>
-                                )}
-                                
-                                <div className="flex justify-between items-center">
-                                {getStatusBadge(consolidation.status)}
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm">
-                                      <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    {consolidation.status !== 'shipped' && (
-                                      <>
-                                        <DropdownMenuItem
-                                          onClick={() => {
-                                            shipConsolidationMutation.mutate({ id: consolidation.id });
-                                          }}
-                                        >
-                                          <Send className="h-4 w-4 mr-2" />
-                                          Ship Consolidation
-                                        </DropdownMenuItem>
-                                        <DropdownMenuSeparator />
-                                      </>
-                                    )}
-                                    <DropdownMenuItem 
-                                      className="text-red-600"
-                                      onClick={() => setDeleteTarget({ 
-                                        type: 'consolidation', 
-                                        id: consolidation.id, 
-                                        name: consolidation.name 
-                                      })}
-                                    >
-                                      <Trash2 className="h-4 w-4 mr-2" />
-                                      Delete
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
                             </div>
                           </div>
-                          );
-                        })}
+                        ))}
                       </div>
                     </ScrollArea>
                   </CardContent>
@@ -2912,6 +2947,146 @@ export default function AtWarehouse() {
               disabled={addItemsToConsolidationMutation.isPending}
             >
               Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Edit Consolidation Dialog */}
+      <Dialog open={!!editingConsolidation} onOpenChange={(open) => !open && setEditingConsolidation(null)}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Edit Consolidation</DialogTitle>
+            <DialogDescription>
+              Update consolidation details and shipment settings
+            </DialogDescription>
+          </DialogHeader>
+          {editingConsolidation && (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="consolidation-name">Consolidation Name</Label>
+                <Input
+                  id="consolidation-name"
+                  value={editingConsolidation.name}
+                  onChange={(e) => setEditingConsolidation({
+                    ...editingConsolidation,
+                    name: e.target.value
+                  })}
+                  placeholder="Enter consolidation name"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="shipment-type">Shipment Type</Label>
+                <Select 
+                  value={editingConsolidation.shipmentType || "not_set"}
+                  onValueChange={(value) => setEditingConsolidation({
+                    ...editingConsolidation,
+                    shipmentType: value === "not_set" ? null : value
+                  })}
+                >
+                  <SelectTrigger id="shipment-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="not_set">Not Set</SelectItem>
+                    <SelectItem value="air_ddp">
+                      <div className="flex items-center gap-2">
+                        <Plane className="h-4 w-4" />
+                        Air DDP (Door-to-Door)
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="express">
+                      <div className="flex items-center gap-2">
+                        <Zap className="h-4 w-4" />
+                        Express Courier
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="railway_general">
+                      <div className="flex items-center gap-2">
+                        <Truck className="h-4 w-4" />
+                        Railway - General
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="railway_sensitive">
+                      <div className="flex items-center gap-2">
+                        <Shield className="h-4 w-4" />
+                        Railway - Sensitive
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="sea_general">
+                      <div className="flex items-center gap-2">
+                        <Ship className="h-4 w-4" />
+                        Sea - General
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="sea_sensitive">
+                      <div className="flex items-center gap-2">
+                        <Ship className="h-4 w-4" />
+                        <Shield className="h-3 w-3" />
+                        Sea - Sensitive
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="notes">Notes (Optional)</Label>
+                <Textarea
+                  id="notes"
+                  value={editingConsolidation.notes || ""}
+                  onChange={(e) => setEditingConsolidation({
+                    ...editingConsolidation,
+                    notes: e.target.value
+                  })}
+                  placeholder="Add any special instructions or notes..."
+                  rows={3}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="target-weight">Target Weight (kg)</Label>
+                <Input
+                  id="target-weight"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={editingConsolidation.targetWeight || ""}
+                  onChange={(e) => setEditingConsolidation({
+                    ...editingConsolidation,
+                    targetWeight: e.target.value ? parseFloat(e.target.value) : null
+                  })}
+                  placeholder="Maximum weight for this consolidation"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setEditingConsolidation(null)}
+              disabled={updateConsolidationMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                if (editingConsolidation) {
+                  updateConsolidationMutation.mutate({
+                    id: editingConsolidation.id,
+                    data: {
+                      name: editingConsolidation.name,
+                      shipmentType: editingConsolidation.shipmentType,
+                      notes: editingConsolidation.notes,
+                      targetWeight: editingConsolidation.targetWeight
+                    }
+                  });
+                }
+              }}
+              disabled={updateConsolidationMutation.isPending || !editingConsolidation?.name}
+            >
+              {updateConsolidationMutation.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
         </DialogContent>
