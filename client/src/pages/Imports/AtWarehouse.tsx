@@ -496,9 +496,8 @@ export default function AtWarehouse() {
       const response = await fetch(`/api/imports/consolidations/${consolidationId}/items`);
       if (response.ok) {
         const items = await response.json();
-        // Sort items by ID ascending (newest at bottom)
-        const sortedItems = items.sort((a: any, b: any) => a.id - b.id);
-        setConsolidationItems(prev => ({ ...prev, [consolidationId]: sortedItems }));
+        // Items are already sorted by the backend (by when they were added)
+        setConsolidationItems(prev => ({ ...prev, [consolidationId]: items }));
       }
     } catch (error) {
       console.error('Failed to fetch consolidation items:', error);

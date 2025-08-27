@@ -766,10 +766,12 @@ router.get("/consolidations/:id/items", async (req, res) => {
         unitPrice: customItems.unitPrice,
         customerName: customItems.customerName,
         orderNumber: customItems.orderNumber,
+        addedAt: consolidationItems.createdAt,
       })
       .from(consolidationItems)
       .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
-      .where(eq(consolidationItems.consolidationId, consolidationId));
+      .where(eq(consolidationItems.consolidationId, consolidationId))
+      .orderBy(consolidationItems.createdAt);
     
     res.json(items);
   } catch (error) {
