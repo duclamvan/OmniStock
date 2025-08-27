@@ -956,18 +956,6 @@ export default function AtWarehouse() {
   };
 
   const handleDragEnd = (result: any) => {
-    // Reset cursor and restore body overflow
-    document.body.style.cursor = '';
-    document.body.style.overflow = '';
-    
-    // Remove dragging class to re-enable transitions (with small delay for library to finish)
-    setTimeout(() => {
-      const container = document.querySelector('[data-testid="available-items-container"]');
-      if (container) {
-        container.classList.remove('is-dragging');
-      }
-    }, 50);
-    
     if (!result.destination) return;
     
     const sourceId = result.source.droppableId;
@@ -975,17 +963,13 @@ export default function AtWarehouse() {
     
     // Handle reordering within Available Items
     if (sourceId === 'available-items' && destinationId === 'available-items') {
-      // Prevent glitch by immediately updating the order
       const currentOrder = manualItemOrder.length ? manualItemOrder : sortedAndFilteredItems.map(item => item.uniqueId);
       const newOrder = Array.from(currentOrder);
       const [removed] = newOrder.splice(result.source.index, 1);
       newOrder.splice(result.destination.index, 0, removed);
       
-      // Update state with smooth transition
       setManualItemOrder(newOrder);
       setItemSortBy('custom');
-      
-      // Save to localStorage for persistence
       localStorage.setItem('atWarehouse_manualItemOrder', JSON.stringify(newOrder));
     }
     // Handle drops to consolidations
@@ -996,7 +980,6 @@ export default function AtWarehouse() {
       if (!isNaN(itemId) && !isNaN(consolidationId)) {
         addItemsToConsolidationMutation.mutate({ consolidationId, itemIds: [itemId] });
         
-        // Remove from manual order if present
         if (manualItemOrder.length > 0) {
           setManualItemOrder(prev => prev.filter(id => id !== result.draggableId));
         }
@@ -1749,29 +1732,7 @@ export default function AtWarehouse() {
             </div>
           </div>
 
-          <DragDropContext 
-            onDragEnd={handleDragEnd}
-            onDragStart={(start) => {
-              document.body.style.cursor = 'grabbing';
-              // Disable auto-scroll to prevent vibrating
-              document.body.style.overflow = 'hidden';
-              // Add class to disable transitions during drag
-              setTimeout(() => {
-                const container = document.querySelector('[data-testid="available-items-container"]');
-                if (container) {
-                  container.classList.add('is-dragging');
-                }
-              }, 0);
-            }}
-            onDragUpdate={(update) => {
-              // Only update cursor when dragging over valid drop zones
-              if (update.destination) {
-                document.body.style.cursor = 'grabbing';
-              } else {
-                document.body.style.cursor = 'no-drop';
-              }
-            }}
-          >
+          <DragDropContext onDragEnd={handleDragEnd}>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               {/* Available Items Column */}
               <div className="lg:col-span-2">
@@ -2052,7 +2013,7 @@ export default function AtWarehouse() {
                         >
                           {sortedAndFilteredItems.map((item, index) => (
                             <Draggable key={item.uniqueId} draggableId={item.uniqueId} index={index}>
-                              {(provided, snapshot) => (
+                              {(provided) => (
                                 <div
                                   ref={provided.innerRef}
                                   {...provided.draggableProps}

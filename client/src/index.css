@@ -16,41 +16,16 @@
 }
 
 /* Simple drag and drop styles - minimal and functional */
-[data-rbd-placeholder-context-id] {
-  transition: height 0.2s ease-out !important;
+[data-rbd-draggable] {
+  transition: none;
 }
 
-/* Smooth drag transitions for available items - only when not dragging */
-[data-testid="available-items-container"]:not(.is-dragging) > div {
-  transition: transform 0.2s ease-out;
+[data-rbd-drag-handle] {
+  cursor: grab !important;
 }
 
-/* Disable transitions during drag for all items in container */
-[data-testid="available-items-container"].is-dragging > div {
-  transition: none !important;
-}
-
-/* The item being dragged */
-.react-beautiful-dnd-dragging {
-  transition: none !important;
-  z-index: 1000;
-  opacity: 0.9;
-}
-
-/* Placeholder space for dragged item */
-[data-rbd-placeholder-context-id] {
-  transition: none !important;
-}
-
-/* Item card transitions - only when not in dragging state */
-[data-testid="available-items-container"]:not(.is-dragging) .border.rounded-lg.p-3 {
-  transition: box-shadow 0.15s ease-out, border-color 0.15s ease-out;
-}
-
-/* Draggable item hover effect - only when not dragging */
-[data-testid="available-items-container"]:not(.is-dragging) .border.rounded-lg.p-3:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+[data-rbd-drag-handle]:active {
+  cursor: grabbing !important;
 }
 
 /* Unpack animation - spreading cards effect */
