@@ -950,6 +950,9 @@ export default function AtWarehouse() {
   };
 
   const handleDragEnd = (result: any) => {
+    // Reset cursor
+    document.body.style.cursor = '';
+    
     if (!result.destination) return;
     
     const sourceId = result.source.droppableId;
@@ -1731,6 +1734,9 @@ export default function AtWarehouse() {
             onDragStart={() => {
               document.body.style.cursor = 'grabbing';
             }}
+            onDragUpdate={() => {
+              document.body.style.cursor = 'grabbing';
+            }}
           >
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               {/* Available Items Column */}
@@ -2018,7 +2024,8 @@ export default function AtWarehouse() {
                                 <div
                                   ref={provided.innerRef}
                                   {...provided.draggableProps}
-                                  className={`border rounded-lg p-3 bg-background hover:shadow-md ${
+                                  {...provided.dragHandleProps}
+                                  className={`border rounded-lg p-3 bg-background hover:shadow-md cursor-grab active:cursor-grabbing ${
                                     selectedItemsForAI.has(item.id) 
                                       ? 'ring-2 ring-purple-500 bg-purple-50 dark:bg-purple-900/20' 
                                       : ''
@@ -2058,11 +2065,10 @@ export default function AtWarehouse() {
                                             onClick={(e) => e.stopPropagation()}
                                           />
                                           <div 
-                                            {...provided.dragHandleProps}
                                             className="hover:bg-muted/50 rounded p-0.5 transition-colors"
-                                            title={itemSortBy === 'custom' ? "Drag to reorder items" : "Drag to consolidation"}
+                                            title={itemSortBy === 'custom' ? "Drag card to reorder items" : "Drag card to consolidation"}
                                           >
-                                            <Grip className="h-4 w-4 text-muted-foreground flex-shrink-0 hover:text-primary transition-colors cursor-grab active:cursor-grabbing" />
+                                            <Grip className="h-4 w-4 text-muted-foreground flex-shrink-0 hover:text-primary transition-colors" />
                                           </div>
                                         </div>
                                         <div className="flex-1">
