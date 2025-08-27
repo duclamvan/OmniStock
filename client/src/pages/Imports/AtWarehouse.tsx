@@ -2161,26 +2161,44 @@ export default function AtWarehouse() {
               <div>
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Active Consolidations</CardTitle>
-                    <CardDescription>Drop items here to consolidate</CardDescription>
+                    <CardTitle className="text-lg">All Consolidations</CardTitle>
+                    <CardDescription>
+                      {consolidations.filter(c => c.status !== 'shipped' && c.status !== 'delivered').length} active • 
+                      {consolidations.filter(c => c.status === 'shipped' || c.status === 'delivered').length} shipped
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <ScrollArea className="h-[500px] pr-4">
                       <div className="space-y-3">
-                        {consolidations.map((consolidation) => (
-                          <div key={consolidation.id}>
-                            <div className="border rounded-lg p-3 bg-muted/30 hover:bg-muted/40 transition-colors">
-                              <div className="flex justify-between items-start mb-2">
-                                <div className="flex-1">
-                                  <div className="font-medium">{consolidation.name}</div>
-                                  <div className="text-xs text-muted-foreground">
-                                    {consolidation.warehouse.replace('_', ' - ')}
+                        {consolidations.map((consolidation) => {
+                          const isActive = consolidation.status !== 'shipped' && consolidation.status !== 'delivered';
+                          return (
+                            <div key={consolidation.id}>
+                              <div className={`border rounded-lg p-3 transition-colors ${
+                                isActive 
+                                  ? 'bg-muted/30 hover:bg-muted/40 border-border' 
+                                  : 'bg-muted/10 opacity-60 border-dashed'
+                              }`}>
+                                <div className="flex justify-between items-start mb-2">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <div className="font-medium">{consolidation.name}</div>
+                                      {!isActive && (
+                                        <Badge variant="secondary" className="text-xs">
+                                          <Ship className="h-3 w-3 mr-1" />
+                                          Shipped
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                      {consolidation.warehouse.replace('_', ' - ')}
+                                    </div>
                                   </div>
+                                  {getShippingMethodBadge(consolidation.shippingMethod)}
                                 </div>
-                                {getShippingMethodBadge(consolidation.shippingMethod)}
-                              </div>
-                              
-                              <Droppable droppableId={`consolidation-${consolidation.id}`}>
+                                
+                                {isActive ? (
+                                  <Droppable droppableId={`consolidation-${consolidation.id}`}>
                                 {(provided, snapshot) => (
                                   <div 
                                     ref={provided.innerRef}
@@ -2269,9 +2287,17 @@ export default function AtWarehouse() {
                                     {provided.placeholder}
                                   </div>
                                 )}
-                              </Droppable>
-                              
-                              <div className="flex justify-between items-center">
+                                  </Droppable>
+                                ) : (
+                                  <div className="min-h-[80px] border-2 border-dashed rounded-lg p-3 mb-2 border-muted bg-muted/5">
+                                    <div className="text-center text-sm py-2 text-muted-foreground">
+                                      <Ship className="h-6 w-6 mx-auto mb-2 opacity-50" />
+                                      This consolidation has been shipped
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                <div className="flex justify-between items-center">
                                 {getStatusBadge(consolidation.status)}
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
@@ -2309,7 +2335,8 @@ export default function AtWarehouse() {
                               </div>
                             </div>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </ScrollArea>
                   </CardContent>
@@ -2693,11 +2720,11 @@ export default function AtWarehouse() {
       >
         <DialogContent className="max-w-3xl max-h-[80vh]">
           <DialogHeader>
-            <DialogTitle>Move to Consolidation</DialogTitle>
+            <DialogTitle>Move to Active Consolidation</DialogTitle>
             <DialogDescription>
               {bulkMoveItems.size > 0 
-                ? `Select a consolidation to move ${bulkMoveItems.size} item${bulkMoveItems.size > 1 ? 's' : ''}`
-                : `Select a consolidation to move "${moveToConsolidationItem?.name}"`
+                ? `Select an active consolidation to move ${bulkMoveItems.size} item${bulkMoveItems.size > 1 ? 's' : ''}. Shipped consolidations cannot accept new items.`
+                : `Select an active consolidation to move "${moveToConsolidationItem?.name}". Shipped consolidations cannot accept new items.`
               }
             </DialogDescription>
           </DialogHeader>
