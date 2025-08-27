@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -250,8 +250,7 @@ export default function AtWarehouse() {
     return filtered;
   };
   
-  const sortedAndFilteredItems = useMemo(() => getFilteredAndSortedItems(), 
-    [customItems, itemSearchTerm, itemSortBy]);
+  const sortedAndFilteredItems = getFilteredAndSortedItems();
 
   // Filter orders by location
   const filteredOrders = locationFilter === "all" 
@@ -546,28 +545,24 @@ export default function AtWarehouse() {
     setExpandedConsolidations(newExpanded);
   };
 
-  // Add items to consolidation mutation - delayed updates to avoid drag conflicts
+  // Simple add items mutation
   const addItemsToConsolidationMutation = useMutation({
     mutationFn: async ({ consolidationId, itemIds }: { consolidationId: number, itemIds: number[] }) => {
       return apiRequest(`/api/imports/consolidations/${consolidationId}/items`, 'POST', { itemIds });
     },
     onSuccess: (_, { consolidationId }) => {
-      // Delay query invalidation to ensure drag animation is fully complete
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ['/api/imports/consolidations'] });
-        queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
-        queryClient.invalidateQueries({ queryKey: ['/api/imports/unpacked-items'] });
-        
-        // Refresh consolidation items if expanded
-        if (expandedConsolidations.has(consolidationId)) {
-          fetchConsolidationItems(consolidationId);
-        }
-      }, 300); // Wait for drag animation to complete
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/consolidations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/unpacked-items'] });
       
-      toast({ title: "Success", description: "Items added to consolidation" });
+      if (expandedConsolidations.has(consolidationId)) {
+        fetchConsolidationItems(consolidationId);
+      }
+      
+      toast({ title: "Success", description: "Item added to consolidation" });
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to add items to consolidation", variant: "destructive" });
+      toast({ title: "Error", description: "Failed to add item", variant: "destructive" });
     }
   });
 
@@ -906,36 +901,19 @@ export default function AtWarehouse() {
   };
 
   const handleDragEnd = (result: any) => {
-    // Reset cursor and remove any dragging classes
-    document.body.style.cursor = '';
-    
-    // Remove dragging class from all elements to ensure clean state
-    const draggingElements = document.querySelectorAll('.dragging-active');
-    draggingElements.forEach(el => el.classList.remove('dragging-active'));
-    
     if (!result.destination) return;
     
-    const sourceId = result.source.droppableId;
     const destinationId = result.destination.droppableId;
     
-    // If dropped back to the same location, just return (no action needed)
-    if (sourceId === destinationId && result.source.index === result.destination.index) {
-      return;
-    }
-    
-    // Extract the actual item ID from the unique draggable ID (e.g., "item-13" -> 13)
-    const draggableId = result.draggableId;
-    const itemId = parseInt(draggableId.replace('item-', ''));
-    
-    // Check if dropping into a consolidation
+    // Only handle drops to consolidations
     if (destinationId.startsWith('consolidation-')) {
+      const itemId = parseInt(result.draggableId.replace('item-', ''));
       const consolidationId = parseInt(destinationId.replace('consolidation-', ''));
-      if (consolidationId && !isNaN(consolidationId) && !isNaN(itemId)) {
-        // Make the API call without any immediate UI updates to avoid conflicts
+      
+      if (!isNaN(itemId) && !isNaN(consolidationId)) {
         addItemsToConsolidationMutation.mutate({ consolidationId, itemIds: [itemId] });
       }
     }
-    // If dropping back to available-items, do nothing (item stays in place)
   };
 
   const getStatusBadge = (status: string) => (
@@ -1951,46 +1929,28 @@ export default function AtWarehouse() {
                   </CardHeader>
                   <CardContent>
                     <Droppable droppableId="available-items">
-                      {(provided, snapshot) => (
+                      {(provided) => (
                         <div 
                           ref={provided.innerRef} 
                           {...provided.droppableProps}
                           data-testid="available-items-container"
-                          className={`
-                            space-y-2 min-h-[400px] p-2 rounded-lg transition-all duration-300
-                            ${snapshot.isDraggingOver 
-                              ? 'bg-gradient-to-b from-blue-50/30 to-transparent dark:from-blue-900/10 dark:to-transparent ring-2 ring-blue-400/30 drop-zone-active' 
-                              : ''}
-                          `}
+                          className="space-y-2 min-h-[400px] p-2 rounded-lg"
                         >
                           {sortedAndFilteredItems.map((item, index) => (
                             <Draggable key={`drag-${item.id}`} draggableId={item.uniqueId} index={index}>
-                              {(provided, snapshot) => (
+                              {(provided) => (
                                 <div
                                   ref={provided.innerRef}
                                   {...provided.draggableProps}
                                   {...provided.dragHandleProps}
-                                  className={`
-                                    draggable-item relative border rounded-lg p-3 bg-background transition-shadow 
-                                    ${
-                                      snapshot.isDragging 
-                                        ? 'dragging-active shadow-2xl z-50 opacity-95' 
-                                        : ''
-                                    }
-                                    ${
-                                      snapshot.draggingOver 
-                                        ? 'ring-2 ring-primary/50' 
-                                        : ''
-                                    }
-                                    ${
-                                      selectedItemsForAI.has(item.id) 
-                                        ? 'ring-2 ring-purple-500 bg-purple-50 dark:bg-purple-900/20' 
-                                        : 'hover:shadow-md hover:border-primary/30'
-                                    }
-                                  `}
+                                  className={`border rounded-lg p-3 bg-background hover:shadow-md cursor-move ${
+                                    selectedItemsForAI.has(item.id) 
+                                      ? 'ring-2 ring-purple-500 bg-purple-50 dark:bg-purple-900/20' 
+                                      : ''
+                                  }`}
                                   onClick={(e) => {
-                                    // Only toggle selection if not dragging and not clicking on buttons
-                                    if (!snapshot.isDragging && !(e.target as HTMLElement).closest('button')) {
+                                    // Only toggle selection if not clicking on buttons
+                                    if (!(e.target as HTMLElement).closest('button')) {
                                       const newSelected = new Set(selectedItemsForAI);
                                       if (newSelected.has(item.id)) {
                                         newSelected.delete(item.id);
@@ -1999,16 +1959,6 @@ export default function AtWarehouse() {
                                       }
                                       setSelectedItemsForAI(newSelected);
                                     }
-                                  }}
-                                  style={{ 
-                                    cursor: snapshot.isDragging ? 'grabbing' : 'grab',
-                                    ...provided.draggableProps.style,
-                                    transform: snapshot.isDragging && provided.draggableProps.style?.transform 
-                                      ? provided.draggableProps.style.transform 
-                                      : undefined,
-                                    transition: snapshot.isDragging 
-                                      ? 'none' 
-                                      : 'box-shadow 0.1s ease-out'
                                   }}
                                 >
                                   <div className="flex items-start justify-between">
@@ -2338,27 +2288,15 @@ export default function AtWarehouse() {
                                 </div>
                                 
                                 <Droppable droppableId={`consolidation-${consolidation.id}`}>
-                                {(provided, snapshot) => (
+                                {(provided) => (
                                   <div 
                                     ref={provided.innerRef}
                                     {...provided.droppableProps}
-                                    className={`
-                                      min-h-[80px] border-2 border-dashed rounded-lg p-3 mb-2
-                                      transition-all duration-300 cubic-bezier(0.4, 0, 0.2, 1)
-                                      ${
-                                        snapshot.isDraggingOver 
-                                          ? 'border-primary bg-gradient-to-br from-primary/20 to-primary/5 dark:from-primary/15 dark:to-primary/5 scale-[1.02] shadow-xl drop-zone-active' 
-                                          : 'border-muted hover:border-muted-foreground/30 hover:bg-muted/5'
-                                      }
-                                    `}
+                                    className="min-h-[80px] border-2 border-dashed rounded-lg p-3 mb-2 border-muted hover:border-primary/50 hover:bg-muted/5"
                                   >
                                     {consolidation.itemCount === 0 ? (
-                                      <div className={`text-center text-sm py-2 transition-all duration-300 ${
-                                        snapshot.isDraggingOver 
-                                          ? 'text-primary font-medium scale-105' 
-                                          : 'text-muted-foreground'
-                                      }`}>
-                                        {snapshot.isDraggingOver ? '✨ Drop items here ✨' : '📦 Drop items here'}
+                                      <div className="text-center text-sm py-2 text-muted-foreground">
+                                        📦 Drop items here
                                       </div>
                                     ) : (
                                       <div>
