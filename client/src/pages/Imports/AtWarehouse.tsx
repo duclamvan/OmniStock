@@ -960,11 +960,13 @@ export default function AtWarehouse() {
     document.body.style.cursor = '';
     document.body.style.overflow = '';
     
-    // Remove dragging class to re-enable transitions
-    const container = document.querySelector('[data-testid="available-items-container"]');
-    if (container) {
-      container.classList.remove('is-dragging');
-    }
+    // Remove dragging class to re-enable transitions (with small delay for library to finish)
+    setTimeout(() => {
+      const container = document.querySelector('[data-testid="available-items-container"]');
+      if (container) {
+        container.classList.remove('is-dragging');
+      }
+    }, 50);
     
     if (!result.destination) return;
     
@@ -1754,10 +1756,12 @@ export default function AtWarehouse() {
               // Disable auto-scroll to prevent vibrating
               document.body.style.overflow = 'hidden';
               // Add class to disable transitions during drag
-              const container = document.querySelector('[data-testid="available-items-container"]');
-              if (container) {
-                container.classList.add('is-dragging');
-              }
+              setTimeout(() => {
+                const container = document.querySelector('[data-testid="available-items-container"]');
+                if (container) {
+                  container.classList.add('is-dragging');
+                }
+              }, 0);
             }}
             onDragUpdate={(update) => {
               // Only update cursor when dragging over valid drop zones
@@ -2047,8 +2051,8 @@ export default function AtWarehouse() {
                           className="space-y-2 min-h-[400px] p-2 rounded-lg"
                         >
                           {sortedAndFilteredItems.map((item, index) => (
-                            <Draggable key={`drag-${item.id}`} draggableId={item.uniqueId} index={index}>
-                              {(provided) => (
+                            <Draggable key={item.uniqueId} draggableId={item.uniqueId} index={index}>
+                              {(provided, snapshot) => (
                                 <div
                                   ref={provided.innerRef}
                                   {...provided.draggableProps}
