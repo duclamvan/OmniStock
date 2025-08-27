@@ -156,6 +156,7 @@ export default function AtWarehouse() {
   const [itemSortBy, setItemSortBy] = useState<string>("newest");
   const [itemSearchTerm, setItemSearchTerm] = useState<string>("");
   const [bulkSelectedItems, setBulkSelectedItems] = useState<Set<number>>(new Set());
+  const [manualItemOrder, setManualItemOrder] = useState<string[]>([]);
   const [extractedItems, setExtractedItems] = useState<Array<{
     name: string;
     source: string;
@@ -204,47 +205,58 @@ export default function AtWarehouse() {
     }
     
     // Apply sorting
-    switch (itemSortBy) {
-      case 'newest':
-        filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        break;
-      case 'oldest':
-        filtered.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-        break;
-      case 'sensitive-first':
-        filtered.sort((a, b) => {
-          if (a.classification === 'sensitive' && b.classification !== 'sensitive') return -1;
-          if (a.classification !== 'sensitive' && b.classification === 'sensitive') return 1;
-          return 0;
-        });
-        break;
-      case 'general-first':
-        filtered.sort((a, b) => {
-          if (a.classification === 'general' && b.classification !== 'general') return -1;
-          if (a.classification !== 'general' && b.classification === 'general') return 1;
-          return 0;
-        });
-        break;
-      case 'quantity-high':
-        filtered.sort((a, b) => b.quantity - a.quantity);
-        break;
-      case 'quantity-low':
-        filtered.sort((a, b) => a.quantity - b.quantity);
-        break;
-      case 'weight-high':
-        filtered.sort((a, b) => parseFloat(b.weight || '0') - parseFloat(a.weight || '0'));
-        break;
-      case 'weight-low':
-        filtered.sort((a, b) => parseFloat(a.weight || '0') - parseFloat(b.weight || '0'));
-        break;
-      case 'name-asc':
-        filtered.sort((a, b) => a.name.localeCompare(b.name));
-        break;
-      case 'name-desc':
-        filtered.sort((a, b) => b.name.localeCompare(a.name));
-        break;
-      default:
-        break;
+    if (itemSortBy === 'custom' && manualItemOrder.length > 0) {
+      // Use manual order
+      const orderMap = new Map(manualItemOrder.map((id, index) => [id, index]));
+      filtered.sort((a, b) => {
+        const aIndex = orderMap.get(a.uniqueId) ?? Number.MAX_VALUE;
+        const bIndex = orderMap.get(b.uniqueId) ?? Number.MAX_VALUE;
+        return aIndex - bIndex;
+      });
+    } else {
+      // Apply regular sorting
+      switch (itemSortBy) {
+        case 'newest':
+          filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          break;
+        case 'oldest':
+          filtered.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+          break;
+        case 'sensitive-first':
+          filtered.sort((a, b) => {
+            if (a.classification === 'sensitive' && b.classification !== 'sensitive') return -1;
+            if (a.classification !== 'sensitive' && b.classification === 'sensitive') return 1;
+            return 0;
+          });
+          break;
+        case 'general-first':
+          filtered.sort((a, b) => {
+            if (a.classification === 'general' && b.classification !== 'general') return -1;
+            if (a.classification !== 'general' && b.classification === 'general') return 1;
+            return 0;
+          });
+          break;
+        case 'quantity-high':
+          filtered.sort((a, b) => b.quantity - a.quantity);
+          break;
+        case 'quantity-low':
+          filtered.sort((a, b) => a.quantity - b.quantity);
+          break;
+        case 'weight-high':
+          filtered.sort((a, b) => parseFloat(b.weight || '0') - parseFloat(a.weight || '0'));
+          break;
+        case 'weight-low':
+          filtered.sort((a, b) => parseFloat(a.weight || '0') - parseFloat(b.weight || '0'));
+          break;
+        case 'name-asc':
+          filtered.sort((a, b) => a.name.localeCompare(b.name));
+          break;
+        case 'name-desc':
+          filtered.sort((a, b) => b.name.localeCompare(a.name));
+          break;
+        default:
+          break;
+      }
     }
     
     return filtered;
@@ -940,15 +952,31 @@ export default function AtWarehouse() {
   const handleDragEnd = (result: any) => {
     if (!result.destination) return;
     
+    const sourceId = result.source.droppableId;
     const destinationId = result.destination.droppableId;
     
-    // Only handle drops to consolidations
-    if (destinationId.startsWith('consolidation-')) {
+    // Handle reordering within Available Items
+    if (sourceId === 'available-items' && destinationId === 'available-items') {
+      const newOrder = Array.from(manualItemOrder.length ? manualItemOrder : sortedAndFilteredItems.map(item => item.uniqueId));
+      const [removed] = newOrder.splice(result.source.index, 1);
+      newOrder.splice(result.destination.index, 0, removed);
+      setManualItemOrder(newOrder);
+      
+      // Set sort to "custom" to indicate manual ordering
+      setItemSortBy('custom');
+    }
+    // Handle drops to consolidations
+    else if (destinationId.startsWith('consolidation-')) {
       const itemId = parseInt(result.draggableId.replace('item-', ''));
       const consolidationId = parseInt(destinationId.replace('consolidation-', ''));
       
       if (!isNaN(itemId) && !isNaN(consolidationId)) {
         addItemsToConsolidationMutation.mutate({ consolidationId, itemIds: [itemId] });
+        
+        // Remove from manual order if present
+        if (manualItemOrder.length > 0) {
+          setManualItemOrder(prev => prev.filter(id => id !== result.draggableId));
+        }
       }
     }
   };
@@ -1738,6 +1766,17 @@ export default function AtWarehouse() {
                             <SelectValue placeholder="Sort by..." />
                           </SelectTrigger>
                           <SelectContent>
+                            {itemSortBy === 'custom' && (
+                              <>
+                                <SelectItem value="custom">
+                                  <div className="flex items-center">
+                                    <Grip className="h-4 w-4 mr-2" />
+                                    Custom Order
+                                  </div>
+                                </SelectItem>
+                                <DropdownMenuSeparator />
+                              </>
+                            )}
                             <SelectItem value="newest">
                               <div className="flex items-center">
                                 <Calendar className="h-4 w-4 mr-2" />
@@ -1979,8 +2018,7 @@ export default function AtWarehouse() {
                                 <div
                                   ref={provided.innerRef}
                                   {...provided.draggableProps}
-                                  {...provided.dragHandleProps}
-                                  className={`border rounded-lg p-3 bg-background hover:shadow-md cursor-move ${
+                                  className={`border rounded-lg p-3 bg-background hover:shadow-md ${
                                     selectedItemsForAI.has(item.id) 
                                       ? 'ring-2 ring-purple-500 bg-purple-50 dark:bg-purple-900/20' 
                                       : ''
@@ -2020,8 +2058,9 @@ export default function AtWarehouse() {
                                             onClick={(e) => e.stopPropagation()}
                                           />
                                           <div 
+                                            {...provided.dragHandleProps}
                                             className="hover:bg-muted/50 rounded p-0.5 transition-colors"
-                                            title="Drag to move"
+                                            title={itemSortBy === 'custom' ? "Drag to reorder items" : "Drag to consolidation"}
                                           >
                                             <Grip className="h-4 w-4 text-muted-foreground flex-shrink-0 hover:text-primary transition-colors cursor-grab active:cursor-grabbing" />
                                           </div>
