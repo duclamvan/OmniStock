@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -157,6 +157,7 @@ export default function AtWarehouse() {
   const [itemSearchTerm, setItemSearchTerm] = useState<string>("");
   const [bulkSelectedItems, setBulkSelectedItems] = useState<Set<number>>(new Set());
   const [manualItemOrder, setManualItemOrder] = useState<string[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
   const [extractedItems, setExtractedItems] = useState<Array<{
     name: string;
     source: string;
@@ -268,7 +269,13 @@ export default function AtWarehouse() {
     return filtered;
   };
   
-  const sortedAndFilteredItems = getFilteredAndSortedItems();
+  const sortedAndFilteredItems = useMemo(() => getFilteredAndSortedItems(), [
+    allItems, 
+    itemSearchTerm, 
+    itemSortBy, 
+    manualItemOrder,
+    isDragging
+  ]);
 
   // Filter orders by location
   const filteredOrders = locationFilter === "all" 
@@ -956,6 +963,8 @@ export default function AtWarehouse() {
   };
 
   const handleDragEnd = (result: any) => {
+    setIsDragging(false);
+    
     if (!result.destination) return;
     
     const sourceId = result.source.droppableId;
@@ -985,6 +994,10 @@ export default function AtWarehouse() {
         }
       }
     }
+  };
+
+  const handleDragStart = () => {
+    setIsDragging(true);
   };
 
   const getStatusBadge = (status: string) => (
@@ -1732,7 +1745,7 @@ export default function AtWarehouse() {
             </div>
           </div>
 
-          <DragDropContext onDragEnd={handleDragEnd}>
+          <DragDropContext onDragEnd={handleDragEnd} onDragStart={handleDragStart}>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               {/* Available Items Column */}
               <div className="lg:col-span-2">
