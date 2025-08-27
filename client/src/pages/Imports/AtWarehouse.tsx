@@ -2704,14 +2704,26 @@ export default function AtWarehouse() {
           
           <ScrollArea className="h-[500px]">
             <div className="space-y-3">
-              {consolidations.length === 0 ? (
+              {consolidations.filter(c => c.status !== 'shipped' && c.status !== 'delivered').length === 0 ? (
                 <div className="text-center py-12">
                   <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">No consolidations available</p>
-                  <p className="text-sm text-muted-foreground mt-1">Create a consolidation first to move items</p>
+                  <p className="text-muted-foreground">No active consolidations available</p>
+                  <p className="text-sm text-muted-foreground mt-1">All consolidations are either shipped or delivered</p>
+                  <Button 
+                    variant="outline" 
+                    className="mt-4"
+                    onClick={() => {
+                      setMoveToConsolidationItem(null);
+                      setBulkMoveItems(new Set());
+                      setIsCreateConsolidationOpen(true);
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create New Consolidation
+                  </Button>
                 </div>
               ) : (
-                consolidations.filter(c => c.status !== 'shipped').map((consolidation) => (
+                consolidations.filter(c => c.status !== 'shipped' && c.status !== 'delivered').map((consolidation) => (
                   <div 
                     key={consolidation.id}
                     onClick={() => {
@@ -2735,33 +2747,44 @@ export default function AtWarehouse() {
                         });
                       }
                     }}
-                    className="border rounded-lg p-4 cursor-pointer hover:border-primary hover:bg-muted/50 transition-all"
+                    className="border rounded-lg p-4 cursor-pointer hover:border-primary hover:bg-primary/5 transition-all group"
                   >
-                    <div className="flex justify-between items-start mb-2">
+                    <div className="flex justify-between items-start mb-3">
                       <div>
-                        <div className="font-medium text-lg">{consolidation.name}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {consolidation.warehouse.replace('_', ' - ')}
+                        <div className="font-semibold text-lg group-hover:text-primary transition-colors">
+                          {consolidation.name}
+                        </div>
+                        <div className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                          <MapPin className="h-3 w-3" />
+                          {consolidation.warehouse.replace('_', ', ')}
                         </div>
                       </div>
                       {getShippingMethodBadge(consolidation.shippingMethod)}
                     </div>
                     
                     <div className="flex items-center gap-4 mt-3 text-sm">
-                      <div className="flex items-center gap-1">
-                        <Package className="h-4 w-4 text-muted-foreground" />
-                        <span>{consolidation.itemCount} items</span>
+                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <Package className="h-4 w-4" />
+                        <span className="font-medium">{consolidation.itemCount || 0}</span>
+                        <span>items</span>
                       </div>
                       {consolidation.targetWeight && (
-                        <div className="flex items-center gap-1">
-                          <Weight className="h-4 w-4 text-muted-foreground" />
-                          <span>Max: {consolidation.targetWeight} kg</span>
+                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                          <Weight className="h-4 w-4" />
+                          <span>Max:</span>
+                          <span className="font-medium">{consolidation.targetWeight} kg</span>
                         </div>
                       )}
                       <div className="ml-auto">
                         {getStatusBadge(consolidation.status)}
                       </div>
                     </div>
+                    
+                    {consolidation.notes && (
+                      <div className="mt-3 pt-3 border-t text-sm text-muted-foreground">
+                        {consolidation.notes}
+                      </div>
+                    )}
                   </div>
                 ))
               )}
