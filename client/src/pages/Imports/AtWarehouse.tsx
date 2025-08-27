@@ -1882,25 +1882,25 @@ export default function AtWarehouse() {
                             onClick={() => {
                               const allFilteredIds = sortedAndFilteredItems.map(i => i.id);
                               const allSelected = allFilteredIds.length > 0 && 
-                                                 allFilteredIds.every(id => bulkSelectedItems.has(id));
+                                                 allFilteredIds.every(id => selectedItemsForAI.has(id));
                               
                               if (allSelected) {
-                                setBulkSelectedItems(new Set());
+                                setSelectedItemsForAI(new Set());
                               } else {
-                                setBulkSelectedItems(new Set(allFilteredIds));
+                                setSelectedItemsForAI(new Set(allFilteredIds));
                               }
                             }}
                           >
                             {(() => {
                               const allFilteredIds = sortedAndFilteredItems.map(i => i.id);
                               const allSelected = allFilteredIds.length > 0 && 
-                                                 allFilteredIds.every(id => bulkSelectedItems.has(id));
+                                                 allFilteredIds.every(id => selectedItemsForAI.has(id));
                               
-                              if (allSelected || bulkSelectedItems.size > 0) {
+                              if (allSelected || selectedItemsForAI.size > 0) {
                                 return (
                                   <>
                                     <Square className="h-3 w-3 mr-1" />
-                                    Deselect All {bulkSelectedItems.size > 0 && `(${bulkSelectedItems.size})`}
+                                    Deselect All {selectedItemsForAI.size > 0 && `(${selectedItemsForAI.size})`}
                                   </>
                                 );
                               } else {
@@ -1921,8 +1921,8 @@ export default function AtWarehouse() {
                                 onClick={expandAllItems}
                                 title="Expand all items with sub-items"
                               >
-                                <ChevronsDown className={bulkSelectedItems.size > 0 ? "h-3 w-3" : "h-3 w-3 mr-1"} />
-                                {bulkSelectedItems.size === 0 && "Expand All"}
+                                <ChevronsDown className={selectedItemsForAI.size > 0 ? "h-3 w-3" : "h-3 w-3 mr-1"} />
+                                {selectedItemsForAI.size === 0 && "Expand All"}
                               </Button>
                               <Button
                                 variant="outline"
@@ -1930,16 +1930,16 @@ export default function AtWarehouse() {
                                 onClick={collapseAllItems}
                                 title="Collapse all items"
                               >
-                                <ChevronsUp className={bulkSelectedItems.size > 0 ? "h-3 w-3" : "h-3 w-3 mr-1"} />
-                                {bulkSelectedItems.size === 0 && "Collapse All"}
+                                <ChevronsUp className={selectedItemsForAI.size > 0 ? "h-3 w-3" : "h-3 w-3 mr-1"} />
+                                {selectedItemsForAI.size === 0 && "Collapse All"}
                               </Button>
                             </>
                           )}
-                          {bulkSelectedItems.size > 0 && (
+                          {selectedItemsForAI.size > 0 && (
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="outline" size="sm">
-                                  Bulk Actions
+                                  Bulk Actions ({selectedItemsForAI.size})
                                   <ChevronDown className="h-4 w-4 ml-1" />
                                 </Button>
                               </DropdownMenuTrigger>
@@ -1947,10 +1947,10 @@ export default function AtWarehouse() {
                                 <DropdownMenuLabel>Classification</DropdownMenuLabel>
                                 <DropdownMenuItem
                                   onClick={() => {
-                                    bulkSelectedItems.forEach(id => {
+                                    selectedItemsForAI.forEach(id => {
                                       updateItemClassificationMutation.mutate({ id, classification: 'general' });
                                     });
-                                    setBulkSelectedItems(new Set());
+                                    setSelectedItemsForAI(new Set());
                                   }}
                                 >
                                   <Flag className="h-4 w-4 text-green-500 fill-green-500 mr-2" />
@@ -1958,10 +1958,10 @@ export default function AtWarehouse() {
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   onClick={() => {
-                                    bulkSelectedItems.forEach(id => {
+                                    selectedItemsForAI.forEach(id => {
                                       updateItemClassificationMutation.mutate({ id, classification: 'sensitive' });
                                     });
-                                    setBulkSelectedItems(new Set());
+                                    setSelectedItemsForAI(new Set());
                                   }}
                                 >
                                   <Flag className="h-4 w-4 text-red-500 fill-red-500 mr-2" />
@@ -1969,10 +1969,10 @@ export default function AtWarehouse() {
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   onClick={() => {
-                                    bulkSelectedItems.forEach(id => {
+                                    selectedItemsForAI.forEach(id => {
                                       updateItemClassificationMutation.mutate({ id, classification: null });
                                     });
-                                    setBulkSelectedItems(new Set());
+                                    setSelectedItemsForAI(new Set());
                                   }}
                                 >
                                   <div className="h-4 w-4 border-2 border-dashed border-gray-400 rounded mr-2" />
@@ -1982,10 +1982,8 @@ export default function AtWarehouse() {
                                 <DropdownMenuLabel>AI Actions</DropdownMenuLabel>
                                 <DropdownMenuItem
                                   onClick={() => {
-                                    setSelectedItemsForAI(bulkSelectedItems);
-                                    setBulkSelectedItems(new Set());
                                     setIsAIProcessing(true);
-                                    aiClassifyMutation.mutate(Array.from(bulkSelectedItems));
+                                    aiClassifyMutation.mutate(Array.from(selectedItemsForAI));
                                   }}
                                 >
                                   <Sparkles className="h-4 w-4 mr-2" />
@@ -1995,8 +1993,8 @@ export default function AtWarehouse() {
                                 <DropdownMenuLabel>Move Items</DropdownMenuLabel>
                                 <DropdownMenuItem
                                   onClick={() => {
-                                    setBulkMoveItems(new Set(bulkSelectedItems));
-                                    setBulkSelectedItems(new Set());
+                                    setBulkMoveItems(new Set(selectedItemsForAI));
+                                    setSelectedItemsForAI(new Set());
                                   }}
                                 >
                                   <ArrowRightToLine className="h-4 w-4 mr-2" />
@@ -2025,14 +2023,17 @@ export default function AtWarehouse() {
                                   ref={provided.innerRef}
                                   {...provided.draggableProps}
                                   {...provided.dragHandleProps}
-                                  className={`border rounded-lg p-3 bg-background hover:shadow-md cursor-grab active:cursor-grabbing ${
+                                  className={`border rounded-lg p-3 bg-background hover:shadow-md cursor-grab active:cursor-grabbing transition-all ${
                                     selectedItemsForAI.has(item.id) 
-                                      ? 'ring-2 ring-purple-500 bg-purple-50 dark:bg-purple-900/20' 
-                                      : ''
+                                      ? 'ring-2 ring-purple-500 bg-purple-50 dark:bg-purple-900/20 border-purple-300' 
+                                      : 'hover:border-purple-200'
                                   }`}
                                   onClick={(e) => {
-                                    // Only toggle selection if not clicking on buttons
-                                    if (!(e.target as HTMLElement).closest('button')) {
+                                    // Only toggle selection if not clicking on buttons or drag handle
+                                    const target = e.target as HTMLElement;
+                                    if (!target.closest('button') && !target.closest('[data-drag-handle]')) {
+                                      e.preventDefault();
+                                      e.stopPropagation();
                                       const newSelected = new Set(selectedItemsForAI);
                                       if (newSelected.has(item.id)) {
                                         newSelected.delete(item.id);
@@ -2049,6 +2050,7 @@ export default function AtWarehouse() {
                                       <div className="flex items-start gap-3">
                                         <div className="flex items-center mt-0.5">
                                           <div 
+                                            data-drag-handle
                                             className="hover:bg-muted/50 rounded p-0.5 transition-colors"
                                             title={itemSortBy === 'custom' ? "Drag card to reorder items" : "Drag card to consolidation"}
                                           >
