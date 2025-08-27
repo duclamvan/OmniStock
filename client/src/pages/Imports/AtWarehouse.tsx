@@ -182,8 +182,11 @@ export default function AtWarehouse() {
     queryKey: ['/api/imports/unpacked-items'],
   });
 
-  // Combine all items
-  const allItems = [...customItems, ...unpackedItems];
+  // Combine all items with unique identifiers
+  const allItems = [
+    ...customItems.map(item => ({ ...item, uniqueId: `custom-${item.id}`, isCustom: true })),
+    ...unpackedItems.map(item => ({ ...item, uniqueId: `unpacked-${item.id}`, isCustom: false }))
+  ];
 
   // Sort and filter items
   const getFilteredAndSortedItems = () => {
@@ -460,10 +463,10 @@ export default function AtWarehouse() {
       const response = await apiRequest(`/api/imports/custom-items/${itemId}/unpack`, 'POST');
       return response;
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast({
         title: "Success",
-        description: `Unpacked ${data.unpackedItems.length} items successfully`,
+        description: `Unpacked ${data.unpackedItems?.length || 0} items successfully`,
       });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
       
@@ -807,13 +810,15 @@ export default function AtWarehouse() {
     
     if (!result.destination) return;
     
-    const itemId = parseInt(result.draggableId);
+    // Extract the actual item ID from the unique draggable ID (e.g., "custom-13" -> 13, "unpacked-14" -> 14)
+    const draggableId = result.draggableId;
+    const itemId = parseInt(draggableId.replace(/^(custom|unpacked)-/, ''));
     const destinationId = result.destination.droppableId;
     
     // Check if dropping into a consolidation
     if (destinationId.startsWith('consolidation-')) {
       const consolidationId = parseInt(destinationId.replace('consolidation-', ''));
-      if (consolidationId && !isNaN(consolidationId)) {
+      if (consolidationId && !isNaN(consolidationId) && !isNaN(itemId)) {
         addItemsToConsolidationMutation.mutate({ consolidationId, itemIds: [itemId] });
       }
     }
@@ -1843,7 +1848,7 @@ export default function AtWarehouse() {
                           `}
                         >
                           {sortedAndFilteredItems.map((item, index) => (
-                            <Draggable key={`item-${item.id}`} draggableId={String(item.id)} index={index}>
+                            <Draggable key={item.uniqueId} draggableId={item.uniqueId} index={index}>
                               {(provided, snapshot) => (
                                 <div
                                   ref={provided.innerRef}
