@@ -950,8 +950,9 @@ export default function AtWarehouse() {
   };
 
   const handleDragEnd = (result: any) => {
-    // Reset cursor
+    // Reset cursor and restore body overflow
     document.body.style.cursor = '';
+    document.body.style.overflow = '';
     
     if (!result.destination) return;
     
@@ -1731,11 +1732,18 @@ export default function AtWarehouse() {
 
           <DragDropContext 
             onDragEnd={handleDragEnd}
-            onDragStart={() => {
+            onDragStart={(start) => {
               document.body.style.cursor = 'grabbing';
+              // Disable auto-scroll to prevent vibrating
+              document.body.style.overflow = 'hidden';
             }}
-            onDragUpdate={() => {
-              document.body.style.cursor = 'grabbing';
+            onDragUpdate={(update) => {
+              // Only update cursor when dragging over valid drop zones
+              if (update.destination) {
+                document.body.style.cursor = 'grabbing';
+              } else {
+                document.body.style.cursor = 'no-drop';
+              }
             }}
           >
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
