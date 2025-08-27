@@ -2323,8 +2323,8 @@ export default function AtWarehouse() {
                                   <div className="flex-1">
                                     <div className="flex items-center gap-2">
                                       <div className="font-medium text-sm">{consolidation.name}</div>
-                                      <Badge className="text-xs px-1.5 py-0" variant={consolidation.shipmentType === 'air_ddp' ? 'default' : 'secondary'}>
-                                        {consolidation.shipmentType?.replace('_', ' ').toUpperCase() || 'Not Set'}
+                                      <Badge className="text-xs px-1.5 py-0" variant={consolidation.shippingMethod === 'air' ? 'default' : 'secondary'}>
+                                        {consolidation.shippingMethod?.replace('_', ' ').toUpperCase() || 'Not Set'}
                                       </Badge>
                                     </div>
                                     <div className="text-xs text-muted-foreground">
@@ -3002,10 +3002,10 @@ export default function AtWarehouse() {
               <div>
                 <Label htmlFor="shipment-type">Shipment Type</Label>
                 <Select 
-                  value={editingConsolidation.shipmentType || "not_set"}
+                  value={editingConsolidation.shippingMethod || "not_set"}
                   onValueChange={(value) => setEditingConsolidation({
                     ...editingConsolidation,
-                    shipmentType: value === "not_set" ? null : value
+                    shippingMethod: value === "not_set" ? null : value
                   })}
                 >
                   <SelectTrigger id="shipment-type">
@@ -3013,10 +3013,16 @@ export default function AtWarehouse() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="not_set">Not Set</SelectItem>
-                    <SelectItem value="air_ddp">
+                    <SelectItem value="air">
                       <div className="flex items-center gap-2">
                         <Plane className="h-4 w-4" />
-                        Air DDP (Door-to-Door)
+                        Air Freight
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="sea">
+                      <div className="flex items-center gap-2">
+                        <Ship className="h-4 w-4" />
+                        Sea Freight
                       </div>
                     </SelectItem>
                     <SelectItem value="express">
@@ -3025,29 +3031,10 @@ export default function AtWarehouse() {
                         Express Courier
                       </div>
                     </SelectItem>
-                    <SelectItem value="railway_general">
-                      <div className="flex items-center gap-2">
-                        <Truck className="h-4 w-4" />
-                        Railway - General
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="railway_sensitive">
+                    <SelectItem value="priority">
                       <div className="flex items-center gap-2">
                         <Shield className="h-4 w-4" />
-                        Railway - Sensitive
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="sea_general">
-                      <div className="flex items-center gap-2">
-                        <Ship className="h-4 w-4" />
-                        Sea - General
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="sea_sensitive">
-                      <div className="flex items-center gap-2">
-                        <Ship className="h-4 w-4" />
-                        <Shield className="h-3 w-3" />
-                        Sea - Sensitive
+                        Priority Shipping
                       </div>
                     </SelectItem>
                   </SelectContent>
@@ -3100,7 +3087,7 @@ export default function AtWarehouse() {
                     id: editingConsolidation.id,
                     data: {
                       name: editingConsolidation.name,
-                      shipmentType: editingConsolidation.shipmentType,
+                      shippingMethod: editingConsolidation.shippingMethod,
                       notes: editingConsolidation.notes,
                       targetWeight: editingConsolidation.targetWeight
                     }

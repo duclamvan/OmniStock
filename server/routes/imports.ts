@@ -115,13 +115,16 @@ router.get("/purchases/at-warehouse", async (req, res) => {
   }
 });
 
-// Get unpacked items (custom items from unpacked purchase orders)
+// Get unpacked items (custom items from unpacked purchase orders that are still available)
 router.get("/unpacked-items", async (req, res) => {
   try {
     const unpackedItems = await db
       .select()
       .from(customItems)
-      .where(like(customItems.orderNumber, 'PO-%'))
+      .where(and(
+        like(customItems.orderNumber, 'PO-%'),
+        eq(customItems.status, 'available')
+      ))
       .orderBy(desc(customItems.createdAt));
     
     res.json(unpackedItems);
@@ -309,6 +312,16 @@ router.post("/purchases/unpack", async (req, res) => {
 
     if (purchase.status === 'unpacked') {
       return res.status(400).json({ message: "Purchase order already unpacked" });
+    }
+    
+    // Check if items from this purchase order already exist
+    const existingItems = await db
+      .select()
+      .from(customItems)
+      .where(eq(customItems.orderNumber, `PO-${purchase.id}`));
+    
+    if (existingItems.length > 0) {
+      return res.status(400).json({ message: "Items from this purchase order have already been unpacked" });
     }
 
     const items = await db
@@ -769,13 +782,13 @@ router.get("/consolidations/:id/items", async (req, res) => {
 router.patch("/consolidations/:id", async (req, res) => {
   try {
     const consolidationId = parseInt(req.params.id);
-    const { name, shipmentType, notes, targetWeight } = req.body;
+    const { name, shippingMethod, notes, targetWeight } = req.body;
     
     await db
       .update(consolidations)
       .set({ 
         name,
-        shipmentType,
+        shippingMethod,
         notes,
         targetWeight,
         updatedAt: new Date()
@@ -838,10 +851,14 @@ router.post("/consolidations/:id/ship", async (req, res) => {
   }
 });
 
-// Get all custom items
+// Get all available custom items (not in consolidations or shipped)
 router.get("/custom-items", async (req, res) => {
   try {
-    const result = await db.select().from(customItems).orderBy(desc(customItems.createdAt));
+    const result = await db
+      .select()
+      .from(customItems)
+      .where(eq(customItems.status, 'available'))
+      .orderBy(desc(customItems.createdAt));
     res.json(result);
   } catch (error) {
     console.error("Error fetching custom items:", error);
