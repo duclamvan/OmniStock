@@ -1855,10 +1855,10 @@ export default function AtWarehouse() {
                                   {...provided.draggableProps}
                                   {...provided.dragHandleProps}
                                   className={`
-                                    draggable-item relative border rounded-lg p-3 bg-background 
+                                    draggable-item relative border rounded-lg p-3 bg-background transition-shadow 
                                     ${
                                       snapshot.isDragging 
-                                        ? 'shadow-2xl !scale-105 !rotate-2 z-50 opacity-95' 
+                                        ? 'dragging-active shadow-2xl z-50 opacity-95' 
                                         : ''
                                     }
                                     ${
@@ -1887,9 +1887,12 @@ export default function AtWarehouse() {
                                   style={{ 
                                     cursor: snapshot.isDragging ? 'grabbing' : 'grab',
                                     ...provided.draggableProps.style,
+                                    transform: snapshot.isDragging && provided.draggableProps.style?.transform 
+                                      ? provided.draggableProps.style.transform 
+                                      : undefined,
                                     transition: snapshot.isDragging 
-                                      ? 'none' 
-                                      : provided.draggableProps.style?.transition
+                                      ? undefined 
+                                      : 'all 0.2s ease'
                                   }}
                                 >
                                   <div className="flex items-start justify-between">

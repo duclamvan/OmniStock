@@ -28,31 +28,23 @@
   }
 }
 
-@keyframes card-lift {
-  0% {
-    transform: rotate(0deg) scale(1);
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-  }
-  100% {
-    transform: rotate(2deg) scale(1.05);
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  }
-}
-
+/* Removed transform animations to prevent stuck drag states */
 /* Smooth transitions for drag and drop */
 .draggable-item {
-  transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), 
-              box-shadow 0.2s cubic-bezier(0.2, 0, 0, 1),
+  transition: box-shadow 0.2s cubic-bezier(0.2, 0, 0, 1),
               border-color 0.2s ease;
+  position: relative;
 }
 
 .draggable-item:hover {
-  transform: translateY(-2px);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
-.draggable-item:active {
-  animation: card-lift 0.3s ease forwards;
+/* Apply dragging styles only when actively dragging */
+.dragging-active {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.08) !important;
+  opacity: 0.95 !important;
+  cursor: grabbing !important;
 }
 
 .drop-zone-active {
