@@ -172,15 +172,21 @@ export default function AtWarehouse() {
   // Fetch purchase orders at warehouse
   const { data: atWarehouseOrders = [], isLoading: isLoadingOrders } = useQuery<ImportPurchase[]>({
     queryKey: ['/api/imports/purchases/at-warehouse'],
+    refetchOnWindowFocus: false, // Prevent glitches on refocus
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   // Fetch all items (unpacked + custom)
   const { data: customItems = [], isLoading: isLoadingItems } = useQuery<CustomItem[]>({
     queryKey: ['/api/imports/custom-items'],
+    refetchOnWindowFocus: false, // Prevent glitches on refocus
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   const { data: unpackedItems = [] } = useQuery<CustomItem[]>({
     queryKey: ['/api/imports/unpacked-items'],
+    refetchOnWindowFocus: false, // Prevent glitches on refocus
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   // Use customItems as single source of truth (unpacked items are already included in customItems)
@@ -961,13 +967,18 @@ export default function AtWarehouse() {
     
     // Handle reordering within Available Items
     if (sourceId === 'available-items' && destinationId === 'available-items') {
-      const newOrder = Array.from(manualItemOrder.length ? manualItemOrder : sortedAndFilteredItems.map(item => item.uniqueId));
+      // Prevent glitch by immediately updating the order
+      const currentOrder = manualItemOrder.length ? manualItemOrder : sortedAndFilteredItems.map(item => item.uniqueId);
+      const newOrder = Array.from(currentOrder);
       const [removed] = newOrder.splice(result.source.index, 1);
       newOrder.splice(result.destination.index, 0, removed);
-      setManualItemOrder(newOrder);
       
-      // Set sort to "custom" to indicate manual ordering
+      // Update state with smooth transition
+      setManualItemOrder(newOrder);
       setItemSortBy('custom');
+      
+      // Save to localStorage for persistence
+      localStorage.setItem('atWarehouse_manualItemOrder', JSON.stringify(newOrder));
     }
     // Handle drops to consolidations
     else if (destinationId.startsWith('consolidation-')) {
