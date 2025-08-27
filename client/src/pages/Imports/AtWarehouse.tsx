@@ -942,15 +942,29 @@ export default function AtWarehouse() {
     
     if (!result.destination) return;
     
-    // Extract the actual item ID from the unique draggable ID (e.g., "custom-13" -> 13, "unpacked-14" -> 14)
+    // Extract the actual item ID from the unique draggable ID (e.g., "item-13" -> 13)
     const draggableId = result.draggableId;
-    const itemId = parseInt(draggableId.replace(/^(custom|unpacked)-/, ''));
+    const itemId = parseInt(draggableId.replace('item-', ''));
     const destinationId = result.destination.droppableId;
     
     // Check if dropping into a consolidation
     if (destinationId.startsWith('consolidation-')) {
       const consolidationId = parseInt(destinationId.replace('consolidation-', ''));
       if (consolidationId && !isNaN(consolidationId) && !isNaN(itemId)) {
+        // Optimistic update - immediately update UI
+        queryClient.setQueryData(['/api/imports/custom-items'], (oldData: any) => {
+          return oldData?.filter((item: any) => item.id !== itemId) || [];
+        });
+        
+        queryClient.setQueryData(['/api/imports/consolidations'], (oldData: any) => {
+          return oldData?.map((consol: any) => 
+            consol.id === consolidationId 
+              ? { ...consol, itemCount: (consol.itemCount || 0) + 1 }
+              : consol
+          ) || [];
+        });
+        
+        // Make the actual API call
         addItemsToConsolidationMutation.mutate({ consolidationId, itemIds: [itemId] });
       }
     }
