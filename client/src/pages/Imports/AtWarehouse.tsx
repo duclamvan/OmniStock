@@ -545,24 +545,60 @@ export default function AtWarehouse() {
     setExpandedConsolidations(newExpanded);
   };
 
-  // Simple add items mutation
+  // Simple add items mutation with optimized cache updates
   const addItemsToConsolidationMutation = useMutation({
     mutationFn: async ({ consolidationId, itemIds }: { consolidationId: number, itemIds: number[] }) => {
       return apiRequest(`/api/imports/consolidations/${consolidationId}/items`, 'POST', { itemIds });
     },
-    onSuccess: (_, { consolidationId }) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/imports/consolidations'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/imports/unpacked-items'] });
+    onMutate: async ({ consolidationId, itemIds }) => {
+      // Cancel outgoing refetches to prevent overwriting optimistic update
+      await queryClient.cancelQueries({ queryKey: ['/api/imports/custom-items'] });
+      await queryClient.cancelQueries({ queryKey: ['/api/imports/consolidations'] });
       
-      if (expandedConsolidations.has(consolidationId)) {
-        fetchConsolidationItems(consolidationId);
-      }
+      // Save current state for rollback
+      const previousItems = queryClient.getQueryData(['/api/imports/custom-items']);
+      const previousConsolidations = queryClient.getQueryData(['/api/imports/consolidations']);
       
-      toast({ title: "Success", description: "Item added to consolidation" });
+      // Optimistically remove the item from available items
+      queryClient.setQueryData(['/api/imports/custom-items'], (old: any) => 
+        old ? old.filter((item: any) => !itemIds.includes(item.id)) : []
+      );
+      
+      // Optimistically update consolidation count
+      queryClient.setQueryData(['/api/imports/consolidations'], (old: any) => 
+        old ? old.map((c: any) => 
+          c.id === consolidationId 
+            ? { ...c, itemCount: (c.itemCount || 0) + itemIds.length }
+            : c
+        ) : []
+      );
+      
+      return { previousItems, previousConsolidations };
     },
-    onError: () => {
+    onError: (err, variables, context) => {
+      // Rollback on error
+      if (context?.previousItems) {
+        queryClient.setQueryData(['/api/imports/custom-items'], context.previousItems);
+      }
+      if (context?.previousConsolidations) {
+        queryClient.setQueryData(['/api/imports/consolidations'], context.previousConsolidations);
+      }
       toast({ title: "Error", description: "Failed to add item", variant: "destructive" });
+    },
+    onSettled: (_, __, { consolidationId }) => {
+      // Refetch to ensure consistency but with a small delay to prevent flicker
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/imports/consolidations'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/imports/unpacked-items'] });
+        
+        if (expandedConsolidations.has(consolidationId)) {
+          fetchConsolidationItems(consolidationId);
+        }
+      }, 500);
+    },
+    onSuccess: () => {
+      toast({ title: "Success", description: "Item added to consolidation" });
     }
   });
 
