@@ -182,11 +182,12 @@ export default function AtWarehouse() {
     queryKey: ['/api/imports/unpacked-items'],
   });
 
-  // Combine all items with unique identifiers
-  const allItems = [
-    ...customItems.map(item => ({ ...item, uniqueId: `custom-${item.id}`, isCustom: true })),
-    ...unpackedItems.map(item => ({ ...item, uniqueId: `unpacked-${item.id}`, isCustom: false }))
-  ];
+  // Use customItems as single source of truth (unpacked items are already included in customItems)
+  const allItems = customItems.map(item => ({ 
+    ...item, 
+    uniqueId: `item-${item.id}`, 
+    isCustom: item.orderNumber ? !item.orderNumber.startsWith('PO-') : true 
+  }));
 
   // Sort and filter items
   const getFilteredAndSortedItems = () => {
