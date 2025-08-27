@@ -554,10 +554,12 @@ export default function AtWarehouse() {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: ['/api/imports/consolidations'] });
       await queryClient.cancelQueries({ queryKey: ['/api/imports/custom-items'] });
+      await queryClient.cancelQueries({ queryKey: ['/api/imports/unpacked-items'] });
       
       // Snapshot the previous values
       const previousConsolidations = queryClient.getQueryData(['/api/imports/consolidations']);
       const previousCustomItems = queryClient.getQueryData(['/api/imports/custom-items']);
+      const previousUnpackedItems = queryClient.getQueryData(['/api/imports/unpacked-items']);
       
       // Optimistically update consolidations to show increased item count
       queryClient.setQueryData(['/api/imports/consolidations'], (old: any) => {
@@ -579,8 +581,14 @@ export default function AtWarehouse() {
         return old.filter((item: any) => !itemIds.includes(item.id));
       });
       
+      // Optimistically remove items from the unpacked items list
+      queryClient.setQueryData(['/api/imports/unpacked-items'], (old: any) => {
+        if (!old) return old;
+        return old.filter((item: any) => !itemIds.includes(item.id));
+      });
+      
       // Return a context object with the snapshotted values
-      return { previousConsolidations, previousCustomItems };
+      return { previousConsolidations, previousCustomItems, previousUnpackedItems };
     },
     onError: (err, variables, context) => {
       // If the mutation fails, use the context returned from onMutate to roll back
@@ -590,12 +598,16 @@ export default function AtWarehouse() {
       if (context?.previousCustomItems) {
         queryClient.setQueryData(['/api/imports/custom-items'], context.previousCustomItems);
       }
+      if (context?.previousUnpackedItems) {
+        queryClient.setQueryData(['/api/imports/unpacked-items'], context.previousUnpackedItems);
+      }
       toast({ title: "Error", description: "Failed to add items to consolidation", variant: "destructive" });
     },
     onSettled: () => {
       // Always refetch after error or success
       queryClient.invalidateQueries({ queryKey: ['/api/imports/consolidations'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/unpacked-items'] });
     },
     onSuccess: () => {
       toast({ title: "Success", description: "Items added to consolidation" });
@@ -951,29 +963,16 @@ export default function AtWarehouse() {
     if (destinationId.startsWith('consolidation-')) {
       const consolidationId = parseInt(destinationId.replace('consolidation-', ''));
       if (consolidationId && !isNaN(consolidationId) && !isNaN(itemId)) {
-        // Use setTimeout to let the drag animation complete before updating
-        setTimeout(() => {
-          // Optimistic update - update UI after animation completes
-          queryClient.setQueryData(['/api/imports/custom-items'], (oldData: any) => {
-            return oldData?.filter((item: any) => item.id !== itemId) || [];
-          });
-          
-          queryClient.setQueryData(['/api/imports/consolidations'], (oldData: any) => {
-            return oldData?.map((consol: any) => 
-              consol.id === consolidationId 
-                ? { ...consol, itemCount: (consol.itemCount || 0) + 1 }
-                : consol
-            ) || [];
-          });
-          
-          // Immediately fetch the consolidation items if it's expanded
-          if (expandedConsolidations.has(consolidationId)) {
+        // Make the API call immediately - the mutation's onMutate will handle optimistic updates
+        addItemsToConsolidationMutation.mutate({ consolidationId, itemIds: [itemId] });
+        
+        // Fetch consolidation items if expanded
+        if (expandedConsolidations.has(consolidationId)) {
+          // Small delay to avoid conflicting with optimistic updates
+          setTimeout(() => {
             fetchConsolidationItems(consolidationId);
-          }
-          
-          // Make the actual API call
-          addItemsToConsolidationMutation.mutate({ consolidationId, itemIds: [itemId] });
-        }, 50); // Small delay to allow drag animation to complete
+          }, 100);
+        }
       }
     }
   };
