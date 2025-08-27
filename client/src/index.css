@@ -20,37 +20,37 @@
   transition: height 0.2s ease-out !important;
 }
 
-/* Disable all react-beautiful-dnd animations to prevent jumps */
-[data-rbd-droppable-context-id] > div {
+/* CRITICAL: Disable ALL animations when dragging to prevent jumps */
+body.is-dragging * {
+  transition: none !important;
+  animation: none !important;
+}
+
+/* After drag, prevent the jump by disabling transforms temporarily */
+body.is-dragging [data-rbd-draggable-context-id],
+body.is-dragging [data-rbd-droppable-context-id] > div {
+  transform: none !important;
   transition: none !important;
 }
 
-/* Smooth drag transitions only for our custom interactions */
-[data-testid="available-items-container"] > div:not([data-rbd-draggable-context-id]) {
-  transition: transform 0.15s ease-out, opacity 0.15s ease-out;
-}
-
-/* Prevent layout shift during drag */
+/* The item being dragged */
 .react-beautiful-dnd-dragging {
   transition: none !important;
   z-index: 1000;
   transform: rotate(3deg) !important;
+  opacity: 0.9;
 }
 
-/* Remove react-beautiful-dnd's automatic animations */
-[data-rbd-draggable-context-id] {
-  transition: none !important;
+/* When not dragging, allow smooth transitions */
+body:not(.is-dragging) [data-testid="available-items-container"] > div {
+  transition: transform 0.15s ease-out;
 }
 
-/* Only apply transitions to non-dragging items on hover */
-.border.rounded-lg.p-3:not([data-rbd-draggable-context-id]) {
-  transition: all 0.15s ease-out;
-}
-
-/* Draggable item hover effect - only when not being dragged */
-.border.rounded-lg.p-3:not(.react-beautiful-dnd-dragging):not([data-rbd-draggable-context-id]):hover {
+/* Hover effect only when not dragging */
+body:not(.is-dragging) .border.rounded-lg.p-3:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.15s ease-out;
 }
 
 /* Unpack animation - spreading cards effect */
