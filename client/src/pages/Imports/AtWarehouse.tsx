@@ -1891,8 +1891,8 @@ export default function AtWarehouse() {
                                       ? provided.draggableProps.style.transform 
                                       : undefined,
                                     transition: snapshot.isDragging 
-                                      ? undefined 
-                                      : 'all 0.2s ease'
+                                      ? 'none' 
+                                      : 'box-shadow 0.1s ease-out'
                                   }}
                                 >
                                   <div className="flex items-start justify-between">

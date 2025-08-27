@@ -15,13 +15,13 @@
   }
 }
 
-/* Trello-like drag and drop animations */
+/* Trello-like drag and drop animations - optimized for speed */
 @keyframes drop-zone-pulse {
   0% {
     box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
   }
-  70% {
-    box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+  50% {
+    box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.1);
   }
   100% {
     box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
@@ -29,15 +29,16 @@
 }
 
 /* Removed transform animations to prevent stuck drag states */
-/* Smooth transitions for drag and drop */
+/* Smooth transitions for drag and drop - optimized for speed */
 .draggable-item {
-  transition: box-shadow 0.2s cubic-bezier(0.2, 0, 0, 1),
-              border-color 0.2s ease;
+  transition: box-shadow 0.1s ease-out,
+              border-color 0.1s ease-out;
   position: relative;
 }
 
 .draggable-item:hover {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition-duration: 0.05s;
 }
 
 /* Apply dragging styles only when actively dragging */
@@ -45,16 +46,18 @@
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.08) !important;
   opacity: 0.95 !important;
   cursor: grabbing !important;
+  transition: none !important;
 }
 
 .drop-zone-active {
-  animation: drop-zone-pulse 2s infinite;
+  animation: drop-zone-pulse 1.5s infinite;
   background: linear-gradient(to bottom, rgba(59, 130, 246, 0.05), rgba(59, 130, 246, 0.02));
+  transition: background 0.1s ease-out;
 }
 
-/* Smooth placeholder transitions */
+/* Smooth placeholder transitions - faster response */
 .drag-placeholder {
-  transition: all 0.2s ease;
+  transition: all 0.1s ease-out;
   background: linear-gradient(to right, transparent, rgba(59, 130, 246, 0.1), transparent);
   border: 2px dashed rgba(59, 130, 246, 0.3);
   border-radius: 8px;
