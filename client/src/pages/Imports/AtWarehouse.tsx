@@ -1717,25 +1717,38 @@ export default function AtWarehouse() {
                             variant="outline"
                             size="sm"
                             onClick={() => {
-                              if (bulkSelectedItems.size === sortedAndFilteredItems.length && sortedAndFilteredItems.length > 0) {
+                              const allFilteredIds = sortedAndFilteredItems.map(i => i.id);
+                              const allSelected = allFilteredIds.length > 0 && 
+                                                 allFilteredIds.every(id => bulkSelectedItems.has(id));
+                              
+                              if (allSelected) {
                                 setBulkSelectedItems(new Set());
                               } else {
-                                const allIds = new Set(sortedAndFilteredItems.map(i => i.id));
-                                setBulkSelectedItems(allIds);
+                                setBulkSelectedItems(new Set(allFilteredIds));
                               }
                             }}
                           >
-                            {bulkSelectedItems.size === sortedAndFilteredItems.length && sortedAndFilteredItems.length > 0 ? (
-                              <>
-                                <Square className="h-3 w-3 mr-1" />
-                                Deselect All
-                              </>
-                            ) : (
-                              <>
-                                <CheckSquare className="h-3 w-3 mr-1" />
-                                Select All ({sortedAndFilteredItems.length})
-                              </>
-                            )}
+                            {(() => {
+                              const allFilteredIds = sortedAndFilteredItems.map(i => i.id);
+                              const allSelected = allFilteredIds.length > 0 && 
+                                                 allFilteredIds.every(id => bulkSelectedItems.has(id));
+                              
+                              if (allSelected) {
+                                return (
+                                  <>
+                                    <Square className="h-3 w-3 mr-1" />
+                                    Deselect All
+                                  </>
+                                );
+                              } else {
+                                return (
+                                  <>
+                                    <CheckSquare className="h-3 w-3 mr-1" />
+                                    Select All ({sortedAndFilteredItems.length})
+                                  </>
+                                );
+                              }
+                            })()}
                           </Button>
                           {allItems.some(item => item.purchaseOrderId && item.orderItems && item.orderItems.length > 0) && (
                             <>
