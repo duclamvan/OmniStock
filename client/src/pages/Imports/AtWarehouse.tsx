@@ -568,10 +568,12 @@ export default function AtWarehouse() {
         const items = await response.json();
         // Items are already sorted by the backend (by when they were added)
         setConsolidationItems(prev => ({ ...prev, [consolidationId]: items }));
+        return items; // Return the items for immediate use
       }
     } catch (error) {
       console.error('Failed to fetch consolidation items:', error);
     }
+    return [];
   };
   
   // Auto-expand and fetch items for active consolidations on mount
@@ -2507,15 +2509,8 @@ export default function AtWarehouse() {
                                         </DropdownMenuItem>
                                         <DropdownMenuItem
                                           onClick={async () => {
-                                            // First ensure we have the items for this consolidation
-                                            if (!consolidationItems[consolidation.id]) {
-                                              await fetchConsolidationItems(consolidation.id);
-                                              // Wait a bit for state to update
-                                              await new Promise(resolve => setTimeout(resolve, 100));
-                                            }
-                                            
-                                            // Get the items for THIS specific consolidation
-                                            const items = consolidationItems[consolidation.id] || [];
+                                            // Fetch fresh items for this specific consolidation
+                                            const items = await fetchConsolidationItems(consolidation.id);
                                             const trackingNumbers: string[] = [];
                                             
                                             console.log(`Processing consolidation ${consolidation.id} (${consolidation.name}):`, items);
