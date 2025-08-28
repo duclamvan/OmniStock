@@ -2504,38 +2504,50 @@ export default function AtWarehouse() {
                                             const items = consolidationItems[consolidation.id] || [];
                                             const trackingNumbers: string[] = [];
                                             
-                                            // Collect tracking numbers from items and their parent purchase orders
+                                            console.log('Consolidation items:', items);
+                                            console.log('All items (custom):', allItems);
+                                            console.log('At warehouse orders:', atWarehouseOrders);
+                                            
+                                            // Collect tracking numbers from items
                                             for (const item of items) {
-                                              // Get the full custom item details
-                                              const fullItem = allItems.find((i: any) => i.id === item.id);
-                                              
+                                              // The item here is already the custom item data
                                               // Check if item has its own tracking number
-                                              if (fullItem?.trackingNumber) {
-                                                trackingNumbers.push(fullItem.trackingNumber);
+                                              if (item.trackingNumber) {
+                                                trackingNumbers.push(item.trackingNumber);
                                               }
                                               
-                                              // Check if item has a parent purchase order with tracking number
-                                              if (fullItem?.purchaseOrderId) {
-                                                // Find the parent purchase order from atWarehouseOrders
-                                                const parentPurchase = atWarehouseOrders.find((p: ImportPurchase) => p.id === fullItem.purchaseOrderId);
-                                                if (parentPurchase?.trackingNumber) {
-                                                  trackingNumbers.push(parentPurchase.trackingNumber);
+                                              // Check if item came from a purchase order (has source starting with "SUPPLIER:")
+                                              // The source field contains supplier info for items from purchase orders
+                                              const supplierMatch = item.source?.match(/^SUPPLIER:\s*(.+)$/i) || 
+                                                                   item.source?.match(/^(.+)$/); // Also match without prefix
+                                              
+                                              if (supplierMatch) {
+                                                // Find matching purchase order by supplier name
+                                                const matchingOrders = atWarehouseOrders.filter((order: ImportPurchase) => {
+                                                  const orderSupplier = order.supplier?.toLowerCase().trim();
+                                                  const itemSupplier = supplierMatch[1]?.toLowerCase().trim() || item.source?.toLowerCase().trim();
+                                                  return orderSupplier === itemSupplier || order.supplier === item.source;
+                                                });
+                                                
+                                                console.log('Matching orders for item:', item.name, matchingOrders);
+                                                
+                                                // Add tracking numbers from matching orders
+                                                for (const order of matchingOrders) {
+                                                  if (order.trackingNumber) {
+                                                    trackingNumbers.push(order.trackingNumber);
+                                                  }
                                                 }
                                               }
-                                            }
-                                            
-                                            // Also check if any items belong to unpacked purchase orders
-                                            // Items created from unpacking will have their purchase order tracking numbers
-                                            for (const order of atWarehouseOrders) {
-                                              if (order.trackingNumber && order.status === 'unpacked') {
-                                                // Check if any of the order's items are in this consolidation
-                                                const orderItemIds = order.items?.map(item => item.id) || [];
-                                                const hasOrderItems = items.some((item: any) => 
-                                                  orderItemIds.includes(item.id) || 
-                                                  item.purchaseOrderId === order.id
+                                              
+                                              // Also check for orderNumber match (like "1688")
+                                              if (item.orderNumber) {
+                                                // Find orders that might contain this order number in their tracking or reference
+                                                const orderWithNumber = atWarehouseOrders.find((order: ImportPurchase) => 
+                                                  order.trackingNumber?.includes(item.orderNumber) ||
+                                                  order.notes?.includes(item.orderNumber)
                                                 );
-                                                if (hasOrderItems) {
-                                                  trackingNumbers.push(order.trackingNumber);
+                                                if (orderWithNumber?.trackingNumber) {
+                                                  trackingNumbers.push(orderWithNumber.trackingNumber);
                                                 }
                                               }
                                             }
@@ -2544,6 +2556,8 @@ export default function AtWarehouse() {
                                             const uniqueTrackingNumbers = Array.from(new Set(
                                               trackingNumbers.filter(tn => tn && tn.trim())
                                             ));
+                                            
+                                            console.log('Final tracking numbers:', uniqueTrackingNumbers);
                                             
                                             setSelectedConsolidationTracking({
                                               id: consolidation.id,
