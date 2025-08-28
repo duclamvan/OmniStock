@@ -692,13 +692,33 @@ export default function AtWarehouse() {
       }
       toast({ title: "Error", description: "Failed to remove item", variant: "destructive" });
     },
-    onSettled: (_, __, { consolidationId }) => {
+    onSettled: (_, __, { consolidationId, itemId }) => {
       // Always refetch after error or success
       queryClient.invalidateQueries({ queryKey: ['/api/imports/consolidations'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/unpacked-items'] });
       // Refresh consolidation items
       fetchConsolidationItems(consolidationId);
+      
+      // Add the removed item to the bottom of manual order list
+      setTimeout(() => {
+        const itemUniqueId = `item-${itemId}`;
+        
+        // Switch to custom sorting and add item to bottom
+        setItemSortBy('custom');
+        setManualItemOrder(prev => {
+          // Get current items in order, or create order from current sorted items if none exists
+          let currentOrder = prev.length > 0 ? prev : sortedAndFilteredItems.map(item => item.uniqueId);
+          
+          // Remove the item if it already exists (shouldn't happen but safety)
+          currentOrder = currentOrder.filter(id => id !== itemUniqueId);
+          
+          // Add to bottom
+          const newOrder = [...currentOrder, itemUniqueId];
+          localStorage.setItem('atWarehouse_manualItemOrder', JSON.stringify(newOrder));
+          return newOrder;
+        });
+      }, 100);
     },
     onSuccess: () => {
       toast({ title: "Success", description: "Item removed from consolidation" });
