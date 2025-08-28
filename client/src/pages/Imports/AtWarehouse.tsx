@@ -141,6 +141,8 @@ export default function AtWarehouse() {
   const [statusTarget, setStatusTarget] = useState<{ type: 'order' | 'item', id: number, currentStatus: string } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'item' | 'consolidation', id: number, name: string } | null>(null);
   const [moveToConsolidationItem, setMoveToConsolidationItem] = useState<{ id: number, name: string } | null>(null);
+  const [showTrackingModal, setShowTrackingModal] = useState(false);
+  const [selectedConsolidationTracking, setSelectedConsolidationTracking] = useState<{id: number, name: string, trackingNumbers: string[]} | null>(null);
   const [bulkMoveItems, setBulkMoveItems] = useState<Set<number>>(new Set());
   const [expandedItems, setExpandedItems] = useState<Set<number>>(() => {
     const saved = localStorage.getItem('atWarehouse_expandedItems');
@@ -2365,6 +2367,35 @@ export default function AtWarehouse() {
                                           <Ship className="h-3 w-3 mr-2" />
                                           Ship Consolidation
                                         </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                          onClick={async () => {
+                                            // Get full item details including tracking numbers
+                                            const items = consolidationItems[consolidation.id] || [];
+                                            const trackingNumbers: string[] = [];
+                                            
+                                            // Collect tracking numbers from items
+                                            for (const item of items) {
+                                              // Get the full custom item details to access tracking number
+                                              const fullItem = allItems.find((i: any) => i.id === item.id);
+                                              if (fullItem?.trackingNumber) {
+                                                trackingNumbers.push(fullItem.trackingNumber);
+                                              }
+                                            }
+                                            
+                                            // Remove duplicates
+                                            const uniqueTrackingNumbers = Array.from(new Set(trackingNumbers));
+                                            
+                                            setSelectedConsolidationTracking({
+                                              id: consolidation.id,
+                                              name: consolidation.name,
+                                              trackingNumbers: uniqueTrackingNumbers
+                                            });
+                                            setShowTrackingModal(true);
+                                          }}
+                                        >
+                                          <Package className="h-3 w-3 mr-2" />
+                                          Export Tracking Numbers
+                                        </DropdownMenuItem>
                                         <DropdownMenuSeparator />
                                         <DropdownMenuItem
                                           onClick={() => handleDeleteConsolidation(consolidation)}
@@ -3117,6 +3148,91 @@ export default function AtWarehouse() {
               disabled={updateConsolidationMutation.isPending || !editingConsolidation?.name}
             >
               {updateConsolidationMutation.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Tracking Numbers Export Modal */}
+      <Dialog open={showTrackingModal} onOpenChange={setShowTrackingModal}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Export Tracking Numbers</DialogTitle>
+            <DialogDescription>
+              Copy tracking numbers for {selectedConsolidationTracking?.name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {selectedConsolidationTracking?.trackingNumbers.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No tracking numbers found</p>
+                <p className="text-sm mt-2">Items in this consolidation don't have tracking numbers yet.</p>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label>Tracking Numbers ({selectedConsolidationTracking?.trackingNumbers.length} total)</Label>
+                  <Textarea 
+                    readOnly
+                    value={selectedConsolidationTracking?.trackingNumbers.join('\n') || ''}
+                    className="min-h-[200px] font-mono text-sm"
+                    onClick={(e) => e.currentTarget.select()}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Click the text area to select all tracking numbers
+                  </p>
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      if (selectedConsolidationTracking?.trackingNumbers) {
+                        navigator.clipboard.writeText(selectedConsolidationTracking.trackingNumbers.join('\n'));
+                        toast({
+                          title: "Copied!",
+                          description: `${selectedConsolidationTracking.trackingNumbers.length} tracking number(s) copied to clipboard`,
+                        });
+                      }
+                    }}
+                  >
+                    <Package className="h-4 w-4 mr-2" />
+                    Copy to Clipboard
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      if (selectedConsolidationTracking?.trackingNumbers) {
+                        // Copy with comma separation for easy paste into shipping forms
+                        navigator.clipboard.writeText(selectedConsolidationTracking.trackingNumbers.join(', '));
+                        toast({
+                          title: "Copied!",
+                          description: "Tracking numbers copied with comma separation",
+                        });
+                      }
+                    }}
+                  >
+                    Copy with Commas
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowTrackingModal(false);
+                setSelectedConsolidationTracking(null);
+              }}
+            >
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
