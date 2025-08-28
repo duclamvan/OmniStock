@@ -160,7 +160,6 @@ export default function AtWarehouse() {
   const [bulkSelectedItems, setBulkSelectedItems] = useState<Set<number>>(new Set());
   const [itemSourceFilter, setItemSourceFilter] = useState<string>("all");
   const [itemClassificationFilter, setItemClassificationFilter] = useState<string>("all");
-  const [itemCustomerFilter, setItemCustomerFilter] = useState<string>("all");
   const [manualItemOrder, setManualItemOrder] = useState<string[]>([]);
   const [extractedItems, setExtractedItems] = useState<Array<{
     name: string;
@@ -229,12 +228,6 @@ export default function AtWarehouse() {
       filtered = filtered.filter(item => !item.classification);
     }
     
-    // Apply customer filter
-    if (itemCustomerFilter === "has_customer") {
-      filtered = filtered.filter(item => item.customerName);
-    } else if (itemCustomerFilter === "no_customer") {
-      filtered = filtered.filter(item => !item.customerName);
-    }
     
     // Apply sorting
     if (itemSortBy === 'custom' && manualItemOrder.length > 0) {
@@ -300,8 +293,7 @@ export default function AtWarehouse() {
     itemSortBy, 
     manualItemOrder,
     itemSourceFilter,
-    itemClassificationFilter,
-    itemCustomerFilter
+    itemClassificationFilter
   ]);
 
   // Filter orders by location
@@ -1938,26 +1930,13 @@ export default function AtWarehouse() {
                           </SelectContent>
                         </Select>
                         
-                        <Select value={itemCustomerFilter} onValueChange={setItemCustomerFilter}>
-                          <SelectTrigger className="w-[140px]">
-                            <Users className="h-3 w-3 mr-2" />
-                            <SelectValue placeholder="Customer" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Items</SelectItem>
-                            <SelectItem value="has_customer">Has Customer</SelectItem>
-                            <SelectItem value="no_customer">No Customer</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        
-                        {(itemSourceFilter !== "all" || itemClassificationFilter !== "all" || itemCustomerFilter !== "all") && (
+                        {(itemSourceFilter !== "all" || itemClassificationFilter !== "all") && (
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => {
                               setItemSourceFilter("all");
                               setItemClassificationFilter("all");
-                              setItemCustomerFilter("all");
                             }}
                             className="h-9"
                           >
