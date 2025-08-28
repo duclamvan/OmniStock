@@ -334,8 +334,8 @@ router.post("/purchases/unpack", async (req, res) => {
     for (const item of items) {
       const customItem = {
         name: item.name,
-        source: purchase.supplier,
-        orderNumber: `PO #${purchase.id}`,
+        source: `Supplier: ${purchase.supplier}`,
+        orderNumber: `PO-${purchase.id}`, // Fixed to match frontend pattern
         quantity: item.quantity,
         unitPrice: item.unitPrice || '0',
         weight: item.weight || '0',
@@ -767,6 +767,7 @@ router.get("/consolidations/:id/items", async (req, res) => {
         unitPrice: customItems.unitPrice,
         customerName: customItems.customerName,
         orderNumber: customItems.orderNumber,
+        trackingNumber: customItems.trackingNumber, // Include tracking number
         addedAt: consolidationItems.createdAt,
       })
       .from(consolidationItems)

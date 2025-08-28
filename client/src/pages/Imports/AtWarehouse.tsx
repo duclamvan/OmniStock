@@ -2515,33 +2515,21 @@ export default function AtWarehouse() {
                                             
                                             // Collect tracking numbers from parent purchase orders
                                             for (const item of items) {
-                                              let trackingFound = false;
-                                              
-                                              // First priority: Items from purchase orders have trackingNumber field
+                                              // Items from purchase orders have trackingNumber field
                                               if (item.trackingNumber) {
                                                 trackingNumbers.push(item.trackingNumber);
-                                                trackingFound = true;
-                                              }
-                                              
-                                              // Second priority: Try to match by order number pattern (e.g., "PO-19")
-                                              // Only use this if we haven't found a tracking number yet
-                                              if (!trackingFound && item.orderNumber && item.orderNumber.startsWith('PO-')) {
-                                                // Extract purchase order ID from orderNumber
+                                              } else if (item.orderNumber && item.orderNumber.startsWith('PO-')) {
+                                                // Try to match by order number pattern (e.g., "PO-19")
                                                 const poId = parseInt(item.orderNumber.replace('PO-', ''));
                                                 if (!isNaN(poId)) {
                                                   // Find the purchase order with this ID from ALL purchase orders
                                                   const purchaseOrder = allPurchaseOrders.find((order: ImportPurchase) => order.id === poId);
                                                   if (purchaseOrder?.trackingNumber) {
                                                     trackingNumbers.push(purchaseOrder.trackingNumber);
-                                                    trackingFound = true;
                                                   }
                                                 }
-                                              }
-                                              
-                                              // Only fall back to supplier matching if we haven't found tracking via PO number
-                                              // AND the item doesn't have an orderNumber (meaning it's not from a specific PO)
-                                              if (!trackingFound && !item.orderNumber && item.source) {
-                                                // Clean up the source to get supplier name
+                                              } else if (!item.orderNumber && item.source) {
+                                                // Only fall back to supplier matching if no PO number
                                                 const supplierName = item.source.replace(/^Supplier:\s*/i, '').trim();
                                                 
                                                 // Find the most recent purchase order from this supplier
