@@ -81,6 +81,7 @@ interface CustomItem {
 interface Consolidation {
   id: number;
   name: string;
+  location?: string;
   shippingMethod: string;
   warehouse: string;
   notes: string | null;
@@ -2469,7 +2470,7 @@ export default function AtWarehouse() {
                                         const items = consolidationItems[consolidation.id] || [];
                                         const totalWeight = items.reduce((sum: number, item: any) => {
                                           const fullItem = allItems.find((i: any) => i.id === item.id);
-                                          return sum + (parseFloat(fullItem?.weight) || 0);
+                                          return sum + (parseFloat(fullItem?.weight || '0') || 0);
                                         }, 0);
                                         return totalWeight.toFixed(2);
                                       })()} kg
@@ -2503,12 +2504,23 @@ export default function AtWarehouse() {
                                             const items = consolidationItems[consolidation.id] || [];
                                             const trackingNumbers: string[] = [];
                                             
-                                            // Collect tracking numbers from items
+                                            // Collect tracking numbers from items and their parent purchase orders
                                             for (const item of items) {
-                                              // Get the full custom item details to access tracking number
+                                              // Get the full custom item details
                                               const fullItem = allItems.find((i: any) => i.id === item.id);
+                                              
+                                              // Check if item has its own tracking number
                                               if (fullItem?.trackingNumber) {
                                                 trackingNumbers.push(fullItem.trackingNumber);
+                                              }
+                                              
+                                              // Check if item has a parent purchase order with tracking number
+                                              if (fullItem?.purchaseOrderId) {
+                                                // Find the parent purchase order
+                                                const parentPurchase = purchases.find(p => p.id === fullItem.purchaseOrderId);
+                                                if (parentPurchase?.trackingNumber) {
+                                                  trackingNumbers.push(parentPurchase.trackingNumber);
+                                                }
                                               }
                                             }
                                             
