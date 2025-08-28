@@ -158,6 +158,9 @@ export default function AtWarehouse() {
   const [itemSortBy, setItemSortBy] = useState<string>("newest");
   const [itemSearchTerm, setItemSearchTerm] = useState<string>("");
   const [bulkSelectedItems, setBulkSelectedItems] = useState<Set<number>>(new Set());
+  const [itemSourceFilter, setItemSourceFilter] = useState<string>("all");
+  const [itemClassificationFilter, setItemClassificationFilter] = useState<string>("all");
+  const [itemCustomerFilter, setItemCustomerFilter] = useState<string>("all");
   const [manualItemOrder, setManualItemOrder] = useState<string[]>([]);
   const [extractedItems, setExtractedItems] = useState<Array<{
     name: string;
@@ -210,6 +213,27 @@ export default function AtWarehouse() {
         item.source?.toLowerCase().includes(itemSearchTerm.toLowerCase()) ||
         item.customerName?.toLowerCase().includes(itemSearchTerm.toLowerCase())
       );
+    }
+    
+    // Apply source filter
+    if (itemSourceFilter !== "all") {
+      filtered = filtered.filter(item => item.source?.toLowerCase() === itemSourceFilter);
+    }
+    
+    // Apply classification filter
+    if (itemClassificationFilter === "general") {
+      filtered = filtered.filter(item => item.classification === "general");
+    } else if (itemClassificationFilter === "sensitive") {
+      filtered = filtered.filter(item => item.classification === "sensitive");
+    } else if (itemClassificationFilter === "unclassified") {
+      filtered = filtered.filter(item => !item.classification);
+    }
+    
+    // Apply customer filter
+    if (itemCustomerFilter === "has_customer") {
+      filtered = filtered.filter(item => item.customerName);
+    } else if (itemCustomerFilter === "no_customer") {
+      filtered = filtered.filter(item => !item.customerName);
     }
     
     // Apply sorting
@@ -274,7 +298,10 @@ export default function AtWarehouse() {
     allItems, 
     itemSearchTerm, 
     itemSortBy, 
-    manualItemOrder
+    manualItemOrder,
+    itemSourceFilter,
+    itemClassificationFilter,
+    itemCustomerFilter
   ]);
 
   // Filter orders by location
@@ -1874,6 +1901,66 @@ export default function AtWarehouse() {
                             </SelectItem>
                           </SelectContent>
                         </Select>
+                      </div>
+                      
+                      {/* Filter Controls */}
+                      <div className="flex gap-2 flex-wrap">
+                        <Select value={itemSourceFilter} onValueChange={setItemSourceFilter}>
+                          <SelectTrigger className="w-[140px]">
+                            <Filter className="h-3 w-3 mr-2" />
+                            <SelectValue placeholder="Source" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Sources</SelectItem>
+                            <SelectItem value="taobao">Taobao</SelectItem>
+                            <SelectItem value="pinduoduo">Pinduoduo</SelectItem>
+                            <SelectItem value="1688">1688</SelectItem>
+                            <SelectItem value="alibaba">Alibaba</SelectItem>
+                            <SelectItem value="jd.com">JD.com</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        
+                        <Select value={itemClassificationFilter} onValueChange={setItemClassificationFilter}>
+                          <SelectTrigger className="w-[150px]">
+                            <Flag className="h-3 w-3 mr-2" />
+                            <SelectValue placeholder="Classification" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Items</SelectItem>
+                            <SelectItem value="general">General</SelectItem>
+                            <SelectItem value="sensitive">Sensitive</SelectItem>
+                            <SelectItem value="unclassified">Unclassified</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        
+                        <Select value={itemCustomerFilter} onValueChange={setItemCustomerFilter}>
+                          <SelectTrigger className="w-[140px]">
+                            <Users className="h-3 w-3 mr-2" />
+                            <SelectValue placeholder="Customer" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Items</SelectItem>
+                            <SelectItem value="has_customer">Has Customer</SelectItem>
+                            <SelectItem value="no_customer">No Customer</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        
+                        {(itemSourceFilter !== "all" || itemClassificationFilter !== "all" || itemCustomerFilter !== "all") && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setItemSourceFilter("all");
+                              setItemClassificationFilter("all");
+                              setItemCustomerFilter("all");
+                            }}
+                            className="h-9"
+                          >
+                            <X className="h-3 w-3 mr-1" />
+                            Clear Filters
+                          </Button>
+                        )}
                       </div>
                       
                       {/* Quick Stats and Bulk Actions */}
