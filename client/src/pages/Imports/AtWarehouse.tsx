@@ -2507,15 +2507,27 @@ export default function AtWarehouse() {
                                         </DropdownMenuItem>
                                         <DropdownMenuItem
                                           onClick={async () => {
-                                            // Get full item details including tracking numbers
+                                            // First ensure we have the items for this consolidation
+                                            if (!consolidationItems[consolidation.id]) {
+                                              await fetchConsolidationItems(consolidation.id);
+                                              // Wait a bit for state to update
+                                              await new Promise(resolve => setTimeout(resolve, 100));
+                                            }
+                                            
+                                            // Get the items for THIS specific consolidation
                                             const items = consolidationItems[consolidation.id] || [];
                                             const trackingNumbers: string[] = [];
                                             
+                                            console.log(`Processing consolidation ${consolidation.id} (${consolidation.name}):`, items);
+                                            
                                             // Collect tracking numbers from parent purchase orders
                                             for (const item of items) {
+                                              console.log(`Processing item: ${item.name}`, item);
+                                              
                                               // Items from purchase orders have trackingNumber field that contains the PO tracking
                                               // This is the mainland/supplier tracking number from when items were received
                                               if (item.trackingNumber) {
+                                                console.log(`Found item tracking: ${item.trackingNumber}`);
                                                 trackingNumbers.push(item.trackingNumber);
                                               }
                                               
@@ -2527,6 +2539,7 @@ export default function AtWarehouse() {
                                                   // Find the purchase order with this ID from ALL purchase orders
                                                   const purchaseOrder = allPurchaseOrders.find((order: ImportPurchase) => order.id === poId);
                                                   if (purchaseOrder?.trackingNumber) {
+                                                    console.log(`Found PO tracking for PO-${poId}: ${purchaseOrder.trackingNumber}`);
                                                     trackingNumbers.push(purchaseOrder.trackingNumber);
                                                   }
                                                 }
@@ -2543,9 +2556,12 @@ export default function AtWarehouse() {
                                                   return order.supplier === supplierName;
                                                 });
                                                 
+                                                console.log(`Found ${matchingOrders.length} orders for supplier "${supplierName}"`);
+                                                
                                                 // Add tracking numbers from matching orders
                                                 for (const order of matchingOrders) {
                                                   if (order.trackingNumber) {
+                                                    console.log(`Found supplier tracking: ${order.trackingNumber}`);
                                                     trackingNumbers.push(order.trackingNumber);
                                                   }
                                                 }
@@ -2556,6 +2572,8 @@ export default function AtWarehouse() {
                                             const uniqueTrackingNumbers = Array.from(new Set(
                                               trackingNumbers.filter(tn => tn && tn.trim())
                                             ));
+                                            
+                                            console.log(`Final unique tracking numbers for ${consolidation.name}:`, uniqueTrackingNumbers);
                                             
                                             setSelectedConsolidationTracking({
                                               id: consolidation.id,
