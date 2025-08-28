@@ -106,6 +106,15 @@ const statusColors: Record<string, string> = {
 };
 
 const shippingMethodColors: Record<string, string> = {
+  general_air_ddp: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900 dark:text-blue-200",
+  sensitive_air_ddp: "bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900 dark:text-orange-200",
+  general_express: "bg-red-100 text-red-800 border-red-200 dark:bg-red-900 dark:text-red-200",
+  sensitive_express: "bg-red-100 text-red-900 border-red-300 dark:bg-red-900 dark:text-red-100",
+  general_railway: "bg-green-100 text-green-800 border-green-200 dark:bg-green-900 dark:text-green-200",
+  sensitive_railway: "bg-green-100 text-green-900 border-green-300 dark:bg-green-900 dark:text-green-100",
+  general_sea: "bg-cyan-100 text-cyan-800 border-cyan-200 dark:bg-cyan-900 dark:text-cyan-200",
+  sensitive_sea: "bg-cyan-100 text-cyan-900 border-cyan-300 dark:bg-cyan-900 dark:text-cyan-100",
+  // Legacy support
   air_express: "bg-red-100 text-red-800 border-red-200 dark:bg-red-900 dark:text-red-200",
   air_standard: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900 dark:text-blue-200",
   sea_freight: "bg-cyan-100 text-cyan-800 border-cyan-200 dark:bg-cyan-900 dark:text-cyan-200",
@@ -114,6 +123,15 @@ const shippingMethodColors: Record<string, string> = {
 };
 
 const shippingMethodIcons: Record<string, any> = {
+  general_air_ddp: Plane,
+  sensitive_air_ddp: Plane,
+  general_express: Zap,
+  sensitive_express: Zap,
+  general_railway: Truck,
+  sensitive_railway: Truck,
+  general_sea: Ship,
+  sensitive_sea: Ship,
+  // Legacy support
   air_express: Zap,
   air_standard: Plane,
   sea_freight: Ship,
@@ -991,6 +1009,7 @@ export default function AtWarehouse() {
     
     const data = {
       name: formData.get('name') as string,
+      location: formData.get('location') as string,
       shippingMethod: formData.get('shippingMethod') as string,
       warehouse: formData.get('warehouse') as string,
       notes: formData.get('notes') as string || null,
@@ -1429,6 +1448,17 @@ export default function AtWarehouse() {
                   />
                 </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="location">Destination Location *</Label>
+                  <Input 
+                    id="location" 
+                    name="location" 
+                    required 
+                    data-testid="input-consolidation-location"
+                    placeholder="e.g., Czech Republic, USA, Vietnam"
+                  />
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="shippingMethod">Shipping Method *</Label>
@@ -1437,34 +1467,52 @@ export default function AtWarehouse() {
                         <SelectValue placeholder="Select shipping method" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="priority">
-                          <div className="flex items-center space-x-2">
-                            <Star className="h-4 w-4 text-purple-600" />
-                            <span>Priority Express</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="air_express">
-                          <div className="flex items-center space-x-2">
-                            <Zap className="h-4 w-4 text-red-600" />
-                            <span>Air Express</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="air_standard">
+                        <SelectItem value="general_air_ddp">
                           <div className="flex items-center space-x-2">
                             <Plane className="h-4 w-4 text-blue-600" />
-                            <span>Air Standard</span>
+                            <span>General Air DDP</span>
                           </div>
                         </SelectItem>
-                        <SelectItem value="sea_freight">
+                        <SelectItem value="sensitive_air_ddp">
                           <div className="flex items-center space-x-2">
-                            <Ship className="h-4 w-4 text-cyan-600" />
-                            <span>Sea Freight</span>
+                            <Plane className="h-4 w-4 text-orange-600" />
+                            <span>Sensitive Air DDP</span>
                           </div>
                         </SelectItem>
-                        <SelectItem value="rail_freight">
+                        <SelectItem value="general_express">
+                          <div className="flex items-center space-x-2">
+                            <Zap className="h-4 w-4 text-red-600" />
+                            <span>General Express</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="sensitive_express">
+                          <div className="flex items-center space-x-2">
+                            <Zap className="h-4 w-4 text-red-800" />
+                            <span>Sensitive Express</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="general_railway">
                           <div className="flex items-center space-x-2">
                             <Truck className="h-4 w-4 text-green-600" />
-                            <span>Rail Freight</span>
+                            <span>General Railway</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="sensitive_railway">
+                          <div className="flex items-center space-x-2">
+                            <Truck className="h-4 w-4 text-green-800" />
+                            <span>Sensitive Railway</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="general_sea">
+                          <div className="flex items-center space-x-2">
+                            <Ship className="h-4 w-4 text-cyan-600" />
+                            <span>General Sea</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="sensitive_sea">
+                          <div className="flex items-center space-x-2">
+                            <Ship className="h-4 w-4 text-cyan-800" />
+                            <span>Sensitive Sea</span>
                           </div>
                         </SelectItem>
                       </SelectContent>
@@ -2412,6 +2460,10 @@ export default function AtWarehouse() {
                                         {consolidation.shippingMethod?.replace('_', ' ').toUpperCase() || 'Not Set'}
                                       </Badge>
                                     </div>
+                                    <div className="text-xs text-muted-foreground flex items-center gap-1 mb-1">
+                                      <MapPin className="h-3 w-3" />
+                                      {consolidation.location || consolidation.warehouse?.replace('_', ', ') || 'No location'}
+                                    </div>
                                     <div className="text-xs text-muted-foreground">
                                       {consolidation.itemCount || 0} items • Total: {(() => {
                                         const items = consolidationItems[consolidation.id] || [];
@@ -3046,7 +3098,7 @@ export default function AtWarehouse() {
                         </div>
                         <div className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
                           <MapPin className="h-3 w-3" />
-                          {consolidation.warehouse.replace('_', ', ')}
+                          {consolidation.location || consolidation.warehouse.replace('_', ', ')}
                         </div>
                       </div>
                       {getShippingMethodBadge(consolidation.shippingMethod)}

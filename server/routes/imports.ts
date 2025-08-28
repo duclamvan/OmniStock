@@ -626,6 +626,7 @@ router.post("/consolidations", async (req, res) => {
   try {
     const consolidationData = {
       name: req.body.name,
+      location: req.body.location,
       shippingMethod: req.body.shippingMethod,
       warehouse: req.body.warehouse,
       notes: req.body.notes || null,
@@ -784,12 +785,13 @@ router.get("/consolidations/:id/items", async (req, res) => {
 router.patch("/consolidations/:id", async (req, res) => {
   try {
     const consolidationId = parseInt(req.params.id);
-    const { name, shippingMethod, notes, targetWeight } = req.body;
+    const { name, location, shippingMethod, notes, targetWeight } = req.body;
     
     await db
       .update(consolidations)
       .set({ 
         name,
+        location,
         shippingMethod,
         notes,
         targetWeight,

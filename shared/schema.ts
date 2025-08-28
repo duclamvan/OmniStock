@@ -72,7 +72,8 @@ export const purchaseItems = pgTable('purchase_items', {
 export const consolidations = pgTable('consolidations', {
   id: serial('id').primaryKey(),
   name: text('name').notNull(),
-  shippingMethod: text('shipping_method').notNull(), // air, sea, express, priority
+  location: text('location').notNull(), // Country destination
+  shippingMethod: text('shipping_method').notNull(), // general_air_ddp, sensitive_air_ddp, express_general, express_sensitive, railway_general, railway_sensitive, sea_general, sea_sensitive
   warehouse: text('warehouse').notNull(),
   notes: text('notes'),
   targetWeight: decimal('target_weight', { precision: 10, scale: 3 }),
