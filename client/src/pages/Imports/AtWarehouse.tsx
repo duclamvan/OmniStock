@@ -2427,13 +2427,21 @@ export default function AtWarehouse() {
                                 <div className="flex justify-between items-start mb-1.5">
                                   <div className="flex-1">
                                     <div className="flex items-center gap-2">
+                                      <Ship className="h-4 w-4 text-primary" />
                                       <div className="font-medium text-sm">{consolidation.name}</div>
                                       <Badge className="text-xs px-1.5 py-0" variant={consolidation.shippingMethod === 'air' ? 'default' : 'secondary'}>
                                         {consolidation.shippingMethod?.replace('_', ' ').toUpperCase() || 'Not Set'}
                                       </Badge>
                                     </div>
                                     <div className="text-xs text-muted-foreground">
-                                      {consolidation.itemCount || 0} items • {consolidation.warehouse.replace('_', ' - ')}
+                                      {consolidation.itemCount || 0} items • Total: {(() => {
+                                        const items = consolidationItems[consolidation.id] || [];
+                                        const totalWeight = items.reduce((sum: number, item: any) => {
+                                          const fullItem = allItems.find((i: any) => i.id === item.id);
+                                          return sum + (parseFloat(fullItem?.weight) || 0);
+                                        }, 0);
+                                        return totalWeight.toFixed(2);
+                                      })()} kg
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-1">
@@ -2545,23 +2553,12 @@ export default function AtWarehouse() {
                                             }}
                                           >
                                             {expandedConsolidations.has(consolidation.id) ? (
-                                              <>
-                                                <ChevronDown className="h-3 w-3 mr-1" />
-                                                Hide
-                                              </>  
+                                              <ChevronDown className="h-3 w-3" />
                                             ) : (
-                                              <>
-                                                <ChevronRight className="h-3 w-3 mr-1" />
-                                                View
-                                              </>
+                                              <ChevronRight className="h-3 w-3" />
                                             )}
                                           </Button>
                                         </div>
-                                        {consolidation.targetWeight && (
-                                          <div className="text-xs text-muted-foreground">
-                                            Max weight: {consolidation.targetWeight} kg
-                                          </div>
-                                        )}
                                         
                                         {/* Show items if expanded */}
                                         {expandedConsolidations.has(consolidation.id) && consolidationItems[consolidation.id] && (
