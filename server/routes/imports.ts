@@ -1073,6 +1073,93 @@ router.get("/shipments/pending", async (req, res) => {
   }
 });
 
+// Search shipments with filters
+router.get("/shipments/search", async (req, res) => {
+  try {
+    const { query, status, carrier, origin, destination } = req.query;
+    
+    let shipmentList = await db.select().from(shipments).orderBy(desc(shipments.createdAt));
+    
+    // Apply filters
+    if (status) {
+      shipmentList = shipmentList.filter(s => s.status === status);
+    }
+    if (carrier) {
+      shipmentList = shipmentList.filter(s => s.carrier.toLowerCase().includes(carrier.toString().toLowerCase()));
+    }
+    if (origin) {
+      shipmentList = shipmentList.filter(s => s.origin.toLowerCase().includes(origin.toString().toLowerCase()));
+    }
+    if (destination) {
+      shipmentList = shipmentList.filter(s => s.destination.toLowerCase().includes(destination.toString().toLowerCase()));
+    }
+    
+    // Get items for each shipment and apply search query
+    const shipmentsWithDetails = await Promise.all(
+      shipmentList.map(async (shipment) => {
+        let items: any[] = [];
+        let itemCount = 0;
+        
+        // If shipment has a consolidation, get its items
+        if (shipment.consolidationId) {
+          const consolidationItemList = await db
+            .select({
+              id: customItems.id,
+              name: customItems.name,
+              quantity: customItems.quantity,
+              weight: customItems.weight,
+              trackingNumber: customItems.trackingNumber,
+              unitPrice: customItems.unitPrice
+            })
+            .from(consolidationItems)
+            .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
+            .where(eq(consolidationItems.consolidationId, shipment.consolidationId));
+          
+          items = consolidationItemList;
+          itemCount = consolidationItemList.length;
+        }
+        
+        // Apply text search if query provided
+        if (query) {
+          const searchQuery = query.toString().toLowerCase();
+          
+          // Check if shipment matches query
+          const shipmentMatches = 
+            shipment.trackingNumber.toLowerCase().includes(searchQuery) ||
+            shipment.carrier.toLowerCase().includes(searchQuery) ||
+            shipment.origin.toLowerCase().includes(searchQuery) ||
+            shipment.destination.toLowerCase().includes(searchQuery) ||
+            shipment.status.toLowerCase().includes(searchQuery);
+          
+          // Check if any items match query
+          const itemsMatch = items.some((item: any) => 
+            item.name?.toLowerCase().includes(searchQuery) ||
+            item.trackingNumber?.toLowerCase().includes(searchQuery)
+          );
+          
+          if (!shipmentMatches && !itemsMatch) {
+            return null;
+          }
+        }
+        
+        return {
+          ...shipment,
+          items,
+          itemCount
+        };
+      })
+    );
+    
+    // Filter out nulls from search results
+    const filteredResults = shipmentsWithDetails.filter(s => s !== null);
+    
+    res.json(filteredResults);
+  } catch (error) {
+    console.error("Error searching shipments:", error);
+    res.status(500).json({ message: "Failed to search shipments" });
+  }
+});
+
 // Get all shipments with details
 router.get("/shipments", async (req, res) => {
   try {

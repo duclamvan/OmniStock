@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Plane, Ship, Truck, MapPin, Clock, Package, Globe, Star, Zap, Target, TrendingUp, Calendar, AlertCircle, CheckCircle } from "lucide-react";
+import { Plus, Plane, Ship, Truck, MapPin, Clock, Package, Globe, Star, Zap, Target, TrendingUp, Calendar, AlertCircle, CheckCircle, Search, CalendarDays } from "lucide-react";
 import { format, differenceInDays, addDays } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -95,6 +95,7 @@ export default function InternationalTransit() {
   const [selectedPendingShipment, setSelectedPendingShipment] = useState<PendingShipment | null>(null);
   const [isPredicting, setIsPredicting] = useState(false);
   const [predictions, setPredictions] = useState<Record<number, DeliveryPrediction>>({});
+  const [searchQuery, setSearchQuery] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -284,6 +285,77 @@ export default function InternationalTransit() {
     return months === 1 ? '1 month' : `${months} months`;
   };
 
+  const getETAColor = (shipment: Shipment) => {
+    const estimatedDelivery = shipment.estimatedDelivery || predictions[shipment.id]?.estimatedDelivery;
+    if (!estimatedDelivery) return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
+    
+    const deliveryDate = new Date(estimatedDelivery);
+    const currentDate = new Date();
+    const daysRemaining = differenceInDays(deliveryDate, currentDate);
+    
+    if (shipment.status === 'delivered') return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+    if (daysRemaining < 0) return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
+    if (daysRemaining === 0) return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200";
+    if (daysRemaining <= 3) return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
+    return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+  };
+
+  // Filter shipments based on search query
+  const filteredShipments = shipments.filter(shipment => {
+    if (!searchQuery) return true;
+    
+    const query = searchQuery.toLowerCase();
+    
+    // Search in tracking number
+    if (shipment.trackingNumber.toLowerCase().includes(query)) return true;
+    
+    // Search in carrier
+    if (shipment.carrier.toLowerCase().includes(query)) return true;
+    
+    // Search in origin/destination
+    if (shipment.origin.toLowerCase().includes(query)) return true;
+    if (shipment.destination.toLowerCase().includes(query)) return true;
+    
+    // Search in status
+    if (shipment.status.toLowerCase().includes(query)) return true;
+    
+    // Search in items
+    if (shipment.items && shipment.items.length > 0) {
+      return shipment.items.some((item: any) => 
+        item.name?.toLowerCase().includes(query) ||
+        item.trackingNumber?.toLowerCase().includes(query)
+      );
+    }
+    
+    return false;
+  });
+
+  // Filter pending shipments based on search query
+  const filteredPendingShipments = pendingShipments.filter(pending => {
+    if (!searchQuery) return true;
+    
+    const query = searchQuery.toLowerCase();
+    
+    // Search in consolidation name
+    if (pending.name.toLowerCase().includes(query)) return true;
+    
+    // Search in location/warehouse
+    if (pending.location?.toLowerCase().includes(query)) return true;
+    if (pending.warehouse.toLowerCase().includes(query)) return true;
+    
+    // Search in shipping method
+    if (pending.shippingMethod?.toLowerCase().includes(query)) return true;
+    
+    // Search in items
+    if (pending.items && pending.items.length > 0) {
+      return pending.items.some((item: any) => 
+        item.name?.toLowerCase().includes(query)
+      );
+    }
+    
+    return false;
+  });
+
   if (isLoading) {
     return (
       <div className="p-6">
@@ -297,18 +369,30 @@ export default function InternationalTransit() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">International Transit</h1>
           <p className="text-muted-foreground">AI-powered shipment tracking with delivery predictions</p>
         </div>
-        <Dialog open={isCreateShipmentOpen} onOpenChange={setIsCreateShipmentOpen}>
-          <DialogTrigger asChild>
-            <Button data-testid="button-create-shipment">
-              <Plus className="h-4 w-4 mr-2" />
-              Create Shipment
-            </Button>
-          </DialogTrigger>
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <div className="relative flex-1 md:w-80">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search by tracking, carrier, items, location..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+              data-testid="input-search-shipments"
+            />
+          </div>
+          <Dialog open={isCreateShipmentOpen} onOpenChange={setIsCreateShipmentOpen}>
+            <DialogTrigger asChild>
+              <Button data-testid="button-create-shipment">
+                <Plus className="h-4 w-4 mr-2" />
+                Create Shipment
+              </Button>
+            </DialogTrigger>
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle>
@@ -435,8 +519,29 @@ export default function InternationalTransit() {
               </DialogFooter>
             </form>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
+
+      {/* Search Results Indicator */}
+      {searchQuery && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Search className="h-4 w-4" />
+          <span>
+            Found {filteredShipments.length} shipment{filteredShipments.length !== 1 ? 's' : ''} and 
+            {' '}{filteredPendingShipments.length} pending consolidation{filteredPendingShipments.length !== 1 ? 's' : ''}
+            {' '}matching "{searchQuery}"
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSearchQuery('')}
+            className="h-6 px-2"
+          >
+            Clear
+          </Button>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -447,7 +552,7 @@ export default function InternationalTransit() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold" data-testid="text-active-shipments">
-              {shipments.filter(s => s.status !== 'delivered').length}
+              {filteredShipments.filter(s => s.status !== 'delivered').length}
             </div>
           </CardContent>
         </Card>
@@ -458,7 +563,7 @@ export default function InternationalTransit() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-600">
-              {shipments.filter(s => s.status === 'in_transit').length}
+              {filteredShipments.filter(s => s.status === 'in_transit').length}
             </div>
           </CardContent>
         </Card>
@@ -469,7 +574,7 @@ export default function InternationalTransit() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-yellow-600">
-              {shipments.filter(s => s.status === 'customs').length}
+              {filteredShipments.filter(s => s.status === 'customs').length}
             </div>
           </CardContent>
         </Card>
@@ -480,20 +585,20 @@ export default function InternationalTransit() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {shipments.filter(s => s.status === 'delivered').length}
+              {filteredShipments.filter(s => s.status === 'delivered').length}
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Pending Shipments - Shipped Consolidations needing tracking */}
-      {pendingShipments.length > 0 && (
+      {filteredPendingShipments.length > 0 && (
         <Card className="border-2 border-yellow-200 dark:border-yellow-900">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Package className="h-5 w-5 text-yellow-600" />
               <span>Pending Shipments</span>
-              <Badge variant="secondary" className="ml-2">{pendingShipments.length}</Badge>
+              <Badge variant="secondary" className="ml-2">{filteredPendingShipments.length}</Badge>
             </CardTitle>
             <CardDescription>
               Shipped consolidations that need tracking information
@@ -501,7 +606,7 @@ export default function InternationalTransit() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {pendingShipments.map((pending) => (
+              {filteredPendingShipments.map((pending) => (
                 <div key={pending.id} className="bg-yellow-50 dark:bg-yellow-950/30 rounded-lg p-3 border border-yellow-200 dark:border-yellow-800">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center space-x-3">
@@ -571,33 +676,49 @@ export default function InternationalTransit() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {shipments.length === 0 ? (
+          {filteredShipments.length === 0 ? (
             <div className="text-center py-8">
               <Plane className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No shipments found</h3>
-              <p className="text-muted-foreground mb-4">Create your first international shipment</p>
-              <Button onClick={() => setIsCreateShipmentOpen(true)} data-testid="button-create-first-shipment">
-                <Plus className="h-4 w-4 mr-2" />
-                Create Shipment
-              </Button>
+              <h3 className="text-lg font-semibold mb-2">
+                {searchQuery ? 'No shipments match your search' : 'No shipments found'}
+              </h3>
+              <p className="text-muted-foreground mb-4">
+                {searchQuery ? 'Try adjusting your search terms' : 'Create your first international shipment'}
+              </p>
+              {searchQuery ? (
+                <Button variant="outline" onClick={() => setSearchQuery('')} data-testid="button-clear-search">
+                  Clear Search
+                </Button>
+              ) : (
+                <Button onClick={() => setIsCreateShipmentOpen(true)} data-testid="button-create-first-shipment">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Shipment
+                </Button>
+              )}
             </div>
           ) : (
             <div className="space-y-6">
-              {shipments.map((shipment) => {
+              {filteredShipments.map((shipment) => {
                 const prediction = predictions[shipment.id];
                 const progress = calculateProgress(shipment);
                 
                 return (
                   <Card key={shipment.id} className="border hover:shadow-md transition-shadow">
                     <CardContent className="p-4">
-                      {/* Compact Header */}
+                      {/* Compact Header with ETA Badge */}
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center space-x-3">
                           {getCarrierIcon(shipment.carrier)}
                           <div>
-                            <h3 className="font-semibold" data-testid={`shipment-tracking-${shipment.id}`}>
-                              {shipment.trackingNumber}
-                            </h3>
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-semibold" data-testid={`shipment-tracking-${shipment.id}`}>
+                                {shipment.trackingNumber}
+                              </h3>
+                              <Badge className={`text-xs ${getETAColor(shipment)}`}>
+                                <CalendarDays className="h-3 w-3 mr-1" />
+                                {getTimeRemaining(shipment)}
+                              </Badge>
+                            </div>
                             <p className="text-xs text-muted-foreground">
                               {shipment.carrier} • {shipment.itemCount} items
                             </p>
