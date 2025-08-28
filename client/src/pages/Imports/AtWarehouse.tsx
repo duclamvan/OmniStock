@@ -199,6 +199,13 @@ export default function AtWarehouse() {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
+  // Fetch ALL purchase orders for tracking number lookup
+  const { data: allPurchaseOrders = [] } = useQuery<ImportPurchase[]>({
+    queryKey: ['/api/imports/purchases'],
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000,
+  });
+
   // Fetch all items (unpacked + custom)
   const { data: customItems = [], isLoading: isLoadingItems } = useQuery<CustomItem[]>({
     queryKey: ['/api/imports/custom-items'],
@@ -2504,32 +2511,37 @@ export default function AtWarehouse() {
                                             const items = consolidationItems[consolidation.id] || [];
                                             const trackingNumbers: string[] = [];
                                             
-                                            console.log('Consolidation items:', items);
-                                            console.log('All items (custom):', allItems);
-                                            console.log('At warehouse orders:', atWarehouseOrders);
-                                            
-                                            // Collect tracking numbers from items
+                                            // Collect tracking numbers from parent purchase orders
                                             for (const item of items) {
-                                              // The item here is already the custom item data
-                                              // Check if item has its own tracking number
+                                              // Items from purchase orders have trackingNumber field that contains the PO tracking
+                                              // This is the mainland/supplier tracking number from when items were received
                                               if (item.trackingNumber) {
                                                 trackingNumbers.push(item.trackingNumber);
                                               }
                                               
-                                              // Check if item came from a purchase order (has source starting with "SUPPLIER:")
-                                              // The source field contains supplier info for items from purchase orders
-                                              const supplierMatch = item.source?.match(/^SUPPLIER:\s*(.+)$/i) || 
-                                                                   item.source?.match(/^(.+)$/); // Also match without prefix
+                                              // Also try to match by order number pattern (e.g., "PO-19")
+                                              if (item.orderNumber && item.orderNumber.startsWith('PO-')) {
+                                                // Extract purchase order ID from orderNumber
+                                                const poId = parseInt(item.orderNumber.replace('PO-', ''));
+                                                if (!isNaN(poId)) {
+                                                  // Find the purchase order with this ID from ALL purchase orders
+                                                  const purchaseOrder = allPurchaseOrders.find((order: ImportPurchase) => order.id === poId);
+                                                  if (purchaseOrder?.trackingNumber) {
+                                                    trackingNumbers.push(purchaseOrder.trackingNumber);
+                                                  }
+                                                }
+                                              }
                                               
-                                              if (supplierMatch) {
-                                                // Find matching purchase order by supplier name
-                                                const matchingOrders = atWarehouseOrders.filter((order: ImportPurchase) => {
-                                                  const orderSupplier = order.supplier?.toLowerCase().trim();
-                                                  const itemSupplier = supplierMatch[1]?.toLowerCase().trim() || item.source?.toLowerCase().trim();
-                                                  return orderSupplier === itemSupplier || order.supplier === item.source;
-                                                });
+                                              // For items with source like "Supplier: Hong Kong Trading Co."
+                                              // Try to find matching purchase order from ALL orders
+                                              if (item.source) {
+                                                // Clean up the source to get supplier name
+                                                const supplierName = item.source.replace(/^Supplier:\s*/i, '').trim();
                                                 
-                                                console.log('Matching orders for item:', item.name, matchingOrders);
+                                                // Find purchase orders from this supplier in ALL orders
+                                                const matchingOrders = allPurchaseOrders.filter((order: ImportPurchase) => {
+                                                  return order.supplier === supplierName;
+                                                });
                                                 
                                                 // Add tracking numbers from matching orders
                                                 for (const order of matchingOrders) {
@@ -2538,26 +2550,12 @@ export default function AtWarehouse() {
                                                   }
                                                 }
                                               }
-                                              
-                                              // Also check for orderNumber match (like "1688")
-                                              if (item.orderNumber) {
-                                                // Find orders that might contain this order number in their tracking or reference
-                                                const orderWithNumber = atWarehouseOrders.find((order: ImportPurchase) => 
-                                                  order.trackingNumber?.includes(item.orderNumber) ||
-                                                  order.notes?.includes(item.orderNumber)
-                                                );
-                                                if (orderWithNumber?.trackingNumber) {
-                                                  trackingNumbers.push(orderWithNumber.trackingNumber);
-                                                }
-                                              }
                                             }
                                             
                                             // Remove duplicates and filter out null/empty values
                                             const uniqueTrackingNumbers = Array.from(new Set(
                                               trackingNumbers.filter(tn => tn && tn.trim())
                                             ));
-                                            
-                                            console.log('Final tracking numbers:', uniqueTrackingNumbers);
                                             
                                             setSelectedConsolidationTracking({
                                               id: consolidation.id,
