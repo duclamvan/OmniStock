@@ -2516,16 +2516,34 @@ export default function AtWarehouse() {
                                               
                                               // Check if item has a parent purchase order with tracking number
                                               if (fullItem?.purchaseOrderId) {
-                                                // Find the parent purchase order
-                                                const parentPurchase = purchases.find(p => p.id === fullItem.purchaseOrderId);
+                                                // Find the parent purchase order from atWarehouseOrders
+                                                const parentPurchase = atWarehouseOrders.find((p: ImportPurchase) => p.id === fullItem.purchaseOrderId);
                                                 if (parentPurchase?.trackingNumber) {
                                                   trackingNumbers.push(parentPurchase.trackingNumber);
                                                 }
                                               }
                                             }
                                             
-                                            // Remove duplicates
-                                            const uniqueTrackingNumbers = Array.from(new Set(trackingNumbers));
+                                            // Also check if any items belong to unpacked purchase orders
+                                            // Items created from unpacking will have their purchase order tracking numbers
+                                            for (const order of atWarehouseOrders) {
+                                              if (order.trackingNumber && order.status === 'unpacked') {
+                                                // Check if any of the order's items are in this consolidation
+                                                const orderItemIds = order.items?.map(item => item.id) || [];
+                                                const hasOrderItems = items.some((item: any) => 
+                                                  orderItemIds.includes(item.id) || 
+                                                  item.purchaseOrderId === order.id
+                                                );
+                                                if (hasOrderItems) {
+                                                  trackingNumbers.push(order.trackingNumber);
+                                                }
+                                              }
+                                            }
+                                            
+                                            // Remove duplicates and filter out null/empty values
+                                            const uniqueTrackingNumbers = Array.from(new Set(
+                                              trackingNumbers.filter(tn => tn && tn.trim())
+                                            ));
                                             
                                             setSelectedConsolidationTracking({
                                               id: consolidation.id,
