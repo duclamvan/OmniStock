@@ -1060,11 +1060,15 @@ export default function AtWarehouse() {
     );
   };
 
-  const getSourceBadge = (source: string) => (
-    <Badge variant="secondary" className={`text-xs ${sourceColors[source.toLowerCase()] || sourceColors.other}`}>
-      {source.toUpperCase()}
-    </Badge>
-  );
+  const getSourceBadge = (source: string) => {
+    // Remove "SUPPLIER:" prefix if present and clean up the display text
+    const cleanSource = source.replace(/^SUPPLIER:\s*/i, '').trim();
+    return (
+      <Badge variant="secondary" className={`text-xs ${sourceColors[cleanSource.toLowerCase()] || sourceColors.other}`}>
+        {cleanSource.toUpperCase()}
+      </Badge>
+    );
+  };
 
   const getClassificationIcon = (classification?: string | null) => {
     if (classification === 'sensitive') {
