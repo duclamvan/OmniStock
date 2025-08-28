@@ -334,8 +334,8 @@ router.post("/purchases/unpack", async (req, res) => {
     for (const item of items) {
       const customItem = {
         name: item.name,
-        source: `Supplier: ${purchase.supplier}`,
-        orderNumber: `PO-${purchase.id}`,
+        source: purchase.supplier,
+        orderNumber: `PO #${purchase.id}`,
         quantity: item.quantity,
         unitPrice: item.unitPrice || '0',
         weight: item.weight || '0',

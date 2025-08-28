@@ -2070,13 +2070,13 @@ export default function AtWarehouse() {
                                           <div className="flex items-center gap-2 mt-1 text-sm text-gray-700 dark:text-gray-300 flex-wrap">
                                             <span>Qty: {item.quantity}</span>
                                             {item.weight && <span>• {item.weight} kg</span>}
-                                            {item.source && item.source !== 'supplier' && (
+                                            {item.source && (
                                               <>
                                                 <span>•</span>
                                                 {getSourceBadge(item.source)}
                                               </>
                                             )}
-                                            {item.source === 'supplier' && item.orderNumber && (
+                                            {item.orderNumber && (
                                               <span>• {item.orderNumber}</span>
                                             )}
                                             {item.customerName && (
