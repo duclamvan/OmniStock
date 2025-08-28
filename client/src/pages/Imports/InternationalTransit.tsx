@@ -75,13 +75,37 @@ const carrierIcons: Record<string, any> = {
   "SF Express": Star
 };
 
+interface PendingShipment {
+  id: number;
+  name: string;
+  location: string;
+  shippingMethod: string;
+  warehouse: string;
+  notes: string | null;
+  targetWeight: string | null;
+  items: any[];
+  itemCount: number;
+  existingShipment: any;
+  needsTracking: boolean;
+}
+
 export default function InternationalTransit() {
   const [isCreateShipmentOpen, setIsCreateShipmentOpen] = useState(false);
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
+  const [selectedPendingShipment, setSelectedPendingShipment] = useState<PendingShipment | null>(null);
   const [isPredicting, setIsPredicting] = useState(false);
   const [predictions, setPredictions] = useState<Record<number, DeliveryPrediction>>({});
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Fetch pending shipments
+  const { data: pendingShipments = [] } = useQuery({
+    queryKey: ['/api/imports/shipments/pending'],
+    queryFn: async () => {
+      const response = await apiRequest('/api/imports/shipments/pending');
+      return response.json() as Promise<PendingShipment[]>;
+    }
+  });
 
   // Fetch shipments
   const { data: shipments = [], isLoading } = useQuery({
@@ -104,7 +128,9 @@ export default function InternationalTransit() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/pending'] });
       setIsCreateShipmentOpen(false);
+      setSelectedPendingShipment(null);
       toast({ title: "Success", description: "Shipment created successfully" });
     },
     onError: () => {
@@ -183,7 +209,7 @@ export default function InternationalTransit() {
     const formData = new FormData(e.currentTarget);
     
     const data = {
-      consolidationId: formData.get('consolidationId') ? parseInt(formData.get('consolidationId') as string) : null,
+      consolidationId: selectedPendingShipment?.id || (formData.get('consolidationId') ? parseInt(formData.get('consolidationId') as string) : null),
       carrier: formData.get('carrier') as string,
       trackingNumber: formData.get('trackingNumber') as string,
       origin: formData.get('origin') as string,
@@ -234,6 +260,29 @@ export default function InternationalTransit() {
     if (confidence >= 60) return "text-yellow-600 dark:text-yellow-400";
     return "text-red-600 dark:text-red-400";
   };
+  
+  const getTimeRemaining = (shipment: Shipment) => {
+    if (shipment.status === 'delivered') return 'Delivered';
+    
+    const estimatedDelivery = shipment.estimatedDelivery || predictions[shipment.id]?.estimatedDelivery;
+    if (!estimatedDelivery) return 'Calculating...';
+    
+    const deliveryDate = new Date(estimatedDelivery);
+    const currentDate = new Date();
+    const daysRemaining = differenceInDays(deliveryDate, currentDate);
+    
+    if (daysRemaining < 0) return 'Delayed';
+    if (daysRemaining === 0) return 'Today';
+    if (daysRemaining === 1) return '1 day';
+    if (daysRemaining < 7) return `${daysRemaining} days`;
+    if (daysRemaining < 30) {
+      const weeks = Math.floor(daysRemaining / 7);
+      return weeks === 1 ? '1 week' : `${weeks} weeks`;
+    }
+    
+    const months = Math.floor(daysRemaining / 30);
+    return months === 1 ? '1 month' : `${months} months`;
+  };
 
   if (isLoading) {
     return (
@@ -262,9 +311,13 @@ export default function InternationalTransit() {
           </DialogTrigger>
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
-              <DialogTitle>Create New Shipment</DialogTitle>
+              <DialogTitle>
+                {selectedPendingShipment ? 'Add Tracking Information' : 'Create New Shipment'}
+              </DialogTitle>
               <DialogDescription>
-                Create a new international shipment with AI delivery prediction
+                {selectedPendingShipment 
+                  ? `Add tracking for consolidation ${selectedPendingShipment.name} (${selectedPendingShipment.itemCount} items)`
+                  : 'Create a new international shipment with AI delivery prediction'}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleCreateShipment} className="space-y-4">
@@ -300,7 +353,7 @@ export default function InternationalTransit() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="origin">Origin *</Label>
-                  <Select name="origin" required>
+                  <Select name="origin" required defaultValue={selectedPendingShipment?.warehouse || ''}>
                     <SelectTrigger data-testid="select-origin">
                       <SelectValue placeholder="Select origin" />
                     </SelectTrigger>
@@ -310,12 +363,15 @@ export default function InternationalTransit() {
                       <SelectItem value="China, Shanghai">China, Shanghai</SelectItem>
                       <SelectItem value="Hong Kong">Hong Kong</SelectItem>
                       <SelectItem value="Vietnam, Ho Chi Minh">Vietnam, Ho Chi Minh</SelectItem>
+                      {selectedPendingShipment?.warehouse && !["China, Guangzhou", "China, Shenzhen", "China, Shanghai", "Hong Kong", "Vietnam, Ho Chi Minh"].includes(selectedPendingShipment.warehouse) && (
+                        <SelectItem value={selectedPendingShipment.warehouse}>{selectedPendingShipment.warehouse}</SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="destination">Destination *</Label>
-                  <Select name="destination" required>
+                  <Select name="destination" required defaultValue={selectedPendingShipment?.location || ''}>
                     <SelectTrigger data-testid="select-destination">
                       <SelectValue placeholder="Select destination" />
                     </SelectTrigger>
@@ -326,6 +382,9 @@ export default function InternationalTransit() {
                       <SelectItem value="Canada, Toronto">Canada, Toronto</SelectItem>
                       <SelectItem value="UK, London">UK, London</SelectItem>
                       <SelectItem value="Australia, Sydney">Australia, Sydney</SelectItem>
+                      {selectedPendingShipment?.location && !["USA, California", "USA, New York", "USA, Texas", "Canada, Toronto", "UK, London", "Australia, Sydney"].includes(selectedPendingShipment.location) && (
+                        <SelectItem value={selectedPendingShipment.location}>{selectedPendingShipment.location}</SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -427,6 +486,82 @@ export default function InternationalTransit() {
         </Card>
       </div>
 
+      {/* Pending Shipments - Shipped Consolidations needing tracking */}
+      {pendingShipments.length > 0 && (
+        <Card className="border-2 border-yellow-200 dark:border-yellow-900">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Package className="h-5 w-5 text-yellow-600" />
+              <span>Pending Shipments</span>
+              <Badge variant="secondary" className="ml-2">{pendingShipments.length}</Badge>
+            </CardTitle>
+            <CardDescription>
+              Shipped consolidations that need tracking information
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {pendingShipments.map((pending) => (
+                <div key={pending.id} className="bg-yellow-50 dark:bg-yellow-950/30 rounded-lg p-3 border border-yellow-200 dark:border-yellow-800">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-3">
+                      <Package className="h-4 w-4 text-yellow-600" />
+                      <div>
+                        <p className="font-semibold text-sm">{pending.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {pending.location} • {pending.warehouse} • {pending.itemCount} items
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Badge variant="outline" className="text-xs">
+                        {pending.shippingMethod?.replace(/_/g, ' ').toUpperCase() || 'Standard'}
+                      </Badge>
+                      <Button 
+                        size="sm" 
+                        variant="default"
+                        onClick={() => {
+                          setSelectedPendingShipment(pending);
+                          setIsCreateShipmentOpen(true);
+                        }}
+                        data-testid={`button-add-tracking-${pending.id}`}
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        Add Tracking
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* Items Preview */}
+                  {pending.items && pending.items.length > 0 && (
+                    <div className="mt-2 p-2 bg-white dark:bg-gray-900 rounded-md">
+                      <p className="text-xs font-medium text-muted-foreground mb-1">Contents:</p>
+                      <div className="space-y-0.5">
+                        {pending.items.slice(0, 2).map((item: any, index: number) => (
+                          <div key={index} className="flex items-center justify-between text-xs">
+                            <span className="truncate flex-1">{item.name}</span>
+                            <span className="text-muted-foreground ml-2">x{item.quantity}</span>
+                          </div>
+                        ))}
+                        {pending.items.length > 2 && (
+                          <p className="text-xs text-muted-foreground">+{pending.items.length - 2} more items</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {pending.targetWeight && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Target Weight: {pending.targetWeight} kg
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Shipments List */}
       <Card>
         <CardHeader>
@@ -453,17 +588,17 @@ export default function InternationalTransit() {
                 const progress = calculateProgress(shipment);
                 
                 return (
-                  <Card key={shipment.id} className="border-2 hover:shadow-lg transition-shadow">
-                    <CardContent className="p-6">
-                      {/* Header */}
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center space-x-4">
+                  <Card key={shipment.id} className="border hover:shadow-md transition-shadow">
+                    <CardContent className="p-4">
+                      {/* Compact Header */}
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center space-x-3">
                           {getCarrierIcon(shipment.carrier)}
                           <div>
-                            <h3 className="font-semibold text-lg" data-testid={`shipment-tracking-${shipment.id}`}>
+                            <h3 className="font-semibold" data-testid={`shipment-tracking-${shipment.id}`}>
                               {shipment.trackingNumber}
                             </h3>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-xs text-muted-foreground">
                               {shipment.carrier} • {shipment.itemCount} items
                             </p>
                           </div>
@@ -479,7 +614,7 @@ export default function InternationalTransit() {
                               })
                             }
                           >
-                            <SelectTrigger className="w-32">
+                            <SelectTrigger className="w-28 h-8">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -492,71 +627,82 @@ export default function InternationalTransit() {
                         </div>
                       </div>
 
-                      {/* Route */}
-                      <div className="flex items-center space-x-4 mb-4">
-                        <div className="flex items-center space-x-2">
-                          <MapPin className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium">{shipment.origin}</span>
+                      {/* Compact Route */}
+                      <div className="flex items-center space-x-3 mb-3 text-sm">
+                        <div className="flex items-center space-x-1">
+                          <MapPin className="h-3 w-3 text-muted-foreground" />
+                          <span>{shipment.origin}</span>
                         </div>
-                        <div className="flex-1 border-t-2 border-dashed"></div>
-                        <div className="flex items-center space-x-2">
-                          <Target className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium">{shipment.destination}</span>
+                        <div className="flex-1 border-t border-dashed"></div>
+                        <div className="flex items-center space-x-1">
+                          <Target className="h-3 w-3 text-muted-foreground" />
+                          <span>{shipment.destination}</span>
                         </div>
                       </div>
 
-                      {/* Progress Bar */}
-                      <div className="mb-4">
+                      {/* Progress Bar with Time Remaining */}
+                      <div className="mb-3">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-sm font-medium">Delivery Progress</span>
-                          <span className="text-sm text-muted-foreground">{progress}%</span>
+                          <span className="text-sm font-semibold text-primary">{getTimeRemaining(shipment)}</span>
                         </div>
                         <Progress value={progress} className="h-2" />
                       </div>
 
-                      {/* AI Prediction Section */}
+                      {/* Shipment Items - Always Show */}
+                      {shipment.items && shipment.items.length > 0 && (
+                        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-md p-3 mb-3">
+                          <p className="text-xs font-medium text-muted-foreground mb-2">Package Contents ({shipment.itemCount} items)</p>
+                          <div className="space-y-1">
+                            {shipment.items.slice(0, 3).map((item: any, index: number) => (
+                              <div key={index} className="flex items-center justify-between text-xs">
+                                <span className="truncate flex-1">{item.name || `Item ${index + 1}`}</span>
+                                <span className="text-muted-foreground ml-2">x{item.quantity || 1}</span>
+                              </div>
+                            ))}
+                            {shipment.items.length > 3 && (
+                              <p className="text-xs text-muted-foreground">+{shipment.items.length - 3} more items</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Compact AI Prediction Section */}
                       {prediction && (
-                        <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 rounded-lg p-4 mb-4">
-                          <div className="flex items-center space-x-2 mb-3">
-                            <TrendingUp className="h-4 w-4 text-blue-600" />
-                            <span className="font-semibold text-blue-800 dark:text-blue-200">AI Delivery Prediction</span>
-                            <Badge className={`${getConfidenceColor(prediction.confidence)}`}>
-                              {prediction.confidence}% Confidence
+                        <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-md p-3 mb-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center space-x-2">
+                              <TrendingUp className="h-3 w-3 text-blue-600" />
+                              <span className="text-xs font-semibold text-blue-800 dark:text-blue-200">AI Prediction</span>
+                            </div>
+                            <Badge variant="secondary" className={`text-xs ${getConfidenceColor(prediction.confidence)}`}>
+                              {prediction.confidence}%
                             </Badge>
                           </div>
                           
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="grid grid-cols-3 gap-3 text-xs">
                             <div>
-                              <p className="text-sm text-muted-foreground">Estimated Delivery</p>
+                              <p className="text-muted-foreground">Est. Delivery</p>
                               <p className="font-semibold">
-                                {format(new Date(prediction.estimatedDelivery), 'MMM dd, yyyy')}
-                              </p>
-                              <p className="text-sm text-blue-600">
-                                {prediction.estimatedDays} days total
+                                {format(new Date(prediction.estimatedDelivery), 'MMM dd')}
                               </p>
                             </div>
                             
                             <div>
-                              <p className="text-sm text-muted-foreground">Historical Data</p>
+                              <p className="text-muted-foreground">Avg Time</p>
                               <p className="font-semibold">
-                                {prediction.historicalAverage} days avg
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                Based on {prediction.historicalShipments} shipments
+                                {prediction.historicalAverage}d
                               </p>
                             </div>
                             
                             <div>
-                              <p className="text-sm text-muted-foreground">Factors</p>
-                              <div className="flex flex-wrap gap-1">
-                                {prediction.factors.seasonalDelay && (
-                                  <Badge variant="outline" className="text-xs">Holiday Season</Badge>
-                                )}
+                              <p className="text-muted-foreground">Factors</p>
+                              <div className="flex gap-1">
                                 {prediction.factors.customsDelay && (
-                                  <Badge variant="outline" className="text-xs">Customs +{prediction.factors.customsDays}d</Badge>
+                                  <span className="text-yellow-600">+{prediction.factors.customsDays}d</span>
                                 )}
                                 {prediction.factors.fastRoute && (
-                                  <Badge variant="outline" className="text-xs text-green-600">Fast Route</Badge>
+                                  <span className="text-green-600">Fast</span>
                                 )}
                               </div>
                             </div>
@@ -564,10 +710,10 @@ export default function InternationalTransit() {
                         </div>
                       )}
 
-                      {/* Shipment Details */}
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                      {/* Compact Shipment Details */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs border-t pt-3">
                         <div>
-                          <p className="text-muted-foreground">Shipping Cost</p>
+                          <p className="text-muted-foreground">Cost</p>
                           <p className="font-semibold">${shipment.shippingCost}</p>
                         </div>
                         <div>
@@ -577,35 +723,39 @@ export default function InternationalTransit() {
                         <div>
                           <p className="text-muted-foreground">Dispatched</p>
                           <p className="font-semibold">
-                            {format(new Date(shipment.createdAt), 'MMM dd, yyyy')}
+                            {format(new Date(shipment.createdAt), 'MMM dd')}
                           </p>
                         </div>
                         <div>
-                          <p className="text-muted-foreground">Current Location</p>
-                          <p className="font-semibold">
-                            {shipment.currentLocation || 'Unknown'}
+                          <p className="text-muted-foreground">Location</p>
+                          <p className="font-semibold truncate">
+                            {shipment.currentLocation || 'In Transit'}
                           </p>
                         </div>
                       </div>
 
-                      {/* Action Buttons */}
-                      <div className="flex justify-between items-center mt-4 pt-4 border-t">
-                        <div className="flex space-x-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => predictDelivery(shipment)}
-                            disabled={isPredicting || !!prediction}
-                            data-testid={`button-predict-${shipment.id}`}
-                          >
-                            <TrendingUp className="h-4 w-4 mr-1" />
-                            {prediction ? 'Predicted' : isPredicting ? 'Predicting...' : 'AI Predict'}
-                          </Button>
-                          
-                          {shipment.status === 'delivered' && (
+                      {/* Compact Action Bar */}
+                      <div className="flex justify-between items-center mt-3 pt-3 border-t">
+                        <div className="flex items-center space-x-2">
+                          {!prediction && (
                             <Button 
-                              variant="outline" 
+                              variant="ghost" 
                               size="sm"
+                              className="h-7 text-xs"
+                              onClick={() => predictDelivery(shipment)}
+                              disabled={isPredicting}
+                              data-testid={`button-predict-${shipment.id}`}
+                            >
+                              <TrendingUp className="h-3 w-3 mr-1" />
+                              {isPredicting ? 'Predicting...' : 'AI Predict'}
+                            </Button>
+                          )}
+                          
+                          {shipment.status !== 'delivered' && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              className="h-7 text-xs"
                               onClick={() => 
                                 updateTrackingMutation.mutate({
                                   shipmentId: shipment.id,
@@ -614,21 +764,20 @@ export default function InternationalTransit() {
                               }
                               data-testid={`button-mark-delivered-${shipment.id}`}
                             >
-                              <CheckCircle className="h-4 w-4 mr-1" />
+                              <CheckCircle className="h-3 w-3 mr-1" />
                               Mark Delivered
                             </Button>
                           )}
                         </div>
                         
-                        <p className="text-sm text-muted-foreground">
-                          Last updated {format(new Date(shipment.updatedAt), 'MMM dd, HH:mm')}
+                        <p className="text-xs text-muted-foreground">
+                          Updated {format(new Date(shipment.updatedAt), 'HH:mm')}
                         </p>
                       </div>
 
                       {shipment.notes && (
-                        <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                          <p className="text-sm text-muted-foreground mb-1">Notes:</p>
-                          <p className="text-sm">{shipment.notes}</p>
+                        <div className="mt-3 p-2 bg-gray-50 dark:bg-gray-800/50 rounded-md">
+                          <p className="text-xs text-muted-foreground">Note: {shipment.notes}</p>
                         </div>
                       )}
                     </CardContent>

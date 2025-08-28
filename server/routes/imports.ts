@@ -1017,23 +1017,96 @@ router.delete("/custom-items/:id", async (req, res) => {
   }
 });
 
+// Get pending shipments (shipped consolidations without full tracking)
+router.get("/shipments/pending", async (req, res) => {
+  try {
+    // Get shipped consolidations
+    const shippedConsolidations = await db
+      .select()
+      .from(consolidations)
+      .where(eq(consolidations.status, 'shipped'))
+      .orderBy(desc(consolidations.createdAt));
+    
+    // Check which ones don't have proper shipment records or need tracking updates
+    const pendingShipments = await Promise.all(
+      shippedConsolidations.map(async (consolidation) => {
+        // Check if there's a shipment for this consolidation
+        const [existingShipment] = await db
+          .select()
+          .from(shipments)
+          .where(eq(shipments.consolidationId, consolidation.id));
+        
+        // Get items for this consolidation
+        const items = await db
+          .select({
+            id: customItems.id,
+            name: customItems.name,
+            quantity: customItems.quantity,
+            weight: customItems.weight,
+            unitPrice: customItems.unitPrice
+          })
+          .from(consolidationItems)
+          .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
+          .where(eq(consolidationItems.consolidationId, consolidation.id));
+        
+        // Only include if no shipment exists or tracking is incomplete
+        if (!existingShipment || !existingShipment.trackingNumber) {
+          return {
+            ...consolidation,
+            existingShipment,
+            items,
+            itemCount: items.length,
+            needsTracking: !existingShipment || !existingShipment.trackingNumber
+          };
+        }
+        return null;
+      })
+    );
+    
+    // Filter out nulls
+    const filteredPending = pendingShipments.filter(p => p !== null);
+    
+    res.json(filteredPending);
+  } catch (error) {
+    console.error("Error fetching pending shipments:", error);
+    res.status(500).json({ message: "Failed to fetch pending shipments" });
+  }
+});
+
 // Get all shipments with details
 router.get("/shipments", async (req, res) => {
   try {
     const shipmentList = await db.select().from(shipments).orderBy(desc(shipments.createdAt));
     
-    // Get items for each shipment
+    // Get items for each shipment from consolidation
     const shipmentsWithDetails = await Promise.all(
       shipmentList.map(async (shipment) => {
-        const items = await db
-          .select()
-          .from(shipmentItems)
-          .where(eq(shipmentItems.shipmentId, shipment.id));
+        let items: any[] = [];
+        let itemCount = 0;
+        
+        // If shipment has a consolidation, get its items
+        if (shipment.consolidationId) {
+          const consolidationItemList = await db
+            .select({
+              id: customItems.id,
+              name: customItems.name,
+              quantity: customItems.quantity,
+              weight: customItems.weight,
+              trackingNumber: customItems.trackingNumber,
+              unitPrice: customItems.unitPrice
+            })
+            .from(consolidationItems)
+            .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
+            .where(eq(consolidationItems.consolidationId, shipment.consolidationId));
+          
+          items = consolidationItemList;
+          itemCount = consolidationItemList.length;
+        }
         
         return {
           ...shipment,
           items,
-          itemCount: items.length
+          itemCount
         };
       })
     );
