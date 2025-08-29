@@ -21,6 +21,10 @@ interface Shipment {
   consolidationId: number | null;
   carrier: string;
   trackingNumber: string;
+  endCarrier?: string;
+  endTrackingNumber?: string;
+  shipmentName?: string;
+  shipmentType?: string;
   origin: string;
   destination: string;
   status: string;
@@ -227,10 +231,33 @@ export default function InternationalTransit() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     
+    // Generate AI shipment name based on items and shipment type
+    const generateShipmentName = () => {
+      const method = selectedPendingShipment?.shippingMethod || '';
+      const itemCount = selectedPendingShipment?.itemCount || 0;
+      const items = selectedPendingShipment?.items || [];
+      
+      // Get first few item names
+      const itemNames = items.slice(0, 2).map((item: any) => item.name).join(', ');
+      const moreItems = items.length > 2 ? ` +${items.length - 2} more` : '';
+      
+      // Create descriptive name
+      const methodType = method.includes('express') ? 'Express' : 
+                        method.includes('air') ? 'Air' : 
+                        method.includes('sea') ? 'Sea' : 
+                        method.includes('railway') ? 'Rail' : 'Standard';
+      
+      return `${methodType} - ${itemNames}${moreItems} (${itemCount} items)`;
+    };
+    
     const data = {
       consolidationId: selectedPendingShipment?.id || (formData.get('consolidationId') ? parseInt(formData.get('consolidationId') as string) : null),
       carrier: selectedPendingShipment?.shippingMethod || 'standard',
       trackingNumber: formData.get('trackingNumber') as string,
+      endCarrier: formData.get('endCarrier') as string || null,
+      endTrackingNumber: formData.get('endTrackingNumber') as string || null,
+      shipmentName: formData.get('shipmentName') as string || generateShipmentName(),
+      shipmentType: selectedPendingShipment?.shippingMethod || formData.get('shipmentType') as string,
       origin: formData.get('origin') as string,
       destination: formData.get('destination') as string,
       shippingCost: parseFloat(formData.get('shippingCost') as string) || 0,
@@ -426,18 +453,16 @@ export default function InternationalTransit() {
             <form onSubmit={handleCreateShipment} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="trackingNumber">Tracking Number *</Label>
+                  <Label htmlFor="shipmentName">Shipment Name</Label>
                   <Input 
-                    id="trackingNumber" 
-                    name="trackingNumber" 
-                    required 
-                    defaultValue={selectedPendingShipment?.trackingNumber || ''}
-                    data-testid="input-tracking-number"
-                    placeholder="Enter tracking number"
+                    id="shipmentName" 
+                    name="shipmentName" 
+                    data-testid="input-shipment-name"
+                    placeholder="AI will generate based on items"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="shippingMethod">Shipment Type</Label>
+                  <Label htmlFor="shipmentType">Shipment Type</Label>
                   <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
                     {(() => {
                       const method = selectedPendingShipment?.shippingMethod;
@@ -457,7 +482,45 @@ export default function InternationalTransit() {
                       {selectedPendingShipment?.shippingMethod?.replace(/_/g, ' ').toUpperCase() || 'STANDARD'}
                     </span>
                   </div>
-                  <input type="hidden" name="shippingMethod" value={selectedPendingShipment?.shippingMethod || ''} />
+                  <input type="hidden" name="shipmentType" value={selectedPendingShipment?.shippingMethod || ''} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="trackingNumber">Tracking Number *</Label>
+                  <Input 
+                    id="trackingNumber" 
+                    name="trackingNumber" 
+                    required 
+                    defaultValue={selectedPendingShipment?.trackingNumber || ''}
+                    data-testid="input-tracking-number"
+                    placeholder="Enter tracking number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="endCarrier">End Shipping Carrier</Label>
+                  <Input 
+                    id="endCarrier" 
+                    name="endCarrier" 
+                    data-testid="input-end-carrier"
+                    placeholder="e.g., DPD, DHL, GLS"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="endTrackingNumber">End Tracking Number</Label>
+                  <Input 
+                    id="endTrackingNumber" 
+                    name="endTrackingNumber" 
+                    data-testid="input-end-tracking-number"
+                    placeholder="Final delivery tracking"
+                  />
+                </div>
+                <div className="space-y-2">
+                  {/* Placeholder for alignment */}
                 </div>
               </div>
 
@@ -474,7 +537,7 @@ export default function InternationalTransit() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="destination">Destination Warehouse *</Label>
-                  <Select name="destination" required defaultValue={selectedPendingShipment?.destination || ''}>
+                  <Select name="destination" required defaultValue={warehouses.length > 0 ? warehouses[0].name : "Czech Republic, Prague"}>
                     <SelectTrigger data-testid="select-destination">
                       <SelectValue placeholder="Select warehouse" />
                     </SelectTrigger>
@@ -494,10 +557,10 @@ export default function InternationalTransit() {
                         ))
                       ) : (
                         <>
+                          <SelectItem value="Czech Republic, Prague">Czech Republic, Prague</SelectItem>
                           <SelectItem value="USA, California">USA, California</SelectItem>
                           <SelectItem value="USA, New York">USA, New York</SelectItem>
                           <SelectItem value="UK, London">UK, London</SelectItem>
-                          <SelectItem value="Czech Republic, Prague">Czech Republic, Prague</SelectItem>
                         </>
                       )}
                     </SelectContent>

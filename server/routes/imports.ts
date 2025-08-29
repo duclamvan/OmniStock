@@ -1250,12 +1250,17 @@ router.post("/shipments", async (req, res) => {
       consolidationId: req.body.consolidationId,
       carrier: req.body.carrier,
       trackingNumber: req.body.trackingNumber,
+      endCarrier: req.body.endCarrier || null,
+      endTrackingNumber: req.body.endTrackingNumber || null,
+      shipmentName: req.body.shipmentName || null,
+      shipmentType: req.body.shipmentType || req.body.shippingMethod || null,
       origin: req.body.origin,
       destination: req.body.destination,
       shippingCost: req.body.shippingCost || 0,
+      shippingCostCurrency: req.body.shippingCostCurrency || 'USD',
       insuranceValue: req.body.insuranceValue || 0,
       notes: req.body.notes || null,
-      status: "dispatched",
+      status: "pending",
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -1263,10 +1268,12 @@ router.post("/shipments", async (req, res) => {
     const [shipment] = await db.insert(shipments).values(shipmentData).returning();
     
     // Update consolidation status to "shipped"
-    await db
-      .update(consolidations)
-      .set({ status: "shipped", updatedAt: new Date() })
-      .where(eq(consolidations.id, req.body.consolidationId));
+    if (req.body.consolidationId) {
+      await db
+        .update(consolidations)
+        .set({ status: "shipped", updatedAt: new Date() })
+        .where(eq(consolidations.id, req.body.consolidationId));
+    }
     
     res.json(shipment);
   } catch (error) {
