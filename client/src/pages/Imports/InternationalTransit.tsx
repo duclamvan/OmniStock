@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Plane, Ship, Truck, MapPin, Clock, Package, Globe, Star, Zap, Target, TrendingUp, Calendar, AlertCircle, CheckCircle, Search, CalendarDays, MoreVertical, ArrowLeft, Train, Shield, Copy, ExternalLink, ChevronDown, ChevronUp, Edit, Filter, ArrowUpDown } from "lucide-react";
+import { Plus, Plane, Ship, Truck, MapPin, Clock, Package, Globe, Star, Zap, Target, TrendingUp, Calendar, AlertCircle, CheckCircle, Search, CalendarDays, MoreVertical, ArrowLeft, Train, Shield, Copy, ExternalLink, ChevronDown, ChevronUp, Edit, Filter, ArrowUpDown, Info } from "lucide-react";
 import { format, differenceInDays, addDays } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -427,52 +427,69 @@ export default function InternationalTransit() {
   };
   
   // Helper function to get shipment type color (border only)
+  // Color psychology: Fast/urgent methods use warm colors, slower methods use cool colors
+  // Sensitive items use deeper/richer variants to indicate special handling
   const getShipmentTypeColor = (shipmentType: string) => {
-    if (shipmentType?.includes('air')) {
-      return shipmentType.includes('sensitive') ? 'border-l-orange-500' : 'border-l-blue-500';
-    } else if (shipmentType?.includes('express')) {
-      return shipmentType.includes('sensitive') ? 'border-l-pink-500' : 'border-l-purple-500';
-    } else if (shipmentType?.includes('sea')) {
-      return shipmentType.includes('sensitive') ? 'border-l-red-500' : 'border-l-cyan-500';
+    if (shipmentType?.includes('express')) {
+      // Express: Fastest - Red tones for urgency
+      return shipmentType.includes('sensitive') ? 'border-l-orange-500' : 'border-l-red-500';
+    } else if (shipmentType?.includes('air')) {
+      // Air DDP: Fast - Blue/purple for sky and premium
+      return shipmentType.includes('sensitive') ? 'border-l-purple-500' : 'border-l-blue-500';
     } else if (shipmentType?.includes('railway')) {
-      return shipmentType.includes('sensitive') ? 'border-l-yellow-500' : 'border-l-green-500';
+      // Railway: Moderate - Green/amber for balanced eco-friendly
+      return shipmentType.includes('sensitive') ? 'border-l-amber-500' : 'border-l-green-500';
+    } else if (shipmentType?.includes('sea')) {
+      // Sea: Slowest - Teal/indigo for ocean depth
+      return shipmentType.includes('sensitive') ? 'border-l-indigo-500' : 'border-l-teal-500';
     }
     return 'border-l-gray-500';
   };
 
-  // Helper function to get shipment type icon
+  // Helper function to get shipment type icon with matching color psychology
   const getShipmentTypeIcon = (shipmentType: string, className: string = 'h-4 w-4') => {
     const isSensitive = shipmentType?.includes('sensitive');
-    const iconColor = isSensitive ? 'text-orange-500' : 'text-primary';
     
-    if (shipmentType?.includes('air')) {
-      return <Plane className={`${className} ${iconColor}`} />;
-    } else if (shipmentType?.includes('express')) {
+    if (shipmentType?.includes('express')) {
+      // Zap icon for express - red/orange for urgency
+      const iconColor = isSensitive ? 'text-orange-500' : 'text-red-500';
       return <Zap className={`${className} ${iconColor}`} />;
-    } else if (shipmentType?.includes('sea')) {
-      return <Ship className={`${className} ${iconColor}`} />;
+    } else if (shipmentType?.includes('air')) {
+      // Plane icon for air - blue/purple for sky
+      const iconColor = isSensitive ? 'text-purple-500' : 'text-blue-500';
+      return <Plane className={`${className} ${iconColor}`} />;
     } else if (shipmentType?.includes('railway')) {
+      // Train icon for railway - green/amber for eco
+      const iconColor = isSensitive ? 'text-amber-500' : 'text-green-500';
       return <Train className={`${className} ${iconColor}`} />;
+    } else if (shipmentType?.includes('sea')) {
+      // Ship icon for sea - teal/indigo for ocean
+      const iconColor = isSensitive ? 'text-indigo-500' : 'text-teal-500';
+      return <Ship className={`${className} ${iconColor}`} />;
     }
     return <Package className={`${className} text-muted-foreground`} />;
   };
 
-  // Helper function to format shipment type display name
+  // Helper function to format shipment type display name with enhanced labels
   const formatShipmentType = (shipmentType: string) => {
-    if (!shipmentType) return '';
+    if (!shipmentType) return { label: '', badge: null };
+    
+    const isSensitive = shipmentType.includes('sensitive');
+    const baseType = shipmentType.replace('_sensitive', '_general');
     
     const typeMap: { [key: string]: string } = {
-      'air_ddp_general': 'Air DDP (general)',
-      'air_ddp_sensitive': 'Air DDP (sensitive)', 
-      'express_general': 'Express (general)',
-      'express_sensitive': 'Express (sensitive)',
-      'railway_general': 'Railway (general)',
-      'railway_sensitive': 'Railway (sensitive)',
-      'sea_general': 'Sea (general)',
-      'sea_sensitive': 'Sea (sensitive)'
+      'air_ddp_general': 'Air DDP',
+      'express_general': 'Express',
+      'railway_general': 'Railway',
+      'sea_general': 'Sea Freight'
     };
     
-    return typeMap[shipmentType] || shipmentType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    const label = typeMap[baseType] || shipmentType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    
+    return {
+      label,
+      badge: isSensitive ? '⚠️ Sensitive' : null
+    };
   };
 
   const getTimeRemaining = (shipment: Shipment) => {
@@ -937,6 +954,56 @@ export default function InternationalTransit() {
         </div>
       )}
 
+      {/* Color Legend - Collapsible */}
+      <details className="mb-4">
+        <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2">
+          <Info className="h-4 w-4" />
+          Shipment Type Color Guide
+        </summary>
+        <Card className="mt-2">
+          <CardContent className="pt-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div className="flex items-center gap-2">
+                <div className="h-3 w-12 bg-red-500 rounded"></div>
+                <div>
+                  <p className="font-medium">Express</p>
+                  <p className="text-xs text-muted-foreground">Fastest (1-3 days)</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-3 w-12 bg-blue-500 rounded"></div>
+                <div>
+                  <p className="font-medium">Air DDP</p>
+                  <p className="text-xs text-muted-foreground">Fast (5-7 days)</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-3 w-12 bg-green-500 rounded"></div>
+                <div>
+                  <p className="font-medium">Railway</p>
+                  <p className="text-xs text-muted-foreground">Moderate (15-20 days)</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-3 w-12 bg-teal-500 rounded"></div>
+                <div>
+                  <p className="font-medium">Sea</p>
+                  <p className="text-xs text-muted-foreground">Economical (30-45 days)</p>
+                </div>
+              </div>
+            </div>
+            <div className="mt-3 pt-3 border-t">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Badge variant="outline" className="text-xs bg-amber-50 border-amber-300 text-amber-700 dark:bg-amber-950 dark:border-amber-700 dark:text-amber-300">
+                  ⚠️ Sensitive
+                </Badge>
+                <span>Items with batteries, liquids, or special handling requirements use warmer color variants</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </details>
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
@@ -1284,11 +1351,21 @@ export default function InternationalTransit() {
                                 {getTimeRemaining(shipment)}
                               </Badge>
                             </div>
-                            {shipment.shipmentType && (
-                              <p className="text-sm text-muted-foreground font-medium">
-                                {formatShipmentType(shipment.shipmentType)}
-                              </p>
-                            )}
+                            {shipment.shipmentType && (() => {
+                              const typeInfo = formatShipmentType(shipment.shipmentType);
+                              return (
+                                <div className="flex items-center gap-2 mt-1">
+                                  <p className="text-sm text-muted-foreground font-medium">
+                                    {typeInfo.label}
+                                  </p>
+                                  {typeInfo.badge && (
+                                    <Badge variant="outline" className="text-xs bg-amber-50 border-amber-300 text-amber-700 dark:bg-amber-950 dark:border-amber-700 dark:text-amber-300">
+                                      {typeInfo.badge}
+                                    </Badge>
+                                  )}
+                                </div>
+                              );
+                            })()}
                             <p className="text-xs text-muted-foreground">
                               {shipment.itemCount} items • {(shipment.carrier || shipment.shippingMethod || 'Standard').replace(/_/g, ' ').toUpperCase()}
                             </p>
@@ -1437,7 +1514,9 @@ export default function InternationalTransit() {
                                         className="h-6 w-6 p-0"
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          copyToClipboard(shipment.endTrackingNumber);
+                                          if (shipment.endTrackingNumber) {
+                                            copyToClipboard(shipment.endTrackingNumber);
+                                          }
                                         }}
                                       >
                                         <Copy className="h-3 w-3" />
@@ -1448,7 +1527,9 @@ export default function InternationalTransit() {
                                         className="h-6 w-6 p-0"
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          window.open(getCarrierTrackingUrl(shipment.endCarrier || 'Local Courier', shipment.endTrackingNumber), '_blank');
+                                          if (shipment.endTrackingNumber) {
+                                            window.open(getCarrierTrackingUrl(shipment.endCarrier || 'Local Courier', shipment.endTrackingNumber), '_blank');
+                                          }
                                         }}
                                       >
                                         <ExternalLink className="h-3 w-3" />
