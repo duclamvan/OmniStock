@@ -1462,7 +1462,7 @@ export default function InternationalTransit() {
                               );
                             })()}
                             <p className="text-xs text-muted-foreground">
-                              {shipment.totalWeight && `${shipment.totalWeight}kg • `}
+                              {shipment.totalWeight ? `${shipment.totalWeight}kg • ` : ''}
                               {shipment.shippingCost && `${shipment.shippingCostCurrency || 'USD'} ${shipment.shippingCost} • `}
                               {shipment.endCarrier || shipment.carrier || 'Standard Carrier'}
                             </p>
