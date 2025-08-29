@@ -1435,7 +1435,7 @@ export default function InternationalTransit() {
                             <div className="flex items-center gap-2">
                               <h3 className="font-semibold" data-testid={`shipment-tracking-${shipment.id}`}>
                                 {shipment.shipmentName || shipment.trackingNumber || `Shipment #${shipment.id}`}
-                                {shipment.totalUnits && shipment.unitType && (
+                                {!shipment.shipmentName && shipment.totalUnits && shipment.unitType && (
                                   <span className="font-normal text-muted-foreground ml-1">
                                     ({shipment.totalUnits} {shipment.unitType})
                                   </span>
