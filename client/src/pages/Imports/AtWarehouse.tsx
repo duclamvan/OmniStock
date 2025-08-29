@@ -14,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Package, Plane, Ship, Zap, Truck, MapPin, Clock, Weight, Users, ShoppingCart, Star, Trash2, Package2, PackageOpen, AlertCircle, CheckCircle, Edit, MoreHorizontal, ArrowUp, ArrowDown, Archive, Send, RefreshCw, Flag, Shield, Grip, AlertTriangle, ChevronDown, ChevronRight, Box, Sparkles, X, Search, SortAsc, CheckSquare, Square, ChevronsDown, ChevronsUp, Filter, Calendar, Hash, Camera, ArrowRightToLine, MoreVertical, Edit2 } from "lucide-react";
+import { Plus, Package, Plane, Ship, Zap, Truck, MapPin, Clock, Weight, Users, ShoppingCart, Star, Trash2, Package2, PackageOpen, AlertCircle, CheckCircle, Edit, MoreHorizontal, ArrowUp, ArrowDown, Archive, Send, RefreshCw, Flag, Shield, Grip, AlertTriangle, ChevronDown, ChevronRight, Box, Sparkles, X, Search, SortAsc, CheckSquare, Square, ChevronsDown, ChevronsUp, Filter, Calendar, Hash, Camera, ArrowRightToLine, MoreVertical, Edit2, Train } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -3217,28 +3217,52 @@ export default function AtWarehouse() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="not_set">Not Set</SelectItem>
-                    <SelectItem value="air">
+                    <SelectItem value="general_air_ddp">
                       <div className="flex items-center gap-2">
                         <Plane className="h-4 w-4" />
-                        Air Freight
+                        General Air (DDP)
                       </div>
                     </SelectItem>
-                    <SelectItem value="sea">
-                      <div className="flex items-center gap-2">
-                        <Ship className="h-4 w-4" />
-                        Sea Freight
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="express">
-                      <div className="flex items-center gap-2">
-                        <Zap className="h-4 w-4" />
-                        Express Courier
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="priority">
+                    <SelectItem value="sensitive_air_ddp">
                       <div className="flex items-center gap-2">
                         <Shield className="h-4 w-4" />
-                        Priority Shipping
+                        Sensitive Air (DDP)
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="express_general">
+                      <div className="flex items-center gap-2">
+                        <Zap className="h-4 w-4" />
+                        Express General
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="express_sensitive">
+                      <div className="flex items-center gap-2">
+                        <Zap className="h-4 w-4 text-orange-500" />
+                        Express Sensitive
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="railway_general">
+                      <div className="flex items-center gap-2">
+                        <Train className="h-4 w-4" />
+                        Railway General
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="railway_sensitive">
+                      <div className="flex items-center gap-2">
+                        <Train className="h-4 w-4 text-orange-500" />
+                        Railway Sensitive
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="sea_general">
+                      <div className="flex items-center gap-2">
+                        <Ship className="h-4 w-4" />
+                        Sea General
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="sea_sensitive">
+                      <div className="flex items-center gap-2">
+                        <Ship className="h-4 w-4 text-orange-500" />
+                        Sea Sensitive
                       </div>
                     </SelectItem>
                   </SelectContent>
@@ -3256,22 +3280,6 @@ export default function AtWarehouse() {
                   })}
                   placeholder="Add any special instructions or notes..."
                   rows={3}
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="target-weight">Target Weight (kg)</Label>
-                <Input
-                  id="target-weight"
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value={editingConsolidation.targetWeight || ""}
-                  onChange={(e) => setEditingConsolidation({
-                    ...editingConsolidation,
-                    targetWeight: e.target.value ? parseFloat(e.target.value) : null
-                  })}
-                  placeholder="Maximum weight for this consolidation"
                 />
               </div>
             </div>
@@ -3292,8 +3300,7 @@ export default function AtWarehouse() {
                     data: {
                       name: editingConsolidation.name,
                       shippingMethod: editingConsolidation.shippingMethod,
-                      notes: editingConsolidation.notes,
-                      targetWeight: editingConsolidation.targetWeight
+                      notes: editingConsolidation.notes
                     }
                   });
                 }
