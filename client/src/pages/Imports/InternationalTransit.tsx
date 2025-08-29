@@ -900,7 +900,7 @@ export default function InternationalTransit() {
                           <div>
                             <div className="flex items-center gap-2">
                               <h3 className="font-semibold" data-testid={`shipment-tracking-${shipment.id}`}>
-                                {shipment.trackingNumber}
+                                {shipment.shipmentName || shipment.trackingNumber || `Shipment #${shipment.id}`}
                               </h3>
                               <Badge className={`text-xs ${getETAColor(shipment)}`}>
                                 <CalendarDays className="h-3 w-3 mr-1" />
@@ -947,7 +947,71 @@ export default function InternationalTransit() {
                         </div>
                       </div>
 
-                      {/* Progress Bar with Dates */}
+                      {/* Tracking Information */}
+                      {(shipment.trackingNumber || shipment.endTrackingNumber) && (
+                        <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-3 mb-3">
+                          <div className="flex items-center mb-2">
+                            <Package className="h-4 w-4 text-blue-600 mr-2" />
+                            <span className="text-sm font-semibold text-blue-800 dark:text-blue-200">Tracking Information</span>
+                          </div>
+                          
+                          {/* Primary Carrier (China to Europe) */}
+                          {shipment.trackingNumber && (
+                            <div className="mb-2">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="text-xs text-muted-foreground">Primary Carrier</p>
+                                  <p className="text-sm font-medium">{shipment.carrier || 'Standard Carrier'}</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-xs text-muted-foreground">Tracking Number</p>
+                                  <p className="text-sm font-mono font-medium text-blue-600">{shipment.trackingNumber}</p>
+                                </div>
+                              </div>
+                              {/* Primary Carrier Progress */}
+                              <div className="mt-2">
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-xs text-muted-foreground">{shipment.origin}</span>
+                                  <span className="text-xs text-muted-foreground">Transit Hub</span>
+                                </div>
+                                <Progress 
+                                  value={shipment.endTrackingNumber ? 100 : progress * 0.7} 
+                                  className={`h-2 ${shipment.endTrackingNumber ? '[&>div]:bg-green-500' : '[&>div]:bg-purple-500'}`}
+                                />
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* End Carrier (European Courier) */}
+                          {shipment.endTrackingNumber && (
+                            <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-800">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="text-xs text-muted-foreground">End Carrier</p>
+                                  <p className="text-sm font-medium">{shipment.endCarrier || 'Local Courier'}</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-xs text-muted-foreground">Tracking Number</p>
+                                  <p className="text-sm font-mono font-medium text-blue-600">{shipment.endTrackingNumber}</p>
+                                </div>
+                              </div>
+                              {/* End Carrier Progress */}
+                              <div className="mt-2">
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-xs text-muted-foreground">Transit Hub</span>
+                                  <span className="text-xs text-muted-foreground">{shipment.destination}</span>
+                                </div>
+                                <Progress 
+                                  value={shipment.status === 'delivered' ? 100 : progress * 0.3} 
+                                  className={`h-2 ${shipment.status === 'delivered' ? '[&>div]:bg-green-500' : '[&>div]:bg-purple-500'}`}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Overall Progress Bar with Dates */}
                       <div className="mb-3">
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-xs text-muted-foreground">
@@ -960,7 +1024,10 @@ export default function InternationalTransit() {
                               : 'Calculating...'}
                           </span>
                         </div>
-                        <Progress value={progress} className="h-2" />
+                        <Progress 
+                          value={progress} 
+                          className={`h-2 ${shipment.status === 'delivered' ? '[&>div]:bg-green-500' : shipment.status === 'in transit' ? '[&>div]:bg-purple-500' : '[&>div]:bg-blue-500'}`}
+                        />
                       </div>
 
                       {/* Shipment Items - Always Show */}
