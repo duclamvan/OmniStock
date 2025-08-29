@@ -551,8 +551,8 @@ export default function InternationalTransit() {
                 Create Shipment
               </Button>
             </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
+          <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-hidden flex flex-col">
+            <DialogHeader className="flex-shrink-0">
               <DialogTitle>
                 {selectedPendingShipment ? 'Add Tracking Information' : 'Create New Shipment'}
               </DialogTitle>
@@ -562,8 +562,9 @@ export default function InternationalTransit() {
                   : 'Create a new international shipment with AI delivery prediction'}
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleCreateShipment} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <form onSubmit={handleCreateShipment} className="flex flex-col flex-1 overflow-hidden">
+              <div className="flex-1 overflow-y-auto px-1 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="shipmentName">Shipment Name</Label>
                   <Input 
@@ -596,7 +597,7 @@ export default function InternationalTransit() {
               {/* Primary Tracking Fields */}
               <div className="space-y-2">
                 <Label className="text-sm font-semibold">Primary Carrier (China to Europe)</Label>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="trackingNumber">Tracking Number *</Label>
                     <Input 
@@ -625,7 +626,7 @@ export default function InternationalTransit() {
               {/* End Carrier Fields */}
               <div className="space-y-2">
                 <Label className="text-sm font-semibold">End Carrier (European Courier)</Label>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="endTrackingNumber">End Tracking Number</Label>
                     <Input 
@@ -650,7 +651,7 @@ export default function InternationalTransit() {
               {/* Weight and Units */}
               <div className="space-y-2">
                 <Label className="text-sm font-semibold">Package Information</Label>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="totalWeight">Total Weight *</Label>
                     <Input 
@@ -694,7 +695,7 @@ export default function InternationalTransit() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="origin">Origin</Label>
                   <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
@@ -738,7 +739,7 @@ export default function InternationalTransit() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="shippingCost">Shipping Cost</Label>
                   <Input 
@@ -776,8 +777,8 @@ export default function InternationalTransit() {
                   placeholder="Additional shipping notes..."
                 />
               </div>
-
-              <DialogFooter>
+              </div>
+              <DialogFooter className="flex-shrink-0 mt-4 pt-4 border-t">
                 <Button type="button" variant="outline" onClick={() => setIsCreateShipmentOpen(false)}>
                   Cancel
                 </Button>
@@ -1429,16 +1430,17 @@ export default function InternationalTransit() {
 
       {/* Edit Shipment Dialog */}
       <Dialog open={isEditShipmentOpen} onOpenChange={setIsEditShipmentOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>Edit Shipment</DialogTitle>
             <DialogDescription>
               Update shipment tracking information and details
             </DialogDescription>
           </DialogHeader>
           {selectedShipment && (
-            <form onSubmit={handleEditShipment} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <form onSubmit={handleEditShipment} className="flex flex-col flex-1 overflow-hidden">
+              <div className="flex-1 overflow-y-auto px-1 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="edit-shipmentName">Shipment Name</Label>
                   <Input 
@@ -1472,7 +1474,7 @@ export default function InternationalTransit() {
               {/* Primary Tracking Fields */}
               <div className="space-y-2">
                 <Label className="text-sm font-semibold">Primary Carrier (China to Europe)</Label>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="edit-trackingNumber">Tracking Number *</Label>
                     <Input 
@@ -1498,7 +1500,7 @@ export default function InternationalTransit() {
               {/* End Carrier Fields */}
               <div className="space-y-2">
                 <Label className="text-sm font-semibold">End Carrier (European Courier)</Label>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="edit-endTrackingNumber">Tracking Number</Label>
                     <Input 
@@ -1521,7 +1523,7 @@ export default function InternationalTransit() {
               </div>
 
               {/* Weight and Units */}
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="edit-totalWeight">Total Weight (kg)</Label>
                   <Input 
@@ -1561,7 +1563,7 @@ export default function InternationalTransit() {
               </div>
 
               {/* Location Fields */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="edit-origin">Origin *</Label>
                   <Input 
@@ -1585,7 +1587,7 @@ export default function InternationalTransit() {
               </div>
 
               {/* Cost Fields */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="edit-shippingCost">Shipping Cost</Label>
                   <Input 
@@ -1624,8 +1626,8 @@ export default function InternationalTransit() {
                   rows={3}
                 />
               </div>
-
-              <DialogFooter>
+              </div>
+              <DialogFooter className="flex-shrink-0 mt-4 pt-4 border-t">
                 <Button type="button" variant="outline" onClick={() => setIsEditShipmentOpen(false)}>
                   Cancel
                 </Button>
