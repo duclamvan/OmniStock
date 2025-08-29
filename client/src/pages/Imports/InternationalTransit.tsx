@@ -605,6 +605,21 @@ export default function InternationalTransit() {
     return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
   };
 
+  const getProgressTextColor = (shipment: Shipment) => {
+    const estimatedDelivery = shipment.estimatedDelivery || predictions[shipment.id]?.estimatedDelivery;
+    if (!estimatedDelivery) return "text-gray-600 dark:text-gray-400";
+    
+    const deliveryDate = new Date(estimatedDelivery);
+    const currentDate = new Date();
+    const daysRemaining = differenceInDays(deliveryDate, currentDate);
+    
+    if (shipment.status === 'delivered') return "text-green-600 dark:text-green-400";
+    if (daysRemaining < 0) return "text-red-600 dark:text-red-400";
+    if (daysRemaining === 0) return "text-orange-600 dark:text-orange-400";
+    if (daysRemaining <= 3) return "text-yellow-600 dark:text-yellow-400";
+    return "text-blue-600 dark:text-blue-400";
+  };
+
   // Filter shipments based on search query
   const filteredShipments = shipments.filter(shipment => {
     if (!searchQuery) return true;
@@ -1642,7 +1657,7 @@ export default function InternationalTransit() {
                           <span className="text-xs text-muted-foreground">
                             {format(new Date(shipment.createdAt), 'MMM dd')}
                           </span>
-                          <span className="text-sm font-semibold text-primary">{getTimeRemaining(shipment)}</span>
+                          <span className={`text-sm font-semibold ${getProgressTextColor(shipment)}`}>{getTimeRemaining(shipment)}</span>
                           <span className="text-xs text-muted-foreground">
                             {shipment.estimatedDelivery || predictions[shipment.id]?.estimatedDelivery 
                               ? format(new Date(shipment.estimatedDelivery || predictions[shipment.id]?.estimatedDelivery), 'MMM dd')
@@ -1651,7 +1666,20 @@ export default function InternationalTransit() {
                         </div>
                         <Progress 
                           value={progress} 
-                          className={`h-2 ${shipment.status === 'delivered' ? '[&>div]:bg-green-500' : shipment.status === 'in transit' ? '[&>div]:bg-purple-500' : '[&>div]:bg-blue-500'}`}
+                          className={`h-2 ${(() => {
+                            const estimatedDelivery = shipment.estimatedDelivery || predictions[shipment.id]?.estimatedDelivery;
+                            if (!estimatedDelivery) return '[&>div]:bg-gray-500';
+                            
+                            const deliveryDate = new Date(estimatedDelivery);
+                            const currentDate = new Date();
+                            const daysRemaining = differenceInDays(deliveryDate, currentDate);
+                            
+                            if (shipment.status === 'delivered') return '[&>div]:bg-green-500';
+                            if (daysRemaining < 0) return '[&>div]:bg-red-500';
+                            if (daysRemaining === 0) return '[&>div]:bg-orange-500';
+                            if (daysRemaining <= 3) return '[&>div]:bg-yellow-500';
+                            return '[&>div]:bg-blue-500';
+                          })()}`}
                         />
                       </div>
 
