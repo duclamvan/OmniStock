@@ -625,14 +625,54 @@ export default function InternationalTransit() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="air_ddp_general">Air DDP (general)</SelectItem>
-                          <SelectItem value="air_ddp_sensitive">Air DDP (sensitive)</SelectItem>
-                          <SelectItem value="express_general">Express (general)</SelectItem>
-                          <SelectItem value="express_sensitive">Express (sensitive)</SelectItem>
-                          <SelectItem value="railway_general">Railway (general)</SelectItem>
-                          <SelectItem value="railway_sensitive">Railway (sensitive)</SelectItem>
-                          <SelectItem value="sea_general">Sea (general)</SelectItem>
-                          <SelectItem value="sea_sensitive">Sea (sensitive)</SelectItem>
+                          <SelectItem value="air_ddp_general">
+                            <div className="flex items-center gap-2">
+                              <Plane className="h-4 w-4 text-blue-500" />
+                              Air DDP (general)
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="air_ddp_sensitive">
+                            <div className="flex items-center gap-2">
+                              <Plane className="h-4 w-4 text-orange-500" />
+                              Air DDP (sensitive)
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="express_general">
+                            <div className="flex items-center gap-2">
+                              <Zap className="h-4 w-4 text-purple-500" />
+                              Express (general)
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="express_sensitive">
+                            <div className="flex items-center gap-2">
+                              <Zap className="h-4 w-4 text-orange-500" />
+                              Express (sensitive)
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="railway_general">
+                            <div className="flex items-center gap-2">
+                              <Train className="h-4 w-4 text-green-500" />
+                              Railway (general)
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="railway_sensitive">
+                            <div className="flex items-center gap-2">
+                              <Train className="h-4 w-4 text-orange-500" />
+                              Railway (sensitive)
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="sea_general">
+                            <div className="flex items-center gap-2">
+                              <Ship className="h-4 w-4 text-cyan-500" />
+                              Sea (general)
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="sea_sensitive">
+                            <div className="flex items-center gap-2">
+                              <Ship className="h-4 w-4 text-orange-500" />
+                              Sea (sensitive)
+                            </div>
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -1097,15 +1137,60 @@ export default function InternationalTransit() {
                     <SelectValue placeholder="Filter by type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Shipments</SelectItem>
-                    <SelectItem value="air_ddp_general">Air DDP (general)</SelectItem>
-                    <SelectItem value="air_ddp_sensitive">Air DDP (sensitive)</SelectItem>
-                    <SelectItem value="express_general">Express (general)</SelectItem>
-                    <SelectItem value="express_sensitive">Express (sensitive)</SelectItem>
-                    <SelectItem value="railway_general">Railway (general)</SelectItem>
-                    <SelectItem value="railway_sensitive">Railway (sensitive)</SelectItem>
-                    <SelectItem value="sea_general">Sea (general)</SelectItem>
-                    <SelectItem value="sea_sensitive">Sea (sensitive)</SelectItem>
+                    <SelectItem value="all">
+                      <div className="flex items-center gap-2">
+                        <Package className="h-4 w-4 text-muted-foreground" />
+                        All Shipments
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="air_ddp_general">
+                      <div className="flex items-center gap-2">
+                        <Plane className="h-4 w-4 text-blue-500" />
+                        Air DDP (general)
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="air_ddp_sensitive">
+                      <div className="flex items-center gap-2">
+                        <Plane className="h-4 w-4 text-orange-500" />
+                        Air DDP (sensitive)
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="express_general">
+                      <div className="flex items-center gap-2">
+                        <Zap className="h-4 w-4 text-purple-500" />
+                        Express (general)
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="express_sensitive">
+                      <div className="flex items-center gap-2">
+                        <Zap className="h-4 w-4 text-orange-500" />
+                        Express (sensitive)
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="railway_general">
+                      <div className="flex items-center gap-2">
+                        <Train className="h-4 w-4 text-green-500" />
+                        Railway (general)
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="railway_sensitive">
+                      <div className="flex items-center gap-2">
+                        <Train className="h-4 w-4 text-orange-500" />
+                        Railway (sensitive)
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="sea_general">
+                      <div className="flex items-center gap-2">
+                        <Ship className="h-4 w-4 text-cyan-500" />
+                        Sea (general)
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="sea_sensitive">
+                      <div className="flex items-center gap-2">
+                        <Ship className="h-4 w-4 text-orange-500" />
+                        Sea (sensitive)
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
