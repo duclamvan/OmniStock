@@ -1435,12 +1435,12 @@ export default function InternationalTransit() {
                             <div className="flex items-center gap-2">
                               <h3 className="font-semibold" data-testid={`shipment-tracking-${shipment.id}`}>
                                 {shipment.shipmentName || shipment.trackingNumber || `Shipment #${shipment.id}`}
+                                {shipment.totalUnits && shipment.unitType && (
+                                  <span className="font-normal text-muted-foreground ml-1">
+                                    ({shipment.totalUnits} {shipment.unitType})
+                                  </span>
+                                )}
                               </h3>
-                              {shipment.totalUnits && shipment.unitType && (
-                                <span className="text-xs text-muted-foreground">
-                                  ({shipment.totalUnits} {shipment.unitType})
-                                </span>
-                              )}
                               <Badge className={`text-xs ${getETAColor(shipment)}`}>
                                 <CalendarDays className="h-3 w-3 mr-1" />
                                 {getTimeRemaining(shipment)}
