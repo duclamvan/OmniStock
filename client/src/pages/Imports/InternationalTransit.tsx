@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Plane, Ship, Truck, MapPin, Clock, Package, Globe, Star, Zap, Target, TrendingUp, Calendar, AlertCircle, CheckCircle, Search, CalendarDays, MoreVertical, ArrowLeft, Train, Shield, Copy, ExternalLink, ChevronDown, ChevronUp, Edit, Filter, ArrowUpDown, Info } from "lucide-react";
+import { Plus, Plane, Ship, Truck, MapPin, Clock, Package, Globe, Star, Zap, Target, TrendingUp, Calendar, AlertCircle, CheckCircle, Search, CalendarDays, MoreVertical, ArrowLeft, Train, Shield, Copy, ExternalLink, ChevronDown, ChevronUp, Edit, Filter, ArrowUpDown, Info, RefreshCw } from "lucide-react";
 import { format, differenceInDays, addDays } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -206,6 +206,28 @@ export default function InternationalTransit() {
       // Always refetch after error or success
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/pending'] });
+    }
+  });
+
+  // Regenerate shipment name mutation
+  const regenerateNameMutation = useMutation({
+    mutationFn: async (shipmentId: number) => {
+      const response = await apiRequest(`/api/imports/shipments/${shipmentId}/regenerate-name`, 'POST');
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
+      toast({ 
+        title: "Success", 
+        description: "Shipment name regenerated successfully" 
+      });
+    },
+    onError: () => {
+      toast({ 
+        title: "Error", 
+        description: "Failed to regenerate shipment name", 
+        variant: "destructive" 
+      });
     }
   });
 
@@ -1385,8 +1407,18 @@ export default function InternationalTransit() {
                           {getShipmentTypeIcon(shipment.shipmentType || shipment.carrier || shipment.shippingMethod || '')}
                           <div>
                             <div className="flex items-center gap-2">
-                              <h3 className="font-semibold" data-testid={`shipment-tracking-${shipment.id}`}>
+                              <h3 className="font-semibold flex items-center gap-1" data-testid={`shipment-tracking-${shipment.id}`}>
                                 {shipment.shipmentName || shipment.trackingNumber || `Shipment #${shipment.id}`}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0 hover:bg-accent"
+                                  onClick={() => regenerateNameMutation.mutate(shipment.id)}
+                                  disabled={regenerateNameMutation.isPending}
+                                  title="Regenerate shipment name based on contents"
+                                >
+                                  <RefreshCw className={`h-3 w-3 ${regenerateNameMutation.isPending ? 'animate-spin' : ''}`} />
+                                </Button>
                               </h3>
                               <Badge className={`text-xs ${getETAColor(shipment)}`}>
                                 <CalendarDays className="h-3 w-3 mr-1" />

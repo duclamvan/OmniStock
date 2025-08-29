@@ -1243,8 +1243,8 @@ router.get("/shipments", async (req, res) => {
   }
 });
 
-// Helper function to generate AI shipment name
-const generateAIShipmentName = async (consolidationId: number | null, shipmentType: string, items?: any[]) => {
+// Helper function to generate AI shipment name based only on contents
+const generateAIShipmentName = async (consolidationId: number | null, items?: any[]) => {
   try {
     let itemsList = items || [];
     
@@ -1262,33 +1262,34 @@ const generateAIShipmentName = async (consolidationId: number | null, shipmentTy
       itemsList = fetchedItems;
     }
     
-    // Build shipment name based on shipping method and items
-    const methodName = shipmentType?.includes('express') ? 'Express' : 
-                      shipmentType?.includes('air') ? 'Air' : 
-                      shipmentType?.includes('sea') ? 'Sea' : 
-                      shipmentType?.includes('railway') ? 'Rail' : 'Standard';
+    // Build name based purely on items
+    if (itemsList.length === 0) {
+      return `Shipment #${consolidationId || Date.now()}`;
+    }
     
-    // Get first 2 items for the name
-    const itemNames = itemsList.slice(0, 2)
-      .map(item => item.name)
-      .filter(Boolean)
+    // Get first 3 items for the name
+    const mainItems = itemsList.slice(0, 3);
+    const itemNames = mainItems
+      .map(item => {
+        // Shorten long product names
+        const name = item.name || 'Item';
+        const shortName = name.length > 20 ? name.substring(0, 20) + '...' : name;
+        const qty = item.quantity > 1 ? ` x${item.quantity}` : '';
+        return shortName + qty;
+      })
       .join(', ');
     
-    const moreItems = itemsList.length > 2 ? ` +${itemsList.length - 2} more` : '';
-    const totalItems = itemsList.reduce((sum, item) => sum + (item.quantity || 1), 0);
+    // Add count if more items exist
+    const moreItems = itemsList.length > 3 ? ` +${itemsList.length - 3} more` : '';
+    const totalQuantity = itemsList.reduce((sum, item) => sum + (item.quantity || 1), 0);
     
-    // Add sensitive label if applicable
-    const sensitiveLabel = shipmentType?.includes('sensitive') ? ' (Sensitive)' : '';
-    
-    // Generate the final name
-    const generatedName = itemNames 
-      ? `${methodName}${sensitiveLabel} - ${itemNames}${moreItems} (${totalItems} items)`
-      : `${methodName}${sensitiveLabel} Shipment - ${totalItems} items`;
+    // Generate concise name focused on contents
+    const generatedName = `${itemNames}${moreItems} (${totalQuantity} pcs)`;
     
     return generatedName;
   } catch (error) {
     console.error('Error generating AI shipment name:', error);
-    return `${shipmentType?.replace(/_/g, ' ').toUpperCase() || 'STANDARD'} Shipment`;
+    return `Shipment #${consolidationId || Date.now()}`;
   }
 };
 
@@ -1301,21 +1302,13 @@ router.post("/shipments", async (req, res) => {
       ? `QS-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
       : req.body.trackingNumber;
     
-    // Generate AI name if not provided (parallel with other operations)
+    // Generate AI name if not provided (based on items only)
     let shipmentName = req.body.shipmentName;
     if (!shipmentName || shipmentName.trim() === '') {
-      // For Quick Ship, use a simpler, faster name generation
-      if (isQuickShip) {
-        const consolidationId = req.body.consolidationId;
-        const shipType = req.body.shipmentType || req.body.shippingMethod || 'standard';
-        shipmentName = `${shipType.replace(/_/g, ' ').toUpperCase()} - CONSOL-${consolidationId}`;
-      } else {
-        shipmentName = await generateAIShipmentName(
-          req.body.consolidationId,
-          req.body.shipmentType || req.body.shippingMethod,
-          req.body.items
-        );
-      }
+      shipmentName = await generateAIShipmentName(
+        req.body.consolidationId,
+        req.body.items
+      );
     }
     
     const shipmentData = {
@@ -1417,7 +1410,6 @@ router.put("/shipments/:id", async (req, res) => {
     if (!shipmentName || shipmentName.trim() === '') {
       shipmentName = await generateAIShipmentName(
         req.body.consolidationId,
-        req.body.shipmentType || req.body.shippingMethod,
         req.body.items
       );
     }
@@ -1480,6 +1472,41 @@ router.put("/shipments/:id", async (req, res) => {
   } catch (error) {
     console.error("Error updating shipment:", error);
     res.status(500).json({ message: "Failed to update shipment" });
+  }
+});
+
+// Regenerate shipment name endpoint
+router.post("/shipments/:id/regenerate-name", async (req, res) => {
+  try {
+    const shipmentId = parseInt(req.params.id);
+    
+    // Get the shipment's consolidation ID
+    const [shipment] = await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.id, shipmentId));
+    
+    if (!shipment) {
+      return res.status(404).json({ message: "Shipment not found" });
+    }
+    
+    // Generate new name based on items
+    const newName = await generateAIShipmentName(shipment.consolidationId);
+    
+    // Update shipment with new name
+    const [updated] = await db
+      .update(shipments)
+      .set({ 
+        shipmentName: newName,
+        updatedAt: new Date()
+      })
+      .where(eq(shipments.id, shipmentId))
+      .returning();
+    
+    res.json(updated);
+  } catch (error) {
+    console.error("Error regenerating shipment name:", error);
+    res.status(500).json({ message: "Failed to regenerate shipment name" });
   }
 });
 
