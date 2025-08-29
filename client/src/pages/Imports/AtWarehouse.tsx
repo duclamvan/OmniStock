@@ -3236,7 +3236,7 @@ export default function AtWarehouse() {
                     </SelectItem>
                     <SelectItem value="sensitive_air_ddp">
                       <div className="flex items-center gap-2">
-                        <Shield className="h-4 w-4" />
+                        <Plane className="h-4 w-4 text-orange-500" />
                         Sensitive Air (DDP)
                       </div>
                     </SelectItem>
