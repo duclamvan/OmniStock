@@ -722,24 +722,68 @@ export default function InternationalTransit() {
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      {(() => {
-                        const method = pending.shippingMethod;
-                        const iconClass = "h-3 w-3 mr-1";
-                        if (method?.includes('air')) {
-                          return <Plane className={`${iconClass} ${method.includes('sensitive') ? 'text-orange-500' : ''}`} />;
-                        } else if (method?.includes('express')) {
-                          return <Zap className={`${iconClass} ${method.includes('sensitive') ? 'text-orange-500' : ''}`} />;
-                        } else if (method?.includes('railway')) {
-                          return <Train className={`${iconClass} ${method.includes('sensitive') ? 'text-orange-500' : ''}`} />;
-                        } else if (method?.includes('sea')) {
-                          return <Ship className={`${iconClass} ${method.includes('sensitive') ? 'text-orange-500' : ''}`} />;
-                        } else {
-                          return <Package className={iconClass} />;
-                        }
-                      })()}
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="text-xs flex items-center">
+                        {(() => {
+                          const method = pending.shippingMethod;
+                          const iconClass = "h-3 w-3 mr-1";
+                          if (method?.includes('air')) {
+                            return <Plane className={`${iconClass} ${method.includes('sensitive') ? 'text-orange-500' : ''}`} />;
+                          } else if (method?.includes('express')) {
+                            return <Zap className={`${iconClass} ${method.includes('sensitive') ? 'text-orange-500' : ''}`} />;
+                          } else if (method?.includes('railway')) {
+                            return <Train className={`${iconClass} ${method.includes('sensitive') ? 'text-orange-500' : ''}`} />;
+                          } else if (method?.includes('sea')) {
+                            return <Ship className={`${iconClass} ${method.includes('sensitive') ? 'text-orange-500' : ''}`} />;
+                          } else {
+                            return <Package className={iconClass} />;
+                          }
+                        })()}
                         {pending.shippingMethod?.replace(/_/g, ' ').toUpperCase() || 'STANDARD'}
                       </Badge>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => {
+                          // Quick ship with defaults
+                          const generateShipmentName = () => {
+                            const method = pending.shippingMethod || '';
+                            const itemCount = pending.itemCount || 0;
+                            const items = pending.items || [];
+                            
+                            const itemNames = items.slice(0, 2).map((item: any) => item.name).join(', ');
+                            const moreItems = items.length > 2 ? ` +${items.length - 2} more` : '';
+                            
+                            const methodType = method.includes('express') ? 'Express' : 
+                                              method.includes('air') ? 'Air' : 
+                                              method.includes('sea') ? 'Sea' : 
+                                              method.includes('railway') ? 'Rail' : 'Standard';
+                            
+                            return `${methodType} - ${itemNames}${moreItems} (${itemCount} items)`;
+                          };
+                          
+                          const quickShipData = {
+                            consolidationId: pending.id,
+                            carrier: pending.shippingMethod || 'standard',
+                            trackingNumber: '', // Will be provided later
+                            endCarrier: null,
+                            endTrackingNumber: null,
+                            shipmentName: generateShipmentName(),
+                            shipmentType: pending.shippingMethod,
+                            origin: pending.warehouse || 'China, Guangzhou',
+                            destination: warehouses.length > 0 ? warehouses[0].name : 'Czech Republic, Prague',
+                            shippingCost: 0, // Will be provided later
+                            shippingCostCurrency: 'USD',
+                            shippingMethod: pending.shippingMethod,
+                            notes: 'Quick shipped - tracking to be added',
+                          };
+                          
+                          createShipmentMutation.mutate(quickShipData);
+                        }}
+                        data-testid={`button-quick-ship-${pending.id}`}
+                      >
+                        <Zap className="h-3 w-3 mr-1" />
+                        Quick Ship
+                      </Button>
                       <Button 
                         size="sm" 
                         variant="default"
