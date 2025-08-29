@@ -100,31 +100,19 @@ export default function InternationalTransit() {
   const queryClient = useQueryClient();
 
   // Fetch pending shipments
-  const { data: pendingShipments = [] } = useQuery({
-    queryKey: ['/api/imports/shipments/pending'],
-    queryFn: async () => {
-      const response = await apiRequest('/api/imports/shipments/pending');
-      return response.json() as Promise<PendingShipment[]>;
-    }
+  const { data: pendingShipments = [] } = useQuery<PendingShipment[]>({
+    queryKey: ['/api/imports/shipments/pending']
   });
 
   // Fetch shipments
-  const { data: shipments = [], isLoading } = useQuery({
-    queryKey: ['/api/imports/shipments'],
-    queryFn: async () => {
-      const response = await apiRequest('/api/imports/shipments');
-      return response.json() as Promise<Shipment[]>;
-    }
+  const { data: shipments = [], isLoading } = useQuery<Shipment[]>({
+    queryKey: ['/api/imports/shipments']
   });
 
   // Create shipment mutation
   const createShipmentMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest('/api/imports/shipments', {
-        method: 'POST',
-        body: JSON.stringify(data),
-        headers: { 'Content-Type': 'application/json' }
-      });
+      const response = await apiRequest('/api/imports/shipments', 'POST', data);
       return response.json();
     },
     onSuccess: () => {
@@ -142,11 +130,7 @@ export default function InternationalTransit() {
   // Update tracking mutation
   const updateTrackingMutation = useMutation({
     mutationFn: async ({ shipmentId, data }: { shipmentId: number; data: any }) => {
-      const response = await apiRequest(`/api/imports/shipments/${shipmentId}/tracking`, {
-        method: 'PATCH',
-        body: JSON.stringify(data),
-        headers: { 'Content-Type': 'application/json' }
-      });
+      const response = await apiRequest(`/api/imports/shipments/${shipmentId}/tracking`, 'PATCH', data);
       return response.json();
     },
     onSuccess: () => {
@@ -164,16 +148,12 @@ export default function InternationalTransit() {
     
     setIsPredicting(true);
     try {
-      const response = await apiRequest('/api/imports/shipments/predict-delivery', {
-        method: 'POST',
-        body: JSON.stringify({
-          shipmentId: shipment.id,
-          origin: shipment.origin,
-          destination: shipment.destination,
-          carrier: shipment.carrier,
-          dispatchDate: shipment.createdAt
-        }),
-        headers: { 'Content-Type': 'application/json' }
+      const response = await apiRequest('/api/imports/shipments/predict-delivery', 'POST', {
+        shipmentId: shipment.id,
+        origin: shipment.origin,
+        destination: shipment.destination,
+        carrier: shipment.carrier,
+        dispatchDate: shipment.createdAt
       });
       
       const prediction = await response.json() as DeliveryPrediction;
