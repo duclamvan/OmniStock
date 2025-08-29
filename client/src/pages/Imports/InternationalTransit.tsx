@@ -112,6 +112,7 @@ export default function InternationalTransit() {
   const [expandedTracking, setExpandedTracking] = useState<Record<number, boolean>>({});
   const [sortBy, setSortBy] = useState<'delivery' | 'type' | 'status'>('delivery');
   const [filterType, setFilterType] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -313,6 +314,11 @@ export default function InternationalTransit() {
     if (filterType !== 'all') {
       filtered = shipmentsToSort.filter(s => s.shipmentType === filterType);
     }
+    
+    // Filter by status
+    if (filterStatus !== 'all') {
+      filtered = filtered.filter(s => s.status === filterStatus);
+    }
 
     // Sort shipments
     const sorted = [...filtered].sort((a, b) => {
@@ -420,6 +426,33 @@ export default function InternationalTransit() {
     return "text-red-600 dark:text-red-400";
   };
   
+  // Helper function to get shipment type color
+  const getShipmentTypeColor = (shipmentType: string) => {
+    if (shipmentType?.includes('air')) {
+      return shipmentType.includes('sensitive') ? 'border-l-orange-500 bg-orange-50 dark:bg-orange-950/20' : 'border-l-blue-500 bg-blue-50 dark:bg-blue-950/20';
+    } else if (shipmentType?.includes('sea')) {
+      return shipmentType.includes('sensitive') ? 'border-l-red-500 bg-red-50 dark:bg-red-950/20' : 'border-l-cyan-500 bg-cyan-50 dark:bg-cyan-950/20';
+    } else if (shipmentType?.includes('railway')) {
+      return shipmentType.includes('sensitive') ? 'border-l-yellow-500 bg-yellow-50 dark:bg-yellow-950/20' : 'border-l-green-500 bg-green-50 dark:bg-green-950/20';
+    }
+    return 'border-l-gray-500 bg-gray-50 dark:bg-gray-950/20';
+  };
+
+  // Helper function to get shipment type icon
+  const getShipmentTypeIcon = (shipmentType: string, className: string = 'h-4 w-4') => {
+    const isSensitive = shipmentType?.includes('sensitive');
+    const iconColor = isSensitive ? 'text-orange-500' : 'text-primary';
+    
+    if (shipmentType?.includes('air')) {
+      return <Plane className={`${className} ${iconColor}`} />;
+    } else if (shipmentType?.includes('sea')) {
+      return <Ship className={`${className} ${iconColor}`} />;
+    } else if (shipmentType?.includes('railway')) {
+      return <Train className={`${className} ${iconColor}`} />;
+    }
+    return <Package className={`${className} text-muted-foreground`} />;
+  };
+
   const getTimeRemaining = (shipment: Shipment) => {
     if (shipment.status === 'delivered') return 'Delivered';
     
@@ -1071,6 +1104,17 @@ export default function InternationalTransit() {
                     <SelectItem value="railway_express">Railway Express</SelectItem>
                   </SelectContent>
                 </Select>
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="in transit">In Transit</SelectItem>
+                    <SelectItem value="delivered">Delivered</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               
               <div className="flex items-center gap-2">
@@ -1117,25 +1161,12 @@ export default function InternationalTransit() {
                 const progress = calculateProgress(shipment);
                 
                 return (
-                  <Card key={shipment.id} className="border hover:shadow-md transition-shadow">
+                  <Card key={shipment.id} className={`border-l-4 hover:shadow-md transition-shadow ${getShipmentTypeColor(shipment.shipmentType || '')}`}>
                     <CardContent className="p-4">
                       {/* Compact Header with Combined Status */}
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center space-x-3">
-                          {(() => {
-                            const method = shipment.carrier || shipment.shippingMethod;
-                            if (method?.includes('air')) {
-                              return <Plane className={`h-4 w-4 ${method.includes('sensitive') ? 'text-orange-500' : 'text-primary'}`} />;
-                            } else if (method?.includes('express')) {
-                              return <Zap className={`h-4 w-4 ${method.includes('sensitive') ? 'text-orange-500' : 'text-primary'}`} />;
-                            } else if (method?.includes('railway')) {
-                              return <Train className={`h-4 w-4 ${method.includes('sensitive') ? 'text-orange-500' : 'text-primary'}`} />;
-                            } else if (method?.includes('sea')) {
-                              return <Ship className={`h-4 w-4 ${method.includes('sensitive') ? 'text-orange-500' : 'text-primary'}`} />;
-                            } else {
-                              return <Package className="h-4 w-4 text-muted-foreground" />;
-                            }
-                          })()}
+                          {getShipmentTypeIcon(shipment.shipmentType || shipment.carrier || shipment.shippingMethod || '')}
                           <div>
                             <div className="flex items-center gap-2">
                               <h3 className="font-semibold" data-testid={`shipment-tracking-${shipment.id}`}>
@@ -1204,21 +1235,21 @@ export default function InternationalTransit() {
                         </div>
                       </div>
 
-                      {/* Tracking Information - Expandable */}
+                      {/* Tracking Information - Expandable - Less Noticeable */}
                       {(shipment.trackingNumber || shipment.endTrackingNumber) && (
-                        <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-3 mb-3">
+                        <div className="bg-gray-50 dark:bg-gray-950/30 rounded-md p-2 mb-3 border border-gray-200 dark:border-gray-800">
                           <div 
                             className="flex items-center justify-between cursor-pointer"
                             onClick={() => setExpandedTracking(prev => ({ ...prev, [shipment.id]: !prev[shipment.id] }))}
                           >
                             <div className="flex items-center">
-                              <Package className="h-4 w-4 text-blue-600 mr-2" />
-                              <span className="text-sm font-semibold text-blue-800 dark:text-blue-200">Tracking Information</span>
+                              <Package className="h-3 w-3 text-gray-500 mr-2" />
+                              <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Tracking Info</span>
                             </div>
                             {expandedTracking[shipment.id] ? (
-                              <ChevronUp className="h-4 w-4 text-blue-600" />
+                              <ChevronUp className="h-3 w-3 text-gray-500" />
                             ) : (
-                              <ChevronDown className="h-4 w-4 text-blue-600" />
+                              <ChevronDown className="h-3 w-3 text-gray-500" />
                             )}
                           </div>
                           
