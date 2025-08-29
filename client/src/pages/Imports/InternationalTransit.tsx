@@ -217,6 +217,17 @@ export default function InternationalTransit() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
+      
+      // Update the selected shipment if in edit modal
+      if (selectedShipment && selectedShipment.id === data.id) {
+        setSelectedShipment({ ...selectedShipment, shipmentName: data.shipmentName });
+        // Update the input field value
+        const input = document.getElementById('edit-shipmentName') as HTMLInputElement;
+        if (input) {
+          input.value = data.shipmentName;
+        }
+      }
+      
       toast({ 
         title: "Success", 
         description: "Shipment name regenerated successfully" 
@@ -1407,18 +1418,13 @@ export default function InternationalTransit() {
                           {getShipmentTypeIcon(shipment.shipmentType || shipment.carrier || shipment.shippingMethod || '')}
                           <div>
                             <div className="flex items-center gap-2">
-                              <h3 className="font-semibold flex items-center gap-1" data-testid={`shipment-tracking-${shipment.id}`}>
+                              <h3 className="font-semibold" data-testid={`shipment-tracking-${shipment.id}`}>
                                 {shipment.shipmentName || shipment.trackingNumber || `Shipment #${shipment.id}`}
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-6 w-6 p-0 hover:bg-accent"
-                                  onClick={() => regenerateNameMutation.mutate(shipment.id)}
-                                  disabled={regenerateNameMutation.isPending}
-                                  title="Regenerate shipment name based on contents"
-                                >
-                                  <RefreshCw className={`h-3 w-3 ${regenerateNameMutation.isPending ? 'animate-spin' : ''}`} />
-                                </Button>
+                                {shipment.totalUnits && shipment.unitType && (
+                                  <span className="font-normal text-muted-foreground ml-1">
+                                    ({shipment.totalUnits} {shipment.unitType})
+                                  </span>
+                                )}
                               </h3>
                               <Badge className={`text-xs ${getETAColor(shipment)}`}>
                                 <CalendarDays className="h-3 w-3 mr-1" />
@@ -1441,7 +1447,9 @@ export default function InternationalTransit() {
                               );
                             })()}
                             <p className="text-xs text-muted-foreground">
-                              {shipment.itemCount} items • {(shipment.carrier || shipment.shippingMethod || 'Standard').replace(/_/g, ' ').toUpperCase()}
+                              {shipment.totalWeight && `${shipment.totalWeight}kg • `}
+                              {shipment.shippingCost && `${shipment.shippingCostCurrency || 'USD'} ${shipment.shippingCost} • `}
+                              {shipment.endCarrier || shipment.carrier || 'Standard Carrier'}
                             </p>
                           </div>
                         </div>
@@ -1778,13 +1786,28 @@ export default function InternationalTransit() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="edit-shipmentName">Shipment Name</Label>
-                      <Input 
-                        id="edit-shipmentName" 
-                        name="shipmentName" 
-                        defaultValue={selectedShipment.shipmentName}
-                        data-testid="input-edit-shipment-name"
-                        placeholder="Enter shipment name"
-                      />
+                      <div className="flex gap-2">
+                        <Input 
+                          id="edit-shipmentName" 
+                          name="shipmentName" 
+                          defaultValue={selectedShipment.shipmentName}
+                          data-testid="input-edit-shipment-name"
+                          placeholder="Enter shipment name"
+                          className="flex-1"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => {
+                            regenerateNameMutation.mutate(selectedShipment.id);
+                          }}
+                          disabled={regenerateNameMutation.isPending}
+                          title="Regenerate name based on contents"
+                        >
+                          <RefreshCw className={`h-4 w-4 ${regenerateNameMutation.isPending ? 'animate-spin' : ''}`} />
+                        </Button>
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="edit-shipmentType">Shipment Type</Label>
