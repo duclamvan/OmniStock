@@ -99,6 +99,9 @@ export const shipments = pgTable('shipments', {
   shippingCost: decimal('shipping_cost', { precision: 10, scale: 2 }).default('0'),
   shippingCostCurrency: text('shipping_cost_currency').default('USD'),
   insuranceValue: decimal('insurance_value', { precision: 10, scale: 2 }).default('0'),
+  totalWeight: decimal('total_weight', { precision: 10, scale: 3 }), // in kg
+  totalUnits: integer('total_units'),
+  unitType: text('unit_type').default('items'),
   estimatedDelivery: timestamp('estimated_delivery'),
   deliveredAt: timestamp('delivered_at'),
   currentLocation: text('current_location'),
