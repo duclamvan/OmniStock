@@ -2464,7 +2464,20 @@ export default function AtWarehouse() {
                                 <div className="flex justify-between items-start mb-1.5">
                                   <div className="flex-1">
                                     <div className="flex items-start gap-2">
-                                      <Ship className="h-4 w-4 text-primary mt-0.5" />
+                                      {(() => {
+                                        const method = consolidation.shippingMethod;
+                                        if (method?.includes('air')) {
+                                          return <Plane className={`h-4 w-4 mt-0.5 ${method.includes('sensitive') ? 'text-orange-500' : 'text-primary'}`} />;
+                                        } else if (method?.includes('express')) {
+                                          return <Zap className={`h-4 w-4 mt-0.5 ${method.includes('sensitive') ? 'text-orange-500' : 'text-primary'}`} />;
+                                        } else if (method?.includes('railway')) {
+                                          return <Train className={`h-4 w-4 mt-0.5 ${method.includes('sensitive') ? 'text-orange-500' : 'text-primary'}`} />;
+                                        } else if (method?.includes('sea')) {
+                                          return <Ship className={`h-4 w-4 mt-0.5 ${method.includes('sensitive') ? 'text-orange-500' : 'text-primary'}`} />;
+                                        } else {
+                                          return <Package className="h-4 w-4 text-muted-foreground mt-0.5" />;
+                                        }
+                                      })()}
                                       <div className="flex-1">
                                         <div className="font-medium text-sm">{consolidation.name}</div>
                                         <Badge 
