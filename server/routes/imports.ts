@@ -807,6 +807,27 @@ router.patch("/consolidations/:id", async (req, res) => {
   }
 });
 
+// Update consolidation status
+router.patch("/consolidations/:id/status", async (req, res) => {
+  try {
+    const consolidationId = parseInt(req.params.id);
+    const { status } = req.body;
+    
+    await db
+      .update(consolidations)
+      .set({ 
+        status,
+        updatedAt: new Date()
+      })
+      .where(eq(consolidations.id, consolidationId));
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Failed to update consolidation status:", error);
+    res.status(500).json({ message: "Failed to update consolidation status" });
+  }
+});
+
 // Ship consolidation
 router.post("/consolidations/:id/ship", async (req, res) => {
   try {

@@ -9,9 +9,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Plane, Ship, Truck, MapPin, Clock, Package, Globe, Star, Zap, Target, TrendingUp, Calendar, AlertCircle, CheckCircle, Search, CalendarDays } from "lucide-react";
+import { Plus, Plane, Ship, Truck, MapPin, Clock, Package, Globe, Star, Zap, Target, TrendingUp, Calendar, AlertCircle, CheckCircle, Search, CalendarDays, MoreVertical, ArrowLeft, Train, Shield } from "lucide-react";
 import { format, differenceInDays, addDays } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -105,12 +106,35 @@ export default function InternationalTransit() {
   const { data: pendingShipments = [] } = useQuery<PendingShipment[]>({
     queryKey: ['/api/imports/shipments/pending']
   });
+  
+  // Fetch warehouses for destination selection
+  const { data: warehouses = [] } = useQuery<any[]>({
+    queryKey: ['/api/warehouses']
+  });
 
   // Fetch shipments
   const { data: shipments = [], isLoading } = useQuery<Shipment[]>({
     queryKey: ['/api/imports/shipments']
   });
 
+  // Move back to warehouse mutation
+  const moveBackToWarehouseMutation = useMutation({
+    mutationFn: async (consolidationId: number) => {
+      const response = await apiRequest('/api/imports/consolidations/' + consolidationId + '/status', 'PATCH', {
+        status: 'active'
+      });
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/pending'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/consolidations'] });
+      toast({ title: "Success", description: "Moved back to warehouse successfully" });
+    },
+    onError: (error) => {
+      toast({ title: "Error", description: "Failed to move back to warehouse", variant: "destructive" });
+    }
+  });
+  
   // Create shipment mutation
   const createShipmentMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -203,12 +227,13 @@ export default function InternationalTransit() {
     
     const data = {
       consolidationId: selectedPendingShipment?.id || (formData.get('consolidationId') ? parseInt(formData.get('consolidationId') as string) : null),
-      carrier: formData.get('carrier') as string,
+      carrier: selectedPendingShipment?.shippingMethod || 'standard',
       trackingNumber: formData.get('trackingNumber') as string,
       origin: formData.get('origin') as string,
       destination: formData.get('destination') as string,
       shippingCost: parseFloat(formData.get('shippingCost') as string) || 0,
-      insuranceValue: parseFloat(formData.get('insuranceValue') as string) || 0,
+      shippingCostCurrency: formData.get('shippingCostCurrency') as string || 'USD',
+      shippingMethod: selectedPendingShipment?.shippingMethod || formData.get('shippingMethod') as string,
       notes: formData.get('notes') as string || null,
     };
     
@@ -399,22 +424,6 @@ export default function InternationalTransit() {
             <form onSubmit={handleCreateShipment} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="carrier">Carrier *</Label>
-                  <Select name="carrier" required defaultValue={selectedPendingShipment?.carrier || ''}>
-                    <SelectTrigger data-testid="select-carrier">
-                      <SelectValue placeholder="Select carrier" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="DHL">DHL</SelectItem>
-                      <SelectItem value="FedEx">FedEx</SelectItem>
-                      <SelectItem value="UPS">UPS</SelectItem>
-                      <SelectItem value="USPS">USPS</SelectItem>
-                      <SelectItem value="China Post">China Post</SelectItem>
-                      <SelectItem value="SF Express">SF Express</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
                   <Label htmlFor="trackingNumber">Tracking Number *</Label>
                   <Input 
                     id="trackingNumber" 
@@ -425,42 +434,69 @@ export default function InternationalTransit() {
                     placeholder="Enter tracking number"
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="shippingMethod">Shipment Type</Label>
+                  <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
+                    {(() => {
+                      const method = selectedPendingShipment?.shippingMethod;
+                      if (method?.includes('air')) {
+                        return <Plane className={`h-4 w-4 ${method.includes('sensitive') ? 'text-orange-500' : 'text-primary'}`} />;
+                      } else if (method?.includes('express')) {
+                        return <Zap className={`h-4 w-4 ${method.includes('sensitive') ? 'text-orange-500' : 'text-primary'}`} />;
+                      } else if (method?.includes('railway')) {
+                        return <Train className={`h-4 w-4 ${method.includes('sensitive') ? 'text-orange-500' : 'text-primary'}`} />;
+                      } else if (method?.includes('sea')) {
+                        return <Ship className={`h-4 w-4 ${method.includes('sensitive') ? 'text-orange-500' : 'text-primary'}`} />;
+                      } else {
+                        return <Package className="h-4 w-4 text-muted-foreground" />;
+                      }
+                    })()}
+                    <span className="text-sm font-medium">
+                      {selectedPendingShipment?.shippingMethod?.replace(/_/g, ' ').toUpperCase() || 'STANDARD'}
+                    </span>
+                  </div>
+                  <input type="hidden" name="shippingMethod" value={selectedPendingShipment?.shippingMethod || ''} />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="origin">Origin *</Label>
-                  <Select name="origin" required defaultValue={selectedPendingShipment?.origin || selectedPendingShipment?.warehouse || ''}>
-                    <SelectTrigger data-testid="select-origin">
-                      <SelectValue placeholder="Select origin" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="China, Guangzhou">China, Guangzhou</SelectItem>
-                      <SelectItem value="China, Shenzhen">China, Shenzhen</SelectItem>
-                      <SelectItem value="China, Shanghai">China, Shanghai</SelectItem>
-                      <SelectItem value="Hong Kong">Hong Kong</SelectItem>
-                      <SelectItem value="Vietnam, Ho Chi Minh">Vietnam, Ho Chi Minh</SelectItem>
-                      {selectedPendingShipment?.warehouse && !["China, Guangzhou", "China, Shenzhen", "China, Shanghai", "Hong Kong", "Vietnam, Ho Chi Minh"].includes(selectedPendingShipment.warehouse) && (
-                        <SelectItem value={selectedPendingShipment.warehouse}>{selectedPendingShipment.warehouse}</SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="origin">Origin</Label>
+                  <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">
+                      {selectedPendingShipment?.warehouse || 'China, Guangzhou'}
+                    </span>
+                  </div>
+                  <input type="hidden" name="origin" value={selectedPendingShipment?.warehouse || 'China, Guangzhou'} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="destination">Destination *</Label>
-                  <Select name="destination" required defaultValue={selectedPendingShipment?.destination || selectedPendingShipment?.location || ''}>
+                  <Label htmlFor="destination">Destination Warehouse *</Label>
+                  <Select name="destination" required defaultValue={selectedPendingShipment?.destination || ''}>
                     <SelectTrigger data-testid="select-destination">
-                      <SelectValue placeholder="Select destination" />
+                      <SelectValue placeholder="Select warehouse" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="USA, California">USA, California</SelectItem>
-                      <SelectItem value="USA, New York">USA, New York</SelectItem>
-                      <SelectItem value="USA, Texas">USA, Texas</SelectItem>
-                      <SelectItem value="Canada, Toronto">Canada, Toronto</SelectItem>
-                      <SelectItem value="UK, London">UK, London</SelectItem>
-                      <SelectItem value="Australia, Sydney">Australia, Sydney</SelectItem>
-                      {selectedPendingShipment?.location && !["USA, California", "USA, New York", "USA, Texas", "Canada, Toronto", "UK, London", "Australia, Sydney"].includes(selectedPendingShipment.location) && (
-                        <SelectItem value={selectedPendingShipment.location}>{selectedPendingShipment.location}</SelectItem>
+                      {warehouses.length > 0 ? (
+                        warehouses.map((warehouse: any) => (
+                          <SelectItem key={warehouse.id} value={warehouse.name}>
+                            <div className="flex flex-col">
+                              <span className="font-medium">{warehouse.name}</span>
+                              {(warehouse.address || warehouse.city || warehouse.country) && (
+                                <span className="text-xs text-muted-foreground">
+                                  {[warehouse.address, warehouse.city, warehouse.country].filter(Boolean).join(', ')}
+                                </span>
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <>
+                          <SelectItem value="USA, California">USA, California</SelectItem>
+                          <SelectItem value="USA, New York">USA, New York</SelectItem>
+                          <SelectItem value="UK, London">UK, London</SelectItem>
+                          <SelectItem value="Czech Republic, Prague">Czech Republic, Prague</SelectItem>
+                        </>
                       )}
                     </SelectContent>
                   </Select>
@@ -469,7 +505,7 @@ export default function InternationalTransit() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="shippingCost">Shipping Cost ($)</Label>
+                  <Label htmlFor="shippingCost">Shipping Cost</Label>
                   <Input 
                     id="shippingCost" 
                     name="shippingCost" 
@@ -480,15 +516,19 @@ export default function InternationalTransit() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="insuranceValue">Insurance Value ($)</Label>
-                  <Input 
-                    id="insuranceValue" 
-                    name="insuranceValue" 
-                    type="number" 
-                    step="0.01" 
-                    data-testid="input-insurance-value"
-                    placeholder="0.00"
-                  />
+                  <Label htmlFor="shippingCostCurrency">Shipping Cost Currency</Label>
+                  <Select name="shippingCostCurrency" defaultValue="USD">
+                    <SelectTrigger data-testid="select-currency">
+                      <SelectValue placeholder="Select currency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USD">USD</SelectItem>
+                      <SelectItem value="EUR">EUR</SelectItem>
+                      <SelectItem value="CZK">CZK</SelectItem>
+                      <SelectItem value="CNY">CNY</SelectItem>
+                      <SelectItem value="VND">VND</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
@@ -617,8 +657,23 @@ export default function InternationalTransit() {
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
+                      {(() => {
+                        const method = pending.shippingMethod;
+                        const iconClass = "h-3 w-3 mr-1";
+                        if (method?.includes('air')) {
+                          return <Plane className={`${iconClass} ${method.includes('sensitive') ? 'text-orange-500' : ''}`} />;
+                        } else if (method?.includes('express')) {
+                          return <Zap className={`${iconClass} ${method.includes('sensitive') ? 'text-orange-500' : ''}`} />;
+                        } else if (method?.includes('railway')) {
+                          return <Train className={`${iconClass} ${method.includes('sensitive') ? 'text-orange-500' : ''}`} />;
+                        } else if (method?.includes('sea')) {
+                          return <Ship className={`${iconClass} ${method.includes('sensitive') ? 'text-orange-500' : ''}`} />;
+                        } else {
+                          return <Package className={iconClass} />;
+                        }
+                      })()}
                       <Badge variant="outline" className="text-xs">
-                        {pending.shippingMethod?.replace(/_/g, ' ').toUpperCase() || 'Standard'}
+                        {pending.shippingMethod?.replace(/_/g, ' ').toUpperCase() || 'STANDARD'}
                       </Badge>
                       <Button 
                         size="sm" 
@@ -632,6 +687,22 @@ export default function InternationalTransit() {
                         <Plus className="h-3 w-3 mr-1" />
                         {pending.trackingNumber ? 'Update Tracking' : 'Add Tracking'}
                       </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => moveBackToWarehouseMutation.mutate(pending.id)}
+                            disabled={moveBackToWarehouseMutation.isPending}
+                          >
+                            <ArrowLeft className="h-3 w-3 mr-2" />
+                            Move Back to Warehouse
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                   
@@ -640,15 +711,12 @@ export default function InternationalTransit() {
                     <div className="mt-2 p-2 bg-white dark:bg-gray-900 rounded-md">
                       <p className="text-xs font-medium text-muted-foreground mb-1">Contents:</p>
                       <div className="space-y-0.5">
-                        {pending.items.slice(0, 2).map((item: any, index: number) => (
+                        {pending.items.map((item: any, index: number) => (
                           <div key={index} className="flex items-center justify-between text-xs">
                             <span className="truncate flex-1">{item.name}</span>
-                            <span className="text-muted-foreground ml-2">x{item.quantity}</span>
+                            <span className="text-muted-foreground ml-2">x{item.quantity || 1}</span>
                           </div>
                         ))}
-                        {pending.items.length > 2 && (
-                          <p className="text-xs text-muted-foreground">+{pending.items.length - 2} more items</p>
-                        )}
                       </div>
                     </div>
                   )}
@@ -772,15 +840,12 @@ export default function InternationalTransit() {
                         <div className="bg-gray-50 dark:bg-gray-800/50 rounded-md p-3 mb-3">
                           <p className="text-xs font-medium text-muted-foreground mb-2">Package Contents ({shipment.itemCount} items)</p>
                           <div className="space-y-1">
-                            {shipment.items.slice(0, 3).map((item: any, index: number) => (
+                            {shipment.items.map((item: any, index: number) => (
                               <div key={index} className="flex items-center justify-between text-xs">
                                 <span className="truncate flex-1">{item.name || `Item ${index + 1}`}</span>
                                 <span className="text-muted-foreground ml-2">x{item.quantity || 1}</span>
                               </div>
                             ))}
-                            {shipment.items.length > 3 && (
-                              <p className="text-xs text-muted-foreground">+{shipment.items.length - 3} more items</p>
-                            )}
                           </div>
                         </div>
                       )}
