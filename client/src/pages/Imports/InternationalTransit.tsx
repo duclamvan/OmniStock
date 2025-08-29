@@ -430,6 +430,8 @@ export default function InternationalTransit() {
   const getShipmentTypeColor = (shipmentType: string) => {
     if (shipmentType?.includes('air')) {
       return shipmentType.includes('sensitive') ? 'border-l-orange-500 bg-orange-50 dark:bg-orange-950/20' : 'border-l-blue-500 bg-blue-50 dark:bg-blue-950/20';
+    } else if (shipmentType?.includes('express')) {
+      return shipmentType.includes('sensitive') ? 'border-l-pink-500 bg-pink-50 dark:bg-pink-950/20' : 'border-l-purple-500 bg-purple-50 dark:bg-purple-950/20';
     } else if (shipmentType?.includes('sea')) {
       return shipmentType.includes('sensitive') ? 'border-l-red-500 bg-red-50 dark:bg-red-950/20' : 'border-l-cyan-500 bg-cyan-50 dark:bg-cyan-950/20';
     } else if (shipmentType?.includes('railway')) {
@@ -445,6 +447,8 @@ export default function InternationalTransit() {
     
     if (shipmentType?.includes('air')) {
       return <Plane className={`${className} ${iconColor}`} />;
+    } else if (shipmentType?.includes('express')) {
+      return <Zap className={`${className} ${iconColor}`} />;
     } else if (shipmentType?.includes('sea')) {
       return <Ship className={`${className} ${iconColor}`} />;
     } else if (shipmentType?.includes('railway')) {
@@ -616,19 +620,19 @@ export default function InternationalTransit() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="shipmentType">Shipment Type</Label>
-                      <Select name="shipmentType" defaultValue={selectedPendingShipment?.shippingMethod || 'air_standard'}>
+                      <Select name="shipmentType" defaultValue={selectedPendingShipment?.shippingMethod || 'air_ddp_general'}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="air_standard">Air Standard</SelectItem>
-                          <SelectItem value="air_express">Air Express</SelectItem>
-                          <SelectItem value="air_standard_sensitive">Air Standard (Sensitive)</SelectItem>
-                          <SelectItem value="air_express_sensitive">Air Express (Sensitive)</SelectItem>
-                          <SelectItem value="sea_standard">Sea Standard</SelectItem>
-                          <SelectItem value="sea_express">Sea Express</SelectItem>
-                          <SelectItem value="railway_standard">Railway Standard</SelectItem>
-                          <SelectItem value="railway_express">Railway Express</SelectItem>
+                          <SelectItem value="air_ddp_general">Air DDP (general)</SelectItem>
+                          <SelectItem value="air_ddp_sensitive">Air DDP (sensitive)</SelectItem>
+                          <SelectItem value="express_general">Express (general)</SelectItem>
+                          <SelectItem value="express_sensitive">Express (sensitive)</SelectItem>
+                          <SelectItem value="railway_general">Railway (general)</SelectItem>
+                          <SelectItem value="railway_sensitive">Railway (sensitive)</SelectItem>
+                          <SelectItem value="sea_general">Sea (general)</SelectItem>
+                          <SelectItem value="sea_sensitive">Sea (sensitive)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -1094,14 +1098,14 @@ export default function InternationalTransit() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Shipments</SelectItem>
-                    <SelectItem value="air_standard">Air Standard</SelectItem>
-                    <SelectItem value="air_express">Air Express</SelectItem>
-                    <SelectItem value="air_standard_sensitive">Air Sensitive</SelectItem>
-                    <SelectItem value="air_express_sensitive">Air Express Sensitive</SelectItem>
-                    <SelectItem value="sea_standard">Sea Standard</SelectItem>
-                    <SelectItem value="sea_express">Sea Express</SelectItem>
-                    <SelectItem value="railway_standard">Railway Standard</SelectItem>
-                    <SelectItem value="railway_express">Railway Express</SelectItem>
+                    <SelectItem value="air_ddp_general">Air DDP (general)</SelectItem>
+                    <SelectItem value="air_ddp_sensitive">Air DDP (sensitive)</SelectItem>
+                    <SelectItem value="express_general">Express (general)</SelectItem>
+                    <SelectItem value="express_sensitive">Express (sensitive)</SelectItem>
+                    <SelectItem value="railway_general">Railway (general)</SelectItem>
+                    <SelectItem value="railway_sensitive">Railway (sensitive)</SelectItem>
+                    <SelectItem value="sea_general">Sea (general)</SelectItem>
+                    <SelectItem value="sea_sensitive">Sea (sensitive)</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
@@ -1500,193 +1504,249 @@ export default function InternationalTransit() {
           </DialogHeader>
           {selectedShipment && (
             <form onSubmit={handleEditShipment} className="flex flex-col flex-1 overflow-hidden">
-              <div className="flex-1 overflow-y-auto px-1 space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-shipmentName">Shipment Name</Label>
-                  <Input 
-                    id="edit-shipmentName" 
-                    name="shipmentName" 
-                    defaultValue={selectedShipment.shipmentName}
-                    data-testid="input-edit-shipment-name"
-                    placeholder="Enter shipment name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-shipmentType">Shipment Type</Label>
-                  <Select name="shipmentType" defaultValue={selectedShipment.shipmentType || 'air_standard'}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="air_standard">Air Standard</SelectItem>
-                      <SelectItem value="air_express">Air Express</SelectItem>
-                      <SelectItem value="air_standard_sensitive">Air Standard (Sensitive)</SelectItem>
-                      <SelectItem value="air_express_sensitive">Air Express (Sensitive)</SelectItem>
-                      <SelectItem value="sea_standard">Sea Standard</SelectItem>
-                      <SelectItem value="sea_express">Sea Express</SelectItem>
-                      <SelectItem value="railway_standard">Railway Standard</SelectItem>
-                      <SelectItem value="railway_express">Railway Express</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Primary Tracking Fields */}
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold">Primary Carrier (China to Europe)</Label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-trackingNumber">Tracking Number *</Label>
-                    <Input 
-                      id="edit-trackingNumber" 
-                      name="trackingNumber" 
-                      defaultValue={selectedShipment.trackingNumber}
-                      required
-                      data-testid="input-edit-tracking"
-                    />
+              <div className="flex-1 overflow-y-auto px-1 space-y-6">
+                
+                {/* Basic Information Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <h3 className="text-sm font-semibold text-foreground">Basic Information</h3>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-carrier">Carrier</Label>
-                    <Input 
-                      id="edit-carrier" 
-                      name="carrier" 
-                      defaultValue={selectedShipment.carrier}
-                      placeholder="e.g., DHL, FedEx, China Post"
-                    />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-shipmentName">Shipment Name</Label>
+                      <Input 
+                        id="edit-shipmentName" 
+                        name="shipmentName" 
+                        defaultValue={selectedShipment.shipmentName}
+                        data-testid="input-edit-shipment-name"
+                        placeholder="Enter shipment name"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-shipmentType">Shipment Type</Label>
+                      <Select name="shipmentType" defaultValue={selectedShipment.shipmentType || 'air_ddp_general'}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="air_ddp_general">Air DDP (general)</SelectItem>
+                          <SelectItem value="air_ddp_sensitive">Air DDP (sensitive)</SelectItem>
+                          <SelectItem value="express_general">Express (general)</SelectItem>
+                          <SelectItem value="express_sensitive">Express (sensitive)</SelectItem>
+                          <SelectItem value="railway_general">Railway (general)</SelectItem>
+                          <SelectItem value="railway_sensitive">Railway (sensitive)</SelectItem>
+                          <SelectItem value="sea_general">Sea (general)</SelectItem>
+                          <SelectItem value="sea_sensitive">Sea (sensitive)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* End Carrier Fields */}
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold">End Carrier (European Courier)</Label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-endTrackingNumber">Tracking Number</Label>
-                    <Input 
-                      id="edit-endTrackingNumber" 
-                      name="endTrackingNumber" 
-                      defaultValue={selectedShipment.endTrackingNumber || ''}
-                      placeholder="Optional - for final delivery"
-                    />
+                {/* Primary Tracking Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <h3 className="text-sm font-semibold text-foreground">Primary Carrier (China to Europe)</h3>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-trackingNumber">Tracking Number *</Label>
+                      <Input 
+                        id="edit-trackingNumber" 
+                        name="trackingNumber" 
+                        defaultValue={selectedShipment.trackingNumber}
+                        required
+                        data-testid="input-edit-tracking"
+                        placeholder="Enter tracking number"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-carrier">Transit Carrier *</Label>
+                      <Input 
+                        id="edit-carrier" 
+                        name="carrier" 
+                        defaultValue={selectedShipment.carrier}
+                        required
+                        placeholder="e.g., China Post, SF Express"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* End Carrier Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b">
+                    <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                    <h3 className="text-sm font-semibold text-foreground">End Carrier (European Courier)</h3>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-endTrackingNumber">End Tracking Number</Label>
+                      <Input 
+                        id="edit-endTrackingNumber" 
+                        name="endTrackingNumber" 
+                        defaultValue={selectedShipment.endTrackingNumber || ''}
+                        placeholder="Local courier tracking"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-endCarrier">End Carrier</Label>
+                      <Input 
+                        id="edit-endCarrier" 
+                        name="endCarrier" 
+                        defaultValue={selectedShipment.endCarrier || ''}
+                        placeholder="e.g., DPD, DHL, GLS"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Package Information Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                    <h3 className="text-sm font-semibold text-foreground">Package Information</h3>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-totalWeight">Total Weight (kg) *</Label>
+                      <Input 
+                        id="edit-totalWeight" 
+                        name="totalWeight" 
+                        type="number" 
+                        step="0.01"
+                        defaultValue={selectedShipment.totalWeight || ''}
+                        required
+                        placeholder="35.000"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-totalUnits">Total Units</Label>
+                      <Input 
+                        id="edit-totalUnits" 
+                        name="totalUnits" 
+                        type="number"
+                        min="1"
+                        defaultValue={selectedShipment.totalUnits || '1'}
+                        placeholder="1"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-unitType">Unit Type</Label>
+                      <Select name="unitType" defaultValue={selectedShipment.unitType || 'carton'}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="carton">Carton</SelectItem>
+                          <SelectItem value="pallet">Pallet</SelectItem>
+                          <SelectItem value="container_20">20ft Container</SelectItem>
+                          <SelectItem value="container_40">40ft Container</SelectItem>
+                          <SelectItem value="container_40hc">40ft HC Container</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Shipping Details Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b">
+                    <div className="w-2 h-2 bg-cyan-500 rounded-full"></div>
+                    <h3 className="text-sm font-semibold text-foreground">Shipping Details</h3>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-origin">Origin</Label>
+                      <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">
+                          {selectedShipment.origin || 'China, Guangzhou'}
+                        </span>
+                      </div>
+                      <input type="hidden" name="origin" value={selectedShipment.origin || 'China, Guangzhou'} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-destination">Destination Warehouse *</Label>
+                      <Select name="destination" required defaultValue={selectedShipment.destination || (warehouses.length > 0 ? warehouses[0].name : "Czech Republic, Prague")}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select warehouse" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {warehouses.length > 0 ? (
+                            warehouses.map((warehouse: any) => (
+                              <SelectItem key={warehouse.id} value={warehouse.name}>
+                                <div className="flex flex-col">
+                                  <span className="font-medium">{warehouse.name}</span>
+                                  {(warehouse.address || warehouse.city || warehouse.country) && (
+                                    <span className="text-xs text-muted-foreground">
+                                      {[warehouse.address, warehouse.city, warehouse.country].filter(Boolean).join(', ')}
+                                    </span>
+                                  )}
+                                </div>
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <>
+                              <SelectItem value="Czech Republic, Prague">Czech Republic, Prague</SelectItem>
+                              <SelectItem value="USA, California">USA, California</SelectItem>
+                              <SelectItem value="USA, New York">USA, New York</SelectItem>
+                              <SelectItem value="UK, London">UK, London</SelectItem>
+                            </>
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-shippingCost">Shipping Cost</Label>
+                      <Input 
+                        id="edit-shippingCost" 
+                        name="shippingCost" 
+                        type="number" 
+                        step="0.01" 
+                        defaultValue={selectedShipment.shippingCost}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-shippingCostCurrency">Currency</Label>
+                      <Select name="shippingCostCurrency" defaultValue={selectedShipment.shippingCostCurrency || 'USD'}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="USD">USD</SelectItem>
+                          <SelectItem value="EUR">EUR</SelectItem>
+                          <SelectItem value="CZK">CZK</SelectItem>
+                          <SelectItem value="CNY">CNY</SelectItem>
+                          <SelectItem value="VND">VND</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional Notes Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b">
+                    <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+                    <h3 className="text-sm font-semibold text-foreground">Additional Notes</h3>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="edit-endCarrier">Carrier</Label>
-                    <Input 
-                      id="edit-endCarrier" 
-                      name="endCarrier" 
-                      defaultValue={selectedShipment.endCarrier || ''}
-                      placeholder="e.g., DPD, GLS, Czech Post"
+                    <Label htmlFor="edit-notes">Notes</Label>
+                    <Textarea 
+                      id="edit-notes" 
+                      name="notes" 
+                      defaultValue={selectedShipment.notes || ''}
+                      placeholder="Additional notes about the shipment"
+                      rows={3}
                     />
                   </div>
                 </div>
-              </div>
-
-              {/* Weight and Units */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-totalWeight">Total Weight (kg)</Label>
-                  <Input 
-                    id="edit-totalWeight" 
-                    name="totalWeight" 
-                    type="number" 
-                    step="0.01"
-                    defaultValue={selectedShipment.totalWeight || ''}
-                    placeholder="0.00"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-totalUnits">Total Units</Label>
-                  <Input 
-                    id="edit-totalUnits" 
-                    name="totalUnits" 
-                    type="number"
-                    defaultValue={selectedShipment.totalUnits || '1'}
-                    placeholder="1"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-unitType">Unit Type</Label>
-                  <Select name="unitType" defaultValue={selectedShipment.unitType || 'carton'}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="carton">Carton</SelectItem>
-                      <SelectItem value="pallet">Pallet</SelectItem>
-                      <SelectItem value="box">Box</SelectItem>
-                      <SelectItem value="bag">Bag</SelectItem>
-                      <SelectItem value="envelope">Envelope</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Location Fields */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-origin">Origin *</Label>
-                  <Input 
-                    id="edit-origin" 
-                    name="origin" 
-                    defaultValue={selectedShipment.origin}
-                    required
-                    placeholder="e.g., Shanghai, China"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-destination">Destination *</Label>
-                  <Input 
-                    id="edit-destination" 
-                    name="destination" 
-                    defaultValue={selectedShipment.destination}
-                    required 
-                    placeholder="e.g., Prague, Czech Republic"
-                  />
-                </div>
-              </div>
-
-              {/* Cost Fields */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-shippingCost">Shipping Cost</Label>
-                  <Input 
-                    id="edit-shippingCost" 
-                    name="shippingCost" 
-                    type="number" 
-                    step="0.01" 
-                    defaultValue={selectedShipment.shippingCost}
-                    placeholder="0.00"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-shippingCostCurrency">Currency</Label>
-                  <Select name="shippingCostCurrency" defaultValue={selectedShipment.shippingCostCurrency || 'USD'}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="USD">USD</SelectItem>
-                      <SelectItem value="EUR">EUR</SelectItem>
-                      <SelectItem value="CZK">CZK</SelectItem>
-                      <SelectItem value="CNY">CNY</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Notes */}
-              <div className="space-y-2">
-                <Label htmlFor="edit-notes">Notes</Label>
-                <Textarea 
-                  id="edit-notes" 
-                  name="notes" 
-                  defaultValue={selectedShipment.notes || ''}
-                  placeholder="Additional notes about the shipment"
-                  rows={3}
-                />
-              </div>
               </div>
               <DialogFooter className="flex-shrink-0 mt-4 pt-4 border-t">
                 <Button type="button" variant="outline" onClick={() => setIsEditShipmentOpen(false)}>
