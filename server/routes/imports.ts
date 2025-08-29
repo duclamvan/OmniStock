@@ -1389,6 +1389,60 @@ router.patch("/shipments/:id/tracking", async (req, res) => {
   }
 });
 
+// Update shipment (full update)
+router.put("/shipments/:id", async (req, res) => {
+  try {
+    const shipmentId = parseInt(req.params.id);
+    
+    // Generate AI name if not provided
+    let shipmentName = req.body.shipmentName;
+    if (!shipmentName || shipmentName.trim() === '') {
+      shipmentName = await generateAIShipmentName(
+        req.body.consolidationId,
+        req.body.shipmentType || req.body.shippingMethod,
+        req.body.items
+      );
+    }
+    
+    const updateData = {
+      carrier: req.body.carrier || 'Standard Carrier',
+      trackingNumber: req.body.trackingNumber,
+      endCarrier: req.body.endCarrier || null,
+      endTrackingNumber: req.body.endTrackingNumber || null,
+      shipmentName: shipmentName,
+      shipmentType: req.body.shipmentType || req.body.shippingMethod,
+      origin: req.body.origin,
+      destination: req.body.destination,
+      shippingCost: req.body.shippingCost?.toString() || '0',
+      shippingCostCurrency: req.body.shippingCostCurrency || 'USD',
+      shippingMethod: req.body.shippingMethod || req.body.shipmentType,
+      notes: req.body.notes || null,
+      totalWeight: req.body.totalWeight?.toString() || null,
+      totalUnits: req.body.totalUnits || null,
+      unitType: req.body.unitType || null,
+      updatedAt: new Date()
+    };
+    
+    const [updated] = await db
+      .update(shipments)
+      .set(updateData)
+      .where(eq(shipments.id, shipmentId))
+      .returning();
+    
+    if (!updated) {
+      return res.status(404).json({ message: "Shipment not found" });
+    }
+    
+    // Get items associated with the shipment
+    const items = await getShipmentItems(updated.consolidationId);
+    
+    res.json({ ...updated, items, itemCount: items.length });
+  } catch (error) {
+    console.error("Error updating shipment:", error);
+    res.status(500).json({ message: "Failed to update shipment" });
+  }
+});
+
 // AI Delivery Prediction Endpoint
 router.post("/shipments/predict-delivery", async (req, res) => {
   try {

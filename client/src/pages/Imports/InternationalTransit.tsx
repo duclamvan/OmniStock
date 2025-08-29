@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Plane, Ship, Truck, MapPin, Clock, Package, Globe, Star, Zap, Target, TrendingUp, Calendar, AlertCircle, CheckCircle, Search, CalendarDays, MoreVertical, ArrowLeft, Train, Shield } from "lucide-react";
+import { Plus, Plane, Ship, Truck, MapPin, Clock, Package, Globe, Star, Zap, Target, TrendingUp, Calendar, AlertCircle, CheckCircle, Search, CalendarDays, MoreVertical, ArrowLeft, Train, Shield, Copy, ExternalLink, ChevronDown, ChevronUp, Edit, Filter, ArrowUpDown } from "lucide-react";
 import { format, differenceInDays, addDays } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
@@ -40,6 +40,9 @@ interface Shipment {
   updatedAt: string;
   items: any[];
   itemCount: number;
+  totalWeight?: number;
+  totalUnits?: number;
+  unitType?: string;
 }
 
 interface DeliveryPrediction {
@@ -100,11 +103,15 @@ interface PendingShipment {
 
 export default function InternationalTransit() {
   const [isCreateShipmentOpen, setIsCreateShipmentOpen] = useState(false);
+  const [isEditShipmentOpen, setIsEditShipmentOpen] = useState(false);
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
   const [selectedPendingShipment, setSelectedPendingShipment] = useState<PendingShipment | null>(null);
   const [isPredicting, setIsPredicting] = useState(false);
   const [predictions, setPredictions] = useState<Record<number, DeliveryPrediction>>({});
   const [searchQuery, setSearchQuery] = useState("");
+  const [expandedTracking, setExpandedTracking] = useState<Record<number, boolean>>({});
+  const [sortBy, setSortBy] = useState<'delivery' | 'type' | 'status'>('delivery');
+  const [filterType, setFilterType] = useState<string>('all');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -184,6 +191,23 @@ export default function InternationalTransit() {
     }
   });
 
+  // Edit shipment mutation
+  const editShipmentMutation = useMutation({
+    mutationFn: async ({ shipmentId, data }: { shipmentId: number; data: any }) => {
+      const response = await apiRequest(`/api/imports/shipments/${shipmentId}`, 'PUT', data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
+      setIsEditShipmentOpen(false);
+      setSelectedShipment(null);
+      toast({ title: "Success", description: "Shipment updated successfully" });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to update shipment", variant: "destructive" });
+    }
+  });
+
   // AI Prediction function
   const predictDelivery = async (shipment: Shipment) => {
     if (predictions[shipment.id]) return; // Already predicted
@@ -226,6 +250,90 @@ export default function InternationalTransit() {
       }
     });
   }, [shipments]);
+
+  // Handle edit shipment form submission
+  const handleEditShipment = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    
+    const data = {
+      carrier: formData.get('carrier') as string || 'Standard Carrier',
+      trackingNumber: formData.get('trackingNumber') as string,
+      endCarrier: formData.get('endCarrier') as string || null,
+      endTrackingNumber: formData.get('endTrackingNumber') as string || null,
+      shipmentName: formData.get('shipmentName') as string || '',
+      shipmentType: formData.get('shipmentType') as string,
+      origin: formData.get('origin') as string,
+      destination: formData.get('destination') as string,
+      shippingCost: parseFloat(formData.get('shippingCost') as string) || 0,
+      shippingCostCurrency: formData.get('shippingCostCurrency') as string || 'USD',
+      shippingMethod: formData.get('shipmentType') as string,
+      notes: formData.get('notes') as string || null,
+      totalWeight: parseFloat(formData.get('totalWeight') as string) || 0,
+      totalUnits: parseInt(formData.get('totalUnits') as string) || 1,
+      unitType: formData.get('unitType') as string || 'carton',
+    };
+    
+    if (selectedShipment) {
+      editShipmentMutation.mutate({ shipmentId: selectedShipment.id, data });
+    }
+  };
+
+  // Copy to clipboard function
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({ title: "Copied!", description: "Tracking number copied to clipboard" });
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to copy", variant: "destructive" });
+    }
+  };
+
+  // Get carrier tracking URL
+  const getCarrierTrackingUrl = (carrier: string, trackingNumber: string): string => {
+    const carrierUrls: Record<string, string> = {
+      'DHL': `https://www.dhl.com/global-en/home/tracking/tracking-express.html?submit=1&tracking-id=${trackingNumber}`,
+      'DPD': `https://www.dpd.com/cz/cs/sledovani-zasilek/?parcelNumber=${trackingNumber}`,
+      'GLS': `https://gls-group.eu/EU/en/parcel-tracking?match=${trackingNumber}`,
+      'Czech Post': `https://www.postaonline.cz/trackandtrace/-/zasilka/cislo?parcelNumbers=${trackingNumber}`,
+      'UPS': `https://www.ups.com/track?loc=en_US&tracknum=${trackingNumber}`,
+      'FedEx': `https://www.fedex.com/fedextrack/?trknbr=${trackingNumber}`,
+      'USPS': `https://tools.usps.com/go/TrackConfirmAction?qtc_tLabels1=${trackingNumber}`,
+      'China Post': `http://english.11183.com.cn/zdxt/servlet/TrackingByEnglish?mailNum=${trackingNumber}`,
+      'SF Express': `https://www.sf-express.com/us/en/dynamic_function/waybill/#search/bill-number/${trackingNumber}`,
+    };
+    
+    return carrierUrls[carrier] || `https://www.google.com/search?q=${carrier}+tracking+${trackingNumber}`;
+  };
+
+  // Sort and filter shipments
+  const sortAndFilterShipments = (shipmentsToSort: Shipment[]) => {
+    // Filter by shipment type
+    let filtered = shipmentsToSort;
+    if (filterType !== 'all') {
+      filtered = shipmentsToSort.filter(s => s.shipmentType === filterType);
+    }
+
+    // Sort shipments
+    const sorted = [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case 'delivery':
+          const dateA = a.estimatedDelivery || a.deliveredAt || new Date(a.createdAt).toISOString();
+          const dateB = b.estimatedDelivery || b.deliveredAt || new Date(b.createdAt).toISOString();
+          return new Date(dateA).getTime() - new Date(dateB).getTime();
+        case 'type':
+          return (a.shipmentType || '').localeCompare(b.shipmentType || '');
+        case 'status':
+          const statusOrder = { 'pending': 0, 'in transit': 1, 'delivered': 2 };
+          return (statusOrder[a.status as keyof typeof statusOrder] || 0) - 
+                 (statusOrder[b.status as keyof typeof statusOrder] || 0);
+        default:
+          return 0;
+      }
+    });
+
+    return sorted;
+  };
 
   const handleCreateShipment = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -904,10 +1012,51 @@ export default function InternationalTransit() {
       {/* Shipments List */}
       <Card>
         <CardHeader>
-          <CardTitle>Shipment Tracking</CardTitle>
-          <CardDescription>
-            Monitor all international shipments with AI-powered delivery predictions
-          </CardDescription>
+          <div className="flex flex-col gap-4">
+            <div>
+              <CardTitle>Shipment Tracking</CardTitle>
+              <CardDescription>
+                Monitor all international shipments with AI-powered delivery predictions
+              </CardDescription>
+            </div>
+            
+            {/* Sort and Filter Controls */}
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex items-center gap-2 flex-1">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <Select value={filterType} onValueChange={setFilterType}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Filter by type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Shipments</SelectItem>
+                    <SelectItem value="air_standard">Air Standard</SelectItem>
+                    <SelectItem value="air_express">Air Express</SelectItem>
+                    <SelectItem value="air_standard_sensitive">Air Sensitive</SelectItem>
+                    <SelectItem value="air_express_sensitive">Air Express Sensitive</SelectItem>
+                    <SelectItem value="sea_standard">Sea Standard</SelectItem>
+                    <SelectItem value="sea_express">Sea Express</SelectItem>
+                    <SelectItem value="railway_standard">Railway Standard</SelectItem>
+                    <SelectItem value="railway_express">Railway Express</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+                <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="delivery">Delivery Date</SelectItem>
+                    <SelectItem value="type">Shipment Type</SelectItem>
+                    <SelectItem value="status">Status</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {filteredShipments.length === 0 ? (
@@ -932,7 +1081,7 @@ export default function InternationalTransit() {
             </div>
           ) : (
             <div className="space-y-6">
-              {filteredShipments.map((shipment) => {
+              {sortAndFilterShipments(filteredShipments).map((shipment) => {
                 const prediction = predictions[shipment.id];
                 const progress = calculateProgress(shipment);
                 
@@ -971,7 +1120,7 @@ export default function InternationalTransit() {
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center">
+                        <div className="flex items-center gap-2">
                           <Select
                             value={shipment.status}
                             onValueChange={(status) => 
@@ -990,6 +1139,24 @@ export default function InternationalTransit() {
                               <SelectItem value="delivered">Delivered</SelectItem>
                             </SelectContent>
                           </Select>
+                          
+                          {/* Three-dot menu for edit */}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => {
+                                setSelectedShipment(shipment);
+                                setIsEditShipmentOpen(true);
+                              }}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit Shipment
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
 
@@ -1006,25 +1173,61 @@ export default function InternationalTransit() {
                         </div>
                       </div>
 
-                      {/* Tracking Information */}
+                      {/* Tracking Information - Expandable */}
                       {(shipment.trackingNumber || shipment.endTrackingNumber) && (
                         <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-3 mb-3">
-                          <div className="flex items-center mb-2">
-                            <Package className="h-4 w-4 text-blue-600 mr-2" />
-                            <span className="text-sm font-semibold text-blue-800 dark:text-blue-200">Tracking Information</span>
+                          <div 
+                            className="flex items-center justify-between cursor-pointer"
+                            onClick={() => setExpandedTracking(prev => ({ ...prev, [shipment.id]: !prev[shipment.id] }))}
+                          >
+                            <div className="flex items-center">
+                              <Package className="h-4 w-4 text-blue-600 mr-2" />
+                              <span className="text-sm font-semibold text-blue-800 dark:text-blue-200">Tracking Information</span>
+                            </div>
+                            {expandedTracking[shipment.id] ? (
+                              <ChevronUp className="h-4 w-4 text-blue-600" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4 text-blue-600" />
+                            )}
                           </div>
                           
-                          {/* Primary Carrier (China to Europe) */}
-                          {shipment.trackingNumber && (
-                            <div className="mb-2">
+                          {expandedTracking[shipment.id] && (
+                            <div className="mt-3 space-y-2">
+                              {/* Primary Carrier (China to Europe) */}
+                              {shipment.trackingNumber && (
+                                <div className="mb-2">
                               <div className="flex items-center justify-between">
                                 <div>
                                   <p className="text-xs text-muted-foreground">Primary Carrier</p>
                                   <p className="text-sm font-medium">{shipment.carrier || 'Standard Carrier'}</p>
                                 </div>
-                                <div className="text-right">
-                                  <p className="text-xs text-muted-foreground">Tracking Number</p>
-                                  <p className="text-sm font-mono font-medium text-blue-600">{shipment.trackingNumber}</p>
+                                <div className="flex items-center gap-2">
+                                  <div className="text-right">
+                                    <p className="text-xs text-muted-foreground">Tracking Number</p>
+                                    <p className="text-sm font-mono font-medium text-blue-600">{shipment.trackingNumber}</p>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 w-6 p-0"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      copyToClipboard(shipment.trackingNumber);
+                                    }}
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 w-6 p-0"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      window.open(getCarrierTrackingUrl(shipment.carrier, shipment.trackingNumber), '_blank');
+                                    }}
+                                  >
+                                    <ExternalLink className="h-3 w-3" />
+                                  </Button>
                                 </div>
                               </div>
                               {/* Primary Carrier Progress */}
@@ -1042,29 +1245,55 @@ export default function InternationalTransit() {
                           )}
                           
                           {/* End Carrier (European Courier) */}
-                          {shipment.endTrackingNumber && (
-                            <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-800">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <p className="text-xs text-muted-foreground">End Carrier</p>
-                                  <p className="text-sm font-medium">{shipment.endCarrier || 'Local Courier'}</p>
+                              {shipment.endTrackingNumber && (
+                                <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-800">
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <p className="text-xs text-muted-foreground">End Carrier</p>
+                                      <p className="text-sm font-medium">{shipment.endCarrier || 'Local Courier'}</p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <div className="text-right">
+                                        <p className="text-xs text-muted-foreground">Tracking Number</p>
+                                        <p className="text-sm font-mono font-medium text-blue-600">{shipment.endTrackingNumber}</p>
+                                      </div>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-6 w-6 p-0"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          copyToClipboard(shipment.endTrackingNumber);
+                                        }}
+                                      >
+                                        <Copy className="h-3 w-3" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-6 w-6 p-0"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          window.open(getCarrierTrackingUrl(shipment.endCarrier || 'Local Courier', shipment.endTrackingNumber), '_blank');
+                                        }}
+                                      >
+                                        <ExternalLink className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                  {/* End Carrier Progress */}
+                                  <div className="mt-2">
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="text-xs text-muted-foreground">Transit Hub</span>
+                                      <span className="text-xs text-muted-foreground">{shipment.destination}</span>
+                                    </div>
+                                    <Progress 
+                                      value={shipment.status === 'delivered' ? 100 : progress * 0.3} 
+                                      className={`h-2 ${shipment.status === 'delivered' ? '[&>div]:bg-green-500' : '[&>div]:bg-purple-500'}`}
+                                    />
+                                  </div>
                                 </div>
-                                <div className="text-right">
-                                  <p className="text-xs text-muted-foreground">Tracking Number</p>
-                                  <p className="text-sm font-mono font-medium text-blue-600">{shipment.endTrackingNumber}</p>
-                                </div>
-                              </div>
-                              {/* End Carrier Progress */}
-                              <div className="mt-2">
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="text-xs text-muted-foreground">Transit Hub</span>
-                                  <span className="text-xs text-muted-foreground">{shipment.destination}</span>
-                                </div>
-                                <Progress 
-                                  value={shipment.status === 'delivered' ? 100 : progress * 0.3} 
-                                  className={`h-2 ${shipment.status === 'delivered' ? '[&>div]:bg-green-500' : '[&>div]:bg-purple-500'}`}
-                                />
-                              </div>
+                              )}
                             </div>
                           )}
                         </div>
@@ -1197,6 +1426,217 @@ export default function InternationalTransit() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Shipment Dialog */}
+      <Dialog open={isEditShipmentOpen} onOpenChange={setIsEditShipmentOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Shipment</DialogTitle>
+            <DialogDescription>
+              Update shipment tracking information and details
+            </DialogDescription>
+          </DialogHeader>
+          {selectedShipment && (
+            <form onSubmit={handleEditShipment} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-shipmentName">Shipment Name</Label>
+                  <Input 
+                    id="edit-shipmentName" 
+                    name="shipmentName" 
+                    defaultValue={selectedShipment.shipmentName}
+                    data-testid="input-edit-shipment-name"
+                    placeholder="Enter shipment name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-shipmentType">Shipment Type</Label>
+                  <Select name="shipmentType" defaultValue={selectedShipment.shipmentType || 'air_standard'}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="air_standard">Air Standard</SelectItem>
+                      <SelectItem value="air_express">Air Express</SelectItem>
+                      <SelectItem value="air_standard_sensitive">Air Standard (Sensitive)</SelectItem>
+                      <SelectItem value="air_express_sensitive">Air Express (Sensitive)</SelectItem>
+                      <SelectItem value="sea_standard">Sea Standard</SelectItem>
+                      <SelectItem value="sea_express">Sea Express</SelectItem>
+                      <SelectItem value="railway_standard">Railway Standard</SelectItem>
+                      <SelectItem value="railway_express">Railway Express</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Primary Tracking Fields */}
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">Primary Carrier (China to Europe)</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-trackingNumber">Tracking Number *</Label>
+                    <Input 
+                      id="edit-trackingNumber" 
+                      name="trackingNumber" 
+                      defaultValue={selectedShipment.trackingNumber}
+                      required
+                      data-testid="input-edit-tracking"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-carrier">Carrier</Label>
+                    <Input 
+                      id="edit-carrier" 
+                      name="carrier" 
+                      defaultValue={selectedShipment.carrier}
+                      placeholder="e.g., DHL, FedEx, China Post"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* End Carrier Fields */}
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">End Carrier (European Courier)</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-endTrackingNumber">Tracking Number</Label>
+                    <Input 
+                      id="edit-endTrackingNumber" 
+                      name="endTrackingNumber" 
+                      defaultValue={selectedShipment.endTrackingNumber || ''}
+                      placeholder="Optional - for final delivery"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-endCarrier">Carrier</Label>
+                    <Input 
+                      id="edit-endCarrier" 
+                      name="endCarrier" 
+                      defaultValue={selectedShipment.endCarrier || ''}
+                      placeholder="e.g., DPD, GLS, Czech Post"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Weight and Units */}
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-totalWeight">Total Weight (kg)</Label>
+                  <Input 
+                    id="edit-totalWeight" 
+                    name="totalWeight" 
+                    type="number" 
+                    step="0.01"
+                    defaultValue={selectedShipment.totalWeight || ''}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-totalUnits">Total Units</Label>
+                  <Input 
+                    id="edit-totalUnits" 
+                    name="totalUnits" 
+                    type="number"
+                    defaultValue={selectedShipment.totalUnits || '1'}
+                    placeholder="1"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-unitType">Unit Type</Label>
+                  <Select name="unitType" defaultValue={selectedShipment.unitType || 'carton'}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="carton">Carton</SelectItem>
+                      <SelectItem value="pallet">Pallet</SelectItem>
+                      <SelectItem value="box">Box</SelectItem>
+                      <SelectItem value="bag">Bag</SelectItem>
+                      <SelectItem value="envelope">Envelope</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Location Fields */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-origin">Origin *</Label>
+                  <Input 
+                    id="edit-origin" 
+                    name="origin" 
+                    defaultValue={selectedShipment.origin}
+                    required
+                    placeholder="e.g., Shanghai, China"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-destination">Destination *</Label>
+                  <Input 
+                    id="edit-destination" 
+                    name="destination" 
+                    defaultValue={selectedShipment.destination}
+                    required 
+                    placeholder="e.g., Prague, Czech Republic"
+                  />
+                </div>
+              </div>
+
+              {/* Cost Fields */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-shippingCost">Shipping Cost</Label>
+                  <Input 
+                    id="edit-shippingCost" 
+                    name="shippingCost" 
+                    type="number" 
+                    step="0.01" 
+                    defaultValue={selectedShipment.shippingCost}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-shippingCostCurrency">Currency</Label>
+                  <Select name="shippingCostCurrency" defaultValue={selectedShipment.shippingCostCurrency || 'USD'}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USD">USD</SelectItem>
+                      <SelectItem value="EUR">EUR</SelectItem>
+                      <SelectItem value="CZK">CZK</SelectItem>
+                      <SelectItem value="CNY">CNY</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div className="space-y-2">
+                <Label htmlFor="edit-notes">Notes</Label>
+                <Textarea 
+                  id="edit-notes" 
+                  name="notes" 
+                  defaultValue={selectedShipment.notes || ''}
+                  placeholder="Additional notes about the shipment"
+                  rows={3}
+                />
+              </div>
+
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsEditShipmentOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={editShipmentMutation.isPending} data-testid="button-save-shipment">
+                  {editShipmentMutation.isPending ? "Saving..." : "Save Changes"}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
