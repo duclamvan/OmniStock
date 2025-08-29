@@ -25,6 +25,8 @@ interface Shipment {
   destination: string;
   status: string;
   shippingCost: string;
+  shippingCostCurrency?: string;
+  shippingMethod?: string;
   insuranceValue: string;
   estimatedDelivery: string | null;
   deliveredAt: string | null;
@@ -771,10 +773,23 @@ export default function InternationalTransit() {
                 return (
                   <Card key={shipment.id} className="border hover:shadow-md transition-shadow">
                     <CardContent className="p-4">
-                      {/* Compact Header with ETA Badge */}
+                      {/* Compact Header with Combined Status */}
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center space-x-3">
-                          {getCarrierIcon(shipment.carrier)}
+                          {(() => {
+                            const method = shipment.carrier || shipment.shippingMethod;
+                            if (method?.includes('air')) {
+                              return <Plane className={`h-4 w-4 ${method.includes('sensitive') ? 'text-orange-500' : 'text-primary'}`} />;
+                            } else if (method?.includes('express')) {
+                              return <Zap className={`h-4 w-4 ${method.includes('sensitive') ? 'text-orange-500' : 'text-primary'}`} />;
+                            } else if (method?.includes('railway')) {
+                              return <Train className={`h-4 w-4 ${method.includes('sensitive') ? 'text-orange-500' : 'text-primary'}`} />;
+                            } else if (method?.includes('sea')) {
+                              return <Ship className={`h-4 w-4 ${method.includes('sensitive') ? 'text-orange-500' : 'text-primary'}`} />;
+                            } else {
+                              return <Package className="h-4 w-4 text-muted-foreground" />;
+                            }
+                          })()}
                           <div>
                             <div className="flex items-center gap-2">
                               <h3 className="font-semibold" data-testid={`shipment-tracking-${shipment.id}`}>
@@ -786,12 +801,11 @@ export default function InternationalTransit() {
                               </Badge>
                             </div>
                             <p className="text-xs text-muted-foreground">
-                              {shipment.carrier} • {shipment.itemCount} items
+                              {shipment.itemCount} items • {(shipment.carrier || shipment.shippingMethod || 'Standard').replace(/_/g, ' ').toUpperCase()}
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          {getStatusBadge(shipment.status)}
+                        <div className="flex items-center">
                           <Select
                             value={shipment.status}
                             onValueChange={(status) => 
@@ -801,7 +815,7 @@ export default function InternationalTransit() {
                               })
                             }
                           >
-                            <SelectTrigger className="w-28 h-8">
+                            <SelectTrigger className={`w-32 h-8 ${shipment.status === 'delivered' ? 'bg-green-50 border-green-200 text-green-800 dark:bg-green-950 dark:border-green-800 dark:text-green-200' : shipment.status === 'in transit' ? 'bg-purple-50 border-purple-200 text-purple-800 dark:bg-purple-950 dark:border-purple-800 dark:text-purple-200' : 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950 dark:border-blue-800 dark:text-blue-200'}`}>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -826,11 +840,18 @@ export default function InternationalTransit() {
                         </div>
                       </div>
 
-                      {/* Progress Bar with Time Remaining */}
+                      {/* Progress Bar with Dates */}
                       <div className="mb-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium">Delivery Progress</span>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(shipment.createdAt), 'MMM dd')}
+                          </span>
                           <span className="text-sm font-semibold text-primary">{getTimeRemaining(shipment)}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {shipment.estimatedDelivery || predictions[shipment.id]?.estimatedDelivery 
+                              ? format(new Date(shipment.estimatedDelivery || predictions[shipment.id]?.estimatedDelivery), 'MMM dd')
+                              : 'Calculating...'}
+                          </span>
                         </div>
                         <Progress value={progress} className="h-2" />
                       </div>
@@ -893,32 +914,8 @@ export default function InternationalTransit() {
                         </div>
                       )}
 
-                      {/* Compact Shipment Details */}
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs border-t pt-3">
-                        <div>
-                          <p className="text-muted-foreground">Cost</p>
-                          <p className="font-semibold">${shipment.shippingCost}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Insurance</p>
-                          <p className="font-semibold">${shipment.insuranceValue}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Dispatched</p>
-                          <p className="font-semibold">
-                            {format(new Date(shipment.createdAt), 'MMM dd')}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Location</p>
-                          <p className="font-semibold truncate">
-                            {shipment.currentLocation || 'In Transit'}
-                          </p>
-                        </div>
-                      </div>
-
                       {/* Compact Action Bar */}
-                      <div className="flex justify-between items-center mt-3 pt-3 border-t">
+                      <div className="flex justify-between items-center mt-3">
                         <div className="flex items-center space-x-2">
                           {!prediction && (
                             <Button 
@@ -952,10 +949,6 @@ export default function InternationalTransit() {
                             </Button>
                           )}
                         </div>
-                        
-                        <p className="text-xs text-muted-foreground">
-                          Updated {format(new Date(shipment.updatedAt), 'HH:mm')}
-                        </p>
                       </div>
 
                       {shipment.notes && (
