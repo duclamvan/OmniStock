@@ -426,18 +426,18 @@ export default function InternationalTransit() {
     return "text-red-600 dark:text-red-400";
   };
   
-  // Helper function to get shipment type color
+  // Helper function to get shipment type color (border only)
   const getShipmentTypeColor = (shipmentType: string) => {
     if (shipmentType?.includes('air')) {
-      return shipmentType.includes('sensitive') ? 'border-l-orange-500 bg-orange-50 dark:bg-orange-950/20' : 'border-l-blue-500 bg-blue-50 dark:bg-blue-950/20';
+      return shipmentType.includes('sensitive') ? 'border-l-orange-500' : 'border-l-blue-500';
     } else if (shipmentType?.includes('express')) {
-      return shipmentType.includes('sensitive') ? 'border-l-pink-500 bg-pink-50 dark:bg-pink-950/20' : 'border-l-purple-500 bg-purple-50 dark:bg-purple-950/20';
+      return shipmentType.includes('sensitive') ? 'border-l-pink-500' : 'border-l-purple-500';
     } else if (shipmentType?.includes('sea')) {
-      return shipmentType.includes('sensitive') ? 'border-l-red-500 bg-red-50 dark:bg-red-950/20' : 'border-l-cyan-500 bg-cyan-50 dark:bg-cyan-950/20';
+      return shipmentType.includes('sensitive') ? 'border-l-red-500' : 'border-l-cyan-500';
     } else if (shipmentType?.includes('railway')) {
-      return shipmentType.includes('sensitive') ? 'border-l-yellow-500 bg-yellow-50 dark:bg-yellow-950/20' : 'border-l-green-500 bg-green-50 dark:bg-green-950/20';
+      return shipmentType.includes('sensitive') ? 'border-l-yellow-500' : 'border-l-green-500';
     }
-    return 'border-l-gray-500 bg-gray-50 dark:bg-gray-950/20';
+    return 'border-l-gray-500';
   };
 
   // Helper function to get shipment type icon
@@ -455,6 +455,24 @@ export default function InternationalTransit() {
       return <Train className={`${className} ${iconColor}`} />;
     }
     return <Package className={`${className} text-muted-foreground`} />;
+  };
+
+  // Helper function to format shipment type display name
+  const formatShipmentType = (shipmentType: string) => {
+    if (!shipmentType) return '';
+    
+    const typeMap: { [key: string]: string } = {
+      'air_ddp_general': 'Air DDP (general)',
+      'air_ddp_sensitive': 'Air DDP (sensitive)', 
+      'express_general': 'Express (general)',
+      'express_sensitive': 'Express (sensitive)',
+      'railway_general': 'Railway (general)',
+      'railway_sensitive': 'Railway (sensitive)',
+      'sea_general': 'Sea (general)',
+      'sea_sensitive': 'Sea (sensitive)'
+    };
+    
+    return typeMap[shipmentType] || shipmentType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
   const getTimeRemaining = (shipment: Shipment) => {
@@ -1266,6 +1284,11 @@ export default function InternationalTransit() {
                                 {getTimeRemaining(shipment)}
                               </Badge>
                             </div>
+                            {shipment.shipmentType && (
+                              <p className="text-sm text-muted-foreground font-medium">
+                                {formatShipmentType(shipment.shipmentType)}
+                              </p>
+                            )}
                             <p className="text-xs text-muted-foreground">
                               {shipment.itemCount} items • {(shipment.carrier || shipment.shippingMethod || 'Standard').replace(/_/g, ' ').toUpperCase()}
                             </p>
