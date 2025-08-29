@@ -782,6 +782,8 @@ export default function AtWarehouse() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/consolidations'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/pending'] });
       toast({ title: "Success", description: "Consolidation shipped successfully" });
     },
     onError: () => {
