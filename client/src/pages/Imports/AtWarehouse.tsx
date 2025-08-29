@@ -2463,14 +2463,25 @@ export default function AtWarehouse() {
                               <div className="border rounded-lg p-2.5 bg-muted/20 hover:bg-muted/30 transition-colors">
                                 <div className="flex justify-between items-start mb-1.5">
                                   <div className="flex-1">
-                                    <div className="flex items-center gap-2">
-                                      <Ship className="h-4 w-4 text-primary" />
-                                      <div className="font-medium text-sm">{consolidation.name}</div>
-                                      <Badge className="text-xs px-1.5 py-0" variant={consolidation.shippingMethod === 'air' ? 'default' : 'secondary'}>
-                                        {consolidation.shippingMethod?.replace('_', ' ').toUpperCase() || 'Not Set'}
-                                      </Badge>
+                                    <div className="flex items-start gap-2">
+                                      <Ship className="h-4 w-4 text-primary mt-0.5" />
+                                      <div className="flex-1">
+                                        <div className="font-medium text-sm">{consolidation.name}</div>
+                                        <Badge 
+                                          className="text-xs px-1.5 py-0 mt-1" 
+                                          variant={
+                                            consolidation.shippingMethod?.includes('air') ? 'default' :
+                                            consolidation.shippingMethod?.includes('express') ? 'destructive' :
+                                            consolidation.shippingMethod?.includes('railway') ? 'outline' :
+                                            consolidation.shippingMethod?.includes('sea') ? 'secondary' :
+                                            'secondary'
+                                          }
+                                        >
+                                          {consolidation.shippingMethod?.replace(/_/g, ' ').toUpperCase() || 'NOT SET'}
+                                        </Badge>
+                                      </div>
                                     </div>
-                                    <div className="text-xs text-muted-foreground flex items-center gap-1 mb-1">
+                                    <div className="text-xs text-muted-foreground flex items-center gap-1 mt-2 mb-1">
                                       <MapPin className="h-3 w-3" />
                                       {consolidation.location || consolidation.warehouse?.replace('_', ', ') || 'No location'}
                                     </div>
