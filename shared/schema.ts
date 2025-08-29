@@ -91,7 +91,7 @@ export const shipments = pgTable('shipments', {
   trackingNumber: text('tracking_number').notNull(),
   origin: text('origin').notNull(),
   destination: text('destination').notNull(),
-  status: text('status').notNull().default('dispatched'), // dispatched, in_transit, customs, delivered
+  status: text('status').notNull().default('pending'), // pending, in transit, delivered
   shippingCost: decimal('shipping_cost', { precision: 10, scale: 2 }).default('0'),
   insuranceValue: decimal('insurance_value', { precision: 10, scale: 2 }).default('0'),
   estimatedDelivery: timestamp('estimated_delivery'),

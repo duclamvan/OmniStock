@@ -53,16 +53,14 @@ interface DeliveryPrediction {
 }
 
 const statusColors: Record<string, string> = {
-  dispatched: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-  in_transit: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-  customs: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+  pending: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+  "in transit": "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
   delivered: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
 };
 
 const statusIcons: Record<string, any> = {
-  dispatched: Package,
-  in_transit: Plane,
-  customs: Globe,
+  pending: Package,
+  "in transit": Plane,
   delivered: CheckCircle
 };
 
@@ -543,18 +541,18 @@ export default function InternationalTransit() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-600">
-              {filteredShipments.filter(s => s.status === 'in_transit').length}
+              {filteredShipments.filter(s => s.status === 'in transit').length}
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">At Customs</CardTitle>
+            <CardTitle className="text-sm font-medium">In Transit</CardTitle>
             <AlertCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-yellow-600">
-              {filteredShipments.filter(s => s.status === 'customs').length}
+              {filteredShipments.filter(s => s.status === 'in transit').length}
             </div>
           </CardContent>
         </Card>
@@ -719,9 +717,8 @@ export default function InternationalTransit() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="dispatched">Dispatched</SelectItem>
-                              <SelectItem value="in_transit">In Transit</SelectItem>
-                              <SelectItem value="customs">At Customs</SelectItem>
+                              <SelectItem value="pending">Pending</SelectItem>
+                              <SelectItem value="in transit">In Transit</SelectItem>
                               <SelectItem value="delivered">Delivered</SelectItem>
                             </SelectContent>
                           </Select>
