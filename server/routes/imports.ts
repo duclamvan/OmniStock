@@ -1243,16 +1243,75 @@ router.get("/shipments", async (req, res) => {
   }
 });
 
+// Helper function to generate AI shipment name
+const generateAIShipmentName = async (consolidationId: number | null, shipmentType: string, items?: any[]) => {
+  try {
+    let itemsList = items || [];
+    
+    // If we have a consolidation ID but no items, fetch them
+    if (consolidationId && itemsList.length === 0) {
+      const fetchedItems = await db
+        .select({
+          name: customItems.name,
+          quantity: customItems.quantity
+        })
+        .from(consolidationItems)
+        .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
+        .where(eq(consolidationItems.consolidationId, consolidationId));
+      
+      itemsList = fetchedItems;
+    }
+    
+    // Build shipment name based on shipping method and items
+    const methodName = shipmentType?.includes('express') ? 'Express' : 
+                      shipmentType?.includes('air') ? 'Air' : 
+                      shipmentType?.includes('sea') ? 'Sea' : 
+                      shipmentType?.includes('railway') ? 'Rail' : 'Standard';
+    
+    // Get first 2 items for the name
+    const itemNames = itemsList.slice(0, 2)
+      .map(item => item.name)
+      .filter(Boolean)
+      .join(', ');
+    
+    const moreItems = itemsList.length > 2 ? ` +${itemsList.length - 2} more` : '';
+    const totalItems = itemsList.reduce((sum, item) => sum + (item.quantity || 1), 0);
+    
+    // Add sensitive label if applicable
+    const sensitiveLabel = shipmentType?.includes('sensitive') ? ' (Sensitive)' : '';
+    
+    // Generate the final name
+    const generatedName = itemNames 
+      ? `${methodName}${sensitiveLabel} - ${itemNames}${moreItems} (${totalItems} items)`
+      : `${methodName}${sensitiveLabel} Shipment - ${totalItems} items`;
+    
+    return generatedName;
+  } catch (error) {
+    console.error('Error generating AI shipment name:', error);
+    return `${shipmentType?.replace(/_/g, ' ').toUpperCase() || 'STANDARD'} Shipment`;
+  }
+};
+
 // Create shipment
 router.post("/shipments", async (req, res) => {
   try {
+    // Generate AI name if not provided
+    let shipmentName = req.body.shipmentName;
+    if (!shipmentName || shipmentName.trim() === '') {
+      shipmentName = await generateAIShipmentName(
+        req.body.consolidationId,
+        req.body.shipmentType || req.body.shippingMethod,
+        req.body.items
+      );
+    }
+    
     const shipmentData = {
       consolidationId: req.body.consolidationId,
-      carrier: req.body.carrier,
+      carrier: req.body.carrier || 'Standard Carrier',
       trackingNumber: req.body.trackingNumber,
       endCarrier: req.body.endCarrier || null,
       endTrackingNumber: req.body.endTrackingNumber || null,
-      shipmentName: req.body.shipmentName || null,
+      shipmentName: shipmentName,
       shipmentType: req.body.shipmentType || req.body.shippingMethod || null,
       origin: req.body.origin,
       destination: req.body.destination,

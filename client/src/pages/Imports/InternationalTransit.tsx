@@ -252,18 +252,22 @@ export default function InternationalTransit() {
     
     const data = {
       consolidationId: selectedPendingShipment?.id || (formData.get('consolidationId') ? parseInt(formData.get('consolidationId') as string) : null),
-      carrier: selectedPendingShipment?.shippingMethod || 'standard',
+      carrier: formData.get('carrier') as string || 'Standard Carrier',
       trackingNumber: formData.get('trackingNumber') as string,
       endCarrier: formData.get('endCarrier') as string || null,
       endTrackingNumber: formData.get('endTrackingNumber') as string || null,
-      shipmentName: formData.get('shipmentName') as string || generateShipmentName(),
-      shipmentType: selectedPendingShipment?.shippingMethod || formData.get('shipmentType') as string,
+      shipmentName: formData.get('shipmentName') as string || '',  // Let backend generate if empty
+      shipmentType: formData.get('shipmentType') as string || selectedPendingShipment?.shippingMethod,
       origin: formData.get('origin') as string,
       destination: formData.get('destination') as string,
       shippingCost: parseFloat(formData.get('shippingCost') as string) || 0,
       shippingCostCurrency: formData.get('shippingCostCurrency') as string || 'USD',
-      shippingMethod: selectedPendingShipment?.shippingMethod || formData.get('shippingMethod') as string,
+      shippingMethod: formData.get('shipmentType') as string || selectedPendingShipment?.shippingMethod,
       notes: formData.get('notes') as string || null,
+      totalWeight: parseFloat(formData.get('totalWeight') as string) || selectedPendingShipment?.targetWeight || 0,
+      totalUnits: parseInt(formData.get('totalUnits') as string) || 1,
+      unitType: formData.get('unitType') as string || 'carton',
+      items: selectedPendingShipment?.items || [],  // Pass items for AI generation
     };
     
     createShipmentMutation.mutate(data);
@@ -463,64 +467,122 @@ export default function InternationalTransit() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="shipmentType">Shipment Type</Label>
-                  <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
-                    {(() => {
-                      const method = selectedPendingShipment?.shippingMethod;
-                      if (method?.includes('air')) {
-                        return <Plane className={`h-4 w-4 ${method.includes('sensitive') ? 'text-orange-500' : 'text-primary'}`} />;
-                      } else if (method?.includes('express')) {
-                        return <Zap className={`h-4 w-4 ${method.includes('sensitive') ? 'text-orange-500' : 'text-primary'}`} />;
-                      } else if (method?.includes('railway')) {
-                        return <Train className={`h-4 w-4 ${method.includes('sensitive') ? 'text-orange-500' : 'text-primary'}`} />;
-                      } else if (method?.includes('sea')) {
-                        return <Ship className={`h-4 w-4 ${method.includes('sensitive') ? 'text-orange-500' : 'text-primary'}`} />;
-                      } else {
-                        return <Package className="h-4 w-4 text-muted-foreground" />;
-                      }
-                    })()}
-                    <span className="text-sm font-medium">
-                      {selectedPendingShipment?.shippingMethod?.replace(/_/g, ' ').toUpperCase() || 'STANDARD'}
-                    </span>
+                  <Select name="shipmentType" defaultValue={selectedPendingShipment?.shippingMethod || 'air_standard'}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="air_standard">Air Standard</SelectItem>
+                      <SelectItem value="air_express">Air Express</SelectItem>
+                      <SelectItem value="air_standard_sensitive">Air Standard (Sensitive)</SelectItem>
+                      <SelectItem value="air_express_sensitive">Air Express (Sensitive)</SelectItem>
+                      <SelectItem value="sea_standard">Sea Standard</SelectItem>
+                      <SelectItem value="sea_express">Sea Express</SelectItem>
+                      <SelectItem value="railway_standard">Railway Standard</SelectItem>
+                      <SelectItem value="railway_express">Railway Express</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Primary Tracking Fields */}
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">Primary Carrier (China to Europe)</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="trackingNumber">Tracking Number *</Label>
+                    <Input 
+                      id="trackingNumber" 
+                      name="trackingNumber" 
+                      required 
+                      defaultValue={selectedPendingShipment?.trackingNumber || ''}
+                      data-testid="input-tracking-number"
+                      placeholder="Enter tracking number"
+                    />
                   </div>
-                  <input type="hidden" name="shipmentType" value={selectedPendingShipment?.shippingMethod || ''} />
+                  <div className="space-y-2">
+                    <Label htmlFor="carrier">Transit Carrier *</Label>
+                    <Input 
+                      id="carrier" 
+                      name="carrier" 
+                      required 
+                      defaultValue={selectedPendingShipment?.carrier || ''}
+                      data-testid="input-carrier"
+                      placeholder="e.g., China Post, SF Express"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="trackingNumber">Tracking Number *</Label>
-                  <Input 
-                    id="trackingNumber" 
-                    name="trackingNumber" 
-                    required 
-                    defaultValue={selectedPendingShipment?.trackingNumber || ''}
-                    data-testid="input-tracking-number"
-                    placeholder="Enter tracking number"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="endCarrier">End Shipping Carrier</Label>
-                  <Input 
-                    id="endCarrier" 
-                    name="endCarrier" 
-                    data-testid="input-end-carrier"
-                    placeholder="e.g., DPD, DHL, GLS"
-                  />
+              {/* End Carrier Fields */}
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">End Carrier (European Courier)</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="endTrackingNumber">End Tracking Number</Label>
+                    <Input 
+                      id="endTrackingNumber" 
+                      name="endTrackingNumber" 
+                      data-testid="input-end-tracking-number"
+                      placeholder="Local courier tracking"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="endCarrier">End Carrier</Label>
+                    <Input 
+                      id="endCarrier" 
+                      name="endCarrier" 
+                      data-testid="input-end-carrier"
+                      placeholder="e.g., DPD, DHL, GLS"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="endTrackingNumber">End Tracking Number</Label>
-                  <Input 
-                    id="endTrackingNumber" 
-                    name="endTrackingNumber" 
-                    data-testid="input-end-tracking-number"
-                    placeholder="Final delivery tracking"
-                  />
-                </div>
-                <div className="space-y-2">
-                  {/* Placeholder for alignment */}
+              {/* Weight and Units */}
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">Package Information</Label>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="totalWeight">Total Weight *</Label>
+                    <Input 
+                      id="totalWeight" 
+                      name="totalWeight" 
+                      type="number"
+                      step="0.01"
+                      required 
+                      defaultValue={selectedPendingShipment?.targetWeight || ''}
+                      data-testid="input-total-weight"
+                      placeholder="Weight"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="totalUnits">Total Units</Label>
+                    <Input 
+                      id="totalUnits" 
+                      name="totalUnits" 
+                      type="number"
+                      min="1"
+                      defaultValue="1"
+                      data-testid="input-total-units"
+                      placeholder="Units"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="unitType">Unit Type</Label>
+                    <Select name="unitType" defaultValue="carton">
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="carton">Carton</SelectItem>
+                        <SelectItem value="pallet">Pallet</SelectItem>
+                        <SelectItem value="container_20">20ft Container</SelectItem>
+                        <SelectItem value="container_40">40ft Container</SelectItem>
+                        <SelectItem value="container_40hc">40ft HC Container</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
 
@@ -714,11 +776,6 @@ export default function InternationalTransit() {
                         <p className="text-xs text-muted-foreground">
                           {pending.location} • {pending.warehouse} • {pending.itemCount} items
                         </p>
-                        {pending.trackingNumber && (
-                          <p className="text-xs text-yellow-600 dark:text-yellow-400 font-medium mt-1">
-                            Tracking: {pending.trackingNumber} ({pending.carrier || 'Carrier TBD'})
-                          </p>
-                        )}
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -821,9 +878,11 @@ export default function InternationalTransit() {
                       <p className="text-xs font-medium text-muted-foreground mb-1">Contents:</p>
                       <div className="space-y-0.5">
                         {pending.items.map((item: any, index: number) => (
-                          <div key={index} className="flex items-center justify-between text-xs">
+                          <div key={index} className="flex items-center gap-2 text-xs">
                             <span className="truncate flex-1">{item.name}</span>
-                            <span className="text-muted-foreground ml-2">x{item.quantity || 1}</span>
+                            <Badge variant="secondary" className="text-xs px-1 py-0 h-5 min-w-[30px] flex items-center justify-center">
+                              {item.quantity || 1}
+                            </Badge>
                           </div>
                         ))}
                       </div>
@@ -832,7 +891,7 @@ export default function InternationalTransit() {
                   
                   {pending.targetWeight && (
                     <p className="text-xs text-muted-foreground mt-2">
-                      Target Weight: {pending.targetWeight} kg
+                      Total Weight: {pending.targetWeight} kg
                     </p>
                   )}
                 </div>
