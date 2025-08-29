@@ -85,6 +85,10 @@ interface PendingShipment {
   itemCount: number;
   existingShipment: any;
   needsTracking: boolean;
+  trackingNumber: string | null;
+  carrier: string | null;
+  origin: string | null;
+  destination: string | null;
 }
 
 export default function InternationalTransit() {
@@ -131,9 +135,19 @@ export default function InternationalTransit() {
       const response = await apiRequest(`/api/imports/shipments/${shipmentId}/tracking`, 'PATCH', data);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (updatedShipment, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
-      toast({ title: "Success", description: "Tracking updated successfully" });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/pending'] });
+      
+      // If status is changed to pending, show success message
+      if (variables.data.status === 'pending') {
+        toast({ 
+          title: "Success", 
+          description: "Shipment moved back to pending with tracking information preserved" 
+        });
+      } else {
+        toast({ title: "Success", description: "Tracking updated successfully" });
+      }
     },
     onError: () => {
       toast({ title: "Error", description: "Failed to update tracking", variant: "destructive" });
@@ -386,7 +400,7 @@ export default function InternationalTransit() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="carrier">Carrier *</Label>
-                  <Select name="carrier" required>
+                  <Select name="carrier" required defaultValue={selectedPendingShipment?.carrier || ''}>
                     <SelectTrigger data-testid="select-carrier">
                       <SelectValue placeholder="Select carrier" />
                     </SelectTrigger>
@@ -406,6 +420,7 @@ export default function InternationalTransit() {
                     id="trackingNumber" 
                     name="trackingNumber" 
                     required 
+                    defaultValue={selectedPendingShipment?.trackingNumber || ''}
                     data-testid="input-tracking-number"
                     placeholder="Enter tracking number"
                   />
@@ -415,7 +430,7 @@ export default function InternationalTransit() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="origin">Origin *</Label>
-                  <Select name="origin" required defaultValue={selectedPendingShipment?.warehouse || ''}>
+                  <Select name="origin" required defaultValue={selectedPendingShipment?.origin || selectedPendingShipment?.warehouse || ''}>
                     <SelectTrigger data-testid="select-origin">
                       <SelectValue placeholder="Select origin" />
                     </SelectTrigger>
@@ -433,7 +448,7 @@ export default function InternationalTransit() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="destination">Destination *</Label>
-                  <Select name="destination" required defaultValue={selectedPendingShipment?.location || ''}>
+                  <Select name="destination" required defaultValue={selectedPendingShipment?.destination || selectedPendingShipment?.location || ''}>
                     <SelectTrigger data-testid="select-destination">
                       <SelectValue placeholder="Select destination" />
                     </SelectTrigger>
@@ -594,6 +609,11 @@ export default function InternationalTransit() {
                         <p className="text-xs text-muted-foreground">
                           {pending.location} • {pending.warehouse} • {pending.itemCount} items
                         </p>
+                        {pending.trackingNumber && (
+                          <p className="text-xs text-yellow-600 dark:text-yellow-400 font-medium mt-1">
+                            Tracking: {pending.trackingNumber} ({pending.carrier || 'Carrier TBD'})
+                          </p>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -610,7 +630,7 @@ export default function InternationalTransit() {
                         data-testid={`button-add-tracking-${pending.id}`}
                       >
                         <Plus className="h-3 w-3 mr-1" />
-                        Add Tracking
+                        {pending.trackingNumber ? 'Update Tracking' : 'Add Tracking'}
                       </Button>
                     </div>
                   </div>

@@ -10,7 +10,7 @@ import {
   shipmentItems,
   deliveryHistory
 } from "@shared/schema";
-import { eq, desc, sql, and, like } from "drizzle-orm";
+import { eq, desc, sql, and, like, or } from "drizzle-orm";
 import { addDays, differenceInDays } from "date-fns";
 import multer from "multer";
 
@@ -1017,18 +1017,28 @@ router.delete("/custom-items/:id", async (req, res) => {
   }
 });
 
-// Get pending shipments (shipped consolidations without full tracking)
+// Get pending shipments (shipped consolidations without full tracking or shipments with pending status)
 router.get("/shipments/pending", async (req, res) => {
   try {
-    // Get shipped consolidations
+    // Get consolidations that are ready or shipped (without tracking)
     const shippedConsolidations = await db
       .select()
       .from(consolidations)
-      .where(eq(consolidations.status, 'shipped'))
+      .where(or(
+        eq(consolidations.status, 'shipped'),
+        eq(consolidations.status, 'ready')
+      ))
       .orderBy(desc(consolidations.createdAt));
     
-    // Check which ones don't have proper shipment records or need tracking updates
-    const pendingShipments = await Promise.all(
+    // Get shipments that are marked as pending
+    const pendingShipmentsList = await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.status, 'pending'))
+      .orderBy(desc(shipments.createdAt));
+    
+    // Process consolidations
+    const pendingFromConsolidations = await Promise.all(
       shippedConsolidations.map(async (consolidation) => {
         // Check if there's a shipment for this consolidation
         const [existingShipment] = await db
@@ -1049,22 +1059,29 @@ router.get("/shipments/pending", async (req, res) => {
           .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
           .where(eq(consolidationItems.consolidationId, consolidation.id));
         
-        // Only include if no shipment exists or tracking is incomplete
-        if (!existingShipment || !existingShipment.trackingNumber) {
+        // Include if:
+        // 1. No shipment exists, OR
+        // 2. Shipment exists but is pending, OR
+        // 3. Shipment exists but tracking is incomplete
+        if (!existingShipment || existingShipment.status === 'pending' || !existingShipment.trackingNumber) {
           return {
             ...consolidation,
             existingShipment,
             items,
             itemCount: items.length,
-            needsTracking: !existingShipment || !existingShipment.trackingNumber
+            needsTracking: !existingShipment || !existingShipment.trackingNumber,
+            trackingNumber: existingShipment?.trackingNumber || null,
+            carrier: existingShipment?.carrier || null,
+            origin: existingShipment?.origin || null,
+            destination: existingShipment?.destination || null
           };
         }
         return null;
       })
     );
     
-    // Filter out nulls
-    const filteredPending = pendingShipments.filter(p => p !== null);
+    // Filter out nulls and combine results
+    const filteredPending = pendingFromConsolidations.filter(p => p !== null);
     
     res.json(filteredPending);
   } catch (error) {
@@ -1253,6 +1270,23 @@ router.patch("/shipments/:id/tracking", async (req, res) => {
     // If status is "delivered", set deliveredAt
     if (req.body.status === "delivered") {
       updateData.deliveredAt = new Date();
+    }
+    
+    // If status is changed back to "pending", update consolidation status
+    if (req.body.status === "pending") {
+      // Get the shipment to find its consolidation
+      const [shipment] = await db
+        .select()
+        .from(shipments)
+        .where(eq(shipments.id, shipmentId));
+      
+      if (shipment && shipment.consolidationId) {
+        // Update consolidation status back to "ready" 
+        await db
+          .update(consolidations)
+          .set({ status: "ready", updatedAt: new Date() })
+          .where(eq(consolidations.id, shipment.consolidationId));
+      }
     }
     
     const [updated] = await db
