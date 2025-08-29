@@ -1292,23 +1292,36 @@ const generateAIShipmentName = async (consolidationId: number | null, shipmentTy
   }
 };
 
-// Create shipment
+// Create shipment (optimized for Quick Ship and regular creation)
 router.post("/shipments", async (req, res) => {
   try {
-    // Generate AI name if not provided
+    // Quick Ship optimization - generate tracking number if empty
+    const isQuickShip = !req.body.trackingNumber || req.body.trackingNumber === '';
+    const trackingNumber = isQuickShip 
+      ? `QS-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+      : req.body.trackingNumber;
+    
+    // Generate AI name if not provided (parallel with other operations)
     let shipmentName = req.body.shipmentName;
     if (!shipmentName || shipmentName.trim() === '') {
-      shipmentName = await generateAIShipmentName(
-        req.body.consolidationId,
-        req.body.shipmentType || req.body.shippingMethod,
-        req.body.items
-      );
+      // For Quick Ship, use a simpler, faster name generation
+      if (isQuickShip) {
+        const consolidationId = req.body.consolidationId;
+        const shipType = req.body.shipmentType || req.body.shippingMethod || 'standard';
+        shipmentName = `${shipType.replace(/_/g, ' ').toUpperCase()} - CONSOL-${consolidationId}`;
+      } else {
+        shipmentName = await generateAIShipmentName(
+          req.body.consolidationId,
+          req.body.shipmentType || req.body.shippingMethod,
+          req.body.items
+        );
+      }
     }
     
     const shipmentData = {
       consolidationId: req.body.consolidationId,
       carrier: req.body.carrier || 'Standard Carrier',
-      trackingNumber: req.body.trackingNumber,
+      trackingNumber: trackingNumber,
       endCarrier: req.body.endCarrier || null,
       endTrackingNumber: req.body.endTrackingNumber || null,
       shipmentName: shipmentName,
@@ -1318,23 +1331,28 @@ router.post("/shipments", async (req, res) => {
       shippingCost: req.body.shippingCost || 0,
       shippingCostCurrency: req.body.shippingCostCurrency || 'USD',
       insuranceValue: req.body.insuranceValue || 0,
-      notes: req.body.notes || null,
-      status: "pending",
+      notes: isQuickShip ? 'Quick shipped - tracking can be updated later' : (req.body.notes || null),
+      status: isQuickShip ? "in transit" : "pending", // Quick Ship goes directly to in transit
       createdAt: new Date(),
       updatedAt: new Date()
     };
     
-    const [shipment] = await db.insert(shipments).values(shipmentData).returning();
+    // Use transaction for atomicity and speed
+    const result = await db.transaction(async (tx) => {
+      const [shipment] = await tx.insert(shipments).values(shipmentData).returning();
+      
+      // Update consolidation status to "shipped" in the same transaction
+      if (req.body.consolidationId) {
+        await tx
+          .update(consolidations)
+          .set({ status: "shipped", updatedAt: new Date() })
+          .where(eq(consolidations.id, req.body.consolidationId));
+      }
+      
+      return shipment;
+    });
     
-    // Update consolidation status to "shipped"
-    if (req.body.consolidationId) {
-      await db
-        .update(consolidations)
-        .set({ status: "shipped", updatedAt: new Date() })
-        .where(eq(consolidations.id, req.body.consolidationId));
-    }
-    
-    res.json(shipment);
+    res.json(result);
   } catch (error) {
     console.error("Error creating shipment:", error);
     res.status(500).json({ message: "Failed to create shipment" });
@@ -1433,8 +1451,30 @@ router.put("/shipments/:id", async (req, res) => {
       return res.status(404).json({ message: "Shipment not found" });
     }
     
-    // Get items associated with the shipment
-    const items = await getShipmentItems(updated.consolidationId);
+    // Get items associated with the shipment's consolidation
+    let items: Array<{
+      id: number;
+      name: string;
+      quantity: number | null;
+      weight: string | null;
+      trackingNumber: string | null;
+      unitPrice: string | null;
+    }> = [];
+    
+    if (updated.consolidationId) {
+      items = await db
+        .select({
+          id: customItems.id,
+          name: customItems.name,
+          quantity: customItems.quantity,
+          weight: customItems.weight,
+          trackingNumber: customItems.trackingNumber,
+          unitPrice: customItems.unitPrice
+        })
+        .from(consolidationItems)
+        .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
+        .where(eq(consolidationItems.consolidationId, updated.consolidationId));
+    }
     
     res.json({ ...updated, items, itemCount: items.length });
   } catch (error) {

@@ -149,21 +149,63 @@ export default function InternationalTransit() {
     }
   });
   
-  // Create shipment mutation
+  // Create shipment mutation with optimistic updates for speed
   const createShipmentMutation = useMutation({
     mutationFn: async (data: any) => {
       const response = await apiRequest('/api/imports/shipments', 'POST', data);
       return response.json();
     },
-    onSuccess: () => {
+    onMutate: async (newShipment) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['/api/imports/shipments'] });
+      await queryClient.cancelQueries({ queryKey: ['/api/imports/shipments/pending'] });
+      
+      // Optimistically remove from pending if it's a quick ship
+      if (newShipment.consolidationId) {
+        const previousPending = queryClient.getQueryData(['/api/imports/shipments/pending']);
+        queryClient.setQueryData(['/api/imports/shipments/pending'], (old: any) => {
+          if (!old) return old;
+          return old.filter((item: any) => item.id !== newShipment.consolidationId);
+        });
+        
+        // Return context for rollback
+        return { previousPending };
+      }
+    },
+    onSuccess: (data, variables) => {
+      // Immediately update the shipments list with the new shipment
+      queryClient.setQueryData(['/api/imports/shipments'], (old: any) => {
+        if (!old) return [data];
+        return [data, ...old];
+      });
+      
+      // Force immediate refetch to ensure consistency
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/pending'] });
+      
       setIsCreateShipmentOpen(false);
       setSelectedPendingShipment(null);
-      toast({ title: "Success", description: "Shipment created successfully" });
+      
+      // Different messages for Quick Ship vs regular creation
+      const isQuickShip = !variables.trackingNumber || variables.trackingNumber === '';
+      toast({ 
+        title: "Success", 
+        description: isQuickShip 
+          ? "Quick Ship completed! Shipment moved to tracking." 
+          : "Shipment created successfully" 
+      });
     },
-    onError: () => {
+    onError: (err, newShipment, context: any) => {
+      // Rollback optimistic update on error
+      if (context?.previousPending) {
+        queryClient.setQueryData(['/api/imports/shipments/pending'], context.previousPending);
+      }
       toast({ title: "Error", description: "Failed to create shipment", variant: "destructive" });
+    },
+    onSettled: () => {
+      // Always refetch after error or success
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/pending'] });
     }
   });
 
