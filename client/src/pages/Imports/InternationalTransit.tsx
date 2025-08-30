@@ -1844,14 +1844,54 @@ export default function InternationalTransit() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="air_ddp_general">Air DDP (general)</SelectItem>
-                          <SelectItem value="air_ddp_sensitive">Air DDP (sensitive)</SelectItem>
-                          <SelectItem value="express_general">Express (general)</SelectItem>
-                          <SelectItem value="express_sensitive">Express (sensitive)</SelectItem>
-                          <SelectItem value="railway_general">Railway (general)</SelectItem>
-                          <SelectItem value="railway_sensitive">Railway (sensitive)</SelectItem>
-                          <SelectItem value="sea_general">Sea (general)</SelectItem>
-                          <SelectItem value="sea_sensitive">Sea (sensitive)</SelectItem>
+                          <SelectItem value="air_ddp_general">
+                            <div className="flex items-center gap-2">
+                              {getShipmentTypeIcon('air_ddp_general', 'h-4 w-4')}
+                              Air DDP (general)
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="air_ddp_sensitive">
+                            <div className="flex items-center gap-2">
+                              {getShipmentTypeIcon('air_ddp_sensitive', 'h-4 w-4')}
+                              Air DDP (sensitive)
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="express_general">
+                            <div className="flex items-center gap-2">
+                              {getShipmentTypeIcon('express_general', 'h-4 w-4')}
+                              Express (general)
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="express_sensitive">
+                            <div className="flex items-center gap-2">
+                              {getShipmentTypeIcon('express_sensitive', 'h-4 w-4')}
+                              Express (sensitive)
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="railway_general">
+                            <div className="flex items-center gap-2">
+                              {getShipmentTypeIcon('railway_general', 'h-4 w-4')}
+                              Railway (general)
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="railway_sensitive">
+                            <div className="flex items-center gap-2">
+                              {getShipmentTypeIcon('railway_sensitive', 'h-4 w-4')}
+                              Railway (sensitive)
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="sea_general">
+                            <div className="flex items-center gap-2">
+                              {getShipmentTypeIcon('sea_general', 'h-4 w-4')}
+                              Sea (general)
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="sea_sensitive">
+                            <div className="flex items-center gap-2">
+                              {getShipmentTypeIcon('sea_sensitive', 'h-4 w-4')}
+                              Sea (sensitive)
+                            </div>
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
