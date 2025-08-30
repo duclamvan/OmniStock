@@ -1954,16 +1954,15 @@ export default function InternationalTransit() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="cartons">Cartons</SelectItem>
-                          <SelectItem value="pallets">Pallets</SelectItem>
                           <SelectItem value="boxes">Boxes</SelectItem>
+                          <SelectItem value="pallets">Pallets</SelectItem>
                           <SelectItem value="bags">Bags</SelectItem>
                           <SelectItem value="crates">Crates</SelectItem>
-                          <SelectItem value="parcels">Parcels</SelectItem>
-                          <SelectItem value="packages">Packages</SelectItem>
-                          <SelectItem value="20ft Container">20ft Container</SelectItem>
-                          <SelectItem value="40ft Container">40ft Container</SelectItem>
-                          <SelectItem value="40ft HC Container">40ft HC Container</SelectItem>
+                          <SelectItem value="20GP Container">20GP Container</SelectItem>
+                          <SelectItem value="40GP Container">40GP Container</SelectItem>
+                          <SelectItem value="40HQ Container">40HQ Container</SelectItem>
+                          <SelectItem value="45HQ Container">45HQ Container</SelectItem>
+                          <SelectItem value="LCL Shipment">LCL Shipment</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
