@@ -1,0 +1,237 @@
+Here are five copy-paste “vibe coding prompts” you can run in Replit (or any code copilot) to scaffold the simpler Import Delivery Receive flow end-to-end. Language is plain; scope is focused.
+
+⸻
+
+CHUNK 1/5 — Data & States (keep it minimal and clear)
+
+Goal: Add the simplest tables + states to support: search by carrier + parcels, count cartons, scan/count items, add missing/damaged notes, store instructions, propose/assign locations, submit by employee, confirm by founder, then post to Inventory with average cost.
+
+Do:
+	•	Create these Drizzle tables (TypeScript, Postgres). Reuse existing import_purchases / purchase_items via FKs.
+
+// /server/db/schema/receiving.ts
+export const deliveryReceipts = pgTable('delivery_receipts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  importPurchaseId: uuid('import_purchase_id').notNull().references(() => importPurchases.id),
+  carrier: text('carrier').notNull(),             // e.g., GLS, PPL, Rail, DHL, Forwarder name
+  claimedParcels: integer('claimed_parcels').notNull().default(0), // employee typed count
+  claimedCartons: integer('claimed_cartons').notNull().default(0),
+  dockCode: text('dock_code'),
+  employeeId: uuid('employee_id').notNull(),
+  founderId: uuid('founder_id'),                 // set when founder confirms
+  status: text('status').$type<
+    'draft' | 'employee_submitted' | 'founder_confirmed' | 'posted_to_inventory'
+  >().notNull().default('draft'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  submittedAt: timestamp('submitted_at', { withTimezone: true }),
+  confirmedAt: timestamp('confirmed_at', { withTimezone: true }),
+});
+
+export const deliveryReceiptLines = pgTable('delivery_receipt_lines', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  receiptId: uuid('receipt_id').notNull().references(() => deliveryReceipts.id, { onDelete: 'cascade' }),
+  purchaseItemId: uuid('purchase_item_id').references(() => purchaseItems.id),
+  skuId: uuid('sku_id'),                          // nullable until matched
+  skuCode: text('sku_code'),                      // fallback display
+  name: text('name').notNull(),
+  expectedQty: integer('expected_qty').notNull().default(0),
+  receivedQty: integer('received_qty').notNull().default(0),
+  damagedQty: integer('damaged_qty').notNull().default(0),
+  note: text('note'),
+  primaryLocation: text('primary_location'),      // from SKU if exists
+  extraLocation: text('extra_location'),          // added when shelf full
+});
+
+export const deliveryInstructions = pgTable('delivery_instructions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  purchaseItemId: uuid('purchase_item_id').references(() => purchaseItems.id),
+  text: text('text').notNull()                    // simple free text, e.g., “Store upright; keep away from heat.”
+});
+
+export const parcelScans = pgTable('parcel_scans', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  receiptId: uuid('receipt_id').references(() => deliveryReceipts.id, { onDelete: 'cascade' }),
+  code: text('code').notNull(),                   // SSCC, carton, SKU barcode, etc.
+  kind: text('kind').$type<'PARCEL'|'CARTON'|'SKU'|'OTHER'>().notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  byUser: uuid('by_user').notNull(),
+});
+
+export const landedCostBatches = pgTable('landed_cost_batches', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  receiptId: uuid('receipt_id').references(() => deliveryReceipts.id, { onDelete: 'cascade' }),
+  method: text('method').$type<'by_weight'|'by_volume'|'by_value'|'by_count'|'mixed_rules'>().notNull(),
+  totalCostNative: numeric('total_cost_native', { precision: 18, scale: 4 }).notNull(),
+  nativeCurrency: text('native_currency').notNull(), // e.g., CNY
+  czkRate: numeric('czk_rate', { precision: 18, scale: 6 }).notNull(), // from your FX service
+  notes: text('notes'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
+Acceptance:
+	•	Tables migrate cleanly.
+	•	Status flow: draft → employee_submitted → founder_confirmed → posted_to_inventory.
+
+⸻
+
+CHUNK 2/5 — Backend API (tiny, predictable, boring)
+
+Goal: CRUD-lite endpoints to drive the simple flow.
+
+Do:
+	•	Add these Express routes (ESM). Keep logic tiny. Validate with Zod.
+
+// /server/routes/receiving.ts
+// 1) Search incoming by carrier + parcels (operator picks the matching import purchase).
+GET /api/receiving/search?carrier=GLS&parcels=12
+  -> returns list of import purchases with matching carrier and probable counts
+
+// 2) Start receipt
+POST /api/receiving/receipts
+  body: { importPurchaseId, carrier, claimedParcels, claimedCartons, dockCode }
+  -> creates delivery_receipts + preloads delivery_receipt_lines from purchase_items
+
+// 3) Scan / Count
+POST /api/receiving/receipts/:id/scan
+  body: { code } // SSCC/carton/SKU
+  -> if SKU barcode: increment receivedQty on matching line
+  -> if PARCEL/CARTON: increment claimedCartons counter
+  -> record parcel_scans row and return updated receipt snapshot
+
+PATCH /api/receiving/receipts/:id/lines/:lineId
+  body: { receivedQty?, damagedQty?, note?, extraLocation? }
+
+// 4) Employee submit (hand off to founder)
+POST /api/receiving/receipts/:id/submit
+  -> status = employee_submitted, submittedAt = now
+
+// 5) Founder confirmation + landed cost selection
+POST /api/receiving/receipts/:id/confirm
+  body: { method, totalCostNative, nativeCurrency, czkRate, notes?, overrides? }
+  -> status = founder_confirmed, create landed_cost_batches row
+  -> compute per-line landed cost allocation and store temp in memory or add columns if you want
+
+// 6) Post to inventory (final)
+POST /api/receiving/receipts/:id/post
+  -> creates stock movements, updates avg cost (multi-currency), status = posted_to_inventory
+
+Notes:
+	•	Code classifier: simple regex + SKU lookup. If code matches a product barcode, it’s SKU; if 18 digits with GS1 check, it’s PARCEL; otherwise OTHER.
+	•	Keep all errors human-readable.
+
+⸻
+
+CHUNK 3/5 — Frontend UX (simple, touch-friendly)
+
+Goal: Three screens only. Plain words. Fast for workers.
+
+Do:
+	•	Routes:
+	•	/inbound/simple (Search & Start)
+	•	/inbound/simple/:receiptId (Receive)
+	•	/inbound/simple/:receiptId/review (Employee Submit → Founder view)
+
+Screen 1: Search & Start (employee)
+	•	Fields: Carrier (select), Number of parcels (input).
+	•	Button: Find import orders → list cards (supplier, ETA, PO count).
+	•	Click a card → modal: set Cartons (quick +/-), Dock, Start.
+
+Screen 2: Receive (employee)
+	•	Top bar: Shipment summary, Dock, Cartons counter (tap +1), Parcel counter (read-only from search).
+	•	Big Scan box (always focused). Show last 3 scans as chips (undo).
+	•	Table:
+	•	SKU / Name | Expected | Received | Damaged | Diff | Locations | Note
+	•	Each row has +1 / -1 buttons, a Scan to add just works, Note opens small textarea.
+	•	Instructions button shows the item’s storage tips (right drawer).
+	•	Add extra location opens a simple picker (type-to-search shelves; or free text).
+	•	Footer buttons: Save Draft | Submit to Founder.
+
+Screen 3: Review & Confirm
+	•	Employee sees a read-only summary + discrepancies list.
+	•	Founder sees a Landed Cost card:
+	•	Method select: by Weight / Volume / Value / Count / Mixed (recommended).
+	•	Inputs: total logistics cost (native currency), FX rate to CZK.
+	•	Button: Confirm landed cost → preview per-line allocation.
+	•	Final button (founder): Post to Inventory.
+
+Acceptance:
+	•	Worker can run the whole receiving without touching complex settings.
+	•	Founder has one clear place to confirm cost and post.
+
+⸻
+
+CHUNK 4/5 — Landed Cost (keep the math clear & small)
+
+Goal: A tiny allocator that picks a fair method. For nails supply, use Mixed by default:
+	•	Heavy/liquids/packaging → by weight
+	•	High-value small (brushes, bits) → by value
+	•	Everything else → by count
+(You can tag purchase items with cost_group: 'weight'|'value'|'count' at PO time. If not set, default to count.)
+
+Do:
+	•	Backend utility:
+
+type Line = { id: string; qty: number; unitWeight?: number; unitVolume?: number; unitValue?: number; group?: 'weight'|'value'|'count' };
+type AllocInput = { lines: Line[]; totalCost: number; method: 'by_weight'|'by_volume'|'by_value'|'by_count'|'mixed_rules' };
+
+export function allocateLandedCost({ lines, totalCost, method }: AllocInput) {
+  const weights = lines.map(l => {
+    const qty = Math.max(0, l.qty);
+    switch (method) {
+      case 'by_weight': return (l.unitWeight ?? 0) * qty;
+      case 'by_volume': return (l.unitVolume ?? 0) * qty;
+      case 'by_value':  return (l.unitValue  ?? 0) * qty;
+      case 'by_count':  return qty;
+      case 'mixed_rules':
+        if (l.group === 'weight') return (l.unitWeight ?? 0) * qty;
+        if (l.group === 'value')  return (l.unitValue  ?? 0) * qty;
+        return qty; // count
+    }
+  });
+  const sum = weights.reduce((a,b)=>a+(b||0),0);
+  return lines.map((l, i) => {
+    const share = sum > 0 ? (weights[i]||0) / sum : 0;
+    const cost = +(totalCost * share).toFixed(4);
+    return { lineId: l.id, costShare: cost };
+  });
+}
+
+	•	On confirm, store a landed_cost_batches row with method, totals, FX rate. Keep per-line allocation in memory or add a simple landed_cost_share column if you want to persist.
+	•	When posting to inventory, add per-line landed_cost_share to the purchase unit cost, then recompute weighted average cost per SKU in base currency (e.g., CZK) using your FX rates.
+
+Weighted average update (CZK example):
+
+new_avg = (old_qty*old_avg + received_qty*received_unit_czk) / (old_qty + received_qty)
+
+
+⸻
+
+CHUNK 5/5 — Inventory Post, Permissions, Done
+
+Goal: One click to finish. Clean audit. Simple permissions.
+
+Do:
+	•	On POST /api/receiving/receipts/:id/post:
+	1.	Guard: status must be founder_confirmed.
+	2.	For each line:
+	•	Ensure SKU matched (attempt auto-match by barcode; if not, show a “Match SKU” dialog on Review screen).
+	•	Compute unit cost CZK = (purchase price + landed share) * FX to CZK.
+	•	Create stock_movements row: reason RECEIVE, qty receivedQty - damagedQty, from in_transit to dockCode (or default receiving bin).
+	•	Update weighted average & on-hand qty.
+	3.	Set status posted_to_inventory.
+	•	Permissions:
+	•	Employee can: create receipt, scan/count, set notes/locations, submit.
+	•	Founder (or role OWNER) can: confirm landed cost, post to inventory.
+	•	UX polish:
+	•	If shelves full → allow typing an extra location. No blocking; just record it.
+	•	Delivery instructions drawer always one click away on the Receive screen.
+	•	Discrepancies list (missing/over/damaged) shows before Submit.
+
+Acceptance checklist:
+	•	A worker can receive with only three inputs: carrier, parcels, cartons — then scan and adjust.
+	•	A founder can confirm costs in one place and post.
+	•	Average cost and stock move are correct; FX handled once.
+
+⸻
+
+If you want, I can turn these into concrete files next (Drizzle migrations, Express handlers, and three React pages using shadcn) so you can paste directly.
