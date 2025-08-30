@@ -153,6 +153,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
         { name: "Supplier Processing", href: "/imports/supplier-processing" },
         { name: "At Warehouse", href: "/imports/at-warehouse" },
         { name: "International Transit", href: "/imports/international-transit" },
+        { name: "Inbound Receiving", href: "/inbound" },
       ],
     },
     {

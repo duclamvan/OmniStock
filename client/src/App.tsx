@@ -61,6 +61,10 @@ import CreatePurchase from "@/pages/Imports/CreatePurchase";
 import AtWarehouse from "@/pages/Imports/AtWarehouse";
 import InternationalTransit from "@/pages/Imports/InternationalTransit";
 import ImportKanbanDashboard from "@/pages/Imports/ImportKanbanDashboard";
+// Inbound Receiving pages
+import { SearchStart } from "@/pages/Inbound/SearchStart";
+import { Receive } from "@/pages/Inbound/Receive";
+import { Review } from "@/pages/Inbound/Review";
 // Legacy imports - commented out
 // import AllImports from "@/pages/Imports/AllImports";
 // import AddImportOrder from "@/pages/Imports/AddImportOrder";
@@ -150,6 +154,10 @@ function Router() {
         <Route path="/imports">
           {() => <ImportKanbanDashboard />}
         </Route>
+        {/* Inbound Receiving Routes */}
+        <Route path="/inbound" component={SearchStart} />
+        <Route path="/inbound/receive/:id" component={Receive} />
+        <Route path="/inbound/review/:id" component={Review} />
         <Route path="/reports">
           {() => <div>Reports page coming soon</div>}
         </Route>
