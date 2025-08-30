@@ -1531,8 +1531,8 @@ export default function InternationalTransit() {
                         <div className="flex items-center space-x-3">
                           {getShipmentTypeIcon(shipment.shipmentType || shipment.carrier || shipment.shippingMethod || '')}
                           <div>
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-semibold" data-testid={`shipment-tracking-${shipment.id}`}>
+                            <div className="flex items-start gap-2">
+                              <h3 className="font-semibold flex-1" data-testid={`shipment-tracking-${shipment.id}`}>
                                 {shipment.shipmentName || shipment.trackingNumber || `Shipment #${shipment.id}`}
                                 {shipment.totalUnits && shipment.unitType && (
                                   <span className="font-normal text-muted-foreground ml-1">
@@ -1540,7 +1540,7 @@ export default function InternationalTransit() {
                                   </span>
                                 )}
                               </h3>
-                              <Badge className={`text-xs ${getETAColor(shipment)}`}>
+                              <Badge className={`text-xs flex-shrink-0 ${getETAColor(shipment)}`}>
                                 <CalendarDays className="h-3 w-3 mr-1" />
                                 {getTimeRemaining(shipment)}
                               </Badge>
