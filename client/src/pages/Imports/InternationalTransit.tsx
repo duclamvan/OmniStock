@@ -706,7 +706,17 @@ export default function InternationalTransit() {
               data-testid="input-search-shipments"
             />
           </div>
-          <Dialog open={isCreateShipmentOpen} onOpenChange={setIsCreateShipmentOpen}>
+          <Dialog 
+            open={isCreateShipmentOpen || isEditShipmentOpen} 
+            onOpenChange={(open) => {
+              if (!open) {
+                setIsCreateShipmentOpen(false);
+                setIsEditShipmentOpen(false);
+                setSelectedPendingShipment(null);
+                setSelectedShipment(null);
+              }
+            }}
+          >
             <DialogTrigger asChild>
               <Button data-testid="button-create-shipment">
                 <Plus className="h-4 w-4 mr-2" />
@@ -716,15 +726,21 @@ export default function InternationalTransit() {
           <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-hidden flex flex-col">
             <DialogHeader className="flex-shrink-0">
               <DialogTitle>
-                {selectedPendingShipment ? 'Add Tracking Information' : 'Create New Shipment'}
+                {selectedShipment 
+                  ? 'Edit Shipment' 
+                  : selectedPendingShipment 
+                    ? 'Add Tracking Information' 
+                    : 'Create New Shipment'}
               </DialogTitle>
               <DialogDescription>
-                {selectedPendingShipment 
-                  ? `Add tracking for consolidation ${selectedPendingShipment.name} (${selectedPendingShipment.itemCount} items)`
-                  : 'Create a new international shipment with AI delivery prediction'}
+                {selectedShipment
+                  ? 'Update shipment tracking information and details'
+                  : selectedPendingShipment 
+                    ? `Add tracking for consolidation ${selectedPendingShipment.name} (${selectedPendingShipment.itemCount} items)`
+                    : 'Create a new international shipment with AI delivery prediction'}
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleCreateShipment} className="flex flex-col flex-1 overflow-hidden">
+            <form onSubmit={selectedShipment ? handleEditShipment : handleCreateShipment} className="flex flex-col flex-1 overflow-hidden">
               <div className="flex-1 overflow-y-auto px-1 space-y-6">
                 
                 {/* Basic Information Section */}
@@ -735,17 +751,36 @@ export default function InternationalTransit() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="shipmentName">Shipment Name</Label>
-                      <Input 
-                        id="shipmentName" 
-                        name="shipmentName" 
-                        data-testid="input-shipment-name"
-                        placeholder="AI will generate based on items"
-                      />
+                      <Label htmlFor="shipmentName">Shipment Name *</Label>
+                      <div className="flex gap-2">
+                        <Input 
+                          id="shipmentName" 
+                          name="shipmentName" 
+                          required
+                          defaultValue={selectedShipment?.shipmentName || ''}
+                          data-testid="input-shipment-name"
+                          placeholder="AI will generate based on items"
+                          className="flex-1"
+                        />
+                        {selectedShipment && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={() => {
+                              regenerateNameMutation.mutate(selectedShipment.id);
+                            }}
+                            disabled={regenerateNameMutation.isPending}
+                            title="Regenerate name based on contents"
+                          >
+                            <RefreshCw className={`h-4 w-4 ${regenerateNameMutation.isPending ? 'animate-spin' : ''}`} />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="shipmentType">Shipment Type</Label>
-                      <Select name="shipmentType" defaultValue={selectedPendingShipment?.shippingMethod || 'air_ddp_general'}>
+                      <Label htmlFor="shipmentType">Shipment Type *</Label>
+                      <Select name="shipmentType" required defaultValue={selectedShipment?.shipmentType || selectedPendingShipment?.shippingMethod || 'air_ddp_general'}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -816,17 +851,17 @@ export default function InternationalTransit() {
                       <Input 
                         id="trackingNumber" 
                         name="trackingNumber" 
-                        defaultValue={selectedPendingShipment?.trackingNumber || ''}
+                        defaultValue={selectedShipment?.trackingNumber || selectedPendingShipment?.trackingNumber || ''}
                         data-testid="input-tracking-number"
                         placeholder="Enter tracking number"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="carrier">Transit Carrier *</Label>
+                      <Label htmlFor="carrier">Transit Carrier</Label>
                       <Input 
                         id="carrier" 
                         name="carrier" 
-                        defaultValue={selectedPendingShipment?.carrier || ''}
+                        defaultValue={selectedShipment?.carrier || selectedPendingShipment?.carrier || ''}
                         data-testid="input-carrier"
                         placeholder="e.g., China Post, SF Express"
                       />
@@ -847,6 +882,7 @@ export default function InternationalTransit() {
                         id="endTrackingNumber" 
                         name="endTrackingNumber" 
                         required
+                        defaultValue={selectedShipment?.endTrackingNumber || ''}
                         data-testid="input-end-tracking-number"
                         placeholder="Local courier tracking"
                       />
@@ -857,6 +893,7 @@ export default function InternationalTransit() {
                         id="endCarrier" 
                         name="endCarrier" 
                         required
+                        defaultValue={selectedShipment?.endCarrier || ''}
                         data-testid="input-end-carrier"
                         placeholder="e.g., DPD, DHL, GLS"
                       />
@@ -879,35 +916,40 @@ export default function InternationalTransit() {
                         type="number"
                         step="0.01"
                         required 
-                        defaultValue={selectedPendingShipment?.targetWeight || ''}
+                        defaultValue={selectedShipment?.totalWeight || selectedPendingShipment?.targetWeight || ''}
                         data-testid="input-total-weight"
                         placeholder="35.000"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="totalUnits">Total Units</Label>
+                      <Label htmlFor="totalUnits">Total Units *</Label>
                       <Input 
                         id="totalUnits" 
                         name="totalUnits" 
                         type="number"
                         min="1"
-                        defaultValue="1"
+                        required
+                        defaultValue={selectedShipment?.totalUnits || '1'}
                         data-testid="input-total-units"
                         placeholder="1"
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="unitType">Unit Type</Label>
-                      <Select name="unitType" defaultValue="carton">
+                      <Select name="unitType" defaultValue={selectedShipment?.unitType || 'cartons'}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="carton">Carton</SelectItem>
-                          <SelectItem value="pallet">Pallet</SelectItem>
-                          <SelectItem value="container_20">20ft Container</SelectItem>
-                          <SelectItem value="container_40">40ft Container</SelectItem>
-                          <SelectItem value="container_40hc">40ft HC Container</SelectItem>
+                          <SelectItem value="boxes">Boxes</SelectItem>
+                          <SelectItem value="pallets">Pallets</SelectItem>
+                          <SelectItem value="bags">Bags</SelectItem>
+                          <SelectItem value="crates">Crates</SelectItem>
+                          <SelectItem value="20GP Container">20GP Container</SelectItem>
+                          <SelectItem value="40GP Container">40GP Container</SelectItem>
+                          <SelectItem value="40HQ Container">40HQ Container</SelectItem>
+                          <SelectItem value="45HQ Container">45HQ Container</SelectItem>
+                          <SelectItem value="LCL Shipment">LCL Shipment</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -926,14 +968,14 @@ export default function InternationalTransit() {
                       <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
                         <MapPin className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm">
-                          {selectedPendingShipment?.warehouse || 'China, Guangzhou'}
+                          {selectedShipment?.origin || selectedPendingShipment?.warehouse || 'China, Guangzhou'}
                         </span>
                       </div>
-                      <input type="hidden" name="origin" value={selectedPendingShipment?.warehouse || 'China, Guangzhou'} />
+                      <input type="hidden" name="origin" value={selectedShipment?.origin || selectedPendingShipment?.warehouse || 'China, Guangzhou'} />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="destination">Destination Warehouse *</Label>
-                      <Select name="destination" required defaultValue={warehouses.length > 0 ? warehouses[0].name : "Czech Republic, Prague"}>
+                      <Select name="destination" required defaultValue={selectedShipment?.destination || (warehouses.length > 0 ? warehouses[0].name : "Czech Republic, Prague")}>
                         <SelectTrigger data-testid="select-destination">
                           <SelectValue placeholder="Select warehouse" />
                         </SelectTrigger>
@@ -972,12 +1014,13 @@ export default function InternationalTransit() {
                         type="number" 
                         step="0.01" 
                         data-testid="input-shipping-cost"
+                        defaultValue={selectedShipment?.shippingCost || ''}
                         placeholder="0.00"
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="shippingCostCurrency">Currency</Label>
-                      <Select name="shippingCostCurrency" defaultValue="USD">
+                      <Select name="shippingCostCurrency" defaultValue={selectedShipment?.shippingCostCurrency || 'USD'}>
                         <SelectTrigger data-testid="select-currency">
                           <SelectValue placeholder="Select currency" />
                         </SelectTrigger>
@@ -1005,17 +1048,28 @@ export default function InternationalTransit() {
                       id="notes" 
                       name="notes" 
                       data-testid="textarea-notes"
+                      defaultValue={selectedShipment?.notes || ''}
                       placeholder="Additional shipping notes..."
                     />
                   </div>
                 </div>
               </div>
               <DialogFooter className="flex-shrink-0 mt-4 pt-4 border-t">
-                <Button type="button" variant="outline" onClick={() => setIsCreateShipmentOpen(false)}>
+                <Button type="button" variant="outline" onClick={() => {
+                  setIsCreateShipmentOpen(false);
+                  setIsEditShipmentOpen(false);
+                  setSelectedPendingShipment(null);
+                  setSelectedShipment(null);
+                }}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={createShipmentMutation.isPending} data-testid="button-submit-shipment">
-                  {createShipmentMutation.isPending ? "Creating..." : "Create Shipment"}
+                <Button type="submit" 
+                  disabled={selectedShipment ? editShipmentMutation.isPending : createShipmentMutation.isPending} 
+                  data-testid="button-submit-shipment">
+                  {selectedShipment 
+                    ? (editShipmentMutation.isPending ? "Updating..." : "Update Shipment")
+                    : (createShipmentMutation.isPending ? "Creating..." : "Create Shipment")
+                  }
                 </Button>
               </DialogFooter>
             </form>
@@ -1792,332 +1846,6 @@ export default function InternationalTransit() {
         </CardContent>
       </Card>
 
-      {/* Edit Shipment Dialog */}
-      <Dialog open={isEditShipmentOpen} onOpenChange={setIsEditShipmentOpen}>
-        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-hidden flex flex-col">
-          <DialogHeader className="flex-shrink-0">
-            <DialogTitle>Edit Shipment</DialogTitle>
-            <DialogDescription>
-              Update shipment tracking information and details
-            </DialogDescription>
-          </DialogHeader>
-          {selectedShipment && (
-            <form onSubmit={handleEditShipment} className="flex flex-col flex-1 overflow-hidden">
-              <div className="flex-1 overflow-y-auto px-1 space-y-6">
-                
-                {/* Basic Information Section */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 pb-2 border-b">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    <h3 className="text-sm font-semibold text-foreground">Basic Information</h3>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-shipmentName">Shipment Name</Label>
-                      <div className="flex gap-2">
-                        <Input 
-                          id="edit-shipmentName" 
-                          name="shipmentName" 
-                          defaultValue={selectedShipment.shipmentName}
-                          data-testid="input-edit-shipment-name"
-                          placeholder="Enter shipment name"
-                          className="flex-1"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          onClick={() => {
-                            regenerateNameMutation.mutate(selectedShipment.id);
-                          }}
-                          disabled={regenerateNameMutation.isPending}
-                          title="Regenerate name based on contents"
-                        >
-                          <RefreshCw className={`h-4 w-4 ${regenerateNameMutation.isPending ? 'animate-spin' : ''}`} />
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-shipmentType">Shipment Type</Label>
-                      <Select name="shipmentType" defaultValue={selectedShipment.shipmentType || 'air_ddp_general'}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="air_ddp_general">
-                            <div className="flex items-center gap-2">
-                              {getShipmentTypeIcon('air_ddp_general', 'h-4 w-4')}
-                              Air DDP (general)
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="air_ddp_sensitive">
-                            <div className="flex items-center gap-2">
-                              {getShipmentTypeIcon('air_ddp_sensitive', 'h-4 w-4')}
-                              Air DDP (sensitive)
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="express_general">
-                            <div className="flex items-center gap-2">
-                              {getShipmentTypeIcon('express_general', 'h-4 w-4')}
-                              Express (general)
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="express_sensitive">
-                            <div className="flex items-center gap-2">
-                              {getShipmentTypeIcon('express_sensitive', 'h-4 w-4')}
-                              Express (sensitive)
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="railway_general">
-                            <div className="flex items-center gap-2">
-                              {getShipmentTypeIcon('railway_general', 'h-4 w-4')}
-                              Railway (general)
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="railway_sensitive">
-                            <div className="flex items-center gap-2">
-                              {getShipmentTypeIcon('railway_sensitive', 'h-4 w-4')}
-                              Railway (sensitive)
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="sea_general">
-                            <div className="flex items-center gap-2">
-                              {getShipmentTypeIcon('sea_general', 'h-4 w-4')}
-                              Sea (general)
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="sea_sensitive">
-                            <div className="flex items-center gap-2">
-                              {getShipmentTypeIcon('sea_sensitive', 'h-4 w-4')}
-                              Sea (sensitive)
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Primary Tracking Section */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 pb-2 border-b">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <h3 className="text-sm font-semibold text-foreground">Primary Carrier (China to Europe)</h3>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-trackingNumber">Tracking Number</Label>
-                      <Input 
-                        id="edit-trackingNumber" 
-                        name="trackingNumber" 
-                        defaultValue={selectedShipment.trackingNumber}
-                        data-testid="input-edit-tracking"
-                        placeholder="Enter tracking number"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-carrier">Transit Carrier *</Label>
-                      <Input 
-                        id="edit-carrier" 
-                        name="carrier" 
-                        defaultValue={selectedShipment.carrier}
-                        placeholder="e.g., China Post, SF Express"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* End Carrier Section */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 pb-2 border-b">
-                    <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                    <h3 className="text-sm font-semibold text-foreground">End Carrier (European Courier)</h3>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-endTrackingNumber">End Tracking Number *</Label>
-                      <Input 
-                        id="edit-endTrackingNumber" 
-                        name="endTrackingNumber" 
-                        defaultValue={selectedShipment.endTrackingNumber || ''}
-                        required
-                        placeholder="Local courier tracking"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-endCarrier">End Carrier *</Label>
-                      <Input 
-                        id="edit-endCarrier" 
-                        name="endCarrier" 
-                        defaultValue={selectedShipment.endCarrier || ''}
-                        required
-                        placeholder="e.g., DPD, DHL, GLS"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Package Information Section */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 pb-2 border-b">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                    <h3 className="text-sm font-semibold text-foreground">Package Information</h3>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-totalWeight">Total Weight (kg) *</Label>
-                      <Input 
-                        id="edit-totalWeight" 
-                        name="totalWeight" 
-                        type="number" 
-                        step="0.01"
-                        defaultValue={selectedShipment.totalWeight || ''}
-                        required
-                        placeholder="35.000"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-totalUnits">Total Units</Label>
-                      <Input 
-                        id="edit-totalUnits" 
-                        name="totalUnits" 
-                        type="number"
-                        min="1"
-                        defaultValue={selectedShipment.totalUnits || '1'}
-                        placeholder="1"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-unitType">Unit Type</Label>
-                      <Select name="unitType" defaultValue={selectedShipment.unitType || 'cartons'}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="boxes">Boxes</SelectItem>
-                          <SelectItem value="pallets">Pallets</SelectItem>
-                          <SelectItem value="bags">Bags</SelectItem>
-                          <SelectItem value="crates">Crates</SelectItem>
-                          <SelectItem value="20GP Container">20GP Container</SelectItem>
-                          <SelectItem value="40GP Container">40GP Container</SelectItem>
-                          <SelectItem value="40HQ Container">40HQ Container</SelectItem>
-                          <SelectItem value="45HQ Container">45HQ Container</SelectItem>
-                          <SelectItem value="LCL Shipment">LCL Shipment</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Shipping Details Section */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 pb-2 border-b">
-                    <div className="w-2 h-2 bg-cyan-500 rounded-full"></div>
-                    <h3 className="text-sm font-semibold text-foreground">Shipping Details</h3>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-origin">Origin</Label>
-                      <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
-                        <MapPin className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">
-                          {selectedShipment.origin || 'China, Guangzhou'}
-                        </span>
-                      </div>
-                      <input type="hidden" name="origin" value={selectedShipment.origin || 'China, Guangzhou'} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-destination">Destination Warehouse *</Label>
-                      <Select name="destination" required defaultValue={selectedShipment.destination || (warehouses.length > 0 ? warehouses[0].name : "Czech Republic, Prague")}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select warehouse" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {warehouses.length > 0 ? (
-                            warehouses.map((warehouse: any) => (
-                              <SelectItem key={warehouse.id} value={warehouse.name}>
-                                <div className="flex flex-col">
-                                  <span className="font-medium">{warehouse.name}</span>
-                                  {(warehouse.address || warehouse.city || warehouse.country) && (
-                                    <span className="text-xs text-muted-foreground">
-                                      {[warehouse.address, warehouse.city, warehouse.country].filter(Boolean).join(', ')}
-                                    </span>
-                                  )}
-                                </div>
-                              </SelectItem>
-                            ))
-                          ) : (
-                            <>
-                              <SelectItem value="Czech Republic, Prague">Czech Republic, Prague</SelectItem>
-                              <SelectItem value="USA, California">USA, California</SelectItem>
-                              <SelectItem value="USA, New York">USA, New York</SelectItem>
-                              <SelectItem value="UK, London">UK, London</SelectItem>
-                            </>
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-shippingCost">Shipping Cost</Label>
-                      <Input 
-                        id="edit-shippingCost" 
-                        name="shippingCost" 
-                        type="number" 
-                        step="0.01" 
-                        defaultValue={selectedShipment.shippingCost}
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-shippingCostCurrency">Currency</Label>
-                      <Select name="shippingCostCurrency" defaultValue={selectedShipment.shippingCostCurrency || 'USD'}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="USD">USD</SelectItem>
-                          <SelectItem value="EUR">EUR</SelectItem>
-                          <SelectItem value="CZK">CZK</SelectItem>
-                          <SelectItem value="CNY">CNY</SelectItem>
-                          <SelectItem value="VND">VND</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Additional Notes Section */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 pb-2 border-b">
-                    <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
-                    <h3 className="text-sm font-semibold text-foreground">Additional Notes</h3>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="edit-notes">Notes</Label>
-                    <Textarea 
-                      id="edit-notes" 
-                      name="notes" 
-                      defaultValue={selectedShipment.notes || ''}
-                      placeholder="Additional notes about the shipment"
-                      rows={3}
-                    />
-                  </div>
-                </div>
-              </div>
-              <DialogFooter className="flex-shrink-0 mt-4 pt-4 border-t">
-                <Button type="button" variant="outline" onClick={() => setIsEditShipmentOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={editShipmentMutation.isPending} data-testid="button-save-shipment">
-                  {editShipmentMutation.isPending ? "Saving..." : "Save Changes"}
-                </Button>
-              </DialogFooter>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
