@@ -216,13 +216,22 @@ export default function InternationalTransit() {
       return response.json();
     },
     onSuccess: (data) => {
+      // Immediately update the query cache with the new data
+      queryClient.setQueryData(['/api/imports/shipments'], (oldData: any) => {
+        if (!oldData) return oldData;
+        return oldData.map((shipment: any) => 
+          shipment.id === data.id ? { ...shipment, shipmentName: data.shipmentName } : shipment
+        );
+      });
+      
+      // Invalidate to ensure consistency
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
       
       // Update the selected shipment if in edit modal
       if (selectedShipment && selectedShipment.id === data.id) {
         setSelectedShipment({ ...selectedShipment, shipmentName: data.shipmentName });
-        // Update the input field value
-        const input = document.getElementById('edit-shipmentName') as HTMLInputElement;
+        // Update the input field value (use correct ID)
+        const input = document.getElementById('shipmentName') as HTMLInputElement;
         if (input) {
           input.value = data.shipmentName;
         }

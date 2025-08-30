@@ -1267,25 +1267,50 @@ const generateAIShipmentName = async (consolidationId: number | null, items?: an
       return `Shipment #${consolidationId || Date.now()}`;
     }
     
-    // Analyze items to determine category/theme
+    // For single item, use the actual item name (shortened if needed)
+    if (itemsList.length === 1) {
+      const itemName = itemsList[0].name || 'Item';
+      // Shorten very long names
+      if (itemName.length > 40) {
+        return itemName.substring(0, 40) + '...';
+      }
+      return itemName;
+    }
+    
+    // For two items, use both names
+    if (itemsList.length === 2) {
+      const item1 = itemsList[0].name || 'Item';
+      const item2 = itemsList[1].name || 'Item';
+      
+      // Shorten each name if needed
+      const short1 = item1.length > 20 ? item1.substring(0, 20) + '...' : item1;
+      const short2 = item2.length > 20 ? item2.substring(0, 20) + '...' : item2;
+      
+      return `${short1} & ${short2}`;
+    }
+    
+    // For 3+ items, use category-based naming
     const itemNames = itemsList.map(item => (item.name || '').toLowerCase());
     
-    // Category detection logic
+    // Enhanced category detection logic with nail/spa/beauty products
     const categories = {
-      electronics: ['laptop', 'computer', 'phone', 'tablet', 'keyboard', 'mouse', 'monitor', 'cable', 'charger', 'headphone', 'speaker', 'camera', 'smartwatch', 'console', 'gaming', 'usb', 'ssd', 'ram', 'processor', 'gpu'],
-      clothing: ['shirt', 'pants', 'dress', 'jacket', 'coat', 'shoes', 'hat', 'sock', 'underwear', 'jeans', 'sweater', 'hoodie', 'suit', 'tie', 'belt', 'scarf', 'glove', 'blazer', 't-shirt', 'shorts'],
-      beauty: ['cosmetic', 'makeup', 'perfume', 'skincare', 'lotion', 'cream', 'shampoo', 'conditioner', 'soap', 'brush', 'lipstick', 'mascara', 'foundation', 'serum', 'cleanser', 'moisturizer'],
-      toys: ['toy', 'game', 'puzzle', 'doll', 'lego', 'action figure', 'board game', 'plush', 'stuffed', 'educational', 'building blocks', 'remote control'],
-      books: ['book', 'novel', 'magazine', 'comic', 'textbook', 'notebook', 'journal', 'diary', 'encyclopedia', 'manga', 'guide', 'manual'],
-      sports: ['ball', 'racket', 'gym', 'fitness', 'weight', 'yoga', 'bike', 'helmet', 'glove', 'shoe', 'equipment', 'gear', 'mat', 'dumbbell'],
-      home: ['furniture', 'chair', 'table', 'lamp', 'rug', 'curtain', 'pillow', 'blanket', 'towel', 'kitchen', 'utensil', 'plate', 'cup', 'mug', 'decoration', 'bedding'],
-      tools: ['tool', 'hammer', 'screwdriver', 'drill', 'saw', 'wrench', 'plier', 'measuring', 'level', 'tape', 'nail', 'screw', 'bolt'],
-      food: ['food', 'snack', 'candy', 'chocolate', 'coffee', 'tea', 'spice', 'sauce', 'oil', 'vinegar', 'beverage', 'drink', 'cereal', 'pasta'],
-      office: ['pen', 'pencil', 'paper', 'stapler', 'folder', 'binder', 'clipboard', 'envelope', 'stamp', 'desk', 'organizer', 'marker', 'eraser'],
-      jewelry: ['ring', 'necklace', 'bracelet', 'earring', 'watch', 'chain', 'pendant', 'brooch', 'jewelry', 'gold', 'silver', 'diamond', 'gem'],
+      nails: ['nail', 'manicure', 'pedicure', 'polish', 'gel', 'acrylic', 'cuticle', 'nail art', 'nail file', 'buffer', 'top coat', 'base coat', 'remover', 'nail glue', 'nail tip'],
+      spa: ['spa', 'massage', 'aromatherapy', 'essential oil', 'candle', 'bath salt', 'bath bomb', 'diffuser', 'relax', 'therapy', 'hot stone', 'sauna', 'facial'],
+      hygiene: ['hygiene', 'sanitizer', 'disinfectant', 'antibacterial', 'antiseptic', 'hand wash', 'body wash', 'deodorant', 'toothpaste', 'toothbrush', 'mouthwash', 'floss', 'tissue', 'wipe', 'toilet'],
+      beauty: ['cosmetic', 'makeup', 'perfume', 'skincare', 'lotion', 'cream', 'shampoo', 'conditioner', 'soap', 'brush', 'lipstick', 'mascara', 'foundation', 'serum', 'cleanser', 'moisturizer', 'beauty', 'face mask', 'eye cream', 'toner'],
+      electronics: ['laptop', 'computer', 'phone', 'tablet', 'keyboard', 'mouse', 'monitor', 'cable', 'charger', 'headphone', 'speaker', 'camera', 'smartwatch', 'console', 'gaming', 'usb', 'ssd', 'ram', 'processor', 'gpu', 'electronic'],
+      clothing: ['shirt', 'pants', 'dress', 'jacket', 'coat', 'shoes', 'hat', 'sock', 'underwear', 'jeans', 'sweater', 'hoodie', 'suit', 'tie', 'belt', 'scarf', 'glove', 'blazer', 't-shirt', 'shorts', 'cloth'],
+      toys: ['toy', 'game', 'puzzle', 'doll', 'lego', 'action figure', 'board game', 'plush', 'stuffed', 'educational', 'building blocks', 'remote control', 'play'],
+      books: ['book', 'novel', 'magazine', 'comic', 'textbook', 'notebook', 'journal', 'diary', 'encyclopedia', 'manga', 'guide', 'manual', 'read'],
+      sports: ['ball', 'racket', 'gym', 'fitness', 'weight', 'yoga', 'bike', 'helmet', 'glove', 'sport', 'equipment', 'gear', 'mat', 'dumbbell', 'exercise'],
+      home: ['furniture', 'chair', 'table', 'lamp', 'rug', 'curtain', 'pillow', 'blanket', 'towel', 'kitchen', 'utensil', 'plate', 'cup', 'mug', 'decoration', 'bedding', 'home'],
+      tools: ['tool', 'hammer', 'screwdriver', 'drill', 'saw', 'wrench', 'plier', 'measuring', 'level', 'tape', 'screw', 'bolt', 'hardware'],
+      food: ['food', 'snack', 'candy', 'chocolate', 'coffee', 'tea', 'spice', 'sauce', 'oil', 'vinegar', 'beverage', 'drink', 'cereal', 'pasta', 'eat'],
+      office: ['pen', 'pencil', 'paper', 'stapler', 'folder', 'binder', 'clipboard', 'envelope', 'stamp', 'desk', 'organizer', 'marker', 'eraser', 'office'],
+      jewelry: ['ring', 'necklace', 'bracelet', 'earring', 'watch', 'chain', 'pendant', 'brooch', 'jewelry', 'gold', 'silver', 'diamond', 'gem', 'jewel'],
       automotive: ['car', 'auto', 'vehicle', 'tire', 'brake', 'engine', 'oil', 'filter', 'battery', 'spark', 'part', 'accessory', 'motor'],
-      health: ['medicine', 'vitamin', 'supplement', 'medical', 'health', 'pill', 'tablet', 'capsule', 'bandage', 'first aid', 'thermometer'],
-      pet: ['pet', 'dog', 'cat', 'bird', 'fish', 'animal', 'collar', 'leash', 'cage', 'aquarium', 'treat', 'toy']
+      health: ['medicine', 'vitamin', 'supplement', 'medical', 'health', 'pill', 'tablet', 'capsule', 'bandage', 'first aid', 'thermometer', 'pharma'],
+      pet: ['pet', 'dog', 'cat', 'bird', 'fish', 'animal', 'collar', 'leash', 'cage', 'aquarium', 'treat', 'feed']
     };
     
     // Count matches for each category
@@ -1312,27 +1337,48 @@ const generateAIShipmentName = async (consolidationId: number | null, items?: an
     
     if (sortedCategories.length === 0) {
       // No category detected, use generic name
-      return itemsList.length === 1 ? 'Single Item Shipment' : 'Mixed Goods Shipment';
-    } else if (sortedCategories.length === 1 || 
-               (sortedCategories[0] && sortedCategories[1] && sortedCategories[0][1] > sortedCategories[1][1] * 2)) {
+      return 'Mixed Goods Shipment';
+    } 
+    
+    // Check for special categories first (nails, spa, hygiene, beauty)
+    const specialCategories = ['nails', 'spa', 'hygiene', 'beauty'];
+    const dominantSpecial = sortedCategories.find(([cat]) => specialCategories.includes(cat));
+    
+    if (dominantSpecial && dominantSpecial[1] >= Math.ceil(itemsList.length * 0.5)) {
+      // If a special category dominates (50%+ of items), use it
+      const categoryName = dominantSpecial[0].charAt(0).toUpperCase() + dominantSpecial[0].slice(1);
+      
+      if (categoryName === 'Nails') {
+        return itemsList.length <= 5 ? 'Nail Care Set' : 'Nail Supplies Collection';
+      } else if (categoryName === 'Spa') {
+        return itemsList.length <= 5 ? 'Spa Essentials' : 'Spa Collection';
+      } else if (categoryName === 'Hygiene') {
+        return itemsList.length <= 5 ? 'Hygiene Bundle' : 'Hygiene Supplies';
+      } else if (categoryName === 'Beauty') {
+        return itemsList.length <= 5 ? 'Beauty Set' : 'Beauty Collection';
+      }
+    }
+    
+    // Check if single category dominates
+    if (sortedCategories.length === 1 || 
+        (sortedCategories[0] && sortedCategories[1] && sortedCategories[0][1] > sortedCategories[1][1] * 2)) {
       // Single dominant category
       const category = sortedCategories[0][0];
       const categoryName = category.charAt(0).toUpperCase() + category.slice(1);
       
-      if (itemsList.length === 1) {
-        return `${categoryName} Item`;
-      } else if (itemsList.length <= 3) {
+      if (itemsList.length <= 4) {
         return `${categoryName} Bundle`;
       } else {
         return `${categoryName} Collection`;
       }
-    } else if (sortedCategories.length === 2) {
-      // Two main categories
+    } else if (sortedCategories.length === 2 && 
+               sortedCategories[0][1] + sortedCategories[1][1] >= itemsList.length * 0.7) {
+      // Two main categories cover 70%+ of items
       const cat1 = sortedCategories[0][0].charAt(0).toUpperCase() + sortedCategories[0][0].slice(1);
       const cat2 = sortedCategories[1][0].charAt(0).toUpperCase() + sortedCategories[1][0].slice(1);
       return `${cat1} & ${cat2} Mix`;
     } else {
-      // Multiple categories
+      // Multiple categories or no clear dominance
       return 'Mixed Goods Shipment';
     }
   } catch (error) {
