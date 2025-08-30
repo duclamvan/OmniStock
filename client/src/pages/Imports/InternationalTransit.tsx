@@ -1269,10 +1269,10 @@ export default function InternationalTransit() {
                       <p className="text-xs font-medium text-muted-foreground mb-1">Contents:</p>
                       <div className="space-y-0.5">
                         {pending.items.map((item: any, index: number) => (
-                          <div key={index} className="flex items-center gap-2 text-xs">
-                            <span className="truncate flex-1">{item.name}</span>
+                          <div key={index} className="flex items-center gap-1 text-xs">
+                            <span className="truncate">{item.name}</span>
                             <Badge variant="secondary" className="text-xs px-1 py-0 h-5 min-w-[30px] flex items-center justify-center">
-                              {item.quantity || 1}
+                              x{item.quantity || 1}
                             </Badge>
                           </div>
                         ))}
@@ -1689,9 +1689,9 @@ export default function InternationalTransit() {
                           <p className="text-xs font-medium text-muted-foreground mb-2">Package Contents ({shipment.itemCount} items)</p>
                           <div className="space-y-1">
                             {shipment.items.map((item: any, index: number) => (
-                              <div key={index} className="flex items-center justify-between text-xs">
-                                <span className="truncate flex-1">{item.name || `Item ${index + 1}`}</span>
-                                <span className="text-muted-foreground ml-2">x{item.quantity || 1}</span>
+                              <div key={index} className="flex items-center gap-2 text-xs">
+                                <span className="truncate">{item.name || `Item ${index + 1}`}</span>
+                                <span className="text-muted-foreground">x{item.quantity || 1}</span>
                               </div>
                             ))}
                           </div>
