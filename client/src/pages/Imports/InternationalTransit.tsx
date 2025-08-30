@@ -1686,7 +1686,7 @@ export default function InternationalTransit() {
                       {/* Shipment Items - Always Show */}
                       {shipment.items && shipment.items.length > 0 && (
                         <div className="bg-gray-50 dark:bg-gray-800/50 rounded-md p-3 mb-3">
-                          <p className="text-xs font-medium text-muted-foreground mb-2">Package Contents ({shipment.itemCount} items)</p>
+                          <p className="text-xs font-medium text-muted-foreground mb-2">Package Contents ({shipment.totalUnits || shipment.itemCount} {shipment.unitType || 'items'})</p>
                           <div className="space-y-1">
                             {shipment.items.map((item: any, index: number) => (
                               <div key={index} className="flex items-center gap-2 text-xs">
