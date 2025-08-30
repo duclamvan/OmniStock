@@ -812,11 +812,10 @@ export default function InternationalTransit() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="trackingNumber">Tracking Number *</Label>
+                      <Label htmlFor="trackingNumber">Tracking Number</Label>
                       <Input 
                         id="trackingNumber" 
                         name="trackingNumber" 
-                        required 
                         defaultValue={selectedPendingShipment?.trackingNumber || ''}
                         data-testid="input-tracking-number"
                         placeholder="Enter tracking number"
@@ -827,7 +826,6 @@ export default function InternationalTransit() {
                       <Input 
                         id="carrier" 
                         name="carrier" 
-                        required 
                         defaultValue={selectedPendingShipment?.carrier || ''}
                         data-testid="input-carrier"
                         placeholder="e.g., China Post, SF Express"
@@ -844,19 +842,21 @@ export default function InternationalTransit() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="endTrackingNumber">End Tracking Number</Label>
+                      <Label htmlFor="endTrackingNumber">End Tracking Number *</Label>
                       <Input 
                         id="endTrackingNumber" 
                         name="endTrackingNumber" 
+                        required
                         data-testid="input-end-tracking-number"
                         placeholder="Local courier tracking"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="endCarrier">End Carrier</Label>
+                      <Label htmlFor="endCarrier">End Carrier *</Label>
                       <Input 
                         id="endCarrier" 
                         name="endCarrier" 
+                        required
                         data-testid="input-end-carrier"
                         placeholder="e.g., DPD, DHL, GLS"
                       />
@@ -1906,12 +1906,11 @@ export default function InternationalTransit() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="edit-trackingNumber">Tracking Number *</Label>
+                      <Label htmlFor="edit-trackingNumber">Tracking Number</Label>
                       <Input 
                         id="edit-trackingNumber" 
                         name="trackingNumber" 
                         defaultValue={selectedShipment.trackingNumber}
-                        required
                         data-testid="input-edit-tracking"
                         placeholder="Enter tracking number"
                       />
@@ -1922,7 +1921,6 @@ export default function InternationalTransit() {
                         id="edit-carrier" 
                         name="carrier" 
                         defaultValue={selectedShipment.carrier}
-                        required
                         placeholder="e.g., China Post, SF Express"
                       />
                     </div>
@@ -1937,20 +1935,22 @@ export default function InternationalTransit() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="edit-endTrackingNumber">End Tracking Number</Label>
+                      <Label htmlFor="edit-endTrackingNumber">End Tracking Number *</Label>
                       <Input 
                         id="edit-endTrackingNumber" 
                         name="endTrackingNumber" 
                         defaultValue={selectedShipment.endTrackingNumber || ''}
+                        required
                         placeholder="Local courier tracking"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="edit-endCarrier">End Carrier</Label>
+                      <Label htmlFor="edit-endCarrier">End Carrier *</Label>
                       <Input 
                         id="edit-endCarrier" 
                         name="endCarrier" 
                         defaultValue={selectedShipment.endCarrier || ''}
+                        required
                         placeholder="e.g., DPD, DHL, GLS"
                       />
                     </div>
