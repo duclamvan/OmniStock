@@ -81,7 +81,9 @@ function Router() {
     <Switch>
       <Layout>
         <Route path="/" component={Home} />
-        <Route path="/orders" component={AllOrders} />
+        <Route path="/orders">
+          {() => <AllOrders />}
+        </Route>
         <Route path="/orders/add" component={AddOrder} />
         <Route path="/orders/pick-pack" component={PickPack} />
         <Route path="/orders/to-fulfill">
