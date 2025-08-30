@@ -54,12 +54,9 @@ export function SearchStart() {
   // Create receipt mutation
   const createReceiptMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest("/api/receiving/receipts", {
-        method: "POST",
-        body: JSON.stringify(data)
-      });
+      return apiRequest("/api/receiving/receipts", "POST", data);
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast({
         title: "Receipt created",
         description: "Starting receiving process..."

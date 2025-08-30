@@ -57,12 +57,9 @@ export function Review() {
   // Calculate landed costs mutation
   const calculateCostsMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest(`/api/receiving/receipts/${id}/calculate-costs`, {
-        method: "POST",
-        body: JSON.stringify({
-          costs: landedCosts,
-          method: allocationMethod
-        })
+      return apiRequest(`/api/receiving/receipts/${id}/calculate-costs`, "POST", {
+        costs: landedCosts,
+        method: allocationMethod
       });
     },
     onSuccess: (data) => {
@@ -84,9 +81,7 @@ export function Review() {
   // Post to inventory mutation
   const postToInventoryMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest(`/api/receiving/receipts/${id}/post`, {
-        method: "POST"
-      });
+      return apiRequest(`/api/receiving/receipts/${id}/post`, "POST");
     },
     onSuccess: () => {
       toast({

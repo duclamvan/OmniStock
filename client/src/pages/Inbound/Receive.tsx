@@ -47,10 +47,7 @@ export function Receive() {
   // Scan barcode mutation
   const scanMutation = useMutation({
     mutationFn: async (barcode: string) => {
-      return apiRequest(`/api/receiving/receipts/${id}/scan`, {
-        method: "POST",
-        body: JSON.stringify({ barcode, quantity: 1 })
-      });
+      return apiRequest(`/api/receiving/receipts/${id}/scan`, "POST", { barcode, quantity: 1 });
     },
     onSuccess: () => {
       toast({
@@ -72,10 +69,7 @@ export function Receive() {
   // Manual add mutation
   const manualAddMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest(`/api/receiving/receipts/${id}/lines`, {
-        method: "POST",
-        body: JSON.stringify(data)
-      });
+      return apiRequest(`/api/receiving/receipts/${id}/lines`, "POST", data);
     },
     onSuccess: () => {
       toast({
@@ -99,10 +93,7 @@ export function Receive() {
   // Update line mutation
   const updateLineMutation = useMutation({
     mutationFn: async ({ lineId, quantity }: { lineId: string; quantity: number }) => {
-      return apiRequest(`/api/receiving/receipts/${id}/lines/${lineId}`, {
-        method: "PATCH",
-        body: JSON.stringify({ quantity })
-      });
+      return apiRequest(`/api/receiving/receipts/${id}/lines/${lineId}`, "PATCH", { quantity });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/receiving/receipts", id] });
@@ -112,9 +103,7 @@ export function Receive() {
   // Delete line mutation
   const deleteLineMutation = useMutation({
     mutationFn: async (lineId: string) => {
-      return apiRequest(`/api/receiving/receipts/${id}/lines/${lineId}`, {
-        method: "DELETE"
-      });
+      return apiRequest(`/api/receiving/receipts/${id}/lines/${lineId}`, "DELETE");
     },
     onSuccess: () => {
       toast({
@@ -128,9 +117,7 @@ export function Receive() {
   // Complete receipt mutation
   const completeReceiptMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest(`/api/receiving/receipts/${id}/complete`, {
-        method: "POST"
-      });
+      return apiRequest(`/api/receiving/receipts/${id}/complete`, "POST");
     },
     onSuccess: () => {
       toast({
