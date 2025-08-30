@@ -1949,16 +1949,21 @@ export default function InternationalTransit() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="edit-unitType">Unit Type</Label>
-                      <Select name="unitType" defaultValue={selectedShipment.unitType || 'carton'}>
+                      <Select name="unitType" defaultValue={selectedShipment.unitType || 'cartons'}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="carton">Carton</SelectItem>
-                          <SelectItem value="pallet">Pallet</SelectItem>
-                          <SelectItem value="container_20">20ft Container</SelectItem>
-                          <SelectItem value="container_40">40ft Container</SelectItem>
-                          <SelectItem value="container_40hc">40ft HC Container</SelectItem>
+                          <SelectItem value="cartons">Cartons</SelectItem>
+                          <SelectItem value="pallets">Pallets</SelectItem>
+                          <SelectItem value="boxes">Boxes</SelectItem>
+                          <SelectItem value="bags">Bags</SelectItem>
+                          <SelectItem value="crates">Crates</SelectItem>
+                          <SelectItem value="parcels">Parcels</SelectItem>
+                          <SelectItem value="packages">Packages</SelectItem>
+                          <SelectItem value="20ft Container">20ft Container</SelectItem>
+                          <SelectItem value="40ft Container">40ft Container</SelectItem>
+                          <SelectItem value="40ft HC Container">40ft HC Container</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
