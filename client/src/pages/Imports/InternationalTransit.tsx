@@ -718,7 +718,14 @@ export default function InternationalTransit() {
             }}
           >
             <DialogTrigger asChild>
-              <Button data-testid="button-create-shipment">
+              <Button 
+                data-testid="button-create-shipment"
+                onClick={() => {
+                  setIsCreateShipmentOpen(true);
+                  setSelectedPendingShipment(null);
+                  setSelectedShipment(null);
+                }}
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Create Shipment
               </Button>
@@ -766,23 +773,27 @@ export default function InternationalTransit() {
                           type="button"
                           variant="outline"
                           size="icon"
-                          onClick={() => {
+                          onClick={async () => {
                             if (selectedShipment) {
                               // For edit mode, regenerate based on existing shipment
                               regenerateNameMutation.mutate(selectedShipment.id);
                             } else if (selectedPendingShipment) {
-                              // For add tracking mode, generate based on consolidation items
-                              const generatedName = `${selectedPendingShipment.name} - ${selectedPendingShipment.itemCount} items`;
+                              // For add tracking mode, generate name based on actual items
+                              // Use the items from the consolidation to generate a meaningful name
+                              const itemNames = selectedPendingShipment.items ? 
+                                selectedPendingShipment.items.slice(0, 3).map((item: any) => item.name).join(', ') : 
+                                'Mixed Items';
+                              const generatedName = itemNames + (selectedPendingShipment.itemCount > 3 ? ' and more' : '');
                               const input = document.getElementById('shipmentName') as HTMLInputElement;
                               if (input) input.value = generatedName;
                             } else {
-                              // For create mode, suggest a default name
+                              // For create mode, prompt to add items first
                               const input = document.getElementById('shipmentName') as HTMLInputElement;
-                              if (input) input.value = `Shipment ${new Date().toISOString().split('T')[0]}`;
+                              if (input) input.value = 'Mixed Goods Shipment';
                             }
                           }}
                           disabled={regenerateNameMutation.isPending}
-                          title={selectedShipment ? "Regenerate name based on contents" : "Generate name suggestion"}
+                          title={selectedShipment ? "Regenerate name based on contents" : "Generate name from items"}
                         >
                           <RefreshCw className={`h-4 w-4 ${regenerateNameMutation.isPending ? 'animate-spin' : ''}`} />
                         </Button>
