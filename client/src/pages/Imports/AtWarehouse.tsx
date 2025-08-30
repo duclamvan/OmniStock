@@ -2528,12 +2528,6 @@ export default function AtWarehouse() {
                                       </DropdownMenuTrigger>
                                       <DropdownMenuContent align="end">
                                         <DropdownMenuItem
-                                          onClick={() => handleShipConsolidation(consolidation)}
-                                        >
-                                          <Ship className="h-3 w-3 mr-2" />
-                                          Ship Consolidation
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem
                                           onClick={async () => {
                                             // Fetch fresh items for this specific consolidation
                                             const items = await fetchConsolidationItems(consolidation.id);
@@ -2686,6 +2680,19 @@ export default function AtWarehouse() {
                                   </div>
                                 )}
                                   </Droppable>
+                                  
+                                  {/* Ship Consolidation Button - Always at bottom */}
+                                  <div className="mt-3 pt-3 border-t">
+                                    <Button 
+                                      onClick={() => handleShipConsolidation(consolidation)}
+                                      className="w-full"
+                                      size="sm"
+                                      data-testid={`button-ship-consolidation-${consolidation.id}`}
+                                    >
+                                      <Ship className="h-4 w-4 mr-2" />
+                                      Ship Consolidation
+                                    </Button>
+                                  </div>
                             </div>
                           </div>
                         ))}
