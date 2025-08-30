@@ -1267,25 +1267,74 @@ const generateAIShipmentName = async (consolidationId: number | null, items?: an
       return `Shipment #${consolidationId || Date.now()}`;
     }
     
-    // Get first 3 items for the name
-    const mainItems = itemsList.slice(0, 3);
-    const itemNames = mainItems
-      .map(item => {
-        // Shorten long product names
-        const name = item.name || 'Item';
-        const shortName = name.length > 20 ? name.substring(0, 20) + '...' : name;
-        // No quantity in the name anymore
-        return shortName;
-      })
-      .join(', ');
+    // Analyze items to determine category/theme
+    const itemNames = itemsList.map(item => (item.name || '').toLowerCase());
     
-    // Add count if more items exist (without numbers)
-    const moreItems = itemsList.length > 3 ? ' & more' : '';
+    // Category detection logic
+    const categories = {
+      electronics: ['laptop', 'computer', 'phone', 'tablet', 'keyboard', 'mouse', 'monitor', 'cable', 'charger', 'headphone', 'speaker', 'camera', 'smartwatch', 'console', 'gaming', 'usb', 'ssd', 'ram', 'processor', 'gpu'],
+      clothing: ['shirt', 'pants', 'dress', 'jacket', 'coat', 'shoes', 'hat', 'sock', 'underwear', 'jeans', 'sweater', 'hoodie', 'suit', 'tie', 'belt', 'scarf', 'glove', 'blazer', 't-shirt', 'shorts'],
+      beauty: ['cosmetic', 'makeup', 'perfume', 'skincare', 'lotion', 'cream', 'shampoo', 'conditioner', 'soap', 'brush', 'lipstick', 'mascara', 'foundation', 'serum', 'cleanser', 'moisturizer'],
+      toys: ['toy', 'game', 'puzzle', 'doll', 'lego', 'action figure', 'board game', 'plush', 'stuffed', 'educational', 'building blocks', 'remote control'],
+      books: ['book', 'novel', 'magazine', 'comic', 'textbook', 'notebook', 'journal', 'diary', 'encyclopedia', 'manga', 'guide', 'manual'],
+      sports: ['ball', 'racket', 'gym', 'fitness', 'weight', 'yoga', 'bike', 'helmet', 'glove', 'shoe', 'equipment', 'gear', 'mat', 'dumbbell'],
+      home: ['furniture', 'chair', 'table', 'lamp', 'rug', 'curtain', 'pillow', 'blanket', 'towel', 'kitchen', 'utensil', 'plate', 'cup', 'mug', 'decoration', 'bedding'],
+      tools: ['tool', 'hammer', 'screwdriver', 'drill', 'saw', 'wrench', 'plier', 'measuring', 'level', 'tape', 'nail', 'screw', 'bolt'],
+      food: ['food', 'snack', 'candy', 'chocolate', 'coffee', 'tea', 'spice', 'sauce', 'oil', 'vinegar', 'beverage', 'drink', 'cereal', 'pasta'],
+      office: ['pen', 'pencil', 'paper', 'stapler', 'folder', 'binder', 'clipboard', 'envelope', 'stamp', 'desk', 'organizer', 'marker', 'eraser'],
+      jewelry: ['ring', 'necklace', 'bracelet', 'earring', 'watch', 'chain', 'pendant', 'brooch', 'jewelry', 'gold', 'silver', 'diamond', 'gem'],
+      automotive: ['car', 'auto', 'vehicle', 'tire', 'brake', 'engine', 'oil', 'filter', 'battery', 'spark', 'part', 'accessory', 'motor'],
+      health: ['medicine', 'vitamin', 'supplement', 'medical', 'health', 'pill', 'tablet', 'capsule', 'bandage', 'first aid', 'thermometer'],
+      pet: ['pet', 'dog', 'cat', 'bird', 'fish', 'animal', 'collar', 'leash', 'cage', 'aquarium', 'treat', 'toy']
+    };
     
-    // Generate concise name focused on contents without counts
-    const generatedName = `${itemNames}${moreItems}`;
+    // Count matches for each category
+    const categoryScores: Record<string, number> = {};
     
-    return generatedName;
+    for (const [category, keywords] of Object.entries(categories)) {
+      let score = 0;
+      for (const itemName of itemNames) {
+        for (const keyword of keywords) {
+          if (itemName.includes(keyword)) {
+            score++;
+            break; // Count each item only once per category
+          }
+        }
+      }
+      if (score > 0) {
+        categoryScores[category] = score;
+      }
+    }
+    
+    // Determine the dominant category
+    const sortedCategories = Object.entries(categoryScores)
+      .sort((a, b) => b[1] - a[1]);
+    
+    if (sortedCategories.length === 0) {
+      // No category detected, use generic name
+      return itemsList.length === 1 ? 'Single Item Shipment' : 'Mixed Goods Shipment';
+    } else if (sortedCategories.length === 1 || 
+               (sortedCategories[0] && sortedCategories[1] && sortedCategories[0][1] > sortedCategories[1][1] * 2)) {
+      // Single dominant category
+      const category = sortedCategories[0][0];
+      const categoryName = category.charAt(0).toUpperCase() + category.slice(1);
+      
+      if (itemsList.length === 1) {
+        return `${categoryName} Item`;
+      } else if (itemsList.length <= 3) {
+        return `${categoryName} Bundle`;
+      } else {
+        return `${categoryName} Collection`;
+      }
+    } else if (sortedCategories.length === 2) {
+      // Two main categories
+      const cat1 = sortedCategories[0][0].charAt(0).toUpperCase() + sortedCategories[0][0].slice(1);
+      const cat2 = sortedCategories[1][0].charAt(0).toUpperCase() + sortedCategories[1][0].slice(1);
+      return `${cat1} & ${cat2} Mix`;
+    } else {
+      // Multiple categories
+      return 'Mixed Goods Shipment';
+    }
   } catch (error) {
     console.error('Error generating AI shipment name:', error);
     return `Shipment #${consolidationId || Date.now()}`;
@@ -1471,6 +1520,25 @@ router.put("/shipments/:id", async (req, res) => {
   } catch (error) {
     console.error("Error updating shipment:", error);
     res.status(500).json({ message: "Failed to update shipment" });
+  }
+});
+
+// Generate name for new shipment (used during creation)
+router.post("/shipments/generate-name", async (req, res) => {
+  try {
+    const { consolidationId } = req.body;
+    
+    if (!consolidationId) {
+      return res.status(400).json({ message: "Consolidation ID required" });
+    }
+    
+    // Generate name based on consolidation items
+    const name = await generateAIShipmentName(consolidationId);
+    
+    res.json({ name });
+  } catch (error) {
+    console.error("Error generating shipment name:", error);
+    res.status(500).json({ message: "Failed to generate shipment name" });
   }
 });
 

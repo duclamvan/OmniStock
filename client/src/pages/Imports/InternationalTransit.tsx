@@ -778,14 +778,29 @@ export default function InternationalTransit() {
                               // For edit mode, regenerate based on existing shipment
                               regenerateNameMutation.mutate(selectedShipment.id);
                             } else if (selectedPendingShipment) {
-                              // For add tracking mode, generate name based on actual items
-                              // Use the items from the consolidation to generate a meaningful name
-                              const itemNames = selectedPendingShipment.items ? 
-                                selectedPendingShipment.items.slice(0, 3).map((item: any) => item.name).join(', ') : 
-                                'Mixed Items';
-                              const generatedName = itemNames + (selectedPendingShipment.itemCount > 3 ? ' and more' : '');
+                              // For add tracking mode, use backend to generate unified category name
                               const input = document.getElementById('shipmentName') as HTMLInputElement;
-                              if (input) input.value = generatedName;
+                              if (input) {
+                                input.value = 'Generating...';
+                                // Create a temporary shipment request to get AI-generated name
+                                fetch('/api/imports/shipments/generate-name', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ 
+                                    consolidationId: selectedPendingShipment.id 
+                                  })
+                                })
+                                  .then(res => res.json())
+                                  .then(data => {
+                                    if (data.name && input) {
+                                      input.value = data.name;
+                                    }
+                                  })
+                                  .catch(() => {
+                                    // Fallback to generic name if API fails
+                                    if (input) input.value = 'Mixed Goods Shipment';
+                                  });
+                              }
                             } else {
                               // For create mode, prompt to add items first
                               const input = document.getElementById('shipmentName') as HTMLInputElement;
