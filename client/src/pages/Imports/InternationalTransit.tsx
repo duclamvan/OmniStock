@@ -1320,49 +1320,49 @@ export default function InternationalTransit() {
                     </SelectItem>
                     <SelectItem value="air_ddp_general">
                       <div className="flex items-center gap-2">
-                        <Plane className="h-4 w-4 text-blue-500" />
+                        {getShipmentTypeIcon('air_ddp_general', 'h-4 w-4')}
                         Air DDP (general)
                       </div>
                     </SelectItem>
                     <SelectItem value="air_ddp_sensitive">
                       <div className="flex items-center gap-2">
-                        <Plane className="h-4 w-4 text-orange-500" />
+                        {getShipmentTypeIcon('air_ddp_sensitive', 'h-4 w-4')}
                         Air DDP (sensitive)
                       </div>
                     </SelectItem>
                     <SelectItem value="express_general">
                       <div className="flex items-center gap-2">
-                        <Zap className="h-4 w-4 text-purple-500" />
+                        {getShipmentTypeIcon('express_general', 'h-4 w-4')}
                         Express (general)
                       </div>
                     </SelectItem>
                     <SelectItem value="express_sensitive">
                       <div className="flex items-center gap-2">
-                        <Zap className="h-4 w-4 text-orange-500" />
+                        {getShipmentTypeIcon('express_sensitive', 'h-4 w-4')}
                         Express (sensitive)
                       </div>
                     </SelectItem>
                     <SelectItem value="railway_general">
                       <div className="flex items-center gap-2">
-                        <Train className="h-4 w-4 text-green-500" />
+                        {getShipmentTypeIcon('railway_general', 'h-4 w-4')}
                         Railway (general)
                       </div>
                     </SelectItem>
                     <SelectItem value="railway_sensitive">
                       <div className="flex items-center gap-2">
-                        <Train className="h-4 w-4 text-orange-500" />
+                        {getShipmentTypeIcon('railway_sensitive', 'h-4 w-4')}
                         Railway (sensitive)
                       </div>
                     </SelectItem>
                     <SelectItem value="sea_general">
                       <div className="flex items-center gap-2">
-                        <Ship className="h-4 w-4 text-cyan-500" />
+                        {getShipmentTypeIcon('sea_general', 'h-4 w-4')}
                         Sea (general)
                       </div>
                     </SelectItem>
                     <SelectItem value="sea_sensitive">
                       <div className="flex items-center gap-2">
-                        <Ship className="h-4 w-4 text-orange-500" />
+                        {getShipmentTypeIcon('sea_sensitive', 'h-4 w-4')}
                         Sea (sensitive)
                       </div>
                     </SelectItem>
