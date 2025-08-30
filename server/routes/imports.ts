@@ -1274,17 +1274,16 @@ const generateAIShipmentName = async (consolidationId: number | null, items?: an
         // Shorten long product names
         const name = item.name || 'Item';
         const shortName = name.length > 20 ? name.substring(0, 20) + '...' : name;
-        const qty = item.quantity > 1 ? ` x${item.quantity}` : '';
-        return shortName + qty;
+        // No quantity in the name anymore
+        return shortName;
       })
       .join(', ');
     
-    // Add count if more items exist
-    const moreItems = itemsList.length > 3 ? ` +${itemsList.length - 3} more` : '';
-    const totalQuantity = itemsList.reduce((sum, item) => sum + (item.quantity || 1), 0);
+    // Add count if more items exist (without numbers)
+    const moreItems = itemsList.length > 3 ? ' & more' : '';
     
-    // Generate concise name focused on contents
-    const generatedName = `${itemNames}${moreItems} (${totalQuantity} pcs)`;
+    // Generate concise name focused on contents without counts
+    const generatedName = `${itemNames}${moreItems}`;
     
     return generatedName;
   } catch (error) {
