@@ -762,20 +762,30 @@ export default function InternationalTransit() {
                           placeholder="AI will generate based on items"
                           className="flex-1"
                         />
-                        {selectedShipment && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            onClick={() => {
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => {
+                            if (selectedShipment) {
+                              // For edit mode, regenerate based on existing shipment
                               regenerateNameMutation.mutate(selectedShipment.id);
-                            }}
-                            disabled={regenerateNameMutation.isPending}
-                            title="Regenerate name based on contents"
-                          >
-                            <RefreshCw className={`h-4 w-4 ${regenerateNameMutation.isPending ? 'animate-spin' : ''}`} />
-                          </Button>
-                        )}
+                            } else if (selectedPendingShipment) {
+                              // For add tracking mode, generate based on consolidation items
+                              const generatedName = `${selectedPendingShipment.name} - ${selectedPendingShipment.itemCount} items`;
+                              const input = document.getElementById('shipmentName') as HTMLInputElement;
+                              if (input) input.value = generatedName;
+                            } else {
+                              // For create mode, suggest a default name
+                              const input = document.getElementById('shipmentName') as HTMLInputElement;
+                              if (input) input.value = `Shipment ${new Date().toISOString().split('T')[0]}`;
+                            }
+                          }}
+                          disabled={regenerateNameMutation.isPending}
+                          title={selectedShipment ? "Regenerate name based on contents" : "Generate name suggestion"}
+                        >
+                          <RefreshCw className={`h-4 w-4 ${regenerateNameMutation.isPending ? 'animate-spin' : ''}`} />
+                        </Button>
                       </div>
                     </div>
                     <div className="space-y-2">
