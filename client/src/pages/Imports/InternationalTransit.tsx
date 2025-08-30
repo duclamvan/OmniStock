@@ -282,10 +282,19 @@ export default function InternationalTransit() {
       const response = await apiRequest(`/api/imports/shipments/${shipmentId}`, 'PUT', data);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (updatedShipment) => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
       setIsEditShipmentOpen(false);
       setSelectedShipment(null);
+      
+      // Scroll to the updated shipment card
+      setTimeout(() => {
+        const shipmentCard = document.querySelector(`[data-shipment-id="${updatedShipment.id}"]`);
+        if (shipmentCard) {
+          shipmentCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+      
       toast({ title: "Success", description: "Shipment updated successfully" });
     },
     onError: () => {
@@ -1524,7 +1533,7 @@ export default function InternationalTransit() {
                 const progress = calculateProgress(shipment);
                 
                 return (
-                  <Card key={shipment.id} className={`border-l-4 hover:shadow-md transition-shadow ${getShipmentTypeColor(shipment.shipmentType || '')}`}>
+                  <Card key={shipment.id} data-shipment-id={shipment.id} className={`border-l-4 hover:shadow-md transition-shadow ${getShipmentTypeColor(shipment.shipmentType || '')}`}>
                     <CardContent className="p-4">
                       {/* Compact Header with Combined Status */}
                       <div className="flex items-start justify-between mb-3">
@@ -1568,26 +1577,12 @@ export default function InternationalTransit() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Select
-                            value={shipment.status}
-                            onValueChange={(status) => 
-                              updateTrackingMutation.mutate({ 
-                                shipmentId: shipment.id, 
-                                data: { status }
-                              })
-                            }
-                          >
-                            <SelectTrigger className={`w-32 h-8 ${shipment.status === 'delivered' ? 'bg-green-50 border-green-200 text-green-800 dark:bg-green-950 dark:border-green-800 dark:text-green-200' : shipment.status === 'in transit' ? 'bg-purple-50 border-purple-200 text-purple-800 dark:bg-purple-950 dark:border-purple-800 dark:text-purple-200' : 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950 dark:border-blue-800 dark:text-blue-200'}`}>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="pending">Pending</SelectItem>
-                              <SelectItem value="in transit">In Transit</SelectItem>
-                              <SelectItem value="delivered">Delivered</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          {/* Status Badge (Read-only) */}
+                          <Badge className={`${shipment.status === 'delivered' ? 'bg-green-100 text-green-800 border-green-300 dark:bg-green-900 dark:text-green-200 dark:border-green-700' : shipment.status === 'in transit' ? 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-900 dark:text-purple-200 dark:border-purple-700' : 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-700'}`}>
+                            {shipment.status === 'pending' ? 'Pending' : shipment.status === 'in transit' ? 'In Transit' : 'Delivered'}
+                          </Badge>
                           
-                          {/* Three-dot menu for edit */}
+                          {/* Three-dot menu for actions */}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -1602,6 +1597,17 @@ export default function InternationalTransit() {
                                 <Edit className="h-4 w-4 mr-2" />
                                 Edit Shipment
                               </DropdownMenuItem>
+                              {shipment.status !== 'pending' && (
+                                <DropdownMenuItem onClick={() => 
+                                  updateTrackingMutation.mutate({ 
+                                    shipmentId: shipment.id, 
+                                    data: { status: 'pending' }
+                                  })
+                                }>
+                                  <Package className="h-4 w-4 mr-2" />
+                                  Move to Pending
+                                </DropdownMenuItem>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
