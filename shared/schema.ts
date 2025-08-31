@@ -148,6 +148,69 @@ export const customItems = pgTable('custom_items', {
   updatedAt: timestamp('updated_at')
 });
 
+// Receiving workflow tables
+export const receipts = pgTable('receipts', {
+  id: serial('id').primaryKey(),
+  shipmentId: integer('shipment_id').notNull().references(() => shipments.id),
+  consolidationId: integer('consolidation_id').references(() => consolidations.id),
+  receivedBy: text('received_by').notNull(), // Employee who received
+  receivedAt: timestamp('received_at').notNull().defaultNow(),
+  parcelCount: integer('parcel_count').notNull(),
+  carrier: text('carrier').notNull(),
+  trackingNumbers: jsonb('tracking_numbers'), // Array of tracking numbers
+  status: text('status').notNull().default('pending_verification'), // pending_verification, verified, pending_approval, approved, rejected
+  notes: text('notes'),
+  damageNotes: text('damage_notes'),
+  photos: jsonb('photos'), // Array of photo URLs
+  verifiedBy: text('verified_by'), // Founder who verified
+  verifiedAt: timestamp('verified_at'),
+  approvedBy: text('approved_by'), // Founder who approved
+  approvedAt: timestamp('approved_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
+export const receiptItems = pgTable('receipt_items', {
+  id: serial('id').primaryKey(),
+  receiptId: integer('receipt_id').notNull().references(() => receipts.id, { onDelete: 'cascade' }),
+  itemId: integer('item_id').notNull(), // References purchaseItems.id or customItems.id
+  itemType: text('item_type').notNull(), // 'purchase' or 'custom'
+  expectedQuantity: integer('expected_quantity').notNull(),
+  receivedQuantity: integer('received_quantity').notNull(),
+  damagedQuantity: integer('damaged_quantity').default(0),
+  missingQuantity: integer('missing_quantity').default(0),
+  barcode: text('barcode'),
+  warehouseLocation: text('warehouse_location'),
+  additionalLocation: text('additional_location'), // If shelves are full
+  storageInstructions: text('storage_instructions'),
+  condition: text('condition').default('good'), // good, damaged, partial
+  notes: text('notes'),
+  photos: jsonb('photos'), // Array of photo URLs for damages
+  verifiedAt: timestamp('verified_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
+export const landedCosts = pgTable('landed_costs', {
+  id: serial('id').primaryKey(),
+  receiptId: integer('receipt_id').notNull().references(() => receipts.id),
+  calculationMethod: text('calculation_method').notNull(), // weight, volume, price, average
+  baseCost: decimal('base_cost', { precision: 10, scale: 2 }).notNull(),
+  shippingCost: decimal('shipping_cost', { precision: 10, scale: 2 }).notNull(),
+  customsDuty: decimal('customs_duty', { precision: 10, scale: 2 }).default('0'),
+  taxes: decimal('taxes', { precision: 10, scale: 2 }).default('0'),
+  handlingFees: decimal('handling_fees', { precision: 10, scale: 2 }).default('0'),
+  insuranceCost: decimal('insurance_cost', { precision: 10, scale: 2 }).default('0'),
+  totalLandedCost: decimal('total_landed_cost', { precision: 10, scale: 2 }).notNull(),
+  currency: text('currency').notNull().default('USD'),
+  exchangeRates: jsonb('exchange_rates'), // Store exchange rates at time of calculation
+  notes: text('notes'),
+  approvedBy: text('approved_by'),
+  approvedAt: timestamp('approved_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
 // Junction tables for many-to-many relationships
 export const consolidationItems = pgTable('consolidation_items', {
   id: serial('id').primaryKey(),
@@ -186,9 +249,40 @@ export const consolidationsRelations = relations(consolidations, ({ many }) => (
   shipments: many(shipments)
 }));
 
-export const shipmentsRelations = relations(shipments, ({ many }) => ({
-  consolidations: many(consolidations),
-  deliveryHistory: many(deliveryHistory)
+export const shipmentsRelations = relations(shipments, ({ many, one }) => ({
+  consolidation: one(consolidations, {
+    fields: [shipments.consolidationId],
+    references: [consolidations.id]
+  }),
+  deliveryHistory: many(deliveryHistory),
+  receipts: many(receipts)
+}));
+
+export const receiptsRelations = relations(receipts, ({ one, many }) => ({
+  shipment: one(shipments, {
+    fields: [receipts.shipmentId],
+    references: [shipments.id]
+  }),
+  consolidation: one(consolidations, {
+    fields: [receipts.consolidationId],
+    references: [consolidations.id]
+  }),
+  items: many(receiptItems),
+  landedCost: one(landedCosts)
+}));
+
+export const receiptItemsRelations = relations(receiptItems, ({ one }) => ({
+  receipt: one(receipts, {
+    fields: [receiptItems.receiptId],
+    references: [receipts.id]
+  })
+}));
+
+export const landedCostsRelations = relations(landedCosts, ({ one }) => ({
+  receipt: one(receipts, {
+    fields: [landedCosts.receiptId],
+    references: [receipts.id]
+  })
 }));
 
 // Export schemas
@@ -200,6 +294,9 @@ export const insertConsolidationSchema = createInsertSchema(consolidations).omit
 export const insertShipmentSchema = createInsertSchema(shipments).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCustomItemSchema = createInsertSchema(customItems).omit({ id: true, createdAt: true });
 export const insertDeliveryHistorySchema = createInsertSchema(deliveryHistory).omit({ id: true, createdAt: true });
+export const insertReceiptSchema = createInsertSchema(receipts).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertReceiptItemSchema = createInsertSchema(receiptItems).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertLandedCostSchema = createInsertSchema(landedCosts).omit({ id: true, createdAt: true, updatedAt: true });
 
 // Export types
 export type User = typeof users.$inferSelect;
@@ -218,3 +315,9 @@ export type CustomItem = typeof customItems.$inferSelect;
 export type InsertCustomItem = z.infer<typeof insertCustomItemSchema>;
 export type DeliveryHistory = typeof deliveryHistory.$inferSelect;
 export type InsertDeliveryHistory = z.infer<typeof insertDeliveryHistorySchema>;
+export type Receipt = typeof receipts.$inferSelect;
+export type InsertReceipt = z.infer<typeof insertReceiptSchema>;
+export type ReceiptItem = typeof receiptItems.$inferSelect;
+export type InsertReceiptItem = z.infer<typeof insertReceiptItemSchema>;
+export type LandedCost = typeof landedCosts.$inferSelect;
+export type InsertLandedCost = z.infer<typeof insertLandedCostSchema>;
