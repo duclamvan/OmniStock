@@ -280,13 +280,33 @@ export default function InternationalTransit() {
   const editShipmentMutation = useMutation({
     mutationFn: async ({ shipmentId, data }: { shipmentId: number; data: any }) => {
       const response = await apiRequest(`/api/imports/shipments/${shipmentId}`, 'PUT', data);
-      return response.json();
+      return { ...response.json(), shipmentId };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
       setIsEditShipmentOpen(false);
       setSelectedShipment(null);
       toast({ title: "Success", description: "Shipment updated successfully" });
+      
+      // Scroll to updated shipment after DOM updates
+      setTimeout(() => {
+        const shipmentCard = document.getElementById(`shipment-${data.shipmentId}`);
+        if (shipmentCard) {
+          // Scroll to the card with smooth animation
+          shipmentCard.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+          });
+          
+          // Add a highlight effect
+          shipmentCard.classList.add('ring-2', 'ring-primary', 'ring-offset-2');
+          
+          // Remove highlight after 2 seconds
+          setTimeout(() => {
+            shipmentCard.classList.remove('ring-2', 'ring-primary', 'ring-offset-2');
+          }, 2000);
+        }
+      }, 500); // Wait for DOM to update
     },
     onError: () => {
       toast({ title: "Error", description: "Failed to update shipment", variant: "destructive" });
@@ -1524,7 +1544,11 @@ export default function InternationalTransit() {
                 const progress = calculateProgress(shipment);
                 
                 return (
-                  <Card key={shipment.id} className={`border-l-4 hover:shadow-md transition-shadow ${getShipmentTypeColor(shipment.shipmentType || '')}`}>
+                  <Card 
+                    key={shipment.id} 
+                    id={`shipment-${shipment.id}`}
+                    className={`border-l-4 hover:shadow-md transition-all duration-300 ${getShipmentTypeColor(shipment.shipmentType || '')}`}
+                  >
                     <CardContent className="p-4">
                       {/* Compact Header with Combined Status */}
                       <div className="flex items-start justify-between mb-3">
@@ -1602,26 +1626,56 @@ export default function InternationalTransit() {
                                 <Edit className="h-4 w-4 mr-2" />
                                 Edit Shipment
                               </DropdownMenuItem>
+                              {shipment.status === "pending" && (
+                                <DropdownMenuItem onClick={() => {
+                                  const shipmentId = shipment.id;
+                                  editShipmentMutation.mutate({
+                                    shipmentId,
+                                    data: { status: "in transit" }
+                                  }, {
+                                    onSuccess: () => {
+                                      // Additional scrolling for Quick Ship
+                                      setTimeout(() => {
+                                        const card = document.getElementById(`shipment-${shipmentId}`);
+                                        if (card) {
+                                          card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                          card.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2');
+                                          setTimeout(() => {
+                                            card.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2');
+                                          }, 2000);
+                                        }
+                                      }, 600);
+                                    }
+                                  });
+                                }}>
+                                  <Plane className="h-4 w-4 mr-2 text-blue-600" />
+                                  Quick Ship: Mark In Transit
+                                </DropdownMenuItem>
+                              )}
                               {shipment.status === "in transit" && (
                                 <DropdownMenuItem onClick={() => {
+                                  const shipmentId = shipment.id;
                                   editShipmentMutation.mutate({
-                                    shipmentId: shipment.id,
+                                    shipmentId,
                                     data: { status: "delivered", deliveredAt: new Date().toISOString() }
+                                  }, {
+                                    onSuccess: () => {
+                                      // Additional scrolling for Quick Ship
+                                      setTimeout(() => {
+                                        const card = document.getElementById(`shipment-${shipmentId}`);
+                                        if (card) {
+                                          card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                          card.classList.add('ring-2', 'ring-green-500', 'ring-offset-2');
+                                          setTimeout(() => {
+                                            card.classList.remove('ring-2', 'ring-green-500', 'ring-offset-2');
+                                          }, 2000);
+                                        }
+                                      }, 600);
+                                    }
                                   });
                                 }}>
                                   <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
                                   Quick Ship: Mark Delivered
-                                </DropdownMenuItem>
-                              )}
-                              {shipment.status === "pending" && (
-                                <DropdownMenuItem onClick={() => {
-                                  editShipmentMutation.mutate({
-                                    shipmentId: shipment.id,
-                                    data: { status: "in transit" }
-                                  });
-                                }}>
-                                  <Plane className="h-4 w-4 mr-2 text-purple-600" />
-                                  Quick Ship: Mark In Transit
                                 </DropdownMenuItem>
                               )}
                             </DropdownMenuContent>
