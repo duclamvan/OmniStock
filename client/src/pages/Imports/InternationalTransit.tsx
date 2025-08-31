@@ -1602,6 +1602,28 @@ export default function InternationalTransit() {
                                 <Edit className="h-4 w-4 mr-2" />
                                 Edit Shipment
                               </DropdownMenuItem>
+                              {shipment.status === "in transit" && (
+                                <DropdownMenuItem onClick={() => {
+                                  editShipmentMutation.mutate({
+                                    shipmentId: shipment.id,
+                                    data: { status: "delivered", deliveredAt: new Date().toISOString() }
+                                  });
+                                }}>
+                                  <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
+                                  Quick Ship: Mark Delivered
+                                </DropdownMenuItem>
+                              )}
+                              {shipment.status === "pending" && (
+                                <DropdownMenuItem onClick={() => {
+                                  editShipmentMutation.mutate({
+                                    shipmentId: shipment.id,
+                                    data: { status: "in transit" }
+                                  });
+                                }}>
+                                  <Plane className="h-4 w-4 mr-2 text-purple-600" />
+                                  Quick Ship: Mark In Transit
+                                </DropdownMenuItem>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>

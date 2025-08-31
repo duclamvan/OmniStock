@@ -456,6 +456,45 @@ export default function AtWarehouse() {
     },
   });
 
+  // Quick Ship mutation - Create shipment from consolidation
+  const quickShipMutation = useMutation({
+    mutationFn: async (consolidationId: number) => {
+      // Get the consolidation details
+      const consolidation = consolidations.find(c => c.id === consolidationId);
+      if (!consolidation) throw new Error('Consolidation not found');
+      
+      // Create shipment with basic details
+      return apiRequest('/api/imports/shipments', 'POST', {
+        consolidationId,
+        carrier: 'To be determined',
+        trackingNumber: `PENDING-${consolidationId}`,
+        origin: consolidation.warehouse || 'China',
+        destination: consolidation.targetLocation || 'Czech Republic',
+        status: 'pending',
+        shippingCost: '0',
+        insuranceValue: '0',
+        shipmentName: consolidation.name,
+        shipmentType: consolidation.shippingMethod || 'standard',
+        notes: 'Quick Ship - Created from At Warehouse'
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Shipment created and moved to International Transit",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/consolidations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create shipment",
+        variant: "destructive",
+      });
+    },
+  });
+
   // AI auto-classification mutation
   const aiClassifyMutation = useMutation({
     mutationFn: async (itemIds: number[]) => {
@@ -2579,6 +2618,14 @@ export default function AtWarehouse() {
                                         >
                                           <Package className="h-3 w-3 mr-2" />
                                           Export Tracking Numbers
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                          onClick={() => quickShipMutation.mutate(consolidation.id)}
+                                          disabled={quickShipMutation.isPending || consolidation.itemCount === 0}
+                                        >
+                                          <ArrowRightToLine className="h-3 w-3 mr-2 text-green-600" />
+                                          Quick Ship: Move to Pending
                                         </DropdownMenuItem>
                                         <DropdownMenuSeparator />
                                         <DropdownMenuItem

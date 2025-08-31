@@ -1887,10 +1887,14 @@ router.get("/shipments/receivable", async (req, res) => {
 
     // Get receipts for these shipments to check status
     const shipmentIds = receivableShipments.map(r => r.shipment.id);
-    const existingReceipts = await db
-      .select()
-      .from(receipts)
-      .where(sql`${receipts.shipmentId} = ANY(${shipmentIds})`);
+    let existingReceipts: any[] = [];
+    
+    if (shipmentIds.length > 0) {
+      existingReceipts = await db
+        .select()
+        .from(receipts)
+        .where(sql`${receipts.shipmentId} = ANY(ARRAY[${sql.raw(shipmentIds.join(','))}]::int[])`);
+    }
 
     // Map receipts by shipment ID
     const receiptsByShipment = existingReceipts.reduce((acc, receipt) => {
