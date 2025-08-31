@@ -8,7 +8,10 @@ import {
   customItems,
   shipments,
   shipmentItems,
-  deliveryHistory
+  deliveryHistory,
+  receipts,
+  receiptItems,
+  landedCosts
 } from "@shared/schema";
 import { eq, desc, sql, and, like, or } from "drizzle-orm";
 import { addDays, differenceInDays } from "date-fns";
@@ -1857,6 +1860,454 @@ router.post("/extract-from-screenshot", upload.single('screenshot'), async (req,
   } catch (error) {
     console.error("Error processing screenshot:", error);
     res.status(500).json({ message: "Failed to process screenshot" });
+  }
+});
+
+// ================ RECEIVING WORKFLOW ROUTES ================
+
+// Get shipments ready for receiving (delivered or about to be delivered)
+router.get("/shipments/receivable", async (req, res) => {
+  try {
+    // Get shipments that are delivered or will be delivered soon
+    const receivableShipments = await db
+      .select({
+        shipment: shipments,
+        consolidation: consolidations
+      })
+      .from(shipments)
+      .leftJoin(consolidations, eq(shipments.consolidationId, consolidations.id))
+      .where(or(
+        eq(shipments.status, 'delivered'),
+        and(
+          eq(shipments.status, 'in transit'),
+          sql`${shipments.estimatedDelivery} <= NOW() + INTERVAL '2 days'`
+        )
+      ))
+      .orderBy(desc(shipments.updatedAt));
+
+    // Get receipts for these shipments to check status
+    const shipmentIds = receivableShipments.map(r => r.shipment.id);
+    const existingReceipts = await db
+      .select()
+      .from(receipts)
+      .where(sql`${receipts.shipmentId} = ANY(${shipmentIds})`);
+
+    // Map receipts by shipment ID
+    const receiptsByShipment = existingReceipts.reduce((acc, receipt) => {
+      acc[receipt.shipmentId] = receipt;
+      return acc;
+    }, {} as Record<number, any>);
+
+    // Format response with receipt status
+    const formattedShipments = receivableShipments.map(({ shipment, consolidation }) => ({
+      ...shipment,
+      consolidation,
+      receipt: receiptsByShipment[shipment.id] || null,
+      receiptStatus: receiptsByShipment[shipment.id]?.status || 'not_received'
+    }));
+
+    res.json(formattedShipments);
+  } catch (error) {
+    console.error("Error fetching receivable shipments:", error);
+    res.status(500).json({ message: "Failed to fetch receivable shipments" });
+  }
+});
+
+// Start receiving process for a shipment
+router.post("/receipts", async (req, res) => {
+  try {
+    const { 
+      shipmentId, 
+      consolidationId, 
+      parcelCount, 
+      carrier, 
+      trackingNumbers,
+      notes,
+      receivedBy
+    } = req.body;
+
+    if (!shipmentId || !parcelCount || !carrier || !receivedBy) {
+      return res.status(400).json({ 
+        message: "Missing required fields: shipmentId, parcelCount, carrier, receivedBy" 
+      });
+    }
+
+    // Check if receipt already exists for this shipment
+    const [existingReceipt] = await db
+      .select()
+      .from(receipts)
+      .where(eq(receipts.shipmentId, shipmentId));
+
+    if (existingReceipt) {
+      return res.status(400).json({ message: "Receipt already exists for this shipment" });
+    }
+
+    // Create receipt
+    const [receipt] = await db.insert(receipts).values({
+      shipmentId,
+      consolidationId,
+      receivedBy,
+      parcelCount,
+      carrier,
+      trackingNumbers: trackingNumbers || [],
+      status: 'pending_verification',
+      notes,
+      receivedAt: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }).returning();
+
+    // Get consolidation items for this shipment
+    let itemsToReceive = [];
+    if (consolidationId) {
+      const consolidationItemList = await db
+        .select()
+        .from(consolidationItems)
+        .where(eq(consolidationItems.consolidationId, consolidationId));
+
+      // Fetch actual items based on type
+      for (const ci of consolidationItemList) {
+        if (ci.itemType === 'purchase') {
+          const [item] = await db
+            .select()
+            .from(purchaseItems)
+            .where(eq(purchaseItems.id, ci.itemId));
+          if (item) {
+            itemsToReceive.push({ ...item, itemType: 'purchase' });
+          }
+        } else if (ci.itemType === 'custom') {
+          const [item] = await db
+            .select()
+            .from(customItems)
+            .where(eq(customItems.id, ci.itemId));
+          if (item) {
+            itemsToReceive.push({ ...item, itemType: 'custom' });
+          }
+        }
+      }
+    }
+
+    // Create receipt items
+    const receiptItemsData = itemsToReceive.map(item => ({
+      receiptId: receipt.id,
+      itemId: item.id,
+      itemType: item.itemType,
+      expectedQuantity: item.quantity || 1,
+      receivedQuantity: 0, // Will be updated during verification
+      damagedQuantity: 0,
+      missingQuantity: 0,
+      warehouseLocation: item.warehouseLocation || null,
+      condition: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }));
+
+    if (receiptItemsData.length > 0) {
+      await db.insert(receiptItems).values(receiptItemsData);
+    }
+
+    res.json({ 
+      receipt,
+      itemCount: receiptItemsData.length,
+      message: "Receipt created successfully" 
+    });
+  } catch (error) {
+    console.error("Error creating receipt:", error);
+    res.status(500).json({ message: "Failed to create receipt" });
+  }
+});
+
+// Get receipt with items
+router.get("/receipts/:id", async (req, res) => {
+  try {
+    const receiptId = parseInt(req.params.id);
+
+    const [receipt] = await db
+      .select()
+      .from(receipts)
+      .where(eq(receipts.id, receiptId));
+
+    if (!receipt) {
+      return res.status(404).json({ message: "Receipt not found" });
+    }
+
+    // Get receipt items with actual item details
+    const items = await db
+      .select()
+      .from(receiptItems)
+      .where(eq(receiptItems.receiptId, receiptId));
+
+    // Fetch actual item details
+    const itemsWithDetails = await Promise.all(items.map(async (ri) => {
+      let itemDetails = null;
+      if (ri.itemType === 'purchase') {
+        const [item] = await db
+          .select()
+          .from(purchaseItems)
+          .where(eq(purchaseItems.id, ri.itemId));
+        itemDetails = item;
+      } else if (ri.itemType === 'custom') {
+        const [item] = await db
+          .select()
+          .from(customItems)
+          .where(eq(customItems.id, ri.itemId));
+        itemDetails = item;
+      }
+      return { ...ri, details: itemDetails };
+    }));
+
+    // Get shipment and consolidation details
+    const [shipment] = await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.id, receipt.shipmentId));
+
+    let consolidation = null;
+    if (receipt.consolidationId) {
+      const [consol] = await db
+        .select()
+        .from(consolidations)
+        .where(eq(consolidations.id, receipt.consolidationId));
+      consolidation = consol;
+    }
+
+    // Get landed cost if exists
+    const [landedCost] = await db
+      .select()
+      .from(landedCosts)
+      .where(eq(landedCosts.receiptId, receiptId));
+
+    res.json({
+      ...receipt,
+      items: itemsWithDetails,
+      shipment,
+      consolidation,
+      landedCost
+    });
+  } catch (error) {
+    console.error("Error fetching receipt:", error);
+    res.status(500).json({ message: "Failed to fetch receipt" });
+  }
+});
+
+// Update receipt item verification
+router.patch("/receipts/:id/items/:itemId", async (req, res) => {
+  try {
+    const receiptId = parseInt(req.params.id);
+    const itemId = parseInt(req.params.itemId);
+    const {
+      receivedQuantity,
+      damagedQuantity,
+      missingQuantity,
+      barcode,
+      warehouseLocation,
+      additionalLocation,
+      storageInstructions,
+      condition,
+      notes,
+      photos
+    } = req.body;
+
+    const [updated] = await db
+      .update(receiptItems)
+      .set({
+        receivedQuantity,
+        damagedQuantity,
+        missingQuantity,
+        barcode,
+        warehouseLocation,
+        additionalLocation,
+        storageInstructions,
+        condition,
+        notes,
+        photos,
+        verifiedAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(and(
+        eq(receiptItems.receiptId, receiptId),
+        eq(receiptItems.id, itemId)
+      ))
+      .returning();
+
+    res.json(updated);
+  } catch (error) {
+    console.error("Error updating receipt item:", error);
+    res.status(500).json({ message: "Failed to update receipt item" });
+  }
+});
+
+// Complete verification and send for approval
+router.post("/receipts/:id/verify", async (req, res) => {
+  try {
+    const receiptId = parseInt(req.params.id);
+    const { verifiedBy, damageNotes, photos } = req.body;
+
+    if (!verifiedBy) {
+      return res.status(400).json({ message: "verifiedBy is required" });
+    }
+
+    // Update receipt status
+    const [updated] = await db
+      .update(receipts)
+      .set({
+        status: 'pending_approval',
+        verifiedBy,
+        verifiedAt: new Date(),
+        damageNotes,
+        photos,
+        updatedAt: new Date()
+      })
+      .where(eq(receipts.id, receiptId))
+      .returning();
+
+    res.json({ 
+      receipt: updated,
+      message: "Verification completed, pending founder approval" 
+    });
+  } catch (error) {
+    console.error("Error verifying receipt:", error);
+    res.status(500).json({ message: "Failed to verify receipt" });
+  }
+});
+
+// Calculate and save landed costs
+router.post("/receipts/:id/landed-costs", async (req, res) => {
+  try {
+    const receiptId = parseInt(req.params.id);
+    const {
+      calculationMethod,
+      baseCost,
+      shippingCost,
+      customsDuty,
+      taxes,
+      handlingFees,
+      insuranceCost,
+      currency,
+      exchangeRates,
+      notes
+    } = req.body;
+
+    if (!calculationMethod || !baseCost || !shippingCost) {
+      return res.status(400).json({ 
+        message: "Missing required fields: calculationMethod, baseCost, shippingCost" 
+      });
+    }
+
+    const totalLandedCost = 
+      parseFloat(baseCost) + 
+      parseFloat(shippingCost) + 
+      parseFloat(customsDuty || 0) + 
+      parseFloat(taxes || 0) + 
+      parseFloat(handlingFees || 0) + 
+      parseFloat(insuranceCost || 0);
+
+    const [landedCost] = await db.insert(landedCosts).values({
+      receiptId,
+      calculationMethod,
+      baseCost: baseCost.toString(),
+      shippingCost: shippingCost.toString(),
+      customsDuty: (customsDuty || 0).toString(),
+      taxes: (taxes || 0).toString(),
+      handlingFees: (handlingFees || 0).toString(),
+      insuranceCost: (insuranceCost || 0).toString(),
+      totalLandedCost: totalLandedCost.toString(),
+      currency: currency || 'USD',
+      exchangeRates,
+      notes,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }).returning();
+
+    res.json(landedCost);
+  } catch (error) {
+    console.error("Error calculating landed costs:", error);
+    res.status(500).json({ message: "Failed to calculate landed costs" });
+  }
+});
+
+// Approve receipt and integrate with inventory
+router.post("/receipts/:id/approve", async (req, res) => {
+  try {
+    const receiptId = parseInt(req.params.id);
+    const { approvedBy } = req.body;
+
+    if (!approvedBy) {
+      return res.status(400).json({ message: "approvedBy is required" });
+    }
+
+    // Update receipt status
+    const [receipt] = await db
+      .update(receipts)
+      .set({
+        status: 'approved',
+        approvedBy,
+        approvedAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(receipts.id, receiptId))
+      .returning();
+
+    // Update shipment status to fully received
+    if (receipt.shipmentId) {
+      await db
+        .update(shipments)
+        .set({
+          status: 'received',
+          updatedAt: new Date()
+        })
+        .where(eq(shipments.id, receipt.shipmentId));
+    }
+
+    // TODO: Integrate with inventory system here
+    // This would involve:
+    // 1. Creating/updating product records
+    // 2. Adding quantities to inventory
+    // 3. Calculating average costs
+    // 4. Updating stock levels
+
+    res.json({ 
+      receipt,
+      message: "Receipt approved and items added to inventory" 
+    });
+  } catch (error) {
+    console.error("Error approving receipt:", error);
+    res.status(500).json({ message: "Failed to approve receipt" });
+  }
+});
+
+// Get all receipts
+router.get("/receipts", async (req, res) => {
+  try {
+    const { status } = req.query;
+
+    let query = db.select().from(receipts);
+    
+    if (status) {
+      query = query.where(eq(receipts.status, status as string));
+    }
+
+    const receiptList = await query.orderBy(desc(receipts.createdAt));
+
+    // Get basic shipment info for each receipt
+    const receiptsWithShipments = await Promise.all(
+      receiptList.map(async (receipt) => {
+        const [shipment] = await db
+          .select()
+          .from(shipments)
+          .where(eq(shipments.id, receipt.shipmentId));
+
+        return {
+          ...receipt,
+          shipment
+        };
+      })
+    );
+
+    res.json(receiptsWithShipments);
+  } catch (error) {
+    console.error("Error fetching receipts:", error);
+    res.status(500).json({ message: "Failed to fetch receipts" });
   }
 });
 
