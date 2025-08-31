@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Package, 
   Search, 
@@ -18,14 +20,24 @@ import {
   ChevronRight,
   Package2,
   FileText,
-  AlertTriangle
+  AlertTriangle,
+  ScanLine,
+  Filter,
+  Users,
+  CheckSquare,
+  Square,
+  Zap
 } from "lucide-react";
 import { Link } from "wouter";
-import { format } from "date-fns";
+import { format, differenceInHours } from "date-fns";
 
 export default function ReceivingList() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("receivable");
+  const [selectedShipments, setSelectedShipments] = useState<Set<number>>(new Set());
+  const [priorityFilter, setPriorityFilter] = useState("all");
+  const [barcodeScan, setBarcodeScan] = useState("");
+  const [showBulkActions, setShowBulkActions] = useState(false);
 
   // Fetch receivable shipments
   const { data: receivableShipments = [], isLoading: isLoadingShipments } = useQuery({
@@ -47,14 +59,62 @@ export default function ReceivingList() {
     }
   });
 
-  // Filter shipments based on search
-  const filteredShipments = receivableShipments.filter((shipment: any) =>
-    searchQuery === "" ||
-    shipment.shipmentName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    shipment.trackingNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    shipment.carrier?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    shipment.consolidation?.name?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filter shipments based on search and priority
+  const filteredShipments = receivableShipments.filter((shipment: any) => {
+    const matchesSearch = searchQuery === "" ||
+      shipment.shipmentName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      shipment.trackingNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      shipment.carrier?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      shipment.consolidation?.name?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesPriority = priorityFilter === "all" || 
+      (priorityFilter === "urgent" && isUrgent(shipment)) ||
+      (priorityFilter === "normal" && !isUrgent(shipment));
+    
+    return matchesSearch && matchesPriority;
+  });
+  
+  // Check if shipment is urgent (delivered more than 24 hours ago)
+  const isUrgent = (shipment: any) => {
+    if (shipment.deliveredAt) {
+      const hoursAgo = differenceInHours(new Date(), new Date(shipment.deliveredAt));
+      return hoursAgo > 24;
+    }
+    return false;
+  };
+  
+  // Handle barcode scan
+  useEffect(() => {
+    if (barcodeScan) {
+      setSearchQuery(barcodeScan);
+      setBarcodeScan("");
+    }
+  }, [barcodeScan]);
+  
+  // Toggle shipment selection
+  const toggleShipmentSelection = (id: number) => {
+    const newSelection = new Set(selectedShipments);
+    if (newSelection.has(id)) {
+      newSelection.delete(id);
+    } else {
+      newSelection.add(id);
+    }
+    setSelectedShipments(newSelection);
+    setShowBulkActions(newSelection.size > 0);
+  };
+  
+  // Select all visible shipments
+  const selectAllShipments = () => {
+    const allIds = new Set<number>(filteredShipments.map((s: any) => s.id));
+    setSelectedShipments(allIds);
+    setShowBulkActions(allIds.size > 0);
+  };
+  
+  // Clear selection
+  const clearSelection = () => {
+    setSelectedShipments(new Set());
+    setShowBulkActions(false);
+  };
 
   // Filter receipts based on search
   const filteredReceipts = receipts.filter((receipt: any) =>
@@ -99,90 +159,112 @@ export default function ReceivingList() {
     }
   };
 
-  const ShipmentCard = ({ shipment, hasReceipt = false }: any) => (
-    <Card className="hover:shadow-md transition-shadow">
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-semibold text-lg">
-                {shipment.shipmentName || `Shipment #${shipment.id}`}
-              </h3>
-              <Badge className={getStatusColor(shipment.status)}>
-                {shipment.status?.replace('_', ' ').toUpperCase()}
-              </Badge>
-              {hasReceipt && (
-                <Badge variant="outline" className="bg-blue-50 border-blue-300 text-blue-700">
-                  <FileText className="h-3 w-3 mr-1" />
-                  Receipt Started
-                </Badge>
-              )}
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {shipment.trackingNumber} • {shipment.carrier || shipment.endCarrier}
-            </p>
-          </div>
-          <div className="text-right">
-            {shipment.estimatedDelivery && (
-              <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                <Calendar className="h-3 w-3" />
-                {format(new Date(shipment.estimatedDelivery), 'MMM dd')}
-              </div>
+  const ShipmentCard = ({ shipment, hasReceipt = false }: any) => {
+    const urgent = isUrgent(shipment);
+    
+    return (
+      <Card className={`hover:shadow-md transition-shadow ${urgent ? 'border-orange-300 bg-orange-50/50 dark:bg-orange-950/20' : ''}`}>
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            {!hasReceipt && (
+              <Checkbox
+                checked={selectedShipments.has(shipment.id)}
+                onCheckedChange={() => toggleShipmentSelection(shipment.id)}
+                className="mt-1"
+                data-testid={`checkbox-shipment-${shipment.id}`}
+              />
             )}
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between text-sm">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1">
-              <MapPin className="h-3 w-3 text-muted-foreground" />
-              <span>{shipment.origin}</span>
-            </div>
-            <ChevronRight className="h-3 w-3 text-muted-foreground" />
-            <div className="flex items-center gap-1">
-              <MapPin className="h-3 w-3 text-muted-foreground" />
-              <span>{shipment.destination}</span>
-            </div>
-          </div>
-        </div>
-
-        {shipment.consolidation && (
-          <div className="mt-3 p-2 bg-gray-50 dark:bg-gray-900 rounded">
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2">
-                <Package2 className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">{shipment.consolidation.name}</span>
-                <Badge variant="secondary" className="text-xs">
-                  {shipment.consolidation.shippingMethod?.replace(/_/g, ' ').toUpperCase()}
-                </Badge>
+            <div className="flex-1">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-semibold text-lg">
+                      {shipment.shipmentName || `Shipment #${shipment.id}`}
+                    </h3>
+                    {urgent && (
+                      <Badge variant="destructive" className="animate-pulse">
+                        <Zap className="h-3 w-3 mr-1" />
+                        Urgent
+                      </Badge>
+                    )}
+                    <Badge className={getStatusColor(shipment.status)}>
+                      {shipment.status?.replace('_', ' ').toUpperCase()}
+                    </Badge>
+                    {hasReceipt && (
+                      <Badge variant="outline" className="bg-blue-50 border-blue-300 text-blue-700">
+                        <FileText className="h-3 w-3 mr-1" />
+                        Receipt Started
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {shipment.trackingNumber} • {shipment.carrier || shipment.endCarrier}
+                  </p>
+                </div>
+                <div className="text-right">
+                  {shipment.estimatedDelivery && (
+                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                      <Calendar className="h-3 w-3" />
+                      {format(new Date(shipment.estimatedDelivery), 'MMM dd')}
+                    </div>
+                  )}
+                </div>
               </div>
-              <span className="text-muted-foreground">
-                {shipment.totalUnits} {shipment.unitType || 'items'}
-              </span>
+
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-1">
+                    <MapPin className="h-3 w-3 text-muted-foreground" />
+                    <span>{shipment.origin}</span>
+                  </div>
+                  <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                  <div className="flex items-center gap-1">
+                    <MapPin className="h-3 w-3 text-muted-foreground" />
+                    <span>{shipment.destination}</span>
+                  </div>
+                </div>
+              </div>
+
+              {shipment.consolidation && (
+                <div className="mt-3 p-2 bg-gray-50 dark:bg-gray-900 rounded">
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <Package2 className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">{shipment.consolidation.name}</span>
+                      <Badge variant="secondary" className="text-xs">
+                        {shipment.consolidation.shippingMethod?.replace(/_/g, ' ').toUpperCase()}
+                      </Badge>
+                    </div>
+                    <span className="text-muted-foreground">
+                      {shipment.totalUnits} {shipment.unitType || 'items'}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-3 flex gap-2">
+                {!hasReceipt ? (
+                  <Link href={`/receiving/start/${shipment.id}`}>
+                    <Button size="sm" className="w-full">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Start Receiving
+                    </Button>
+                  </Link>
+                ) : (
+                  <Link href={`/receiving/receipt/${shipment.receiptId}`}>
+                    <Button size="sm" variant="outline" className="w-full">
+                      <FileText className="h-4 w-4 mr-2" />
+                      View Receipt
+                    </Button>
+                  </Link>
+                )}
+              </div>
             </div>
           </div>
-        )}
-
-        <div className="mt-3 flex gap-2">
-          {!hasReceipt ? (
-            <Link href={`/receiving/start/${shipment.id}`}>
-              <Button size="sm" className="w-full">
-                <Plus className="h-4 w-4 mr-2" />
-                Start Receiving
-              </Button>
-            </Link>
-          ) : (
-            <Link href={`/receiving/receipt/${shipment.receiptId}`}>
-              <Button size="sm" variant="outline" className="w-full">
-                <FileText className="h-4 w-4 mr-2" />
-                View Receipt
-              </Button>
-            </Link>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
+        </CardContent>
+      </Card>
+    );
+  };
 
   const ReceiptCard = ({ receipt }: any) => (
     <Card className="hover:shadow-md transition-shadow">
@@ -261,19 +343,78 @@ export default function ReceivingList() {
         </p>
       </div>
 
-      {/* Search */}
+      {/* Search and Filters */}
       <Card className="mb-6">
-        <CardContent className="p-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by shipment name, tracking number, carrier..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-              data-testid="input-search-receiving"
-            />
+        <CardContent className="p-4 space-y-4">
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by shipment name, tracking number, carrier..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+                data-testid="input-search-receiving"
+              />
+            </div>
+            <div className="relative">
+              <ScanLine className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Scan barcode"
+                value={barcodeScan}
+                onChange={(e) => setBarcodeScan(e.target.value)}
+                className="pl-10 w-48"
+                data-testid="input-barcode-scan"
+              />
+            </div>
+            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+              <SelectTrigger className="w-32">
+                <SelectValue placeholder="Priority" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="urgent">
+                  <span className="flex items-center gap-1">
+                    <Zap className="h-3 w-3 text-orange-500" />
+                    Urgent
+                  </span>
+                </SelectItem>
+                <SelectItem value="normal">Normal</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+          
+          {/* Bulk Actions Bar */}
+          {showBulkActions && (
+            <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
+              <div className="flex items-center gap-2">
+                <CheckSquare className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-medium">
+                  {selectedShipments.size} shipment{selectedShipments.size !== 1 ? 's' : ''} selected
+                </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={clearSelection}
+                  className="text-xs"
+                >
+                  Clear
+                </Button>
+              </div>
+              <div className="flex gap-2">
+                <Link href={`/receiving/bulk-start`}>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    data-testid="button-bulk-receive"
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    Bulk Receive
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

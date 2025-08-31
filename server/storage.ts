@@ -105,6 +105,7 @@ export interface IStorage {
   startPackingOrder(id: string, employeeId: string): Promise<Order | undefined>;
   completePackingOrder(id: string, items: any[]): Promise<Order | undefined>;
   getOrdersByCustomerId(customerId: number): Promise<Order[]>;
+  getUnpaidOrders(): Promise<Order[]>;
   getDashboardMetrics(): Promise<any>;
   
   // Order Items
@@ -554,6 +555,11 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getOrdersByCustomerId(customerId: number): Promise<Order[]> {
+    return [];
+  }
+  
+  async getUnpaidOrders(): Promise<Order[]> {
+    // Return empty array - orders have been replaced by imports system
     return [];
   }
   
