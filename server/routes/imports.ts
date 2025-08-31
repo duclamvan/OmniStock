@@ -1996,7 +1996,7 @@ router.post("/receipts", async (req, res) => {
       receivedQuantity: 0, // Will be updated during verification
       damagedQuantity: 0,
       missingQuantity: 0,
-      warehouseLocation: item.warehouseLocation || null,
+      warehouseLocation: item.itemType === 'purchase' ? (item as any).warehouseLocation : null,
       condition: 'pending',
       createdAt: new Date(),
       updatedAt: new Date()
@@ -2281,13 +2281,20 @@ router.get("/receipts", async (req, res) => {
   try {
     const { status } = req.query;
 
-    let query = db.select().from(receipts);
+    let receiptList;
     
     if (status) {
-      query = query.where(eq(receipts.status, status as string));
+      receiptList = await db
+        .select()
+        .from(receipts)
+        .where(eq(receipts.status, status as string))
+        .orderBy(desc(receipts.createdAt));
+    } else {
+      receiptList = await db
+        .select()
+        .from(receipts)
+        .orderBy(desc(receipts.createdAt));
     }
-
-    const receiptList = await query.orderBy(desc(receipts.createdAt));
 
     // Get basic shipment info for each receipt
     const receiptsWithShipments = await Promise.all(

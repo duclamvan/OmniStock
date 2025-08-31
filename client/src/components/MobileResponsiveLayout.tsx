@@ -156,6 +156,11 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
       ],
     },
     {
+      name: "Receiving",
+      href: "/receiving",
+      icon: Package,
+    },
+    {
       name: "Shipping",
       href: "/shipping",
       icon: Truck,
