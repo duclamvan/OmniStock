@@ -20,7 +20,6 @@ import { ObjectPermission } from "./objectAcl";
 // import { putawayRouter } from "./routes/putaway";
 // import { importOrdersRouter } from "./routes/importOrders";
 import imports from './routes/imports';
-import receiving from './routes/receiving';
 import { weightCalculationService } from "./services/weightCalculation";
 import { ImageCompressionService } from "./services/imageCompression";
 
@@ -3478,7 +3477,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Import routes
   app.use('/api/imports', imports);
-  app.use('/api/receiving', receiving);
   
   // Returns endpoints
   app.get('/api/returns', async (req, res) => {
