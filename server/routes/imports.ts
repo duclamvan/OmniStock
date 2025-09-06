@@ -1902,13 +1902,56 @@ router.get("/shipments/receivable", async (req, res) => {
       return acc;
     }, {} as Record<number, any>);
 
-    // Format response with receipt status
-    let formattedShipments = receivableShipments.map(({ shipment, consolidation }) => ({
-      ...shipment,
-      consolidation,
-      receipt: receiptsByShipment[shipment.id] || null,
-      receiptStatus: receiptsByShipment[shipment.id]?.status || 'not_received'
-    }));
+    // Format response with receipt status and items
+    let formattedShipments = await Promise.all(
+      receivableShipments.map(async ({ shipment, consolidation }) => {
+        // Get items for each shipment's consolidation
+        let items: any[] = [];
+        if (shipment.consolidationId) {
+          const consolidationItemList = await db
+            .select()
+            .from(consolidationItems)
+            .where(eq(consolidationItems.consolidationId, shipment.consolidationId));
+
+          // Fetch actual items based on type
+          for (const ci of consolidationItemList) {
+            if (ci.itemType === 'purchase') {
+              const [item] = await db
+                .select()
+                .from(purchaseItems)
+                .where(eq(purchaseItems.id, ci.itemId));
+              if (item) {
+                items.push({
+                  ...item,
+                  itemType: 'purchase',
+                  category: (item as any).category || 'General'
+                });
+              }
+            } else if (ci.itemType === 'custom') {
+              const [item] = await db
+                .select()
+                .from(customItems)
+                .where(eq(customItems.id, ci.itemId));
+              if (item) {
+                items.push({
+                  ...item,
+                  itemType: 'custom',
+                  category: item.classification || 'General'
+                });
+              }
+            }
+          }
+        }
+
+        return {
+          ...shipment,
+          consolidation,
+          items,
+          receipt: receiptsByShipment[shipment.id] || null,
+          receiptStatus: receiptsByShipment[shipment.id]?.status || 'not_received'
+        };
+      })
+    );
 
     // Add mock data if no real shipments found to populate receiving sections
     if (formattedShipments.length === 0) {
@@ -1938,6 +1981,10 @@ router.get("/shipments/receivable", async (req, res) => {
           receipt: null,
           receiptStatus: 'not_received',
           receiptId: null,
+          items: [
+            { id: 1, name: "Wireless Headphones", sku: "WH-001", quantity: 10, category: "Electronics" },
+            { id: 2, name: "USB Charging Cable", sku: "USB-C-02", quantity: 14, category: "Accessories" }
+          ],
           createdAt: "2025-01-28T00:00:00.000Z",
           updatedAt: "2025-01-30T00:00:00.000Z"
         },
@@ -1966,6 +2013,11 @@ router.get("/shipments/receivable", async (req, res) => {
           receipt: null,
           receiptStatus: 'not_received',
           receiptId: null,
+          items: [
+            { id: 3, name: "Face Cream", sku: "FC-100", quantity: 50, category: "Beauty" },
+            { id: 4, name: "Lip Balm Set", sku: "LB-200", quantity: 100, category: "Beauty" },
+            { id: 5, name: "Eye Serum", sku: "ES-300", quantity: 6, category: "Beauty" }
+          ],
           createdAt: "2025-01-26T00:00:00.000Z",
           updatedAt: "2025-01-29T00:00:00.000Z"
         },
@@ -1994,6 +2046,10 @@ router.get("/shipments/receivable", async (req, res) => {
           receipt: null,
           receiptStatus: 'not_received',
           receiptId: null,
+          items: [
+            { id: 6, name: "N95 Masks", sku: "N95-001", quantity: 5, category: "Medical" },
+            { id: 7, name: "Medical Gloves", sku: "MG-002", quantity: 3, category: "Medical" }
+          ],
           createdAt: "2025-01-23T00:00:00.000Z",
           updatedAt: "2025-01-25T00:00:00.000Z"
         },
@@ -2022,6 +2078,11 @@ router.get("/shipments/receivable", async (req, res) => {
           receipt: null,
           receiptStatus: 'not_received',
           receiptId: null,
+          items: [
+            { id: 8, name: "Fashion Sunglasses", sku: "SG-101", quantity: 25, category: "Accessories" },
+            { id: 9, name: "Leather Wallet", sku: "LW-202", quantity: 30, category: "Accessories" },
+            { id: 10, name: "Watch Bands", sku: "WB-303", quantity: 34, category: "Accessories" }
+          ],
           createdAt: "2025-01-25T00:00:00.000Z",
           updatedAt: "2025-01-28T00:00:00.000Z"
         },
@@ -2050,6 +2111,11 @@ router.get("/shipments/receivable", async (req, res) => {
           receipt: null,
           receiptStatus: 'not_received',
           receiptId: null,
+          items: [
+            { id: 11, name: "Garden Shears", sku: "GS-401", quantity: 15, category: "Tools" },
+            { id: 12, name: "Plant Pots", sku: "PP-402", quantity: 20, category: "Garden" },
+            { id: 13, name: "Watering Can", sku: "WC-403", quantity: 10, category: "Garden" }
+          ],
           createdAt: "2025-01-24T00:00:00.000Z",
           updatedAt: "2025-01-26T00:00:00.000Z"
         },
@@ -2078,6 +2144,10 @@ router.get("/shipments/receivable", async (req, res) => {
           receipt: null,
           receiptStatus: 'not_received',
           receiptId: null,
+          items: [
+            { id: 14, name: "Arduino Boards", sku: "AB-501", quantity: 40, category: "Electronics" },
+            { id: 15, name: "LED Strips", sku: "LED-502", quantity: 27, category: "Electronics" }
+          ],
           createdAt: "2025-01-27T00:00:00.000Z",
           updatedAt: "2025-01-31T00:00:00.000Z"
         },
@@ -2106,6 +2176,11 @@ router.get("/shipments/receivable", async (req, res) => {
           receipt: null,
           receiptStatus: 'not_received',
           receiptId: null,
+          items: [
+            { id: 16, name: "Baby Bottles", sku: "BB-601", quantity: 60, category: "Baby" },
+            { id: 17, name: "Pacifiers", sku: "PF-602", quantity: 40, category: "Baby" },
+            { id: 18, name: "Baby Wipes", sku: "BW-603", quantity: 12, category: "Baby" }
+          ],
           createdAt: "2025-01-22T00:00:00.000Z",
           updatedAt: "2025-01-24T00:00:00.000Z"
         },
@@ -2134,12 +2209,16 @@ router.get("/shipments/receivable", async (req, res) => {
           receipt: null,
           receiptStatus: 'not_received',
           receiptId: null,
+          items: [
+            { id: 19, name: "Yoga Mats", sku: "YM-701", quantity: 20, category: "Sports" },
+            { id: 20, name: "Dumbbells", sku: "DB-702", quantity: 13, category: "Sports" }
+          ],
           createdAt: "2025-01-25T00:00:00.000Z",
           updatedAt: "2025-01-27T00:00:00.000Z"
         }
       ];
       
-      formattedShipments = mockReceivableShipments;
+      formattedShipments = mockReceivableShipments as any;
     }
 
     res.json(formattedShipments);

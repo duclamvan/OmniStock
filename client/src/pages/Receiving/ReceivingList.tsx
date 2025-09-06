@@ -526,7 +526,7 @@ export default function ReceivingList() {
                       <CardContent className="p-4">
                         {/* Shipment Header */}
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
-                          <div className="flex items-center gap-2 sm:gap-3">
+                          <div className="flex items-center gap-2 sm:gap-3 flex-1">
                             <Button
                               variant="ghost"
                               size="sm"
@@ -549,37 +549,36 @@ export default function ReceivingList() {
                               onCheckedChange={() => toggleShipmentSelection(shipment.id)}
                               data-testid={`checkbox-shipment-${shipment.id}`}
                             />
-                            <div>
-                              <div className="flex items-center gap-2">
+                            <div className="flex-1">
+                              {/* First Row: Title and Status */}
+                              <div className="flex items-center gap-2 flex-wrap">
                                 <h3 className="font-semibold text-sm sm:text-base">
                                   {shipment.shipmentName || `Shipment #${shipment.id}`}
                                 </h3>
+                                <Badge className={getStatusColor(shipment.status)}>
+                                  {shipment.status?.replace('_', ' ').toUpperCase()}
+                                </Badge>
                                 {urgent && (
                                   <Badge variant="destructive" className="animate-pulse">
                                     <Zap className="h-3 w-3 mr-1" />
                                     Urgent
                                   </Badge>
                                 )}
-                                <Badge className={getStatusColor(shipment.status)}>
-                                  {shipment.status?.replace('_', ' ').toUpperCase()}
-                                </Badge>
                               </div>
-                              <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-muted-foreground mt-1">
+                              
+                              {/* Second Row: More Visible Info - End-Carrier, Units, Tracking */}
+                              <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground mt-2">
                                 {shipment.consolidation && (
                                   <>
-                                    <span>{shipment.consolidation.name}</span>
-                                    <span>•</span>
+                                    <span className="text-muted-foreground text-xs">{shipment.consolidation.name}</span>
+                                    <span className="text-muted-foreground">•</span>
                                   </>
                                 )}
+                                <span className="font-semibold">{shipment.endCarrier || shipment.carrier}</span>
+                                <span className="text-muted-foreground">•</span>
                                 <span>{shipment.totalUnits} {shipment.unitType || 'items'}</span>
-                                <span>•</span>
-                                <span>Tracking: {shipment.trackingNumber}</span>
-                                {shipment.deliveredAt && (
-                                  <>
-                                    <span>•</span>
-                                    <span>Delivered {format(new Date(shipment.deliveredAt), 'MMM dd')}</span>
-                                  </>
-                                )}
+                                <span className="text-muted-foreground">•</span>
+                                <span className="font-mono">Tracking: {shipment.trackingNumber}</span>
                               </div>
                             </div>
                           </div>
