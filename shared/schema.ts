@@ -376,21 +376,19 @@ export const discounts = pgTable('discounts', {
 });
 
 export const expenses = pgTable('expenses', {
-  id: serial('id').primaryKey(),
-  expenseId: text('expense_id').notNull().unique(),
-  name: text('name').notNull(),
-  category: text('category').notNull(), // rent, utilities, shipping, marketing, equipment, other
-  amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
-  totalCost: decimal('total_cost', { precision: 10, scale: 2 }),
-  currency: text('currency').default('CZK'),
-  date: date('date').notNull(),
-  paymentMethod: text('payment_method'), // cash, card, bank_transfer, other
-  status: text('status').default('pending'), // pending, paid, overdue
-  recurring: boolean('recurring').default(false),
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  expenseId: varchar('expense_id').notNull(),
+  name: varchar('name').notNull(),
+  category: varchar('category'),
+  amount: decimal('amount').notNull(),
+  currency: varchar('currency').default('CZK'),
+  recurring: varchar('recurring'),
+  paymentMethod: varchar('payment_method'),
+  status: varchar('status').default('pending'),
+  date: timestamp('date').notNull(),
   description: text('description'),
-  receiptUrl: text('receipt_url'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow()
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow()
 });
 
 // User activities tracking

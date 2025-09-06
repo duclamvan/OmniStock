@@ -594,6 +594,31 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async generateExpenseId(): Promise<string> {
+    // Generate expense ID in format EXP-YYYYMMDD-XXXX
+    const date = new Date();
+    const dateStr = date.getFullYear().toString() + 
+                   (date.getMonth() + 1).toString().padStart(2, '0') + 
+                   date.getDate().toString().padStart(2, '0');
+    
+    // Get existing expenses count for today to generate sequence
+    const todayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const todayEnd = new Date(todayStart);
+    todayEnd.setDate(todayEnd.getDate() + 1);
+    
+    try {
+      const todayExpenses = await db.select().from(expenses)
+        .where(sql`${expenses.createdAt} >= ${todayStart} AND ${expenses.createdAt} < ${todayEnd}`);
+      
+      const sequence = (todayExpenses.length + 1).toString().padStart(4, '0');
+      return `EXP-${dateStr}-${sequence}`;
+    } catch (error) {
+      // Fallback to timestamp-based ID if query fails
+      const timestamp = Date.now().toString().slice(-4);
+      return `EXP-${dateStr}-${timestamp}`;
+    }
+  }
+
   async createOrder(orderData: any): Promise<Order> {
     try {
       const [order] = await db
