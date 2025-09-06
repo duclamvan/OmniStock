@@ -211,6 +211,158 @@ export const landedCosts = pgTable('landed_costs', {
   updatedAt: timestamp('updated_at').notNull().defaultNow()
 });
 
+// Core business entities
+export const customers = pgTable('customers', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  email: text('email'),
+  phone: text('phone'),
+  address: text('address'),
+  city: text('city'),
+  zipCode: text('zip_code'),
+  country: text('country').default('Czech Republic'),
+  type: text('type').default('individual'), // individual, business
+  notes: text('notes'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
+export const suppliers = pgTable('suppliers', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  contactPerson: text('contact_person'),
+  email: text('email'),
+  phone: text('phone'),
+  address: text('address'),
+  city: text('city'),
+  zipCode: text('zip_code'),
+  country: text('country'),
+  website: text('website'),
+  paymentTerms: text('payment_terms'),
+  notes: text('notes'),
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
+export const warehouses = pgTable('warehouses', {
+  id: text('id').primaryKey(), // WH-XX-YY format
+  name: text('name').notNull(),
+  location: text('location').notNull(),
+  address: text('address'),
+  city: text('city'),
+  country: text('country'),
+  zipCode: text('zip_code'),
+  phone: text('phone'),
+  email: text('email'),
+  manager: text('manager'),
+  capacity: integer('capacity'),
+  type: text('type').default('fulfillment'), // fulfillment, storage, transit
+  status: text('status').default('active'), // active, inactive, maintenance
+  rentedFromDate: date('rented_from_date'),
+  expenseId: integer('expense_id'),
+  contact: text('contact'),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  floorArea: decimal('floor_area', { precision: 10, scale: 2 })
+});
+
+export const products = pgTable('products', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  sku: text('sku').unique(),
+  categoryId: integer('category_id').references(() => categories.id),
+  supplierId: integer('supplier_id').references(() => suppliers.id),
+  warehouseId: text('warehouse_id').references(() => warehouses.id),
+  description: text('description'),
+  importCost: decimal('import_cost', { precision: 10, scale: 2 }),
+  sellingPrice: decimal('selling_price', { precision: 10, scale: 2 }),
+  currency: text('currency').default('CZK'),
+  stockQuantity: integer('stock_quantity').default(0),
+  lowStockThreshold: integer('low_stock_threshold').default(5),
+  barcode: text('barcode'),
+  imageUrl: text('image_url'),
+  weight: decimal('weight', { precision: 10, scale: 3 }), // in kg
+  dimensions: jsonb('dimensions'), // {length, width, height}
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
+export const orders = pgTable('orders', {
+  id: serial('id').primaryKey(),
+  orderId: text('order_id').notNull().unique(),
+  customerId: integer('customer_id').notNull().references(() => customers.id),
+  currency: text('currency').default('CZK'),
+  orderStatus: text('order_status').default('pending'), // pending, processing, shipped, delivered, cancelled
+  paymentStatus: text('payment_status').default('pending'), // pending, paid, pay_later, refunded
+  subtotal: decimal('subtotal', { precision: 10, scale: 2 }).default('0'),
+  taxRate: decimal('tax_rate', { precision: 5, scale: 2 }).default('21'), // VAT rate
+  taxAmount: decimal('tax_amount', { precision: 10, scale: 2 }).default('0'),
+  shippingCost: decimal('shipping_cost', { precision: 10, scale: 2 }).default('0'),
+  grandTotal: decimal('grand_total', { precision: 10, scale: 2 }).default('0'),
+  notes: text('notes'),
+  shippingMethod: text('shipping_method'),
+  paymentMethod: text('payment_method'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  shippedAt: timestamp('shipped_at')
+});
+
+export const orderItems = pgTable('order_items', {
+  id: serial('id').primaryKey(),
+  orderId: integer('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
+  productId: integer('product_id').notNull().references(() => products.id),
+  quantity: integer('quantity').notNull(),
+  unitPrice: decimal('unit_price', { precision: 10, scale: 2 }).notNull(),
+  totalPrice: decimal('total_price', { precision: 10, scale: 2 }).notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow()
+});
+
+export const discounts = pgTable('discounts', {
+  id: serial('id').primaryKey(),
+  discountId: text('discount_id').notNull().unique(),
+  name: text('name').notNull(),
+  type: text('type').notNull(), // percentage, fixed, buy_x_get_y
+  percentage: decimal('percentage', { precision: 5, scale: 2 }),
+  value: decimal('value', { precision: 10, scale: 2 }),
+  minOrderAmount: decimal('min_order_amount', { precision: 10, scale: 2 }),
+  status: text('status').default('active'), // active, inactive, expired
+  startDate: date('start_date'),
+  endDate: date('end_date'),
+  applicationScope: text('application_scope').default('order'), // order, product, customer
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
+export const expenses = pgTable('expenses', {
+  id: serial('id').primaryKey(),
+  expenseId: text('expense_id').notNull().unique(),
+  name: text('name').notNull(),
+  category: text('category').notNull(), // rent, utilities, shipping, marketing, equipment, other
+  amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
+  totalCost: decimal('total_cost', { precision: 10, scale: 2 }),
+  currency: text('currency').default('CZK'),
+  date: date('date').notNull(),
+  paymentMethod: text('payment_method'), // cash, card, bank_transfer, other
+  status: text('status').default('pending'), // pending, paid, overdue
+  recurring: boolean('recurring').default(false),
+  description: text('description'),
+  receiptUrl: text('receipt_url'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
+// User activities tracking
+export const userActivities = pgTable('user_activities', {
+  id: serial('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  action: text('action').notNull(), // created, updated, deleted, viewed
+  entityType: text('entity_type').notNull(), // order, product, customer, etc.
+  entityId: text('entity_id').notNull(),
+  description: text('description'),
+  createdAt: timestamp('created_at').notNull().defaultNow()
+});
+
 // Junction tables for many-to-many relationships
 export const consolidationItems = pgTable('consolidation_items', {
   id: serial('id').primaryKey(),
@@ -285,6 +437,58 @@ export const landedCostsRelations = relations(landedCosts, ({ one }) => ({
   })
 }));
 
+// Core business relations
+export const customersRelations = relations(customers, ({ many }) => ({
+  orders: many(orders)
+}));
+
+export const suppliersRelations = relations(suppliers, ({ many }) => ({
+  products: many(products)
+}));
+
+export const productsRelations = relations(products, ({ one, many }) => ({
+  category: one(categories, {
+    fields: [products.categoryId],
+    references: [categories.id]
+  }),
+  supplier: one(suppliers, {
+    fields: [products.supplierId],
+    references: [suppliers.id]
+  }),
+  warehouse: one(warehouses, {
+    fields: [products.warehouseId],
+    references: [warehouses.id]
+  }),
+  orderItems: many(orderItems)
+}));
+
+export const ordersRelations = relations(orders, ({ one, many }) => ({
+  customer: one(customers, {
+    fields: [orders.customerId],
+    references: [customers.id]
+  }),
+  orderItems: many(orderItems)
+}));
+
+export const orderItemsRelations = relations(orderItems, ({ one }) => ({
+  order: one(orders, {
+    fields: [orderItems.orderId],
+    references: [orders.id]
+  }),
+  product: one(products, {
+    fields: [orderItems.productId],
+    references: [products.id]
+  })
+}));
+
+export const warehousesRelations = relations(warehouses, ({ many }) => ({
+  products: many(products)
+}));
+
+export const categoriesRelations = relations(categories, ({ many }) => ({
+  products: many(products)
+}));
+
 // Export schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCategorySchema = createInsertSchema(categories).omit({ id: true, createdAt: true, updatedAt: true });
@@ -297,6 +501,17 @@ export const insertDeliveryHistorySchema = createInsertSchema(deliveryHistory).o
 export const insertReceiptSchema = createInsertSchema(receipts).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertReceiptItemSchema = createInsertSchema(receiptItems).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertLandedCostSchema = createInsertSchema(landedCosts).omit({ id: true, createdAt: true, updatedAt: true });
+
+// Core business schemas
+export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertWarehouseSchema = createInsertSchema(warehouses).omit({ createdAt: true });
+export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true });
+export const insertOrderItemSchema = createInsertSchema(orderItems).omit({ id: true, createdAt: true });
+export const insertDiscountSchema = createInsertSchema(discounts).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertExpenseSchema = createInsertSchema(expenses).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertUserActivitySchema = createInsertSchema(userActivities).omit({ id: true, createdAt: true });
 
 // Export types
 export type User = typeof users.$inferSelect;
@@ -321,3 +536,23 @@ export type ReceiptItem = typeof receiptItems.$inferSelect;
 export type InsertReceiptItem = z.infer<typeof insertReceiptItemSchema>;
 export type LandedCost = typeof landedCosts.$inferSelect;
 export type InsertLandedCost = z.infer<typeof insertLandedCostSchema>;
+
+// Core business types
+export type Customer = typeof customers.$inferSelect;
+export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
+export type Supplier = typeof suppliers.$inferSelect;
+export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
+export type Warehouse = typeof warehouses.$inferSelect;
+export type InsertWarehouse = z.infer<typeof insertWarehouseSchema>;
+export type Product = typeof products.$inferSelect;
+export type InsertProduct = z.infer<typeof insertProductSchema>;
+export type Order = typeof orders.$inferSelect;
+export type InsertOrder = z.infer<typeof insertOrderSchema>;
+export type OrderItem = typeof orderItems.$inferSelect;
+export type InsertOrderItem = z.infer<typeof insertOrderItemSchema>;
+export type Discount = typeof discounts.$inferSelect;
+export type InsertDiscount = z.infer<typeof insertDiscountSchema>;
+export type Expense = typeof expenses.$inferSelect;
+export type InsertExpense = z.infer<typeof insertExpenseSchema>;
+export type UserActivity = typeof userActivities.$inferSelect;
+export type InsertUserActivity = z.infer<typeof insertUserActivitySchema>;
