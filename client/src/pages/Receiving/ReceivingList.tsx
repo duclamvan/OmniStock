@@ -478,35 +478,79 @@ export default function ReceivingList() {
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-4 w-full max-w-2xl">
-          <TabsTrigger value="receivable">
-            Ready to Receive
-            {receivableShipments.filter((s: any) => !s.receipt).length > 0 && (
-              <Badge variant="secondary" className="ml-2">
-                {receivableShipments.filter((s: any) => !s.receipt).length}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="verification">
-            Verification
-            {pendingVerification.length > 0 && (
-              <Badge variant="secondary" className="ml-2">
-                {pendingVerification.length}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="approval">
-            Approval
-            {pendingApproval.length > 0 && (
-              <Badge variant="secondary" className="ml-2">
-                {pendingApproval.length}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="completed">
-            Completed
-          </TabsTrigger>
-        </TabsList>
+        <div className="flex gap-2 flex-wrap mb-6">
+          <button
+            onClick={() => setActiveTab('receivable')}
+            className={`
+              flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all
+              ${activeTab === 'receivable' 
+                ? 'bg-blue-600 text-white shadow-lg' 
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+              }
+            `}
+            data-testid="tab-receivable"
+          >
+            <Package className="h-4 w-4" />
+            <span>Ready to Receive</span>
+            <span className={`${activeTab === 'receivable' ? 'text-white/90' : 'text-gray-500'}`}>
+              ({receivableShipments.filter((s: any) => !s.receipt).length})
+            </span>
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('verification')}
+            className={`
+              flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all
+              ${activeTab === 'verification' 
+                ? 'bg-blue-600 text-white shadow-lg' 
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+              }
+            `}
+            data-testid="tab-verification"
+          >
+            <Clock className="h-4 w-4" />
+            <span>Verification</span>
+            <span className={`${activeTab === 'verification' ? 'text-white/90' : 'text-gray-500'}`}>
+              ({pendingVerification.length})
+            </span>
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('approval')}
+            className={`
+              flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all
+              ${activeTab === 'approval' 
+                ? 'bg-blue-600 text-white shadow-lg' 
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+              }
+            `}
+            data-testid="tab-approval"
+          >
+            <AlertCircle className="h-4 w-4" />
+            <span>Approval</span>
+            <span className={`${activeTab === 'approval' ? 'text-white/90' : 'text-gray-500'}`}>
+              ({pendingApproval.length})
+            </span>
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('completed')}
+            className={`
+              flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all
+              ${activeTab === 'completed' 
+                ? 'bg-blue-600 text-white shadow-lg' 
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+              }
+            `}
+            data-testid="tab-completed"
+          >
+            <CheckCircle className="h-4 w-4" />
+            <span>Completed</span>
+            <span className={`${activeTab === 'completed' ? 'text-white/90' : 'text-gray-500'}`}>
+              ({approved.length})
+            </span>
+          </button>
+        </div>
 
         <TabsContent value="receivable" className="mt-6">
           {isLoading ? (
