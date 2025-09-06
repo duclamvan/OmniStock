@@ -1201,6 +1201,64 @@ router.get("/shipments/search", async (req, res) => {
   }
 });
 
+// Get single shipment by ID with details (MUST come before general /shipments route)
+router.get("/shipments/:id", async (req, res) => {
+  try {
+    console.log(`Fetching shipment with ID: ${req.params.id}`);
+    const shipmentId = parseInt(req.params.id);
+    if (isNaN(shipmentId)) {
+      console.log("Invalid shipment ID");
+      return res.status(400).json({ message: "Invalid shipment ID" });
+    }
+
+    console.log("Querying database for shipment...");
+    const [shipment] = await db
+      .select({
+        shipment: shipments,
+        consolidation: consolidations
+      })
+      .from(shipments)
+      .leftJoin(consolidations, eq(shipments.consolidationId, consolidations.id))
+      .where(eq(shipments.id, shipmentId));
+
+    console.log("Shipment query result:", shipment ? "Found" : "Not found");
+    
+    if (!shipment) {
+      return res.status(404).json({ message: "Shipment not found" });
+    }
+
+    // Get shipment items from consolidation
+    let items: any[] = [];
+    if (shipment.shipment.consolidationId) {
+      items = await db
+        .select({
+          id: customItems.id,
+          name: customItems.name,
+          quantity: customItems.quantity,
+          weight: customItems.weight,
+          trackingNumber: customItems.trackingNumber,
+          unitPrice: customItems.unitPrice
+        })
+        .from(consolidationItems)
+        .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
+        .where(eq(consolidationItems.consolidationId, shipment.shipment.consolidationId));
+    }
+
+    const shipmentWithDetails = {
+      ...shipment.shipment,
+      consolidation: shipment.consolidation,
+      items,
+      itemCount: items.length
+    };
+
+    console.log("Returning full shipment data with", items.length, "items");
+    res.json(shipmentWithDetails);
+  } catch (error) {
+    console.error("Error fetching shipment:", error);
+    res.status(500).json({ message: "Failed to fetch shipment", error: error instanceof Error ? error.message : "Unknown error" });
+  }
+});
+
 // Get all shipments with details
 router.get("/shipments", async (req, res) => {
   try {

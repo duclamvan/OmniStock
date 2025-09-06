@@ -309,7 +309,7 @@ export default function StartReceiving() {
               </CardDescription>
             </div>
             <div className="flex flex-col items-end gap-2">
-              <Badge className={getStatusColor(shipment.status)} size="lg">
+              <Badge className={getStatusColor(shipment.status)}>
                 {shipment.status?.replace('_', ' ').toUpperCase()}
               </Badge>
               {getDeliveryStatus()?.type === 'urgent' && (
