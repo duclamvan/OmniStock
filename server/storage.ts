@@ -695,11 +695,92 @@ export class DatabaseStorage implements IStorage {
   async updateDiscount(id: string, discount: any): Promise<Discount | undefined> { return { id, ...discount }; }
   async deleteDiscount(id: string): Promise<boolean> { return true; }
 
-  async getWarehouses(): Promise<Warehouse[]> { return []; }
-  async getWarehouse(id: string): Promise<Warehouse | undefined> { return undefined; }
-  async createWarehouse(warehouse: any): Promise<Warehouse> { return { id: Date.now().toString(), ...warehouse }; }
-  async updateWarehouse(id: string, warehouse: any): Promise<Warehouse | undefined> { return { id, ...warehouse }; }
-  async deleteWarehouse(id: string): Promise<boolean> { return true; }
+  async getWarehouses(): Promise<Warehouse[]> {
+    try {
+      const result = await db.execute(sql`
+        SELECT * FROM warehouses 
+        ORDER BY name
+      `);
+      return result.rows as Warehouse[];
+    } catch (error) {
+      console.error('Error fetching warehouses:', error);
+      return [];
+    }
+  }
+
+  async getWarehouse(id: string): Promise<Warehouse | undefined> {
+    try {
+      const result = await db.execute(sql`
+        SELECT * FROM warehouses 
+        WHERE id = ${id}
+        LIMIT 1
+      `);
+      return result.rows[0] as Warehouse | undefined;
+    } catch (error) {
+      console.error('Error fetching warehouse:', error);
+      return undefined;
+    }
+  }
+
+  async createWarehouse(warehouse: any): Promise<Warehouse> {
+    try {
+      const id = warehouse.id || `WH-${Date.now()}`;
+      const result = await db.execute(sql`
+        INSERT INTO warehouses (id, name, location, address, city, country, zip_code, phone, email, manager, capacity, type, status, floor_area, code, notes)
+        VALUES (${id}, ${warehouse.name}, ${warehouse.location}, ${warehouse.address}, ${warehouse.city}, ${warehouse.country}, 
+                ${warehouse.zip_code}, ${warehouse.phone}, ${warehouse.email}, ${warehouse.manager}, 
+                ${warehouse.capacity}, ${warehouse.type}, ${warehouse.status || 'active'}, 
+                ${warehouse.floor_area}, ${warehouse.code}, ${warehouse.notes})
+        RETURNING *
+      `);
+      return result.rows[0] as Warehouse;
+    } catch (error) {
+      console.error('Error creating warehouse:', error);
+      throw error;
+    }
+  }
+
+  async updateWarehouse(id: string, warehouse: any): Promise<Warehouse | undefined> {
+    try {
+      const result = await db.execute(sql`
+        UPDATE warehouses 
+        SET name = ${warehouse.name},
+            location = ${warehouse.location},
+            address = ${warehouse.address},
+            city = ${warehouse.city},
+            country = ${warehouse.country},
+            zip_code = ${warehouse.zip_code},
+            phone = ${warehouse.phone},
+            email = ${warehouse.email},
+            manager = ${warehouse.manager},
+            capacity = ${warehouse.capacity},
+            type = ${warehouse.type},
+            status = ${warehouse.status},
+            floor_area = ${warehouse.floor_area},
+            code = ${warehouse.code},
+            notes = ${warehouse.notes}
+        WHERE id = ${id}
+        RETURNING *
+      `);
+      return result.rows[0] as Warehouse | undefined;
+    } catch (error) {
+      console.error('Error updating warehouse:', error);
+      return undefined;
+    }
+  }
+
+  async deleteWarehouse(id: string): Promise<boolean> {
+    try {
+      const result = await db.execute(sql`
+        DELETE FROM warehouses 
+        WHERE id = ${id}
+      `);
+      return (result.rowCount ?? 0) > 0;
+    } catch (error) {
+      console.error('Error deleting warehouse:', error);
+      return false;
+    }
+  }
 
   async getSuppliers(): Promise<Supplier[]> { return []; }
   async getSupplier(id: string): Promise<Supplier | undefined> { return undefined; }
