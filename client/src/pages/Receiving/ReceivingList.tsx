@@ -927,11 +927,11 @@ export default function ReceivingList() {
 
                         {/* Additional Info Bar */}
                         <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-xs sm:text-sm mb-3 sm:pl-11">
-                          {shipment.carrier !== shipment.endCarrier && shipment.endCarrier && (
+                          {shipment.consolidation?.warehouse && (
                             <div className="flex items-center gap-1">
-                              <Truck className="h-3 w-3 text-muted-foreground" />
+                              <MapPin className="h-3 w-3 text-muted-foreground" />
                               <span className="text-muted-foreground">
-                                {shipment.carrier} → {shipment.endCarrier}
+                                Destination: {shipment.consolidation.warehouse}
                               </span>
                             </div>
                           )}
