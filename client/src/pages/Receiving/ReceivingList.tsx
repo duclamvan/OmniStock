@@ -425,63 +425,6 @@ export default function ReceivingList() {
         </CardContent>
       </Card>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Ready to Receive</p>
-                <p className="text-2xl font-bold">
-                  {receivableShipments.filter((s: any) => !s.receipt).length}
-                </p>
-              </div>
-              <Truck className="h-8 w-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Pending Verification</p>
-                <p className="text-2xl font-bold">{pendingVerification.length}</p>
-              </div>
-              <Clock className="h-8 w-8 text-yellow-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Pending Approval</p>
-                <p className="text-2xl font-bold">{pendingApproval.length}</p>
-              </div>
-              <AlertCircle className="h-8 w-8 text-orange-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Approved Today</p>
-                <p className="text-2xl font-bold">
-                  {approved.filter((r: any) => {
-                    const today = new Date().toDateString();
-                    return new Date(r.approvedAt).toDateString() === today;
-                  }).length}
-                </p>
-              </div>
-              <CheckCircle className="h-8 w-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
