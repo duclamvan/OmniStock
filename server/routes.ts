@@ -8,6 +8,14 @@ import path from "path";
 import { promises as fs } from "fs";
 import {
   insertCategorySchema,
+  insertCustomerSchema,
+  insertSupplierSchema,
+  insertProductSchema,
+  insertOrderSchema,
+  insertOrderItemSchema,
+  insertDiscountSchema,
+  insertExpenseSchema,
+  insertUserActivitySchema,
 } from "@shared/schema";
 import { z } from "zod";
 import { nanoid } from "nanoid";
