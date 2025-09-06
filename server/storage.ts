@@ -619,31 +619,80 @@ export class DatabaseStorage implements IStorage {
 
   // Products
   async getProducts(): Promise<Product[]> {
-    return [];
+    try {
+      const productsData = await db.select().from(products).orderBy(desc(products.createdAt));
+      return productsData;
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      return [];
+    }
   }
 
   async getProduct(id: string): Promise<Product | undefined> {
-    return undefined;
+    try {
+      const [product] = await db.select().from(products).where(eq(products.id, parseInt(id)));
+      return product || undefined;
+    } catch (error) {
+      console.error('Error fetching product:', error);
+      return undefined;
+    }
   }
 
   async getProductById(id: string): Promise<Product | undefined> {
-    return undefined;
+    return this.getProduct(id);
   }
 
-  async createProduct(product: any): Promise<Product> {
-    return { id: Date.now().toString(), ...product };
+  async createProduct(productData: any): Promise<Product> {
+    try {
+      const [product] = await db
+        .insert(products)
+        .values(productData)
+        .returning();
+      return product;
+    } catch (error) {
+      console.error('Error creating product:', error);
+      throw error;
+    }
   }
 
-  async updateProduct(id: string, product: any): Promise<Product | undefined> {
-    return { id, ...product };
+  async updateProduct(id: string, productData: any): Promise<Product | undefined> {
+    try {
+      const [updated] = await db
+        .update(products)
+        .set({ ...productData, updatedAt: new Date() })
+        .where(eq(products.id, parseInt(id)))
+        .returning();
+      return updated || undefined;
+    } catch (error) {
+      console.error('Error updating product:', error);
+      return undefined;
+    }
   }
 
   async deleteProduct(id: string): Promise<boolean> {
-    return true;
+    try {
+      const result = await db
+        .delete(products)
+        .where(eq(products.id, parseInt(id)));
+      return (result.rowCount ?? 0) > 0;
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      return false;
+    }
   }
 
   async getLowStockProducts(): Promise<Product[]> {
-    return [];
+    try {
+      const lowStockProducts = await db
+        .select()
+        .from(products)
+        .where(sql`${products.stockQuantity} <= ${products.lowStockThreshold}`)
+        .orderBy(products.stockQuantity);
+      return lowStockProducts;
+    } catch (error) {
+      console.error('Error fetching low stock products:', error);
+      return [];
+    }
   }
 
   // Product Variants
@@ -665,27 +714,66 @@ export class DatabaseStorage implements IStorage {
 
   // Customers
   async getCustomers(): Promise<Customer[]> {
-    return [];
+    try {
+      const customersData = await db.select().from(customers).orderBy(desc(customers.createdAt));
+      return customersData;
+    } catch (error) {
+      console.error('Error fetching customers:', error);
+      return [];
+    }
   }
 
   async getCustomer(id: number): Promise<Customer | undefined> {
-    return undefined;
+    try {
+      const [customer] = await db.select().from(customers).where(eq(customers.id, id));
+      return customer || undefined;
+    } catch (error) {
+      console.error('Error fetching customer:', error);
+      return undefined;
+    }
   }
 
   async getCustomerById(id: number): Promise<Customer | undefined> {
-    return undefined;
+    return this.getCustomer(id);
   }
 
-  async createCustomer(customer: any): Promise<Customer> {
-    return { id: Date.now(), ...customer };
+  async createCustomer(customerData: any): Promise<Customer> {
+    try {
+      const [customer] = await db
+        .insert(customers)
+        .values(customerData)
+        .returning();
+      return customer;
+    } catch (error) {
+      console.error('Error creating customer:', error);
+      throw error;
+    }
   }
 
-  async updateCustomer(id: number, customer: any): Promise<Customer | undefined> {
-    return { id, ...customer };
+  async updateCustomer(id: number, customerData: any): Promise<Customer | undefined> {
+    try {
+      const [updated] = await db
+        .update(customers)
+        .set({ ...customerData, updatedAt: new Date() })
+        .where(eq(customers.id, id))
+        .returning();
+      return updated || undefined;
+    } catch (error) {
+      console.error('Error updating customer:', error);
+      return undefined;
+    }
   }
 
   async deleteCustomer(id: number): Promise<boolean> {
-    return true;
+    try {
+      const result = await db
+        .delete(customers)
+        .where(eq(customers.id, id));
+      return (result.rowCount ?? 0) > 0;
+    } catch (error) {
+      console.error('Error deleting customer:', error);
+      return false;
+    }
   }
 
   // All other stub implementations...
@@ -782,11 +870,64 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getSuppliers(): Promise<Supplier[]> { return []; }
-  async getSupplier(id: string): Promise<Supplier | undefined> { return undefined; }
-  async createSupplier(supplier: any): Promise<Supplier> { return { id: Date.now().toString(), ...supplier }; }
-  async updateSupplier(id: string, supplier: any): Promise<Supplier | undefined> { return { id, ...supplier }; }
-  async deleteSupplier(id: string): Promise<boolean> { return true; }
+  async getSuppliers(): Promise<Supplier[]> {
+    try {
+      const suppliersData = await db.select().from(suppliers).orderBy(desc(suppliers.createdAt));
+      return suppliersData;
+    } catch (error) {
+      console.error('Error fetching suppliers:', error);
+      return [];
+    }
+  }
+
+  async getSupplier(id: string): Promise<Supplier | undefined> {
+    try {
+      const [supplier] = await db.select().from(suppliers).where(eq(suppliers.id, parseInt(id)));
+      return supplier || undefined;
+    } catch (error) {
+      console.error('Error fetching supplier:', error);
+      return undefined;
+    }
+  }
+
+  async createSupplier(supplierData: any): Promise<Supplier> {
+    try {
+      const [supplier] = await db
+        .insert(suppliers)
+        .values(supplierData)
+        .returning();
+      return supplier;
+    } catch (error) {
+      console.error('Error creating supplier:', error);
+      throw error;
+    }
+  }
+
+  async updateSupplier(id: string, supplierData: any): Promise<Supplier | undefined> {
+    try {
+      const [updated] = await db
+        .update(suppliers)
+        .set({ ...supplierData, updatedAt: new Date() })
+        .where(eq(suppliers.id, parseInt(id)))
+        .returning();
+      return updated || undefined;
+    } catch (error) {
+      console.error('Error updating supplier:', error);
+      return undefined;
+    }
+  }
+
+  async deleteSupplier(id: string): Promise<boolean> {
+    try {
+      const result = await db
+        .delete(suppliers)
+        .where(eq(suppliers.id, parseInt(id)));
+      return (result.rowCount ?? 0) > 0;
+    } catch (error) {
+      console.error('Error deleting supplier:', error);
+      return false;
+    }
+  }
 
   async getReturns(): Promise<Return[]> { return []; }
   async getReturn(id: string): Promise<Return | undefined> { return undefined; }
