@@ -520,139 +520,340 @@ export default function ReceivingList() {
               <p className="text-muted-foreground">No shipments ready for receiving</p>
             </div>
           ) : (
-            <Card>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="border-b bg-gray-50 dark:bg-gray-900">
-                    <tr>
-                      <th className="p-3 text-left">
-                        <Checkbox
-                          checked={selectedShipments.size === filteredShipments.filter((s: any) => !s.receipt).length && filteredShipments.filter((s: any) => !s.receipt).length > 0}
-                          onCheckedChange={() => {
-                            const receivableShipments = filteredShipments.filter((s: any) => !s.receipt);
-                            if (selectedShipments.size === receivableShipments.length) {
-                              clearSelection();
-                            } else {
-                              const allIds = new Set<number>(receivableShipments.map((s: any) => s.id));
-                              setSelectedShipments(allIds);
-                              setShowBulkActions(allIds.size > 0);
-                            }
-                          }}
-                          data-testid="checkbox-select-all"
-                        />
-                      </th>
-                      <th className="p-3 text-left text-sm font-semibold">Shipment</th>
-                      <th className="p-3 text-left text-sm font-semibold">Tracking</th>
-                      <th className="p-3 text-left text-sm font-semibold">Carrier</th>
-                      <th className="p-3 text-left text-sm font-semibold">Route</th>
-                      <th className="p-3 text-center text-sm font-semibold">Units</th>
-                      <th className="p-3 text-left text-sm font-semibold">Est. Delivery</th>
-                      <th className="p-3 text-left text-sm font-semibold">Status</th>
-                      <th className="p-3 text-left text-sm font-semibold">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {filteredShipments
-                      .filter((s: any) => !s.receipt)
-                      .map((shipment: any) => {
-                        const urgent = isUrgent(shipment);
-                        return (
-                          <tr 
-                            key={shipment.id} 
-                            id={`shipment-${shipment.id}`}
-                            className={`hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors ${urgent ? 'bg-orange-50/50 dark:bg-orange-950/20' : ''}`}
-                          >
-                            <td className="p-3">
+            <>
+              {/* Mobile view - Cards */}
+              <div className="block lg:hidden space-y-3">
+                {filteredShipments
+                  .filter((s: any) => !s.receipt)
+                  .map((shipment: any) => {
+                    const urgent = isUrgent(shipment);
+                    return (
+                      <Card 
+                        key={shipment.id} 
+                        id={`shipment-${shipment.id}`}
+                        className={`${urgent ? 'border-orange-300 bg-orange-50/50 dark:bg-orange-950/20' : ''}`}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-start gap-3 flex-1">
                               <Checkbox
                                 checked={selectedShipments.has(shipment.id)}
                                 onCheckedChange={() => toggleShipmentSelection(shipment.id)}
+                                className="mt-1"
                                 data-testid={`checkbox-shipment-${shipment.id}`}
                               />
-                            </td>
-                            <td className="p-3">
-                              <div className="flex items-center gap-2">
-                                <div>
-                                  <div className="font-medium">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 flex-wrap mb-2">
+                                  <h3 className="font-semibold text-base">
                                     {shipment.shipmentName || `Shipment #${shipment.id}`}
+                                  </h3>
+                                  {urgent && (
+                                    <Badge variant="destructive" className="animate-pulse">
+                                      <Zap className="h-3 w-3 mr-1" />
+                                      Urgent
+                                    </Badge>
+                                  )}
+                                  <Badge className={getStatusColor(shipment.status)}>
+                                    {shipment.status?.replace('_', ' ').toUpperCase()}
+                                  </Badge>
+                                </div>
+                                {shipment.consolidation && (
+                                  <p className="text-xs text-muted-foreground mb-2">
+                                    {shipment.consolidation.name}
+                                  </p>
+                                )}
+                                <div className="space-y-1 text-sm">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-muted-foreground">Tracking:</span>
+                                    <span className="font-mono text-xs">{shipment.trackingNumber}</span>
                                   </div>
-                                  {shipment.consolidation && (
-                                    <div className="text-xs text-muted-foreground">
-                                      {shipment.consolidation.name}
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-muted-foreground">Carrier:</span>
+                                    <span>
+                                      {shipment.carrier}
+                                      {shipment.endCarrier && shipment.endCarrier !== shipment.carrier && (
+                                        <span className="text-xs"> → {shipment.endCarrier}</span>
+                                      )}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-start gap-2">
+                                    <span className="text-muted-foreground">Route:</span>
+                                    <span className="flex items-center gap-1 flex-wrap">
+                                      <span>{shipment.origin?.split(',')[0]}</span>
+                                      <ChevronRight className="h-3 w-3" />
+                                      <span>{shipment.destination?.split(',')[0]}</span>
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-muted-foreground">Units:</span>
+                                    <span className="font-medium">
+                                      {shipment.totalUnits} {shipment.unitType || 'items'}
+                                    </span>
+                                  </div>
+                                  {shipment.estimatedDelivery && (
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-muted-foreground">Est. Delivery:</span>
+                                      <span className="flex items-center gap-1">
+                                        <Calendar className="h-3 w-3" />
+                                        {format(new Date(shipment.estimatedDelivery), 'MMM dd, yyyy')}
+                                      </span>
                                     </div>
                                   )}
                                 </div>
-                                {urgent && (
-                                  <Badge variant="destructive" className="animate-pulse">
-                                    <Zap className="h-3 w-3 mr-1" />
-                                    Urgent
-                                  </Badge>
-                                )}
                               </div>
-                            </td>
-                            <td className="p-3">
-                              <div className="font-mono text-xs">
-                                {shipment.trackingNumber}
-                              </div>
-                            </td>
-                            <td className="p-3">
-                              <div className="text-sm">
-                                <div>{shipment.carrier}</div>
-                                {shipment.endCarrier && shipment.endCarrier !== shipment.carrier && (
-                                  <div className="text-xs text-muted-foreground">
-                                    → {shipment.endCarrier}
-                                  </div>
-                                )}
-                              </div>
-                            </td>
-                            <td className="p-3">
-                              <div className="flex items-center gap-1 text-sm">
-                                <MapPin className="h-3 w-3 text-muted-foreground" />
-                                <span className="truncate max-w-[100px]" title={shipment.origin}>
-                                  {shipment.origin?.split(',')[0]}
-                                </span>
-                                <ChevronRight className="h-3 w-3 text-muted-foreground" />
-                                <span className="truncate max-w-[100px]" title={shipment.destination}>
-                                  {shipment.destination?.split(',')[0]}
-                                </span>
-                              </div>
-                            </td>
-                            <td className="p-3 text-center">
-                              <div className="text-sm font-medium">
-                                {shipment.totalUnits} {shipment.unitType || 'items'}
-                              </div>
-                            </td>
-                            <td className="p-3">
-                              <div className="text-sm">
-                                {shipment.estimatedDelivery ? (
-                                  <div className="flex items-center gap-1">
-                                    <Calendar className="h-3 w-3 text-muted-foreground" />
-                                    {format(new Date(shipment.estimatedDelivery), 'MMM dd')}
-                                  </div>
-                                ) : (
-                                  '-'
-                                )}
-                              </div>
-                            </td>
-                            <td className="p-3">
-                              <Badge className={getStatusColor(shipment.status)}>
-                                {shipment.status?.replace('_', ' ').toUpperCase()}
-                              </Badge>
-                            </td>
-                            <td className="p-3">
-                              <Link href={`/receiving/start/${shipment.id}`}>
-                                <Button size="sm" variant="outline">
-                                  <Plus className="h-4 w-4 mr-1" />
-                                  Receive
-                                </Button>
-                              </Link>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                  </tbody>
-                </table>
+                            </div>
+                          </div>
+                          <Link href={`/receiving/start/${shipment.id}`}>
+                            <Button size="sm" className="w-full">
+                              <Plus className="h-4 w-4 mr-2" />
+                              Start Receiving
+                            </Button>
+                          </Link>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
               </div>
-            </Card>
+
+              {/* Tablet view - Condensed table */}
+              <div className="hidden lg:hidden md:block">
+                <Card>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="border-b bg-gray-50 dark:bg-gray-900">
+                        <tr>
+                          <th className="p-3 text-left w-10">
+                            <Checkbox
+                              checked={selectedShipments.size === filteredShipments.filter((s: any) => !s.receipt).length && filteredShipments.filter((s: any) => !s.receipt).length > 0}
+                              onCheckedChange={() => {
+                                const receivableShipments = filteredShipments.filter((s: any) => !s.receipt);
+                                if (selectedShipments.size === receivableShipments.length) {
+                                  clearSelection();
+                                } else {
+                                  const allIds = new Set<number>(receivableShipments.map((s: any) => s.id));
+                                  setSelectedShipments(allIds);
+                                  setShowBulkActions(allIds.size > 0);
+                                }
+                              }}
+                              data-testid="checkbox-select-all"
+                            />
+                          </th>
+                          <th className="p-3 text-left text-sm font-semibold">Shipment</th>
+                          <th className="p-3 text-left text-sm font-semibold">Tracking</th>
+                          <th className="p-3 text-center text-sm font-semibold">Units</th>
+                          <th className="p-3 text-left text-sm font-semibold">Status</th>
+                          <th className="p-3 text-left text-sm font-semibold">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {filteredShipments
+                          .filter((s: any) => !s.receipt)
+                          .map((shipment: any) => {
+                            const urgent = isUrgent(shipment);
+                            return (
+                              <tr 
+                                key={shipment.id} 
+                                id={`shipment-${shipment.id}`}
+                                className={`hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors ${urgent ? 'bg-orange-50/50 dark:bg-orange-950/20' : ''}`}
+                              >
+                                <td className="p-3">
+                                  <Checkbox
+                                    checked={selectedShipments.has(shipment.id)}
+                                    onCheckedChange={() => toggleShipmentSelection(shipment.id)}
+                                    data-testid={`checkbox-shipment-${shipment.id}`}
+                                  />
+                                </td>
+                                <td className="p-3">
+                                  <div>
+                                    <div className="font-medium text-sm">
+                                      {shipment.shipmentName || `Shipment #${shipment.id}`}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                      {shipment.carrier} → {shipment.endCarrier || shipment.carrier}
+                                    </div>
+                                    {urgent && (
+                                      <Badge variant="destructive" className="animate-pulse mt-1">
+                                        <Zap className="h-3 w-3 mr-1" />
+                                        Urgent
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="p-3">
+                                  <div className="font-mono text-xs">
+                                    {shipment.trackingNumber}
+                                  </div>
+                                </td>
+                                <td className="p-3 text-center">
+                                  <div className="text-sm font-medium">
+                                    {shipment.totalUnits}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {shipment.unitType || 'items'}
+                                  </div>
+                                </td>
+                                <td className="p-3">
+                                  <Badge className={getStatusColor(shipment.status)}>
+                                    {shipment.status?.replace('_', ' ').toUpperCase()}
+                                  </Badge>
+                                </td>
+                                <td className="p-3">
+                                  <Link href={`/receiving/start/${shipment.id}`}>
+                                    <Button size="sm" variant="outline">
+                                      <Plus className="h-4 w-4 mr-1" />
+                                      Receive
+                                    </Button>
+                                  </Link>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+              </div>
+
+              {/* Desktop view - Full table */}
+              <div className="hidden lg:block">
+                <Card>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="border-b bg-gray-50 dark:bg-gray-900">
+                        <tr>
+                          <th className="p-4 text-left w-12">
+                            <Checkbox
+                              checked={selectedShipments.size === filteredShipments.filter((s: any) => !s.receipt).length && filteredShipments.filter((s: any) => !s.receipt).length > 0}
+                              onCheckedChange={() => {
+                                const receivableShipments = filteredShipments.filter((s: any) => !s.receipt);
+                                if (selectedShipments.size === receivableShipments.length) {
+                                  clearSelection();
+                                } else {
+                                  const allIds = new Set<number>(receivableShipments.map((s: any) => s.id));
+                                  setSelectedShipments(allIds);
+                                  setShowBulkActions(allIds.size > 0);
+                                }
+                              }}
+                              data-testid="checkbox-select-all"
+                            />
+                          </th>
+                          <th className="p-4 text-left text-sm font-semibold min-w-[200px]">Shipment</th>
+                          <th className="p-4 text-left text-sm font-semibold min-w-[150px]">Tracking</th>
+                          <th className="p-4 text-left text-sm font-semibold min-w-[140px]">Carrier</th>
+                          <th className="p-4 text-left text-sm font-semibold min-w-[200px]">Route</th>
+                          <th className="p-4 text-center text-sm font-semibold min-w-[80px]">Units</th>
+                          <th className="p-4 text-left text-sm font-semibold min-w-[120px]">Est. Delivery</th>
+                          <th className="p-4 text-left text-sm font-semibold min-w-[100px]">Status</th>
+                          <th className="p-4 text-left text-sm font-semibold min-w-[100px]">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {filteredShipments
+                          .filter((s: any) => !s.receipt)
+                          .map((shipment: any) => {
+                            const urgent = isUrgent(shipment);
+                            return (
+                              <tr 
+                                key={shipment.id} 
+                                id={`shipment-${shipment.id}`}
+                                className={`hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors ${urgent ? 'bg-orange-50/50 dark:bg-orange-950/20' : ''}`}
+                              >
+                                <td className="p-4">
+                                  <Checkbox
+                                    checked={selectedShipments.has(shipment.id)}
+                                    onCheckedChange={() => toggleShipmentSelection(shipment.id)}
+                                    data-testid={`checkbox-shipment-${shipment.id}`}
+                                  />
+                                </td>
+                                <td className="p-4">
+                                  <div className="flex items-center gap-2">
+                                    <div>
+                                      <div className="font-medium">
+                                        {shipment.shipmentName || `Shipment #${shipment.id}`}
+                                      </div>
+                                      {shipment.consolidation && (
+                                        <div className="text-xs text-muted-foreground">
+                                          {shipment.consolidation.name} • {shipment.consolidation.shippingMethod?.replace(/_/g, ' ')}
+                                        </div>
+                                      )}
+                                    </div>
+                                    {urgent && (
+                                      <Badge variant="destructive" className="animate-pulse">
+                                        <Zap className="h-3 w-3 mr-1" />
+                                        Urgent
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="p-4">
+                                  <div className="font-mono text-xs">
+                                    {shipment.trackingNumber}
+                                  </div>
+                                </td>
+                                <td className="p-4">
+                                  <div className="text-sm">
+                                    <div>{shipment.carrier}</div>
+                                    {shipment.endCarrier && shipment.endCarrier !== shipment.carrier && (
+                                      <div className="text-xs text-muted-foreground">
+                                        → {shipment.endCarrier}
+                                      </div>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="p-4">
+                                  <div className="flex items-center gap-1 text-sm">
+                                    <MapPin className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                                    <span className="truncate max-w-[100px]" title={shipment.origin}>
+                                      {shipment.origin?.split(',')[0]}
+                                    </span>
+                                    <ChevronRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                                    <span className="truncate max-w-[100px]" title={shipment.destination}>
+                                      {shipment.destination?.split(',')[0]}
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="p-4 text-center">
+                                  <div className="text-sm font-medium">
+                                    {shipment.totalUnits}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {shipment.unitType || 'items'}
+                                  </div>
+                                </td>
+                                <td className="p-4">
+                                  <div className="text-sm">
+                                    {shipment.estimatedDelivery ? (
+                                      <div className="flex items-center gap-1">
+                                        <Calendar className="h-3 w-3 text-muted-foreground" />
+                                        {format(new Date(shipment.estimatedDelivery), 'MMM dd')}
+                                      </div>
+                                    ) : (
+                                      <span className="text-muted-foreground">-</span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="p-4">
+                                  <Badge className={getStatusColor(shipment.status)}>
+                                    {shipment.status?.replace('_', ' ').toUpperCase()}
+                                  </Badge>
+                                </td>
+                                <td className="p-4">
+                                  <Link href={`/receiving/start/${shipment.id}`}>
+                                    <Button size="sm" variant="outline">
+                                      <Plus className="h-4 w-4 mr-1" />
+                                      Receive
+                                    </Button>
+                                  </Link>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+              </div>
+            </>
           )}
         </TabsContent>
 
