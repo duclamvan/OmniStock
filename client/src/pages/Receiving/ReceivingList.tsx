@@ -931,7 +931,7 @@ export default function ReceivingList() {
                             <div className="flex items-center gap-1">
                               <MapPin className="h-3 w-3 text-muted-foreground" />
                               <span className="text-muted-foreground">
-                                Destination: {shipment.consolidation.warehouse}
+                                Destination Warehouse: {shipment.consolidation.warehouse}
                               </span>
                             </div>
                           )}
