@@ -572,8 +572,7 @@ export default function ReceivingList() {
                                   <>
                                     <Badge variant="secondary" className="text-xs">
                                       {(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod)
-                                        ?.replace(/_/g, ' ')
-                                        .replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                                        ?.replace(/_/g, ' ')}
                                     </Badge>
                                     <span className="text-muted-foreground">•</span>
                                   </>
