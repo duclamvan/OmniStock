@@ -537,8 +537,18 @@ export class DatabaseStorage implements IStorage {
   
   // Orders - Compatibility stubs (return empty data for now)
   async getOrders(customerId?: number): Promise<Order[]> {
-    // Return empty array for now - orders have been replaced by imports
-    return [];
+    try {
+      if (customerId) {
+        const ordersData = await db.select().from(orders).where(eq(orders.customerId, customerId.toString())).orderBy(desc(orders.createdAt));
+        return ordersData;
+      } else {
+        const ordersData = await db.select().from(orders).orderBy(desc(orders.createdAt));
+        return ordersData;
+      }
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      return [];
+    }
   }
 
   async getOrdersByStatus(status: string): Promise<Order[]> {
@@ -546,16 +556,55 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getOrder(id: string): Promise<Order | undefined> {
-    return undefined;
+    try {
+      const [order] = await db.select().from(orders).where(eq(orders.id, id));
+      return order || undefined;
+    } catch (error) {
+      console.error('Error fetching order:', error);
+      return undefined;
+    }
   }
 
   async getOrderById(id: string): Promise<Order | undefined> {
-    return undefined;
+    return this.getOrder(id);
   }
 
-  async createOrder(order: any): Promise<Order> {
-    // Create a dummy order for compatibility
-    return { id: Date.now().toString(), ...order };
+  async generateOrderId(): Promise<string> {
+    // Generate order ID in format ORDER-YYYYMMDD-XXXX
+    const date = new Date();
+    const dateStr = date.getFullYear().toString() + 
+                   (date.getMonth() + 1).toString().padStart(2, '0') + 
+                   date.getDate().toString().padStart(2, '0');
+    
+    // Get existing orders count for today to generate sequence
+    const todayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const todayEnd = new Date(todayStart);
+    todayEnd.setDate(todayEnd.getDate() + 1);
+    
+    try {
+      const todayOrders = await db.select().from(orders)
+        .where(sql`${orders.createdAt} >= ${todayStart} AND ${orders.createdAt} < ${todayEnd}`);
+      
+      const sequence = (todayOrders.length + 1).toString().padStart(4, '0');
+      return `ORDER-${dateStr}-${sequence}`;
+    } catch (error) {
+      // Fallback to timestamp-based ID if query fails
+      const timestamp = Date.now().toString().slice(-4);
+      return `ORDER-${dateStr}-${timestamp}`;
+    }
+  }
+
+  async createOrder(orderData: any): Promise<Order> {
+    try {
+      const [order] = await db
+        .insert(orders)
+        .values(orderData)
+        .returning();
+      return order;
+    } catch (error) {
+      console.error('Error creating order:', error);
+      throw error;
+    }
   }
 
   async updateOrder(id: string, order: any): Promise<Order | undefined> {
