@@ -568,9 +568,13 @@ export default function ReceivingList() {
                               
                               {/* Second Row: More Visible Info - End-Carrier, Units, Tracking */}
                               <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground mt-2">
-                                {shipment.consolidation && (
+                                {(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod) && (
                                   <>
-                                    <span className="text-muted-foreground text-xs">{shipment.consolidation.name}</span>
+                                    <Badge variant="secondary" className="text-xs">
+                                      {(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod)
+                                        ?.replace(/_/g, ' ')
+                                        .replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                                    </Badge>
                                     <span className="text-muted-foreground">•</span>
                                   </>
                                 )}
