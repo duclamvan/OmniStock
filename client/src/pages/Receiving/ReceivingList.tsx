@@ -669,7 +669,7 @@ export default function ReceivingList() {
                                   </>
                                 )}
                                 <span className="font-semibold">
-                                  {getCarrierLogo(shipment.endCarrier || shipment.carrier)}
+                                  {shipment.endCarrier || shipment.carrier}
                                 </span>
                                 <span className="text-muted-foreground">•</span>
                                 <span className="flex items-center gap-1">
