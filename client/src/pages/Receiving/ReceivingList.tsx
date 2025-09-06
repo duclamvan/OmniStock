@@ -36,6 +36,24 @@ import { Link } from "wouter";
 import { format, differenceInHours } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
+// Helper function to format shipment type display name
+const formatShipmentType = (shipmentType: string) => {
+  if (!shipmentType) return '';
+  
+  const isSensitive = shipmentType.includes('sensitive');
+  const baseType = shipmentType.replace('_sensitive', '_general');
+  
+  const typeMap: { [key: string]: string } = {
+    'air_ddp_general': 'Air DDP',
+    'express_general': 'Express',
+    'railway_general': 'Railway',
+    'sea_general': 'Sea Freight'
+  };
+  
+  const label = typeMap[baseType] || shipmentType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  return isSensitive ? `${label} (Sensitive)` : label;
+};
+
 export default function ReceivingList() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("receivable");
@@ -571,8 +589,7 @@ export default function ReceivingList() {
                                 {(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod) && (
                                   <>
                                     <Badge variant="secondary" className="text-xs">
-                                      {(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod)
-                                        ?.replace(/_/g, ' ')}
+                                      {formatShipmentType(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod || '')}
                                     </Badge>
                                     <span className="text-muted-foreground">•</span>
                                   </>
