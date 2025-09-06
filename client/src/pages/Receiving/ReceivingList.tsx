@@ -18,6 +18,8 @@ import {
   Calendar,
   MapPin,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Package2,
   FileText,
   AlertTriangle,
@@ -26,10 +28,13 @@ import {
   Users,
   CheckSquare,
   Square,
-  Zap
+  Zap,
+  CreditCard,
+  UserCheck
 } from "lucide-react";
 import { Link } from "wouter";
 import { format, differenceInHours } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ReceivingList() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -38,6 +43,8 @@ export default function ReceivingList() {
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [barcodeScan, setBarcodeScan] = useState("");
   const [showBulkActions, setShowBulkActions] = useState(false);
+  const [expandedShipments, setExpandedShipments] = useState<Set<number>>(new Set());
+  const { toast } = useToast();
 
   // Fetch receivable shipments
   const { data: receivableShipments = [], isLoading: isLoadingShipments } = useQuery({
@@ -564,340 +571,168 @@ export default function ReceivingList() {
               <p className="text-muted-foreground">No shipments ready for receiving</p>
             </div>
           ) : (
-            <>
-              {/* Mobile view - Cards */}
-              <div className="block lg:hidden space-y-3">
-                {filteredShipments
-                  .filter((s: any) => !s.receipt)
-                  .map((shipment: any) => {
-                    const urgent = isUrgent(shipment);
-                    return (
-                      <Card 
-                        key={shipment.id} 
-                        id={`shipment-${shipment.id}`}
-                        className={`${urgent ? 'border-orange-300 bg-orange-50/50 dark:bg-orange-950/20' : ''}`}
-                      >
-                        <CardContent className="p-4">
-                          <div className="flex items-start justify-between mb-3">
-                            <div className="flex items-start gap-3 flex-1">
-                              <Checkbox
-                                checked={selectedShipments.has(shipment.id)}
-                                onCheckedChange={() => toggleShipmentSelection(shipment.id)}
-                                className="mt-1"
-                                data-testid={`checkbox-shipment-${shipment.id}`}
-                              />
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 flex-wrap mb-2">
-                                  <h3 className="font-semibold text-base">
-                                    {shipment.shipmentName || `Shipment #${shipment.id}`}
-                                  </h3>
-                                  {urgent && (
-                                    <Badge variant="destructive" className="animate-pulse">
-                                      <Zap className="h-3 w-3 mr-1" />
-                                      Urgent
-                                    </Badge>
-                                  )}
-                                  <Badge className={getStatusColor(shipment.status)}>
-                                    {shipment.status?.replace('_', ' ').toUpperCase()}
+            <div className="space-y-4">
+              {filteredShipments
+                .filter((s: any) => !s.receipt)
+                .map((shipment: any) => {
+                  const urgent = isUrgent(shipment);
+                  const isExpanded = expandedShipments.has(shipment.id);
+                  
+                  return (
+                    <Card key={shipment.id} id={`shipment-${shipment.id}`} className={`border hover:shadow-md transition-shadow ${urgent ? 'border-orange-300 bg-orange-50/50 dark:bg-orange-950/20' : ''}`}>
+                      <CardContent className="p-4">
+                        {/* Shipment Header */}
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+                          <div className="flex items-center gap-2 sm:gap-3">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="p-1"
+                              onClick={() => {
+                                const newExpanded = new Set(expandedShipments);
+                                if (isExpanded) {
+                                  newExpanded.delete(shipment.id);
+                                } else {
+                                  newExpanded.add(shipment.id);
+                                }
+                                setExpandedShipments(newExpanded);
+                              }}
+                              data-testid={`button-toggle-${shipment.id}`}
+                            >
+                              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                            </Button>
+                            <Checkbox
+                              checked={selectedShipments.has(shipment.id)}
+                              onCheckedChange={() => toggleShipmentSelection(shipment.id)}
+                              data-testid={`checkbox-shipment-${shipment.id}`}
+                            />
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h3 className="font-semibold text-sm sm:text-base">
+                                  {shipment.shipmentName || `Shipment #${shipment.id}`}
+                                </h3>
+                                {urgent && (
+                                  <Badge variant="destructive" className="animate-pulse">
+                                    <Zap className="h-3 w-3 mr-1" />
+                                    Urgent
                                   </Badge>
-                                </div>
-                                {shipment.consolidation && (
-                                  <p className="text-xs text-muted-foreground mb-2">
-                                    {shipment.consolidation.name}
-                                  </p>
                                 )}
-                                <div className="space-y-1 text-sm">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-muted-foreground">Tracking:</span>
-                                    <span className="font-mono text-xs">{shipment.trackingNumber}</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-muted-foreground">Carrier:</span>
-                                    <span>
-                                      {shipment.carrier}
-                                      {shipment.endCarrier && shipment.endCarrier !== shipment.carrier && (
-                                        <span className="text-xs"> → {shipment.endCarrier}</span>
-                                      )}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-start gap-2">
-                                    <span className="text-muted-foreground">Route:</span>
-                                    <span className="flex items-center gap-1 flex-wrap">
-                                      <span>{shipment.origin?.split(',')[0]}</span>
-                                      <ChevronRight className="h-3 w-3" />
-                                      <span>{shipment.destination?.split(',')[0]}</span>
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-muted-foreground">Units:</span>
-                                    <span className="font-medium">
-                                      {shipment.totalUnits} {shipment.unitType || 'items'}
-                                    </span>
-                                  </div>
-                                  {shipment.estimatedDelivery && (
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-muted-foreground">Est. Delivery:</span>
-                                      <span className="flex items-center gap-1">
-                                        <Calendar className="h-3 w-3" />
-                                        {format(new Date(shipment.estimatedDelivery), 'MMM dd, yyyy')}
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
+                                <Badge className={getStatusColor(shipment.status)}>
+                                  {shipment.status?.replace('_', ' ').toUpperCase()}
+                                </Badge>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-muted-foreground mt-1">
+                                {shipment.consolidation && (
+                                  <>
+                                    <span>{shipment.consolidation.name}</span>
+                                    <span>•</span>
+                                  </>
+                                )}
+                                <span>{shipment.totalUnits} {shipment.unitType || 'items'}</span>
+                                <span>•</span>
+                                <span>Tracking: {shipment.trackingNumber}</span>
+                                {shipment.deliveredAt && (
+                                  <>
+                                    <span>•</span>
+                                    <span>Delivered {format(new Date(shipment.deliveredAt), 'MMM dd')}</span>
+                                  </>
+                                )}
                               </div>
                             </div>
                           </div>
-                          <Link href={`/receiving/start/${shipment.id}`}>
-                            <Button size="sm" className="w-full">
-                              <Plus className="h-4 w-4 mr-2" />
-                              Start Receiving
-                            </Button>
-                          </Link>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-              </div>
+                          <div className="flex items-center gap-2 flex-wrap justify-end">
+                            <Link href={`/receiving/start/${shipment.id}`}>
+                              <Button size="sm" variant="outline">
+                                <Plus className="h-4 w-4 mr-1" />
+                                Start Receiving
+                              </Button>
+                            </Link>
+                          </div>
+                        </div>
 
-              {/* Tablet view - Condensed table */}
-              <div className="hidden lg:hidden md:block">
-                <Card>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="border-b bg-gray-50 dark:bg-gray-900">
-                        <tr>
-                          <th className="p-3 text-left w-10">
-                            <Checkbox
-                              checked={selectedShipments.size === filteredShipments.filter((s: any) => !s.receipt).length && filteredShipments.filter((s: any) => !s.receipt).length > 0}
-                              onCheckedChange={() => {
-                                const receivableShipments = filteredShipments.filter((s: any) => !s.receipt);
-                                if (selectedShipments.size === receivableShipments.length) {
-                                  clearSelection();
-                                } else {
-                                  const allIds = new Set<number>(receivableShipments.map((s: any) => s.id));
-                                  setSelectedShipments(allIds);
-                                  setShowBulkActions(allIds.size > 0);
-                                }
-                              }}
-                              data-testid="checkbox-select-all"
-                            />
-                          </th>
-                          <th className="p-3 text-left text-sm font-semibold">Shipment</th>
-                          <th className="p-3 text-left text-sm font-semibold">Tracking</th>
-                          <th className="p-3 text-center text-sm font-semibold">Units</th>
-                          <th className="p-3 text-left text-sm font-semibold">Status</th>
-                          <th className="p-3 text-left text-sm font-semibold">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y">
-                        {filteredShipments
-                          .filter((s: any) => !s.receipt)
-                          .map((shipment: any) => {
-                            const urgent = isUrgent(shipment);
-                            return (
-                              <tr 
-                                key={shipment.id} 
-                                id={`shipment-${shipment.id}`}
-                                className={`hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors ${urgent ? 'bg-orange-50/50 dark:bg-orange-950/20' : ''}`}
-                              >
-                                <td className="p-3">
-                                  <Checkbox
-                                    checked={selectedShipments.has(shipment.id)}
-                                    onCheckedChange={() => toggleShipmentSelection(shipment.id)}
-                                    data-testid={`checkbox-shipment-${shipment.id}`}
-                                  />
-                                </td>
-                                <td className="p-3">
-                                  <div>
-                                    <div className="font-medium text-sm">
-                                      {shipment.shipmentName || `Shipment #${shipment.id}`}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground">
-                                      {shipment.carrier} → {shipment.endCarrier || shipment.carrier}
-                                    </div>
-                                    {urgent && (
-                                      <Badge variant="destructive" className="animate-pulse mt-1">
-                                        <Zap className="h-3 w-3 mr-1" />
-                                        Urgent
-                                      </Badge>
-                                    )}
-                                  </div>
-                                </td>
-                                <td className="p-3">
-                                  <div className="font-mono text-xs">
-                                    {shipment.trackingNumber}
-                                  </div>
-                                </td>
-                                <td className="p-3 text-center">
-                                  <div className="text-sm font-medium">
-                                    {shipment.totalUnits}
-                                  </div>
-                                  <div className="text-xs text-muted-foreground">
-                                    {shipment.unitType || 'items'}
-                                  </div>
-                                </td>
-                                <td className="p-3">
-                                  <Badge className={getStatusColor(shipment.status)}>
-                                    {shipment.status?.replace('_', ' ').toUpperCase()}
-                                  </Badge>
-                                </td>
-                                <td className="p-3">
-                                  <Link href={`/receiving/start/${shipment.id}`}>
-                                    <Button size="sm" variant="outline">
-                                      <Plus className="h-4 w-4 mr-1" />
-                                      Receive
-                                    </Button>
-                                  </Link>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                      </tbody>
-                    </table>
-                  </div>
-                </Card>
-              </div>
+                        {/* Shipment Info Bar */}
+                        <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-xs sm:text-sm mb-3 sm:pl-11">
+                          <div className="flex items-center gap-1">
+                            <Truck className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-muted-foreground">
+                              {shipment.carrier}
+                              {shipment.endCarrier && shipment.endCarrier !== shipment.carrier && (
+                                <span> → {shipment.endCarrier}</span>
+                              )}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-muted-foreground">
+                              {shipment.origin?.split(',')[0]} → {shipment.destination?.split(',')[0]}
+                            </span>
+                          </div>
+                          {shipment.estimatedDelivery && (
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3 text-muted-foreground" />
+                              <span className="text-muted-foreground">
+                                Est: {format(new Date(shipment.estimatedDelivery), 'MMM dd')}
+                              </span>
+                            </div>
+                          )}
+                          {shipment.actualWeight && (
+                            <div className="flex items-center gap-1">
+                              <Package2 className="h-3 w-3 text-muted-foreground" />
+                              <span className="font-semibold">
+                                Weight: {shipment.actualWeight} kg
+                              </span>
+                            </div>
+                          )}
+                        </div>
 
-              {/* Desktop view - Full table */}
-              <div className="hidden lg:block">
-                <Card>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="border-b bg-gray-50 dark:bg-gray-900">
-                        <tr>
-                          <th className="p-4 text-left w-12">
-                            <Checkbox
-                              checked={selectedShipments.size === filteredShipments.filter((s: any) => !s.receipt).length && filteredShipments.filter((s: any) => !s.receipt).length > 0}
-                              onCheckedChange={() => {
-                                const receivableShipments = filteredShipments.filter((s: any) => !s.receipt);
-                                if (selectedShipments.size === receivableShipments.length) {
-                                  clearSelection();
-                                } else {
-                                  const allIds = new Set<number>(receivableShipments.map((s: any) => s.id));
-                                  setSelectedShipments(allIds);
-                                  setShowBulkActions(allIds.size > 0);
-                                }
-                              }}
-                              data-testid="checkbox-select-all"
-                            />
-                          </th>
-                          <th className="p-4 text-left text-sm font-semibold min-w-[200px]">Shipment</th>
-                          <th className="p-4 text-left text-sm font-semibold min-w-[150px]">Tracking</th>
-                          <th className="p-4 text-left text-sm font-semibold min-w-[140px]">Carrier</th>
-                          <th className="p-4 text-left text-sm font-semibold min-w-[200px]">Route</th>
-                          <th className="p-4 text-center text-sm font-semibold min-w-[80px]">Units</th>
-                          <th className="p-4 text-left text-sm font-semibold min-w-[120px]">Est. Delivery</th>
-                          <th className="p-4 text-left text-sm font-semibold min-w-[100px]">Status</th>
-                          <th className="p-4 text-left text-sm font-semibold min-w-[100px]">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y">
-                        {filteredShipments
-                          .filter((s: any) => !s.receipt)
-                          .map((shipment: any) => {
-                            const urgent = isUrgent(shipment);
-                            return (
-                              <tr 
-                                key={shipment.id} 
-                                id={`shipment-${shipment.id}`}
-                                className={`hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors ${urgent ? 'bg-orange-50/50 dark:bg-orange-950/20' : ''}`}
-                              >
-                                <td className="p-4">
-                                  <Checkbox
-                                    checked={selectedShipments.has(shipment.id)}
-                                    onCheckedChange={() => toggleShipmentSelection(shipment.id)}
-                                    data-testid={`checkbox-shipment-${shipment.id}`}
-                                  />
-                                </td>
-                                <td className="p-4">
-                                  <div className="flex items-center gap-2">
-                                    <div>
-                                      <div className="font-medium">
-                                        {shipment.shipmentName || `Shipment #${shipment.id}`}
-                                      </div>
-                                      {shipment.consolidation && (
-                                        <div className="text-xs text-muted-foreground">
-                                          {shipment.consolidation.name} • {shipment.consolidation.shippingMethod?.replace(/_/g, ' ')}
-                                        </div>
-                                      )}
-                                    </div>
-                                    {urgent && (
-                                      <Badge variant="destructive" className="animate-pulse">
-                                        <Zap className="h-3 w-3 mr-1" />
-                                        Urgent
-                                      </Badge>
-                                    )}
-                                  </div>
-                                </td>
-                                <td className="p-4">
-                                  <div className="font-mono text-xs">
-                                    {shipment.trackingNumber}
-                                  </div>
-                                </td>
-                                <td className="p-4">
-                                  <div className="text-sm">
-                                    <div>{shipment.carrier}</div>
-                                    {shipment.endCarrier && shipment.endCarrier !== shipment.carrier && (
-                                      <div className="text-xs text-muted-foreground">
-                                        → {shipment.endCarrier}
-                                      </div>
-                                    )}
-                                  </div>
-                                </td>
-                                <td className="p-4">
-                                  <div className="flex items-center gap-1 text-sm">
-                                    <MapPin className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                                    <span className="truncate max-w-[100px]" title={shipment.origin}>
-                                      {shipment.origin?.split(',')[0]}
-                                    </span>
-                                    <ChevronRight className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                                    <span className="truncate max-w-[100px]" title={shipment.destination}>
-                                      {shipment.destination?.split(',')[0]}
-                                    </span>
-                                  </div>
-                                </td>
-                                <td className="p-4 text-center">
-                                  <div className="text-sm font-medium">
-                                    {shipment.totalUnits}
-                                  </div>
-                                  <div className="text-xs text-muted-foreground">
-                                    {shipment.unitType || 'items'}
-                                  </div>
-                                </td>
-                                <td className="p-4">
-                                  <div className="text-sm">
-                                    {shipment.estimatedDelivery ? (
-                                      <div className="flex items-center gap-1">
-                                        <Calendar className="h-3 w-3 text-muted-foreground" />
-                                        {format(new Date(shipment.estimatedDelivery), 'MMM dd')}
-                                      </div>
-                                    ) : (
-                                      <span className="text-muted-foreground">-</span>
-                                    )}
-                                  </div>
-                                </td>
-                                <td className="p-4">
-                                  <Badge className={getStatusColor(shipment.status)}>
-                                    {shipment.status?.replace('_', ' ').toUpperCase()}
-                                  </Badge>
-                                </td>
-                                <td className="p-4">
-                                  <Link href={`/receiving/start/${shipment.id}`}>
-                                    <Button size="sm" variant="outline">
-                                      <Plus className="h-4 w-4 mr-1" />
-                                      Receive
-                                    </Button>
-                                  </Link>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                      </tbody>
-                    </table>
-                  </div>
-                </Card>
-              </div>
-            </>
+                        {/* Items Table - Only visible when expanded */}
+                        {isExpanded && (
+                          <div className="sm:pl-11">
+                            {(!shipment.items || shipment.items.length === 0) ? (
+                              <div className="text-center py-6 bg-muted/30 rounded-lg">
+                                <p className="text-muted-foreground text-sm">No items details available</p>
+                              </div>
+                            ) : (
+                              <div className="rounded-lg border bg-card overflow-x-auto">
+                                <table className="w-full text-sm">
+                                  <thead className="border-b bg-muted/50">
+                                    <tr>
+                                      <th className="p-2 text-left font-medium">Item</th>
+                                      <th className="p-2 text-left font-medium">SKU</th>
+                                      <th className="p-2 text-center font-medium">Quantity</th>
+                                      <th className="p-2 text-left font-medium">Category</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y">
+                                    {shipment.items.map((item: any, index: number) => (
+                                      <tr key={index} className="hover:bg-muted/30">
+                                        <td className="p-2">{item.name}</td>
+                                        <td className="p-2 font-mono text-xs">{item.sku || '-'}</td>
+                                        <td className="p-2 text-center">{item.quantity}</td>
+                                        <td className="p-2">{item.category || '-'}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Notes */}
+                        {shipment.notes && isExpanded && (
+                          <div className="mt-3 sm:pl-11">
+                            <div className="p-3 bg-muted/50 rounded-lg">
+                              <p className="text-xs text-muted-foreground mb-1">Notes:</p>
+                              <p className="text-sm">{shipment.notes}</p>
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+            </div>
           )}
         </TabsContent>
 
