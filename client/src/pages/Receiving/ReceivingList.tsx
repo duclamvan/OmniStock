@@ -34,7 +34,9 @@ import {
   Plane,
   Ship,
   Train,
-  Star
+  Star,
+  Container,
+  Layers
 } from "lucide-react";
 import { Link } from "wouter";
 import { format, differenceInHours } from "date-fns";
@@ -78,28 +80,51 @@ const getShipmentTypeIcon = (shipmentType: string, className = "h-3 w-3") => {
   return <Package className={`${className} text-muted-foreground`} />;
 };
 
-// Helper function to get carrier icon
-const getCarrierIcon = (carrierName: string, className = "h-3 w-3") => {
+// Helper function to get carrier logo/icon
+const getCarrierLogo = (carrierName: string, className = "h-4 w-4") => {
   const carrier = carrierName?.toLowerCase() || '';
   
+  // For now using text-based logos until actual carrier logos are implemented
   if (carrier.includes('dhl')) {
-    return <Zap className={`${className} text-yellow-600`} />;
+    return <span className={`${className.replace('h-4 w-4', '')} text-xs font-bold text-red-600 bg-yellow-100 dark:bg-yellow-900 px-1.5 py-0.5 rounded`}>DHL</span>;
   } else if (carrier.includes('fedex')) {
-    return <Plane className={`${className} text-purple-600`} />;
+    return <span className={`${className.replace('h-4 w-4', '')} text-xs font-bold text-white bg-purple-600 px-1.5 py-0.5 rounded`}>FDX</span>;
   } else if (carrier.includes('ups')) {
-    return <Truck className={`${className} text-amber-700`} />;
-  } else if (carrier.includes('usps') || carrier.includes('post')) {
-    return <Package className={`${className} text-blue-600`} />;
-  } else if (carrier.includes('sf') || carrier.includes('express')) {
-    return <Star className={`${className} text-green-600`} />;
+    return <span className={`${className.replace('h-4 w-4', '')} text-xs font-bold text-white bg-amber-700 px-1.5 py-0.5 rounded`}>UPS</span>;
+  } else if (carrier.includes('usps')) {
+    return <span className={`${className.replace('h-4 w-4', '')} text-xs font-bold text-white bg-blue-600 px-1.5 py-0.5 rounded`}>USPS</span>;
+  } else if (carrier.includes('post')) {
+    return <span className={`${className.replace('h-4 w-4', '')} text-xs font-bold text-white bg-blue-500 px-1.5 py-0.5 rounded`}>POST</span>;
+  } else if (carrier.includes('sf')) {
+    return <span className={`${className.replace('h-4 w-4', '')} text-xs font-bold text-white bg-green-600 px-1.5 py-0.5 rounded`}>SF</span>;
   } else if (carrier.includes('ems')) {
-    return <Plane className={`${className} text-red-600`} />;
-  } else if (carrier.includes('dpd') || carrier.includes('gls')) {
-    return <Truck className={`${className} text-red-500`} />;
-  } else if (carrier.includes('czech') || carrier.includes('ppl') || carrier.includes('zásilkovna')) {
-    return <Package className={`${className} text-blue-500`} />;
+    return <span className={`${className.replace('h-4 w-4', '')} text-xs font-bold text-white bg-red-600 px-1.5 py-0.5 rounded`}>EMS</span>;
+  } else if (carrier.includes('dpd')) {
+    return <span className={`${className.replace('h-4 w-4', '')} text-xs font-bold text-white bg-red-500 px-1.5 py-0.5 rounded`}>DPD</span>;
+  } else if (carrier.includes('gls')) {
+    return <span className={`${className.replace('h-4 w-4', '')} text-xs font-bold text-white bg-red-400 px-1.5 py-0.5 rounded`}>GLS</span>;
+  } else if (carrier.includes('ppl')) {
+    return <span className={`${className.replace('h-4 w-4', '')} text-xs font-bold text-white bg-orange-500 px-1.5 py-0.5 rounded`}>PPL</span>;
+  } else if (carrier.includes('zásilkovna')) {
+    return <span className={`${className.replace('h-4 w-4', '')} text-xs font-bold text-white bg-green-500 px-1.5 py-0.5 rounded`}>Z-BOX</span>;
   }
   return <Truck className={`${className} text-muted-foreground`} />;
+};
+
+// Helper function to get unit type icon
+const getUnitTypeIcon = (unitType: string, className = "h-3 w-3") => {
+  const unit = unitType?.toLowerCase() || '';
+  
+  if (unit.includes('pallet')) {
+    return <Layers className={`${className} text-amber-600`} />;
+  } else if (unit.includes('container')) {
+    return <Container className={`${className} text-blue-600`} />;
+  } else if (unit.includes('parcel') || unit.includes('package')) {
+    return <Package2 className={`${className} text-green-600`} />;
+  } else if (unit.includes('piece')) {
+    return <Package className={`${className} text-purple-600`} />;
+  }
+  return <Package className={`${className} text-muted-foreground`} />;
 };
 
 export default function ReceivingList() {
@@ -632,7 +657,7 @@ export default function ReceivingList() {
                                 )}
                               </div>
                               
-                              {/* Second Row: More Visible Info - End-Carrier, Units, Tracking */}
+                              {/* Second Row: Shipment Type, Carrier, Units */}
                               <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground mt-2">
                                 {(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod) && (
                                   <>
@@ -644,12 +669,23 @@ export default function ReceivingList() {
                                   </>
                                 )}
                                 <span className="font-semibold flex items-center gap-1">
-                                  {getCarrierIcon(shipment.endCarrier || shipment.carrier)}
+                                  {getCarrierLogo(shipment.endCarrier || shipment.carrier)}
                                   {shipment.endCarrier || shipment.carrier}
                                 </span>
                                 <span className="text-muted-foreground">•</span>
-                                <span>{shipment.totalUnits} {shipment.unitType || 'items'}</span>
-                                <span className="text-muted-foreground">•</span>
+                                <span className="flex items-center gap-1">
+                                  {getUnitTypeIcon(shipment.unitType || 'items')}
+                                  {shipment.totalUnits} {shipment.unitType || 'items'}
+                                </span>
+                              </div>
+                              
+                              {/* Third Row: Route and Tracking */}
+                              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-1">
+                                <span className="flex items-center gap-1">
+                                  <MapPin className="h-3 w-3" />
+                                  {shipment.origin?.split(',')[0]} - {shipment.destination?.split(',')[0]}
+                                </span>
+                                <span>•</span>
                                 <span className="font-mono">Tracking: {shipment.trackingNumber}</span>
                               </div>
                             </div>
@@ -667,23 +703,16 @@ export default function ReceivingList() {
                           </div>
                         </div>
 
-                        {/* Shipment Info Bar */}
+                        {/* Additional Info Bar */}
                         <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-xs sm:text-sm mb-3 sm:pl-11">
-                          <div className="flex items-center gap-1">
-                            <Truck className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-muted-foreground">
-                              {shipment.carrier}
-                              {shipment.endCarrier && shipment.endCarrier !== shipment.carrier && (
-                                <span> → {shipment.endCarrier}</span>
-                              )}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-muted-foreground">
-                              {shipment.origin?.split(',')[0]} → {shipment.destination?.split(',')[0]}
-                            </span>
-                          </div>
+                          {shipment.carrier !== shipment.endCarrier && shipment.endCarrier && (
+                            <div className="flex items-center gap-1">
+                              <Truck className="h-3 w-3 text-muted-foreground" />
+                              <span className="text-muted-foreground">
+                                {shipment.carrier} → {shipment.endCarrier}
+                              </span>
+                            </div>
+                          )}
                           {shipment.estimatedDelivery && (
                             <div className="flex items-center gap-1">
                               <Calendar className="h-3 w-3 text-muted-foreground" />
