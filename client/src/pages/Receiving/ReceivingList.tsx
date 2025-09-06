@@ -36,10 +36,16 @@ import {
   Train,
   Star,
   Container,
-  Layers
+  Layers,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  CalendarDays,
+  Weight,
+  Hash
 } from "lucide-react";
 import { Link } from "wouter";
-import { format, differenceInHours } from "date-fns";
+import { format, differenceInHours, differenceInDays, isToday, isYesterday, isThisWeek, isThisMonth } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
 // Helper function to format shipment type display name
@@ -135,6 +141,11 @@ export default function ReceivingList() {
   const [barcodeScan, setBarcodeScan] = useState("");
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [expandedShipments, setExpandedShipments] = useState<Set<number>>(new Set());
+  const [sortBy, setSortBy] = useState("deliveredAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [carrierFilter, setCarrierFilter] = useState("all");
+  const [unitTypeFilter, setUnitTypeFilter] = useState("all");
+  const [dateRangeFilter, setDateRangeFilter] = useState("all");
   const { toast } = useToast();
 
   // Fetch receivable shipments
@@ -157,7 +168,17 @@ export default function ReceivingList() {
     }
   });
 
-  // Filter shipments based on search and priority
+  // Get unique carriers from shipments
+  const uniqueCarriers = Array.from(new Set(
+    receivableShipments.map((s: any) => s.endCarrier || s.carrier).filter(Boolean)
+  )).sort();
+
+  // Get unique unit types from shipments
+  const uniqueUnitTypes = Array.from(new Set(
+    receivableShipments.map((s: any) => s.unitType || 'items').filter(Boolean)
+  )).sort();
+
+  // Filter shipments based on all filters
   const filteredShipments = receivableShipments.filter((shipment: any) => {
     const matchesSearch = searchQuery === "" ||
       shipment.shipmentName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -169,7 +190,83 @@ export default function ReceivingList() {
       (priorityFilter === "urgent" && isUrgent(shipment)) ||
       (priorityFilter === "normal" && !isUrgent(shipment));
     
-    return matchesSearch && matchesPriority;
+    const matchesCarrier = carrierFilter === "all" ||
+      (shipment.endCarrier || shipment.carrier) === carrierFilter;
+    
+    const matchesUnitType = unitTypeFilter === "all" ||
+      (shipment.unitType || 'items') === unitTypeFilter;
+    
+    const matchesDateRange = (() => {
+      if (dateRangeFilter === "all") return true;
+      const deliveredDate = shipment.deliveredAt ? new Date(shipment.deliveredAt) : null;
+      const now = new Date();
+      
+      switch (dateRangeFilter) {
+        case "today":
+          return deliveredDate && isToday(deliveredDate);
+        case "yesterday":
+          return deliveredDate && isYesterday(deliveredDate);
+        case "week":
+          return deliveredDate && isThisWeek(deliveredDate);
+        case "month":
+          return deliveredDate && isThisMonth(deliveredDate);
+        case "older":
+          return deliveredDate && differenceInDays(now, deliveredDate) > 30;
+        default:
+          return true;
+      }
+    })();
+    
+    return matchesSearch && matchesPriority && matchesCarrier && matchesUnitType && matchesDateRange;
+  });
+
+  // Sort filtered shipments
+  const sortedShipments = [...filteredShipments].sort((a: any, b: any) => {
+    let aValue, bValue;
+    
+    switch (sortBy) {
+      case "deliveredAt":
+        aValue = a.deliveredAt ? new Date(a.deliveredAt).getTime() : 0;
+        bValue = b.deliveredAt ? new Date(b.deliveredAt).getTime() : 0;
+        break;
+      case "shipmentName":
+        aValue = a.shipmentName || `Shipment #${a.id}`;
+        bValue = b.shipmentName || `Shipment #${b.id}`;
+        break;
+      case "carrier":
+        aValue = a.endCarrier || a.carrier || '';
+        bValue = b.endCarrier || b.carrier || '';
+        break;
+      case "urgency":
+        aValue = isUrgent(a) ? 1 : 0;
+        bValue = isUrgent(b) ? 1 : 0;
+        break;
+      case "totalUnits":
+        aValue = a.totalUnits || 0;
+        bValue = b.totalUnits || 0;
+        break;
+      case "weight":
+        aValue = a.actualWeight || 0;
+        bValue = b.actualWeight || 0;
+        break;
+      case "estimatedDelivery":
+        aValue = a.estimatedDelivery ? new Date(a.estimatedDelivery).getTime() : 0;
+        bValue = b.estimatedDelivery ? new Date(b.estimatedDelivery).getTime() : 0;
+        break;
+      default:
+        aValue = a.id;
+        bValue = b.id;
+    }
+    
+    if (typeof aValue === 'string' && typeof bValue === 'string') {
+      return sortOrder === 'asc' 
+        ? aValue.localeCompare(bValue)
+        : bValue.localeCompare(aValue);
+    }
+    
+    return sortOrder === 'asc'
+      ? (aValue > bValue ? 1 : -1)
+      : (bValue > aValue ? 1 : -1);
   });
   
   // Check if shipment is urgent (delivered more than 24 hours ago)
@@ -203,7 +300,7 @@ export default function ReceivingList() {
   
   // Select all visible shipments
   const selectAllShipments = () => {
-    const allIds = new Set<number>(filteredShipments.map((s: any) => s.id));
+    const allIds = new Set<number>(sortedShipments.map((s: any) => s.id));
     setSelectedShipments(allIds);
     setShowBulkActions(allIds.size > 0);
   };
@@ -444,8 +541,8 @@ export default function ReceivingList() {
       {/* Search and Filters */}
       <Card className="mb-6">
         <CardContent className="p-4 space-y-4">
-          <div className="flex gap-2">
-            <div className="relative flex-1">
+          <div className="flex gap-2 flex-wrap">
+            <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search by shipment name, tracking number, carrier..."
@@ -465,21 +562,139 @@ export default function ReceivingList() {
                 data-testid="input-barcode-scan"
               />
             </div>
+          </div>
+          
+          {/* Filters Row */}
+          <div className="flex gap-2 flex-wrap">
             <Select value={priorityFilter} onValueChange={setPriorityFilter}>
               <SelectTrigger className="w-32">
+                <Zap className="h-3 w-3" />
                 <SelectValue placeholder="Priority" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="all">All Priorities</SelectItem>
                 <SelectItem value="urgent">
                   <span className="flex items-center gap-1">
                     <Zap className="h-3 w-3 text-orange-500" />
-                    Urgent
+                    Urgent Only
                   </span>
                 </SelectItem>
-                <SelectItem value="normal">Normal</SelectItem>
+                <SelectItem value="normal">Normal Only</SelectItem>
               </SelectContent>
             </Select>
+            
+            <Select value={carrierFilter} onValueChange={setCarrierFilter}>
+              <SelectTrigger className="w-40">
+                <Truck className="h-3 w-3" />
+                <SelectValue placeholder="Carrier" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Carriers</SelectItem>
+                {uniqueCarriers.map(carrier => (
+                  <SelectItem key={carrier} value={carrier}>
+                    {carrier}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <Select value={unitTypeFilter} onValueChange={setUnitTypeFilter}>
+              <SelectTrigger className="w-36">
+                <Package2 className="h-3 w-3" />
+                <SelectValue placeholder="Unit Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                {uniqueUnitTypes.map(type => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <Select value={dateRangeFilter} onValueChange={setDateRangeFilter}>
+              <SelectTrigger className="w-36">
+                <CalendarDays className="h-3 w-3" />
+                <SelectValue placeholder="Date Range" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Dates</SelectItem>
+                <SelectItem value="today">Today</SelectItem>
+                <SelectItem value="yesterday">Yesterday</SelectItem>
+                <SelectItem value="week">This Week</SelectItem>
+                <SelectItem value="month">This Month</SelectItem>
+                <SelectItem value="older">Older (30+ days)</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            {/* Sort Controls */}
+            <div className="flex gap-1 ml-auto">
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-40">
+                  <ArrowUpDown className="h-3 w-3" />
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="deliveredAt">
+                    <span className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      Delivery Date
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="urgency">
+                    <span className="flex items-center gap-1">
+                      <Zap className="h-3 w-3" />
+                      Urgency
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="shipmentName">
+                    <span className="flex items-center gap-1">
+                      <Package className="h-3 w-3" />
+                      Shipment Name
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="carrier">
+                    <span className="flex items-center gap-1">
+                      <Truck className="h-3 w-3" />
+                      Carrier
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="totalUnits">
+                    <span className="flex items-center gap-1">
+                      <Hash className="h-3 w-3" />
+                      Total Units
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="weight">
+                    <span className="flex items-center gap-1">
+                      <Weight className="h-3 w-3" />
+                      Weight
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="estimatedDelivery">
+                    <span className="flex items-center gap-1">
+                      <CalendarDays className="h-3 w-3" />
+                      Est. Delivery
+                    </span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                className="w-10"
+                data-testid="button-sort-order"
+              >
+                {sortOrder === 'asc' ? (
+                  <ArrowUp className="h-4 w-4" />
+                ) : (
+                  <ArrowDown className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
           </div>
           
           {/* Bulk Actions Bar */}
@@ -490,6 +705,14 @@ export default function ReceivingList() {
                 <span className="text-sm font-medium">
                   {selectedShipments.size} shipment{selectedShipments.size !== 1 ? 's' : ''} selected
                 </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={selectAllShipments}
+                  className="text-xs"
+                >
+                  Select All ({sortedShipments.length})
+                </Button>
                 <Button
                   size="sm"
                   variant="ghost"
@@ -534,7 +757,7 @@ export default function ReceivingList() {
             <Package className="h-4 w-4" />
             <span>Ready to Receive</span>
             <span className={`${activeTab === 'receivable' ? 'text-white/90' : 'text-gray-500'}`}>
-              ({receivableShipments.filter((s: any) => !s.receipt).length})
+              ({sortedShipments.filter((s: any) => !s.receipt).length})
             </span>
           </button>
           
@@ -599,14 +822,14 @@ export default function ReceivingList() {
               <Package className="h-12 w-12 text-muted-foreground mx-auto mb-2 animate-pulse" />
               <p className="text-muted-foreground">Loading shipments...</p>
             </div>
-          ) : filteredShipments.filter((s: any) => !s.receipt).length === 0 ? (
+          ) : sortedShipments.filter((s: any) => !s.receipt).length === 0 ? (
             <div className="text-center py-8">
               <Package className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
               <p className="text-muted-foreground">No shipments ready for receiving</p>
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredShipments
+              {sortedShipments
                 .filter((s: any) => !s.receipt)
                 .map((shipment: any) => {
                   const urgent = isUrgent(shipment);
