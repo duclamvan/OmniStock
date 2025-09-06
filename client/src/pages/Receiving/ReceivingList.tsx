@@ -30,7 +30,11 @@ import {
   Square,
   Zap,
   CreditCard,
-  UserCheck
+  UserCheck,
+  Plane,
+  Ship,
+  Train,
+  Star
 } from "lucide-react";
 import { Link } from "wouter";
 import { format, differenceInHours } from "date-fns";
@@ -52,6 +56,50 @@ const formatShipmentType = (shipmentType: string) => {
   
   const label = typeMap[baseType] || shipmentType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   return isSensitive ? `${label} (Sensitive)` : label;
+};
+
+// Helper function to get shipment type icon
+const getShipmentTypeIcon = (shipmentType: string, className = "h-3 w-3") => {
+  const isSensitive = shipmentType?.includes('sensitive');
+  
+  if (shipmentType?.includes('express')) {
+    const iconColor = isSensitive ? 'text-orange-500' : 'text-red-500';
+    return <Zap className={`${className} ${iconColor}`} />;
+  } else if (shipmentType?.includes('air')) {
+    const iconColor = isSensitive ? 'text-blue-600' : 'text-blue-500';
+    return <Plane className={`${className} ${iconColor}`} />;
+  } else if (shipmentType?.includes('railway') || shipmentType?.includes('rail')) {
+    const iconColor = isSensitive ? 'text-purple-600' : 'text-purple-500';
+    return <Train className={`${className} ${iconColor}`} />;
+  } else if (shipmentType?.includes('sea')) {
+    const iconColor = isSensitive ? 'text-indigo-500' : 'text-teal-500';
+    return <Ship className={`${className} ${iconColor}`} />;
+  }
+  return <Package className={`${className} text-muted-foreground`} />;
+};
+
+// Helper function to get carrier icon
+const getCarrierIcon = (carrierName: string, className = "h-3 w-3") => {
+  const carrier = carrierName?.toLowerCase() || '';
+  
+  if (carrier.includes('dhl')) {
+    return <Zap className={`${className} text-yellow-600`} />;
+  } else if (carrier.includes('fedex')) {
+    return <Plane className={`${className} text-purple-600`} />;
+  } else if (carrier.includes('ups')) {
+    return <Truck className={`${className} text-amber-700`} />;
+  } else if (carrier.includes('usps') || carrier.includes('post')) {
+    return <Package className={`${className} text-blue-600`} />;
+  } else if (carrier.includes('sf') || carrier.includes('express')) {
+    return <Star className={`${className} text-green-600`} />;
+  } else if (carrier.includes('ems')) {
+    return <Plane className={`${className} text-red-600`} />;
+  } else if (carrier.includes('dpd') || carrier.includes('gls')) {
+    return <Truck className={`${className} text-red-500`} />;
+  } else if (carrier.includes('czech') || carrier.includes('ppl') || carrier.includes('zásilkovna')) {
+    return <Package className={`${className} text-blue-500`} />;
+  }
+  return <Truck className={`${className} text-muted-foreground`} />;
 };
 
 export default function ReceivingList() {
@@ -588,13 +636,17 @@ export default function ReceivingList() {
                               <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground mt-2">
                                 {(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod) && (
                                   <>
-                                    <Badge variant="secondary" className="text-xs">
+                                    <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                                      {getShipmentTypeIcon(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod || '')}
                                       {formatShipmentType(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod || '')}
                                     </Badge>
                                     <span className="text-muted-foreground">•</span>
                                   </>
                                 )}
-                                <span className="font-semibold">{shipment.endCarrier || shipment.carrier}</span>
+                                <span className="font-semibold flex items-center gap-1">
+                                  {getCarrierIcon(shipment.endCarrier || shipment.carrier)}
+                                  {shipment.endCarrier || shipment.carrier}
+                                </span>
                                 <span className="text-muted-foreground">•</span>
                                 <span>{shipment.totalUnits} {shipment.unitType || 'items'}</span>
                                 <span className="text-muted-foreground">•</span>
