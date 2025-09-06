@@ -630,7 +630,7 @@ export class DatabaseStorage implements IStorage {
 
   async getProduct(id: string): Promise<Product | undefined> {
     try {
-      const [product] = await db.select().from(products).where(eq(products.id, parseInt(id)));
+      const [product] = await db.select().from(products).where(eq(products.id, id));
       return product || undefined;
     } catch (error) {
       console.error('Error fetching product:', error);
@@ -660,7 +660,7 @@ export class DatabaseStorage implements IStorage {
       const [updated] = await db
         .update(products)
         .set({ ...productData, updatedAt: new Date() })
-        .where(eq(products.id, parseInt(id)))
+        .where(eq(products.id, id))
         .returning();
       return updated || undefined;
     } catch (error) {
@@ -673,7 +673,7 @@ export class DatabaseStorage implements IStorage {
     try {
       const result = await db
         .delete(products)
-        .where(eq(products.id, parseInt(id)));
+        .where(eq(products.id, id));
       return (result.rowCount ?? 0) > 0;
     } catch (error) {
       console.error('Error deleting product:', error);
@@ -686,8 +686,8 @@ export class DatabaseStorage implements IStorage {
       const lowStockProducts = await db
         .select()
         .from(products)
-        .where(sql`${products.stockQuantity} <= ${products.lowStockThreshold}`)
-        .orderBy(products.stockQuantity);
+        .where(sql`${products.quantity} <= ${products.lowStockAlert}`)
+        .orderBy(products.quantity);
       return lowStockProducts;
     } catch (error) {
       console.error('Error fetching low stock products:', error);
@@ -882,7 +882,7 @@ export class DatabaseStorage implements IStorage {
 
   async getSupplier(id: string): Promise<Supplier | undefined> {
     try {
-      const [supplier] = await db.select().from(suppliers).where(eq(suppliers.id, parseInt(id)));
+      const [supplier] = await db.select().from(suppliers).where(eq(suppliers.id, id));
       return supplier || undefined;
     } catch (error) {
       console.error('Error fetching supplier:', error);
@@ -908,7 +908,7 @@ export class DatabaseStorage implements IStorage {
       const [updated] = await db
         .update(suppliers)
         .set({ ...supplierData, updatedAt: new Date() })
-        .where(eq(suppliers.id, parseInt(id)))
+        .where(eq(suppliers.id, id))
         .returning();
       return updated || undefined;
     } catch (error) {
@@ -921,7 +921,7 @@ export class DatabaseStorage implements IStorage {
     try {
       const result = await db
         .delete(suppliers)
-        .where(eq(suppliers.id, parseInt(id)));
+        .where(eq(suppliers.id, id));
       return (result.rowCount ?? 0) > 0;
     } catch (error) {
       console.error('Error deleting supplier:', error);

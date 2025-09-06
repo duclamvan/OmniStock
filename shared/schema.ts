@@ -1,7 +1,7 @@
 import { pgTable, text, integer, timestamp, decimal, boolean, jsonb, varchar, serial, date, json } from 'drizzle-orm/pg-core';
 import { createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
-import { relations } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 
 // Users table
 export const users = pgTable('users', {
@@ -213,36 +213,47 @@ export const landedCosts = pgTable('landed_costs', {
 
 // Core business entities
 export const customers = pgTable('customers', {
-  id: serial('id').primaryKey(),
-  name: text('name').notNull(),
-  email: text('email'),
-  phone: text('phone'),
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar('name').notNull(),
+  facebookName: varchar('facebook_name'),
+  facebookId: varchar('facebook_id'),
+  email: varchar('email'),
+  phone: varchar('phone'),
   address: text('address'),
-  city: text('city'),
-  zipCode: text('zip_code'),
-  country: text('country').default('Czech Republic'),
-  type: text('type').default('individual'), // individual, business
+  city: varchar('city'),
+  zipCode: varchar('zip_code'),
+  country: varchar('country'),
   notes: text('notes'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow()
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+  type: varchar('type').default('regular'),
+  state: varchar('state'),
+  vatId: varchar('vat_id'),
+  taxId: varchar('tax_id'),
+  firstOrderDate: timestamp('first_order_date'),
+  lastOrderDate: timestamp('last_order_date'),
+  totalOrders: integer('total_orders').default(0),
+  totalSpent: decimal('total_spent').default('0'),
+  averageOrderValue: decimal('average_order_value').default('0'),
+  customerRank: varchar('customer_rank'),
+  lastContactDate: timestamp('last_contact_date'),
+  preferredLanguage: varchar('preferred_language').default('cs')
 });
 
 export const suppliers = pgTable('suppliers', {
-  id: serial('id').primaryKey(),
-  name: text('name').notNull(),
-  contactPerson: text('contact_person'),
-  email: text('email'),
-  phone: text('phone'),
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar('name').notNull(),
+  contactPerson: varchar('contact_person'),
+  email: varchar('email'),
+  phone: varchar('phone'),
   address: text('address'),
-  city: text('city'),
-  zipCode: text('zip_code'),
-  country: text('country'),
-  website: text('website'),
-  paymentTerms: text('payment_terms'),
+  country: varchar('country'),
+  website: varchar('website'),
+  supplierLink: text('supplier_link'),
+  lastPurchaseDate: timestamp('last_purchase_date'),
+  totalPurchased: decimal('total_purchased').default('0'),
   notes: text('notes'),
-  isActive: boolean('is_active').default(true),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow()
+  createdAt: timestamp('created_at').defaultNow()
 });
 
 export const warehouses = pgTable('warehouses', {
@@ -268,25 +279,34 @@ export const warehouses = pgTable('warehouses', {
 });
 
 export const products = pgTable('products', {
-  id: serial('id').primaryKey(),
-  name: text('name').notNull(),
-  sku: text('sku').unique(),
-  categoryId: integer('category_id').references(() => categories.id),
-  supplierId: integer('supplier_id').references(() => suppliers.id),
-  warehouseId: text('warehouse_id').references(() => warehouses.id),
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar('name').notNull(),
+  englishName: varchar('english_name'),
+  sku: varchar('sku').notNull(),
+  categoryId: varchar('category_id'),
+  warehouseId: varchar('warehouse_id'),
+  supplierId: varchar('supplier_id'),
   description: text('description'),
-  importCost: decimal('import_cost', { precision: 10, scale: 2 }),
-  sellingPrice: decimal('selling_price', { precision: 10, scale: 2 }),
-  currency: text('currency').default('CZK'),
-  stockQuantity: integer('stock_quantity').default(0),
-  lowStockThreshold: integer('low_stock_threshold').default(5),
-  barcode: text('barcode'),
-  imageUrl: text('image_url'),
-  weight: decimal('weight', { precision: 10, scale: 3 }), // in kg
-  dimensions: jsonb('dimensions'), // {length, width, height}
+  quantity: integer('quantity').default(0),
+  lowStockAlert: integer('low_stock_alert').default(5),
+  priceCzk: decimal('price_czk'),
+  priceEur: decimal('price_eur'),
+  importCostUsd: decimal('import_cost_usd'),
+  importCostCzk: decimal('import_cost_czk'),
+  importCostEur: decimal('import_cost_eur'),
+  supplierLink: text('supplier_link'),
+  imageUrl: varchar('image_url'),
+  barcode: varchar('barcode'),
+  length: decimal('length'),
+  width: decimal('width'),
+  height: decimal('height'),
+  weight: decimal('weight'),
   isActive: boolean('is_active').default(true),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow()
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+  warehouseLocation: varchar('warehouse_location'),
+  shipmentNotes: text('shipment_notes'),
+  packingMaterialId: varchar('packing_material_id')
 });
 
 export const orders = pgTable('orders', {
