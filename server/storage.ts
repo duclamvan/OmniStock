@@ -7,6 +7,12 @@ import {
   shipments,
   customItems,
   deliveryHistory,
+  customers,
+  suppliers,
+  products,
+  orders,
+  orderItems,
+  warehouses,
   type User,
   type InsertUser,
   type Category,
@@ -22,20 +28,26 @@ import {
   type CustomItem,
   type InsertCustomItem,
   type DeliveryHistory,
-  type InsertDeliveryHistory
+  type InsertDeliveryHistory,
+  type Customer,
+  type InsertCustomer,
+  type Supplier,
+  type InsertSupplier,
+  type Product,
+  type InsertProduct,
+  type Order,
+  type InsertOrder,
+  type OrderItem,
+  type InsertOrderItem,
+  type Warehouse,
+  type InsertWarehouse
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, like, sql, gte, lte, inArray, ne, asc, isNull, notInArray } from "drizzle-orm";
 
 // Define types for missing entities (these should match what the app expects)
-export type Order = any;
-export type OrderItem = any;
-export type Product = any;
 export type ProductVariant = any;
-export type Customer = any;
 export type Discount = any;
-export type Warehouse = any;
-export type Supplier = any;
 export type Return = any;
 export type ReturnItem = any;
 export type Expense = any;
@@ -640,6 +652,16 @@ export class DatabaseStorage implements IStorage {
 
   async getProductById(id: string): Promise<Product | undefined> {
     return this.getProduct(id);
+  }
+
+  async getProductBySku(sku: string): Promise<Product | undefined> {
+    try {
+      const [product] = await db.select().from(products).where(eq(products.sku, sku));
+      return product || undefined;
+    } catch (error) {
+      console.error('Error fetching product by SKU:', error);
+      return undefined;
+    }
   }
 
   async createProduct(productData: any): Promise<Product> {
