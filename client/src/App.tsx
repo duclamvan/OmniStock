@@ -63,6 +63,7 @@ import InternationalTransit from "@/pages/Imports/InternationalTransit";
 import ImportKanbanDashboard from "@/pages/Imports/ImportKanbanDashboard";
 import ReceivingList from "@/pages/Receiving/ReceivingList";
 import StartReceiving from "@/pages/Receiving/StartReceiving";
+import ContinueReceiving from "@/pages/Receiving/ContinueReceiving";
 import ReceiptDetails from "@/pages/Receiving/ReceiptDetails";
 // Legacy imports - commented out
 // import AllImports from "@/pages/Imports/AllImports";
@@ -75,15 +76,16 @@ import ReceiptDetails from "@/pages/Receiving/ReceiptDetails";
 // import ConsolidatedWarehouseView from "@/pages/Imports/ConsolidatedWarehouseView";
 // import ShipmentTracking from "@/pages/Imports/ShipmentTracking";
 
-// Import lazy function
-import { lazy } from 'react';
+// Removed lazy import to fix suspension errors
 
 function Router() {
   return (
     <Switch>
       <Layout>
         <Route path="/" component={Home} />
-        <Route path="/orders" component={AllOrders} />
+        <Route path="/orders">
+          {() => <AllOrders />}
+        </Route>
         <Route path="/orders/add" component={AddOrder} />
         <Route path="/orders/pick-pack" component={PickPack} />
         <Route path="/orders/to-fulfill">
@@ -158,9 +160,9 @@ function Router() {
         </Route>
         {/* Receiving Routes */}
         <Route path="/receiving" component={ReceivingList} />
-        <Route path="/receiving/start/:id" component={lazy(() => import('./pages/Receiving/StartReceiving'))} />
-        <Route path="/receiving/continue/:id" component={lazy(() => import('./pages/Receiving/ContinueReceiving'))} />
-        <Route path="/receiving/receipt/:id" component={lazy(() => import('./pages/Receiving/ReceiptDetails'))} />
+        <Route path="/receiving/start/:id" component={StartReceiving} />
+        <Route path="/receiving/continue/:id" component={ContinueReceiving} />
+        <Route path="/receiving/receipt/:id" component={ReceiptDetails} />
         <Route path="/reports">
           {() => <div>Reports page coming soon</div>}
         </Route>

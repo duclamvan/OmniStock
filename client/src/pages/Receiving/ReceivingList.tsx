@@ -248,10 +248,9 @@ export default function ReceivingList() {
       .filter((type: string) => type.length > 0)
   )).sort();
 
-  // Helper function to determine if shipment is urgent
-  const isUrgent = (shipment: any) => {
-    return shipment.priority === 'high' || 
-      (shipment.estimatedArrival && new Date(shipment.estimatedArrival) <= new Date(Date.now() + 3 * 24 * 60 * 60 * 1000));
+  // Helper function to determine if shipment is urgent (removed functionality)
+  const isUrgent = (_shipment: any) => {
+    return false; // Always false to remove urgent functionality
   };
 
   // Filter shipments based on all filters
@@ -276,7 +275,7 @@ export default function ReceivingList() {
 
     if (!shipmentsData) return [];
 
-    let filtered = shipmentsData.filter(shipment => {
+    let filtered = shipmentsData.filter((shipment: any) => {
       // Type filter
       if (shipmentTypeFilter !== 'all' && shipment.shipmentType !== shipmentTypeFilter) {
         return false;
