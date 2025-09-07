@@ -979,7 +979,7 @@ export default function ReceivingList() {
                             <div className="flex items-center gap-1">
                               <Warehouse className="h-3 w-3 text-muted-foreground" />
                               <span className="text-muted-foreground">
-                                Destination Warehouse: {shipment.consolidation.warehouse}
+                                {shipment.consolidation.warehouse}
                               </span>
                             </div>
                           )}
