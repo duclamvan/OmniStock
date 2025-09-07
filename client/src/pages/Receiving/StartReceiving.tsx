@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
@@ -30,7 +29,8 @@ import {
   Camera,
   Save,
   CheckSquare,
-  Square
+  Square,
+  ArrowRight
 } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
@@ -51,7 +51,7 @@ export default function StartReceiving() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const barcodeRef = useRef<HTMLInputElement>(null);
-  
+
   // Form state
   const [receivedBy, setReceivedBy] = useState("");
   const [carrier, setCarrier] = useState("");
@@ -59,7 +59,7 @@ export default function StartReceiving() {
   const [scannedParcels, setScannedParcels] = useState(0);
   const [notes, setNotes] = useState("");
   const [receivingItems, setReceivingItems] = useState<ReceivingItem[]>([]);
-  
+
   // UI state
   const [currentStep, setCurrentStep] = useState(1);
   const [scanMode, setScanMode] = useState(false);
@@ -82,7 +82,7 @@ export default function StartReceiving() {
     if (shipment) {
       setCarrier(shipment.endCarrier || shipment.carrier || "");
       setParcelCount(shipment.totalUnits || 1);
-      
+
       // Initialize items from shipment
       if (shipment.items && shipment.items.length > 0) {
         const items = shipment.items.map((item: any, index: number) => ({
@@ -536,12 +536,21 @@ export default function StartReceiving() {
 
               <Button
                 onClick={() => setCurrentStep(2)}
-                disabled={!receivedBy || !carrier}
+                disabled={!receivedBy || !carrier || scannedParcels === 0}
                 className="w-full"
                 size="lg"
               >
-                Continue to Item Checklist
-                <CheckSquare className="h-4 w-4 ml-2" />
+                {scannedParcels > 0 ? (
+                  <>
+                    Continue to Item Checklist
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </>
+                ) : (
+                  <>
+                    Continue to Item Checklist
+                    <CheckSquare className="h-4 w-4 ml-2" />
+                  </>
+                )}
               </Button>
             </CardContent>
           </Card>
