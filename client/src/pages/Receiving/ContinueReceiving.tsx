@@ -76,10 +76,12 @@ export default function ContinueReceiving() {
       if (!response.ok) throw new Error('Failed to fetch shipment');
       return response.json();
     },
-    enabled: !!id
+    enabled: !!id,
+    refetchOnMount: 'always', // Always refetch when component mounts
+    refetchOnWindowFocus: false // Don't refetch on window focus
   });
 
-  // Fetch existing receipt if available
+  // Fetch existing receipt if available - always fetch fresh data
   const { data: receipt } = useQuery({
     queryKey: [`/api/imports/receipts/by-shipment/${id}`],
     queryFn: async () => {
@@ -87,7 +89,10 @@ export default function ContinueReceiving() {
       if (!response.ok) return null;
       return response.json();
     },
-    enabled: !!id
+    enabled: !!id,
+    refetchOnMount: 'always', // Always refetch when component mounts to get latest data
+    refetchOnWindowFocus: false, // Don't refetch on window focus
+    staleTime: 0 // Consider data stale immediately
   });
 
   // Initialize data when shipment loads
@@ -366,6 +371,8 @@ export default function ContinueReceiving() {
     },
     onSuccess: (response) => {
       console.log("Auto-save successful:", response);
+      // Invalidate the receipt query to ensure fresh data on next load
+      queryClient.invalidateQueries({ queryKey: [`/api/imports/receipts/by-shipment/${id}`] });
     },
     onError: (error: any) => {
       console.error("Auto-save failed:", error);
