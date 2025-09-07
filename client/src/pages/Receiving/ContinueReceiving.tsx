@@ -1,0 +1,536 @@
+
+import { useState, useEffect, useRef } from "react";
+import { useParams, useLocation } from "wouter";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient } from "@/lib/queryClient";
+import { 
+  ArrowLeft, 
+  Package, 
+  Plus,
+  Minus,
+  ScanLine,
+  CheckCircle2,
+  Package2,
+  Save,
+  CheckSquare,
+  Square,
+  Camera,
+  FileText
+} from "lucide-react";
+import { Link } from "wouter";
+
+interface ReceivingItem {
+  id: string;
+  name: string;
+  sku?: string;
+  expectedQty: number;
+  receivedQty: number;
+  status: 'pending' | 'complete' | 'partial' | 'damaged' | 'missing';
+  notes?: string;
+  checked: boolean;
+}
+
+export default function ContinueReceiving() {
+  const { id } = useParams();
+  const [, navigate] = useLocation();
+  const { toast } = useToast();
+  const barcodeRef = useRef<HTMLInputElement>(null);
+  
+  // Form state
+  const [receivingItems, setReceivingItems] = useState<ReceivingItem[]>([]);
+  const [notes, setNotes] = useState("");
+  
+  // UI state
+  const [scanMode, setScanMode] = useState(false);
+  const [barcodeScan, setBarcodeScan] = useState("");
+  const [showAllItems, setShowAllItems] = useState(false);
+
+  // Fetch shipment details
+  const { data: shipment, isLoading } = useQuery({
+    queryKey: [`/api/imports/shipments/${id}`],
+    queryFn: async () => {
+      const response = await fetch(`/api/imports/shipments/${id}`);
+      if (!response.ok) throw new Error('Failed to fetch shipment');
+      return response.json();
+    },
+    enabled: !!id
+  });
+
+  // Fetch existing receipt if available
+  const { data: receipt } = useQuery({
+    queryKey: [`/api/imports/receipts/by-shipment/${id}`],
+    queryFn: async () => {
+      const response = await fetch(`/api/imports/receipts/by-shipment/${id}`);
+      if (!response.ok) return null;
+      return response.json();
+    },
+    enabled: !!id
+  });
+
+  // Initialize data when shipment loads
+  useEffect(() => {
+    if (shipment && receipt) {
+      // Load existing receipt data
+      setNotes(receipt.notes || "");
+      
+      // Initialize items from receipt
+      if (receipt.items && receipt.items.length > 0) {
+        const items = receipt.items.map((item: any) => ({
+          id: item.itemId || item.id,
+          name: item.name || item.productName || `Item ${item.id}`,
+          sku: item.sku,
+          expectedQty: item.expectedQuantity || item.quantity || 1,
+          receivedQty: item.receivedQuantity || 0,
+          status: item.status || 'pending',
+          notes: item.notes || '',
+          checked: (item.receivedQuantity || 0) > 0
+        }));
+        setReceivingItems(items);
+      }
+    } else if (shipment && !receipt) {
+      // Initialize from shipment if no receipt exists
+      if (shipment.items && shipment.items.length > 0) {
+        const items = shipment.items.map((item: any, index: number) => ({
+          id: item.id || `item-${index}`,
+          name: item.name || item.productName || `Item ${index + 1}`,
+          sku: item.sku,
+          expectedQty: item.quantity || 1,
+          receivedQty: 0,
+          status: 'pending' as const,
+          notes: '',
+          checked: false
+        }));
+        setReceivingItems(items);
+      }
+    }
+  }, [shipment, receipt]);
+
+  // Auto-focus barcode input in scan mode
+  useEffect(() => {
+    if (scanMode && barcodeRef.current) {
+      barcodeRef.current.focus();
+    }
+  }, [scanMode]);
+
+  // Handle barcode scan
+  const handleBarcodeScan = (value: string) => {
+    const item = receivingItems.find(item => item.sku === value);
+    if (item) {
+      updateItemQuantity(item.id, 1);
+      toast({
+        title: "Item Scanned",
+        description: `${item.name} - Quantity updated`
+      });
+    } else {
+      toast({
+        title: "Item Not Found",
+        description: "This SKU is not in the current shipment",
+        variant: "destructive"
+      });
+    }
+    setBarcodeScan("");
+  };
+
+  // Update item quantity
+  const updateItemQuantity = (itemId: string, delta: number) => {
+    setReceivingItems(items =>
+      items.map(item => {
+        if (item.id === itemId) {
+          const newQty = Math.max(0, item.receivedQty + delta);
+          const status = newQty === 0 ? 'pending' :
+                        newQty === item.expectedQty ? 'complete' :
+                        newQty < item.expectedQty ? 'partial' : 'complete';
+          return {
+            ...item,
+            receivedQty: newQty,
+            status,
+            checked: newQty > 0
+          };
+        }
+        return item;
+      })
+    );
+  };
+
+  // Toggle item status
+  const toggleItemStatus = (itemId: string, status: ReceivingItem['status']) => {
+    setReceivingItems(items =>
+      items.map(item => {
+        if (item.id === itemId) {
+          return { ...item, status, checked: true };
+        }
+        return item;
+      })
+    );
+  };
+
+  // Update item notes
+  const updateItemNotes = (itemId: string, notes: string) => {
+    setReceivingItems(items =>
+      items.map(item => {
+        if (item.id === itemId) {
+          return { ...item, notes };
+        }
+        return item;
+      })
+    );
+  };
+
+  // Update receipt mutation
+  const updateReceiptMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await fetch(`/api/imports/receipts/${receipt.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update receipt');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Receipt Updated",
+        description: "Successfully updated the receiving process"
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/receivable'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/receiving'] });
+      navigate('/receiving');
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update receipt",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleSubmit = async () => {
+    if (!receipt) {
+      toast({
+        title: "Error",
+        description: "No receipt found to update",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    updateReceiptMutation.mutate({
+      notes,
+      items: receivingItems.map(item => ({
+        itemId: item.id,
+        expectedQuantity: item.expectedQty,
+        receivedQuantity: item.receivedQty,
+        status: item.status,
+        notes: item.notes
+      }))
+    });
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'delivered':
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case 'receiving':
+        return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200';
+      case 'in transit':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+    }
+  };
+
+  const getItemStatusColor = (status: ReceivingItem['status']) => {
+    switch (status) {
+      case 'complete':
+        return 'bg-green-100 text-green-800';
+      case 'partial':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'damaged':
+        return 'bg-red-100 text-red-800';
+      case 'missing':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-50 text-gray-600';
+    }
+  };
+
+  const totalItems = receivingItems.length;
+  const completedItems = receivingItems.filter(item => item.status === 'complete' || item.status === 'partial').length;
+  const progress = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-4">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+          <div className="h-64 bg-gray-100 rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!shipment) {
+    return (
+      <div className="container mx-auto p-4">
+        <Card>
+          <CardContent className="p-6 text-center">
+            <Package className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+            <p className="text-muted-foreground">Shipment not found</p>
+            <Link href="/receiving">
+              <Button variant="outline" className="mt-4">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Receiving
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto p-4 max-w-4xl">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <Link href="/receiving">
+            <Button variant="ghost" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold">Continue Receiving</h1>
+            <p className="text-sm text-muted-foreground">
+              {shipment.shipmentName || `Shipment #${shipment.id}`} • {shipment.trackingNumber}
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Badge className={getStatusColor(shipment.status)}>
+            {shipment.status?.replace('_', ' ').toUpperCase()}
+          </Badge>
+          {receipt && (
+            <Link href={`/receiving/receipt/${receipt.id}`}>
+              <Button variant="outline" size="sm">
+                <FileText className="h-4 w-4 mr-2" />
+                View Receipt
+              </Button>
+            </Link>
+          )}
+        </div>
+      </div>
+
+      {/* Progress Bar */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium">Progress</span>
+          <span className="text-sm text-muted-foreground">{Math.round(progress)}% Complete</span>
+        </div>
+        <Progress value={progress} className="h-2" />
+      </div>
+
+      {/* Item Checklist */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <CheckSquare className="h-5 w-5" />
+              Item Verification ({completedItems}/{totalItems})
+            </CardTitle>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAllItems(!showAllItems)}
+              >
+                {showAllItems ? 'Show Active' : 'Show All'}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setScanMode(!scanMode);
+                  if (!scanMode) {
+                    setTimeout(() => barcodeRef.current?.focus(), 100);
+                  }
+                }}
+                className={scanMode ? 'bg-blue-50 border-blue-300' : ''}
+              >
+                <ScanLine className="h-4 w-4 mr-1" />
+                Scan Items
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {/* Scan Input */}
+          {scanMode && (
+            <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded-lg">
+              <Input
+                ref={barcodeRef}
+                value={barcodeScan}
+                onChange={(e) => setBarcodeScan(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && barcodeScan) {
+                    handleBarcodeScan(barcodeScan);
+                  }
+                }}
+                placeholder="Scan item barcode here..."
+                className="border-blue-300"
+              />
+            </div>
+          )}
+
+          {/* Items List */}
+          <div className="max-h-96 overflow-y-auto space-y-2">
+            {receivingItems
+              .filter(item => showAllItems || item.status === 'pending' || item.receivedQty < item.expectedQty)
+              .map((item) => (
+                <div key={item.id} className="border rounded-lg p-3 bg-white dark:bg-gray-900">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium">{item.name}</h4>
+                        <Badge className={`text-xs ${getItemStatusColor(item.status)}`}>
+                          {item.status}
+                        </Badge>
+                      </div>
+                      {item.sku && (
+                        <p className="text-xs text-muted-foreground font-mono">
+                          SKU: {item.sku}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => updateItemQuantity(item.id, -1)}
+                        disabled={item.receivedQty === 0}
+                      >
+                        <Minus className="h-3 w-3" />
+                      </Button>
+                      <span className="text-sm font-mono w-16 text-center">
+                        {item.receivedQty}/{item.expectedQty}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => updateItemQuantity(item.id, 1)}
+                      >
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    </div>
+
+                    <div className="flex gap-1">
+                      <Button
+                        variant={item.status === 'complete' ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          setReceivingItems(items =>
+                            items.map(i => 
+                              i.id === item.id 
+                                ? { ...i, receivedQty: i.expectedQty, status: 'complete', checked: true }
+                                : i
+                            )
+                          );
+                        }}
+                      >
+                        OK
+                      </Button>
+                      <Button
+                        variant={item.status === 'damaged' ? "destructive" : "outline"}
+                        size="sm"
+                        onClick={() => toggleItemStatus(item.id, 'damaged')}
+                      >
+                        DMG
+                      </Button>
+                      <Button
+                        variant={item.status === 'missing' ? "secondary" : "outline"}
+                        size="sm"
+                        onClick={() => toggleItemStatus(item.id, 'missing')}
+                      >
+                        MISS
+                      </Button>
+                    </div>
+                  </div>
+
+                  {(item.status === 'damaged' || item.status === 'missing' || item.notes) && (
+                    <div className="mt-2">
+                      <Input
+                        value={item.notes || ''}
+                        onChange={(e) => updateItemNotes(item.id, e.target.value)}
+                        placeholder="Add notes..."
+                        className="text-sm"
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+          </div>
+
+          {receivingItems.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              <Package2 className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p>No items to verify</p>
+            </div>
+          )}
+
+          {/* Additional Notes */}
+          <div>
+            <Label>Additional Notes</Label>
+            <Textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Add any additional notes..."
+              rows={3}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Action Buttons */}
+      <div className="flex gap-3 mt-6">
+        <Link href="/receiving">
+          <Button variant="outline" className="flex-1">
+            Cancel
+          </Button>
+        </Link>
+        <Button
+          onClick={handleSubmit}
+          disabled={updateReceiptMutation.isPending}
+          className="flex-1"
+          size="lg"
+        >
+          {updateReceiptMutation.isPending ? (
+            <>Updating...</>
+          ) : (
+            <>
+              <Save className="h-4 w-4 mr-2" />
+              Update Receiving
+            </>
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+}

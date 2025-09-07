@@ -248,6 +248,22 @@ export default function ReceivingList() {
       .filter((type: string) => type.length > 0)
   )).sort();
 
+  // Check if there are urgent shipments
+  const hasUrgentShipments = toReceiveShipments.some((shipment: any) => {
+    if (!shipment.createdAt) return false;
+    const createdDate = new Date(shipment.createdAt);
+    const daysSinceCreated = (new Date().getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24);
+    return daysSinceCreated > 7; // Consider urgent if older than 7 days
+  });
+
+  // Helper function to check if shipment is urgent
+  const isUrgent = (shipment: any) => {
+    if (!shipment.createdAt) return false;
+    const createdDate = new Date(shipment.createdAt);
+    const daysSinceCreated = (new Date().getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24);
+    return daysSinceCreated > 7; // Consider urgent if older than 7 days
+  };
+
   // Filter shipments based on all filters
   const filteredShipments = currentShipments.filter((shipment: any) => {
     const matchesSearch = searchQuery === "" ||
@@ -397,7 +413,7 @@ export default function ReceivingList() {
   };
 
   const ShipmentCard = ({ shipment, hasReceipt = false }: any) => {
-    const urgent = false; // isUrgent function removed, so this is now static
+    const urgent = isUrgent(shipment); // Use the isUrgent function
 
     return (
       <Card className={`hover:shadow-md transition-shadow ${urgent ? 'border-orange-300 bg-orange-50/50 dark:bg-orange-950/20' : ''}`}>
@@ -609,7 +625,7 @@ export default function ReceivingList() {
           {/* Filters Row */}
           <div className="flex gap-2 flex-wrap">
             {/* Priority Filter Removed as isUrgent is removed */}
-            
+
             <Select value={carrierFilter} onValueChange={setCarrierFilter}>
               <SelectTrigger className="w-40">
                 <Truck className="h-3 w-3" />

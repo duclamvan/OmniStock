@@ -75,6 +75,9 @@ import ReceiptDetails from "@/pages/Receiving/ReceiptDetails";
 // import ConsolidatedWarehouseView from "@/pages/Imports/ConsolidatedWarehouseView";
 // import ShipmentTracking from "@/pages/Imports/ShipmentTracking";
 
+// Import lazy function
+import { lazy } from 'react';
+
 function Router() {
   return (
     <Switch>
@@ -155,8 +158,9 @@ function Router() {
         </Route>
         {/* Receiving Routes */}
         <Route path="/receiving" component={ReceivingList} />
-        <Route path="/receiving/start/:id" component={StartReceiving} />
-        <Route path="/receiving/receipt/:id" component={ReceiptDetails} />
+        <Route path="/receiving/start/:id" component={lazy(() => import('./pages/Receiving/StartReceiving'))} />
+        <Route path="/receiving/continue/:id" component={lazy(() => import('./pages/Receiving/ContinueReceiving'))} />
+        <Route path="/receiving/receipt/:id" component={lazy(() => import('./pages/Receiving/ReceiptDetails'))} />
         <Route path="/reports">
           {() => <div>Reports page coming soon</div>}
         </Route>
