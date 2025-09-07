@@ -113,6 +113,21 @@ export default function ContinueReceiving() {
           checked: (item.receivedQuantity || 0) > 0
         }));
         setReceivingItems(items);
+        console.log('Loaded items from receipt:', items);
+      } else if (shipment.items && shipment.items.length > 0) {
+        // Fallback to shipment items if receipt has no items
+        const items = shipment.items.map((item: any, index: number) => ({
+          id: item.id ? item.id.toString() : `item-${index}`,
+          name: item.name || item.productName || `Item ${index + 1}`,
+          sku: item.sku,
+          expectedQty: item.quantity || 1,
+          receivedQty: 0,
+          status: 'pending' as const,
+          notes: '',
+          checked: false
+        }));
+        setReceivingItems(items);
+        console.log('Loaded items from shipment (receipt had no items):', items);
       }
       
       // Start on step 2 since we already have receipt data
@@ -134,6 +149,7 @@ export default function ContinueReceiving() {
           checked: false
         }));
         setReceivingItems(items);
+        console.log('Loaded items from shipment:', items);
       }
     }
   }, [shipment, receipt]);
@@ -831,8 +847,15 @@ export default function ContinueReceiving() {
 
               {/* Items List */}
               <div className="max-h-96 overflow-y-auto space-y-2">
-                {receivingItems
-                  .filter(item => showAllItems || item.status === 'pending' || item.receivedQty < item.expectedQty)
+                {(() => {
+                  const filteredItems = receivingItems.filter(item => 
+                    showAllItems || item.status === 'pending' || item.receivedQty < item.expectedQty
+                  );
+                  console.log('Receiving items:', receivingItems);
+                  console.log('Show all items:', showAllItems);
+                  console.log('Filtered items:', filteredItems);
+                  return filteredItems;
+                })()
                   .map((item) => (
                     <div key={item.id} className="border rounded-lg p-3 bg-white dark:bg-gray-900">
                       <div className="flex items-start justify-between mb-2">
@@ -940,12 +963,33 @@ export default function ContinueReceiving() {
                   ))}
               </div>
 
-              {receivingItems.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Package2 className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>No items to verify</p>
-                </div>
-              )}
+              {(() => {
+                const filteredItems = receivingItems.filter(item => 
+                  showAllItems || item.status === 'pending' || item.receivedQty < item.expectedQty
+                );
+                
+                if (receivingItems.length === 0) {
+                  return (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Package2 className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                      <p>No items loaded from shipment</p>
+                      <p className="text-xs mt-2">Debug: Check console for data loading issues</p>
+                    </div>
+                  );
+                }
+                
+                if (filteredItems.length === 0) {
+                  return (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Package2 className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                      <p>All items completed. Switch to "Show All" to see them.</p>
+                      <p className="text-xs mt-2">Total items: {receivingItems.length}</p>
+                    </div>
+                  );
+                }
+                
+                return null;
+              })()}
             </CardContent>
           </Card>
 
