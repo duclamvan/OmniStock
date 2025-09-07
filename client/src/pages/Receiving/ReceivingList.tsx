@@ -210,36 +210,42 @@ export default function ReceivingList() {
   });
 
   // Get the current shipments based on active tab
-  const getCurrentShipments = () => {
+  const getCurrentShipments = (): any[] => {
     switch (activeTab) {
       case 'to-receive':
-        return toReceiveShipments;
+        return toReceiveShipments || [];
       case 'receiving':
-        return receivingShipments;
+        return receivingShipments || [];
       case 'approval':
-        return approvalShipments;
+        return approvalShipments || [];
       case 'completed':
-        return completedShipments;
+        return completedShipments || [];
       default:
-        return toReceiveShipments;
+        return toReceiveShipments || [];
     }
   };
 
-  const currentShipments = getCurrentShipments();
+  const currentShipments: any[] = getCurrentShipments();
 
   // Get unique carriers from shipments
-  const uniqueCarriers = Array.from(new Set(
-    currentShipments.map((s: any) => s.endCarrier || s.carrier).filter(Boolean)
+  const uniqueCarriers: string[] = Array.from(new Set(
+    currentShipments
+      .map((s: any) => String(s.endCarrier || s.carrier || ''))
+      .filter((carrier: string) => carrier.length > 0)
   )).sort();
 
   // Get unique shipment types from shipments
-  const uniqueShipmentTypes = Array.from(new Set(
-    currentShipments.map((s: any) => s.shipmentType || 'N/A').filter(Boolean)
+  const uniqueShipmentTypes: string[] = Array.from(new Set(
+    currentShipments
+      .map((s: any) => String(s.shipmentType || 'N/A'))
+      .filter((type: string) => type.length > 0)
   )).sort();
 
   // Get unique carton types from shipments
-  const uniqueCartonTypes = Array.from(new Set(
-    currentShipments.map((s: any) => s.unitType || 'items').filter(Boolean)
+  const uniqueCartonTypes: string[] = Array.from(new Set(
+    currentShipments
+      .map((s: any) => String(s.unitType || 'items'))
+      .filter((type: string) => type.length > 0)
   )).sort();
 
   // Filter shipments based on all filters
