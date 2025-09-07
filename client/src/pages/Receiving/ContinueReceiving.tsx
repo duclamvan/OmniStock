@@ -124,7 +124,7 @@ export default function ContinueReceiving() {
       
       if (shipment.items && shipment.items.length > 0) {
         const items = shipment.items.map((item: any, index: number) => ({
-          id: item.id || `item-${index}`,
+          id: item.id ? item.id.toString() : `item-${index}`, // Convert to string for UI, but store original ID
           name: item.name || item.productName || `Item ${index + 1}`,
           sku: item.sku,
           expectedQty: item.quantity || 1,
@@ -302,10 +302,7 @@ export default function ContinueReceiving() {
   // Auto-save mutation for preserving progress in real-time
   const autoSaveMutation = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest('/api/imports/receipts/auto-save', {
-        method: 'POST',
-        body: JSON.stringify(data)
-      });
+      return await apiRequest('/api/imports/receipts/auto-save', 'POST', data);
     },
     onError: (error: any) => {
       console.error("Auto-save failed:", error);
@@ -340,7 +337,7 @@ export default function ContinueReceiving() {
       carrier,
       notes,
       items: receivingItems.map(item => ({
-        itemId: item.id,
+        itemId: parseInt(item.id) || item.id, // Convert string ID back to integer for API
         expectedQuantity: item.expectedQty,
         receivedQuantity: item.receivedQty,
         status: item.status,

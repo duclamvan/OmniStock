@@ -3059,18 +3059,26 @@ router.post("/receipts/auto-save", async (req, res) => {
         .where(eq(receiptItems.receiptId, receipt.id));
       
       // Insert updated receipt items
-      const itemsToInsert = items.map((item: any) => ({
-        receiptId: receipt.id,
-        itemId: item.itemId || item.id,
-        expectedQuantity: item.expectedQuantity || item.expectedQty || 1,
-        receivedQuantity: item.receivedQuantity || item.receivedQty || 0,
-        damagedQuantity: item.damagedQuantity || 0,
-        missingQuantity: item.missingQuantity || 0,
-        status: item.status || 'pending',
-        notes: item.notes || "",
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }));
+      const itemsToInsert = items.map((item: any) => {
+        // Handle both integer and string itemIds
+        const itemId = typeof (item.itemId || item.id) === 'string' 
+          ? parseInt((item.itemId || item.id).toString()) 
+          : (item.itemId || item.id);
+        
+        return {
+          receiptId: receipt.id,
+          itemId: itemId,
+          itemType: 'purchase', // Default to purchase type
+          expectedQuantity: item.expectedQuantity || item.expectedQty || 1,
+          receivedQuantity: item.receivedQuantity || item.receivedQty || 0,
+          damagedQuantity: item.damagedQuantity || 0,
+          missingQuantity: item.missingQuantity || 0,
+          status: item.status || 'pending',
+          notes: item.notes || "",
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+      });
       
       if (itemsToInsert.length > 0) {
         await db.insert(receiptItems).values(itemsToInsert);
