@@ -36,6 +36,7 @@ import {
   Train,
   Star,
   Container,
+  Warehouse,
   Layers,
   ArrowUpDown,
   ArrowUp,
@@ -976,7 +977,7 @@ export default function ReceivingList() {
                         <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-xs sm:text-sm mb-3 sm:pl-11">
                           {shipment.consolidation?.warehouse && (
                             <div className="flex items-center gap-1">
-                              <Container className="h-3 w-3 text-muted-foreground" />
+                              <Warehouse className="h-3 w-3 text-muted-foreground" />
                               <span className="text-muted-foreground">
                                 Destination Warehouse: {shipment.consolidation.warehouse}
                               </span>
