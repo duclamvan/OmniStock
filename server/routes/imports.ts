@@ -2960,4 +2960,36 @@ router.get("/receipts", async (req, res) => {
   }
 });
 
+// Get receipt by shipment ID
+router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
+  try {
+    const shipmentId = parseInt(req.params.shipmentId);
+    
+    // Get the receipt for this shipment
+    const [receipt] = await db
+      .select()
+      .from(receipts)
+      .where(eq(receipts.shipmentId, shipmentId));
+    
+    if (!receipt) {
+      return res.status(404).json({ message: "No receipt found for this shipment" });
+    }
+    
+    // Get receipt items
+    const receiptItems = await db
+      .select()
+      .from(receiptItems)
+      .where(eq(receiptItems.receiptId, receipt.id));
+    
+    // Return receipt with items
+    res.json({
+      receipt: receipt,
+      items: receiptItems
+    });
+  } catch (error) {
+    console.error("Error fetching receipt by shipment:", error);
+    res.status(500).json({ message: "Failed to fetch receipt" });
+  }
+});
+
 export default router;
