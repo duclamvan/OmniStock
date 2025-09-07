@@ -77,6 +77,20 @@ export default function StartReceiving() {
     enabled: !!id
   });
 
+  // Fetch existing receipt for this shipment (for preserved data)
+  const { data: existingReceipt } = useQuery({
+    queryKey: [`/api/imports/receipts/by-shipment/${id}`],
+    queryFn: async () => {
+      const response = await fetch(`/api/imports/receipts/by-shipment/${id}`);
+      if (!response.ok) {
+        if (response.status === 404) return null; // No existing receipt
+        throw new Error('Failed to fetch receipt');
+      }
+      return response.json();
+    },
+    enabled: !!id
+  });
+
   // Initialize data when shipment loads
   useEffect(() => {
     if (shipment) {
@@ -99,6 +113,40 @@ export default function StartReceiving() {
       }
     }
   }, [shipment]);
+
+  // Load preserved receipt data if it exists
+  useEffect(() => {
+    if (existingReceipt && existingReceipt.receipt) {
+      const receipt = existingReceipt.receipt;
+      // Load preserved form data
+      setReceivedBy(receipt.receivedBy || "Employee #1");
+      setCarrier(receipt.carrier || "");
+      setParcelCount(receipt.parcelCount || 1);
+      setScannedParcels(receipt.parcelCount || 0); // Assume all parcels were scanned before
+      setNotes(receipt.notes || "");
+
+      // Load preserved item data if available
+      if (existingReceipt.items && existingReceipt.items.length > 0) {
+        const items = existingReceipt.items.map((item: any, index: number) => ({
+          id: item.itemId || `item-${index}`,
+          name: item.name || item.productName || `Item ${index + 1}`,
+          sku: item.sku,
+          expectedQty: item.expectedQuantity || 1,
+          receivedQty: item.receivedQuantity || 0,
+          status: item.status || 'pending' as const,
+          notes: item.notes || '',
+          checked: (item.receivedQuantity || 0) > 0
+        }));
+        setReceivingItems(items);
+      }
+
+      // Show toast to inform user that preserved data was loaded
+      toast({
+        title: "Data Preserved",
+        description: "Previous receiving progress has been restored"
+      });
+    }
+  }, [existingReceipt, toast]);
 
   // Auto-focus barcode input in scan mode
   useEffect(() => {
@@ -268,22 +316,32 @@ export default function StartReceiving() {
         }
       });
 
-      // Create receipt with item details
-      createReceiptMutation.mutate({
-        shipmentId: parseInt(id!),
-        consolidationId: shipment?.consolidationId || null,
-        receivedBy,
-        parcelCount,
-        carrier,
-        notes,
-        items: receivingItems.map(item => ({
-          itemId: item.id,
-          expectedQuantity: item.expectedQty,
-          receivedQuantity: item.receivedQty,
-          status: item.status,
-          notes: item.notes
-        }))
-      });
+      // Check if there's an existing receipt
+      if (existingReceipt && existingReceipt.receipt) {
+        // If we have an existing receipt (preserved data), navigate directly to it
+        toast({
+          title: "Receiving Resumed",
+          description: "Continuing with preserved receiving data"
+        });
+        navigate(`/receiving/receipt/${existingReceipt.receipt.id}`);
+      } else {
+        // Create new receipt with item details
+        createReceiptMutation.mutate({
+          shipmentId: parseInt(id!),
+          consolidationId: shipment?.consolidationId || null,
+          receivedBy,
+          parcelCount,
+          carrier,
+          notes,
+          items: receivingItems.map(item => ({
+            itemId: item.id,
+            expectedQuantity: item.expectedQty,
+            receivedQuantity: item.receivedQty,
+            status: item.status,
+            notes: item.notes
+          }))
+        });
+      }
     } catch (error) {
       toast({
         title: "Error",

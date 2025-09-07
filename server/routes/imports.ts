@@ -2485,7 +2485,11 @@ router.post("/receipts", async (req, res) => {
       .where(eq(receipts.shipmentId, shipmentId));
 
     if (existingReceipt) {
-      return res.status(400).json({ message: "Receipt already exists for this shipment" });
+      // If receipt exists (from preserved data), return it instead of creating new one
+      return res.json({ 
+        receipt: existingReceipt,
+        message: "Using existing receipt (preserved data)"
+      });
     }
 
     // Create receipt
