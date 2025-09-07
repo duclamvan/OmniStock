@@ -147,7 +147,6 @@ export default function ReceivingList() {
   const [carrierFilter, setCarrierFilter] = useState("all");
   const [shipmentTypeFilter, setShipmentTypeFilter] = useState("all"); // Added shipmentTypeFilter
   const [cartonTypeFilter, setCartonTypeFilter] = useState("all"); // Added cartonTypeFilter
-  const [dateRangeFilter, setDateRangeFilter] = useState("all");
   const { toast } = useToast();
 
   // Fetch shipments ready to receive
@@ -252,30 +251,7 @@ export default function ReceivingList() {
     const matchesCartonType = cartonTypeFilter === "all" ||
       (shipment.unitType || 'items') === cartonTypeFilter;
 
-    const matchesDateRange = (() => {
-      if (dateRangeFilter === "all") return true;
-      const deliveredDate = shipment.deliveredAt ? new Date(shipment.deliveredAt) : null;
-      const now = new Date();
-
-      if (!deliveredDate) return false; // Ensure deliveredDate is valid
-
-      switch (dateRangeFilter) {
-        case "today":
-          return isToday(deliveredDate);
-        case "yesterday":
-          return isYesterday(deliveredDate);
-        case "week":
-          return isThisWeek(deliveredDate);
-        case "month":
-          return isThisMonth(deliveredDate);
-        case "older":
-          return differenceInDays(now, deliveredDate) > 30;
-        default:
-          return true;
-      }
-    })();
-
-    return matchesSearch && matchesPriority && matchesCarrier && matchesShipmentType && matchesCartonType && matchesDateRange;
+    return matchesSearch && matchesPriority && matchesCarrier && matchesShipmentType && matchesCartonType;
   });
 
   // Sort filtered shipments
@@ -660,21 +636,6 @@ export default function ReceivingList() {
                     {type}
                   </SelectItem>
                 ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={dateRangeFilter} onValueChange={setDateRangeFilter}>
-              <SelectTrigger className="w-36">
-                <CalendarDays className="h-3 w-3" />
-                <SelectValue placeholder="Date Range" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Dates</SelectItem>
-                <SelectItem value="today">Today</SelectItem>
-                <SelectItem value="yesterday">Yesterday</SelectItem>
-                <SelectItem value="week">This Week</SelectItem>
-                <SelectItem value="month">This Month</SelectItem>
-                <SelectItem value="older">Older (30+ days)</SelectItem>
               </SelectContent>
             </Select>
 
