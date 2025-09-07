@@ -53,7 +53,7 @@ export default function StartReceiving() {
   const barcodeRef = useRef<HTMLInputElement>(null);
 
   // Form state
-  const [receivedBy, setReceivedBy] = useState("");
+  const [receivedBy, setReceivedBy] = useState("Employee #1");
   const [carrier, setCarrier] = useState("");
   const [parcelCount, setParcelCount] = useState(1);
   const [scannedParcels, setScannedParcels] = useState(0);
