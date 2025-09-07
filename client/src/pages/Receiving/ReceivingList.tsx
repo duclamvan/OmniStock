@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -248,93 +248,136 @@ export default function ReceivingList() {
       .filter((type: string) => type.length > 0)
   )).sort();
 
-  // Check if there are urgent shipments
-  const hasUrgentShipments = toReceiveShipments.some((shipment: any) => {
-    if (!shipment.createdAt) return false;
-    const createdDate = new Date(shipment.createdAt);
-    const daysSinceCreated = (new Date().getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24);
-    return daysSinceCreated > 7; // Consider urgent if older than 7 days
-  });
-
-  // Helper function to check if shipment is urgent
+  // Helper function to determine if shipment is urgent
   const isUrgent = (shipment: any) => {
-    if (!shipment.createdAt) return false;
-    const createdDate = new Date(shipment.createdAt);
-    const daysSinceCreated = (new Date().getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24);
-    return daysSinceCreated > 7; // Consider urgent if older than 7 days
+    return shipment.priority === 'high' || 
+      (shipment.estimatedArrival && new Date(shipment.estimatedArrival) <= new Date(Date.now() + 3 * 24 * 60 * 60 * 1000));
   };
 
   // Filter shipments based on all filters
-  const filteredShipments = currentShipments.filter((shipment: any) => {
-    const matchesSearch = searchQuery === "" ||
-      shipment.shipmentName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      shipment.trackingNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      shipment.carrier?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      shipment.consolidation?.name?.toLowerCase().includes(searchQuery.toLowerCase());
-
-    const matchesPriority = priorityFilter === "all"; // Removed isUrgent check
-
-    const matchesCarrier = carrierFilter === "all" ||
-      (shipment.endCarrier || shipment.carrier) === carrierFilter;
-
-    const matchesShipmentType = shipmentTypeFilter === "all" ||
-      (shipment.shipmentType || 'N/A') === shipmentTypeFilter;
-
-    const matchesCartonType = cartonTypeFilter === "all" ||
-      (shipment.unitType || 'items') === cartonTypeFilter;
-
-    return matchesSearch && matchesPriority && matchesCarrier && matchesShipmentType && matchesCartonType;
-  });
-
-  // Sort filtered shipments
-  const sortedShipments = [...filteredShipments].sort((a: any, b: any) => {
-    let aValue, bValue;
-
-    switch (sortBy) {
-      case "deliveredAt":
-        aValue = a.deliveredAt ? new Date(a.deliveredAt).getTime() : 0;
-        bValue = b.deliveredAt ? new Date(b.deliveredAt).getTime() : 0;
+  const filteredShipments = useMemo(() => {
+    let shipmentsData = [];
+    switch (activeTab) {
+      case 'to-receive':
+        shipmentsData = toReceiveShipments;
         break;
-      case "shipmentName":
-        aValue = a.shipmentName || `Shipment #${a.id}`;
-        bValue = b.shipmentName || `Shipment #${b.id}`;
+      case 'receiving':
+        shipmentsData = receivingShipments;
         break;
-      case "carrier":
-        aValue = a.endCarrier || a.carrier || '';
-        bValue = b.endCarrier || b.carrier || '';
+      case 'approval':
+        shipmentsData = approvalShipments;
         break;
-      case "urgency":
-        // Removed dependency on isUrgent
-        aValue = 0; 
-        bValue = 0; 
-        break;
-      case "totalUnits":
-        aValue = a.totalUnits || 0;
-        bValue = b.totalUnits || 0;
-        break;
-      case "weight":
-        aValue = a.actualWeight || 0;
-        bValue = b.actualWeight || 0;
-        break;
-      case "estimatedDelivery":
-        aValue = a.estimatedDelivery ? new Date(a.estimatedDelivery).getTime() : 0;
-        bValue = b.estimatedDelivery ? new Date(b.estimatedDelivery).getTime() : 0;
+      case 'completed':
+        shipmentsData = completedShipments;
         break;
       default:
-        aValue = a.id;
-        bValue = b.id;
+        shipmentsData = toReceiveShipments;
     }
 
-    if (typeof aValue === 'string' && typeof bValue === 'string') {
-      return sortOrder === 'asc' 
-        ? aValue.localeCompare(bValue)
-        : bValue.localeCompare(aValue);
-    }
+    if (!shipmentsData) return [];
 
-    return sortOrder === 'asc'
-      ? (aValue > bValue ? 1 : -1)
-      : (bValue > aValue ? 1 : -1);
-  });
+    let filtered = shipmentsData.filter(shipment => {
+      // Type filter
+      if (shipmentTypeFilter !== 'all' && shipment.shipmentType !== shipmentTypeFilter) {
+        return false;
+      }
+
+      // Priority filter
+      if (priorityFilter !== 'all') {
+        const shipmentIsUrgent = isUrgent(shipment);
+
+        if (priorityFilter === 'urgent' && !shipmentIsUrgent) return false;
+        if (priorityFilter === 'normal' && shipmentIsUrgent) return false;
+      }
+
+      // Search filter
+      if (searchQuery) {
+        const searchLower = searchQuery.toLowerCase();
+        return (
+          shipment.shipmentName?.toLowerCase().includes(searchLower) ||
+          shipment.trackingNumber?.toLowerCase().includes(searchLower) ||
+          shipment.carrier?.toLowerCase().includes(searchLower) ||
+          shipment.consolidation?.name?.toLowerCase().includes(searchLower)
+        );
+      }
+      
+      // Carrier filter
+      if (carrierFilter !== 'all' && (shipment.endCarrier || shipment.carrier) !== carrierFilter) {
+        return false;
+      }
+
+      // Carton type filter
+      if (cartonTypeFilter !== 'all' && (shipment.unitType || 'items') !== cartonTypeFilter) {
+        return false;
+      }
+
+      return true;
+    });
+
+    return filtered;
+  }, [
+    activeTab, 
+    toReceiveShipments, 
+    receivingShipments, 
+    approvalShipments, 
+    completedShipments, 
+    searchQuery, 
+    priorityFilter, 
+    carrierFilter, 
+    shipmentTypeFilter, 
+    cartonTypeFilter
+  ]);
+
+  // Sort filtered shipments
+  const sortedShipments = useMemo(() => {
+    return [...filteredShipments].sort((a: any, b: any) => {
+      let aValue, bValue;
+
+      switch (sortBy) {
+        case "deliveredAt":
+          aValue = a.deliveredAt ? new Date(a.deliveredAt).getTime() : 0;
+          bValue = b.deliveredAt ? new Date(b.deliveredAt).getTime() : 0;
+          break;
+        case "shipmentName":
+          aValue = a.shipmentName || `Shipment #${a.id}`;
+          bValue = b.shipmentName || `Shipment #${b.id}`;
+          break;
+        case "carrier":
+          aValue = a.endCarrier || a.carrier || '';
+          bValue = b.endCarrier || b.carrier || '';
+          break;
+        case "urgency":
+          aValue = isUrgent(a) ? 1 : 0;
+          bValue = isUrgent(b) ? 1 : 0;
+          break;
+        case "totalUnits":
+          aValue = a.totalUnits || 0;
+          bValue = b.totalUnits || 0;
+          break;
+        case "weight":
+          aValue = a.actualWeight || 0;
+          bValue = b.actualWeight || 0;
+          break;
+        case "estimatedDelivery":
+          aValue = a.estimatedDelivery ? new Date(a.estimatedDelivery).getTime() : 0;
+          bValue = b.estimatedDelivery ? new Date(b.estimatedDelivery).getTime() : 0;
+          break;
+        default:
+          aValue = a.id;
+          bValue = b.id;
+      }
+
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortOrder === 'asc' 
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      }
+
+      return sortOrder === 'asc'
+        ? (aValue > bValue ? 1 : -1)
+        : (bValue > aValue ? 1 : -1);
+    });
+  }, [filteredShipments, sortBy, sortOrder]);
 
   // Handle barcode scan
   useEffect(() => {
@@ -624,7 +667,17 @@ export default function ReceivingList() {
 
           {/* Filters Row */}
           <div className="flex gap-2 flex-wrap">
-            {/* Priority Filter Removed as isUrgent is removed */}
+            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+              <SelectTrigger className="w-40">
+                <AlertTriangle className="h-3 w-3" />
+                <SelectValue placeholder="Priority" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Priorities</SelectItem>
+                <SelectItem value="normal">Normal</SelectItem>
+                <SelectItem value="urgent">Urgent</SelectItem>
+              </SelectContent>
+            </Select>
 
             <Select value={carrierFilter} onValueChange={setCarrierFilter}>
               <SelectTrigger className="w-40">
@@ -833,7 +886,7 @@ export default function ReceivingList() {
             <Package className="h-4 w-4" />
             <span>To Receive</span>
             <span className={`${activeTab === 'to-receive' ? 'text-white/90' : 'text-gray-500'}`}>
-              ({sortedShipments.length})
+              ({sortedShipments.filter(s => s.status === 'pending_receiving').length})
             </span>
           </button>
 
@@ -898,7 +951,7 @@ export default function ReceivingList() {
               <Package className="h-12 w-12 text-muted-foreground mx-auto mb-2 animate-pulse" />
               <p className="text-muted-foreground">Loading shipments...</p>
             </div>
-          ) : sortedShipments.length === 0 ? (
+          ) : sortedShipments.filter(s => s.status === 'pending_receiving').length === 0 ? (
             <div className="text-center py-8">
               <Package className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
               <p className="text-muted-foreground">No shipments ready for receiving</p>
@@ -906,6 +959,7 @@ export default function ReceivingList() {
           ) : (
             <div className="space-y-4">
               {sortedShipments
+                .filter(s => s.status === 'pending_receiving')
                 .map((shipment: any) => {
                   const isExpanded = expandedShipments.has(shipment.id);
 
