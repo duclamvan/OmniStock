@@ -406,7 +406,7 @@ export default function StartReceiving() {
               </div>
 
               {/* Parcel Count */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                 <div>
                   <Label>Expected Parcels</Label>
                   <div className="flex items-center gap-2">
@@ -430,6 +430,38 @@ export default function StartReceiving() {
                       variant="outline"
                       size="sm"
                       onClick={() => setParcelCount(parcelCount + 1)}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                <div>
+                  <Label>Received Parcels (Manual)</Label>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setScannedParcels(Math.max(0, scannedParcels - 1))}
+                      disabled={scannedParcels === 0}
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                    <Input
+                      type="number"
+                      value={scannedParcels}
+                      onChange={(e) => setScannedParcels(Math.max(0, Math.min(parcelCount, parseInt(e.target.value) || 0)))}
+                      className="text-center"
+                      min="0"
+                      max={parcelCount}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setScannedParcels(Math.min(parcelCount, scannedParcels + 1))}
+                      disabled={scannedParcels >= parcelCount}
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
