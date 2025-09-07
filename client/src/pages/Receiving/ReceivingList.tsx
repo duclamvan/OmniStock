@@ -368,9 +368,9 @@ export default function ReceivingList() {
   );
 
   // Group receipts by status
-  const pendingVerification = filteredReceipts.filter((r: any) => r.status === 'pending_verification');
-  const pendingApproval = filteredReceipts.filter((r: any) => r.status === 'pending_approval');
-  const approved = filteredReceipts.filter((r: any) => r.status === 'approved');
+  const pendingVerification = receipts.filter((r: any) => r.status === 'pending_verification');
+  const pendingApproval = receipts.filter((r: any) => r.status === 'pending_approval');
+  const approved = receipts.filter((r: any) => r.status === 'approved');
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -575,7 +575,7 @@ export default function ReceivingList() {
     </Card>
   );
 
-  const isLoading = isLoadingShipments || isLoadingReceipts;
+  const isLoading = isLoadingToReceive || isLoadingReceiving || isLoadingApproval || isLoadingCompleted || isLoadingReceipts;
 
   return (
     <div className="container mx-auto p-6">

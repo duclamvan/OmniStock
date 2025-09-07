@@ -190,7 +190,7 @@ export default function StartReceiving() {
     return { type: 'ontime', message: 'On time' };
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!receivedBy || !parcelCount || !carrier) {
@@ -204,15 +204,36 @@ export default function StartReceiving() {
 
     const filteredTrackingNumbers = trackingNumbers.filter(tn => tn.trim() !== "");
 
-    createReceiptMutation.mutate({
-      shipmentId: parseInt(id!),
-      consolidationId: shipment?.consolidationId || null,
-      receivedBy,
-      parcelCount: parseInt(parcelCount),
-      carrier: carrier || shipment?.endCarrier || shipment?.carrier,
-      trackingNumbers: filteredTrackingNumbers,
-      notes
-    });
+    try {
+      // First, update the shipment status to 'receiving'
+      const statusResponse = await fetch(`/api/imports/shipments/${id}/start-receiving`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!statusResponse.ok) {
+        throw new Error('Failed to update shipment status');
+      }
+
+      // Then create the receipt
+      createReceiptMutation.mutate({
+        shipmentId: parseInt(id!),
+        consolidationId: shipment?.consolidationId || null,
+        receivedBy,
+        parcelCount: parseInt(parcelCount),
+        carrier: carrier || shipment?.endCarrier || shipment?.carrier,
+        trackingNumbers: filteredTrackingNumbers,
+        notes
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to start receiving process",
+        variant: "destructive"
+      });
+    }
   };
 
   if (isLoading) {
