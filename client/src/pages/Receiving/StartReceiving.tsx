@@ -111,11 +111,19 @@ export default function StartReceiving() {
   const handleBarcodeScan = (value: string) => {
     if (currentStep === 1) {
       // Step 1: Scanning parcel barcodes
-      setScannedParcels(prev => Math.min(prev + 1, parcelCount));
+      const newScannedCount = Math.min(scannedParcels + 1, parcelCount);
+      const isFirstParcel = scannedParcels === 0 && newScannedCount === 1;
+      
+      setScannedParcels(newScannedCount);
       toast({
         title: "Parcel Scanned",
-        description: `Scanned ${scannedParcels + 1} of ${parcelCount} parcels`
+        description: `Scanned ${newScannedCount} of ${parcelCount} parcels`
       });
+
+      // Auto-move to "Currently Receiving" tab when first parcel is received
+      if (isFirstParcel && !startReceivingMutation.isPending) {
+        startReceivingMutation.mutate();
+      }
     } else if (currentStep === 2) {
       // Step 2: Scanning item barcodes
       const item = receivingItems.find(item => item.sku === value);
@@ -180,6 +188,32 @@ export default function StartReceiving() {
       })
     );
   };
+
+  // Start receiving mutation (move to "Currently Receiving" tab)
+  const startReceivingMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/imports/shipments/${id}/start-receiving`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!response.ok) throw new Error('Failed to start receiving');
+      return response.json();
+    },
+    onSuccess: () => {
+      // Invalidate queries to refresh the tabs
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/receivable'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/receiving'] });
+      toast({
+        title: "Receiving Started",
+        description: "Shipment moved to Currently Receiving tab"
+      });
+    },
+    onError: (error: any) => {
+      console.error('Error starting receiving:', error);
+    }
+  });
 
   // Create receipt mutation
   const createReceiptMutation = useMutation({
@@ -460,7 +494,16 @@ export default function StartReceiving() {
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => setScannedParcels(Math.min(parcelCount, scannedParcels + 1))}
+                      onClick={() => {
+                        const newCount = Math.min(parcelCount, scannedParcels + 1);
+                        const isFirstParcel = scannedParcels === 0 && newCount === 1;
+                        setScannedParcels(newCount);
+                        
+                        // Auto-move to "Currently Receiving" tab when first parcel is received
+                        if (isFirstParcel && !startReceivingMutation.isPending) {
+                          startReceivingMutation.mutate();
+                        }
+                      }}
                       disabled={scannedParcels >= parcelCount}
                     >
                       <Plus className="h-4 w-4" />
