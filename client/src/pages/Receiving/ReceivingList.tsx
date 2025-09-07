@@ -958,7 +958,6 @@ export default function ReceivingList() {
           ) : (
             <div className="space-y-4">
               {sortedShipments
-                .filter(s => s.status === 'pending_receiving')
                 .map((shipment: any) => {
                   const isExpanded = expandedShipments.has(shipment.id);
 
