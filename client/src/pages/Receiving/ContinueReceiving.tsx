@@ -831,6 +831,25 @@ export default function ContinueReceiving() {
             </CardContent>
           </Card>
 
+          {/* Notes Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Additional Notes
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Add any additional notes about this receiving process..."
+                rows={3}
+                className="resize-none"
+              />
+            </CardContent>
+          </Card>
+
           {/* Action Buttons */}
           <div className="flex gap-3">
             <Button

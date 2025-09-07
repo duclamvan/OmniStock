@@ -32,7 +32,8 @@ import {
   Square,
   ArrowRight,
   Check,
-  X
+  X,
+  FileText
 } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
@@ -814,6 +815,25 @@ export default function StartReceiving() {
                   <p>No items to verify</p>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Notes Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Additional Notes
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Add any additional notes about this receiving process..."
+                rows={3}
+                className="resize-none"
+              />
             </CardContent>
           </Card>
 
