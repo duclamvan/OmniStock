@@ -135,7 +135,7 @@ const getUnitTypeIcon = (unitType: string, className = "h-3 w-3") => {
 
 export default function ReceivingList() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("receivable");
+  const [activeTab, setActiveTab] = useState("to-receive");
   const [selectedShipments, setSelectedShipments] = useState<Set<number>>(new Set());
   const [priorityFilter, setPriorityFilter] = useState("all");
   const [barcodeScan, setBarcodeScan] = useState("");
@@ -148,12 +148,42 @@ export default function ReceivingList() {
   const [dateRangeFilter, setDateRangeFilter] = useState("all");
   const { toast } = useToast();
 
-  // Fetch receivable shipments
-  const { data: receivableShipments = [], isLoading: isLoadingShipments } = useQuery({
+  // Fetch shipments ready to receive
+  const { data: toReceiveShipments = [], isLoading: isLoadingToReceive } = useQuery({
     queryKey: ['/api/imports/shipments/receivable'],
     queryFn: async () => {
       const response = await fetch('/api/imports/shipments/receivable');
       if (!response.ok) throw new Error('Failed to fetch receivable shipments');
+      return response.json();
+    }
+  });
+
+  // Fetch shipments currently being received
+  const { data: receivingShipments = [], isLoading: isLoadingReceiving } = useQuery({
+    queryKey: ['/api/imports/shipments/by-status/receiving'],
+    queryFn: async () => {
+      const response = await fetch('/api/imports/shipments/by-status/receiving');
+      if (!response.ok) throw new Error('Failed to fetch receiving shipments');
+      return response.json();
+    }
+  });
+
+  // Fetch shipments pending approval
+  const { data: approvalShipments = [], isLoading: isLoadingApproval } = useQuery({
+    queryKey: ['/api/imports/shipments/by-status/pending_approval'],
+    queryFn: async () => {
+      const response = await fetch('/api/imports/shipments/by-status/pending_approval');
+      if (!response.ok) throw new Error('Failed to fetch approval shipments');
+      return response.json();
+    }
+  });
+
+  // Fetch completed shipments
+  const { data: completedShipments = [], isLoading: isLoadingCompleted } = useQuery({
+    queryKey: ['/api/imports/shipments/by-status/completed'],
+    queryFn: async () => {
+      const response = await fetch('/api/imports/shipments/by-status/completed');
+      if (!response.ok) throw new Error('Failed to fetch completed shipments');
       return response.json();
     }
   });
@@ -168,18 +198,36 @@ export default function ReceivingList() {
     }
   });
 
+  // Get the current shipments based on active tab
+  const getCurrentShipments = () => {
+    switch (activeTab) {
+      case 'to-receive':
+        return toReceiveShipments;
+      case 'receiving':
+        return receivingShipments;
+      case 'approval':
+        return approvalShipments;
+      case 'completed':
+        return completedShipments;
+      default:
+        return toReceiveShipments;
+    }
+  };
+
+  const currentShipments = getCurrentShipments();
+
   // Get unique carriers from shipments
   const uniqueCarriers = Array.from(new Set(
-    receivableShipments.map((s: any) => s.endCarrier || s.carrier).filter(Boolean)
+    currentShipments.map((s: any) => s.endCarrier || s.carrier).filter(Boolean)
   )).sort();
 
   // Get unique unit types from shipments
   const uniqueUnitTypes = Array.from(new Set(
-    receivableShipments.map((s: any) => s.unitType || 'items').filter(Boolean)
+    currentShipments.map((s: any) => s.unitType || 'items').filter(Boolean)
   )).sort();
 
   // Filter shipments based on all filters
-  const filteredShipments = receivableShipments.filter((shipment: any) => {
+  const filteredShipments = currentShipments.filter((shipment: any) => {
     const matchesSearch = searchQuery === "" ||
       shipment.shipmentName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       shipment.trackingNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -744,38 +792,38 @@ export default function ReceivingList() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <div className="flex gap-2 flex-wrap mb-6">
           <button
-            onClick={() => setActiveTab('receivable')}
+            onClick={() => setActiveTab('to-receive')}
             className={`
               flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all
-              ${activeTab === 'receivable' 
+              ${activeTab === 'to-receive' 
                 ? 'bg-sky-600 text-white shadow-lg shadow-sky-600/20' 
                 : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
               }
             `}
-            data-testid="tab-receivable"
+            data-testid="tab-to-receive"
           >
             <Package className="h-4 w-4" />
-            <span>Ready to Receive</span>
-            <span className={`${activeTab === 'receivable' ? 'text-white/90' : 'text-gray-500'}`}>
-              ({sortedShipments.filter((s: any) => !s.receipt).length})
+            <span>To Receive</span>
+            <span className={`${activeTab === 'to-receive' ? 'text-white/90' : 'text-gray-500'}`}>
+              ({sortedShipments.length})
             </span>
           </button>
           
           <button
-            onClick={() => setActiveTab('verification')}
+            onClick={() => setActiveTab('receiving')}
             className={`
               flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all
-              ${activeTab === 'verification' 
+              ${activeTab === 'receiving' 
                 ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/20' 
                 : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
               }
             `}
-            data-testid="tab-verification"
+            data-testid="tab-receiving"
           >
             <Clock className="h-4 w-4" />
-            <span>Verification</span>
-            <span className={`${activeTab === 'verification' ? 'text-white/90' : 'text-gray-500'}`}>
-              ({pendingVerification.length})
+            <span>Receiving</span>
+            <span className={`${activeTab === 'receiving' ? 'text-white/90' : 'text-gray-500'}`}>
+              ({receivingShipments.length})
             </span>
           </button>
           
@@ -793,7 +841,7 @@ export default function ReceivingList() {
             <AlertCircle className="h-4 w-4" />
             <span>Approval</span>
             <span className={`${activeTab === 'approval' ? 'text-white/90' : 'text-gray-500'}`}>
-              ({pendingApproval.length})
+              ({approvalShipments.length})
             </span>
           </button>
           
@@ -811,18 +859,18 @@ export default function ReceivingList() {
             <CheckCircle className="h-4 w-4" />
             <span>Completed</span>
             <span className={`${activeTab === 'completed' ? 'text-white/90' : 'text-gray-500'}`}>
-              ({approved.length})
+              ({completedShipments.length})
             </span>
           </button>
         </div>
 
-        <TabsContent value="receivable" className="mt-6">
-          {isLoading ? (
+        <TabsContent value="to-receive" className="mt-6">
+          {isLoadingToReceive ? (
             <div className="text-center py-8">
               <Package className="h-12 w-12 text-muted-foreground mx-auto mb-2 animate-pulse" />
               <p className="text-muted-foreground">Loading shipments...</p>
             </div>
-          ) : sortedShipments.filter((s: any) => !s.receipt).length === 0 ? (
+          ) : sortedShipments.length === 0 ? (
             <div className="text-center py-8">
               <Package className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
               <p className="text-muted-foreground">No shipments ready for receiving</p>
@@ -830,7 +878,6 @@ export default function ReceivingList() {
           ) : (
             <div className="space-y-4">
               {sortedShipments
-                .filter((s: any) => !s.receipt)
                 .map((shipment: any) => {
                   const urgent = isUrgent(shipment);
                   const isExpanded = expandedShipments.has(shipment.id);
@@ -1004,49 +1051,134 @@ export default function ReceivingList() {
           )}
         </TabsContent>
 
-        <TabsContent value="verification" className="mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {pendingVerification.length === 0 ? (
-              <div className="col-span-full text-center py-8">
-                <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                <p className="text-muted-foreground">No receipts pending verification</p>
-              </div>
-            ) : (
-              pendingVerification.map((receipt: any) => (
-                <ReceiptCard key={receipt.id} receipt={receipt} />
-              ))
-            )}
-          </div>
+        <TabsContent value="receiving" className="mt-6">
+          {isLoadingReceiving ? (
+            <div className="text-center py-8">
+              <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-2 animate-pulse" />
+              <p className="text-muted-foreground">Loading shipments...</p>
+            </div>
+          ) : receivingShipments.length === 0 ? (
+            <div className="text-center py-8">
+              <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+              <p className="text-muted-foreground">No shipments currently being received</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {receivingShipments.map((shipment: any) => {
+                const isExpanded = expandedShipments.has(shipment.id);
+                return (
+                  <Card key={shipment.id} className="border hover:shadow-md transition-shadow">
+                    <CardContent className="p-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="flex items-center gap-3 flex-1">
+                          <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100">
+                            Currently Receiving
+                          </Badge>
+                          <div className="flex-1">
+                            <h3 className="font-semibold">{shipment.shipmentName || `Shipment #${shipment.id}`}</h3>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {shipment.trackingNumber} • {shipment.endCarrier || shipment.carrier}
+                            </p>
+                          </div>
+                        </div>
+                        <Link href={`/receiving/continue/${shipment.id}`}>
+                          <Button size="sm" variant="outline">
+                            Continue Receiving
+                          </Button>
+                        </Link>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="approval" className="mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {pendingApproval.length === 0 ? (
-              <div className="col-span-full text-center py-8">
-                <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                <p className="text-muted-foreground">No receipts pending approval</p>
-              </div>
-            ) : (
-              pendingApproval.map((receipt: any) => (
-                <ReceiptCard key={receipt.id} receipt={receipt} />
-              ))
-            )}
-          </div>
+          {isLoadingApproval ? (
+            <div className="text-center py-8">
+              <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-2 animate-pulse" />
+              <p className="text-muted-foreground">Loading shipments...</p>
+            </div>
+          ) : approvalShipments.length === 0 ? (
+            <div className="text-center py-8">
+              <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+              <p className="text-muted-foreground">No shipments pending approval</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {approvalShipments.map((shipment: any) => {
+                return (
+                  <Card key={shipment.id} className="border hover:shadow-md transition-shadow border-orange-300">
+                    <CardContent className="p-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="flex items-center gap-3 flex-1">
+                          <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100">
+                            Pending Approval
+                          </Badge>
+                          <div className="flex-1">
+                            <h3 className="font-semibold">{shipment.shipmentName || `Shipment #${shipment.id}`}</h3>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {shipment.trackingNumber} • {shipment.endCarrier || shipment.carrier}
+                            </p>
+                          </div>
+                        </div>
+                        <Link href={`/receiving/approve/${shipment.id}`}>
+                          <Button size="sm" className="bg-orange-600 hover:bg-orange-700 text-white">
+                            Review & Approve
+                          </Button>
+                        </Link>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="completed" className="mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {approved.length === 0 ? (
-              <div className="col-span-full text-center py-8">
-                <CheckCircle className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                <p className="text-muted-foreground">No completed receipts</p>
-              </div>
-            ) : (
-              approved.map((receipt: any) => (
-                <ReceiptCard key={receipt.id} receipt={receipt} />
-              ))
-            )}
-          </div>
+          {isLoadingCompleted ? (
+            <div className="text-center py-8">
+              <CheckCircle className="h-12 w-12 text-muted-foreground mx-auto mb-2 animate-pulse" />
+              <p className="text-muted-foreground">Loading shipments...</p>
+            </div>
+          ) : completedShipments.length === 0 ? (
+            <div className="text-center py-8">
+              <CheckCircle className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+              <p className="text-muted-foreground">No completed shipments</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {completedShipments.map((shipment: any) => {
+                return (
+                  <Card key={shipment.id} className="border hover:shadow-md transition-shadow border-green-300">
+                    <CardContent className="p-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div className="flex items-center gap-3 flex-1">
+                          <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100">
+                            Completed
+                          </Badge>
+                          <div className="flex-1">
+                            <h3 className="font-semibold">{shipment.shipmentName || `Shipment #${shipment.id}`}</h3>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {shipment.trackingNumber} • {shipment.endCarrier || shipment.carrier}
+                            </p>
+                          </div>
+                        </div>
+                        <Link href={`/receiving/view/${shipment.id}`}>
+                          <Button size="sm" variant="outline">
+                            View Details
+                          </Button>
+                        </Link>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>
