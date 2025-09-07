@@ -189,6 +189,16 @@ export default function ReceivingList() {
     }
   });
 
+  // Expand/Collapse All functions
+  const expandAllShipments = () => {
+    const allIds = new Set(sortedShipments.map((s: any) => s.id));
+    setExpandedShipments(allIds);
+  };
+
+  const collapseAllShipments = () => {
+    setExpandedShipments(new Set());
+  };
+
   // Fetch all receipts
   const { data: receipts = [], isLoading: isLoadingReceipts } = useQuery({
     queryKey: ['/api/imports/receipts'],
@@ -711,6 +721,36 @@ export default function ReceivingList() {
             </div>
           </div>
 
+          {/* Expand/Collapse Controls */}
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">Item Details:</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={expandAllShipments}
+                className="h-7 text-xs"
+                disabled={sortedShipments.length === 0}
+              >
+                <ChevronDown className="h-3 w-3 mr-1" />
+                Expand All
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={collapseAllShipments}
+                className="h-7 text-xs"
+                disabled={sortedShipments.length === 0}
+              >
+                <ChevronUp className="h-3 w-3 mr-1" />
+                Collapse All
+              </Button>
+            </div>
+            <span className="text-muted-foreground">
+              {sortedShipments.length} shipment{sortedShipments.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+
           {/* Bulk Actions Bar */}
           {showBulkActions && (
             <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
@@ -845,11 +885,10 @@ export default function ReceivingList() {
             <div className="space-y-4">
               {sortedShipments
                 .map((shipment: any) => {
-                  const urgent = false; // isUrgent function removed
                   const isExpanded = expandedShipments.has(shipment.id);
 
                   return (
-                    <Card key={shipment.id} id={`shipment-${shipment.id}`} className={`border hover:shadow-md transition-shadow ${urgent ? 'border-orange-300 bg-orange-50/50 dark:bg-orange-950/20' : ''}`}>
+                    <Card key={shipment.id} id={`shipment-${shipment.id}`} className="border hover:shadow-md transition-shadow">
                       <CardContent className="p-4">
                         {/* Shipment Header */}
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
@@ -885,12 +924,6 @@ export default function ReceivingList() {
                                 <Badge className={getStatusColor(shipment.status)}>
                                   {shipment.status?.replace('_', ' ').toUpperCase()}
                                 </Badge>
-                                {urgent && (
-                                  <Badge variant="destructive" className="animate-pulse">
-                                    <Zap className="h-3 w-3 mr-1" />
-                                    Urgent
-                                  </Badge>
-                                )}
                               </div>
 
                               {/* Second Row: Shipment Type, Carrier, Units */}
