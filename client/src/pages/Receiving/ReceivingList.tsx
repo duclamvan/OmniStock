@@ -885,7 +885,7 @@ export default function ReceivingList() {
             <Package className="h-4 w-4" />
             <span>To Receive</span>
             <span className={`${activeTab === 'to-receive' ? 'text-white/90' : 'text-gray-500'}`}>
-              ({sortedShipments.filter(s => s.status === 'pending_receiving').length})
+              ({activeTab === 'to-receive' ? sortedShipments.length : toReceiveShipments?.length || 0})
             </span>
           </button>
 
@@ -950,7 +950,7 @@ export default function ReceivingList() {
               <Package className="h-12 w-12 text-muted-foreground mx-auto mb-2 animate-pulse" />
               <p className="text-muted-foreground">Loading shipments...</p>
             </div>
-          ) : sortedShipments.filter(s => s.status === 'pending_receiving').length === 0 ? (
+          ) : sortedShipments.length === 0 ? (
             <div className="text-center py-8">
               <Package className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
               <p className="text-muted-foreground">No shipments ready for receiving</p>
