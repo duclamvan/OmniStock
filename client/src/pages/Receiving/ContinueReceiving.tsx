@@ -43,7 +43,7 @@ interface ReceivingItem {
   sku?: string;
   expectedQty: number;
   receivedQty: number;
-  status: 'pending' | 'complete' | 'partial' | 'damaged' | 'missing';
+  status: 'pending' | 'complete' | 'partial' | 'damaged' | 'missing' | 'partial_damaged' | 'partial_missing';
   notes?: string;
   checked: boolean;
 }
@@ -223,6 +223,9 @@ export default function ContinueReceiving() {
           } else if (status === 'damaged' || status === 'missing') {
             // Keep current receivedQty but mark status appropriately
             updatedItem.receivedQty = Math.max(0, item.receivedQty);
+          } else if (status === 'partial_damaged' || status === 'partial_missing') {
+            // For partial statuses, keep current receivedQty but ensure it's less than expected
+            updatedItem.receivedQty = Math.min(Math.max(1, item.receivedQty), item.expectedQty - 1);
           }
           
           return updatedItem;
@@ -472,6 +475,10 @@ export default function ContinueReceiving() {
         return 'bg-red-100 text-red-800';
       case 'missing':
         return 'bg-gray-100 text-gray-800';
+      case 'partial_damaged':
+        return 'bg-orange-100 text-orange-800';
+      case 'partial_missing':
+        return 'bg-purple-100 text-purple-800';
       default:
         return 'bg-gray-50 text-gray-600';
     }
@@ -823,7 +830,9 @@ export default function ContinueReceiving() {
                           <div className="flex items-center gap-2">
                             <h4 className="font-medium">{item.name}</h4>
                             <Badge className={`text-xs ${getItemStatusColor(item.status)}`}>
-                              {item.status.toUpperCase()}
+                              {item.status === 'partial_damaged' ? 'PARTIAL DAMAGED' : 
+                               item.status === 'partial_missing' ? 'PARTIAL MISSING' : 
+                               item.status.toUpperCase()}
                             </Badge>
                           </div>
                           {item.sku && (
@@ -856,7 +865,7 @@ export default function ContinueReceiving() {
                           </Button>
                         </div>
 
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap">
                           <Button
                             variant={item.status === 'complete' ? "default" : "outline"}
                             size="sm"
@@ -869,7 +878,7 @@ export default function ContinueReceiving() {
                                 )
                               );
                             }}
-                            className={`min-w-[70px] ${
+                            className={`min-w-[60px] ${
                               item.status === 'complete'
                                 ? 'bg-green-600 hover:bg-green-700 border-green-600 text-white'
                                 : 'border-green-200 hover:border-green-300 hover:bg-green-50 text-green-700'
@@ -882,7 +891,7 @@ export default function ContinueReceiving() {
                             variant={item.status === 'damaged' ? "destructive" : "outline"}
                             size="sm"
                             onClick={() => toggleItemStatus(item.id, 'damaged')}
-                            className={`min-w-[70px] ${
+                            className={`min-w-[60px] ${
                               item.status === 'damaged'
                                 ? 'bg-red-600 hover:bg-red-700 border-red-600 text-white'
                                 : 'border-red-200 hover:border-red-300 hover:bg-red-50 text-red-700'
@@ -895,7 +904,7 @@ export default function ContinueReceiving() {
                             variant={item.status === 'missing' ? "secondary" : "outline"}
                             size="sm"
                             onClick={() => toggleItemStatus(item.id, 'missing')}
-                            className={`min-w-[70px] ${
+                            className={`min-w-[60px] ${
                               item.status === 'missing'
                                 ? 'bg-gray-600 hover:bg-gray-700 border-gray-600 text-white'
                                 : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700'
@@ -904,10 +913,36 @@ export default function ContinueReceiving() {
                             <X className="h-3 w-3 mr-1" />
                             MISS
                           </Button>
+                          <Button
+                            variant={item.status === 'partial_damaged' ? "destructive" : "outline"}
+                            size="sm"
+                            onClick={() => toggleItemStatus(item.id, 'partial_damaged')}
+                            className={`min-w-[80px] text-xs ${
+                              item.status === 'partial_damaged'
+                                ? 'bg-orange-600 hover:bg-orange-700 border-orange-600 text-white'
+                                : 'border-orange-200 hover:border-orange-300 hover:bg-orange-50 text-orange-700'
+                            }`}
+                          >
+                            <AlertTriangle className="h-3 w-3 mr-1" />
+                            P-DMG
+                          </Button>
+                          <Button
+                            variant={item.status === 'partial_missing' ? "secondary" : "outline"}
+                            size="sm"
+                            onClick={() => toggleItemStatus(item.id, 'partial_missing')}
+                            className={`min-w-[80px] text-xs ${
+                              item.status === 'partial_missing'
+                                ? 'bg-purple-600 hover:bg-purple-700 border-purple-600 text-white'
+                                : 'border-purple-200 hover:border-purple-300 hover:bg-purple-50 text-purple-700'
+                            }`}
+                          >
+                            <X className="h-3 w-3 mr-1" />
+                            P-MISS
+                          </Button>
                         </div>
                       </div>
 
-                      {(item.status === 'damaged' || item.status === 'missing' || item.notes) && (
+                      {(item.status === 'damaged' || item.status === 'missing' || item.status === 'partial_damaged' || item.status === 'partial_missing' || item.notes) && (
                         <div className="mt-2">
                           <Input
                             value={item.notes || ''}

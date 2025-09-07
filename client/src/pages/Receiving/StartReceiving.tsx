@@ -44,7 +44,7 @@ interface ReceivingItem {
   sku?: string;
   expectedQty: number;
   receivedQty: number;
-  status: 'pending' | 'complete' | 'partial' | 'damaged' | 'missing';
+  status: 'pending' | 'complete' | 'partial' | 'damaged' | 'missing' | 'partial_damaged' | 'partial_missing';
   notes?: string;
   checked: boolean;
 }
