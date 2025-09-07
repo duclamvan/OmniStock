@@ -66,7 +66,7 @@ export default function ContinueReceiving() {
   const [currentStep, setCurrentStep] = useState(1);
   const [scanMode, setScanMode] = useState(false);
   const [barcodeScan, setBarcodeScan] = useState("");
-  const [showAllItems, setShowAllItems] = useState(false);
+  const [showAllItems, setShowAllItems] = useState(true);
 
   // Fetch shipment details
   const { data: shipment, isLoading } = useQuery({
