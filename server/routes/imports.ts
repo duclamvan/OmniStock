@@ -1924,11 +1924,18 @@ router.post("/shipments/:id/move-back-to-receive", async (req, res) => {
       .where(eq(receipts.shipmentId, shipmentId));
     
     if (existingReceipt) {
-      // If there's a receipt, we should delete it or mark it as cancelled
-      // For now, we'll prevent moving back if there's already a receipt
-      return res.status(400).json({ 
-        message: "Cannot move back - receiving process has already started with a receipt. Please complete the receiving process or contact an administrator." 
-      });
+      // Only prevent moving back if the receipt is in progress or completed
+      // Allow moving back if receipt is still in pending_verification (early stage)
+      if (existingReceipt.status !== 'pending_verification') {
+        return res.status(400).json({ 
+          message: "Cannot move back - receiving process is already in progress. Please complete the receiving process or contact an administrator." 
+        });
+      }
+      
+      // Delete the pending receipt since we're moving back to receivable status
+      await db
+        .delete(receipts)
+        .where(eq(receipts.id, existingReceipt.id));
     }
     
     // Update the shipment's receiving status back to null/empty (receivable)
