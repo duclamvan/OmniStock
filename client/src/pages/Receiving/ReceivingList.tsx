@@ -13,6 +13,16 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   Package, 
   Search, 
@@ -156,16 +166,22 @@ export default function ReceivingList() {
   const [carrierFilter, setCarrierFilter] = useState("all");
   const [shipmentTypeFilter, setShipmentTypeFilter] = useState("all"); // Added shipmentTypeFilter
   const [cartonTypeFilter, setCartonTypeFilter] = useState("all"); // Added cartonTypeFilter
+  
+  // Move back confirmation dialog state
+  const [showMoveBackDialog, setShowMoveBackDialog] = useState(false);
+  const [shipmentToMoveBack, setShipmentToMoveBack] = useState<number | null>(null);
+  
   const { toast } = useToast();
 
   // Mutation to move shipment back to receivable status
   const moveBackToReceiveMutation = useMutation({
-    mutationFn: async (shipmentId: number) => {
+    mutationFn: async ({ shipmentId, preserveData }: { shipmentId: number; preserveData: boolean }) => {
       const response = await fetch(`/api/imports/shipments/${shipmentId}/move-back-to-receive`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({ preserveData })
       });
       if (!response.ok) {
         const error = await response.json();
@@ -173,14 +189,17 @@ export default function ReceivingList() {
       }
       return response.json();
     },
-    onSuccess: (data, shipmentId) => {
+    onSuccess: (data, { preserveData }) => {
       toast({
         title: "Shipment Moved",
-        description: "Shipment moved back to 'To Receive' status successfully"
+        description: `Shipment moved back to 'To Receive' status${preserveData ? ' (data preserved)' : ' (data deleted)'} successfully`
       });
       // Invalidate both receiving and receivable queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/receiving'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/receivable'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts'] });
+      setShowMoveBackDialog(false);
+      setShipmentToMoveBack(null);
     },
     onError: (error: any) => {
       toast({
@@ -1210,7 +1229,10 @@ export default function ReceivingList() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem 
-                                onClick={() => moveBackToReceiveMutation.mutate(shipment.id)}
+                                onClick={() => {
+                                  setShipmentToMoveBack(shipment.id);
+                                  setShowMoveBackDialog(true);
+                                }}
                                 disabled={moveBackToReceiveMutation.isPending}
                                 className="text-orange-600 hover:text-orange-700"
                               >
@@ -1315,6 +1337,63 @@ export default function ReceivingList() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Move Back Confirmation Dialog */}
+      <AlertDialog open={showMoveBackDialog} onOpenChange={setShowMoveBackDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Move Shipment Back to To Receive</AlertDialogTitle>
+            <AlertDialogDescription>
+              Do you want to preserve the shipment received data or delete it when moving back?
+              <br />
+              <br />
+              <strong>Preserve Data:</strong> Keep any receiving progress and parcel counts.<br />
+              <strong>Delete Data:</strong> Remove all receiving progress and start fresh.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel 
+              onClick={() => {
+                setShowMoveBackDialog(false);
+                setShipmentToMoveBack(null);
+              }}
+              data-testid="button-cancel-move-back"
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (shipmentToMoveBack) {
+                  moveBackToReceiveMutation.mutate({
+                    shipmentId: shipmentToMoveBack,
+                    preserveData: true
+                  });
+                }
+              }}
+              disabled={moveBackToReceiveMutation.isPending}
+              className="bg-blue-600 hover:bg-blue-700"
+              data-testid="button-preserve-data"
+            >
+              Preserve Data
+            </AlertDialogAction>
+            <AlertDialogAction
+              onClick={() => {
+                if (shipmentToMoveBack) {
+                  moveBackToReceiveMutation.mutate({
+                    shipmentId: shipmentToMoveBack,
+                    preserveData: false
+                  });
+                }
+              }}
+              disabled={moveBackToReceiveMutation.isPending}
+              className="bg-red-600 hover:bg-red-700"
+              data-testid="button-delete-data"
+            >
+              Delete Data
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

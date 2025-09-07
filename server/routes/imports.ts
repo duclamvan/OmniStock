@@ -1900,6 +1900,7 @@ router.post("/shipments/:id/start-receiving", async (req, res) => {
 router.post("/shipments/:id/move-back-to-receive", async (req, res) => {
   try {
     const shipmentId = parseInt(req.params.id);
+    const { preserveData = false } = req.body; // Extract preserveData option
     
     // Check if shipment exists and is currently in receiving status
     const [shipment] = await db
@@ -1932,10 +1933,14 @@ router.post("/shipments/:id/move-back-to-receive", async (req, res) => {
         });
       }
       
-      // Delete the pending receipt since we're moving back to receivable status
-      await db
-        .delete(receipts)
-        .where(eq(receipts.id, existingReceipt.id));
+      // Handle receipt based on preserveData preference
+      if (!preserveData) {
+        // Delete the pending receipt since we're moving back to receivable status
+        await db
+          .delete(receipts)
+          .where(eq(receipts.id, existingReceipt.id));
+      }
+      // If preserveData is true, keep the receipt but we still move shipment back to receivable
     }
     
     // Update the shipment's receiving status back to null/empty (receivable)
