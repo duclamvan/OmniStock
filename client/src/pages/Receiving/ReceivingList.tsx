@@ -618,7 +618,10 @@ export default function ReceivingList() {
                 <SelectItem value="all">All Types</SelectItem>
                 {uniqueShipmentTypes.map(type => (
                   <SelectItem key={type} value={type}>
-                    {type}
+                    <div className="flex items-center gap-2">
+                      {getShipmentTypeIcon(type, 'h-4 w-4')}
+                      {formatShipmentType(type)}
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
