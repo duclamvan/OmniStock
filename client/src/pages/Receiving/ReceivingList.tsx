@@ -52,17 +52,17 @@ import { useToast } from "@/hooks/use-toast";
 // Helper function to format shipment type display name
 const formatShipmentType = (shipmentType: string) => {
   if (!shipmentType) return '';
-  
+
   const isSensitive = shipmentType.includes('sensitive');
   const baseType = shipmentType.replace('_sensitive', '_general');
-  
+
   const typeMap: { [key: string]: string } = {
     'air_ddp_general': 'Air DDP',
     'express_general': 'Express',
     'railway_general': 'Railway',
     'sea_general': 'Sea Freight'
   };
-  
+
   const label = typeMap[baseType] || shipmentType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   return isSensitive ? `${label} (Sensitive)` : label;
 };
@@ -70,7 +70,7 @@ const formatShipmentType = (shipmentType: string) => {
 // Helper function to get shipment type icon
 const getShipmentTypeIcon = (shipmentType: string, className = "h-3 w-3") => {
   const isSensitive = shipmentType?.includes('sensitive');
-  
+
   if (shipmentType?.includes('express')) {
     const iconColor = isSensitive ? 'text-orange-500' : 'text-red-500';
     return <Zap className={`${className} ${iconColor}`} />;
@@ -90,7 +90,7 @@ const getShipmentTypeIcon = (shipmentType: string, className = "h-3 w-3") => {
 // Helper function to get carrier logo/icon
 const getCarrierLogo = (carrierName: string, className = "h-4 w-4") => {
   const carrier = carrierName?.toLowerCase() || '';
-  
+
   // For now using text-based logos until actual carrier logos are implemented
   if (carrier.includes('dhl')) {
     return <span className={`${className.replace('h-4 w-4', '')} text-xs font-bold text-red-600 bg-yellow-100 dark:bg-yellow-900 px-1.5 py-0.5 rounded`}>DHL</span>;
@@ -121,7 +121,7 @@ const getCarrierLogo = (carrierName: string, className = "h-4 w-4") => {
 // Helper function to get unit type icon
 const getUnitTypeIcon = (unitType: string, className = "h-3 w-3") => {
   const unit = unitType?.toLowerCase() || '';
-  
+
   if (unit.includes('pallet')) {
     return <Layers className={`${className} text-amber-600`} />;
   } else if (unit.includes('container')) {
@@ -145,7 +145,8 @@ export default function ReceivingList() {
   const [sortBy, setSortBy] = useState("deliveredAt");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [carrierFilter, setCarrierFilter] = useState("all");
-  const [unitTypeFilter, setUnitTypeFilter] = useState("all");
+  const [shipmentTypeFilter, setShipmentTypeFilter] = useState("all"); // Added shipmentTypeFilter
+  const [cartonTypeFilter, setCartonTypeFilter] = useState("all"); // Added cartonTypeFilter
   const [dateRangeFilter, setDateRangeFilter] = useState("all");
   const { toast } = useToast();
 
@@ -222,8 +223,13 @@ export default function ReceivingList() {
     currentShipments.map((s: any) => s.endCarrier || s.carrier).filter(Boolean)
   )).sort();
 
-  // Get unique unit types from shipments
-  const uniqueUnitTypes = Array.from(new Set(
+  // Get unique shipment types from shipments
+  const uniqueShipmentTypes = Array.from(new Set(
+    currentShipments.map((s: any) => s.shipmentType || 'N/A').filter(Boolean)
+  )).sort();
+
+  // Get unique carton types from shipments
+  const uniqueCartonTypes = Array.from(new Set(
     currentShipments.map((s: any) => s.unitType || 'items').filter(Boolean)
   )).sort();
 
@@ -234,45 +240,48 @@ export default function ReceivingList() {
       shipment.trackingNumber?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       shipment.carrier?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       shipment.consolidation?.name?.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesPriority = priorityFilter === "all" || 
-      (priorityFilter === "urgent" && isUrgent(shipment)) ||
-      (priorityFilter === "normal" && !isUrgent(shipment));
-    
+
+    const matchesPriority = priorityFilter === "all"; // Removed isUrgent check
+
     const matchesCarrier = carrierFilter === "all" ||
       (shipment.endCarrier || shipment.carrier) === carrierFilter;
-    
-    const matchesUnitType = unitTypeFilter === "all" ||
-      (shipment.unitType || 'items') === unitTypeFilter;
-    
+
+    const matchesShipmentType = shipmentTypeFilter === "all" ||
+      (shipment.shipmentType || 'N/A') === shipmentTypeFilter;
+
+    const matchesCartonType = cartonTypeFilter === "all" ||
+      (shipment.unitType || 'items') === cartonTypeFilter;
+
     const matchesDateRange = (() => {
       if (dateRangeFilter === "all") return true;
       const deliveredDate = shipment.deliveredAt ? new Date(shipment.deliveredAt) : null;
       const now = new Date();
-      
+
+      if (!deliveredDate) return false; // Ensure deliveredDate is valid
+
       switch (dateRangeFilter) {
         case "today":
-          return deliveredDate && isToday(deliveredDate);
+          return isToday(deliveredDate);
         case "yesterday":
-          return deliveredDate && isYesterday(deliveredDate);
+          return isYesterday(deliveredDate);
         case "week":
-          return deliveredDate && isThisWeek(deliveredDate);
+          return isThisWeek(deliveredDate);
         case "month":
-          return deliveredDate && isThisMonth(deliveredDate);
+          return isThisMonth(deliveredDate);
         case "older":
-          return deliveredDate && differenceInDays(now, deliveredDate) > 30;
+          return differenceInDays(now, deliveredDate) > 30;
         default:
           return true;
       }
     })();
-    
-    return matchesSearch && matchesPriority && matchesCarrier && matchesUnitType && matchesDateRange;
+
+    return matchesSearch && matchesPriority && matchesCarrier && matchesShipmentType && matchesCartonType && matchesDateRange;
   });
 
   // Sort filtered shipments
   const sortedShipments = [...filteredShipments].sort((a: any, b: any) => {
     let aValue, bValue;
-    
+
     switch (sortBy) {
       case "deliveredAt":
         aValue = a.deliveredAt ? new Date(a.deliveredAt).getTime() : 0;
@@ -287,8 +296,9 @@ export default function ReceivingList() {
         bValue = b.endCarrier || b.carrier || '';
         break;
       case "urgency":
-        aValue = isUrgent(a) ? 1 : 0;
-        bValue = isUrgent(b) ? 1 : 0;
+        // Removed dependency on isUrgent
+        aValue = 0; 
+        bValue = 0; 
         break;
       case "totalUnits":
         aValue = a.totalUnits || 0;
@@ -306,27 +316,18 @@ export default function ReceivingList() {
         aValue = a.id;
         bValue = b.id;
     }
-    
+
     if (typeof aValue === 'string' && typeof bValue === 'string') {
       return sortOrder === 'asc' 
         ? aValue.localeCompare(bValue)
         : bValue.localeCompare(aValue);
     }
-    
+
     return sortOrder === 'asc'
       ? (aValue > bValue ? 1 : -1)
       : (bValue > aValue ? 1 : -1);
   });
-  
-  // Check if shipment is urgent (delivered more than 24 hours ago)
-  const isUrgent = (shipment: any) => {
-    if (shipment.deliveredAt) {
-      const hoursAgo = differenceInHours(new Date(), new Date(shipment.deliveredAt));
-      return hoursAgo > 24;
-    }
-    return false;
-  };
-  
+
   // Handle barcode scan
   useEffect(() => {
     if (barcodeScan) {
@@ -334,7 +335,7 @@ export default function ReceivingList() {
       setBarcodeScan("");
     }
   }, [barcodeScan]);
-  
+
   // Toggle shipment selection
   const toggleShipmentSelection = (id: number) => {
     const newSelection = new Set(selectedShipments);
@@ -346,14 +347,14 @@ export default function ReceivingList() {
     setSelectedShipments(newSelection);
     setShowBulkActions(newSelection.size > 0);
   };
-  
+
   // Select all visible shipments
   const selectAllShipments = () => {
     const allIds = new Set<number>(sortedShipments.map((s: any) => s.id));
     setSelectedShipments(allIds);
     setShowBulkActions(allIds.size > 0);
   };
-  
+
   // Clear selection
   const clearSelection = () => {
     setSelectedShipments(new Set());
@@ -404,8 +405,8 @@ export default function ReceivingList() {
   };
 
   const ShipmentCard = ({ shipment, hasReceipt = false }: any) => {
-    const urgent = isUrgent(shipment);
-    
+    const urgent = false; // isUrgent function removed, so this is now static
+
     return (
       <Card className={`hover:shadow-md transition-shadow ${urgent ? 'border-orange-300 bg-orange-50/50 dark:bg-orange-950/20' : ''}`}>
         <CardContent className="p-4">
@@ -612,25 +613,10 @@ export default function ReceivingList() {
               />
             </div>
           </div>
-          
+
           {/* Filters Row */}
           <div className="flex gap-2 flex-wrap">
-            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger className="w-32">
-                <Zap className="h-3 w-3" />
-                <SelectValue placeholder="Priority" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Priorities</SelectItem>
-                <SelectItem value="urgent">
-                  <span className="flex items-center gap-1">
-                    <Zap className="h-3 w-3 text-orange-500" />
-                    Urgent Only
-                  </span>
-                </SelectItem>
-                <SelectItem value="normal">Normal Only</SelectItem>
-              </SelectContent>
-            </Select>
+            {/* Priority Filter Removed as isUrgent is removed */}
             
             <Select value={carrierFilter} onValueChange={setCarrierFilter}>
               <SelectTrigger className="w-40">
@@ -646,22 +632,37 @@ export default function ReceivingList() {
                 ))}
               </SelectContent>
             </Select>
-            
-            <Select value={unitTypeFilter} onValueChange={setUnitTypeFilter}>
-              <SelectTrigger className="w-36">
-                <Package2 className="h-3 w-3" />
-                <SelectValue placeholder="Unit Type" />
+
+            <Select value={shipmentTypeFilter} onValueChange={setShipmentTypeFilter}>
+              <SelectTrigger className="w-40">
+                <Package className="h-3 w-3" />
+                <SelectValue placeholder="Shipment Type" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Types</SelectItem>
-                {uniqueUnitTypes.map(type => (
+                {uniqueShipmentTypes.map(type => (
                   <SelectItem key={type} value={type}>
                     {type}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            
+
+            <Select value={cartonTypeFilter} onValueChange={setCartonTypeFilter}>
+              <SelectTrigger className="w-36">
+                <Package2 className="h-3 w-3" />
+                <SelectValue placeholder="Carton Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                {uniqueCartonTypes.map(type => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             <Select value={dateRangeFilter} onValueChange={setDateRangeFilter}>
               <SelectTrigger className="w-36">
                 <CalendarDays className="h-3 w-3" />
@@ -676,7 +677,7 @@ export default function ReceivingList() {
                 <SelectItem value="older">Older (30+ days)</SelectItem>
               </SelectContent>
             </Select>
-            
+
             {/* Sort Controls */}
             <div className="flex gap-1 ml-auto">
               <Select value={sortBy} onValueChange={setSortBy}>
@@ -729,7 +730,7 @@ export default function ReceivingList() {
                   </SelectItem>
                 </SelectContent>
               </Select>
-              
+
               <Button
                 variant="outline"
                 size="icon"
@@ -745,7 +746,7 @@ export default function ReceivingList() {
               </Button>
             </div>
           </div>
-          
+
           {/* Bulk Actions Bar */}
           {showBulkActions && (
             <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
@@ -809,7 +810,7 @@ export default function ReceivingList() {
               ({sortedShipments.length})
             </span>
           </button>
-          
+
           <button
             onClick={() => setActiveTab('receiving')}
             className={`
@@ -827,7 +828,7 @@ export default function ReceivingList() {
               ({receivingShipments.length})
             </span>
           </button>
-          
+
           <button
             onClick={() => setActiveTab('approval')}
             className={`
@@ -845,7 +846,7 @@ export default function ReceivingList() {
               ({approvalShipments.length})
             </span>
           </button>
-          
+
           <button
             onClick={() => setActiveTab('completed')}
             className={`
@@ -880,9 +881,9 @@ export default function ReceivingList() {
             <div className="space-y-4">
               {sortedShipments
                 .map((shipment: any) => {
-                  const urgent = isUrgent(shipment);
+                  const urgent = false; // isUrgent function removed
                   const isExpanded = expandedShipments.has(shipment.id);
-                  
+
                   return (
                     <Card key={shipment.id} id={`shipment-${shipment.id}`} className={`border hover:shadow-md transition-shadow ${urgent ? 'border-orange-300 bg-orange-50/50 dark:bg-orange-950/20' : ''}`}>
                       <CardContent className="p-4">
@@ -927,7 +928,7 @@ export default function ReceivingList() {
                                   </Badge>
                                 )}
                               </div>
-                              
+
                               {/* Second Row: Shipment Type, Carrier, Units */}
                               <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground mt-2">
                                 {(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod) && (
@@ -948,7 +949,7 @@ export default function ReceivingList() {
                                   {shipment.totalUnits} {shipment.unitType || 'items'}
                                 </span>
                               </div>
-                              
+
                               {/* Third Row: Route and Tracking */}
                               <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-1">
                                 <span className="flex items-center gap-1">
