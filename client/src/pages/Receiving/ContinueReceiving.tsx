@@ -108,16 +108,12 @@ export default function ContinueReceiving() {
       
       // Initialize items from receipt
       if (receipt.items && receipt.items.length > 0) {
-        console.log('Receipt items raw data:', receipt.items);
         // Merge receipt items with shipment items to get full data
         const items = receipt.items.map((receiptItem: any) => {
           // Find matching shipment item for name and SKU
           const shipmentItem = shipment.items?.find((si: any) => 
             si.id === receiptItem.itemId || si.id?.toString() === receiptItem.itemId?.toString()
           );
-          
-          console.log('Processing receipt item:', receiptItem);
-          console.log('receivedQuantity value:', receiptItem.receivedQuantity);
           
           return {
             id: receiptItem.itemId?.toString() || receiptItem.id?.toString(),
@@ -131,7 +127,6 @@ export default function ContinueReceiving() {
           };
         });
         setReceivingItems(items);
-        console.log('Loaded items from receipt:', items);
       } else if (shipment.items && shipment.items.length > 0) {
         // Fallback to shipment items if receipt has no items
         const items = shipment.items.map((item: any, index: number) => ({
@@ -145,7 +140,6 @@ export default function ContinueReceiving() {
           checked: false
         }));
         setReceivingItems(items);
-        console.log('Loaded items from shipment (receipt had no items):', items);
       }
       
       // Start on step 2 since we already have receipt data
@@ -167,7 +161,6 @@ export default function ContinueReceiving() {
           checked: false
         }));
         setReceivingItems(items);
-        console.log('Loaded items from shipment:', items);
       }
     }
   }, [shipment, receipt]);
@@ -366,17 +359,14 @@ export default function ContinueReceiving() {
   // Auto-save mutation for preserving progress in real-time
   const autoSaveMutation = useMutation({
     mutationFn: async (data: any) => {
-      console.log("Auto-saving data:", data);
       return await apiRequest('/api/imports/receipts/auto-save', 'POST', data);
     },
     onSuccess: (response) => {
-      console.log("Auto-save successful:", response);
       // Invalidate the receipt query to ensure fresh data on next load
       queryClient.invalidateQueries({ queryKey: [`/api/imports/receipts/by-shipment/${id}`] });
     },
     onError: (error: any) => {
       console.error("Auto-save failed:", error);
-      console.error("Error details:", error.message, error.cause);
       // Don't show toast for auto-save failures to avoid interrupting user experience
     }
   });
