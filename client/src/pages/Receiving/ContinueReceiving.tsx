@@ -93,18 +93,19 @@ export default function ContinueReceiving() {
   // Initialize data when shipment loads
   useEffect(() => {
     if (shipment && receipt) {
-      // Load existing receipt data
-      setReceivedBy(receipt.receivedBy || "Employee #1");
-      setCarrier(receipt.carrier || shipment.endCarrier || shipment.carrier || "");
-      setParcelCount(receipt.parcelCount || shipment.totalUnits || 1);
-      setScannedParcels(receipt.parcelCount || shipment.totalUnits || 1);
-      setNotes(receipt.notes || "");
+      // Load existing receipt data - receipt object has structure: { receipt: {...}, items: [...] }
+      const receiptData = receipt.receipt || receipt;
+      setReceivedBy(receiptData.receivedBy || "Employee #1");
+      setCarrier(receiptData.carrier || shipment.endCarrier || shipment.carrier || "");
+      setParcelCount(receiptData.parcelCount || shipment.totalUnits || 1);
+      setScannedParcels(receiptData.parcelCount || shipment.totalUnits || 1);
+      setNotes(receiptData.notes || "");
       
       // Initialize items from receipt
       if (receipt.items && receipt.items.length > 0) {
         const items = receipt.items.map((item: any) => ({
-          id: item.itemId || item.id,
-          name: item.name || item.productName || `Item ${item.id}`,
+          id: item.itemId?.toString() || item.id?.toString(),
+          name: item.name || item.productName || `Item ${item.itemId || item.id}`,
           sku: item.sku,
           expectedQty: item.expectedQuantity || item.quantity || 1,
           receivedQty: item.receivedQuantity || 0,
@@ -278,7 +279,8 @@ export default function ContinueReceiving() {
   // Update receipt mutation
   const updateReceiptMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await fetch(`/api/imports/receipts/${receipt.id}`, {
+      const receiptId = receipt?.receipt?.id || receipt?.id;
+      const response = await fetch(`/api/imports/receipts/${receiptId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
