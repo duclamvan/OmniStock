@@ -1867,10 +1867,108 @@ router.post("/extract-from-screenshot", upload.single('screenshot'), async (req,
 
 // ================ RECEIVING WORKFLOW ROUTES ================
 
-// Get shipments ready for receiving (delivered or about to be delivered)
+// Start receiving a shipment (move to receiving status)
+router.post("/shipments/:id/start-receiving", async (req, res) => {
+  try {
+    const shipmentId = parseInt(req.params.id);
+    
+    // Update the shipment's receiving status
+    const [updated] = await db
+      .update(shipments)
+      .set({ 
+        receivingStatus: 'receiving',
+        updatedAt: new Date()
+      })
+      .where(eq(shipments.id, shipmentId))
+      .returning();
+    
+    if (!updated) {
+      return res.status(404).json({ message: "Shipment not found" });
+    }
+    
+    res.json({ 
+      message: "Shipment moved to receiving status",
+      shipment: updated
+    });
+  } catch (error) {
+    console.error("Error starting receiving:", error);
+    res.status(500).json({ message: "Failed to start receiving process" });
+  }
+});
+
+// Get shipments by receiving status
+router.get("/shipments/by-status/:status", async (req, res) => {
+  try {
+    const status = req.params.status; // receiving, pending_approval, completed
+    
+    const shipmentsWithStatus = await db
+      .select({
+        shipment: shipments,
+        consolidation: consolidations
+      })
+      .from(shipments)
+      .leftJoin(consolidations, eq(shipments.consolidationId, consolidations.id))
+      .where(eq(shipments.receivingStatus, status))
+      .orderBy(desc(shipments.updatedAt));
+    
+    // Get items for each shipment
+    const formattedShipments = await Promise.all(
+      shipmentsWithStatus.map(async ({ shipment, consolidation }) => {
+        let items: any[] = [];
+        if (shipment.consolidationId) {
+          const consolidationItemList = await db
+            .select()
+            .from(consolidationItems)
+            .where(eq(consolidationItems.consolidationId, shipment.consolidationId));
+          
+          for (const ci of consolidationItemList) {
+            if (ci.itemType === 'purchase') {
+              const [item] = await db
+                .select()
+                .from(purchaseItems)
+                .where(eq(purchaseItems.id, ci.itemId));
+              if (item) {
+                items.push({
+                  ...item,
+                  itemType: 'purchase',
+                  category: (item as any).category || 'General'
+                });
+              }
+            } else if (ci.itemType === 'custom') {
+              const [item] = await db
+                .select()
+                .from(customItems)
+                .where(eq(customItems.id, ci.itemId));
+              if (item) {
+                items.push({
+                  ...item,
+                  itemType: 'custom',
+                  category: item.classification || 'General'
+                });
+              }
+            }
+          }
+        }
+        
+        return {
+          ...shipment,
+          consolidation,
+          items
+        };
+      })
+    );
+    
+    res.json(formattedShipments);
+  } catch (error) {
+    console.error("Error fetching shipments by status:", error);
+    res.status(500).json({ message: "Failed to fetch shipments" });
+  }
+});
+
+// Get shipments ready for receiving (delivered or about to be delivered, not yet in receiving process)
 router.get("/shipments/receivable", async (req, res) => {
   try {
-    // Get shipments that are delivered or will be delivered soon
+    // Get shipments that are delivered or will be delivered soon, but not already being received
     const receivableShipments = await db
       .select({
         shipment: shipments,
@@ -1878,11 +1976,17 @@ router.get("/shipments/receivable", async (req, res) => {
       })
       .from(shipments)
       .leftJoin(consolidations, eq(shipments.consolidationId, consolidations.id))
-      .where(or(
-        eq(shipments.status, 'delivered'),
-        and(
-          eq(shipments.status, 'in transit'),
-          sql`${shipments.estimatedDelivery} <= NOW() + INTERVAL '2 days'`
+      .where(and(
+        or(
+          eq(shipments.status, 'delivered'),
+          and(
+            eq(shipments.status, 'in transit'),
+            sql`${shipments.estimatedDelivery} <= NOW() + INTERVAL '2 days'`
+          )
+        ),
+        or(
+          isNull(shipments.receivingStatus),
+          eq(shipments.receivingStatus, '')
         )
       ))
       .orderBy(desc(shipments.updatedAt));
