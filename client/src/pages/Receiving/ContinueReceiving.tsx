@@ -103,16 +103,24 @@ export default function ContinueReceiving() {
       
       // Initialize items from receipt
       if (receipt.items && receipt.items.length > 0) {
-        const items = receipt.items.map((item: any) => ({
-          id: item.itemId?.toString() || item.id?.toString(),
-          name: item.name || item.productName || `Item ${item.itemId || item.id}`,
-          sku: item.sku,
-          expectedQty: item.expectedQuantity || item.quantity || 1,
-          receivedQty: item.receivedQuantity || 0,
-          status: item.status || 'pending',
-          notes: item.notes || '',
-          checked: (item.receivedQuantity || 0) > 0
-        }));
+        // Merge receipt items with shipment items to get full data
+        const items = receipt.items.map((receiptItem: any) => {
+          // Find matching shipment item for name and SKU
+          const shipmentItem = shipment.items?.find((si: any) => 
+            si.id === receiptItem.itemId || si.id?.toString() === receiptItem.itemId?.toString()
+          );
+          
+          return {
+            id: receiptItem.itemId?.toString() || receiptItem.id?.toString(),
+            name: shipmentItem?.name || shipmentItem?.productName || `Item ${receiptItem.itemId || receiptItem.id}`,
+            sku: shipmentItem?.sku || '',
+            expectedQty: receiptItem.expectedQuantity || receiptItem.quantity || 1,
+            receivedQty: receiptItem.receivedQuantity || 0,
+            status: receiptItem.status || 'pending',
+            notes: receiptItem.notes || '',
+            checked: (receiptItem.receivedQuantity || 0) > 0
+          };
+        });
         setReceivingItems(items);
         console.log('Loaded items from receipt:', items);
       } else if (shipment.items && shipment.items.length > 0) {
