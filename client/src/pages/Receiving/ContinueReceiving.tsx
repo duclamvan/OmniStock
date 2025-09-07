@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { 
   ArrowLeft, 
   Package, 
@@ -149,7 +149,12 @@ export default function ContinueReceiving() {
   const handleBarcodeScan = (value: string) => {
     if (currentStep === 1) {
       // Step 1: Scanning parcel barcodes
-      setScannedParcels(prev => Math.min(prev + 1, parcelCount));
+      setScannedParcels(prev => {
+        const newCount = Math.min(prev + 1, parcelCount);
+        // Trigger auto-save after state update
+        setTimeout(() => autoSaveProgress(), 100);
+        return newCount;
+      });
       toast({
         title: "Parcel Scanned",
         description: `Scanned ${scannedParcels + 1} of ${parcelCount} parcels`
@@ -193,6 +198,8 @@ export default function ContinueReceiving() {
         return item;
       })
     );
+    // Trigger auto-save after state update
+    setTimeout(() => autoSaveProgress(), 100);
   };
 
   // Toggle item status
@@ -205,6 +212,8 @@ export default function ContinueReceiving() {
         return item;
       })
     );
+    // Trigger auto-save after state update
+    setTimeout(() => autoSaveProgress(), 100);
   };
 
   // Update item notes
@@ -217,6 +226,8 @@ export default function ContinueReceiving() {
         return item;
       })
     );
+    // Trigger auto-save after state update
+    setTimeout(() => autoSaveProgress(), 100);
   };
 
   // Update receipt mutation
@@ -287,6 +298,79 @@ export default function ContinueReceiving() {
       });
     }
   });
+
+  // Auto-save mutation for preserving progress in real-time
+  const autoSaveMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest('/api/imports/receipts/auto-save', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      });
+    },
+    onError: (error: any) => {
+      console.error("Auto-save failed:", error);
+      // Don't show toast for auto-save failures to avoid interrupting user experience
+    }
+  });
+
+  // Debounced auto-save function
+  const debouncedAutoSave = useCallback(
+    (() => {
+      let timeoutId: NodeJS.Timeout;
+      return (data: any) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          autoSaveMutation.mutate(data);
+        }, 500); // Save after 500ms of inactivity
+      };
+    })(),
+    [autoSaveMutation]
+  );
+
+  // Auto-save current progress
+  const autoSaveProgress = useCallback(() => {
+    if (!shipment) return;
+    
+    const progressData = {
+      shipmentId: shipment.id,
+      consolidationId: shipment.consolidationId,
+      receivedBy,
+      parcelCount,
+      scannedParcels,
+      carrier,
+      notes,
+      items: receivingItems.map(item => ({
+        itemId: item.id,
+        expectedQuantity: item.expectedQty,
+        receivedQuantity: item.receivedQty,
+        status: item.status,
+        notes: item.notes
+      }))
+    };
+    
+    debouncedAutoSave(progressData);
+  }, [shipment, receivedBy, parcelCount, scannedParcels, carrier, notes, receivingItems, debouncedAutoSave]);
+
+  // Auto-save wrapper functions for form inputs
+  const handleReceivedByChange = (value: string) => {
+    setReceivedBy(value);
+    setTimeout(() => autoSaveProgress(), 100);
+  };
+
+  const handleCarrierChange = (value: string) => {
+    setCarrier(value);
+    setTimeout(() => autoSaveProgress(), 100);
+  };
+
+  const handleParcelCountChange = (value: number) => {
+    setParcelCount(value);
+    setTimeout(() => autoSaveProgress(), 100);
+  };
+
+  const handleNotesChange = (value: string) => {
+    setNotes(value);
+    setTimeout(() => autoSaveProgress(), 100);
+  };
 
   const handleSubmit = async () => {
     if (!receivedBy || !carrier) {
@@ -491,7 +575,7 @@ export default function ContinueReceiving() {
                   <Label>Received By *</Label>
                   <Input
                     value={receivedBy}
-                    onChange={(e) => setReceivedBy(e.target.value)}
+                    onChange={(e) => handleReceivedByChange(e.target.value)}
                     placeholder="Your name"
                     required
                   />
@@ -500,7 +584,7 @@ export default function ContinueReceiving() {
                   <Label>Carrier *</Label>
                   <Input
                     value={carrier}
-                    onChange={(e) => setCarrier(e.target.value)}
+                    onChange={(e) => handleCarrierChange(e.target.value)}
                     placeholder="DHL, UPS, FedEx..."
                     required
                   />
@@ -516,14 +600,14 @@ export default function ContinueReceiving() {
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => setParcelCount(Math.max(1, parcelCount - 1))}
+                      onClick={() => handleParcelCountChange(Math.max(1, parcelCount - 1))}
                     >
                       <Minus className="h-4 w-4" />
                     </Button>
                     <Input
                       type="number"
                       value={parcelCount}
-                      onChange={(e) => setParcelCount(Math.max(1, parseInt(e.target.value) || 1))}
+                      onChange={(e) => handleParcelCountChange(Math.max(1, parseInt(e.target.value) || 1))}
                       className="text-center"
                       min="1"
                     />
@@ -531,7 +615,7 @@ export default function ContinueReceiving() {
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => setParcelCount(parcelCount + 1)}
+                      onClick={() => handleParcelCountChange(parcelCount + 1)}
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
@@ -630,7 +714,7 @@ export default function ContinueReceiving() {
                 <Label>Initial Notes</Label>
                 <Textarea
                   value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
+                  onChange={(e) => handleNotesChange(e.target.value)}
                   placeholder="Any initial observations..."
                   rows={2}
                 />
