@@ -208,84 +208,84 @@ export default function ContinueReceiving() {
 
   // Update item quantity
   const updateItemQuantity = (itemId: string, delta: number) => {
-    setReceivingItems(items =>
-      items.map(item => {
-        if (item.id === itemId) {
-          const newQty = Math.max(0, item.receivedQty + delta);
-          let status: ReceivingItem['status'] = 'pending';
-          
-          if (newQty === 0) {
-            status = 'pending';
-          } else if (newQty === item.expectedQty) {
-            status = 'complete';
-          } else if (newQty > 0 && newQty < item.expectedQty) {
-            status = 'partial';
-          } else if (newQty > item.expectedQty) {
-            status = 'complete'; // Over-received items are still considered complete
-          }
-          return {
-            ...item,
-            receivedQty: newQty,
-            status,
-            checked: newQty > 0
-          };
+    const updatedItems = receivingItems.map(item => {
+      if (item.id === itemId) {
+        const newQty = Math.max(0, item.receivedQty + delta);
+        let status: ReceivingItem['status'] = 'pending';
+        
+        if (newQty === 0) {
+          status = 'pending';
+        } else if (newQty === item.expectedQty) {
+          status = 'complete';
+        } else if (newQty > 0 && newQty < item.expectedQty) {
+          status = 'partial';
+        } else if (newQty > item.expectedQty) {
+          status = 'complete'; // Over-received items are still considered complete
         }
-        return item;
-      })
-    );
-    // Trigger auto-save with small delay to ensure state is updated
-    setTimeout(() => triggerAutoSave(), 50);
+        return {
+          ...item,
+          receivedQty: newQty,
+          status,
+          checked: newQty > 0
+        };
+      }
+      return item;
+    });
+    
+    setReceivingItems(updatedItems);
+    // Trigger auto-save with updated items immediately
+    triggerAutoSave(updatedItems);
   };
 
   // Toggle item status
   const toggleItemStatus = (itemId: string, status: ReceivingItem['status']) => {
-    setReceivingItems(items =>
-      items.map(item => {
-        if (item.id === itemId) {
-          let finalStatus = status;
-          let updatedItem = { ...item, checked: true };
-          
-          if (status === 'complete') {
-            updatedItem.receivedQty = item.expectedQty;
-            finalStatus = 'complete';
-          } else if (status === 'damaged') {
-            // If there's partial quantity received, mark as partial_damaged
-            if (item.receivedQty > 0 && item.receivedQty < item.expectedQty) {
-              finalStatus = 'partial_damaged';
-            } else {
-              finalStatus = 'damaged';
-            }
-          } else if (status === 'missing') {
-            // If there's partial quantity received, mark as partial_missing  
-            if (item.receivedQty > 0 && item.receivedQty < item.expectedQty) {
-              finalStatus = 'partial_missing';
-            } else {
-              finalStatus = 'missing';
-            }
+    const updatedItems = receivingItems.map(item => {
+      if (item.id === itemId) {
+        let finalStatus = status;
+        let updatedItem = { ...item, checked: true };
+        
+        if (status === 'complete') {
+          updatedItem.receivedQty = item.expectedQty;
+          finalStatus = 'complete';
+        } else if (status === 'damaged') {
+          // If there's partial quantity received, mark as partial_damaged
+          if (item.receivedQty > 0 && item.receivedQty < item.expectedQty) {
+            finalStatus = 'partial_damaged';
+          } else {
+            finalStatus = 'damaged';
           }
-          
-          updatedItem.status = finalStatus;
-          return updatedItem;
+        } else if (status === 'missing') {
+          // If there's partial quantity received, mark as partial_missing  
+          if (item.receivedQty > 0 && item.receivedQty < item.expectedQty) {
+            finalStatus = 'partial_missing';
+          } else {
+            finalStatus = 'missing';
+          }
         }
-        return item;
-      })
-    );
-    // Trigger auto-save immediately
-    triggerAutoSave();
+        
+        updatedItem.status = finalStatus;
+        return updatedItem;
+      }
+      return item;
+    });
+    
+    setReceivingItems(updatedItems);
+    // Trigger auto-save with updated items immediately
+    triggerAutoSave(updatedItems);
   };
 
   // Update item notes
   const updateItemNotes = (itemId: string, notes: string) => {
-    setReceivingItems(items =>
-      items.map(item => {
-        if (item.id === itemId) {
-          return { ...item, notes };
-        }
-        return item;
-      })
-    );
-    // Trigger auto-save immediately
-    triggerAutoSave();
+    const updatedItems = receivingItems.map(item => {
+      if (item.id === itemId) {
+        return { ...item, notes };
+      }
+      return item;
+    });
+    
+    setReceivingItems(updatedItems);
+    // Trigger auto-save with updated items immediately
+    triggerAutoSave(updatedItems);
   };
 
   // Update receipt mutation
@@ -389,8 +389,11 @@ export default function ContinueReceiving() {
   );
 
   // Auto-save current progress - direct call to debounced save
-  const triggerAutoSave = useCallback(() => {
+  const triggerAutoSave = useCallback((updatedItems?: any[]) => {
     if (!shipment) return;
+    
+    // Use provided items or fall back to state items
+    const itemsToSave = updatedItems || receivingItems;
     
     const progressData = {
       shipmentId: shipment.id,
@@ -400,7 +403,7 @@ export default function ContinueReceiving() {
       scannedParcels,
       carrier,
       notes,
-      items: receivingItems.map(item => ({
+      items: itemsToSave.map(item => ({
         itemId: parseInt(item.id) || item.id, // Convert string ID back to integer for API
         expectedQuantity: item.expectedQty,
         receivedQuantity: item.receivedQty,
@@ -920,13 +923,13 @@ export default function ContinueReceiving() {
                             variant={item.status === 'complete' ? "default" : "outline"}
                             size="sm"
                             onClick={() => {
-                              setReceivingItems(items =>
-                                items.map(i => 
-                                  i.id === item.id 
-                                    ? { ...i, receivedQty: i.expectedQty, status: 'complete', checked: true }
-                                    : i
-                                )
+                              const updatedItems = receivingItems.map(i => 
+                                i.id === item.id 
+                                  ? { ...i, receivedQty: i.expectedQty, status: 'complete', checked: true }
+                                  : i
                               );
+                              setReceivingItems(updatedItems);
+                              triggerAutoSave(updatedItems);
                             }}
                             className={`min-w-[60px] ${
                               item.status === 'complete'
