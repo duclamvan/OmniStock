@@ -165,15 +165,13 @@ export default function ContinueReceiving() {
   const handleBarcodeScan = (value: string) => {
     if (currentStep === 1) {
       // Step 1: Scanning parcel barcodes
-      setScannedParcels(prev => {
-        const newCount = Math.min(prev + 1, parcelCount);
-        // Trigger auto-save after state update
-        setTimeout(() => autoSaveProgress(), 100);
-        return newCount;
-      });
+      const newCount = Math.min(scannedParcels + 1, parcelCount);
+      setScannedParcels(newCount);
+      // Trigger auto-save immediately with updated data
+      setTimeout(() => triggerAutoSave(), 50); // Small delay to ensure state is updated
       toast({
         title: "Parcel Scanned",
-        description: `Scanned ${scannedParcels + 1} of ${parcelCount} parcels`
+        description: `Scanned ${newCount} of ${parcelCount} parcels`
       });
     } else if (currentStep === 2) {
       // Step 2: Scanning item barcodes
@@ -222,8 +220,8 @@ export default function ContinueReceiving() {
         return item;
       })
     );
-    // Trigger auto-save after state update
-    setTimeout(() => autoSaveProgress(), 100);
+    // Trigger auto-save with small delay to ensure state is updated
+    setTimeout(() => triggerAutoSave(), 50);
   };
 
   // Toggle item status
@@ -259,8 +257,8 @@ export default function ContinueReceiving() {
         return item;
       })
     );
-    // Trigger auto-save after state update
-    setTimeout(() => autoSaveProgress(), 100);
+    // Trigger auto-save immediately
+    triggerAutoSave();
   };
 
   // Update item notes
@@ -273,8 +271,8 @@ export default function ContinueReceiving() {
         return item;
       })
     );
-    // Trigger auto-save after state update
-    setTimeout(() => autoSaveProgress(), 100);
+    // Trigger auto-save immediately
+    triggerAutoSave();
   };
 
   // Update receipt mutation
@@ -349,10 +347,15 @@ export default function ContinueReceiving() {
   // Auto-save mutation for preserving progress in real-time
   const autoSaveMutation = useMutation({
     mutationFn: async (data: any) => {
+      console.log("Auto-saving data:", data);
       return await apiRequest('/api/imports/receipts/auto-save', 'POST', data);
+    },
+    onSuccess: (response) => {
+      console.log("Auto-save successful:", response);
     },
     onError: (error: any) => {
       console.error("Auto-save failed:", error);
+      console.error("Error details:", error.message, error.cause);
       // Don't show toast for auto-save failures to avoid interrupting user experience
     }
   });
@@ -371,8 +374,8 @@ export default function ContinueReceiving() {
     [autoSaveMutation]
   );
 
-  // Auto-save current progress
-  const autoSaveProgress = useCallback(() => {
+  // Auto-save current progress - direct call to debounced save
+  const triggerAutoSave = useCallback(() => {
     if (!shipment) return;
     
     const progressData = {
@@ -395,25 +398,25 @@ export default function ContinueReceiving() {
     debouncedAutoSave(progressData);
   }, [shipment, receivedBy, parcelCount, scannedParcels, carrier, notes, receivingItems, debouncedAutoSave]);
 
-  // Auto-save wrapper functions for form inputs
+  // Auto-save wrapper functions for form inputs - trigger immediately
   const handleReceivedByChange = (value: string) => {
     setReceivedBy(value);
-    setTimeout(() => autoSaveProgress(), 100);
+    triggerAutoSave();
   };
 
   const handleCarrierChange = (value: string) => {
     setCarrier(value);
-    setTimeout(() => autoSaveProgress(), 100);
+    triggerAutoSave();
   };
 
   const handleParcelCountChange = (value: number) => {
     setParcelCount(value);
-    setTimeout(() => autoSaveProgress(), 100);
+    triggerAutoSave();
   };
 
   const handleNotesChange = (value: string) => {
     setNotes(value);
-    setTimeout(() => autoSaveProgress(), 100);
+    triggerAutoSave();
   };
 
   const handleSubmit = async () => {
