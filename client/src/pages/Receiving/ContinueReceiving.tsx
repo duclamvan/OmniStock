@@ -185,9 +185,17 @@ export default function ContinueReceiving() {
       items.map(item => {
         if (item.id === itemId) {
           const newQty = Math.max(0, item.receivedQty + delta);
-          const status = newQty === 0 ? 'pending' :
-                        newQty === item.expectedQty ? 'complete' :
-                        newQty < item.expectedQty ? 'partial' : 'complete';
+          let status: ReceivingItem['status'] = 'pending';
+          
+          if (newQty === 0) {
+            status = 'pending';
+          } else if (newQty === item.expectedQty) {
+            status = 'complete';
+          } else if (newQty > 0 && newQty < item.expectedQty) {
+            status = 'partial';
+          } else if (newQty > item.expectedQty) {
+            status = 'complete'; // Over-received items are still considered complete
+          }
           return {
             ...item,
             receivedQty: newQty,
@@ -207,7 +215,17 @@ export default function ContinueReceiving() {
     setReceivingItems(items =>
       items.map(item => {
         if (item.id === itemId) {
-          return { ...item, status, checked: true };
+          // When marking as damaged or missing, ensure receivedQty reflects the status
+          let updatedItem = { ...item, status, checked: true };
+          
+          if (status === 'complete') {
+            updatedItem.receivedQty = item.expectedQty;
+          } else if (status === 'damaged' || status === 'missing') {
+            // Keep current receivedQty but mark status appropriately
+            updatedItem.receivedQty = Math.max(0, item.receivedQty);
+          }
+          
+          return updatedItem;
         }
         return item;
       })
@@ -805,7 +823,7 @@ export default function ContinueReceiving() {
                           <div className="flex items-center gap-2">
                             <h4 className="font-medium">{item.name}</h4>
                             <Badge className={`text-xs ${getItemStatusColor(item.status)}`}>
-                              {item.status}
+                              {item.status.toUpperCase()}
                             </Badge>
                           </div>
                           {item.sku && (
