@@ -2976,7 +2976,7 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
     }
     
     // Get receipt items
-    const receiptItems = await db
+    const receiptItemsList = await db
       .select()
       .from(receiptItems)
       .where(eq(receiptItems.receiptId, receipt.id));
@@ -2984,11 +2984,106 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
     // Return receipt with items
     res.json({
       receipt: receipt,
-      items: receiptItems
+      items: receiptItemsList
     });
   } catch (error) {
     console.error("Error fetching receipt by shipment:", error);
     res.status(500).json({ message: "Failed to fetch receipt" });
+  }
+});
+
+// Auto-save receiving progress (create or update receipt)
+router.post("/receipts/auto-save", async (req, res) => {
+  try {
+    const { 
+      shipmentId, 
+      consolidationId,
+      receivedBy,
+      parcelCount,
+      scannedParcels,
+      carrier,
+      notes,
+      items
+    } = req.body;
+
+    if (!shipmentId) {
+      return res.status(400).json({ message: "shipmentId is required" });
+    }
+
+    // Check if receipt already exists for this shipment
+    const [existingReceipt] = await db
+      .select()
+      .from(receipts)
+      .where(eq(receipts.shipmentId, shipmentId));
+
+    let receipt;
+    
+    if (existingReceipt) {
+      // Update existing receipt
+      const [updatedReceipt] = await db
+        .update(receipts)
+        .set({
+          receivedBy: receivedBy || existingReceipt.receivedBy,
+          parcelCount: parcelCount || existingReceipt.parcelCount,
+          carrier: carrier || existingReceipt.carrier,
+          notes: notes || existingReceipt.notes,
+          updatedAt: new Date()
+        })
+        .where(eq(receipts.id, existingReceipt.id))
+        .returning();
+      
+      receipt = updatedReceipt;
+    } else {
+      // Create new receipt for auto-save
+      const [newReceipt] = await db.insert(receipts).values({
+        shipmentId,
+        consolidationId,
+        receivedBy: receivedBy || "Employee #1",
+        parcelCount: parcelCount || 1,
+        carrier: carrier || "",
+        status: 'pending_verification',
+        notes: notes || "",
+        receivedAt: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }).returning();
+      
+      receipt = newReceipt;
+    }
+
+    // Update or create receipt items if provided
+    if (items && items.length > 0) {
+      // Delete existing receipt items for this receipt
+      await db
+        .delete(receiptItems)
+        .where(eq(receiptItems.receiptId, receipt.id));
+      
+      // Insert updated receipt items
+      const itemsToInsert = items.map((item: any) => ({
+        receiptId: receipt.id,
+        itemId: item.itemId || item.id,
+        expectedQuantity: item.expectedQuantity || item.expectedQty || 1,
+        receivedQuantity: item.receivedQuantity || item.receivedQty || 0,
+        damagedQuantity: item.damagedQuantity || 0,
+        missingQuantity: item.missingQuantity || 0,
+        status: item.status || 'pending',
+        notes: item.notes || "",
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }));
+      
+      if (itemsToInsert.length > 0) {
+        await db.insert(receiptItems).values(itemsToInsert);
+      }
+    }
+
+    res.json({ 
+      receipt,
+      message: "Progress auto-saved successfully"
+    });
+  } catch (error) {
+    console.error("Error auto-saving receipt:", error);
+    res.status(500).json({ message: "Failed to auto-save progress" });
   }
 });
 
