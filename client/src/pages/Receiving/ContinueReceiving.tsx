@@ -215,19 +215,29 @@ export default function ContinueReceiving() {
     setReceivingItems(items =>
       items.map(item => {
         if (item.id === itemId) {
-          // When marking as damaged or missing, ensure receivedQty reflects the status
-          let updatedItem = { ...item, status, checked: true };
+          let finalStatus = status;
+          let updatedItem = { ...item, checked: true };
           
           if (status === 'complete') {
             updatedItem.receivedQty = item.expectedQty;
-          } else if (status === 'damaged' || status === 'missing') {
-            // Keep current receivedQty but mark status appropriately
-            updatedItem.receivedQty = Math.max(0, item.receivedQty);
-          } else if (status === 'partial_damaged' || status === 'partial_missing') {
-            // For partial statuses, keep current receivedQty but ensure it's less than expected
-            updatedItem.receivedQty = Math.min(Math.max(1, item.receivedQty), item.expectedQty - 1);
+            finalStatus = 'complete';
+          } else if (status === 'damaged') {
+            // If there's partial quantity received, mark as partial_damaged
+            if (item.receivedQty > 0 && item.receivedQty < item.expectedQty) {
+              finalStatus = 'partial_damaged';
+            } else {
+              finalStatus = 'damaged';
+            }
+          } else if (status === 'missing') {
+            // If there's partial quantity received, mark as partial_missing  
+            if (item.receivedQty > 0 && item.receivedQty < item.expectedQty) {
+              finalStatus = 'partial_missing';
+            } else {
+              finalStatus = 'missing';
+            }
           }
           
+          updatedItem.status = finalStatus;
           return updatedItem;
         }
         return item;
@@ -888,11 +898,11 @@ export default function ContinueReceiving() {
                             OK
                           </Button>
                           <Button
-                            variant={item.status === 'damaged' ? "destructive" : "outline"}
+                            variant={item.status === 'damaged' || item.status === 'partial_damaged' ? "destructive" : "outline"}
                             size="sm"
                             onClick={() => toggleItemStatus(item.id, 'damaged')}
                             className={`min-w-[60px] ${
-                              item.status === 'damaged'
+                              item.status === 'damaged' || item.status === 'partial_damaged'
                                 ? 'bg-red-600 hover:bg-red-700 border-red-600 text-white'
                                 : 'border-red-200 hover:border-red-300 hover:bg-red-50 text-red-700'
                             }`}
@@ -901,43 +911,17 @@ export default function ContinueReceiving() {
                             DMG
                           </Button>
                           <Button
-                            variant={item.status === 'missing' ? "secondary" : "outline"}
+                            variant={item.status === 'missing' || item.status === 'partial_missing' ? "secondary" : "outline"}
                             size="sm"
                             onClick={() => toggleItemStatus(item.id, 'missing')}
                             className={`min-w-[60px] ${
-                              item.status === 'missing'
+                              item.status === 'missing' || item.status === 'partial_missing'
                                 ? 'bg-gray-600 hover:bg-gray-700 border-gray-600 text-white'
                                 : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700'
                             }`}
                           >
                             <X className="h-3 w-3 mr-1" />
                             MISS
-                          </Button>
-                          <Button
-                            variant={item.status === 'partial_damaged' ? "destructive" : "outline"}
-                            size="sm"
-                            onClick={() => toggleItemStatus(item.id, 'partial_damaged')}
-                            className={`min-w-[80px] text-xs ${
-                              item.status === 'partial_damaged'
-                                ? 'bg-orange-600 hover:bg-orange-700 border-orange-600 text-white'
-                                : 'border-orange-200 hover:border-orange-300 hover:bg-orange-50 text-orange-700'
-                            }`}
-                          >
-                            <AlertTriangle className="h-3 w-3 mr-1" />
-                            P-DMG
-                          </Button>
-                          <Button
-                            variant={item.status === 'partial_missing' ? "secondary" : "outline"}
-                            size="sm"
-                            onClick={() => toggleItemStatus(item.id, 'partial_missing')}
-                            className={`min-w-[80px] text-xs ${
-                              item.status === 'partial_missing'
-                                ? 'bg-purple-600 hover:bg-purple-700 border-purple-600 text-white'
-                                : 'border-purple-200 hover:border-purple-300 hover:bg-purple-50 text-purple-700'
-                            }`}
-                          >
-                            <X className="h-3 w-3 mr-1" />
-                            P-MISS
                           </Button>
                         </div>
                       </div>

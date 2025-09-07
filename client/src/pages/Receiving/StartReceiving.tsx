@@ -221,7 +221,30 @@ export default function StartReceiving() {
     setReceivingItems(items =>
       items.map(item => {
         if (item.id === itemId) {
-          return { ...item, status, checked: true };
+          let finalStatus = status;
+          let updatedItem = { ...item, checked: true };
+          
+          if (status === 'complete') {
+            updatedItem.receivedQty = item.expectedQty;
+            finalStatus = 'complete';
+          } else if (status === 'damaged') {
+            // If there's partial quantity received, mark as partial_damaged
+            if (item.receivedQty > 0 && item.receivedQty < item.expectedQty) {
+              finalStatus = 'partial_damaged';
+            } else {
+              finalStatus = 'damaged';
+            }
+          } else if (status === 'missing') {
+            // If there's partial quantity received, mark as partial_missing  
+            if (item.receivedQty > 0 && item.receivedQty < item.expectedQty) {
+              finalStatus = 'partial_missing';
+            } else {
+              finalStatus = 'missing';
+            }
+          }
+          
+          updatedItem.status = finalStatus;
+          return updatedItem;
         }
         return item;
       })
@@ -777,7 +800,7 @@ export default function StartReceiving() {
                             OK
                           </Button>
                           <Button
-                            variant={item.status === 'damaged' ? "destructive" : "outline"}
+                            variant={item.status === 'damaged' || item.status === 'partial_damaged' ? "destructive" : "outline"}
                             size="sm"
                             onClick={() => toggleItemStatus(item.id, 'damaged')}
                           >
@@ -785,7 +808,7 @@ export default function StartReceiving() {
                             DMG
                           </Button>
                           <Button
-                            variant={item.status === 'missing' ? "secondary" : "outline"}
+                            variant={item.status === 'missing' || item.status === 'partial_missing' ? "secondary" : "outline"}
                             size="sm"
                             onClick={() => toggleItemStatus(item.id, 'missing')}
                           >
@@ -795,7 +818,7 @@ export default function StartReceiving() {
                         </div>
                       </div>
 
-                      {(item.status === 'damaged' || item.status === 'missing' || item.notes) && (
+                      {(item.status === 'damaged' || item.status === 'missing' || item.status === 'partial_damaged' || item.status === 'partial_missing' || item.notes) && (
                         <div className="mt-2">
                           <Input
                             value={item.notes || ''}
