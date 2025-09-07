@@ -29,7 +29,10 @@ import {
   User,
   Clock,
   Hash,
-  ArrowRight
+  ArrowRight,
+  Check,
+  AlertTriangle,
+  X
 } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
@@ -754,7 +757,7 @@ export default function ContinueReceiving() {
                           </Button>
                         </div>
 
-                        <div className="flex gap-1">
+                        <div className="flex gap-2">
                           <Button
                             variant={item.status === 'complete' ? "default" : "outline"}
                             size="sm"
@@ -767,21 +770,39 @@ export default function ContinueReceiving() {
                                 )
                               );
                             }}
+                            className={`min-w-[70px] ${
+                              item.status === 'complete'
+                                ? 'bg-green-600 hover:bg-green-700 border-green-600 text-white'
+                                : 'border-green-200 hover:border-green-300 hover:bg-green-50 text-green-700'
+                            }`}
                           >
+                            <Check className="h-3 w-3 mr-1" />
                             OK
                           </Button>
                           <Button
                             variant={item.status === 'damaged' ? "destructive" : "outline"}
                             size="sm"
                             onClick={() => toggleItemStatus(item.id, 'damaged')}
+                            className={`min-w-[70px] ${
+                              item.status === 'damaged'
+                                ? 'bg-red-600 hover:bg-red-700 border-red-600 text-white'
+                                : 'border-red-200 hover:border-red-300 hover:bg-red-50 text-red-700'
+                            }`}
                           >
+                            <AlertTriangle className="h-3 w-3 mr-1" />
                             DMG
                           </Button>
                           <Button
                             variant={item.status === 'missing' ? "secondary" : "outline"}
                             size="sm"
                             onClick={() => toggleItemStatus(item.id, 'missing')}
+                            className={`min-w-[70px] ${
+                              item.status === 'missing'
+                                ? 'bg-gray-600 hover:bg-gray-700 border-gray-600 text-white'
+                                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700'
+                            }`}
                           >
+                            <X className="h-3 w-3 mr-1" />
                             MISS
                           </Button>
                         </div>

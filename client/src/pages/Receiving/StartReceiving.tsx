@@ -30,7 +30,9 @@ import {
   Save,
   CheckSquare,
   Square,
-  ArrowRight
+  ArrowRight,
+  Check,
+  X
 } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
@@ -161,7 +163,7 @@ export default function StartReceiving() {
       // Step 1: Scanning parcel barcodes
       const newScannedCount = Math.min(scannedParcels + 1, parcelCount);
       const isFirstParcel = scannedParcels === 0 && newScannedCount === 1;
-      
+
       setScannedParcels(newScannedCount);
       toast({
         title: "Parcel Scanned",
@@ -556,7 +558,7 @@ export default function StartReceiving() {
                         const newCount = Math.min(parcelCount, scannedParcels + 1);
                         const isFirstParcel = scannedParcels === 0 && newCount === 1;
                         setScannedParcels(newCount);
-                        
+
                         // Auto-move to "Currently Receiving" tab when first parcel is received
                         if (isFirstParcel && !startReceivingMutation.isPending) {
                           startReceivingMutation.mutate();
@@ -770,6 +772,7 @@ export default function StartReceiving() {
                               );
                             }}
                           >
+                            <Check className="h-4 w-4 mr-1" />
                             OK
                           </Button>
                           <Button
@@ -777,6 +780,7 @@ export default function StartReceiving() {
                             size="sm"
                             onClick={() => toggleItemStatus(item.id, 'damaged')}
                           >
+                            <AlertTriangle className="h-4 w-4 mr-1" />
                             DMG
                           </Button>
                           <Button
@@ -784,6 +788,7 @@ export default function StartReceiving() {
                             size="sm"
                             onClick={() => toggleItemStatus(item.id, 'missing')}
                           >
+                            <X className="h-4 w-4 mr-1" />
                             MISS
                           </Button>
                         </div>
