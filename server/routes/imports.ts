@@ -1896,6 +1896,61 @@ router.post("/shipments/:id/start-receiving", async (req, res) => {
   }
 });
 
+// Move shipment back to receivable status
+router.post("/shipments/:id/move-back-to-receive", async (req, res) => {
+  try {
+    const shipmentId = parseInt(req.params.id);
+    
+    // Check if shipment exists and is currently in receiving status
+    const [shipment] = await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.id, shipmentId));
+    
+    if (!shipment) {
+      return res.status(404).json({ message: "Shipment not found" });
+    }
+    
+    if (shipment.receivingStatus !== 'receiving') {
+      return res.status(400).json({ 
+        message: "Shipment is not currently in receiving status" 
+      });
+    }
+    
+    // Check if there are any receipts for this shipment
+    const [existingReceipt] = await db
+      .select()
+      .from(receipts)
+      .where(eq(receipts.shipmentId, shipmentId));
+    
+    if (existingReceipt) {
+      // If there's a receipt, we should delete it or mark it as cancelled
+      // For now, we'll prevent moving back if there's already a receipt
+      return res.status(400).json({ 
+        message: "Cannot move back - receiving process has already started with a receipt. Please complete the receiving process or contact an administrator." 
+      });
+    }
+    
+    // Update the shipment's receiving status back to null/empty (receivable)
+    const [updated] = await db
+      .update(shipments)
+      .set({ 
+        receivingStatus: null,
+        updatedAt: new Date()
+      })
+      .where(eq(shipments.id, shipmentId))
+      .returning();
+    
+    res.json({ 
+      message: "Shipment moved back to receivable status successfully",
+      shipment: updated
+    });
+  } catch (error) {
+    console.error("Error moving shipment back to receive:", error);
+    res.status(500).json({ message: "Failed to move shipment back to receivable status" });
+  }
+});
+
 // Get shipments by receiving status
 router.get("/shipments/by-status/:status", async (req, res) => {
   try {

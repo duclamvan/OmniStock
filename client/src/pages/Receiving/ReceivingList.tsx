@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
 import { 
   Package, 
   Search, 
@@ -43,11 +49,14 @@ import {
   ArrowDown,
   CalendarDays,
   Weight,
-  Hash
+  Hash,
+  MoreHorizontal,
+  Undo2
 } from "lucide-react";
 import { Link } from "wouter";
 import { format, differenceInHours, differenceInDays, isToday, isYesterday, isThisWeek, isThisMonth } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { queryClient } from "@/lib/queryClient";
 
 // Helper function to format shipment type display name
 const formatShipmentType = (shipmentType: string) => {
@@ -148,6 +157,39 @@ export default function ReceivingList() {
   const [shipmentTypeFilter, setShipmentTypeFilter] = useState("all"); // Added shipmentTypeFilter
   const [cartonTypeFilter, setCartonTypeFilter] = useState("all"); // Added cartonTypeFilter
   const { toast } = useToast();
+
+  // Mutation to move shipment back to receivable status
+  const moveBackToReceiveMutation = useMutation({
+    mutationFn: async (shipmentId: number) => {
+      const response = await fetch(`/api/imports/shipments/${shipmentId}/move-back-to-receive`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to move shipment back');
+      }
+      return response.json();
+    },
+    onSuccess: (data, shipmentId) => {
+      toast({
+        title: "Shipment Moved",
+        description: "Shipment moved back to 'To Receive' status successfully"
+      });
+      // Invalidate both receiving and receivable queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/receiving'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/receivable'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to move shipment back",
+        variant: "destructive"
+      });
+    }
+  });
 
   // Fetch shipments ready to receive
   const { data: toReceiveShipments = [], isLoading: isLoadingToReceive } = useQuery({
@@ -1154,11 +1196,30 @@ export default function ReceivingList() {
                             </p>
                           </div>
                         </div>
-                        <Link href={`/receiving/continue/${shipment.id}`}>
-                          <Button size="sm" variant="outline">
-                            Continue Receiving
-                          </Button>
-                        </Link>
+                        <div className="flex items-center gap-2">
+                          <Link href={`/receiving/continue/${shipment.id}`}>
+                            <Button size="sm" variant="outline">
+                              Continue Receiving
+                            </Button>
+                          </Link>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem 
+                                onClick={() => moveBackToReceiveMutation.mutate(shipment.id)}
+                                disabled={moveBackToReceiveMutation.isPending}
+                                className="text-orange-600 hover:text-orange-700"
+                              >
+                                <Undo2 className="h-4 w-4 mr-2" />
+                                Move back to To Receive
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
