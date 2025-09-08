@@ -204,57 +204,59 @@ export default function ContinueReceiving() {
     setBarcodeScan("");
   };
 
-  // Update item quantity
+  // Update item quantity with functional state update to prevent rapid-click issues
   const updateItemQuantity = (itemId: string, delta: number) => {
-    const updatedItems = receivingItems.map(item => {
-      if (item.id === itemId) {
-        const newQty = Math.max(0, item.receivedQty + delta);
-        let status: ReceivingItem['status'] = item.status; // Preserve existing status for damaged/missing
-        
-        // Only update status if it's not already set to damaged or missing
-        if (item.status !== 'damaged' && item.status !== 'missing' && 
-            item.status !== 'partial_damaged' && item.status !== 'partial_missing') {
-          if (newQty === 0) {
-            status = 'pending';
-          } else if (newQty >= item.expectedQty) {
-            status = 'complete'; // Complete when received >= expected
-          } else if (newQty > 0 && newQty < item.expectedQty) {
-            status = 'partial';
-          }
-        } else {
-          // Handle partial damaged/missing cases
-          if (item.status === 'damaged' || item.status === 'partial_damaged') {
-            if (newQty > 0 && newQty < item.expectedQty) {
-              status = 'partial_damaged';
-            } else if (newQty === 0) {
-              status = 'damaged';
-            } else {
-              status = 'damaged'; // Keep as damaged even if over-received
+    setReceivingItems(prevItems => {
+      const updatedItems = prevItems.map(item => {
+        if (item.id === itemId) {
+          const newQty = Math.max(0, item.receivedQty + delta);
+          let status: ReceivingItem['status'] = item.status; // Preserve existing status for damaged/missing
+          
+          // Only update status if it's not already set to damaged or missing
+          if (item.status !== 'damaged' && item.status !== 'missing' && 
+              item.status !== 'partial_damaged' && item.status !== 'partial_missing') {
+            if (newQty === 0) {
+              status = 'pending';
+            } else if (newQty >= item.expectedQty) {
+              status = 'complete'; // Complete when received >= expected
+            } else if (newQty > 0 && newQty < item.expectedQty) {
+              status = 'partial';
             }
-          } else if (item.status === 'missing' || item.status === 'partial_missing') {
-            if (newQty > 0 && newQty < item.expectedQty) {
-              status = 'partial_missing';
-            } else if (newQty === 0) {
-              status = 'missing';
-            } else {
-              status = 'missing'; // Keep as missing even if over-received
+          } else {
+            // Handle partial damaged/missing cases
+            if (item.status === 'damaged' || item.status === 'partial_damaged') {
+              if (newQty > 0 && newQty < item.expectedQty) {
+                status = 'partial_damaged';
+              } else if (newQty === 0) {
+                status = 'damaged';
+              } else {
+                status = 'damaged'; // Keep as damaged even if over-received
+              }
+            } else if (item.status === 'missing' || item.status === 'partial_missing') {
+              if (newQty > 0 && newQty < item.expectedQty) {
+                status = 'partial_missing';
+              } else if (newQty === 0) {
+                status = 'missing';
+              } else {
+                status = 'missing'; // Keep as missing even if over-received
+              }
             }
           }
+          
+          return {
+            ...item,
+            receivedQty: newQty,
+            status,
+            checked: newQty > 0
+          };
         }
-        
-        return {
-          ...item,
-          receivedQty: newQty,
-          status,
-          checked: newQty > 0
-        };
-      }
-      return item;
+        return item;
+      });
+      
+      // Trigger auto-save with updated items immediately
+      triggerAutoSave(updatedItems);
+      return updatedItems;
     });
-    
-    setReceivingItems(updatedItems);
-    // Trigger auto-save with updated items immediately
-    triggerAutoSave(updatedItems);
   };
 
   // Toggle item status
