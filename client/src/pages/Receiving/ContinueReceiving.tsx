@@ -209,17 +209,39 @@ export default function ContinueReceiving() {
     const updatedItems = receivingItems.map(item => {
       if (item.id === itemId) {
         const newQty = Math.max(0, item.receivedQty + delta);
-        let status: ReceivingItem['status'] = 'pending';
+        let status: ReceivingItem['status'] = item.status; // Preserve existing status for damaged/missing
         
-        if (newQty === 0) {
-          status = 'pending';
-        } else if (newQty === item.expectedQty) {
-          status = 'complete';
-        } else if (newQty > 0 && newQty < item.expectedQty) {
-          status = 'partial';
-        } else if (newQty > item.expectedQty) {
-          status = 'complete'; // Over-received items are still considered complete
+        // Only update status if it's not already set to damaged or missing
+        if (item.status !== 'damaged' && item.status !== 'missing' && 
+            item.status !== 'partial_damaged' && item.status !== 'partial_missing') {
+          if (newQty === 0) {
+            status = 'pending';
+          } else if (newQty >= item.expectedQty) {
+            status = 'complete'; // Complete when received >= expected
+          } else if (newQty > 0 && newQty < item.expectedQty) {
+            status = 'partial';
+          }
+        } else {
+          // Handle partial damaged/missing cases
+          if (item.status === 'damaged' || item.status === 'partial_damaged') {
+            if (newQty > 0 && newQty < item.expectedQty) {
+              status = 'partial_damaged';
+            } else if (newQty === 0) {
+              status = 'damaged';
+            } else {
+              status = 'damaged'; // Keep as damaged even if over-received
+            }
+          } else if (item.status === 'missing' || item.status === 'partial_missing') {
+            if (newQty > 0 && newQty < item.expectedQty) {
+              status = 'partial_missing';
+            } else if (newQty === 0) {
+              status = 'missing';
+            } else {
+              status = 'missing'; // Keep as missing even if over-received
+            }
+          }
         }
+        
         return {
           ...item,
           receivedQty: newQty,
@@ -379,7 +401,7 @@ export default function ContinueReceiving() {
         clearTimeout(timeoutId);
         timeoutId = setTimeout(() => {
           autoSaveMutation.mutate(data);
-        }, 500); // Save after 500ms of inactivity
+        }, 1000); // Save after 1 second of inactivity to reduce frequent saves
       };
     })(),
     [autoSaveMutation]
@@ -528,7 +550,12 @@ export default function ContinueReceiving() {
   };
 
   const totalItems = receivingItems.length;
-  const completedItems = receivingItems.filter(item => item.status === 'complete' || item.status === 'partial').length;
+  const completedItems = receivingItems.filter(item => 
+    item.status === 'complete' || 
+    item.receivedQty >= item.expectedQty ||
+    (item.receivedQty > 0 && (item.status === 'damaged' || item.status === 'partial_damaged' || 
+     item.status === 'missing' || item.status === 'partial_missing'))
+  ).length;
   const progress = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
 
   if (isLoading) {
