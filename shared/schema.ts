@@ -157,6 +157,7 @@ export const receipts = pgTable('receipts', {
   receivedBy: text('received_by').notNull(), // Employee who received
   receivedAt: timestamp('received_at').notNull().defaultNow(),
   parcelCount: integer('parcel_count').notNull(),
+  receivedParcels: integer('received_parcels').notNull().default(0), // Actually received/scanned parcels
   carrier: text('carrier').notNull(),
   trackingNumbers: jsonb('tracking_numbers'), // Array of tracking numbers
   status: text('status').notNull().default('pending_verification'), // pending_verification, verified, pending_approval, approved, rejected
