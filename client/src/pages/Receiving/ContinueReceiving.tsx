@@ -395,19 +395,22 @@ export default function ContinueReceiving() {
     }
   });
 
-  // Debounced auto-save function
-  const debouncedAutoSave = useCallback(
-    (() => {
-      let timeoutId: NodeJS.Timeout;
-      return (data: any) => {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => {
-          autoSaveMutation.mutate(data);
-        }, 1000); // Save after 1 second of inactivity to reduce frequent saves
-      };
-    })(),
-    [autoSaveMutation]
-  );
+  // Use useRef to maintain stable debounce timer across renders
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Debounced auto-save function with stable reference
+  const debouncedAutoSave = useCallback((data: any) => {
+    // Clear any existing timer
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+    
+    // Set new timer for 1.5 seconds
+    autoSaveTimerRef.current = setTimeout(() => {
+      autoSaveMutation.mutate(data);
+      autoSaveTimerRef.current = null;
+    }, 1500); // Save after 1.5 seconds of inactivity to reduce API calls
+  }, []);
 
   // Auto-save current progress - direct call to debounced save
   const triggerAutoSave = useCallback((updatedItems?: any[]) => {
@@ -646,9 +649,9 @@ export default function ContinueReceiving() {
         </div>
         <Progress value={progress} className="h-2" />
         <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
-          <span>Items: {totalReceivedQty}/{totalExpectedQty}</span>
-          <span>Parcels: {scannedParcels}/{parcelCount}</span>
-          <span>Checked: {checkedItemsCount}/{totalItems}</span>
+          <span>Items Received: {totalReceivedQty} of {totalExpectedQty}</span>
+          <span>Parcels: {scannedParcels} of {parcelCount}</span>
+          <span>Verified: {checkedItemsCount} of {totalItems} items</span>
         </div>
       </div>
 
@@ -917,9 +920,6 @@ export default function ContinueReceiving() {
                   const filteredItems = receivingItems.filter(item => 
                     showAllItems || item.status === 'pending' || item.receivedQty < item.expectedQty
                   );
-                  console.log('Receiving items:', receivingItems);
-                  console.log('Show all items:', showAllItems);
-                  console.log('Filtered items:', filteredItems);
                   return filteredItems;
                 })()
                   .map((item) => (
