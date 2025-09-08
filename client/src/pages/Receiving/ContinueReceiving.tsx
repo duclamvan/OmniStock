@@ -1078,7 +1078,7 @@ export default function ContinueReceiving() {
               ) : (
                 <>
                   <Save className="h-4 w-4 mr-2" />
-                  {receipt ? 'Update' : 'Complete'} Receiving
+                  Complete Receiving
                 </>
               )}
             </Button>
