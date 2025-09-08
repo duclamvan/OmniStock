@@ -386,8 +386,8 @@ export default function ContinueReceiving() {
       return await apiRequest('/api/imports/receipts/auto-save', 'POST', data);
     },
     onSuccess: (response) => {
-      // Invalidate the receipt query to ensure fresh data on next load
-      queryClient.invalidateQueries({ queryKey: [`/api/imports/receipts/by-shipment/${id}`] });
+      // Don't invalidate cache during active editing to prevent jumping values
+      // Data will be fresh when component remounts
     },
     onError: (error: any) => {
       console.error("Auto-save failed:", error);
