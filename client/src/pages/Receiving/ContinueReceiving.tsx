@@ -649,8 +649,8 @@ export default function ContinueReceiving() {
         </div>
         <Progress value={progress} className="h-2" />
         <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
-          <span>Items Received: {totalReceivedQty} of {totalExpectedQty}</span>
           <span>Parcels: {scannedParcels} of {parcelCount}</span>
+          <span>Items Received: {totalReceivedQty} of {totalExpectedQty}</span>
           <span>Verified: {checkedItemsCount} of {totalItems} items</span>
         </div>
       </div>
