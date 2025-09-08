@@ -103,7 +103,9 @@ export default function ContinueReceiving() {
       setReceivedBy(receiptData.receivedBy || "Employee #1");
       setCarrier(receiptData.carrier || shipment.endCarrier || shipment.carrier || "");
       setParcelCount(receiptData.parcelCount || shipment.totalUnits || 1);
-      setScannedParcels(receiptData.parcelCount || shipment.totalUnits || 1);
+      // Load scannedParcels from trackingNumbers JSON field
+      const savedScannedParcels = receiptData.trackingNumbers?.scannedParcels;
+      setScannedParcels(savedScannedParcels !== undefined ? savedScannedParcels : receiptData.parcelCount || shipment.totalUnits || 1);
       setNotes(receiptData.notes || "");
       
       // Initialize items from receipt

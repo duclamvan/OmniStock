@@ -3092,7 +3092,12 @@ router.post("/receipts/auto-save", async (req, res) => {
     let receipt;
     
     if (existingReceipt) {
-      // Update existing receipt
+      // Update existing receipt with scannedParcels stored in trackingNumbers JSON
+      const trackingData = {
+        ...(existingReceipt.trackingNumbers as any || {}),
+        scannedParcels: scannedParcels !== undefined ? scannedParcels : (existingReceipt.trackingNumbers as any)?.scannedParcels
+      };
+      
       const [updatedReceipt] = await db
         .update(receipts)
         .set({
@@ -3100,6 +3105,7 @@ router.post("/receipts/auto-save", async (req, res) => {
           parcelCount: parcelCount || existingReceipt.parcelCount,
           carrier: carrier || existingReceipt.carrier,
           notes: notes || existingReceipt.notes,
+          trackingNumbers: trackingData,
           updatedAt: new Date()
         })
         .where(eq(receipts.id, existingReceipt.id))
@@ -3107,7 +3113,11 @@ router.post("/receipts/auto-save", async (req, res) => {
       
       receipt = updatedReceipt;
     } else {
-      // Create new receipt for auto-save
+      // Create new receipt for auto-save with scannedParcels stored in trackingNumbers JSON
+      const trackingData = {
+        scannedParcels: scannedParcels || 0
+      };
+      
       const [newReceipt] = await db.insert(receipts).values({
         shipmentId,
         consolidationId,
@@ -3116,6 +3126,7 @@ router.post("/receipts/auto-save", async (req, res) => {
         carrier: carrier || "",
         status: 'pending_verification',
         notes: notes || "",
+        trackingNumbers: trackingData,
         receivedAt: new Date(),
         createdAt: new Date(),
         updatedAt: new Date()
