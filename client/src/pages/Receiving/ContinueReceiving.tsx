@@ -551,14 +551,29 @@ export default function ContinueReceiving() {
     }
   };
 
+  // Calculate comprehensive progress including partial items and parcels
   const totalItems = receivingItems.length;
+  const totalExpectedQty = receivingItems.reduce((sum, item) => sum + item.expectedQty, 0);
+  const totalReceivedQty = receivingItems.reduce((sum, item) => sum + item.receivedQty, 0);
+  
+  // Calculate different progress components
+  const itemsProgress = totalExpectedQty > 0 ? (totalReceivedQty / totalExpectedQty) * 100 : 0;
+  const parcelProgress = parcelCount > 0 ? (scannedParcels / parcelCount) * 100 : 0;
+  
+  // Count items by status for additional weight
+  const checkedItemsCount = receivingItems.filter(item => item.checked).length;
+  const checkedProgress = totalItems > 0 ? (checkedItemsCount / totalItems) * 100 : 0;
+  
+  // Combined weighted progress (40% items quantity, 30% parcels, 30% checked items)
+  const progress = (itemsProgress * 0.4) + (parcelProgress * 0.3) + (checkedProgress * 0.3);
+  
+  // For display purposes
   const completedItems = receivingItems.filter(item => 
     item.status === 'complete' || 
     item.receivedQty >= item.expectedQty ||
     (item.receivedQty > 0 && (item.status === 'damaged' || item.status === 'partial_damaged' || 
      item.status === 'missing' || item.status === 'partial_missing'))
   ).length;
-  const progress = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
 
   if (isLoading) {
     return (
@@ -626,10 +641,15 @@ export default function ContinueReceiving() {
       {/* Progress Bar */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium">Progress</span>
+          <span className="text-sm font-medium">Overall Progress</span>
           <span className="text-sm text-muted-foreground">{Math.round(progress)}% Complete</span>
         </div>
         <Progress value={progress} className="h-2" />
+        <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
+          <span>Items: {totalReceivedQty}/{totalExpectedQty}</span>
+          <span>Parcels: {scannedParcels}/{parcelCount}</span>
+          <span>Checked: {checkedItemsCount}/{totalItems}</span>
+        </div>
       </div>
 
       {/* Step Navigation */}
