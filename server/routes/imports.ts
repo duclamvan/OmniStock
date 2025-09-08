@@ -2640,6 +2640,79 @@ router.get("/receipts/:id", async (req, res) => {
   }
 });
 
+// Update receipt
+router.put("/receipts/:id", async (req, res) => {
+  try {
+    const receiptId = parseInt(req.params.id);
+    const {
+      receivedBy,
+      carrier,
+      parcelCount,
+      notes,
+      items
+    } = req.body;
+
+    // Update receipt details
+    const [updatedReceipt] = await db
+      .update(receipts)
+      .set({
+        receivedBy,
+        carrier,
+        parcelCount,
+        notes,
+        updatedAt: new Date()
+      })
+      .where(eq(receipts.id, receiptId))
+      .returning();
+
+    if (!updatedReceipt) {
+      return res.status(404).json({ message: "Receipt not found" });
+    }
+
+    // Update receipt items if provided
+    if (items && items.length > 0) {
+      // Delete existing receipt items
+      await db
+        .delete(receiptItems)
+        .where(eq(receiptItems.receiptId, receiptId));
+
+      // Insert updated receipt items
+      const itemsToInsert = items.map((item: any) => ({
+        receiptId,
+        itemId: parseInt(item.itemId) || item.itemId,
+        itemType: 'purchase',
+        expectedQuantity: item.expectedQuantity || 1,
+        receivedQuantity: item.receivedQuantity || 0,
+        damagedQuantity: item.damagedQuantity || 0,
+        missingQuantity: item.missingQuantity || 0,
+        status: item.status || 'pending',
+        notes: item.notes || "",
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }));
+
+      if (itemsToInsert.length > 0) {
+        await db.insert(receiptItems).values(itemsToInsert);
+      }
+    }
+
+    // Fetch and return updated receipt with items
+    const updatedItems = await db
+      .select()
+      .from(receiptItems)
+      .where(eq(receiptItems.receiptId, receiptId));
+
+    res.json({
+      receipt: updatedReceipt,
+      items: updatedItems,
+      message: "Receipt updated successfully"
+    });
+  } catch (error) {
+    console.error("Error updating receipt:", error);
+    res.status(500).json({ message: "Failed to update receipt" });
+  }
+});
+
 // Update receipt item verification
 router.patch("/receipts/:id/items/:itemId", async (req, res) => {
   try {
