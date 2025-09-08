@@ -177,9 +177,7 @@ export default function ContinueReceiving() {
     if (currentStep === 1) {
       // Step 1: Scanning parcel barcodes
       const newCount = Math.min(scannedParcels + 1, parcelCount);
-      setScannedParcels(newCount);
-      // Trigger auto-save immediately with updated data
-      setTimeout(() => triggerAutoSave(), 50); // Small delay to ensure state is updated
+      handleScannedParcelsChange(newCount);
       toast({
         title: "Parcel Scanned",
         description: `Scanned ${newCount} of ${parcelCount} parcels`
@@ -452,6 +450,11 @@ export default function ContinueReceiving() {
 
   const handleParcelCountChange = (value: number) => {
     setParcelCount(value);
+    triggerAutoSave();
+  };
+
+  const handleScannedParcelsChange = (value: number) => {
+    setScannedParcels(value);
     triggerAutoSave();
   };
 
@@ -746,7 +749,7 @@ export default function ContinueReceiving() {
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => setScannedParcels(Math.max(0, scannedParcels - 1))}
+                      onClick={() => handleScannedParcelsChange(Math.max(0, scannedParcels - 1))}
                       disabled={scannedParcels === 0}
                     >
                       <Minus className="h-4 w-4" />
@@ -754,7 +757,7 @@ export default function ContinueReceiving() {
                     <Input
                       type="number"
                       value={scannedParcels}
-                      onChange={(e) => setScannedParcels(Math.max(0, Math.min(parcelCount, parseInt(e.target.value) || 0)))}
+                      onChange={(e) => handleScannedParcelsChange(Math.max(0, Math.min(parcelCount, parseInt(e.target.value) || 0)))}
                       className="text-center"
                       min="0"
                       max={parcelCount}
@@ -763,7 +766,7 @@ export default function ContinueReceiving() {
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => setScannedParcels(Math.min(parcelCount, scannedParcels + 1))}
+                      onClick={() => handleScannedParcelsChange(Math.min(parcelCount, scannedParcels + 1))}
                       disabled={scannedParcels >= parcelCount}
                     >
                       <Plus className="h-4 w-4" />
