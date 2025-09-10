@@ -208,9 +208,14 @@ export default function ContinueReceiving() {
   // Save data on component unmount to ensure changes are persisted
   useEffect(() => {
     return () => {
-      // Clear any pending debounce timer
+      // Clear ALL pending timers
       if (autoSaveTimerRef.current) {
         clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
+      }
+      if (buttonSaveTimerRef.current) {
+        clearTimeout(buttonSaveTimerRef.current);
+        buttonSaveTimerRef.current = null;
       }
       
       // Save any pending data synchronously before unmount
