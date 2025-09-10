@@ -235,7 +235,7 @@ export default function ContinueReceiving() {
     if (currentStep === 1) {
       // Step 1: Scanning parcel barcodes
       const newCount = Math.min(scannedParcels + 1, parcelCount);
-      handleScannedParcelsChange(newCount, true); // Immediate save for scans
+      handleScannedParcelsChange(newCount, true); // Immediate save for scans with correct value
       toast({
         title: "Parcel Scanned",
         description: `Scanned ${newCount} of ${parcelCount} parcels`
@@ -497,18 +497,19 @@ export default function ContinueReceiving() {
   }, [immediateAutoSave]);
 
   // Auto-save current progress with different strategies
-  const triggerAutoSave = useCallback((updatedItems?: any[], immediate?: boolean) => {
+  const triggerAutoSave = useCallback((updatedItems?: any[], immediate?: boolean, overrides?: { scannedParcels?: number, parcelCount?: number }) => {
     if (!shipment) return;
     
     // Use provided items or fall back to state items
     const itemsToSave = updatedItems || receivingItems;
     
+    // Use overridden values if provided, otherwise fall back to state values
     const progressData = {
       shipmentId: shipment.id,
       consolidationId: shipment.consolidationId,
       receivedBy,
-      parcelCount,
-      scannedParcels, // This will be saved in trackingNumbers JSON on backend
+      parcelCount: overrides?.parcelCount ?? parcelCount,
+      scannedParcels: overrides?.scannedParcels ?? scannedParcels, // Use override or state value
       carrier,
       notes,
       items: itemsToSave.map(item => ({
@@ -557,8 +558,9 @@ export default function ContinueReceiving() {
         clearTimeout(buttonSaveTimerRef.current);
       }
       // Set a short delay to batch rapid clicks (300ms)
+      // Pass the new value directly to avoid closure issues
       buttonSaveTimerRef.current = setTimeout(() => {
-        triggerAutoSave(undefined, true);
+        triggerAutoSave(undefined, true, { parcelCount: value });
         buttonSaveTimerRef.current = null;
       }, 300);
     }
@@ -581,8 +583,9 @@ export default function ContinueReceiving() {
         clearTimeout(buttonSaveTimerRef.current);
       }
       // Set a short delay to batch rapid clicks (300ms)
+      // Pass the new value directly to avoid closure issues
       buttonSaveTimerRef.current = setTimeout(() => {
-        triggerAutoSave(undefined, true);
+        triggerAutoSave(undefined, true, { scannedParcels: value });
         buttonSaveTimerRef.current = null;
       }, 300);
     }
