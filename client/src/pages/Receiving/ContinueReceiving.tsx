@@ -186,7 +186,7 @@ export default function ContinueReceiving() {
     if (currentStep === 1) {
       // Step 1: Scanning parcel barcodes
       const newCount = Math.min(scannedParcels + 1, parcelCount);
-      handleScannedParcelsChange(newCount);
+      handleScannedParcelsChange(newCount, true); // Immediate save for scans
       toast({
         title: "Parcel Scanned",
         description: `Scanned ${newCount} of ${parcelCount} parcels`
@@ -260,8 +260,8 @@ export default function ContinueReceiving() {
         return item;
       });
       
-      // Trigger auto-save with updated items immediately
-      triggerAutoSave(updatedItems);
+      // Trigger immediate auto-save for quantity changes
+      triggerAutoSave(updatedItems, true);
       return updatedItems;
     });
   };
@@ -299,8 +299,8 @@ export default function ContinueReceiving() {
     });
     
     setReceivingItems(updatedItems);
-    // Trigger auto-save with updated items immediately
-    triggerAutoSave(updatedItems);
+    // Trigger immediate auto-save for status changes
+    triggerAutoSave(updatedItems, true);
   };
 
   // Update item notes
@@ -313,8 +313,8 @@ export default function ContinueReceiving() {
     });
     
     setReceivingItems(updatedItems);
-    // Trigger auto-save with updated items immediately
-    triggerAutoSave(updatedItems);
+    // Debounced save for notes changes
+    triggerAutoSave(updatedItems, false);
   };
 
   // Update receipt mutation
@@ -404,23 +404,45 @@ export default function ContinueReceiving() {
 
   // Use useRef to maintain stable debounce timer across renders
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   
-  // Debounced auto-save function with stable reference
-  const debouncedAutoSave = useCallback((data: any) => {
+  // Immediate save function for button clicks
+  const immediateAutoSave = useCallback((data: any) => {
+    // Cancel any pending debounced saves
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
+    setIsSaving(true);
+    autoSaveMutation.mutate(data, {
+      onSettled: () => setIsSaving(false)
+    });
+  }, []);
+  
+  // Debounced auto-save function for text inputs (saves on blur or after delay)
+  const debouncedAutoSave = useCallback((data: any, immediate?: boolean) => {
+    if (immediate) {
+      immediateAutoSave(data);
+      return;
+    }
+    
     // Clear any existing timer
     if (autoSaveTimerRef.current) {
       clearTimeout(autoSaveTimerRef.current);
     }
     
-    // Set new timer for 1.5 seconds
+    // Set new timer for 2 seconds for text inputs
     autoSaveTimerRef.current = setTimeout(() => {
-      autoSaveMutation.mutate(data);
+      setIsSaving(true);
+      autoSaveMutation.mutate(data, {
+        onSettled: () => setIsSaving(false)
+      });
       autoSaveTimerRef.current = null;
-    }, 1500); // Save after 1.5 seconds of inactivity to reduce API calls
-  }, []);
+    }, 2000); // Save after 2 seconds of inactivity for text inputs
+  }, [immediateAutoSave]);
 
-  // Auto-save current progress - direct call to debounced save
-  const triggerAutoSave = useCallback((updatedItems?: any[]) => {
+  // Auto-save current progress with different strategies
+  const triggerAutoSave = useCallback((updatedItems?: any[], immediate?: boolean) => {
     if (!shipment) return;
     
     // Use provided items or fall back to state items
@@ -443,33 +465,58 @@ export default function ContinueReceiving() {
       }))
     };
     
-    debouncedAutoSave(progressData);
+    debouncedAutoSave(progressData, immediate);
   }, [shipment, receivedBy, parcelCount, scannedParcels, carrier, notes, receivingItems, debouncedAutoSave]);
 
-  // Auto-save wrapper functions for form inputs - trigger immediately
+  // Text input handlers - save on blur
   const handleReceivedByChange = (value: string) => {
     setReceivedBy(value);
-    triggerAutoSave();
+    // Don't trigger auto-save here, wait for blur
+  };
+  
+  const handleReceivedByBlur = () => {
+    triggerAutoSave(undefined, false); // Use debounced save
   };
 
   const handleCarrierChange = (value: string) => {
     setCarrier(value);
-    triggerAutoSave();
+    // Don't trigger auto-save here, wait for blur
+  };
+  
+  const handleCarrierBlur = () => {
+    triggerAutoSave(undefined, false); // Use debounced save
   };
 
-  const handleParcelCountChange = (value: number) => {
+  // Number input handlers - save immediately for buttons
+  const handleParcelCountChange = (value: number, isButton?: boolean) => {
     setParcelCount(value);
-    triggerAutoSave();
+    if (isButton) {
+      triggerAutoSave(undefined, true); // Immediate save for buttons
+    }
+  };
+  
+  const handleParcelCountBlur = () => {
+    triggerAutoSave(undefined, false); // Save on blur for manual input
   };
 
-  const handleScannedParcelsChange = (value: number) => {
+  const handleScannedParcelsChange = (value: number, isButton?: boolean) => {
     setScannedParcels(value);
-    triggerAutoSave();
+    if (isButton) {
+      triggerAutoSave(undefined, true); // Immediate save for buttons
+    }
+  };
+  
+  const handleScannedParcelsBlur = () => {
+    triggerAutoSave(undefined, false); // Save on blur for manual input
   };
 
   const handleNotesChange = (value: string) => {
     setNotes(value);
-    triggerAutoSave();
+    // Don't trigger auto-save here, wait for blur
+  };
+  
+  const handleNotesBlur = () => {
+    triggerAutoSave(undefined, false); // Use debounced save
   };
 
   const handleSubmit = async () => {
@@ -705,6 +752,7 @@ export default function ContinueReceiving() {
                   <Input
                     value={receivedBy}
                     onChange={(e) => handleReceivedByChange(e.target.value)}
+                    onBlur={handleReceivedByBlur}
                     placeholder="Your name"
                     required
                   />
@@ -714,6 +762,7 @@ export default function ContinueReceiving() {
                   <Input
                     value={carrier}
                     onChange={(e) => handleCarrierChange(e.target.value)}
+                    onBlur={handleCarrierBlur}
                     placeholder="DHL, UPS, FedEx..."
                     required
                   />
@@ -729,14 +778,15 @@ export default function ContinueReceiving() {
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => handleParcelCountChange(Math.max(1, parcelCount - 1))}
+                      onClick={() => handleParcelCountChange(Math.max(1, parcelCount - 1), true)}
                     >
                       <Minus className="h-4 w-4" />
                     </Button>
                     <Input
                       type="number"
                       value={parcelCount}
-                      onChange={(e) => handleParcelCountChange(Math.max(1, parseInt(e.target.value) || 1))}
+                      onChange={(e) => handleParcelCountChange(Math.max(1, parseInt(e.target.value) || 1), false)}
+                      onBlur={handleParcelCountBlur}
                       className="text-center"
                       min="1"
                     />
@@ -744,7 +794,7 @@ export default function ContinueReceiving() {
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => handleParcelCountChange(parcelCount + 1)}
+                      onClick={() => handleParcelCountChange(parcelCount + 1, true)}
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
@@ -758,7 +808,7 @@ export default function ContinueReceiving() {
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => handleScannedParcelsChange(Math.max(0, scannedParcels - 1))}
+                      onClick={() => handleScannedParcelsChange(Math.max(0, scannedParcels - 1), true)}
                       disabled={scannedParcels === 0}
                     >
                       <Minus className="h-4 w-4" />
@@ -766,7 +816,8 @@ export default function ContinueReceiving() {
                     <Input
                       type="number"
                       value={scannedParcels}
-                      onChange={(e) => handleScannedParcelsChange(Math.max(0, Math.min(parcelCount, parseInt(e.target.value) || 0)))}
+                      onChange={(e) => handleScannedParcelsChange(Math.max(0, Math.min(parcelCount, parseInt(e.target.value) || 0)), false)}
+                      onBlur={handleScannedParcelsBlur}
                       className="text-center"
                       min="0"
                       max={parcelCount}
@@ -775,7 +826,7 @@ export default function ContinueReceiving() {
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => handleScannedParcelsChange(Math.min(parcelCount, scannedParcels + 1))}
+                      onClick={() => handleScannedParcelsChange(Math.min(parcelCount, scannedParcels + 1), true)}
                       disabled={scannedParcels >= parcelCount}
                     >
                       <Plus className="h-4 w-4" />
@@ -844,6 +895,7 @@ export default function ContinueReceiving() {
                 <Textarea
                   value={notes}
                   onChange={(e) => handleNotesChange(e.target.value)}
+                  onBlur={handleNotesBlur}
                   placeholder="Any initial observations..."
                   rows={2}
                 />
