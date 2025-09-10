@@ -103,9 +103,7 @@ export default function ContinueReceiving() {
       setReceivedBy(receiptData.receivedBy || "Employee #1");
       setCarrier(receiptData.carrier || shipment.endCarrier || shipment.carrier || "");
       setParcelCount(receiptData.parcelCount || shipment.totalUnits || 1);
-      // Load scannedParcels from trackingNumbers JSON field
-      const savedScannedParcels = receiptData.trackingNumbers?.scannedParcels;
-      setScannedParcels(savedScannedParcels !== undefined ? savedScannedParcels : receiptData.parcelCount || shipment.totalUnits || 1);
+      setScannedParcels(receiptData.parcelCount || shipment.totalUnits || 1);
       setNotes(receiptData.notes || "");
       
       // Initialize items from receipt
@@ -652,7 +650,7 @@ export default function ContinueReceiving() {
           <span className="text-sm font-medium">Overall Progress</span>
           <span className="text-sm text-muted-foreground">{Math.round(progress)}% Complete</span>
         </div>
-        <Progress value={progress} className="h-2" />
+        <Progress value={progress} className="h-3 bg-gray-200 dark:bg-gray-700" />
         <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
           <span>Parcels: {scannedParcels}/{parcelCount}</span>
           <span>Items Received: {totalReceivedQty}/{totalExpectedQty}</span>
@@ -821,7 +819,7 @@ export default function ContinueReceiving() {
                 </div>
                 <Progress 
                   value={(scannedParcels / parcelCount) * 100} 
-                  className="h-3"
+                  className="h-3 bg-gray-200 dark:bg-gray-700"
                 />
                 {scannedParcels === parcelCount && parcelCount > 0 && (
                   <div className="flex items-center gap-2 mt-2 text-green-600">
