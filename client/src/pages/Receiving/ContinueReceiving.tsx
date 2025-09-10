@@ -103,42 +103,49 @@ export default function ContinueReceiving() {
       setReceivedBy(receiptData.receivedBy || "Employee #1");
       setCarrier(receiptData.carrier || shipment.endCarrier || shipment.carrier || "");
       setParcelCount(receiptData.parcelCount || shipment.totalUnits || 1);
-      setScannedParcels(receiptData.parcelCount || shipment.totalUnits || 1);
+      
+      // Load scanned parcels from tracking numbers JSON if available
+      const trackingData = receiptData.trackingNumbers || {};
+      setScannedParcels(trackingData.scannedParcels || receiptData.receivedParcels || 0);
       setNotes(receiptData.notes || "");
       
-      // Initialize items from receipt
-      if (receipt.items && receipt.items.length > 0) {
-        // Merge receipt items with shipment items to get full data
-        const items = receipt.items.map((receiptItem: any) => {
-          // Find matching shipment item for name and SKU
-          const shipmentItem = shipment.items?.find((si: any) => 
-            si.id === receiptItem.itemId || si.id?.toString() === receiptItem.itemId?.toString()
+      // Initialize items from receipt - build complete item list from shipment items first
+      if (shipment.items && shipment.items.length > 0) {
+        const items = shipment.items.map((shipmentItem: any, index: number) => {
+          const itemId = shipmentItem.id ? shipmentItem.id.toString() : `item-${index}`;
+          
+          // Find corresponding receipt item data if it exists
+          const receiptItem = receipt.items?.find((ri: any) => 
+            ri.itemId?.toString() === shipmentItem.id?.toString() ||
+            ri.itemId === shipmentItem.id
           );
           
-          return {
-            id: receiptItem.itemId?.toString() || receiptItem.id?.toString(),
-            name: shipmentItem?.name || shipmentItem?.productName || `Item ${receiptItem.itemId || receiptItem.id}`,
-            sku: shipmentItem?.sku || '',
-            expectedQty: receiptItem.expectedQuantity || receiptItem.quantity || 1,
-            receivedQty: receiptItem.receivedQuantity || 0,
-            status: receiptItem.status || 'pending',
-            notes: receiptItem.notes || '',
-            checked: (receiptItem.receivedQuantity || 0) > 0
-          };
+          if (receiptItem) {
+            // Use saved receipt item data
+            return {
+              id: itemId,
+              name: shipmentItem.name || shipmentItem.productName || `Item ${index + 1}`,
+              sku: shipmentItem.sku || '',
+              expectedQty: receiptItem.expectedQuantity || shipmentItem.quantity || 1,
+              receivedQty: receiptItem.receivedQuantity || 0,
+              status: receiptItem.status || 'pending',
+              notes: receiptItem.notes || '',
+              checked: (receiptItem.receivedQuantity || 0) > 0
+            };
+          } else {
+            // No receipt data yet, use shipment defaults
+            return {
+              id: itemId,
+              name: shipmentItem.name || shipmentItem.productName || `Item ${index + 1}`,
+              sku: shipmentItem.sku || '',
+              expectedQty: shipmentItem.quantity || 1,
+              receivedQty: 0,
+              status: 'pending' as const,
+              notes: '',
+              checked: false
+            };
+          }
         });
-        setReceivingItems(items);
-      } else if (shipment.items && shipment.items.length > 0) {
-        // Fallback to shipment items if receipt has no items
-        const items = shipment.items.map((item: any, index: number) => ({
-          id: item.id ? item.id.toString() : `item-${index}`,
-          name: item.name || item.productName || `Item ${index + 1}`,
-          sku: item.sku,
-          expectedQty: item.quantity || 1,
-          receivedQty: 0,
-          status: 'pending' as const,
-          notes: '',
-          checked: false
-        }));
         setReceivingItems(items);
       }
       
@@ -148,12 +155,13 @@ export default function ContinueReceiving() {
       // Initialize from shipment if no receipt exists
       setCarrier(shipment.endCarrier || shipment.carrier || "");
       setParcelCount(shipment.totalUnits || 1);
+      setScannedParcels(0); // No parcels scanned yet for new receiving
       
       if (shipment.items && shipment.items.length > 0) {
         const items = shipment.items.map((item: any, index: number) => ({
           id: item.id ? item.id.toString() : `item-${index}`, // Convert to string for UI, but store original ID
           name: item.name || item.productName || `Item ${index + 1}`,
-          sku: item.sku,
+          sku: item.sku || '',
           expectedQty: item.quantity || 1,
           receivedQty: 0,
           status: 'pending' as const,
@@ -422,7 +430,7 @@ export default function ContinueReceiving() {
       consolidationId: shipment.consolidationId,
       receivedBy,
       parcelCount,
-      scannedParcels,
+      scannedParcels, // This will be saved in trackingNumbers JSON on backend
       carrier,
       notes,
       items: itemsToSave.map(item => ({
