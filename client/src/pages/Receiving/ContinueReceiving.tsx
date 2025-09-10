@@ -181,6 +181,30 @@ export default function ContinueReceiving() {
     }
   }, [scanMode]);
 
+  // Keep track of current state values for cleanup save
+  useEffect(() => {
+    if (shipment) {
+      // Update the ref with current state values whenever they change
+      const currentData = {
+        shipmentId: shipment.id,
+        consolidationId: shipment.consolidationId,
+        receivedBy,
+        parcelCount,
+        scannedParcels,
+        carrier,
+        notes,
+        items: receivingItems.map(item => ({
+          itemId: parseInt(item.id) || item.id,
+          expectedQuantity: item.expectedQty,
+          receivedQuantity: item.receivedQty,
+          status: item.status,
+          notes: item.notes
+        }))
+      };
+      lastSaveDataRef.current = currentData;
+    }
+  }, [shipment, receivedBy, parcelCount, scannedParcels, carrier, notes, receivingItems]);
+
   // Save data on component unmount to ensure changes are persisted
   useEffect(() => {
     return () => {
@@ -516,26 +540,55 @@ export default function ContinueReceiving() {
     triggerAutoSave(undefined, false); // Use debounced save
   };
 
-  // Number input handlers - save immediately for buttons
+  // Ref to track button save timer
+  const buttonSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Number input handlers - batch saves for rapid button clicks
   const handleParcelCountChange = (value: number, isButton?: boolean) => {
     setParcelCount(value);
     if (isButton) {
-      triggerAutoSave(undefined, true); // Immediate save for buttons
+      // Clear any existing button save timer
+      if (buttonSaveTimerRef.current) {
+        clearTimeout(buttonSaveTimerRef.current);
+      }
+      // Set a short delay to batch rapid clicks (300ms)
+      buttonSaveTimerRef.current = setTimeout(() => {
+        triggerAutoSave(undefined, true);
+        buttonSaveTimerRef.current = null;
+      }, 300);
     }
   };
   
   const handleParcelCountBlur = () => {
+    // Clear button timer if exists
+    if (buttonSaveTimerRef.current) {
+      clearTimeout(buttonSaveTimerRef.current);
+      buttonSaveTimerRef.current = null;
+    }
     triggerAutoSave(undefined, false); // Save on blur for manual input
   };
 
   const handleScannedParcelsChange = (value: number, isButton?: boolean) => {
     setScannedParcels(value);
     if (isButton) {
-      triggerAutoSave(undefined, true); // Immediate save for buttons
+      // Clear any existing button save timer
+      if (buttonSaveTimerRef.current) {
+        clearTimeout(buttonSaveTimerRef.current);
+      }
+      // Set a short delay to batch rapid clicks (300ms)
+      buttonSaveTimerRef.current = setTimeout(() => {
+        triggerAutoSave(undefined, true);
+        buttonSaveTimerRef.current = null;
+      }, 300);
     }
   };
   
   const handleScannedParcelsBlur = () => {
+    // Clear button timer if exists
+    if (buttonSaveTimerRef.current) {
+      clearTimeout(buttonSaveTimerRef.current);
+      buttonSaveTimerRef.current = null;
+    }
     triggerAutoSave(undefined, false); // Save on blur for manual input
   };
 
