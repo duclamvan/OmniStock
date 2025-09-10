@@ -82,7 +82,7 @@ export default function ContinueReceiving() {
   });
 
   // Fetch existing receipt if available - always fetch fresh data
-  const { data: receipt } = useQuery({
+  const { data: receipt, isLoading: receiptLoading } = useQuery({
     queryKey: [`/api/imports/receipts/by-shipment/${id}`],
     queryFn: async () => {
       const response = await fetch(`/api/imports/receipts/by-shipment/${id}`);
@@ -106,7 +106,8 @@ export default function ContinueReceiving() {
       
       // Load scanned parcels from tracking numbers JSON if available
       const trackingData = receiptData.trackingNumbers || {};
-      setScannedParcels(trackingData.scannedParcels || receiptData.receivedParcels || 0);
+      const savedScannedParcels = trackingData.scannedParcels || receiptData.receivedParcels || 0;
+      setScannedParcels(savedScannedParcels);
       setNotes(receiptData.notes || "");
       
       // Initialize items from receipt - build complete item list from shipment items first
@@ -151,8 +152,8 @@ export default function ContinueReceiving() {
       
       // Start on step 2 since we already have receipt data
       setCurrentStep(2);
-    } else if (shipment && !receipt) {
-      // Initialize from shipment if no receipt exists
+    } else if (shipment && !receipt && !receiptLoading) {
+      // Initialize from shipment if no receipt exists (only after receipt loading is complete)
       setCarrier(shipment.endCarrier || shipment.carrier || "");
       setParcelCount(shipment.totalUnits || 1);
       setScannedParcels(0); // No parcels scanned yet for new receiving
@@ -171,7 +172,7 @@ export default function ContinueReceiving() {
         setReceivingItems(items);
       }
     }
-  }, [shipment, receipt]);
+  }, [shipment, receipt, receiptLoading]);
 
   // Auto-focus barcode input in scan mode
   useEffect(() => {
