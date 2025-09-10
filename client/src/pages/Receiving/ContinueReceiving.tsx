@@ -181,6 +181,26 @@ export default function ContinueReceiving() {
     }
   }, [scanMode]);
 
+  // Save data on component unmount to ensure changes are persisted
+  useEffect(() => {
+    return () => {
+      // Clear any pending debounce timer
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+      
+      // Save any pending data synchronously before unmount
+      if (lastSaveDataRef.current && shipment) {
+        // Use navigator.sendBeacon for reliable unmount saves
+        const saveUrl = '/api/imports/receipts/auto-save';
+        const blob = new Blob([JSON.stringify(lastSaveDataRef.current)], {
+          type: 'application/json'
+        });
+        navigator.sendBeacon(saveUrl, blob);
+      }
+    };
+  }, [shipment]);
+
   // Handle barcode scan
   const handleBarcodeScan = (value: string) => {
     if (currentStep === 1) {
@@ -405,6 +425,7 @@ export default function ContinueReceiving() {
   // Use useRef to maintain stable debounce timer across renders
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const lastSaveDataRef = useRef<any>(null);
   
   // Immediate save function for button clicks
   const immediateAutoSave = useCallback((data: any) => {
@@ -413,6 +434,8 @@ export default function ContinueReceiving() {
       clearTimeout(autoSaveTimerRef.current);
       autoSaveTimerRef.current = null;
     }
+    // Store the data for potential cleanup save
+    lastSaveDataRef.current = data;
     setIsSaving(true);
     autoSaveMutation.mutate(data, {
       onSettled: () => setIsSaving(false)
@@ -425,6 +448,9 @@ export default function ContinueReceiving() {
       immediateAutoSave(data);
       return;
     }
+    
+    // Store the data for potential cleanup save
+    lastSaveDataRef.current = data;
     
     // Clear any existing timer
     if (autoSaveTimerRef.current) {
@@ -464,6 +490,9 @@ export default function ContinueReceiving() {
         notes: item.notes
       }))
     };
+    
+    // Always store the latest data for cleanup save
+    lastSaveDataRef.current = progressData;
     
     debouncedAutoSave(progressData, immediate);
   }, [shipment, receivedBy, parcelCount, scannedParcels, carrier, notes, receivingItems, debouncedAutoSave]);
@@ -1035,7 +1064,7 @@ export default function ContinueReceiving() {
                             onClick={() => {
                               const updatedItems = receivingItems.map(i => 
                                 i.id === item.id 
-                                  ? { ...i, receivedQty: i.expectedQty, status: 'complete', checked: true }
+                                  ? { ...i, receivedQty: i.expectedQty, status: 'complete' as const, checked: true }
                                   : i
                               );
                               setReceivingItems(updatedItems);
