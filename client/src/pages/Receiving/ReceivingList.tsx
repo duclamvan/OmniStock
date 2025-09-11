@@ -967,8 +967,7 @@ export default function ReceivingList() {
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap mb-6">
           <button
             onClick={() => setActiveTab('to-receive')}
             className={`
@@ -1040,27 +1039,6 @@ export default function ReceivingList() {
               ({completedShipments.length})
             </span>
           </button>
-          </div>
-          
-          {/* Expand All Button - only show for receiving tab */}
-          {activeTab === 'receiving' && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                if (expandAllReceiving) {
-                  setExpandedShipments(new Set());
-                  setExpandAllReceiving(false);
-                } else {
-                  const allIds = new Set<number>(receivingShipments.map((s: any) => s.id));
-                  setExpandedShipments(allIds);
-                  setExpandAllReceiving(true);
-                }
-              }}
-            >
-              {expandAllReceiving ? 'Collapse All' : 'Expand All'}
-            </Button>
-          )}
         </div>
 
         <TabsContent value="to-receive" className="mt-6">
