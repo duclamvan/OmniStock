@@ -1310,7 +1310,7 @@ export default function ReceivingList() {
                           ) : (
                             <div className="rounded-lg border bg-card overflow-x-auto">
                               <div className="p-3 space-y-2">
-                                <h4 className="text-sm font-semibold text-muted-foreground mb-2">Received Items:</h4>
+                                <h4 className="text-sm font-semibold text-muted-foreground mb-2">Received Items: ({shipment.items.length})</h4>
                                 {shipment.items.map((item: any, index: number) => {
                                   // Find receipt data for this item
                                   const receiptItem = receiptItems.find((ri: any) => 
