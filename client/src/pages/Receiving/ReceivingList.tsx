@@ -1323,7 +1323,6 @@ export default function ReceivingList() {
                                   return (
                                     <div key={index} className="flex items-center justify-between py-2 px-3 hover:bg-muted/50 rounded">
                                       <div className="flex items-center gap-2">
-                                        <CheckSquare className="h-4 w-4 text-muted-foreground" />
                                         <span className="text-sm font-medium">
                                           {item.name} - <span className={`font-semibold ${
                                             receivedQty === expectedQty ? 'text-green-600' : 
