@@ -1423,6 +1423,8 @@ router.post("/shipments", async (req, res) => {
       shippingCost: req.body.shippingCost || 0,
       shippingCostCurrency: req.body.shippingCostCurrency || 'USD',
       insuranceValue: req.body.insuranceValue || 0,
+      totalUnits: req.body.totalUnits || 1,
+      unitType: req.body.unitType || 'packages',
       notes: isQuickShip ? 'Quick shipped - tracking can be updated later' : (req.body.notes || null),
       status: isQuickShip ? "in transit" : "pending", // Quick Ship goes directly to in transit
       createdAt: new Date(),
