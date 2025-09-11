@@ -166,7 +166,7 @@ export default function ReceivingList() {
   const [carrierFilter, setCarrierFilter] = useState("all");
   const [shipmentTypeFilter, setShipmentTypeFilter] = useState("all"); // Added shipmentTypeFilter
   const [cartonTypeFilter, setCartonTypeFilter] = useState("all"); // Added cartonTypeFilter
-  const [expandAllReceiving, setExpandAllReceiving] = useState(false);
+  const [expandAllReceiving, setExpandAllReceiving] = useState(true);
   const [receiptDataMap, setReceiptDataMap] = useState<Map<number, any>>(new Map());
   
   // Move back confirmation dialog state
@@ -473,6 +473,15 @@ export default function ReceivingList() {
       setBarcodeScan("");
     }
   }, [barcodeScan]);
+
+  // Auto-expand receiving items when they load or when switching to receiving tab
+  useEffect(() => {
+    if (activeTab === 'receiving' && receivingShipments && receivingShipments.length > 0) {
+      const allIds = new Set<number>(receivingShipments.map((s: any) => s.id));
+      setExpandedShipments(allIds);
+      setExpandAllReceiving(true);
+    }
+  }, [activeTab, receivingShipments]);
 
   // Toggle shipment selection
   const toggleShipmentSelection = (id: number) => {
@@ -958,7 +967,8 @@ export default function ReceivingList() {
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <div className="flex gap-2 flex-wrap mb-6">
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => setActiveTab('to-receive')}
             className={`
@@ -1030,6 +1040,27 @@ export default function ReceivingList() {
               ({completedShipments.length})
             </span>
           </button>
+          </div>
+          
+          {/* Expand All Button - only show for receiving tab */}
+          {activeTab === 'receiving' && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (expandAllReceiving) {
+                  setExpandedShipments(new Set());
+                  setExpandAllReceiving(false);
+                } else {
+                  const allIds = new Set<number>(receivingShipments.map((s: any) => s.id));
+                  setExpandedShipments(allIds);
+                  setExpandAllReceiving(true);
+                }
+              }}
+            >
+              {expandAllReceiving ? 'Collapse All' : 'Expand All'}
+            </Button>
+          )}
         </div>
 
         <TabsContent value="to-receive" className="mt-6">
@@ -1225,25 +1256,6 @@ export default function ReceivingList() {
             </div>
           ) : (
             <div className="space-y-4">
-              {/* Expand All Button */}
-              <div className="flex justify-end mb-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    if (expandAllReceiving) {
-                      setExpandedShipments(new Set());
-                      setExpandAllReceiving(false);
-                    } else {
-                      const allIds = new Set<number>(receivingShipments.map((s: any) => s.id));
-                      setExpandedShipments(allIds);
-                      setExpandAllReceiving(true);
-                    }
-                  }}
-                >
-                  {expandAllReceiving ? 'Collapse All' : 'Expand All'}
-                </Button>
-              </div>
               
               {receivingShipments.map((shipment: any) => {
                 const isExpanded = expandedShipments.has(shipment.id);
