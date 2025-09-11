@@ -166,6 +166,8 @@ export default function ReceivingList() {
   const [carrierFilter, setCarrierFilter] = useState("all");
   const [shipmentTypeFilter, setShipmentTypeFilter] = useState("all"); // Added shipmentTypeFilter
   const [cartonTypeFilter, setCartonTypeFilter] = useState("all"); // Added cartonTypeFilter
+  const [expandAllReceiving, setExpandAllReceiving] = useState(false);
+  const [receiptDataMap, setReceiptDataMap] = useState<Map<number, any>>(new Map());
   
   // Move back confirmation dialog state
   const [showMoveBackDialog, setShowMoveBackDialog] = useState(false);
@@ -220,13 +222,38 @@ export default function ReceivingList() {
     }
   });
 
-  // Fetch shipments currently being received
+  // Fetch shipments currently being received with receipt data
   const { data: receivingShipments = [], isLoading: isLoadingReceiving } = useQuery({
     queryKey: ['/api/imports/shipments/by-status/receiving'],
     queryFn: async () => {
       const response = await fetch('/api/imports/shipments/by-status/receiving');
       if (!response.ok) throw new Error('Failed to fetch receiving shipments');
-      return response.json();
+      const shipments = await response.json();
+      
+      // Fetch receipt data for each shipment
+      const receiptsPromises = shipments.map(async (shipment: any) => {
+        try {
+          const receiptResponse = await fetch(`/api/imports/receipts/by-shipment/${shipment.id}`);
+          if (receiptResponse.ok) {
+            const data = await receiptResponse.json();
+            return { shipmentId: shipment.id, receiptData: data };
+          }
+        } catch (error) {
+          console.error(`Error fetching receipt for shipment ${shipment.id}:`, error);
+        }
+        return { shipmentId: shipment.id, receiptData: null };
+      });
+      
+      const receipts = await Promise.all(receiptsPromises);
+      const newReceiptMap = new Map();
+      receipts.forEach(({ shipmentId, receiptData }) => {
+        if (receiptData) {
+          newReceiptMap.set(shipmentId, receiptData);
+        }
+      });
+      setReceiptDataMap(newReceiptMap);
+      
+      return shipments;
     }
   });
 
@@ -1198,13 +1225,52 @@ export default function ReceivingList() {
             </div>
           ) : (
             <div className="space-y-4">
+              {/* Expand All Button */}
+              <div className="flex justify-end mb-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (expandAllReceiving) {
+                      setExpandedShipments(new Set());
+                      setExpandAllReceiving(false);
+                    } else {
+                      const allIds = new Set<number>(receivingShipments.map((s: any) => s.id));
+                      setExpandedShipments(allIds);
+                      setExpandAllReceiving(true);
+                    }
+                  }}
+                >
+                  {expandAllReceiving ? 'Collapse All' : 'Expand All'}
+                </Button>
+              </div>
+              
               {receivingShipments.map((shipment: any) => {
                 const isExpanded = expandedShipments.has(shipment.id);
+                const receiptData = receiptDataMap.get(shipment.id);
+                const receiptItems = receiptData?.items || [];
+                
                 return (
                   <Card key={shipment.id} className="border hover:shadow-md transition-shadow">
                     <CardContent className="p-4">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div className="flex items-center gap-3 flex-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="p-1"
+                            onClick={() => {
+                              const newExpanded = new Set(expandedShipments);
+                              if (isExpanded) {
+                                newExpanded.delete(shipment.id);
+                              } else {
+                                newExpanded.add(shipment.id);
+                              }
+                              setExpandedShipments(newExpanded);
+                            }}
+                          >
+                            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          </Button>
                           <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100">
                             Currently Receiving
                           </Badge>
@@ -1243,6 +1309,55 @@ export default function ReceivingList() {
                           </DropdownMenu>
                         </div>
                       </div>
+                      
+                      {/* Expanded Items List */}
+                      {isExpanded && (
+                        <div className="mt-4 sm:pl-11">
+                          {(!shipment.items || shipment.items.length === 0) ? (
+                            <div className="text-center py-4 bg-muted/30 rounded-lg">
+                              <p className="text-muted-foreground text-sm">No items details available</p>
+                            </div>
+                          ) : (
+                            <div className="rounded-lg border bg-card overflow-x-auto">
+                              <div className="p-3 space-y-2">
+                                <h4 className="text-sm font-semibold text-muted-foreground mb-2">Received Items:</h4>
+                                {shipment.items.map((item: any, index: number) => {
+                                  // Find receipt data for this item
+                                  const receiptItem = receiptItems.find((ri: any) => 
+                                    ri.itemId === item.id || ri.itemId?.toString() === item.id?.toString()
+                                  );
+                                  const receivedQty = receiptItem?.receivedQuantity || 0;
+                                  const expectedQty = receiptItem?.expectedQuantity || item.quantity || 0;
+                                  const status = receiptItem?.status || 'pending';
+                                  
+                                  return (
+                                    <div key={index} className="flex items-center justify-between py-2 px-3 hover:bg-muted/50 rounded">
+                                      <div className="flex items-center gap-2">
+                                        <CheckSquare className="h-4 w-4 text-muted-foreground" />
+                                        <span className="text-sm font-medium">
+                                          {item.name} - <span className={`font-semibold ${
+                                            receivedQty === expectedQty ? 'text-green-600' : 
+                                            receivedQty > 0 ? 'text-amber-600' : 'text-gray-600'
+                                          }`}>{receivedQty}/{expectedQty} pcs</span>
+                                        </span>
+                                      </div>
+                                      <Badge 
+                                        variant={status === 'complete' ? 'default' : status === 'partial' ? 'secondary' : 'outline'}
+                                        className="text-xs"
+                                      >
+                                        {status === 'complete' ? 'Complete' : 
+                                         status === 'partial' ? 'Partial' : 
+                                         status === 'damaged' ? 'Damaged' :
+                                         status === 'missing' ? 'Missing' : 'Pending'}
+                                      </Badge>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 );
