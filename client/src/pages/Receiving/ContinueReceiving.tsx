@@ -63,10 +63,6 @@ export default function ContinueReceiving() {
   const [receivingItems, setReceivingItems] = useState<ReceivingItem[]>([]);
   const [notes, setNotes] = useState("");
   
-  // Determine if this is a pallet shipment
-  const isPalletShipment = shipment?.unitType?.toLowerCase().includes('pallet') || false;
-  const unitLabel = isPalletShipment ? 'Pallets' : 'Parcels';
-  
   // UI state
   const [currentStep, setCurrentStep] = useState(1);
   const [scanMode, setScanMode] = useState(false);
@@ -99,6 +95,10 @@ export default function ContinueReceiving() {
     refetchOnWindowFocus: false, // Don't refetch on window focus
     staleTime: 0 // Consider data stale immediately
   });
+
+  // Determine if this is a pallet shipment
+  const isPalletShipment = shipment?.unitType?.toLowerCase().includes('pallet') || false;
+  const unitLabel = isPalletShipment ? 'Pallets' : 'Parcels';
 
   // Initialize data when shipment loads
   useEffect(() => {
@@ -868,7 +868,7 @@ export default function ContinueReceiving() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                 <div>
                   <Label>Expected {unitLabel}</Label>
-                  <div className="flex items-center gap-2"></div>
+                  <div className="flex items-center gap-2">
                     <Button
                       type="button"
                       variant="outline"
@@ -898,7 +898,7 @@ export default function ContinueReceiving() {
 
                 <div>
                   <Label>Received {unitLabel} (Manual)</Label>
-                  <div className="flex items-center gap-2"></div>
+                  <div className="flex items-center gap-2">
                     <Button
                       type="button"
                       variant="outline"
