@@ -33,7 +33,9 @@ import {
   Check,
   AlertTriangle,
   X,
-  Layers
+  Layers,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
@@ -68,6 +70,8 @@ export default function ContinueReceiving() {
   const [scanMode, setScanMode] = useState(false);
   const [barcodeScan, setBarcodeScan] = useState("");
   const [showAllItems, setShowAllItems] = useState(true);
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  const [expandAll, setExpandAll] = useState(false);
 
   // Fetch shipment details
   const { data: shipment, isLoading } = useQuery({
@@ -460,6 +464,31 @@ export default function ContinueReceiving() {
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const lastSaveDataRef = useRef<any>(null);
+  
+  // Toggle expanded state for an item
+  const toggleItemExpanded = (itemId: string) => {
+    setExpandedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
+  };
+  
+  // Toggle expand all items
+  const toggleExpandAll = () => {
+    if (expandAll) {
+      setExpandedItems(new Set());
+      setExpandAll(false);
+    } else {
+      const allItemIds = receivingItems.map(item => item.id);
+      setExpandedItems(new Set(allItemIds));
+      setExpandAll(true);
+    }
+  };
   
   // Immediate save function for button clicks
   const immediateAutoSave = useCallback((data: any) => {
@@ -1033,6 +1062,13 @@ export default function ContinueReceiving() {
                   <Button
                     variant="outline"
                     size="sm"
+                    onClick={toggleExpandAll}
+                  >
+                    {expandAll ? 'Collapse All' : 'Expand All'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => setShowAllItems(!showAllItems)}
                   >
                     {showAllItems ? 'Show Active' : 'Show All'}
@@ -1081,111 +1117,140 @@ export default function ContinueReceiving() {
                   );
                   return filteredItems;
                 })()
-                  .map((item) => (
-                    <div key={item.id} className="border rounded-lg p-3 bg-white dark:bg-gray-900">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-medium">{item.name}</h4>
-                            <Badge className={`text-xs ${getItemStatusColor(item.status)}`}>
-                              {item.status === 'partial_damaged' ? 'PARTIAL DAMAGED' : 
-                               item.status === 'partial_missing' ? 'PARTIAL MISSING' : 
-                               item.status.toUpperCase()}
-                            </Badge>
+                  .map((item) => {
+                    const isExpanded = expandedItems.has(item.id);
+                    return (
+                      <div key={item.id} className="border rounded-lg bg-white dark:bg-gray-900">
+                        {/* Collapsible Header */}
+                        <div 
+                          className="flex items-center justify-between p-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
+                          onClick={() => toggleItemExpanded(item.id)}
+                        >
+                          <div className="flex items-center gap-2 flex-1">
+                            {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                            <span className="font-medium">{item.name}</span>
+                            <span className="text-sm text-muted-foreground">- {item.receivedQty}/{item.expectedQty} pcs</span>
+                            {item.sku && (
+                              <span className="text-xs text-muted-foreground font-mono">
+                                (SKU: {item.sku})
+                              </span>
+                            )}
                           </div>
-                          {item.sku && (
-                            <p className="text-xs text-muted-foreground font-mono">
-                              SKU: {item.sku}
-                            </p>
-                          )}
+                          <Badge className={`text-xs ${getItemStatusColor(item.status)}`}>
+                            {item.status === 'partial_damaged' ? 'PARTIAL DAMAGED' : 
+                             item.status === 'partial_missing' ? 'PARTIAL MISSING' : 
+                             item.status.toUpperCase()}
+                          </Badge>
                         </div>
+                        
+                        {/* Expandable Content */}
+                        {isExpanded && (
+                          <div className="px-3 pb-3 border-t">
+                            <div className="flex items-center gap-3 mt-3">
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    updateItemQuantity(item.id, -1);
+                                  }}
+                                  disabled={item.receivedQty === 0}
+                                >
+                                  <Minus className="h-3 w-3" />
+                                </Button>
+                                <span className="text-sm font-mono w-16 text-center">
+                                  {item.receivedQty}/{item.expectedQty}
+                                </span>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    updateItemQuantity(item.id, 1);
+                                  }}
+                                >
+                                  <Plus className="h-3 w-3" />
+                                </Button>
+                              </div>
+
+                              <div className="flex gap-2 flex-wrap">
+                                <Button
+                                  variant={item.status === 'complete' ? "default" : "outline"}
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const updatedItems = receivingItems.map(i => 
+                                      i.id === item.id 
+                                        ? { ...i, receivedQty: i.expectedQty, status: 'complete' as const, checked: true }
+                                        : i
+                                    );
+                                    setReceivingItems(updatedItems);
+                                    triggerAutoSave(updatedItems);
+                                  }}
+                                  className={`min-w-[60px] ${
+                                    item.status === 'complete'
+                                      ? 'bg-green-600 hover:bg-green-700 border-green-600 text-white'
+                                      : 'border-green-200 hover:border-green-300 hover:bg-green-50 text-green-700'
+                                  }`}
+                                >
+                                  <Check className="h-3 w-3 mr-1" />
+                                  OK
+                                </Button>
+                                <Button
+                                  variant={item.status === 'damaged' || item.status === 'partial_damaged' ? "destructive" : "outline"}
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleItemStatus(item.id, 'damaged');
+                                  }}
+                                  className={`min-w-[60px] ${
+                                    item.status === 'damaged' || item.status === 'partial_damaged'
+                                      ? 'bg-red-600 hover:bg-red-700 border-red-600 text-white'
+                                      : 'border-red-200 hover:border-red-300 hover:bg-red-50 text-red-700'
+                                  }`}
+                                >
+                                  <AlertTriangle className="h-3 w-3 mr-1" />
+                                  DMG
+                                </Button>
+                                <Button
+                                  variant={item.status === 'missing' || item.status === 'partial_missing' ? "secondary" : "outline"}
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleItemStatus(item.id, 'missing');
+                                  }}
+                                  className={`min-w-[60px] ${
+                                    item.status === 'missing' || item.status === 'partial_missing'
+                                      ? 'bg-gray-600 hover:bg-gray-700 border-gray-600 text-white'
+                                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700'
+                                  }`}
+                                >
+                                  <X className="h-3 w-3 mr-1" />
+                                  MISS
+                                </Button>
+                              </div>
+                            </div>
+
+                            {(item.status === 'damaged' || item.status === 'missing' || item.status === 'partial_damaged' || item.status === 'partial_missing' || item.notes) && (
+                              <div className="mt-2">
+                                <Input
+                                  value={item.notes || ''}
+                                  onChange={(e) => {
+                                    e.stopPropagation();
+                                    updateItemNotes(item.id, e.target.value);
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                  placeholder="Add notes..."
+                                  className="text-sm"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
-
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => updateItemQuantity(item.id, -1)}
-                            disabled={item.receivedQty === 0}
-                          >
-                            <Minus className="h-3 w-3" />
-                          </Button>
-                          <span className="text-sm font-mono w-16 text-center">
-                            {item.receivedQty}/{item.expectedQty}
-                          </span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => updateItemQuantity(item.id, 1)}
-                          >
-                            <Plus className="h-3 w-3" />
-                          </Button>
-                        </div>
-
-                        <div className="flex gap-2 flex-wrap">
-                          <Button
-                            variant={item.status === 'complete' ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => {
-                              const updatedItems = receivingItems.map(i => 
-                                i.id === item.id 
-                                  ? { ...i, receivedQty: i.expectedQty, status: 'complete' as const, checked: true }
-                                  : i
-                              );
-                              setReceivingItems(updatedItems);
-                              triggerAutoSave(updatedItems);
-                            }}
-                            className={`min-w-[60px] ${
-                              item.status === 'complete'
-                                ? 'bg-green-600 hover:bg-green-700 border-green-600 text-white'
-                                : 'border-green-200 hover:border-green-300 hover:bg-green-50 text-green-700'
-                            }`}
-                          >
-                            <Check className="h-3 w-3 mr-1" />
-                            OK
-                          </Button>
-                          <Button
-                            variant={item.status === 'damaged' || item.status === 'partial_damaged' ? "destructive" : "outline"}
-                            size="sm"
-                            onClick={() => toggleItemStatus(item.id, 'damaged')}
-                            className={`min-w-[60px] ${
-                              item.status === 'damaged' || item.status === 'partial_damaged'
-                                ? 'bg-red-600 hover:bg-red-700 border-red-600 text-white'
-                                : 'border-red-200 hover:border-red-300 hover:bg-red-50 text-red-700'
-                            }`}
-                          >
-                            <AlertTriangle className="h-3 w-3 mr-1" />
-                            DMG
-                          </Button>
-                          <Button
-                            variant={item.status === 'missing' || item.status === 'partial_missing' ? "secondary" : "outline"}
-                            size="sm"
-                            onClick={() => toggleItemStatus(item.id, 'missing')}
-                            className={`min-w-[60px] ${
-                              item.status === 'missing' || item.status === 'partial_missing'
-                                ? 'bg-gray-600 hover:bg-gray-700 border-gray-600 text-white'
-                                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700'
-                            }`}
-                          >
-                            <X className="h-3 w-3 mr-1" />
-                            MISS
-                          </Button>
-                        </div>
-                      </div>
-
-                      {(item.status === 'damaged' || item.status === 'missing' || item.status === 'partial_damaged' || item.status === 'partial_missing' || item.notes) && (
-                        <div className="mt-2">
-                          <Input
-                            value={item.notes || ''}
-                            onChange={(e) => updateItemNotes(item.id, e.target.value)}
-                            placeholder="Add notes..."
-                            className="text-sm"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
               </div>
 
               {(() => {
