@@ -32,7 +32,8 @@ import {
   ArrowRight,
   Check,
   AlertTriangle,
-  X
+  X,
+  Layers
 } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
@@ -61,6 +62,10 @@ export default function ContinueReceiving() {
   const [scannedParcels, setScannedParcels] = useState(0);
   const [receivingItems, setReceivingItems] = useState<ReceivingItem[]>([]);
   const [notes, setNotes] = useState("");
+  
+  // Determine if this is a pallet shipment
+  const isPalletShipment = shipment?.unitType?.toLowerCase().includes('pallet') || false;
+  const unitLabel = isPalletShipment ? 'Pallets' : 'Parcels';
   
   // UI state
   const [currentStep, setCurrentStep] = useState(1);
@@ -237,8 +242,8 @@ export default function ContinueReceiving() {
       const newCount = Math.min(scannedParcels + 1, parcelCount);
       handleScannedParcelsChange(newCount, true); // Immediate save for scans with correct value
       toast({
-        title: "Parcel Scanned",
-        description: `Scanned ${newCount} of ${parcelCount} parcels`
+        title: `${isPalletShipment ? 'Pallet' : 'Parcel'} Scanned`,
+        description: `Scanned ${newCount} of ${parcelCount} ${unitLabel.toLowerCase()}`
       });
     } else if (currentStep === 2) {
       // Step 2: Scanning item barcodes
@@ -798,7 +803,7 @@ export default function ContinueReceiving() {
         </div>
         <Progress value={progress} className="h-3 bg-gray-200 dark:bg-gray-700" />
         <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
-          <span>Parcels: {scannedParcels}/{parcelCount}</span>
+          <span>{unitLabel}: {scannedParcels}/{parcelCount}</span>
           <span>Items Received: {totalReceivedQty}/{totalExpectedQty}</span>
           <span>Verified: {checkedItemsCount}/{totalItems} items</span>
         </div>
@@ -830,8 +835,8 @@ export default function ContinueReceiving() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                Parcel Verification
+                {isPalletShipment ? <Layers className="h-5 w-5" /> : <Package className="h-5 w-5" />}
+                {unitLabel} Verification
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -862,8 +867,8 @@ export default function ContinueReceiving() {
               {/* Parcel Count */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                 <div>
-                  <Label>Expected Parcels</Label>
-                  <div className="flex items-center gap-2">
+                  <Label>Expected {unitLabel}</Label>
+                  <div className="flex items-center gap-2"></div>
                     <Button
                       type="button"
                       variant="outline"
@@ -892,8 +897,8 @@ export default function ContinueReceiving() {
                 </div>
 
                 <div>
-                  <Label>Received Parcels (Manual)</Label>
-                  <div className="flex items-center gap-2">
+                  <Label>Received {unitLabel} (Manual)</Label>
+                  <div className="flex items-center gap-2"></div>
                     <Button
                       type="button"
                       variant="outline"
@@ -937,7 +942,7 @@ export default function ContinueReceiving() {
                             handleBarcodeScan(barcodeScan);
                           }
                         }}
-                        placeholder="Scan or type barcode"
+                        placeholder={`Scan or type ${isPalletShipment ? 'pallet' : 'parcel'} barcode`}
                         className={scanMode ? 'border-blue-500 ring-2 ring-blue-200' : ''}
                       />
                       <ScanLine className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -962,7 +967,7 @@ export default function ContinueReceiving() {
               {/* Parcel Progress */}
               <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium">Parcels Scanned</span>
+                  <span className="font-medium">{unitLabel} Scanned</span>
                   <span className="text-2xl font-bold text-green-600">
                     {scannedParcels} / {parcelCount}
                   </span>
@@ -974,7 +979,7 @@ export default function ContinueReceiving() {
                 {scannedParcels === parcelCount && parcelCount > 0 && (
                   <div className="flex items-center gap-2 mt-2 text-green-600">
                     <CheckCircle2 className="h-4 w-4" />
-                    <span className="text-sm">All parcels verified!</span>
+                    <span className="text-sm">All {unitLabel.toLowerCase()} verified!</span>
                   </div>
                 )}
               </div>
