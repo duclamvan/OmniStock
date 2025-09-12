@@ -3233,9 +3233,34 @@ router.post("/receipts/complete/:receiptId", async (req, res) => {
       });
     }
     
+    // Helper function to calculate item status
+    const getItemStatus = (item: typeof receiptItemsList[0]) => {
+      const expectedQty = item.expectedQuantity || 0;
+      const receivedQty = item.receivedQuantity || 0;
+      const damagedQty = item.damagedQuantity || 0;
+      const missingQty = item.missingQuantity || 0;
+      
+      if (receivedQty === expectedQty && damagedQty === 0 && missingQty === 0) {
+        return 'complete';
+      } else if (damagedQty > 0 && receivedQty === 0) {
+        return 'damaged';
+      } else if (damagedQty > 0) {
+        return 'partial_damaged';
+      } else if (missingQty > 0 && receivedQty === 0) {
+        return 'missing';
+      } else if (missingQty > 0) {
+        return 'partial_missing';
+      } else if (receivedQty > 0 && receivedQty < expectedQty) {
+        return 'partial';
+      } else if (receivedQty === 0) {
+        return 'pending';
+      }
+      return 'pending';
+    };
+    
     // Check if all items have been processed (not pending)
     const pendingItems = receiptItemsList.filter(item => 
-      item.status === 'pending'
+      getItemStatus(item) === 'pending'
     );
     
     if (pendingItems.length > 0) {
@@ -3247,14 +3272,16 @@ router.post("/receipts/complete/:receiptId", async (req, res) => {
     
     // Calculate statistics for the receipt
     const totalItems = receiptItemsList.length;
-    const completeItems = receiptItemsList.filter(item => item.status === 'complete').length;
-    const damagedItems = receiptItemsList.filter(item => 
-      item.status === 'damaged' || item.status === 'partial_damaged'
-    ).length;
-    const missingItems = receiptItemsList.filter(item => 
-      item.status === 'missing' || item.status === 'partial_missing'
-    ).length;
-    const partialItems = receiptItemsList.filter(item => item.status === 'partial').length;
+    const completeItems = receiptItemsList.filter(item => getItemStatus(item) === 'complete').length;
+    const damagedItems = receiptItemsList.filter(item => {
+      const status = getItemStatus(item);
+      return status === 'damaged' || status === 'partial_damaged';
+    }).length;
+    const missingItems = receiptItemsList.filter(item => {
+      const status = getItemStatus(item);
+      return status === 'missing' || status === 'partial_missing';
+    }).length;
+    const partialItems = receiptItemsList.filter(item => getItemStatus(item) === 'partial').length;
     
     // Begin transaction to update both receipt and shipment
     await db.transaction(async (tx) => {
