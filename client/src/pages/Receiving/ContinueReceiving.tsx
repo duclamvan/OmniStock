@@ -57,6 +57,7 @@ interface ReceivingItem {
   status: 'pending' | 'complete' | 'partial' | 'damaged' | 'missing' | 'partial_damaged' | 'partial_missing';
   notes?: string;
   checked: boolean;
+  imageUrl?: string;
 }
 
 export default function ContinueReceiving() {
@@ -185,7 +186,8 @@ export default function ContinueReceiving() {
               receivedQty,
               status: calculatedStatus,
               notes: receiptItem.notes || '',
-              checked: receivedQty > 0
+              checked: receivedQty > 0,
+              imageUrl: shipmentItem.imageUrl || ''
             };
           } else {
             // No receipt data yet, use shipment defaults
@@ -197,7 +199,8 @@ export default function ContinueReceiving() {
               receivedQty: 0,
               status: 'pending' as const,
               notes: '',
-              checked: false
+              checked: false,
+              imageUrl: shipmentItem.imageUrl || ''
             };
           }
         });
@@ -222,7 +225,8 @@ export default function ContinueReceiving() {
           receivedQty: 0,
           status: 'pending' as const,
           notes: '',
-          checked: false
+          checked: false,
+          imageUrl: item.imageUrl || ''
         }));
         setReceivingItems(items);
       }
@@ -1323,8 +1327,27 @@ export default function ContinueReceiving() {
                         `}
                       >
                         <div className="p-4">
-                          {/* Header Row with Checkbox, Name, and Status Badge */}
+                          {/* Header Row with Image, Status Icon, Name, and Status Badge */}
                           <div className="flex items-start gap-3 mb-3">
+                            {/* Product Image */}
+                            <div className="flex-shrink-0">
+                              {item.imageUrl ? (
+                                <img 
+                                  src={item.imageUrl} 
+                                  alt={item.name}
+                                  className="w-12 h-12 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
+                                  onError={(e) => {
+                                    // Fallback to placeholder if image fails to load
+                                    e.currentTarget.style.display = 'none';
+                                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                  }}
+                                />
+                              ) : null}
+                              <div className={`${item.imageUrl ? 'hidden' : ''} w-12 h-12 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 flex items-center justify-center`}>
+                                <Package2 className="h-6 w-6 text-gray-400" />
+                              </div>
+                            </div>
+                            
                             {/* Status Icon/Checkbox */}
                             <div className={`mt-0.5 transition-transform duration-200 ${isComplete ? 'scale-110' : ''}`}>
                               <StatusIcon className={`h-6 w-6 ${iconColor}`} />

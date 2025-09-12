@@ -11,7 +11,8 @@ import {
   deliveryHistory,
   receipts,
   receiptItems,
-  landedCosts
+  landedCosts,
+  products
 } from "@shared/schema";
 import { eq, desc, sql, and, like, or, isNull } from "drizzle-orm";
 import { addDays, differenceInDays } from "date-fns";
@@ -2429,21 +2430,115 @@ router.get("/shipments/:id", async (req, res) => {
       return res.status(404).json({ message: "Shipment not found" });
     }
 
-    // Get shipment items from consolidation
+    // Get shipment items from consolidation with images
     let items: any[] = [];
     if (shipment.shipment.consolidationId) {
-      items = await db
-        .select({
-          id: customItems.id,
-          name: customItems.name,
-          quantity: customItems.quantity,
-          weight: customItems.weight,
-          trackingNumber: customItems.trackingNumber,
-          unitPrice: customItems.unitPrice
-        })
+      // First get consolidation items
+      const consolidationItemsList = await db
+        .select()
         .from(consolidationItems)
-        .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
         .where(eq(consolidationItems.consolidationId, shipment.shipment.consolidationId));
+      
+      // Process each item based on its type
+      for (const consItem of consolidationItemsList) {
+        if (consItem.itemType === 'custom') {
+          // Get custom item details
+          const [customItem] = await db
+            .select({
+              id: customItems.id,
+              name: customItems.name,
+              quantity: customItems.quantity,
+              weight: customItems.weight,
+              trackingNumber: customItems.trackingNumber,
+              unitPrice: customItems.unitPrice,
+              notes: customItems.notes,
+              orderNumber: customItems.orderNumber
+            })
+            .from(customItems)
+            .where(eq(customItems.id, consItem.itemId));
+          
+          if (customItem) {
+            // Try to find a matching product by name or SKU
+            let imageUrl = null;
+            let sku = null;
+            
+            // Extract SKU from notes or orderNumber if available
+            const skuMatch = (customItem.notes || '').match(/sku[:\s]*([A-Z0-9-]+)/i) || 
+                           (customItem.orderNumber || '').match(/sku[:\s]*([A-Z0-9-]+)/i);
+            if (skuMatch) {
+              sku = skuMatch[1];
+            }
+            
+            // Try to find product image by name or SKU
+            if (sku) {
+              const [product] = await db
+                .select({ imageUrl: products.imageUrl, sku: products.sku })
+                .from(products)
+                .where(eq(products.sku, sku));
+              
+              if (product) {
+                imageUrl = product.imageUrl;
+                sku = product.sku;
+              }
+            } else {
+              // Try fuzzy match by name
+              const [product] = await db
+                .select({ imageUrl: products.imageUrl, sku: products.sku })
+                .from(products)
+                .where(like(products.name, `%${customItem.name.substring(0, 20)}%`))
+                .limit(1);
+              
+              if (product) {
+                imageUrl = product.imageUrl;
+                sku = product.sku;
+              }
+            }
+            
+            items.push({
+              ...customItem,
+              sku,
+              imageUrl
+            });
+          }
+        } else if (consItem.itemType === 'purchase') {
+          // Get purchase item details with image
+          const [purchaseItem] = await db
+            .select({
+              id: purchaseItems.id,
+              name: purchaseItems.name,
+              sku: purchaseItems.sku,
+              quantity: purchaseItems.quantity,
+              weight: purchaseItems.weight,
+              trackingNumber: purchaseItems.trackingNumber,
+              unitPrice: purchaseItems.unitPrice,
+              imageUrl: purchaseItems.imageUrl,
+              notes: purchaseItems.notes
+            })
+            .from(purchaseItems)
+            .where(eq(purchaseItems.id, consItem.itemId));
+          
+          if (purchaseItem) {
+            // If purchase item doesn't have image, try to find from products table
+            let finalImageUrl = purchaseItem.imageUrl;
+            
+            if (!finalImageUrl && purchaseItem.sku) {
+              const [product] = await db
+                .select({ imageUrl: products.imageUrl })
+                .from(products)
+                .where(eq(products.sku, purchaseItem.sku));
+              
+              if (product) {
+                finalImageUrl = product.imageUrl;
+              }
+            }
+            
+            items.push({
+              ...purchaseItem,
+              imageUrl: finalImageUrl
+            });
+          }
+        }
+      }
     }
 
     const shipmentWithDetails = {
