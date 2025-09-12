@@ -997,6 +997,25 @@ export default function ContinueReceiving() {
                       <Camera className="h-4 w-4" />
                     </Button>
                   </div>
+                  <div className="mt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        handleScannedParcelsChange(parcelCount, true);
+                        toast({
+                          title: "Auto-Receive Complete",
+                          description: `All ${parcelCount} ${unitLabel.toLowerCase()} have been automatically received`
+                        });
+                      }}
+                      disabled={scannedParcels >= parcelCount}
+                      className="w-full"
+                    >
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      Auto-Receive All {unitLabel} ({parcelCount})
+                    </Button>
+                  </div>
                 </div>
               </div>
 
