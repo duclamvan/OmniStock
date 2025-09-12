@@ -1353,11 +1353,10 @@ export default function ReceivingList() {
                             </div>
                           )}
                         </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
             </div>
           )}
         </TabsContent>
