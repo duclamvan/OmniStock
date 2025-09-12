@@ -1315,40 +1315,111 @@ export default function ReceivingList() {
                               <p className="text-muted-foreground text-sm">No items details available</p>
                             </div>
                           ) : (
-                            <div className="rounded-lg border bg-card overflow-x-auto">
-                              <div className="p-3 space-y-2">
-                                <h4 className="text-sm font-semibold text-muted-foreground mb-2">Received Items: {shipment.items.length}</h4>
-                                {shipment.items.map((item: any, index: number) => {
-                                  // Find receipt data for this item
-                                  const receiptItem = receiptItems.find((ri: any) => 
-                                    ri.itemId === item.id || ri.itemId?.toString() === item.id?.toString()
-                                  );
-                                  const receivedQty = receiptItem?.receivedQuantity || 0;
-                                  const expectedQty = receiptItem?.expectedQuantity || item.quantity || 0;
-                                  const status = receiptItem?.status || 'pending';
+                            <div className="rounded-lg border bg-card overflow-hidden">
+                              <div className="p-2 border-b bg-muted/30">
+                                <h4 className="text-xs font-semibold text-muted-foreground">RECEIVED ITEMS ({shipment.items.length})</h4>
+                              </div>
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                  <thead className="border-b bg-muted/20">
+                                    <tr className="text-xs text-muted-foreground">
+                                      <th className="text-left px-2 py-1.5 font-medium">Item</th>
+                                      <th className="text-center px-2 py-1.5 font-medium min-w-[100px]">Qty</th>
+                                      <th className="text-center px-2 py-1.5 font-medium min-w-[80px]">Progress</th>
+                                      <th className="text-center px-2 py-1.5 font-medium">Status</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {shipment.items.map((item: any, index: number) => {
+                                      // Find receipt data for this item
+                                      const receiptItem = receiptItems.find((ri: any) => 
+                                        ri.itemId === item.id || ri.itemId?.toString() === item.id?.toString()
+                                      );
+                                      const receivedQty = receiptItem?.receivedQuantity || 0;
+                                      const expectedQty = receiptItem?.expectedQuantity || item.quantity || 0;
+                                      const status = receiptItem?.status || 'pending';
+                                      const progressPercent = expectedQty > 0 ? Math.round((receivedQty / expectedQty) * 100) : 0;
 
-                                  return (
-                                    <div key={index} className="flex items-center justify-between py-2 px-3 hover:bg-muted/50 rounded">
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-sm font-medium">
-                                          {item.name} - <span className={`font-semibold ${
-                                            receivedQty === expectedQty ? 'text-green-600' : 
-                                            receivedQty > 0 ? 'text-amber-600' : 'text-gray-600'
-                                          }`}>{receivedQty}/{expectedQty} pcs</span>
-                                        </span>
-                                      </div>
-                                      <Badge 
-                                        variant={status === 'complete' ? 'default' : status === 'partial' ? 'secondary' : 'outline'}
-                                        className="text-xs"
-                                      >
-                                        {status === 'complete' ? 'Complete' : 
-                                         status === 'partial' ? 'Partial' : 
-                                         status === 'damaged' ? 'Damaged' :
-                                         status === 'missing' ? 'Missing' : 'Pending'}
-                                      </Badge>
-                                    </div>
-                                  );
-                                })}
+                                      // Status icon and color
+                                      const getStatusIcon = () => {
+                                        switch(status) {
+                                          case 'complete':
+                                            return <CheckCircle className="h-3.5 w-3.5 text-green-600" />;
+                                          case 'partial':
+                                            return <AlertCircle className="h-3.5 w-3.5 text-amber-600" />;
+                                          case 'damaged':
+                                            return <AlertTriangle className="h-3.5 w-3.5 text-red-600" />;
+                                          case 'missing':
+                                            return <AlertCircle className="h-3.5 w-3.5 text-red-600" />;
+                                          default:
+                                            return <Clock className="h-3.5 w-3.5 text-gray-400" />;
+                                        }
+                                      };
+
+                                      return (
+                                        <tr 
+                                          key={index} 
+                                          className={`border-b last:border-b-0 hover:bg-muted/30 transition-colors ${
+                                            index % 2 === 0 ? 'bg-background' : 'bg-muted/10'
+                                          }`}
+                                        >
+                                          <td className="px-2 py-1 max-w-[200px]">
+                                            <span className="font-medium truncate block" title={item.name}>
+                                              {item.name}
+                                            </span>
+                                          </td>
+                                          <td className="px-2 py-1 text-center">
+                                            <div className="flex items-center justify-center gap-1">
+                                              <span className={`font-semibold ${
+                                                receivedQty === expectedQty ? 'text-green-600' : 
+                                                receivedQty > 0 ? 'text-amber-600' : 'text-muted-foreground'
+                                              }`}>
+                                                {receivedQty}
+                                              </span>
+                                              <span className="text-muted-foreground">/</span>
+                                              <span className="text-muted-foreground">{expectedQty}</span>
+                                            </div>
+                                          </td>
+                                          <td className="px-2 py-1">
+                                            <div className="flex items-center gap-1.5">
+                                              <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                                                <div 
+                                                  className={`h-full transition-all ${
+                                                    progressPercent === 100 ? 'bg-green-600' :
+                                                    progressPercent > 0 ? 'bg-amber-600' : 'bg-gray-300'
+                                                  }`}
+                                                  style={{ width: `${progressPercent}%` }}
+                                                />
+                                              </div>
+                                              <span className={`text-xs font-medium ${
+                                                progressPercent === 100 ? 'text-green-600' :
+                                                progressPercent > 0 ? 'text-amber-600' : 'text-muted-foreground'
+                                              }`}>
+                                                {progressPercent}%
+                                              </span>
+                                            </div>
+                                          </td>
+                                          <td className="px-2 py-1 text-center">
+                                            <div className="flex items-center justify-center gap-1">
+                                              {getStatusIcon()}
+                                              <span className={`text-xs font-medium ${
+                                                status === 'complete' ? 'text-green-600' :
+                                                status === 'partial' ? 'text-amber-600' :
+                                                status === 'damaged' || status === 'missing' ? 'text-red-600' :
+                                                'text-muted-foreground'
+                                              }`}>
+                                                {status === 'complete' ? 'Complete' : 
+                                                 status === 'partial' ? 'Partial' : 
+                                                 status === 'damaged' ? 'Damaged' :
+                                                 status === 'missing' ? 'Missing' : 'Pending'}
+                                              </span>
+                                            </div>
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
                               </div>
                             </div>
                           )}
