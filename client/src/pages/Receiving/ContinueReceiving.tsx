@@ -10,6 +10,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { 
@@ -68,6 +78,7 @@ export default function ContinueReceiving() {
   const [scanMode, setScanMode] = useState(false);
   const [barcodeScan, setBarcodeScan] = useState("");
   const [showAllItems, setShowAllItems] = useState(true);
+  const [showCompleteDialog, setShowCompleteDialog] = useState(false);
 
   // Fetch shipment details
   const { data: shipment, isLoading } = useQuery({
@@ -456,6 +467,46 @@ export default function ContinueReceiving() {
     }
   });
 
+  // Complete receiving mutation
+  const completeReceivingMutation = useMutation({
+    mutationFn: async () => {
+      const receiptId = receipt?.receipt?.id || receipt?.id;
+      if (!receiptId) throw new Error('No receipt ID found');
+      
+      const response = await fetch(`/api/imports/receipts/complete/${receiptId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to complete receiving');
+      }
+      
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Receiving Completed",
+        description: "The shipment has been successfully received and is now pending approval"
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/receivable'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/receiving'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/pending_approval'] });
+      navigate('/receiving');
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to complete receiving",
+        variant: "destructive"
+      });
+    }
+  });
+
   // Use useRef to maintain stable debounce timer across renders
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -616,65 +667,49 @@ export default function ContinueReceiving() {
   };
 
   const handleSubmit = async () => {
-    if (!receivedBy || !carrier) {
+    // First make sure all data is saved
+    await triggerAutoSave(undefined, true);
+    
+    // Check if all items have been processed
+    const pendingItems = receivingItems.filter(item => item.status === 'pending');
+    
+    if (pendingItems.length > 0) {
       toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields",
+        title: "Incomplete Items",
+        description: `Please process all items before completing. ${pendingItems.length} items are still pending.`,
         variant: "destructive"
       });
       return;
     }
-
-    if (receipt) {
-      // Update existing receipt
-      updateReceiptMutation.mutate({
-        receivedBy,
-        carrier,
-        parcelCount,
-        notes,
-        items: receivingItems.map(item => ({
-          itemId: item.id,
-          expectedQuantity: item.expectedQty,
-          receivedQuantity: item.receivedQty,
-          status: item.status,
-          notes: item.notes
-        }))
-      });
-    } else {
-      // Create new receipt
-      try {
-        // Update shipment status to 'receiving'
-        await fetch(`/api/imports/shipments/${id}/start-receiving`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-
-        // Create receipt with item details
-        createReceiptMutation.mutate({
-          shipmentId: parseInt(id!),
-          consolidationId: shipment?.consolidationId || null,
-          receivedBy,
-          parcelCount,
-          carrier,
-          notes,
-          items: receivingItems.map(item => ({
-            itemId: item.id,
-            expectedQuantity: item.expectedQty,
-            receivedQuantity: item.receivedQty,
-            status: item.status,
-            notes: item.notes
-          }))
-        });
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to start receiving process",
-          variant: "destructive"
-        });
-      }
-    }
+    
+    // Show confirmation dialog
+    setShowCompleteDialog(true);
+  };
+  
+  const handleCompleteReceiving = () => {
+    setShowCompleteDialog(false);
+    completeReceivingMutation.mutate();
+  };
+  
+  // Calculate item statistics for confirmation dialog
+  const getItemStats = () => {
+    const totalItems = receivingItems.length;
+    const completeItems = receivingItems.filter(item => item.status === 'complete').length;
+    const damagedItems = receivingItems.filter(item => 
+      item.status === 'damaged' || item.status === 'partial_damaged'
+    ).length;
+    const missingItems = receivingItems.filter(item => 
+      item.status === 'missing' || item.status === 'partial_missing'
+    ).length;
+    const partialItems = receivingItems.filter(item => item.status === 'partial').length;
+    
+    return {
+      totalItems,
+      completeItems,
+      damagedItems,
+      missingItems,
+      partialItems
+    };
   };
 
   const getStatusColor = (status: string) => {
@@ -1249,15 +1284,19 @@ export default function ContinueReceiving() {
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={updateReceiptMutation.isPending || createReceiptMutation.isPending}
+              disabled={
+                completeReceivingMutation.isPending || 
+                receivingItems.some(item => item.status === 'pending') ||
+                receivingItems.length === 0
+              }
               className="flex-1"
               size="lg"
             >
-              {updateReceiptMutation.isPending || createReceiptMutation.isPending ? (
+              {completeReceivingMutation.isPending ? (
                 <>Processing...</>
               ) : (
                 <>
-                  <Save className="h-4 w-4 mr-2" />
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
                   Complete Receiving
                 </>
               )}
@@ -1265,6 +1304,70 @@ export default function ContinueReceiving() {
           </div>
         </div>
       )}
+      
+      {/* Confirmation Dialog */}
+      <AlertDialog open={showCompleteDialog} onOpenChange={setShowCompleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Complete Receiving Process?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-4">
+              <div>
+                This action will complete the receiving process and move the shipment to pending approval.
+              </div>
+              
+              {(() => {
+                const stats = getItemStats();
+                return (
+                  <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg space-y-2">
+                    <h4 className="font-semibold text-sm">Receiving Summary:</h4>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div>Total Items:</div>
+                      <div className="font-medium">{stats.totalItems}</div>
+                      
+                      <div>Complete:</div>
+                      <div className="font-medium text-green-600">{stats.completeItems}</div>
+                      
+                      {stats.damagedItems > 0 && (
+                        <>
+                          <div>Damaged:</div>
+                          <div className="font-medium text-red-600">{stats.damagedItems}</div>
+                        </>
+                      )}
+                      
+                      {stats.missingItems > 0 && (
+                        <>
+                          <div>Missing:</div>
+                          <div className="font-medium text-gray-600">{stats.missingItems}</div>
+                        </>
+                      )}
+                      
+                      {stats.partialItems > 0 && (
+                        <>
+                          <div>Partial:</div>
+                          <div className="font-medium text-yellow-600">{stats.partialItems}</div>
+                        </>
+                      )}
+                      
+                      <div>Scanned {isPalletShipment ? 'Pallets' : 'Parcels'}:</div>
+                      <div className="font-medium">{scannedParcels}/{parcelCount}</div>
+                    </div>
+                  </div>
+                );
+              })()}
+              
+              <div className="text-sm text-muted-foreground">
+                Once completed, this shipment will require approval before the items can be processed further.
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleCompleteReceiving}>
+              Complete Receiving
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

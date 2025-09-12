@@ -3181,4 +3181,145 @@ router.post("/receipts/auto-save", async (req, res) => {
   }
 });
 
+// Complete receiving process for a shipment
+router.post("/receipts/complete/:receiptId", async (req, res) => {
+  try {
+    const receiptId = parseInt(req.params.receiptId);
+    
+    // Fetch the receipt with validation
+    const [receipt] = await db
+      .select()
+      .from(receipts)
+      .where(eq(receipts.id, receiptId));
+    
+    if (!receipt) {
+      return res.status(404).json({ message: "Receipt not found" });
+    }
+    
+    // Check if receipt is already completed
+    if (receipt.status === 'verified' || receipt.status === 'approved') {
+      return res.status(400).json({ 
+        message: "Receipt has already been completed" 
+      });
+    }
+    
+    // Get the shipment
+    const [shipment] = await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.id, receipt.shipmentId));
+    
+    if (!shipment) {
+      return res.status(404).json({ message: "Shipment not found" });
+    }
+    
+    // Check if shipment is in receiving status
+    if (shipment.receivingStatus !== 'receiving') {
+      return res.status(400).json({ 
+        message: "Shipment is not in receiving status" 
+      });
+    }
+    
+    // Get all receipt items to validate they are processed
+    const receiptItemsList = await db
+      .select()
+      .from(receiptItems)
+      .where(eq(receiptItems.receiptId, receiptId));
+    
+    // Check if there are any items
+    if (receiptItemsList.length === 0) {
+      return res.status(400).json({ 
+        message: "No items found in receipt" 
+      });
+    }
+    
+    // Check if all items have been processed (not pending)
+    const pendingItems = receiptItemsList.filter(item => 
+      item.status === 'pending'
+    );
+    
+    if (pendingItems.length > 0) {
+      return res.status(400).json({ 
+        message: `Cannot complete receiving: ${pendingItems.length} items are still pending`,
+        pendingCount: pendingItems.length
+      });
+    }
+    
+    // Calculate statistics for the receipt
+    const totalItems = receiptItemsList.length;
+    const completeItems = receiptItemsList.filter(item => item.status === 'complete').length;
+    const damagedItems = receiptItemsList.filter(item => 
+      item.status === 'damaged' || item.status === 'partial_damaged'
+    ).length;
+    const missingItems = receiptItemsList.filter(item => 
+      item.status === 'missing' || item.status === 'partial_missing'
+    ).length;
+    const partialItems = receiptItemsList.filter(item => item.status === 'partial').length;
+    
+    // Begin transaction to update both receipt and shipment
+    await db.transaction(async (tx) => {
+      // Update receipt status to pending_approval and set completedAt
+      await tx
+        .update(receipts)
+        .set({
+          status: 'pending_approval',
+          // Store completion timestamp in trackingNumbers JSON field
+          trackingNumbers: {
+            ...(receipt.trackingNumbers as any || {}),
+            completedAt: new Date().toISOString(),
+            completionStats: {
+              totalItems,
+              completeItems,
+              damagedItems,
+              missingItems,
+              partialItems
+            }
+          },
+          updatedAt: new Date()
+        })
+        .where(eq(receipts.id, receiptId));
+      
+      // Update shipment receiving status to pending_approval
+      await tx
+        .update(shipments)
+        .set({
+          receivingStatus: 'pending_approval',
+          updatedAt: new Date()
+        })
+        .where(eq(shipments.id, receipt.shipmentId));
+    });
+    
+    // Fetch updated data to return
+    const [updatedReceipt] = await db
+      .select()
+      .from(receipts)
+      .where(eq(receipts.id, receiptId));
+    
+    const [updatedShipment] = await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.id, receipt.shipmentId));
+    
+    res.json({
+      success: true,
+      message: "Receiving completed successfully",
+      receipt: updatedReceipt,
+      shipment: updatedShipment,
+      stats: {
+        totalItems,
+        completeItems,
+        damagedItems,
+        missingItems,
+        partialItems
+      }
+    });
+  } catch (error) {
+    console.error("Error completing receipt:", error);
+    res.status(500).json({ 
+      message: "Failed to complete receiving",
+      error: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+});
+
 export default router;
