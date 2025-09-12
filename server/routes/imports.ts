@@ -2857,22 +2857,46 @@ router.post("/receipts/approve/:id", async (req, res) => {
     const receiptId = parseInt(req.params.id);
     const { notes } = req.body;
 
-    // Update receipt status
+    // Validate receipt ID
+    if (isNaN(receiptId)) {
+      return res.status(400).json({ message: "Invalid receipt ID" });
+    }
+
+    // First, check if receipt exists and is in pending_approval status
+    const [existingReceipt] = await db
+      .select()
+      .from(receipts)
+      .where(eq(receipts.id, receiptId));
+
+    if (!existingReceipt) {
+      return res.status(404).json({ message: "Receipt not found" });
+    }
+
+    if (existingReceipt.status === 'approved') {
+      return res.status(400).json({ message: "Receipt is already approved" });
+    }
+
+    if (existingReceipt.status !== 'pending_approval' && existingReceipt.status !== 'verified') {
+      return res.status(400).json({ message: "Receipt must be in pending_approval or verified status to approve" });
+    }
+
+    // Update receipt status with proper notes handling
+    const existingNotes = existingReceipt.notes || '';
+    const updatedNotes = notes 
+      ? (existingNotes ? `${existingNotes}\n\nApproval Notes: ${notes}` : `Approval Notes: ${notes}`) 
+      : existingNotes;
+
     const [receipt] = await db
       .update(receipts)
       .set({
         status: 'approved',
         approvedBy: 'Manager', // Default approver
         approvedAt: new Date(),
-        notes: notes ? (receipts.notes ? `${receipts.notes}\n\nApproval Notes: ${notes}` : `Approval Notes: ${notes}`) : receipts.notes,
+        notes: updatedNotes,
         updatedAt: new Date()
       })
       .where(eq(receipts.id, receiptId))
       .returning();
-
-    if (!receipt) {
-      return res.status(404).json({ message: "Receipt not found" });
-    }
 
     // Update shipment status to completed
     if (receipt.shipmentId) {
@@ -2880,6 +2904,7 @@ router.post("/receipts/approve/:id", async (req, res) => {
         .update(shipments)
         .set({
           status: 'completed',
+          receivingStatus: 'completed',
           updatedAt: new Date()
         })
         .where(eq(shipments.id, receipt.shipmentId));
@@ -2908,11 +2933,39 @@ router.post("/receipts/reject/:id", async (req, res) => {
     const receiptId = parseInt(req.params.id);
     const { reason } = req.body;
 
-    if (!reason) {
-      return res.status(400).json({ message: "Rejection reason is required" });
+    // Validate receipt ID
+    if (isNaN(receiptId)) {
+      return res.status(400).json({ message: "Invalid receipt ID" });
+    }
+
+    if (!reason || reason.trim().length === 0) {
+      return res.status(400).json({ message: "Rejection reason is required and cannot be empty" });
+    }
+
+    // First, check if receipt exists and is in the correct status
+    const [existingReceipt] = await db
+      .select()
+      .from(receipts)
+      .where(eq(receipts.id, receiptId));
+
+    if (!existingReceipt) {
+      return res.status(404).json({ message: "Receipt not found" });
+    }
+
+    if (existingReceipt.status === 'approved') {
+      return res.status(400).json({ message: "Cannot reject an already approved receipt" });
+    }
+
+    if (existingReceipt.status !== 'pending_approval' && existingReceipt.status !== 'verified') {
+      return res.status(400).json({ message: "Receipt must be in pending_approval or verified status to reject" });
     }
 
     // Update receipt status and add rejection reason to notes
+    const existingNotes = existingReceipt.notes || '';
+    const updatedNotes = existingNotes 
+      ? `${existingNotes}\n\nREJECTED: ${reason}` 
+      : `REJECTED: ${reason}`;
+
     const [receipt] = await db
       .update(receipts)
       .set({
@@ -2921,15 +2974,11 @@ router.post("/receipts/reject/:id", async (req, res) => {
         verifiedAt: null,
         approvedBy: null,
         approvedAt: null,
-        notes: receipts.notes ? `${receipts.notes}\n\nREJECTED: ${reason}` : `REJECTED: ${reason}`,
+        notes: updatedNotes,
         updatedAt: new Date()
       })
       .where(eq(receipts.id, receiptId))
       .returning();
-
-    if (!receipt) {
-      return res.status(404).json({ message: "Receipt not found" });
-    }
 
     // Update shipment status back to receiving
     if (receipt.shipmentId) {

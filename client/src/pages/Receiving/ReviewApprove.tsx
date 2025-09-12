@@ -132,8 +132,15 @@ export default function ReviewApprove() {
         title: "Shipment Approved",
         description: "The shipment has been successfully approved and completed.",
       });
+      // Comprehensive cache invalidation
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/pending_approval'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/completed'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/receiving'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts'] });
+      if (id) {
+        queryClient.invalidateQueries({ queryKey: [`/api/imports/receipts/by-shipment/${id}`] });
+      }
       navigate('/receiving');
     },
     onError: (error: any) => {
@@ -162,8 +169,15 @@ export default function ReviewApprove() {
         description: "The shipment has been rejected and returned to receiving status.",
         variant: "destructive",
       });
+      // Comprehensive cache invalidation
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/pending_approval'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/completed'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/receiving'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts'] });
+      if (id) {
+        queryClient.invalidateQueries({ queryKey: [`/api/imports/receipts/by-shipment/${id}`] });
+      }
       navigate('/receiving');
     },
     onError: (error: any) => {
@@ -521,8 +535,17 @@ export default function ReviewApprove() {
                   disabled={approveMutation.isPending || rejectMutation.isPending}
                   data-testid="button-approve-shipment"
                 >
-                  <CheckCircle2 className="mr-2 h-5 w-5" />
-                  Approve Shipment
+                  {approveMutation.isPending ? (
+                    <>
+                      <Package className="mr-2 h-5 w-5 animate-pulse" />
+                      Approving...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="mr-2 h-5 w-5" />
+                      Approve Shipment
+                    </>
+                  )}
                 </Button>
                 <Button 
                   variant="destructive" 
@@ -532,8 +555,17 @@ export default function ReviewApprove() {
                   disabled={approveMutation.isPending || rejectMutation.isPending}
                   data-testid="button-reject-shipment"
                 >
-                  <XCircle className="mr-2 h-5 w-5" />
-                  Reject Shipment
+                  {rejectMutation.isPending ? (
+                    <>
+                      <Package className="mr-2 h-5 w-5 animate-pulse" />
+                      Rejecting...
+                    </>
+                  ) : (
+                    <>
+                      <XCircle className="mr-2 h-5 w-5" />
+                      Reject Shipment
+                    </>
+                  )}
                 </Button>
                 <Button 
                   variant="outline" 
