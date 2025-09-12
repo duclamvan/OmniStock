@@ -2852,33 +2852,34 @@ router.post("/receipts/:id/landed-costs", async (req, res) => {
 });
 
 // Approve receipt and integrate with inventory
-router.post("/receipts/:id/approve", async (req, res) => {
+router.post("/receipts/approve/:id", async (req, res) => {
   try {
     const receiptId = parseInt(req.params.id);
-    const { approvedBy } = req.body;
-
-    if (!approvedBy) {
-      return res.status(400).json({ message: "approvedBy is required" });
-    }
+    const { notes } = req.body;
 
     // Update receipt status
     const [receipt] = await db
       .update(receipts)
       .set({
         status: 'approved',
-        approvedBy,
+        approvedBy: 'Manager', // Default approver
         approvedAt: new Date(),
+        notes: notes ? (receipts.notes ? `${receipts.notes}\n\nApproval Notes: ${notes}` : `Approval Notes: ${notes}`) : receipts.notes,
         updatedAt: new Date()
       })
       .where(eq(receipts.id, receiptId))
       .returning();
 
-    // Update shipment status to fully received
+    if (!receipt) {
+      return res.status(404).json({ message: "Receipt not found" });
+    }
+
+    // Update shipment status to completed
     if (receipt.shipmentId) {
       await db
         .update(shipments)
         .set({
-          status: 'received',
+          status: 'completed',
           updatedAt: new Date()
         })
         .where(eq(shipments.id, receipt.shipmentId));
@@ -2898,6 +2899,56 @@ router.post("/receipts/:id/approve", async (req, res) => {
   } catch (error) {
     console.error("Error approving receipt:", error);
     res.status(500).json({ message: "Failed to approve receipt" });
+  }
+});
+
+// Reject receipt and return to receiving status
+router.post("/receipts/reject/:id", async (req, res) => {
+  try {
+    const receiptId = parseInt(req.params.id);
+    const { reason } = req.body;
+
+    if (!reason) {
+      return res.status(400).json({ message: "Rejection reason is required" });
+    }
+
+    // Update receipt status and add rejection reason to notes
+    const [receipt] = await db
+      .update(receipts)
+      .set({
+        status: 'pending',
+        verifiedBy: null,
+        verifiedAt: null,
+        approvedBy: null,
+        approvedAt: null,
+        notes: receipts.notes ? `${receipts.notes}\n\nREJECTED: ${reason}` : `REJECTED: ${reason}`,
+        updatedAt: new Date()
+      })
+      .where(eq(receipts.id, receiptId))
+      .returning();
+
+    if (!receipt) {
+      return res.status(404).json({ message: "Receipt not found" });
+    }
+
+    // Update shipment status back to receiving
+    if (receipt.shipmentId) {
+      await db
+        .update(shipments)
+        .set({
+          status: 'receiving',
+          updatedAt: new Date()
+        })
+        .where(eq(shipments.id, receipt.shipmentId));
+    }
+
+    res.json({ 
+      receipt,
+      message: "Receipt rejected and returned to receiving status" 
+    });
+  } catch (error) {
+    console.error("Error rejecting receipt:", error);
+    res.status(500).json({ message: "Failed to reject receipt" });
   }
 });
 
