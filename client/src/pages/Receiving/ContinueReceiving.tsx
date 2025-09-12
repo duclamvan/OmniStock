@@ -1172,7 +1172,7 @@ export default function ContinueReceiving() {
         <div className="space-y-4">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-3">
                 <CardTitle className="flex items-center gap-2">
                   <CheckSquare className="h-5 w-5" />
                   Item Verification ({completedItems}/{totalItems})
@@ -1201,6 +1201,36 @@ export default function ContinueReceiving() {
                   </Button>
                 </div>
               </div>
+              
+              {/* Progress Summary */}
+              {receivingItems.length > 0 && (
+                <div className="grid grid-cols-4 gap-2 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600">
+                      {receivingItems.filter(i => i.status === 'complete').length}
+                    </div>
+                    <div className="text-xs text-muted-foreground">Complete</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-amber-600">
+                      {receivingItems.filter(i => i.status === 'pending').length}
+                    </div>
+                    <div className="text-xs text-muted-foreground">Pending</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-red-600">
+                      {receivingItems.filter(i => i.status === 'damaged' || i.status === 'partial_damaged').length}
+                    </div>
+                    <div className="text-xs text-muted-foreground">Damaged</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-gray-600">
+                      {receivingItems.filter(i => i.status === 'missing' || i.status === 'partial_missing').length}
+                    </div>
+                    <div className="text-xs text-muted-foreground">Missing</div>
+                  </div>
+                </div>
+              )}
             </CardHeader>
             <CardContent className="space-y-3">
               {/* Scan Input */}
@@ -1222,118 +1252,228 @@ export default function ContinueReceiving() {
               )}
 
               {/* Items List */}
-              <div className="max-h-96 overflow-y-auto space-y-2">
+              <div className="max-h-96 overflow-y-auto space-y-3 pr-1">
                 {(() => {
                   const filteredItems = receivingItems.filter(item => 
                     showAllItems || item.status === 'pending' || item.receivedQty < item.expectedQty
                   );
-                  return filteredItems;
+                  
+                  // Sort items: pending first, then partial, then completed
+                  const sortedItems = [...filteredItems].sort((a, b) => {
+                    const statusOrder = {
+                      'pending': 0,
+                      'partial': 1,
+                      'partial_damaged': 2,
+                      'partial_missing': 3,
+                      'damaged': 4,
+                      'missing': 5,
+                      'complete': 6
+                    };
+                    return (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99);
+                  });
+                  
+                  return sortedItems;
                 })()
-                  .map((item) => (
-                    <div key={item.id} className="border rounded-lg p-3 bg-white dark:bg-gray-900">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-medium">{item.name}</h4>
-                            <Badge className={`text-xs ${getItemStatusColor(item.status)}`}>
-                              {item.status === 'partial_damaged' ? 'PARTIAL DAMAGED' : 
-                               item.status === 'partial_missing' ? 'PARTIAL MISSING' : 
-                               item.status.toUpperCase()}
-                            </Badge>
+                  .map((item) => {
+                    const progress = (item.receivedQty / item.expectedQty) * 100;
+                    const isComplete = item.status === 'complete';
+                    const isDamaged = item.status === 'damaged' || item.status === 'partial_damaged';
+                    const isMissing = item.status === 'missing' || item.status === 'partial_missing';
+                    const isPartial = item.status === 'partial' || item.status === 'partial_damaged' || item.status === 'partial_missing';
+                    const isPending = item.status === 'pending';
+                    
+                    // Determine colors based on status
+                    let borderColor = 'border-l-gray-400';
+                    let bgColor = 'bg-white dark:bg-gray-900';
+                    let statusIcon = Square;
+                    let iconColor = 'text-gray-400';
+                    
+                    if (isComplete) {
+                      borderColor = 'border-l-green-500';
+                      bgColor = 'bg-green-50 dark:bg-green-950/30';
+                      statusIcon = CheckCircle2;
+                      iconColor = 'text-green-600';
+                    } else if (isDamaged) {
+                      borderColor = 'border-l-red-500';
+                      bgColor = 'bg-red-50 dark:bg-red-950/30';
+                      statusIcon = AlertTriangle;
+                      iconColor = 'text-red-600';
+                    } else if (isMissing) {
+                      borderColor = 'border-l-gray-600';
+                      bgColor = 'bg-gray-100 dark:bg-gray-800/50';
+                      statusIcon = X;
+                      iconColor = 'text-gray-600';
+                    } else if (isPartial) {
+                      borderColor = 'border-l-amber-500';
+                      bgColor = 'bg-amber-50 dark:bg-amber-950/30';
+                      statusIcon = Clock;
+                      iconColor = 'text-amber-600';
+                    }
+                    
+                    const StatusIcon = statusIcon;
+                    
+                    return (
+                      <div 
+                        key={item.id} 
+                        className={`
+                          border rounded-lg transition-all duration-300 ease-in-out
+                          border-l-4 ${borderColor} ${bgColor}
+                          ${isComplete ? 'opacity-75' : ''}
+                          hover:shadow-md
+                        `}
+                      >
+                        <div className="p-4">
+                          {/* Header Row with Checkbox, Name, and Status Badge */}
+                          <div className="flex items-start gap-3 mb-3">
+                            {/* Status Icon/Checkbox */}
+                            <div className={`mt-0.5 transition-transform duration-200 ${isComplete ? 'scale-110' : ''}`}>
+                              <StatusIcon className={`h-6 w-6 ${iconColor}`} />
+                            </div>
+                            
+                            {/* Item Details */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1">
+                                  <h4 className={`font-semibold text-base ${isComplete ? 'line-through opacity-60' : ''}`}>
+                                    {item.name}
+                                  </h4>
+                                  {item.sku && (
+                                    <p className="text-xs text-muted-foreground font-mono mt-1">
+                                      SKU: {item.sku}
+                                    </p>
+                                  )}
+                                </div>
+                                
+                                {/* Status Badge - Top Right */}
+                                <Badge 
+                                  className={`text-xs whitespace-nowrap ${getItemStatusColor(item.status)}`}
+                                  variant={isComplete ? 'default' : isPending ? 'outline' : 'secondary'}
+                                >
+                                  {item.status === 'partial_damaged' ? 'PARTIAL DMG' : 
+                                   item.status === 'partial_missing' ? 'PARTIAL MISS' : 
+                                   item.status.toUpperCase()}
+                                </Badge>
+                              </div>
+                              
+                              {/* Progress Bar */}
+                              <div className="mt-2">
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-xs text-muted-foreground">Progress</span>
+                                  <span className={`text-sm font-bold ${
+                                    progress >= 100 ? 'text-green-600' : 
+                                    progress > 0 ? 'text-amber-600' : 
+                                    'text-gray-500'
+                                  }`}>
+                                    {item.receivedQty} / {item.expectedQty} units
+                                  </span>
+                                </div>
+                                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                                  <div 
+                                    className={`h-full transition-all duration-300 ease-out ${
+                                      progress >= 100 ? 'bg-green-500' :
+                                      progress > 0 ? 'bg-amber-500' :
+                                      'bg-gray-300'
+                                    }`}
+                                    style={{ width: `${Math.min(100, progress)}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
                           </div>
-                          {item.sku && (
-                            <p className="text-xs text-muted-foreground font-mono">
-                              SKU: {item.sku}
-                            </p>
+
+                          {/* Quantity Controls and Action Buttons */}
+                          <div className="flex items-center gap-3 mt-3">
+                            {/* Quantity Controls */}
+                            <div className="flex items-center gap-2 bg-white dark:bg-gray-800 rounded-lg p-1 border">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => updateItemQuantity(item.id, -1)}
+                                disabled={item.receivedQty === 0}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Minus className="h-4 w-4" />
+                              </Button>
+                              <span className="text-base font-bold font-mono w-20 text-center">
+                                {item.receivedQty}/{item.expectedQty}
+                              </span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => updateItemQuantity(item.id, 1)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Plus className="h-4 w-4" />
+                              </Button>
+                            </div>
+
+                            {/* Action Buttons Group */}
+                            <div className="flex gap-2 flex-wrap ml-auto">
+                              <Button
+                                variant={item.status === 'complete' ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => {
+                                  const updatedItems = receivingItems.map(i => 
+                                    i.id === item.id 
+                                      ? { ...i, receivedQty: i.expectedQty, status: 'complete' as const, checked: true }
+                                      : i
+                                  );
+                                  setReceivingItems(updatedItems);
+                                  triggerAutoSave(updatedItems);
+                                }}
+                                className={`min-w-[70px] transition-colors ${
+                                  item.status === 'complete'
+                                    ? 'bg-green-600 hover:bg-green-700 border-green-600 text-white'
+                                    : 'border-green-500 hover:border-green-600 hover:bg-green-50 text-green-700'
+                                }`}
+                              >
+                                <Check className="h-3 w-3 mr-1" />
+                                OK
+                              </Button>
+                              <Button
+                                variant={isDamaged ? "destructive" : "outline"}
+                                size="sm"
+                                onClick={() => toggleItemStatus(item.id, 'damaged')}
+                                className={`min-w-[70px] transition-colors ${
+                                  isDamaged
+                                    ? 'bg-red-600 hover:bg-red-700 border-red-600 text-white'
+                                    : 'border-red-500 hover:border-red-600 hover:bg-red-50 text-red-700'
+                                }`}
+                              >
+                                <AlertTriangle className="h-3 w-3 mr-1" />
+                                DMG
+                              </Button>
+                              <Button
+                                variant={isMissing ? "secondary" : "outline"}
+                                size="sm"
+                                onClick={() => toggleItemStatus(item.id, 'missing')}
+                                className={`min-w-[70px] transition-colors ${
+                                  isMissing
+                                    ? 'bg-gray-600 hover:bg-gray-700 border-gray-600 text-white'
+                                    : 'border-gray-500 hover:border-gray-600 hover:bg-gray-50 text-gray-700'
+                                }`}
+                              >
+                                <X className="h-3 w-3 mr-1" />
+                                MISS
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* Notes Field - Show when needed */}
+                          {(isDamaged || isMissing || item.notes) && (
+                            <div className="mt-3 transition-all duration-200">
+                              <Input
+                                value={item.notes || ''}
+                                onChange={(e) => updateItemNotes(item.id, e.target.value)}
+                                placeholder="Add notes about this item..."
+                                className="text-sm bg-white dark:bg-gray-800"
+                              />
+                            </div>
                           )}
                         </div>
                       </div>
-
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => updateItemQuantity(item.id, -1)}
-                            disabled={item.receivedQty === 0}
-                          >
-                            <Minus className="h-3 w-3" />
-                          </Button>
-                          <span className="text-sm font-mono w-16 text-center">
-                            {item.receivedQty}/{item.expectedQty}
-                          </span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => updateItemQuantity(item.id, 1)}
-                          >
-                            <Plus className="h-3 w-3" />
-                          </Button>
-                        </div>
-
-                        <div className="flex gap-2 flex-wrap">
-                          <Button
-                            variant={item.status === 'complete' ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => {
-                              const updatedItems = receivingItems.map(i => 
-                                i.id === item.id 
-                                  ? { ...i, receivedQty: i.expectedQty, status: 'complete' as const, checked: true }
-                                  : i
-                              );
-                              setReceivingItems(updatedItems);
-                              triggerAutoSave(updatedItems);
-                            }}
-                            className={`min-w-[60px] ${
-                              item.status === 'complete'
-                                ? 'bg-green-600 hover:bg-green-700 border-green-600 text-white'
-                                : 'border-green-200 hover:border-green-300 hover:bg-green-50 text-green-700'
-                            }`}
-                          >
-                            <Check className="h-3 w-3 mr-1" />
-                            OK
-                          </Button>
-                          <Button
-                            variant={item.status === 'damaged' || item.status === 'partial_damaged' ? "destructive" : "outline"}
-                            size="sm"
-                            onClick={() => toggleItemStatus(item.id, 'damaged')}
-                            className={`min-w-[60px] ${
-                              item.status === 'damaged' || item.status === 'partial_damaged'
-                                ? 'bg-red-600 hover:bg-red-700 border-red-600 text-white'
-                                : 'border-red-200 hover:border-red-300 hover:bg-red-50 text-red-700'
-                            }`}
-                          >
-                            <AlertTriangle className="h-3 w-3 mr-1" />
-                            DMG
-                          </Button>
-                          <Button
-                            variant={item.status === 'missing' || item.status === 'partial_missing' ? "secondary" : "outline"}
-                            size="sm"
-                            onClick={() => toggleItemStatus(item.id, 'missing')}
-                            className={`min-w-[60px] ${
-                              item.status === 'missing' || item.status === 'partial_missing'
-                                ? 'bg-gray-600 hover:bg-gray-700 border-gray-600 text-white'
-                                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700'
-                            }`}
-                          >
-                            <X className="h-3 w-3 mr-1" />
-                            MISS
-                          </Button>
-                        </div>
-                      </div>
-
-                      {(item.status === 'damaged' || item.status === 'missing' || item.status === 'partial_damaged' || item.status === 'partial_missing' || item.notes) && (
-                        <div className="mt-2">
-                          <Input
-                            value={item.notes || ''}
-                            onChange={(e) => updateItemNotes(item.id, e.target.value)}
-                            placeholder="Add notes..."
-                            className="text-sm"
-                          />
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
               </div>
 
               {(() => {
