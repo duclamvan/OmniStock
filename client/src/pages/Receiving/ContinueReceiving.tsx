@@ -1013,7 +1013,7 @@ export default function ContinueReceiving() {
                       className="w-full"
                     >
                       <CheckCircle2 className="h-4 w-4 mr-2" />
-                      Auto-Receive All {unitLabel} ({parcelCount})
+                      Receive All ({parcelCount})
                     </Button>
                   </div>
                 </div>
