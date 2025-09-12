@@ -168,11 +168,11 @@ export default function ReceivingList() {
   const [cartonTypeFilter, setCartonTypeFilter] = useState("all"); // Added cartonTypeFilter
   const [expandAllReceiving, setExpandAllReceiving] = useState(true);
   const [receiptDataMap, setReceiptDataMap] = useState<Map<number, any>>(new Map());
-  
+
   // Move back confirmation dialog state
   const [showMoveBackDialog, setShowMoveBackDialog] = useState(false);
   const [shipmentToMoveBack, setShipmentToMoveBack] = useState<number | null>(null);
-  
+
   const { toast } = useToast();
 
   // Mutation to move shipment back to receivable status
@@ -229,7 +229,7 @@ export default function ReceivingList() {
       const response = await fetch('/api/imports/shipments/by-status/receiving');
       if (!response.ok) throw new Error('Failed to fetch receiving shipments');
       const shipments = await response.json();
-      
+
       // Fetch receipt data for each shipment
       const receiptsPromises = shipments.map(async (shipment: any) => {
         try {
@@ -243,7 +243,7 @@ export default function ReceivingList() {
         }
         return { shipmentId: shipment.id, receiptData: null };
       });
-      
+
       const receipts = await Promise.all(receiptsPromises);
       const newReceiptMap = new Map();
       receipts.forEach(({ shipmentId, receiptData }) => {
@@ -252,7 +252,7 @@ export default function ReceivingList() {
         }
       });
       setReceiptDataMap(newReceiptMap);
-      
+
       return shipments;
     }
   });
@@ -387,7 +387,7 @@ export default function ReceivingList() {
           shipment.consolidation?.name?.toLowerCase().includes(searchLower)
         );
       }
-      
+
       // Carrier filter
       if (carrierFilter !== 'all' && (shipment.endCarrier || shipment.carrier) !== carrierFilter) {
         return false;
@@ -474,14 +474,21 @@ export default function ReceivingList() {
     }
   }, [barcodeScan]);
 
-  // Auto-expand receiving items when they load or when switching to receiving tab
+  // Auto-expand all shipments in receiving tab
   useEffect(() => {
-    if (activeTab === 'receiving' && receivingShipments && receivingShipments.length > 0) {
-      const allIds = new Set<number>(receivingShipments.map((s: any) => s.id));
-      setExpandedShipments(allIds);
-      setExpandAllReceiving(true);
+    if (receivingShipments && receivingShipments.length > 0 && expandAllReceiving) {
+      const allReceivingIds = new Set(receivingShipments.map((s: any) => s.id));
+      setExpandedShipments(allReceivingIds);
     }
-  }, [activeTab, receivingShipments]);
+  }, [receivingShipments, expandAllReceiving]);
+
+  // Auto-expand all shipments in to-receive tab by default
+  useEffect(() => {
+    if (activeTab === "to-receive" && sortedShipments && sortedShipments.length > 0) {
+      const allToReceiveIds = new Set(sortedShipments.map((s: any) => s.id));
+      setExpandedShipments(prev => new Set([...prev, ...allToReceiveIds]));
+    }
+  }, [activeTab, sortedShipments]);
 
   // Toggle shipment selection
   const toggleShipmentSelection = (id: number) => {
@@ -1234,12 +1241,12 @@ export default function ReceivingList() {
             </div>
           ) : (
             <div className="space-y-4">
-              
+
               {receivingShipments.map((shipment: any) => {
                 const isExpanded = expandedShipments.has(shipment.id);
                 const receiptData = receiptDataMap.get(shipment.id);
                 const receiptItems = receiptData?.items || [];
-                
+
                 return (
                   <Card key={shipment.id} className="border hover:shadow-md transition-shadow">
                     <CardContent className="p-4">
@@ -1299,7 +1306,7 @@ export default function ReceivingList() {
                           </DropdownMenu>
                         </div>
                       </div>
-                      
+
                       {/* Expanded Items List */}
                       {isExpanded && (
                         <div className="mt-4 sm:pl-11">
@@ -1319,7 +1326,7 @@ export default function ReceivingList() {
                                   const receivedQty = receiptItem?.receivedQuantity || 0;
                                   const expectedQty = receiptItem?.expectedQuantity || item.quantity || 0;
                                   const status = receiptItem?.status || 'pending';
-                                  
+
                                   return (
                                     <div key={index} className="flex items-center justify-between py-2 px-3 hover:bg-muted/50 rounded">
                                       <div className="flex items-center gap-2">
