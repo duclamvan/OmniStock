@@ -61,7 +61,7 @@ import { format } from "date-fns";
 const getStatusColor = (status: string) => {
   switch (status) {
     case 'complete':
-      return 'success';
+      return 'default';
     case 'partial':
     case 'partial_damaged':
     case 'partial_missing':
@@ -121,10 +121,11 @@ export default function ReviewApprove() {
     mutationFn: async () => {
       if (!receiptData?.receipt?.id) throw new Error('No receipt found');
       
-      return apiRequest(`/api/imports/receipts/approve/${receiptData.receipt.id}`, {
-        method: 'POST',
-        body: JSON.stringify({ notes: approvalNotes })
-      });
+      return apiRequest(
+        `/api/imports/receipts/approve/${receiptData.receipt.id}`,
+        'POST',
+        { notes: approvalNotes }
+      );
     },
     onSuccess: () => {
       toast({
@@ -149,10 +150,11 @@ export default function ReviewApprove() {
     mutationFn: async () => {
       if (!receiptData?.receipt?.id) throw new Error('No receipt found');
       
-      return apiRequest(`/api/imports/receipts/reject/${receiptData.receipt.id}`, {
-        method: 'POST',
-        body: JSON.stringify({ reason: rejectionReason })
-      });
+      return apiRequest(
+        `/api/imports/receipts/reject/${receiptData.receipt.id}`,
+        'POST',
+        { reason: rejectionReason }
+      );
     },
     onSuccess: () => {
       toast({
@@ -271,7 +273,7 @@ export default function ReviewApprove() {
             </p>
           </div>
         </div>
-        <Badge variant={hasDiscrepancies ? "warning" : "success"} className="text-sm px-3 py-1">
+        <Badge variant={hasDiscrepancies ? "warning" : "default"} className="text-sm px-3 py-1">
           {hasDiscrepancies ? "Has Discrepancies" : "No Issues"}
         </Badge>
       </div>
@@ -378,7 +380,7 @@ export default function ReviewApprove() {
                           <div className="flex items-center gap-2">
                             {getStatusIcon(item.status)}
                             <Badge variant={getStatusColor(item.status)}>
-                              {item.status.replace(/_/g, ' ')}
+                              {item.status?.replace(/_/g, ' ') || 'unknown'}
                             </Badge>
                           </div>
                         </TableCell>
@@ -436,7 +438,7 @@ export default function ReviewApprove() {
                     <CheckCircle className="h-4 w-4 text-green-600" />
                     <span className="text-sm">Complete</span>
                   </span>
-                  <Badge variant="success">{statistics.completeItems}</Badge>
+                  <Badge variant="default">{statistics.completeItems}</Badge>
                 </div>
                 
                 {statistics.partialItems > 0 && (
@@ -493,7 +495,7 @@ export default function ReviewApprove() {
 
           {/* Alert for Discrepancies */}
           {hasDiscrepancies && (
-            <Alert variant="warning">
+            <Alert>
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle>Discrepancies Found</AlertTitle>
               <AlertDescription>
