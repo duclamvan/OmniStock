@@ -477,7 +477,7 @@ export default function ReceivingList() {
   // Auto-expand all shipments in receiving tab
   useEffect(() => {
     if (receivingShipments && receivingShipments.length > 0 && expandAllReceiving) {
-      const allReceivingIds = new Set(receivingShipments.map((s: any) => s.id));
+      const allReceivingIds = new Set<number>(receivingShipments.map((s: any) => s.id));
       setExpandedShipments(allReceivingIds);
     }
   }, [receivingShipments, expandAllReceiving]);
@@ -485,8 +485,8 @@ export default function ReceivingList() {
   // Auto-expand all shipments in to-receive tab by default
   useEffect(() => {
     if (activeTab === "to-receive" && sortedShipments && sortedShipments.length > 0) {
-      const allToReceiveIds = new Set(sortedShipments.map((s: any) => s.id));
-      setExpandedShipments(prev => new Set([...prev, ...allToReceiveIds]));
+      const allToReceiveIds = new Set<number>(sortedShipments.map((s: any) => s.id));
+      setExpandedShipments(prev => new Set<number>([...Array.from(prev), ...Array.from(allToReceiveIds)]));
     }
   }, [activeTab, sortedShipments]);
 
@@ -1353,7 +1353,8 @@ export default function ReceivingList() {
                             </div>
                           )}
                         </div>
-                      </CardContent>
+                      )}
+                    </CardContent>
                     </Card>
                   );
                 })}
