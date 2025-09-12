@@ -142,15 +142,50 @@ export default function ContinueReceiving() {
           
           if (receiptItem) {
             // Use saved receipt item data
+            const expectedQty = receiptItem.expectedQuantity || shipmentItem.quantity || 1;
+            const receivedQty = receiptItem.receivedQuantity || 0;
+            
+            // Calculate status based on quantities, but preserve special statuses
+            let calculatedStatus = receiptItem.status || 'pending';
+            
+            // Only recalculate if it's a basic status (pending, partial, complete)
+            // Preserve special statuses (damaged, missing, partial_damaged, partial_missing)
+            if (!['damaged', 'missing', 'partial_damaged', 'partial_missing'].includes(calculatedStatus)) {
+              if (receivedQty >= expectedQty) {
+                calculatedStatus = 'complete';
+              } else if (receivedQty > 0 && receivedQty < expectedQty) {
+                calculatedStatus = 'partial';
+              } else if (receivedQty === 0) {
+                calculatedStatus = 'pending';
+              }
+            } else {
+              // For special statuses, ensure they're consistent with quantities
+              if (calculatedStatus === 'damaged' || calculatedStatus === 'partial_damaged') {
+                // If marked as damaged but has partial quantity, ensure it's partial_damaged
+                if (receivedQty > 0 && receivedQty < expectedQty) {
+                  calculatedStatus = 'partial_damaged';
+                } else if (receivedQty === 0) {
+                  calculatedStatus = 'damaged';
+                }
+              } else if (calculatedStatus === 'missing' || calculatedStatus === 'partial_missing') {
+                // If marked as missing but has partial quantity, ensure it's partial_missing
+                if (receivedQty > 0 && receivedQty < expectedQty) {
+                  calculatedStatus = 'partial_missing';
+                } else if (receivedQty === 0) {
+                  calculatedStatus = 'missing';
+                }
+              }
+            }
+            
             return {
               id: itemId,
               name: shipmentItem.name || shipmentItem.productName || `Item ${index + 1}`,
               sku: shipmentItem.sku || '',
-              expectedQty: receiptItem.expectedQuantity || shipmentItem.quantity || 1,
-              receivedQty: receiptItem.receivedQuantity || 0,
-              status: receiptItem.status || 'pending',
+              expectedQty,
+              receivedQty,
+              status: calculatedStatus,
               notes: receiptItem.notes || '',
-              checked: (receiptItem.receivedQuantity || 0) > 0
+              checked: receivedQty > 0
             };
           } else {
             // No receipt data yet, use shipment defaults
