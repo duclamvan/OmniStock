@@ -72,6 +72,7 @@ export default function ContinueReceiving() {
   const [scannedParcels, setScannedParcels] = useState(0);
   const [receivingItems, setReceivingItems] = useState<ReceivingItem[]>([]);
   const [notes, setNotes] = useState("");
+  const [scannedTrackingNumbers, setScannedTrackingNumbers] = useState<string[]>([]);
   
   // UI state
   const [currentStep, setCurrentStep] = useState(1);
@@ -120,10 +121,12 @@ export default function ContinueReceiving() {
       setCarrier(receiptData.carrier || shipment.endCarrier || shipment.carrier || "");
       setParcelCount(receiptData.parcelCount || shipment.totalUnits || 1);
       
-      // Load scanned parcels from tracking numbers JSON if available
+      // Load scanned parcels and tracking numbers from tracking numbers JSON if available
       const trackingData = receiptData.trackingNumbers || {};
       const savedScannedParcels = trackingData.scannedParcels || receiptData.receivedParcels || 0;
+      const savedTrackingNumbers = trackingData.numbers || [];
       setScannedParcels(savedScannedParcels);
+      setScannedTrackingNumbers(savedTrackingNumbers);
       setNotes(receiptData.notes || "");
       
       // Initialize items from receipt - build complete item list from shipment items first
@@ -173,6 +176,7 @@ export default function ContinueReceiving() {
       setCarrier(shipment.endCarrier || shipment.carrier || "");
       setParcelCount(shipment.totalUnits || 1);
       setScannedParcels(0); // No parcels scanned yet for new receiving
+      setScannedTrackingNumbers([]); // No tracking numbers yet for new receiving
       
       if (shipment.items && shipment.items.length > 0) {
         const items = shipment.items.map((item: any, index: number) => ({
@@ -209,6 +213,7 @@ export default function ContinueReceiving() {
         scannedParcels,
         carrier,
         notes,
+        trackingNumbers: scannedTrackingNumbers,
         items: receivingItems.map(item => ({
           itemId: parseInt(item.id) || item.id,
           expectedQuantity: item.expectedQty,
@@ -250,11 +255,24 @@ export default function ContinueReceiving() {
   const handleBarcodeScan = (value: string) => {
     if (currentStep === 1) {
       // Step 1: Scanning parcel barcodes
+      // Check if tracking number already scanned
+      if (scannedTrackingNumbers.includes(value)) {
+        toast({
+          title: "Already Scanned",
+          description: `Tracking number ${value} has already been scanned`,
+          variant: "destructive"
+        });
+        setBarcodeScan("");
+        return;
+      }
+      
       const newCount = Math.min(scannedParcels + 1, parcelCount);
-      handleScannedParcelsChange(newCount, true); // Immediate save for scans with correct value
+      const newTrackingNumbers = [...scannedTrackingNumbers, value];
+      setScannedTrackingNumbers(newTrackingNumbers);
+      handleScannedParcelsChange(newCount, true, { trackingNumbers: newTrackingNumbers }); // Immediate save for scans with correct value
       toast({
         title: `${isPalletShipment ? 'Pallet' : 'Parcel'} Scanned`,
-        description: `Scanned ${newCount} of ${parcelCount} ${unitLabel.toLowerCase()}`
+        description: `Scanned ${newCount} of ${parcelCount} ${unitLabel.toLowerCase()} - ${value}`
       });
     } else if (currentStep === 2) {
       // Step 2: Scanning item barcodes
@@ -554,7 +572,7 @@ export default function ContinueReceiving() {
   }, [immediateAutoSave]);
 
   // Auto-save current progress with different strategies
-  const triggerAutoSave = useCallback((updatedItems?: any[], immediate?: boolean, overrides?: { scannedParcels?: number, parcelCount?: number }) => {
+  const triggerAutoSave = useCallback((updatedItems?: any[], immediate?: boolean, overrides?: { scannedParcels?: number, parcelCount?: number, trackingNumbers?: string[] }) => {
     if (!shipment) return;
     
     // Use provided items or fall back to state items
@@ -569,6 +587,7 @@ export default function ContinueReceiving() {
       scannedParcels: overrides?.scannedParcels ?? scannedParcels, // Use override or state value
       carrier,
       notes,
+      trackingNumbers: overrides?.trackingNumbers ?? scannedTrackingNumbers, // Include tracking numbers
       items: itemsToSave.map(item => ({
         itemId: parseInt(item.id) || item.id, // Convert string ID back to integer for API
         expectedQuantity: item.expectedQty,
@@ -582,7 +601,7 @@ export default function ContinueReceiving() {
     lastSaveDataRef.current = progressData;
     
     debouncedAutoSave(progressData, immediate);
-  }, [shipment, receivedBy, parcelCount, scannedParcels, carrier, notes, receivingItems, debouncedAutoSave]);
+  }, [shipment, receivedBy, parcelCount, scannedParcels, carrier, notes, receivingItems, scannedTrackingNumbers, debouncedAutoSave]);
 
   // Text input handlers - save on blur
   const handleReceivedByChange = (value: string) => {
@@ -632,7 +651,7 @@ export default function ContinueReceiving() {
     triggerAutoSave(undefined, false); // Save on blur for manual input
   };
 
-  const handleScannedParcelsChange = (value: number, isButton?: boolean) => {
+  const handleScannedParcelsChange = (value: number, isButton?: boolean, options?: { trackingNumbers?: string[] }) => {
     setScannedParcels(value);
     if (isButton) {
       // Clear any existing button save timer
@@ -642,7 +661,7 @@ export default function ContinueReceiving() {
       // Set a short delay to batch rapid clicks (300ms)
       // Pass the new value directly to avoid closure issues
       buttonSaveTimerRef.current = setTimeout(() => {
-        triggerAutoSave(undefined, true, { scannedParcels: value });
+        triggerAutoSave(undefined, true, { scannedParcels: value, trackingNumbers: options?.trackingNumbers });
         buttonSaveTimerRef.current = null;
       }, 300);
     }
@@ -901,7 +920,7 @@ export default function ContinueReceiving() {
               </div>
 
               {/* Parcel Count */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>Expected {unitLabel}</Label>
                   <div className="flex items-center gap-2">
@@ -964,59 +983,6 @@ export default function ContinueReceiving() {
                     </Button>
                   </div>
                 </div>
-
-                <div>
-                  <Label>Scan Parcels</Label>
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <Input
-                        ref={barcodeRef}
-                        value={barcodeScan}
-                        onChange={(e) => setBarcodeScan(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && barcodeScan) {
-                            handleBarcodeScan(barcodeScan);
-                          }
-                        }}
-                        placeholder={`Scan or type ${isPalletShipment ? 'pallet' : 'parcel'} barcode`}
-                        className={scanMode ? 'border-blue-500 ring-2 ring-blue-200' : ''}
-                      />
-                      <ScanLine className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        setScanMode(!scanMode);
-                        if (!scanMode) {
-                          setTimeout(() => barcodeRef.current?.focus(), 100);
-                        }
-                      }}
-                      className={scanMode ? 'bg-blue-50 border-blue-300' : ''}
-                    >
-                      <Camera className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="mt-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        handleScannedParcelsChange(parcelCount, true);
-                        toast({
-                          title: "Auto-Receive Complete",
-                          description: `All ${parcelCount} ${unitLabel.toLowerCase()} have been automatically received`
-                        });
-                      }}
-                      disabled={scannedParcels >= parcelCount}
-                      className="w-full"
-                    >
-                      <CheckCircle2 className="h-4 w-4 mr-2" />
-                      Receive All ({parcelCount})
-                    </Button>
-                  </div>
-                </div>
               </div>
 
               {/* Parcel Progress */}
@@ -1037,6 +1003,98 @@ export default function ContinueReceiving() {
                     <span className="text-sm">All {unitLabel.toLowerCase()} verified!</span>
                   </div>
                 )}
+                
+                {/* Tracking Numbers Display */}
+                {scannedTrackingNumbers.length > 0 && (
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Scanned Tracking Numbers:</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setScannedTrackingNumbers([]);
+                          setScannedParcels(0);
+                          triggerAutoSave(undefined, true, { scannedParcels: 0, trackingNumbers: [] });
+                          toast({
+                            title: "Cleared",
+                            description: "All tracking numbers have been cleared"
+                          });
+                        }}
+                        className="text-xs"
+                      >
+                        <X className="h-3 w-3 mr-1" />
+                        Clear All
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {scannedTrackingNumbers.map((trackingNumber, index) => (
+                        <Badge 
+                          key={index} 
+                          variant="secondary" 
+                          className="text-xs py-1 px-2"
+                        >
+                          {trackingNumber}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Scan Parcels */}
+              <div>
+                <Label>Scan {unitLabel}</Label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Input
+                      ref={barcodeRef}
+                      value={barcodeScan}
+                      onChange={(e) => setBarcodeScan(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && barcodeScan) {
+                          handleBarcodeScan(barcodeScan);
+                        }
+                      }}
+                      placeholder={`Scan or type ${isPalletShipment ? 'pallet' : 'parcel'} tracking number`}
+                      className={scanMode ? 'border-blue-500 ring-2 ring-blue-200' : ''}
+                    />
+                    <ScanLine className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setScanMode(!scanMode);
+                      if (!scanMode) {
+                        setTimeout(() => barcodeRef.current?.focus(), 100);
+                      }
+                    }}
+                    className={scanMode ? 'bg-blue-50 border-blue-300' : ''}
+                  >
+                    <Camera className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="mt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      handleScannedParcelsChange(parcelCount, true);
+                      toast({
+                        title: "Auto-Receive Complete",
+                        description: `All ${parcelCount} ${unitLabel.toLowerCase()} have been automatically received`
+                      });
+                    }}
+                    disabled={scannedParcels >= parcelCount}
+                    className="w-full"
+                  >
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Receive All ({parcelCount})
+                  </Button>
+                </div>
               </div>
 
               {/* Quick Notes */}
