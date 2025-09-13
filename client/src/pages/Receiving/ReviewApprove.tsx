@@ -358,16 +358,16 @@ export default function ReviewApprove() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="rounded-md border">
+              <div className="rounded-lg border overflow-hidden">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[35%]">Item Name</TableHead>
-                      <TableHead className="w-[15%]">SKU</TableHead>
-                      <TableHead className="text-center w-[10%]">Expected</TableHead>
-                      <TableHead className="text-center w-[10%]">Received</TableHead>
-                      <TableHead className="w-[15%]">Status</TableHead>
-                      <TableHead className="w-[15%]">Location</TableHead>
+                    <TableRow className="bg-muted/50">
+                      <TableHead className="w-[50px]"></TableHead>
+                      <TableHead className="min-w-[250px]">Item Details</TableHead>
+                      <TableHead className="text-center w-[100px]">Expected</TableHead>
+                      <TableHead className="text-center w-[120px]">Received</TableHead>
+                      <TableHead className="w-[150px]">Status</TableHead>
+                      <TableHead className="w-[120px]">Location</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -405,70 +405,110 @@ export default function ReviewApprove() {
                           status = 'damaged';
                         }
                         
+                        // Get product image or use placeholder based on item type
+                        const itemImage = item.purchaseItem?.imageUrl || null;
+                        const getPlaceholderIcon = () => {
+                          if (itemName.toLowerCase().includes('mask')) return '😷';
+                          if (itemName.toLowerCase().includes('glove')) return '🧤';
+                          if (itemName.toLowerCase().includes('sanitizer')) return '🧴';
+                          if (itemName.toLowerCase().includes('thermometer')) return '🌡️';
+                          if (itemName.toLowerCase().includes('oxygen') || itemName.toLowerCase().includes('monitor')) return '📊';
+                          return '📦';
+                        };
+                        
                         return (
-                          <TableRow key={item.id || index}>
-                            <TableCell>
-                              <div className="space-y-1">
-                                <p className="font-medium">{itemName}</p>
-                                {item.notes && (
-                                  <p className="text-xs text-muted-foreground">{item.notes}</p>
+                          <TableRow key={item.id || index} className="hover:bg-muted/30">
+                            {/* Image Column */}
+                            <TableCell className="p-2">
+                              <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center overflow-hidden">
+                                {itemImage ? (
+                                  <img 
+                                    src={itemImage} 
+                                    alt={itemName}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <span className="text-lg">{getPlaceholderIcon()}</span>
                                 )}
                               </div>
                             </TableCell>
+                            
+                            {/* Item Details Column */}
                             <TableCell>
-                              <span className="font-mono text-sm">{itemSku}</span>
+                              <div className="space-y-1">
+                                <p className="font-semibold text-sm">{itemName}</p>
+                                <p className="text-xs text-muted-foreground font-mono">{itemSku}</p>
+                                {item.notes && (
+                                  <p className="text-xs text-muted-foreground italic">{item.notes}</p>
+                                )}
+                              </div>
                             </TableCell>
-                            <TableCell className="text-center font-medium">
-                              {expectedQty}
+                            
+                            {/* Expected Column */}
+                            <TableCell className="text-center">
+                              <div className="font-semibold text-lg">
+                                {expectedQty}
+                              </div>
                             </TableCell>
+                            
+                            {/* Received Column */}
                             <TableCell className="text-center">
                               <div className="space-y-1">
-                                <span className={
+                                <div className={
                                   receivedQty < expectedQty 
-                                    ? "text-amber-600 font-bold" 
+                                    ? "text-amber-600 font-bold text-lg" 
                                     : receivedQty > expectedQty
-                                    ? "text-blue-600 font-bold"
-                                    : "text-green-600 font-bold"
+                                    ? "text-blue-600 font-bold text-lg"
+                                    : "text-green-600 font-bold text-lg"
                                 }>
                                   {receivedQty}
-                                </span>
+                                </div>
                                 {(damagedQty > 0 || missingQty > 0) && (
-                                  <div className="text-xs space-y-0.5">
+                                  <div className="space-y-0.5">
                                     {damagedQty > 0 && (
-                                      <p className="text-red-600">-{damagedQty} damaged</p>
+                                      <div className="text-xs text-red-600 font-medium">
+                                        -{damagedQty} damaged
+                                      </div>
                                     )}
                                     {missingQty > 0 && (
-                                      <p className="text-gray-600">-{missingQty} missing</p>
+                                      <div className="text-xs text-gray-600 font-medium">
+                                        -{missingQty} missing
+                                      </div>
                                     )}
                                   </div>
                                 )}
                               </div>
                             </TableCell>
+                            
+                            {/* Status Column */}
                             <TableCell>
-                              <div className="flex items-center gap-1.5">
-                                {getStatusIcon(status, "h-3.5 w-3.5")}
+                              <div className="flex items-center gap-2">
+                                {getStatusIcon(status, "h-4 w-4")}
                                 <Badge 
                                   variant={getStatusColor(status)} 
-                                  className="text-xs"
+                                  className="text-xs font-medium"
                                 >
                                   {status.replace(/_/g, ' ')}
                                 </Badge>
                               </div>
                             </TableCell>
+                            
+                            {/* Location Column */}
                             <TableCell>
                               <div className="text-sm">
-                                {item.warehouseLocation && (
-                                  <div className="flex items-center gap-1">
-                                    <MapPin className="h-3 w-3 text-muted-foreground" />
-                                    <span className="font-mono">{item.warehouseLocation}</span>
+                                {item.warehouseLocation ? (
+                                  <div className="space-y-1">
+                                    <div className="flex items-center gap-1">
+                                      <MapPin className="h-3 w-3 text-muted-foreground" />
+                                      <span className="font-mono text-xs">{item.warehouseLocation}</span>
+                                    </div>
+                                    {item.additionalLocation && (
+                                      <p className="text-xs text-muted-foreground ml-4">
+                                        {item.additionalLocation}
+                                      </p>
+                                    )}
                                   </div>
-                                )}
-                                {item.additionalLocation && (
-                                  <p className="text-xs text-muted-foreground mt-0.5">
-                                    {item.additionalLocation}
-                                  </p>
-                                )}
-                                {!item.warehouseLocation && !item.additionalLocation && (
+                                ) : (
                                   <span className="text-muted-foreground">-</span>
                                 )}
                               </div>
@@ -478,7 +518,7 @@ export default function ReviewApprove() {
                       })
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8">
+                        <TableCell colSpan={7} className="text-center py-8">
                           <div className="flex flex-col items-center gap-2">
                             <Package className="h-8 w-8 text-muted-foreground" />
                             <p className="text-muted-foreground">No items found for this shipment</p>
