@@ -136,6 +136,11 @@ export default function ContinueReceiving() {
       setCarrier(receiptData.carrier || shipment.endCarrier || shipment.carrier || "");
       setParcelCount(receiptData.parcelCount || shipment.totalUnits || 1);
       
+      // Load photos from receipt if available
+      if (receiptData.photos && Array.isArray(receiptData.photos)) {
+        setUploadedPhotos(receiptData.photos);
+      }
+      
       // Load scanned parcels and tracking numbers from tracking numbers JSON if available
       const trackingData = receiptData.trackingNumbers || {};
       const savedScannedParcels = trackingData.scannedParcels || receiptData.receivedParcels || 0;
@@ -266,6 +271,7 @@ export default function ContinueReceiving() {
         scannedParcels,
         carrier,
         notes,
+        photos: uploadedPhotos,
         trackingNumbers: scannedTrackingNumbers,
         items: receivingItems.map(item => ({
           itemId: parseInt(item.id) || item.id,
@@ -277,7 +283,7 @@ export default function ContinueReceiving() {
       };
       lastSaveDataRef.current = currentData;
     }
-  }, [shipment, receivedBy, parcelCount, scannedParcels, carrier, notes, receivingItems]);
+  }, [shipment, receivedBy, parcelCount, scannedParcels, carrier, notes, uploadedPhotos, receivingItems]);
 
   // Save data on component unmount to ensure changes are persisted
   useEffect(() => {
@@ -627,7 +633,7 @@ export default function ContinueReceiving() {
   }, [immediateAutoSave]);
 
   // Auto-save current progress with different strategies
-  const triggerAutoSave = useCallback((updatedItems?: any[], immediate?: boolean, overrides?: { scannedParcels?: number, parcelCount?: number, trackingNumbers?: string[] }) => {
+  const triggerAutoSave = useCallback((updatedItems?: any[], immediate?: boolean, overrides?: { scannedParcels?: number, parcelCount?: number, trackingNumbers?: string[], photos?: string[] }) => {
     if (!shipment) return;
     
     // Use provided items or fall back to state items
@@ -642,6 +648,7 @@ export default function ContinueReceiving() {
       scannedParcels: overrides?.scannedParcels ?? scannedParcels, // Use override or state value
       carrier,
       notes,
+      photos: overrides?.photos ?? uploadedPhotos, // Include photos
       trackingNumbers: overrides?.trackingNumbers ?? scannedTrackingNumbers, // Include tracking numbers
       items: itemsToSave.map(item => ({
         itemId: parseInt(item.id) || item.id, // Convert string ID back to integer for API
@@ -656,7 +663,7 @@ export default function ContinueReceiving() {
     lastSaveDataRef.current = progressData;
     
     debouncedAutoSave(progressData, immediate);
-  }, [shipment, receivedBy, parcelCount, scannedParcels, carrier, notes, receivingItems, scannedTrackingNumbers, debouncedAutoSave]);
+  }, [shipment, receivedBy, parcelCount, scannedParcels, carrier, notes, uploadedPhotos, receivingItems, scannedTrackingNumbers, debouncedAutoSave]);
 
   // Text input handlers - save on blur
   const handleReceivedByChange = (value: string) => {
@@ -865,12 +872,26 @@ export default function ContinueReceiving() {
     const files = e.target.files;
     if (!files) return;
     
+    let processedCount = 0;
+    const totalFiles = files.length;
     const newPhotos: string[] = [];
+    
     Array.from(files).forEach(file => {
       const reader = new FileReader();
       reader.onloadend = () => {
         if (reader.result && typeof reader.result === 'string') {
-          setUploadedPhotos(prev => [...prev, reader.result as string]);
+          newPhotos.push(reader.result);
+          processedCount++;
+          
+          // When all files are processed, update state and trigger auto-save
+          if (processedCount === totalFiles) {
+            setUploadedPhotos(prev => {
+              const updated = [...prev, ...newPhotos];
+              // Trigger auto-save with updated photos
+              triggerAutoSave(undefined, true, { photos: updated });
+              return updated;
+            });
+          }
         }
       };
       reader.readAsDataURL(file);
@@ -881,7 +902,12 @@ export default function ContinueReceiving() {
   };
   
   const handleRemovePhoto = (index: number) => {
-    setUploadedPhotos(prev => prev.filter((_, i) => i !== index));
+    setUploadedPhotos(prev => {
+      const updated = prev.filter((_, i) => i !== index);
+      // Trigger auto-save with updated photos
+      triggerAutoSave(undefined, true, { photos: updated });
+      return updated;
+    });
   };
 
   if (isLoading) {

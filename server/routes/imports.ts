@@ -3345,6 +3345,7 @@ router.post("/receipts/auto-save", async (req, res) => {
       scannedParcels,
       carrier,
       notes,
+      photos,
       items
     } = req.body;
 
@@ -3374,6 +3375,7 @@ router.post("/receipts/auto-save", async (req, res) => {
           parcelCount: parcelCount || existingReceipt.parcelCount,
           carrier: carrier || existingReceipt.carrier,
           notes: notes || existingReceipt.notes,
+          photos: photos || existingReceipt.photos,
           trackingNumbers: trackingData,
           updatedAt: new Date()
         })
@@ -3395,6 +3397,7 @@ router.post("/receipts/auto-save", async (req, res) => {
         carrier: carrier || "",
         status: 'pending_verification',
         notes: notes || "",
+        photos: photos || [],
         trackingNumbers: trackingData,
         receivedAt: new Date(),
         createdAt: new Date(),
