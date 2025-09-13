@@ -187,13 +187,8 @@ export default function ContinueReceiving() {
       // Load photos from receipt if available
       if (receiptData.photos && Array.isArray(receiptData.photos) && receiptData.photos.length > 0) {
         console.log(`Loading ${receiptData.photos.length} photos from saved data`);
-        setPhotosLoading(true);
-        
-        // Simulate async loading of photos to show loading state
-        setTimeout(() => {
-          setUploadedPhotos(receiptData.photos);
-          setPhotosLoading(false);
-        }, 100); // Small delay to show loading state
+        setUploadedPhotos(receiptData.photos);
+        setPhotosLoading(false);
       } else {
         console.log('No photos to load');
         setUploadedPhotos([]);
@@ -2008,7 +2003,8 @@ export default function ContinueReceiving() {
             <CardContent>
               <Textarea
                 value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+                onChange={(e) => handleNotesChange(e.target.value)}
+                onBlur={handleNotesBlur}
                 placeholder="Add any additional notes about this receiving process..."
                 rows={3}
                 className="resize-none"

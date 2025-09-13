@@ -8,6 +8,8 @@ Preferred communication style: Simple, everyday language.
 - **January 25, 2025**: Fixed auto-save issues and enhanced loading experiences in receiving workflow
   - Fixed item quantity auto-save to trigger immediately on every change (was using debounced save)
   - Fixed status button changes (OK, DMG, MISS) to save immediately to prevent data loss
+  - Fixed Additional Notes textarea to properly save changes automatically on blur
+  - Fixed photo loading to display immediately without delay on page load
   - Added skeleton loading placeholders for photos while they load from database
   - Enhanced photo loading with smooth transitions and proper loading states
   - Ensured all user actions save immediately to database for reliable data persistence
