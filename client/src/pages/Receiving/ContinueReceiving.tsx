@@ -127,18 +127,37 @@ export default function ContinueReceiving() {
   const isPalletShipment = shipment?.unitType?.toLowerCase().includes('pallet') || false;
   const unitLabel = isPalletShipment ? 'Pallets' : 'Parcels';
 
-  // Initialize data when shipment loads
+  // Initialize data when shipment and receipt loads
   useEffect(() => {
-    if (shipment && receipt) {
+    console.log('Loading receipt data:', { shipment: !!shipment, receipt: !!receipt, receiptLoading });
+    
+    if (shipment && receipt && !receiptLoading) {
       // Load existing receipt data - receipt object has structure: { receipt: {...}, items: [...] }
       const receiptData = receipt.receipt || receipt;
+      console.log('Receipt data found:', { 
+        id: receiptData.id, 
+        receivedBy: receiptData.receivedBy,
+        scannedParcels: receiptData.trackingNumbers?.scannedParcels,
+        photoCount: receiptData.photos?.length || 0,
+        itemCount: receipt.items?.length || 0
+      });
+      console.log('Setting state from receipt:', {
+        receivedBy: receiptData.receivedBy,
+        carrier: receiptData.carrier,
+        parcelCount: receiptData.parcelCount,
+        notes: receiptData.notes
+      });
       setReceivedBy(receiptData.receivedBy || "Employee #1");
       setCarrier(receiptData.carrier || shipment.endCarrier || shipment.carrier || "");
       setParcelCount(receiptData.parcelCount || shipment.totalUnits || 1);
       
       // Load photos from receipt if available
       if (receiptData.photos && Array.isArray(receiptData.photos)) {
+        console.log(`Loading ${receiptData.photos.length} photos from saved data`);
         setUploadedPhotos(receiptData.photos);
+      } else {
+        console.log('No photos to load');
+        setUploadedPhotos([]);
       }
       
       // Load scanned parcels and tracking numbers from tracking numbers JSON if available
@@ -241,31 +260,45 @@ export default function ContinueReceiving() {
       
       // Only show Step 2 if Step 1 is complete AND Step 2 has progress
       // Otherwise default to Step 1
+      console.log('Step determination:', {
+        isStep1Complete,
+        hasStep2Progress,
+        selectedStep: isStep1Complete && hasStep2Progress ? 2 : 1
+      });
+      
       if (isStep1Complete && hasStep2Progress) {
         setCurrentStep(2);
       } else {
         setCurrentStep(1);
       }
     } else if (shipment && !receipt && !receiptLoading) {
-      // Initialize from shipment if no receipt exists (only after receipt loading is complete)
-      setCarrier(shipment.endCarrier || shipment.carrier || "");
-      setParcelCount(shipment.totalUnits || 1);
-      setScannedParcels(0); // No parcels scanned yet for new receiving
-      setScannedTrackingNumbers([]); // No tracking numbers yet for new receiving
+      // Only initialize from shipment if we don't already have data
+      // This prevents resetting data if receipt momentarily becomes null
+      console.log('No receipt found, checking if we need to initialize from shipment');
       
-      if (shipment.items && shipment.items.length > 0) {
-        const items = shipment.items.map((item: any, index: number) => ({
-          id: item.id ? item.id.toString() : `item-${index}`, // Convert to string for UI, but store original ID
-          name: item.name || item.productName || `Item ${index + 1}`,
-          sku: item.sku || '',
-          expectedQty: item.quantity || 1,
-          receivedQty: 0,
-          status: 'pending' as const,
-          notes: '',
-          checked: false,
-          imageUrl: item.imageUrl || ''
-        }));
-        setReceivingItems(items);
+      // Only set defaults if the current values are empty/default
+      if (!receivedBy || receivedBy === "Employee #1") {
+        setCarrier(shipment.endCarrier || shipment.carrier || "");
+        setParcelCount(shipment.totalUnits || 1);
+        setScannedParcels(0); // No parcels scanned yet for new receiving
+        setScannedTrackingNumbers([]); // No tracking numbers yet for new receiving
+        setUploadedPhotos([]); // Clear photos for new receiving
+        setNotes(""); // Clear notes for new receiving
+        
+        if (shipment.items && shipment.items.length > 0) {
+          const items = shipment.items.map((item: any, index: number) => ({
+            id: item.id ? item.id.toString() : `item-${index}`, // Convert to string for UI, but store original ID
+            name: item.name || item.productName || `Item ${index + 1}`,
+            sku: item.sku || '',
+            expectedQty: item.quantity || 1,
+            receivedQty: 0,
+            status: 'pending' as const,
+            notes: '',
+            checked: false,
+            imageUrl: item.imageUrl || ''
+          }));
+          setReceivingItems(items);
+        }
       }
     }
   }, [shipment, receipt, receiptLoading]);
