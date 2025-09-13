@@ -43,7 +43,10 @@ import {
   Check,
   AlertTriangle,
   X,
-  Layers
+  Layers,
+  Upload,
+  ImagePlus,
+  Trash2
 } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
@@ -83,6 +86,7 @@ export default function ContinueReceiving() {
   const [receivingItems, setReceivingItems] = useState<ReceivingItem[]>([]);
   const [notes, setNotes] = useState("");
   const [scannedTrackingNumbers, setScannedTrackingNumbers] = useState<string[]>([]);
+  const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
   
   // UI state
   const [currentStep, setCurrentStep] = useState(1);
@@ -854,6 +858,32 @@ export default function ContinueReceiving() {
      item.status === 'missing' || item.status === 'partial_missing'))
   ).length;
 
+  // Photo upload handlers
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    
+    const newPhotos: string[] = [];
+    Array.from(files).forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (reader.result && typeof reader.result === 'string') {
+          setUploadedPhotos(prev => [...prev, reader.result as string]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+    
+    // Clear the input value to allow uploading the same file again
+    e.target.value = '';
+  };
+  
+  const handleRemovePhoto = (index: number) => {
+    setUploadedPhotos(prev => prev.filter((_, i) => i !== index));
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto p-4">
@@ -1594,6 +1624,107 @@ export default function ContinueReceiving() {
                 
                 return null;
               })()}
+            </CardContent>
+          </Card>
+
+          {/* Photos Upload Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Camera className="h-5 w-5" />
+                Photos
+                <span className="text-sm font-normal text-muted-foreground ml-auto">
+                  {uploadedPhotos.length > 0 && `(${uploadedPhotos.length} uploaded)`}
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Upload Button */}
+              <div className="flex items-center gap-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="gap-2"
+                >
+                  <ImagePlus className="h-4 w-4" />
+                  Add Photos
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handlePhotoUpload}
+                  className="hidden"
+                />
+                <span className="text-sm text-muted-foreground">
+                  Upload photos of the shipment, damage, or any issues
+                </span>
+              </div>
+
+              {/* Photos Grid - Horizontal Scrollable Layout */}
+              {uploadedPhotos.length > 0 && (
+                <div className="relative">
+                  <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+                    {uploadedPhotos.map((photo, index) => (
+                      <div
+                        key={index}
+                        className="relative flex-shrink-0 group"
+                      >
+                        {/* Photo Container */}
+                        <div className="relative w-32 h-32 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-600 transition-colors">
+                          <img
+                            src={photo}
+                            alt={`Upload ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                          {/* Overlay with photo number */}
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+                            <span className="text-white text-xs font-medium">
+                              Photo {index + 1}
+                            </span>
+                          </div>
+                          {/* Remove button */}
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            onClick={() => handleRemovePhoto(index)}
+                            className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                    {/* Upload more placeholder */}
+                    <div
+                      className="flex-shrink-0 w-32 h-32 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-600 transition-colors cursor-pointer flex flex-col items-center justify-center"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                      <span className="text-xs text-gray-500 dark:text-gray-400 text-center px-2">
+                        Add more
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Empty State */}
+              {uploadedPhotos.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-8 px-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700">
+                  <Camera className="h-12 w-12 text-gray-400 mb-3" />
+                  <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+                    No photos uploaded yet
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-500 text-center mt-1">
+                    Click "Add Photos" to upload images of the shipment
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
