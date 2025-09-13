@@ -907,6 +907,15 @@ export default function ContinueReceiving() {
               const updated = [...prev, ...newPhotos];
               // Trigger auto-save with updated photos
               triggerAutoSave(undefined, true, { photos: updated });
+              
+              // Show confirmation toast
+              toast({
+                title: "Photos Uploaded",
+                description: `${newPhotos.length} photo${newPhotos.length > 1 ? 's' : ''} added and saved`,
+                className: "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800",
+                duration: 3000
+              });
+              
               return updated;
             });
           }
@@ -924,6 +933,15 @@ export default function ContinueReceiving() {
       const updated = prev.filter((_, i) => i !== index);
       // Trigger auto-save with updated photos
       triggerAutoSave(undefined, true, { photos: updated });
+      
+      // Show confirmation toast
+      toast({
+        title: "Photo Removed",
+        description: "Photo deleted and changes saved",
+        className: "bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800",
+        duration: 2000
+      });
+      
       return updated;
     });
   };

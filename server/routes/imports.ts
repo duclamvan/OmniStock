@@ -3352,6 +3352,11 @@ router.post("/receipts/auto-save", async (req, res) => {
     if (!shipmentId) {
       return res.status(400).json({ message: "shipmentId is required" });
     }
+    
+    // Debug log for photos
+    if (photos && photos.length > 0) {
+      console.log(`Auto-saving ${photos.length} photos for shipment ${shipmentId}`);
+    }
 
     // Check if receipt already exists for this shipment
     const [existingReceipt] = await db
