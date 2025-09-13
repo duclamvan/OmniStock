@@ -675,17 +675,17 @@ export default function ContinueReceiving() {
   const pendingSaveRef = useRef<boolean>(false);
   
   
-  // Immediate save function with queue prevention
+  // Immediate save function that always captures the last value
   const immediateAutoSave = useCallback((data: any) => {
-    // Prevent duplicate saves
+    // Always store the latest data
+    lastSaveDataRef.current = data;
+    
+    // If already saving, the latest data will be saved when current save completes
     if (pendingSaveRef.current) {
-      // Store the latest data to save after current save completes
-      lastSaveDataRef.current = data;
       return;
     }
     
     pendingSaveRef.current = true;
-    lastSaveDataRef.current = data;
     setIsSaving(true);
     setSaveStatus('saving');
     
@@ -703,11 +703,14 @@ export default function ContinueReceiving() {
           setSaveStatus('idle');
         }, 1000);
         
-        // If there's pending data, save it now
-        if (lastSaveDataRef.current && lastSaveDataRef.current !== data) {
+        // Check if newer data arrived while we were saving
+        if (lastSaveDataRef.current && JSON.stringify(lastSaveDataRef.current) !== JSON.stringify(data)) {
           const pendingData = lastSaveDataRef.current;
+          // Small delay to prevent too rapid saves
+          setTimeout(() => immediateAutoSave(pendingData), 50);
+        } else {
+          // Clear the ref if we've saved the latest data
           lastSaveDataRef.current = null;
-          setTimeout(() => immediateAutoSave(pendingData), 100);
         }
       }
     });
