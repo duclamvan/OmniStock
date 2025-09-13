@@ -90,6 +90,7 @@ export default function ContinueReceiving() {
   const [barcodeScan, setBarcodeScan] = useState("");
   const [showAllItems, setShowAllItems] = useState(true);
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
+  const [hasShownCompletionToast, setHasShownCompletionToast] = useState(false);
 
   // Fetch shipment details
   const { data: shipment, isLoading } = useQuery({
@@ -828,6 +829,22 @@ export default function ContinueReceiving() {
   
   // Combined weighted progress (40% items quantity, 30% parcels, 30% checked items)
   const progress = (itemsProgress * 0.4) + (parcelProgress * 0.3) + (checkedProgress * 0.3);
+  
+  // Show completion notification when progress reaches 100%
+  useEffect(() => {
+    if (progress >= 100 && !hasShownCompletionToast && receivingItems.length > 0) {
+      setHasShownCompletionToast(true);
+      toast({
+        title: "✨ All items received",
+        description: "Great job! The shipment is fully received.",
+        className: "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800",
+        duration: 4000
+      });
+    } else if (progress < 100 && hasShownCompletionToast) {
+      // Reset if progress drops back below 100%
+      setHasShownCompletionToast(false);
+    }
+  }, [progress, hasShownCompletionToast, receivingItems.length, toast]);
   
   // For display purposes
   const completedItems = receivingItems.filter(item => 
