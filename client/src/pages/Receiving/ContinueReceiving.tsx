@@ -970,7 +970,31 @@ export default function ContinueReceiving() {
           if (processedCount === totalFiles) {
             setUploadedPhotos(prev => {
               const updated = [...prev, ...newPhotos];
-              // Trigger auto-save with updated photos
+              
+              // Immediately update lastSaveDataRef for cleanup save
+              if (shipment) {
+                const progressData = {
+                  shipmentId: shipment.id,
+                  consolidationId: shipment.consolidationId,
+                  receivedBy,
+                  parcelCount,
+                  scannedParcels,
+                  carrier,
+                  notes,
+                  photos: updated,
+                  trackingNumbers: scannedTrackingNumbers,
+                  items: receivingItems.map(item => ({
+                    itemId: parseInt(item.id) || item.id,
+                    expectedQuantity: item.expectedQty,
+                    receivedQuantity: item.receivedQty,
+                    status: item.status,
+                    notes: item.notes
+                  }))
+                };
+                lastSaveDataRef.current = progressData;
+              }
+              
+              // Trigger immediate auto-save
               triggerAutoSave(undefined, true, { photos: updated });
               
               // Show confirmation toast
@@ -996,7 +1020,31 @@ export default function ContinueReceiving() {
   const handleRemovePhoto = (index: number) => {
     setUploadedPhotos(prev => {
       const updated = prev.filter((_, i) => i !== index);
-      // Trigger auto-save with updated photos
+      
+      // Immediately update lastSaveDataRef for cleanup save
+      if (shipment) {
+        const progressData = {
+          shipmentId: shipment.id,
+          consolidationId: shipment.consolidationId,
+          receivedBy,
+          parcelCount,
+          scannedParcels,
+          carrier,
+          notes,
+          photos: updated,
+          trackingNumbers: scannedTrackingNumbers,
+          items: receivingItems.map(item => ({
+            itemId: parseInt(item.id) || item.id,
+            expectedQuantity: item.expectedQty,
+            receivedQuantity: item.receivedQty,
+            status: item.status,
+            notes: item.notes
+          }))
+        };
+        lastSaveDataRef.current = progressData;
+      }
+      
+      // Trigger immediate auto-save
       triggerAutoSave(undefined, true, { photos: updated });
       
       // Show confirmation toast
