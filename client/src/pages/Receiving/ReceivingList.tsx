@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, memo, useCallback } from "react";
+import { useState, useEffect, useMemo, memo, useCallback, ReactNode } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { FixedSizeList as List } from "react-window";
+import { FixedSizeList as List, VariableSizeList } from "react-window";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -69,6 +69,101 @@ import { Link } from "wouter";
 import { format, differenceInHours, differenceInDays, isToday, isYesterday, isThisWeek, isThisMonth } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
+
+// Memoized status icon component to avoid recreating functions on every render
+const StatusIcon = memo(({ status }: { status: string }): ReactNode => {
+  switch(status) {
+    case 'complete':
+      return <CheckCircle className="h-3.5 w-3.5 text-green-600" />;
+    case 'partial':
+      return <AlertCircle className="h-3.5 w-3.5 text-amber-600" />;
+    case 'damaged':
+      return <AlertTriangle className="h-3.5 w-3.5 text-red-600" />;
+    case 'missing':
+      return <AlertCircle className="h-3.5 w-3.5 text-red-600" />;
+    default:
+      return <Clock className="h-3.5 w-3.5 text-gray-400" />;
+  }
+});
+StatusIcon.displayName = 'StatusIcon';
+
+// Memoized item row component for performance
+const ReceiptItemRow = memo(({
+  item,
+  receiptItem,
+  index
+}: {
+  item: any;
+  receiptItem: any;
+  index: number;
+}) => {
+  const receivedQty = receiptItem?.receivedQuantity || 0;
+  const expectedQty = receiptItem?.expectedQuantity || item.quantity || 0;
+  const status = receiptItem?.status || 'pending';
+  const progressPercent = expectedQty > 0 ? Math.round((receivedQty / expectedQty) * 100) : 0;
+
+  return (
+    <tr 
+      className={`border-b last:border-b-0 hover:bg-muted/30 transition-colors ${
+        index % 2 === 0 ? 'bg-background' : 'bg-muted/10'
+      }`}
+    >
+      <td className="px-2 py-1 max-w-[200px]">
+        <span className="font-medium truncate block" title={item.name}>
+          {item.name}
+        </span>
+      </td>
+      <td className="px-2 py-1 text-center">
+        <div className="flex items-center justify-center gap-1">
+          <span className={`font-semibold ${
+            receivedQty === expectedQty ? 'text-green-600' : 
+            receivedQty > 0 ? 'text-amber-600' : 'text-muted-foreground'
+          }`}>
+            {receivedQty}
+          </span>
+          <span className="text-muted-foreground">/</span>
+          <span className="text-muted-foreground">{expectedQty}</span>
+        </div>
+      </td>
+      <td className="px-2 py-1">
+        <div className="flex items-center gap-1.5">
+          <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+            <div 
+              className={`h-full transition-all ${
+                progressPercent === 100 ? 'bg-green-600' :
+                progressPercent > 0 ? 'bg-amber-600' : 'bg-gray-300'
+              }`}
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+          <span className={`text-xs font-medium ${
+            progressPercent === 100 ? 'text-green-600' :
+            progressPercent > 0 ? 'text-amber-600' : 'text-muted-foreground'
+          }`}>
+            {progressPercent}%
+          </span>
+        </div>
+      </td>
+      <td className="px-2 py-1 text-center">
+        <div className="flex items-center justify-center gap-1">
+          <StatusIcon status={status} />
+          <span className={`text-xs font-medium ${
+            status === 'complete' ? 'text-green-600' :
+            status === 'partial' ? 'text-amber-600' :
+            status === 'damaged' || status === 'missing' ? 'text-red-600' :
+            'text-muted-foreground'
+          }`}>
+            {status === 'complete' ? 'Complete' : 
+             status === 'partial' ? 'Partial' : 
+             status === 'damaged' ? 'Damaged' :
+             status === 'missing' ? 'Missing' : 'Pending'}
+          </span>
+        </div>
+      </td>
+    </tr>
+  );
+});
+ReceiptItemRow.displayName = 'ReceiptItemRow';
 
 // Helper function to format shipment type display name
 const formatShipmentType = (shipmentType: string) => {
@@ -435,7 +530,7 @@ export default function ReceivingList() {
     refetchOnMount: true // Only refetch if stale
   });
 
-  // Fetch shipments currently being received with receipt data (optimized caching)
+  // Fetch shipments currently being received with receipt data (optimized with parallel fetching)
   const { data: receivingShipments = [], isLoading: isLoadingReceiving, refetch: refetchReceiving } = useQuery({
     queryKey: ['/api/imports/shipments/by-status/receiving'],
     queryFn: async () => {
@@ -443,27 +538,27 @@ export default function ReceivingList() {
       if (!response.ok) throw new Error('Failed to fetch receiving shipments');
       const shipments = await response.json();
 
-      // Fetch receipt data for each shipment
-      const receiptsPromises = shipments.map(async (shipment: any) => {
-        try {
-          const receiptResponse = await fetch(`/api/imports/receipts/by-shipment/${shipment.id}`);
-          if (receiptResponse.ok) {
-            const data = await receiptResponse.json();
-            return { shipmentId: shipment.id, receiptData: data };
-          }
-        } catch (error) {
-          console.error(`Error fetching receipt for shipment ${shipment.id}:`, error);
-        }
-        return { shipmentId: shipment.id, receiptData: null };
-      });
+      // Parallel fetch receipt data for all shipments at once (much faster!)
+      const receiptsPromises = shipments.map((shipment: any) => 
+        fetch(`/api/imports/receipts/by-shipment/${shipment.id}`)
+          .then(res => res.ok ? res.json() : null)
+          .then(data => ({ shipmentId: shipment.id, receiptData: data }))
+          .catch(error => {
+            console.error(`Error fetching receipt for shipment ${shipment.id}:`, error);
+            return { shipmentId: shipment.id, receiptData: null };
+          })
+      );
 
+      // Wait for all promises to resolve in parallel
       const receipts = await Promise.all(receiptsPromises);
-      const newReceiptMap = new Map();
-      receipts.forEach(({ shipmentId, receiptData }) => {
-        if (receiptData) {
-          newReceiptMap.set(shipmentId, receiptData);
-        }
-      });
+      
+      // Build the receipt map more efficiently
+      const newReceiptMap = new Map(
+        receipts
+          .filter(({ receiptData }) => receiptData !== null)
+          .map(({ shipmentId, receiptData }) => [shipmentId, receiptData])
+      );
+      
       setReceiptDataMap(newReceiptMap);
 
       return shipments;
@@ -1508,6 +1603,14 @@ export default function ReceivingList() {
                 const isExpanded = expandedShipments.has(shipment.id);
                 const receiptData = receiptDataMap.get(shipment.id);
                 const receiptItems = receiptData?.items || [];
+                
+                // Create O(1) lookup map for receipt items by itemId for performance
+                // Note: Not using useMemo here to avoid hooks rules violation in map
+                const receiptItemsMap = new Map();
+                receiptItems.forEach((item: any) => {
+                  // Handle both string and number IDs
+                  receiptItemsMap.set(String(item.itemId), item);
+                });
 
                 return (
                   <Card key={shipment.id} className="border hover:shadow-md transition-shadow">
@@ -1581,108 +1684,71 @@ export default function ReceivingList() {
                               <div className="p-2 border-b bg-muted/30">
                                 <h4 className="text-xs font-semibold text-muted-foreground">RECEIVED ITEMS ({shipment.items.length})</h4>
                               </div>
-                              <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
-                                  <thead className="border-b bg-muted/20">
-                                    <tr className="text-xs text-muted-foreground">
-                                      <th className="text-left px-2 py-1.5 font-medium">Item</th>
-                                      <th className="text-center px-2 py-1.5 font-medium min-w-[100px]">Qty</th>
-                                      <th className="text-center px-2 py-1.5 font-medium min-w-[80px]">Progress</th>
-                                      <th className="text-center px-2 py-1.5 font-medium">Status</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {shipment.items.map((item: any, index: number) => {
-                                      // Find receipt data for this item
-                                      const receiptItem = receiptItems.find((ri: any) => 
-                                        ri.itemId === item.id || ri.itemId?.toString() === item.id?.toString()
-                                      );
-                                      const receivedQty = receiptItem?.receivedQuantity || 0;
-                                      const expectedQty = receiptItem?.expectedQuantity || item.quantity || 0;
-                                      const status = receiptItem?.status || 'pending';
-                                      const progressPercent = expectedQty > 0 ? Math.round((receivedQty / expectedQty) * 100) : 0;
-
-                                      // Status icon and color
-                                      const getStatusIcon = () => {
-                                        switch(status) {
-                                          case 'complete':
-                                            return <CheckCircle className="h-3.5 w-3.5 text-green-600" />;
-                                          case 'partial':
-                                            return <AlertCircle className="h-3.5 w-3.5 text-amber-600" />;
-                                          case 'damaged':
-                                            return <AlertTriangle className="h-3.5 w-3.5 text-red-600" />;
-                                          case 'missing':
-                                            return <AlertCircle className="h-3.5 w-3.5 text-red-600" />;
-                                          default:
-                                            return <Clock className="h-3.5 w-3.5 text-gray-400" />;
-                                        }
-                                      };
-
+                              {/* Use virtualization for lists with more than 20 items */}
+                              {shipment.items.length > 20 ? (
+                                <div>
+                                  {/* Table header */}
+                                  <div className="border-b bg-muted/20">
+                                    <div className="grid grid-cols-[1fr,100px,80px,100px] text-xs text-muted-foreground">
+                                      <div className="text-left px-2 py-1.5 font-medium">Item</div>
+                                      <div className="text-center px-2 py-1.5 font-medium">Qty</div>
+                                      <div className="text-center px-2 py-1.5 font-medium">Progress</div>
+                                      <div className="text-center px-2 py-1.5 font-medium">Status</div>
+                                    </div>
+                                  </div>
+                                  {/* Virtualized list for performance */}
+                                  <List
+                                    height={400}
+                                    itemCount={shipment.items.length}
+                                    itemSize={40}
+                                    width="100%"
+                                  >
+                                    {({ index, style }) => {
+                                      const item = shipment.items[index];
+                                      const receiptItem = receiptItemsMap.get(String(item.id));
+                                      
                                       return (
-                                        <tr 
-                                          key={index} 
-                                          className={`border-b last:border-b-0 hover:bg-muted/30 transition-colors ${
-                                            index % 2 === 0 ? 'bg-background' : 'bg-muted/10'
-                                          }`}
-                                        >
-                                          <td className="px-2 py-1 max-w-[200px]">
-                                            <span className="font-medium truncate block" title={item.name}>
-                                              {item.name}
-                                            </span>
-                                          </td>
-                                          <td className="px-2 py-1 text-center">
-                                            <div className="flex items-center justify-center gap-1">
-                                              <span className={`font-semibold ${
-                                                receivedQty === expectedQty ? 'text-green-600' : 
-                                                receivedQty > 0 ? 'text-amber-600' : 'text-muted-foreground'
-                                              }`}>
-                                                {receivedQty}
-                                              </span>
-                                              <span className="text-muted-foreground">/</span>
-                                              <span className="text-muted-foreground">{expectedQty}</span>
-                                            </div>
-                                          </td>
-                                          <td className="px-2 py-1">
-                                            <div className="flex items-center gap-1.5">
-                                              <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                                                <div 
-                                                  className={`h-full transition-all ${
-                                                    progressPercent === 100 ? 'bg-green-600' :
-                                                    progressPercent > 0 ? 'bg-amber-600' : 'bg-gray-300'
-                                                  }`}
-                                                  style={{ width: `${progressPercent}%` }}
-                                                />
-                                              </div>
-                                              <span className={`text-xs font-medium ${
-                                                progressPercent === 100 ? 'text-green-600' :
-                                                progressPercent > 0 ? 'text-amber-600' : 'text-muted-foreground'
-                                              }`}>
-                                                {progressPercent}%
-                                              </span>
-                                            </div>
-                                          </td>
-                                          <td className="px-2 py-1 text-center">
-                                            <div className="flex items-center justify-center gap-1">
-                                              {getStatusIcon()}
-                                              <span className={`text-xs font-medium ${
-                                                status === 'complete' ? 'text-green-600' :
-                                                status === 'partial' ? 'text-amber-600' :
-                                                status === 'damaged' || status === 'missing' ? 'text-red-600' :
-                                                'text-muted-foreground'
-                                              }`}>
-                                                {status === 'complete' ? 'Complete' : 
-                                                 status === 'partial' ? 'Partial' : 
-                                                 status === 'damaged' ? 'Damaged' :
-                                                 status === 'missing' ? 'Missing' : 'Pending'}
-                                              </span>
-                                            </div>
-                                          </td>
-                                        </tr>
+                                        <div style={style}>
+                                          <ReceiptItemRow
+                                            item={item}
+                                            receiptItem={receiptItem}
+                                            index={index}
+                                          />
+                                        </div>
                                       );
-                                    })}
-                                  </tbody>
-                                </table>
-                              </div>
+                                    }}
+                                  </List>
+                                </div>
+                              ) : (
+                                /* Regular table for small lists */
+                                <div className="overflow-x-auto">
+                                  <table className="w-full text-sm">
+                                    <thead className="border-b bg-muted/20">
+                                      <tr className="text-xs text-muted-foreground">
+                                        <th className="text-left px-2 py-1.5 font-medium">Item</th>
+                                        <th className="text-center px-2 py-1.5 font-medium min-w-[100px]">Qty</th>
+                                        <th className="text-center px-2 py-1.5 font-medium min-w-[80px]">Progress</th>
+                                        <th className="text-center px-2 py-1.5 font-medium">Status</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {shipment.items.map((item: any, index: number) => {
+                                        // O(1) lookup for receipt data using the pre-built map
+                                        const receiptItem = receiptItemsMap.get(String(item.id));
+                                        
+                                        return (
+                                          <ReceiptItemRow 
+                                            key={item.id || index}
+                                            item={item}
+                                            receiptItem={receiptItem}
+                                            index={index}
+                                          />
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
