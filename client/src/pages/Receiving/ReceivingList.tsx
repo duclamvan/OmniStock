@@ -165,7 +165,8 @@ export default function ReceivingList() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [carrierFilter, setCarrierFilter] = useState("all");
   const [shipmentTypeFilter, setShipmentTypeFilter] = useState("all"); // Added shipmentTypeFilter
-  const [cartonTypeFilter, setCartonTypeFilter] = useState("all"); // Added cartonTypeFilter
+  const [cartonTypeFilter, setCartonTypeFilter] = useState("all"); // Packaging type filter (boxes/pallets/etc.)
+  const [warehouseFilter, setWarehouseFilter] = useState("all"); // Warehouse filter
   const [expandAllReceiving, setExpandAllReceiving] = useState(true);
   const [receiptDataMap, setReceiptDataMap] = useState<Map<number, any>>(new Map());
 
@@ -335,11 +336,18 @@ export default function ReceivingList() {
       .filter((type: string) => type.length > 0)
   )).sort();
 
-  // Get unique carton types from shipments
+  // Get unique packaging types (unitType) from shipments
   const uniqueCartonTypes: string[] = Array.from(new Set(
     currentShipments
       .map((s: any) => String(s.unitType || 'items'))
       .filter((type: string) => type.length > 0)
+  )).sort();
+
+  // Get unique warehouses from shipments
+  const uniqueWarehouses: string[] = Array.from(new Set(
+    currentShipments
+      .map((s: any) => s.consolidation?.warehouse)
+      .filter((warehouse: string | undefined) => warehouse && warehouse.length > 0)
   )).sort();
 
   // Helper function to determine if shipment is urgent (removed functionality)
@@ -399,8 +407,13 @@ export default function ReceivingList() {
         return false;
       }
 
-      // Carton type filter
+      // Packaging type filter (unitType)
       if (cartonTypeFilter !== 'all' && (shipment.unitType || 'items') !== cartonTypeFilter) {
+        return false;
+      }
+
+      // Warehouse filter
+      if (warehouseFilter !== 'all' && shipment.consolidation?.warehouse !== warehouseFilter) {
         return false;
       }
 
@@ -418,7 +431,8 @@ export default function ReceivingList() {
     priorityFilter, 
     carrierFilter, 
     shipmentTypeFilter, 
-    cartonTypeFilter
+    cartonTypeFilter,
+    warehouseFilter
   ]);
 
   // Sort filtered shipments
@@ -803,6 +817,21 @@ export default function ReceivingList() {
               </SelectContent>
             </Select>
 
+            <Select value={warehouseFilter} onValueChange={setWarehouseFilter}>
+              <SelectTrigger className="w-40">
+                <Warehouse className="h-3 w-3" />
+                <SelectValue placeholder="Warehouse" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Warehouses</SelectItem>
+                {uniqueWarehouses.map(warehouse => (
+                  <SelectItem key={warehouse} value={warehouse}>
+                    {warehouse}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
             <Select value={shipmentTypeFilter} onValueChange={setShipmentTypeFilter}>
               <SelectTrigger className="w-40">
                 <Package className="h-3 w-3" />
@@ -822,15 +851,18 @@ export default function ReceivingList() {
             </Select>
 
             <Select value={cartonTypeFilter} onValueChange={setCartonTypeFilter}>
-              <SelectTrigger className="w-36">
+              <SelectTrigger className="w-40">
                 <Package2 className="h-3 w-3" />
-                <SelectValue placeholder="Carton Type" />
+                <SelectValue placeholder="Packaging Type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="all">All Packaging</SelectItem>
                 {uniqueCartonTypes.map(type => (
                   <SelectItem key={type} value={type}>
-                    {type}
+                    <div className="flex items-center gap-1">
+                      {getUnitTypeIcon(type, 'h-4 w-4')}
+                      <span className="capitalize">{type}</span>
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
