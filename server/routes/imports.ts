@@ -3069,7 +3069,7 @@ router.get("/receipts", async (req, res) => {
     const { status } = req.query;
 
     // Use a single query with LEFT JOIN to fetch receipts with shipments
-    let query = db
+    const baseQuery = db
       .select({
         receipt: receipts,
         shipment: shipments
@@ -3077,11 +3077,9 @@ router.get("/receipts", async (req, res) => {
       .from(receipts)
       .leftJoin(shipments, eq(receipts.shipmentId, shipments.id));
     
-    if (status) {
-      query = query.where(eq(receipts.status, status as string));
-    }
-    
-    const receiptsWithShipments = await query
+    const receiptsWithShipments = await (status 
+      ? baseQuery.where(eq(receipts.status, status as string))
+      : baseQuery)
       .orderBy(desc(receipts.createdAt))
       .limit(100); // Limit to prevent loading too much data
 
