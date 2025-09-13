@@ -128,6 +128,7 @@ export default function ContinueReceiving() {
   const [showAllItems, setShowAllItems] = useState(true);
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [hasShownCompletionToast, setHasShownCompletionToast] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
   // Fetch shipment details
   const { data: shipment, isLoading } = useQuery({
@@ -382,6 +383,10 @@ export default function ContinueReceiving() {
       if (buttonSaveTimerRef.current) {
         clearTimeout(buttonSaveTimerRef.current);
         buttonSaveTimerRef.current = null;
+      }
+      if (saveStatusTimerRef.current) {
+        clearTimeout(saveStatusTimerRef.current);
+        saveStatusTimerRef.current = null;
       }
       
       // Save any pending data synchronously before unmount
@@ -675,6 +680,7 @@ export default function ContinueReceiving() {
   const [isSaving, setIsSaving] = useState(false);
   const lastSaveDataRef = useRef<any>(null);
   const lastSaveTimeRef = useRef<number>(0);
+  const saveStatusTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   
   // Immediate save function for button clicks
@@ -687,8 +693,19 @@ export default function ContinueReceiving() {
     // Store the data for potential cleanup save
     lastSaveDataRef.current = data;
     setIsSaving(true);
+    setSaveStatus('saving');
     autoSaveMutation.mutate(data, {
-      onSettled: () => setIsSaving(false)
+      onSettled: () => {
+        setIsSaving(false);
+        setSaveStatus('saved');
+        // Clear saved status after 2 seconds
+        if (saveStatusTimerRef.current) {
+          clearTimeout(saveStatusTimerRef.current);
+        }
+        saveStatusTimerRef.current = setTimeout(() => {
+          setSaveStatus('idle');
+        }, 2000);
+      }
     });
   }, []);
   
@@ -711,8 +728,19 @@ export default function ContinueReceiving() {
     autoSaveTimerRef.current = setTimeout(() => {
       lastSaveTimeRef.current = Date.now();
       setIsSaving(true);
+      setSaveStatus('saving');
       autoSaveMutation.mutate(data, {
-        onSettled: () => setIsSaving(false)
+        onSettled: () => {
+          setIsSaving(false);
+          setSaveStatus('saved');
+          // Clear saved status after 2 seconds
+          if (saveStatusTimerRef.current) {
+            clearTimeout(saveStatusTimerRef.current);
+          }
+          saveStatusTimerRef.current = setTimeout(() => {
+            setSaveStatus('idle');
+          }, 2000);
+        }
       });
       autoSaveTimerRef.current = null;
     }, 3000); // Save after 3 seconds of inactivity for text inputs
@@ -1091,7 +1119,23 @@ export default function ContinueReceiving() {
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-4xl">
+    <div className="container mx-auto p-4 max-w-4xl relative">
+      {/* Save Status Indicator */}
+      <div className="fixed top-4 right-4 z-50">
+        {saveStatus === 'saving' && (
+          <div className="flex items-center gap-2 bg-white dark:bg-gray-800 shadow-lg rounded-lg px-4 py-2 border border-gray-200 dark:border-gray-700 animate-in fade-in slide-in-from-top-1 duration-200">
+            <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-blue-600"></div>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Saving...</span>
+          </div>
+        )}
+        {saveStatus === 'saved' && (
+          <div className="flex items-center gap-2 bg-white dark:bg-gray-800 shadow-lg rounded-lg px-4 py-2 border border-green-200 dark:border-green-800 animate-in fade-in slide-in-from-top-1 duration-200">
+            <CheckCircle2 className="h-4 w-4 text-green-600" />
+            <span className="text-sm font-medium text-green-700 dark:text-green-400">Saved</span>
+          </div>
+        )}
+      </div>
+      
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
