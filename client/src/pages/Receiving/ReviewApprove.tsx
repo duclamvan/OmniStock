@@ -203,24 +203,23 @@ export default function ReviewApprove() {
   if (receiptData?.items) {
     receiptData.items.forEach((item: any) => {
       statistics.totalItems++;
-      statistics.totalExpected += item.expectedQty || 0;
-      statistics.totalReceived += item.receivedQty || 0;
+      const expectedQty = item.expectedQuantity || 0;
+      const receivedQty = item.receivedQuantity || 0;
+      const damagedQty = item.damagedQuantity || 0;
+      const missingQty = item.missingQuantity || 0;
       
-      switch (item.status) {
-        case 'complete':
-          statistics.completeItems++;
-          break;
-        case 'partial':
-        case 'partial_damaged':
-        case 'partial_missing':
-          statistics.partialItems++;
-          break;
-        case 'damaged':
-          statistics.damagedItems++;
-          break;
-        case 'missing':
-          statistics.missingItems++;
-          break;
+      statistics.totalExpected += expectedQty;
+      statistics.totalReceived += receivedQty;
+      
+      // Determine status based on quantities
+      if (receivedQty === 0 && missingQty > 0) {
+        statistics.missingItems++;
+      } else if (damagedQty > 0 && receivedQty === 0) {
+        statistics.damagedItems++;
+      } else if (receivedQty < expectedQty) {
+        statistics.partialItems++;
+      } else if (receivedQty === expectedQty && damagedQty === 0 && missingQty === 0) {
+        statistics.completeItems++;
       }
     });
   }
@@ -363,48 +362,130 @@ export default function ReviewApprove() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Item</TableHead>
-                      <TableHead>SKU</TableHead>
-                      <TableHead className="text-center">Expected</TableHead>
-                      <TableHead className="text-center">Received</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Notes</TableHead>
+                      <TableHead className="w-[35%]">Item Name</TableHead>
+                      <TableHead className="w-[15%]">SKU</TableHead>
+                      <TableHead className="text-center w-[10%]">Expected</TableHead>
+                      <TableHead className="text-center w-[10%]">Received</TableHead>
+                      <TableHead className="w-[15%]">Status</TableHead>
+                      <TableHead className="w-[15%]">Location</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {items?.map((item: any, index: number) => (
-                      <TableRow key={item.id || index}>
-                        <TableCell className="font-medium">{item.name}</TableCell>
-                        <TableCell className="font-mono text-sm">
-                          {item.sku || '-'}
-                        </TableCell>
-                        <TableCell className="text-center">{item.expectedQty}</TableCell>
-                        <TableCell className="text-center">
-                          <span className={
-                            item.receivedQty < item.expectedQty 
-                              ? "text-amber-600 font-medium" 
-                              : item.receivedQty > item.expectedQty
-                              ? "text-blue-600 font-medium"
-                              : "text-green-600 font-medium"
-                          }>
-                            {item.receivedQty}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {getStatusIcon(item.status)}
-                            <Badge variant={getStatusColor(item.status)}>
-                              {item.status?.replace(/_/g, ' ') || 'unknown'}
-                            </Badge>
+                    {items && items.length > 0 ? (
+                      items.map((item: any, index: number) => {
+                        // Determine item name and SKU based on item type
+                        const itemName = item.itemType === 'purchase' && item.purchaseItem
+                          ? item.purchaseItem.name
+                          : item.itemType === 'consolidation' && item.consolidationItem
+                          ? item.consolidationItem.name
+                          : item.itemName || 'Unknown Item';
+                        
+                        const itemSku = item.itemType === 'purchase' && item.purchaseItem
+                          ? item.purchaseItem.sku
+                          : item.itemType === 'consolidation' && item.consolidationItem
+                          ? item.consolidationItem.sku
+                          : item.barcode || '-';
+                        
+                        const expectedQty = item.expectedQuantity || 0;
+                        const receivedQty = item.receivedQuantity || 0;
+                        const damagedQty = item.damagedQuantity || 0;
+                        const missingQty = item.missingQuantity || 0;
+                        
+                        // Determine status based on quantities
+                        let status = 'complete';
+                        if (receivedQty === 0 && missingQty > 0) {
+                          status = 'missing';
+                        } else if (damagedQty > 0 && receivedQty === 0) {
+                          status = 'damaged';
+                        } else if (receivedQty < expectedQty) {
+                          if (damagedQty > 0) status = 'partial_damaged';
+                          else if (missingQty > 0) status = 'partial_missing';
+                          else status = 'partial';
+                        } else if (damagedQty > 0) {
+                          status = 'damaged';
+                        }
+                        
+                        return (
+                          <TableRow key={item.id || index}>
+                            <TableCell>
+                              <div className="space-y-1">
+                                <p className="font-medium">{itemName}</p>
+                                {item.notes && (
+                                  <p className="text-xs text-muted-foreground">{item.notes}</p>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <span className="font-mono text-sm">{itemSku}</span>
+                            </TableCell>
+                            <TableCell className="text-center font-medium">
+                              {expectedQty}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <div className="space-y-1">
+                                <span className={
+                                  receivedQty < expectedQty 
+                                    ? "text-amber-600 font-bold" 
+                                    : receivedQty > expectedQty
+                                    ? "text-blue-600 font-bold"
+                                    : "text-green-600 font-bold"
+                                }>
+                                  {receivedQty}
+                                </span>
+                                {(damagedQty > 0 || missingQty > 0) && (
+                                  <div className="text-xs space-y-0.5">
+                                    {damagedQty > 0 && (
+                                      <p className="text-red-600">-{damagedQty} damaged</p>
+                                    )}
+                                    {missingQty > 0 && (
+                                      <p className="text-gray-600">-{missingQty} missing</p>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-1.5">
+                                {getStatusIcon(status, "h-3.5 w-3.5")}
+                                <Badge 
+                                  variant={getStatusColor(status)} 
+                                  className="text-xs"
+                                >
+                                  {status.replace(/_/g, ' ')}
+                                </Badge>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                {item.warehouseLocation && (
+                                  <div className="flex items-center gap-1">
+                                    <MapPin className="h-3 w-3 text-muted-foreground" />
+                                    <span className="font-mono">{item.warehouseLocation}</span>
+                                  </div>
+                                )}
+                                {item.additionalLocation && (
+                                  <p className="text-xs text-muted-foreground mt-0.5">
+                                    {item.additionalLocation}
+                                  </p>
+                                )}
+                                {!item.warehouseLocation && !item.additionalLocation && (
+                                  <span className="text-muted-foreground">-</span>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8">
+                          <div className="flex flex-col items-center gap-2">
+                            <Package className="h-8 w-8 text-muted-foreground" />
+                            <p className="text-muted-foreground">No items found for this shipment</p>
                           </div>
                         </TableCell>
-                        <TableCell className="max-w-[200px]">
-                          <p className="text-sm text-muted-foreground truncate">
-                            {item.notes || '-'}
-                          </p>
-                        </TableCell>
                       </TableRow>
-                    ))}
+                    )}
                   </TableBody>
                 </Table>
               </div>

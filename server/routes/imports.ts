@@ -3269,17 +3269,64 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
       return res.status(404).json({ message: "No receipt found for this shipment" });
     }
     
-    // Get receipt items
+    // Get receipt items with purchase item details
     const receiptItemsList = await db
-      .select()
+      .select({
+        id: receiptItems.id,
+        receiptId: receiptItems.receiptId,
+        itemId: receiptItems.itemId,
+        itemType: receiptItems.itemType,
+        expectedQuantity: receiptItems.expectedQuantity,
+        receivedQuantity: receiptItems.receivedQuantity,
+        damagedQuantity: receiptItems.damagedQuantity,
+        missingQuantity: receiptItems.missingQuantity,
+        barcode: receiptItems.barcode,
+        warehouseLocation: receiptItems.warehouseLocation,
+        additionalLocation: receiptItems.additionalLocation,
+        storageInstructions: receiptItems.storageInstructions,
+        condition: receiptItems.condition,
+        notes: receiptItems.notes,
+        photos: receiptItems.photos,
+        verifiedAt: receiptItems.verifiedAt,
+        createdAt: receiptItems.createdAt,
+        updatedAt: receiptItems.updatedAt
+      })
       .from(receiptItems)
       .where(eq(receiptItems.receiptId, receipt.id));
     
-    // Return shipment, receipt, and items
+    // For each receipt item, fetch the related purchase item if it exists
+    const itemsWithDetails = await Promise.all(
+      receiptItemsList.map(async (receiptItem) => {
+        let purchaseItem = null;
+        let consolidationItem = null;
+        
+        if (receiptItem.itemType === 'purchase' && receiptItem.itemId) {
+          const [item] = await db
+            .select()
+            .from(purchaseItems)
+            .where(eq(purchaseItems.id, receiptItem.itemId));
+          purchaseItem = item;
+        } else if (receiptItem.itemType === 'consolidation' && receiptItem.itemId) {
+          const [item] = await db
+            .select()
+            .from(consolidationItems)
+            .where(eq(consolidationItems.id, receiptItem.itemId));
+          consolidationItem = item;
+        }
+        
+        return {
+          ...receiptItem,
+          purchaseItem,
+          consolidationItem
+        };
+      })
+    );
+    
+    // Return shipment, receipt, and items with details
     res.json({
       shipment: shipmentData,
       receipt: receipt,
-      items: receiptItemsList
+      items: itemsWithDetails
     });
   } catch (error) {
     console.error("Error fetching receipt by shipment:", error);
