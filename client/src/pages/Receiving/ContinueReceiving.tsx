@@ -1660,40 +1660,117 @@ export default function ContinueReceiving() {
               
               {(() => {
                 const stats = getItemStats();
+                const completionRate = stats.totalItems > 0 ? (stats.completeItems / stats.totalItems) * 100 : 0;
+                const parcelProgress = parcelCount > 0 ? (scannedParcels / parcelCount) * 100 : 0;
+                
                 return (
-                  <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg space-y-2">
-                    <h4 className="font-semibold text-sm">Receiving Summary:</h4>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>Total Items:</div>
-                      <div className="font-medium">{stats.totalItems}</div>
-                      
-                      <div>Complete:</div>
-                      <div className="font-medium text-green-600">{stats.completeItems}</div>
-                      
-                      {stats.damagedItems > 0 && (
-                        <>
-                          <div>Damaged:</div>
-                          <div className="font-medium text-red-600">{stats.damagedItems}</div>
-                        </>
-                      )}
-                      
-                      {stats.missingItems > 0 && (
-                        <>
-                          <div>Missing:</div>
-                          <div className="font-medium text-gray-600">{stats.missingItems}</div>
-                        </>
-                      )}
-                      
-                      {stats.partialItems > 0 && (
-                        <>
-                          <div>Partial:</div>
-                          <div className="font-medium text-yellow-600">{stats.partialItems}</div>
-                        </>
-                      )}
-                      
-                      <div>Scanned {isPalletShipment ? 'Pallets' : 'Parcels'}:</div>
-                      <div className="font-medium">{scannedParcels}/{parcelCount}</div>
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 p-5 rounded-xl border border-blue-100 dark:border-gray-700 space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Package className="h-4 w-4 text-blue-600" />
+                      <h4 className="font-semibold text-base text-gray-800 dark:text-gray-200">Receiving Progress</h4>
                     </div>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Items Progress */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Items Complete</span>
+                          <span className={`text-sm font-bold px-3 py-1 rounded-full shadow-sm ${
+                            completionRate === 100 
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border border-green-200' 
+                              : completionRate > 0 
+                                ? 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 border border-amber-200'
+                                : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 border border-gray-200'
+                          }`}>
+                            {stats.completeItems}/{stats.totalItems}
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                          <div 
+                            className={`h-3 rounded-full transition-all duration-500 ease-out ${
+                              completionRate === 100 
+                                ? 'bg-green-500 shadow-sm' 
+                                : completionRate > 0 
+                                  ? 'bg-amber-500 shadow-sm'
+                                  : 'bg-gray-400'
+                            }`}
+                            style={{ width: `${completionRate}%` }}
+                          />
+                        </div>
+                        <div className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                          {Math.round(completionRate)}% complete
+                        </div>
+                      </div>
+
+                      {/* Parcels Progress */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                            {isPalletShipment ? 'Pallets' : 'Parcels'} Scanned
+                          </span>
+                          <span className={`text-sm font-bold px-3 py-1 rounded-full shadow-sm ${
+                            parcelProgress === 100 
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border border-green-200' 
+                              : parcelProgress > 0 
+                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border border-blue-200'
+                                : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 border border-gray-200'
+                          }`}>
+                            {scannedParcels}/{parcelCount}
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                          <div 
+                            className={`h-3 rounded-full transition-all duration-500 ease-out ${
+                              parcelProgress === 100 
+                                ? 'bg-green-500 shadow-sm' 
+                                : parcelProgress > 0 
+                                  ? 'bg-blue-500 shadow-sm'
+                                  : 'bg-gray-400'
+                            }`}
+                            style={{ width: `${parcelProgress}%` }}
+                          />
+                        </div>
+                        <div className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                          {Math.round(parcelProgress)}% scanned
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Status Badges */}
+                    {(stats.damagedItems > 0 || stats.missingItems > 0 || stats.partialItems > 0) && (
+                      <div className="flex flex-wrap gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
+                        {stats.damagedItems > 0 && (
+                          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded-full text-xs font-semibold border border-red-200 dark:border-red-800">
+                            <AlertTriangle className="h-3 w-3" />
+                            {stats.damagedItems} Damaged
+                          </div>
+                        )}
+                        
+                        {stats.missingItems > 0 && (
+                          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-full text-xs font-semibold border border-gray-200 dark:border-gray-700">
+                            <Minus className="h-3 w-3" />
+                            {stats.missingItems} Missing
+                          </div>
+                        )}
+                        
+                        {stats.partialItems > 0 && (
+                          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 rounded-full text-xs font-semibold border border-amber-200 dark:border-amber-800">
+                            <Clock className="h-3 w-3" />
+                            {stats.partialItems} Partial
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Completion Status */}
+                    {completionRate === 100 && parcelProgress === 100 && (
+                      <div className="flex items-center gap-2 px-4 py-3 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg">
+                        <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                        <span className="text-sm font-medium text-green-800 dark:text-green-200">
+                          All items and parcels received successfully!
+                        </span>
+                      </div>
+                    )}
                   </div>
                 );
               })()}
