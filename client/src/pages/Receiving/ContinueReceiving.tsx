@@ -101,7 +101,9 @@ export default function ContinueReceiving() {
   const { toast } = useToast();
   const barcodeRef = useRef<HTMLInputElement>(null);
   const lastSaveDataRef = useRef<any>(null); // Fix missing ref error for world-record speed
-  const dataInitializedRef = useRef(false); // Prevent double initialization
+  const dataInitializedRef = useRef<string>(''); // Prevent double initialization - stores data key
+  const updateQueueRef = useRef<Map<string, number>>(new Map()); // Queue for rapid updates
+  const updateTimerRef = useRef<NodeJS.Timeout | null>(null); // Timer for debounced updates
   
   // Handle back navigation with proper query invalidation
   const handleBackNavigation = useCallback(() => {
@@ -143,7 +145,7 @@ export default function ContinueReceiving() {
     },
     enabled: !!id,
     staleTime: 30 * 1000, // Data is fresh for 30 seconds
-    cacheTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
     refetchOnMount: false, // Use cached data when available
     refetchOnWindowFocus: false,
     refetchOnReconnect: false
@@ -159,7 +161,7 @@ export default function ContinueReceiving() {
     },
     enabled: !!id,
     staleTime: 10 * 1000, // Receipt data fresh for 10 seconds
-    cacheTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
     refetchOnMount: 'always', // Always check for updates on mount
     refetchOnWindowFocus: false,
     refetchOnReconnect: false
@@ -378,17 +380,160 @@ export default function ContinueReceiving() {
   // Clear timers on unmount
   useEffect(() => {
     return () => {
-      // Clear pending timers
-      if (saveStatusTimerRef.current) {
-        clearTimeout(saveStatusTimerRef.current);
-        saveStatusTimerRef.current = null;
+      // Clear pending update timer
+      if (updateTimerRef.current) {
+        clearTimeout(updateTimerRef.current);
+        updateTimerRef.current = null;
       }
-      if (buttonSaveTimerRef.current) {
-        clearTimeout(buttonSaveTimerRef.current);
-        buttonSaveTimerRef.current = null;
+      // Flush any pending updates
+      if (updateQueueRef.current.size > 0) {
+        // Can't call flushUpdateQueue here as it may not be defined yet
+        updateQueueRef.current.clear();
       }
     };
   }, []);
+
+  // ================ OPTIMIZED FIELD-SPECIFIC MUTATIONS ================
+  // Define mutations before functions that use them
+  
+  // Mutation for updating meta fields (receivedBy, carrier, parcelCount, notes)
+  const updateMetaMutation = useMutation({
+    mutationFn: async ({ field, value }: { field: string; value: any }) => {
+      const receiptId = receipt?.receipt?.id || receipt?.id;
+      if (!receiptId) {
+        // Create receipt first if it doesn't exist
+        const response = await apiRequest('/api/imports/receipts/auto-save', 'POST', {
+          shipmentId: shipment?.id,
+          consolidationId: shipment?.consolidationId,
+          receivedBy: field === 'receivedBy' ? value : receivedBy,
+          carrier: field === 'carrier' ? value : carrier,
+          parcelCount: field === 'parcelCount' ? value : parcelCount,
+          notes: field === 'notes' ? value : notes,
+          scannedParcels: field === 'scannedParcels' ? value : scannedParcels
+        });
+        return response;
+      }
+      
+      // Update only the specific field
+      const payload: any = {};
+      payload[field] = value;
+      
+      const response = await fetch(`/api/imports/receipts/${receiptId}/meta`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      if (!response.ok) throw new Error('Failed to update');
+      return response.json();
+    },
+    onError: (error) => {
+      console.error('Meta update failed:', error);
+    }
+  });
+  
+  // Mutation for updating item quantities atomically - no optimistic revert on error
+  const updateItemQuantityMutation = useMutation({
+    mutationFn: async ({ itemId, delta }: { itemId: string; delta: number }) => {
+      const receiptId = receipt?.receipt?.id || receipt?.id;
+      if (!receiptId) return;
+      
+      const response = await fetch(`/api/imports/receipts/${receiptId}/items/${itemId}/increment`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ delta })
+      });
+      
+      if (!response.ok) throw new Error('Failed to update quantity');
+      return response.json();
+    },
+    onError: (error, variables) => {
+      console.error('Item quantity update failed:', error);
+      // Show toast but don't revert UI - user can retry if needed
+      toast({
+        title: "Update Failed",
+        description: "Failed to save quantity update. Please try again.",
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // Mutation for updating item status and notes - no optimistic revert on error
+  const updateItemFieldMutation = useMutation({
+    mutationFn: async ({ itemId, field, value }: { itemId: string; field: string; value: any }) => {
+      const receiptId = receipt?.receipt?.id || receipt?.id;
+      if (!receiptId) return;
+      
+      const payload: any = {};
+      payload[field] = value;
+      
+      const response = await fetch(`/api/imports/receipts/${receiptId}/items/${itemId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      if (!response.ok) throw new Error('Failed to update item');
+      return response.json();
+    },
+    onError: (error, variables) => {
+      console.error('Item update failed:', error);
+      // Error handling is done in the calling function
+    }
+  });
+  
+  // Mutation for tracking numbers
+  const updateTrackingMutation = useMutation({
+    mutationFn: async ({ action, trackingNumber }: { action: 'add' | 'remove'; trackingNumber: string }) => {
+      const receiptId = receipt?.receipt?.id || receipt?.id;
+      if (!receiptId) return;
+      
+      const response = await fetch(`/api/imports/receipts/${receiptId}/tracking`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, trackingNumber })
+      });
+      
+      if (!response.ok) throw new Error('Failed to update tracking');
+      return response.json();
+    },
+    onError: (error) => {
+      console.error('Tracking update failed:', error);
+    }
+  });
+  
+  // Mutation for photos (keep existing but optimized)
+  const updatePhotosMutation = useMutation({
+    mutationFn: async (photos: string[]) => {
+      const receiptId = receipt?.receipt?.id || receipt?.id;
+      if (!receiptId) {
+        // Create receipt first if it doesn't exist
+        const response = await apiRequest('/api/imports/receipts/auto-save', 'POST', {
+          shipmentId: shipment?.id,
+          consolidationId: shipment?.consolidationId,
+          receivedBy,
+          carrier,
+          parcelCount,
+          notes,
+          photos,
+          scannedParcels
+        });
+        return response;
+      }
+      
+      const response = await fetch(`/api/imports/receipts/${receiptId}/photos`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ photos })
+      });
+      
+      if (!response.ok) throw new Error('Failed to update photos');
+      return response.json();
+    },
+    onError: (error) => {
+      console.error('Photos update failed:', error);
+    }
+  });
 
   // Handle barcode scan
   const handleBarcodeScan = (value: string) => {
@@ -444,8 +589,24 @@ export default function ContinueReceiving() {
     setBarcodeScan("");
   };
 
-  // Update item quantity - optimistic update with atomic server increment
-  const updateItemQuantity = (itemId: string, delta: number) => {
+  // Flush update queue - sends all pending updates to server
+  const flushUpdateQueue = useCallback(() => {
+    if (updateQueueRef.current.size === 0) return;
+    
+    // Get all pending updates
+    const updates = Array.from(updateQueueRef.current.entries());
+    updateQueueRef.current.clear();
+    
+    // Send updates to server
+    updates.forEach(([itemId, totalDelta]) => {
+      if (totalDelta !== 0) {
+        updateItemQuantityMutation.mutate({ itemId, delta: totalDelta });
+      }
+    });
+  }, [updateItemQuantityMutation]);
+
+  // Update item quantity - optimistic update with queued server updates
+  const updateItemQuantity = useCallback((itemId: string, delta: number) => {
     // Find the item to update
     const itemToUpdate = receivingItems.find(item => item.id === itemId);
     if (!itemToUpdate) return;
@@ -485,40 +646,47 @@ export default function ContinueReceiving() {
       }
     }
     
-    // Optimistic update
-    const updatedItems = receivingItems.map(item => {
-      if (item.id === itemId) {
-        return {
-          ...item,
-          receivedQty: newQty,
-          status: newStatus,
-          checked: newQty > 0
-        };
-      }
-      return item;
-    });
-    setReceivingItems(updatedItems);
-    
-    // Send atomic increment to server
-    setSaveStatus('saving');
-    updateItemQuantityMutation.mutate({ itemId, delta }, {
-      onSuccess: () => {
-        // If status changed, update it separately
-        if (newStatus !== itemToUpdate.status) {
-          updateItemFieldMutation.mutate({ itemId, field: 'status', value: newStatus });
+    // Immediate optimistic update for instant UI response
+    setReceivingItems(prevItems => 
+      prevItems.map(item => {
+        if (item.id === itemId) {
+          return {
+            ...item,
+            receivedQty: newQty,
+            status: newStatus,
+            checked: newQty > 0
+          };
         }
-        setSaveStatus('saved');
-        setTimeout(() => setSaveStatus('idle'), 1000);
-      },
-      onError: () => {
-        // Revert optimistic update on error
-        setReceivingItems(receivingItems);
+        return item;
+      })
+    );
+    
+    // Queue the update for batched sending to server
+    const currentDelta = updateQueueRef.current.get(itemId) || 0;
+    updateQueueRef.current.set(itemId, currentDelta + delta);
+    
+    // Clear existing timer
+    if (updateTimerRef.current) {
+      clearTimeout(updateTimerRef.current);
+    }
+    
+    // Set new timer to flush updates after 300ms of inactivity
+    updateTimerRef.current = setTimeout(() => {
+      flushUpdateQueue();
+      setSaveStatus('saving');
+      
+      // Update status if changed
+      if (newStatus !== itemToUpdate.status) {
+        updateItemFieldMutation.mutate({ itemId, field: 'status', value: newStatus });
       }
-    });
-  };
+      
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 1000);
+    }, 300);
+  }, [receivingItems, flushUpdateQueue, updateItemFieldMutation]);
 
-  // Toggle item status - optimized with field-specific save
-  const toggleItemStatus = (itemId: string, status: ReceivingItem['status']) => {
+  // Toggle item status - optimistic update without revert on error
+  const toggleItemStatus = useCallback((itemId: string, status: ReceivingItem['status']) => {
     const itemToUpdate = receivingItems.find(item => item.id === itemId);
     if (!itemToUpdate) return;
     
@@ -542,21 +710,22 @@ export default function ContinueReceiving() {
       }
     }
     
-    // Optimistic update
-    const updatedItems = receivingItems.map(item => {
-      if (item.id === itemId) {
-        return {
-          ...item,
-          receivedQty: finalQty,
-          status: finalStatus,
-          checked: true
-        };
-      }
-      return item;
-    });
-    setReceivingItems(updatedItems);
+    // Immediate optimistic update for instant UI response
+    setReceivingItems(prevItems => 
+      prevItems.map(item => {
+        if (item.id === itemId) {
+          return {
+            ...item,
+            receivedQty: finalQty,
+            status: finalStatus,
+            checked: true
+          };
+        }
+        return item;
+      })
+    );
     
-    // Send field-specific update to server
+    // Send field-specific update to server without reverting on error
     setSaveStatus('saving');
     
     // Update status
@@ -570,24 +739,29 @@ export default function ContinueReceiving() {
         setTimeout(() => setSaveStatus('idle'), 1000);
       },
       onError: () => {
-        // Revert optimistic update on error
-        setReceivingItems(receivingItems);
+        // Don't revert UI - show error toast instead
+        toast({
+          title: "Update Failed",
+          description: "Failed to save status update. Please try again.",
+          variant: "destructive"
+        });
       }
     });
-  };
+  }, [receivingItems, toast, updateItemFieldMutation]);
 
-  // Update item notes - optimized with field-specific save
-  const updateItemNotes = (itemId: string, notes: string) => {
-    // Optimistic update
-    const updatedItems = receivingItems.map(item => {
-      if (item.id === itemId) {
-        return { ...item, notes };
-      }
-      return item;
-    });
-    setReceivingItems(updatedItems);
+  // Update item notes - optimistic update without revert on error
+  const updateItemNotes = useCallback((itemId: string, notes: string) => {
+    // Immediate optimistic update
+    setReceivingItems(prevItems => 
+      prevItems.map(item => {
+        if (item.id === itemId) {
+          return { ...item, notes };
+        }
+        return item;
+      })
+    );
     
-    // Send field-specific update to server
+    // Send field-specific update to server without reverting on error
     setSaveStatus('saving');
     updateItemFieldMutation.mutate({ itemId, field: 'notes', value: notes }, {
       onSuccess: () => {
@@ -595,11 +769,15 @@ export default function ContinueReceiving() {
         setTimeout(() => setSaveStatus('idle'), 1000);
       },
       onError: () => {
-        // Revert optimistic update on error
-        setReceivingItems(receivingItems);
+        // Don't revert UI - show error toast instead
+        toast({
+          title: "Update Failed",
+          description: "Failed to save notes. Please try again.",
+          variant: "destructive"
+        });
       }
     });
-  };
+  }, [toast, updateItemFieldMutation]);
 
   // Update receipt mutation
   const updateReceiptMutation = useMutation({
@@ -671,140 +849,6 @@ export default function ContinueReceiving() {
     }
   });
 
-  // ================ OPTIMIZED FIELD-SPECIFIC MUTATIONS ================
-  
-  // Mutation for updating meta fields (receivedBy, carrier, parcelCount, notes)
-  const updateMetaMutation = useMutation({
-    mutationFn: async ({ field, value }: { field: string; value: any }) => {
-      const receiptId = receipt?.receipt?.id || receipt?.id;
-      if (!receiptId) {
-        // Create receipt first if it doesn't exist
-        const response = await apiRequest('/api/imports/receipts/auto-save', 'POST', {
-          shipmentId: shipment?.id,
-          consolidationId: shipment?.consolidationId,
-          receivedBy: field === 'receivedBy' ? value : receivedBy,
-          carrier: field === 'carrier' ? value : carrier,
-          parcelCount: field === 'parcelCount' ? value : parcelCount,
-          notes: field === 'notes' ? value : notes,
-          scannedParcels: field === 'scannedParcels' ? value : scannedParcels
-        });
-        return response;
-      }
-      
-      // Update only the specific field
-      const payload: any = {};
-      payload[field] = value;
-      
-      const response = await fetch(`/api/imports/receipts/${receiptId}/meta`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      
-      if (!response.ok) throw new Error('Failed to update');
-      return response.json();
-    },
-    onError: (error) => {
-      console.error('Meta update failed:', error);
-    }
-  });
-  
-  // Mutation for updating item quantities atomically
-  const updateItemQuantityMutation = useMutation({
-    mutationFn: async ({ itemId, delta }: { itemId: string; delta: number }) => {
-      const receiptId = receipt?.receipt?.id || receipt?.id;
-      if (!receiptId) return;
-      
-      const response = await fetch(`/api/imports/receipts/${receiptId}/items/${itemId}/increment`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ delta })
-      });
-      
-      if (!response.ok) throw new Error('Failed to update quantity');
-      return response.json();
-    },
-    onError: (error) => {
-      console.error('Item quantity update failed:', error);
-    }
-  });
-  
-  // Mutation for updating item status and notes
-  const updateItemFieldMutation = useMutation({
-    mutationFn: async ({ itemId, field, value }: { itemId: string; field: string; value: any }) => {
-      const receiptId = receipt?.receipt?.id || receipt?.id;
-      if (!receiptId) return;
-      
-      const payload: any = {};
-      payload[field] = value;
-      
-      const response = await fetch(`/api/imports/receipts/${receiptId}/items/${itemId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      
-      if (!response.ok) throw new Error('Failed to update item');
-      return response.json();
-    },
-    onError: (error) => {
-      console.error('Item update failed:', error);
-    }
-  });
-  
-  // Mutation for tracking numbers
-  const updateTrackingMutation = useMutation({
-    mutationFn: async ({ action, trackingNumber }: { action: 'add' | 'remove'; trackingNumber: string }) => {
-      const receiptId = receipt?.receipt?.id || receipt?.id;
-      if (!receiptId) return;
-      
-      const response = await fetch(`/api/imports/receipts/${receiptId}/tracking`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, trackingNumber })
-      });
-      
-      if (!response.ok) throw new Error('Failed to update tracking');
-      return response.json();
-    },
-    onError: (error) => {
-      console.error('Tracking update failed:', error);
-    }
-  });
-  
-  // Mutation for photos (keep existing but optimized)
-  const updatePhotosMutation = useMutation({
-    mutationFn: async (photos: string[]) => {
-      const receiptId = receipt?.receipt?.id || receipt?.id;
-      if (!receiptId) {
-        // Create receipt first if it doesn't exist
-        const response = await apiRequest('/api/imports/receipts/auto-save', 'POST', {
-          shipmentId: shipment?.id,
-          consolidationId: shipment?.consolidationId,
-          receivedBy,
-          carrier,
-          parcelCount,
-          notes,
-          photos,
-          scannedParcels
-        });
-        return response;
-      }
-      
-      const response = await fetch(`/api/imports/receipts/${receiptId}/photos`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ photos })
-      });
-      
-      if (!response.ok) throw new Error('Failed to update photos');
-      return response.json();
-    },
-    onError: (error) => {
-      console.error('Photos update failed:', error);
-    }
-  });
-  
   // Legacy auto-save mutation for initial creation and items batch update
   const autoSaveMutation = useMutation({
     mutationFn: async (data: any) => {
