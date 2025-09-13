@@ -226,8 +226,26 @@ export default function ContinueReceiving() {
         setReceivingItems(items);
       }
       
-      // Start on step 2 since we already have receipt data
-      setCurrentStep(2);
+      // Determine which step to show based on completion status
+      // Check if Step 1 is completed (has basic info)
+      const isStep1Complete = 
+        receiptData.receivedBy && 
+        receiptData.carrier && 
+        (trackingData.scannedParcels > 0 || receiptData.parcelCount > 0);
+      
+      // Check if Step 2 has partial progress (some items received)
+      const hasStep2Progress = receipt.items && receipt.items.some((item: any) => 
+        item.receivedQuantity > 0 || 
+        item.status !== 'pending'
+      );
+      
+      // Only show Step 2 if Step 1 is complete AND Step 2 has progress
+      // Otherwise default to Step 1
+      if (isStep1Complete && hasStep2Progress) {
+        setCurrentStep(2);
+      } else {
+        setCurrentStep(1);
+      }
     } else if (shipment && !receipt && !receiptLoading) {
       // Initialize from shipment if no receipt exists (only after receipt loading is complete)
       setCarrier(shipment.endCarrier || shipment.carrier || "");
