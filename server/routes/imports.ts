@@ -14,7 +14,7 @@ import {
   landedCosts,
   products
 } from "@shared/schema";
-import { eq, desc, sql, and, like, or, isNull } from "drizzle-orm";
+import { eq, desc, sql, and, like, or, isNull, inArray } from "drizzle-orm";
 import { addDays, differenceInDays } from "date-fns";
 import multer from "multer";
 
@@ -1971,6 +1971,7 @@ router.get("/shipments/by-status/:status", async (req, res) => {
   try {
     const status = req.params.status; // receiving, pending_approval, completed
     
+    // Get shipments with consolidations in a single query
     const shipmentsWithStatus = await db
       .select({
         shipment: shipments,
@@ -1979,54 +1980,65 @@ router.get("/shipments/by-status/:status", async (req, res) => {
       .from(shipments)
       .leftJoin(consolidations, eq(shipments.consolidationId, consolidations.id))
       .where(eq(shipments.receivingStatus, status))
-      .orderBy(desc(shipments.updatedAt));
+      .orderBy(desc(shipments.updatedAt))
+      .limit(50); // Limit results to improve performance
     
-    // Get items for each shipment
-    const formattedShipments = await Promise.all(
-      shipmentsWithStatus.map(async ({ shipment, consolidation }) => {
-        let items: any[] = [];
-        if (shipment.consolidationId) {
-          const consolidationItemList = await db
-            .select()
-            .from(consolidationItems)
-            .where(eq(consolidationItems.consolidationId, shipment.consolidationId));
-          
-          for (const ci of consolidationItemList) {
-            if (ci.itemType === 'purchase') {
-              const [item] = await db
-                .select()
-                .from(purchaseItems)
-                .where(eq(purchaseItems.id, ci.itemId));
-              if (item) {
-                items.push({
-                  ...item,
-                  itemType: 'purchase',
-                  category: (item as any).category || 'General'
-                });
-              }
-            } else if (ci.itemType === 'custom') {
-              const [item] = await db
-                .select()
-                .from(customItems)
-                .where(eq(customItems.id, ci.itemId));
-              if (item) {
-                items.push({
-                  ...item,
-                  itemType: 'custom',
-                  category: item.classification || 'General'
-                });
-              }
-            }
-          }
+    // Get all consolidation IDs to batch-fetch items
+    const consolidationIds = shipmentsWithStatus
+      .map(s => s.shipment.consolidationId)
+      .filter(id => id !== null);
+    
+    // Batch-fetch all items for all consolidations at once
+    let itemsByConsolidation: Record<number, any[]> = {};
+    
+    if (consolidationIds.length > 0) {
+      // Get all consolidation items with their related purchase/custom items using JOINs
+      const allItems = await db
+        .select({
+          consolidationItem: consolidationItems,
+          purchaseItem: purchaseItems,
+          customItem: customItems
+        })
+        .from(consolidationItems)
+        .leftJoin(purchaseItems, and(
+          eq(consolidationItems.itemType, 'purchase'),
+          eq(consolidationItems.itemId, purchaseItems.id)
+        ))
+        .leftJoin(customItems, and(
+          eq(consolidationItems.itemType, 'custom'),
+          eq(consolidationItems.itemId, customItems.id)
+        ))
+        .where(inArray(consolidationItems.consolidationId, consolidationIds));
+      
+      // Group items by consolidation ID
+      for (const row of allItems) {
+        const consId = row.consolidationItem.consolidationId;
+        if (!itemsByConsolidation[consId]) {
+          itemsByConsolidation[consId] = [];
         }
         
-        return {
-          ...shipment,
-          consolidation,
-          items
-        };
-      })
-    );
+        if (row.consolidationItem.itemType === 'purchase' && row.purchaseItem) {
+          itemsByConsolidation[consId].push({
+            ...row.purchaseItem,
+            itemType: 'purchase',
+            category: (row.purchaseItem as any).category || 'General'
+          });
+        } else if (row.consolidationItem.itemType === 'custom' && row.customItem) {
+          itemsByConsolidation[consId].push({
+            ...row.customItem,
+            itemType: 'custom',
+            category: row.customItem.classification || 'General'
+          });
+        }
+      }
+    }
+    
+    // Map results without any additional queries
+    const formattedShipments = shipmentsWithStatus.map(({ shipment, consolidation }) => ({
+      ...shipment,
+      consolidation,
+      items: shipment.consolidationId ? (itemsByConsolidation[shipment.consolidationId] || []) : []
+    }));
     
     res.json(formattedShipments);
   } catch (error) {
@@ -3056,38 +3068,31 @@ router.get("/receipts", async (req, res) => {
   try {
     const { status } = req.query;
 
-    let receiptList;
+    // Use a single query with LEFT JOIN to fetch receipts with shipments
+    let query = db
+      .select({
+        receipt: receipts,
+        shipment: shipments
+      })
+      .from(receipts)
+      .leftJoin(shipments, eq(receipts.shipmentId, shipments.id));
     
     if (status) {
-      receiptList = await db
-        .select()
-        .from(receipts)
-        .where(eq(receipts.status, status as string))
-        .orderBy(desc(receipts.createdAt));
-    } else {
-      receiptList = await db
-        .select()
-        .from(receipts)
-        .orderBy(desc(receipts.createdAt));
+      query = query.where(eq(receipts.status, status as string));
     }
+    
+    const receiptsWithShipments = await query
+      .orderBy(desc(receipts.createdAt))
+      .limit(100); // Limit to prevent loading too much data
 
-    // Get basic shipment info for each receipt
-    const receiptsWithShipments = await Promise.all(
-      receiptList.map(async (receipt) => {
-        const [shipment] = await db
-          .select()
-          .from(shipments)
-          .where(eq(shipments.id, receipt.shipmentId));
-
-        return {
-          ...receipt,
-          shipment
-        };
-      })
-    );
+    // Transform the results to match the expected format
+    const transformedReceipts = receiptsWithShipments.map(row => ({
+      ...row.receipt,
+      shipment: row.shipment
+    }));
 
     // Add mock receipts if no real receipts exist to populate receipts section
-    if (receiptsWithShipments.length === 0) {
+    if (transformedReceipts.length === 0) {
       const mockReceipts = [
         {
           id: 1,
@@ -3178,7 +3183,7 @@ router.get("/receipts", async (req, res) => {
       return res.json(mockReceipts);
     }
 
-    res.json(receiptsWithShipments);
+    res.json(transformedReceipts);
   } catch (error) {
     console.error("Error fetching receipts:", error);
     res.status(500).json({ message: "Failed to fetch receipts" });
@@ -3224,58 +3229,31 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
       return res.status(404).json({ message: "No receipt found for this shipment" });
     }
     
-    // Get receipt items with purchase item details
-    const receiptItemsList = await db
+    // Get receipt items with LEFT JOINs for purchase and consolidation items
+    // This single query replaces the N+1 problem!
+    const receiptItemsWithDetails = await db
       .select({
-        id: receiptItems.id,
-        receiptId: receiptItems.receiptId,
-        itemId: receiptItems.itemId,
-        itemType: receiptItems.itemType,
-        expectedQuantity: receiptItems.expectedQuantity,
-        receivedQuantity: receiptItems.receivedQuantity,
-        damagedQuantity: receiptItems.damagedQuantity,
-        missingQuantity: receiptItems.missingQuantity,
-        barcode: receiptItems.barcode,
-        warehouseLocation: receiptItems.warehouseLocation,
-        additionalLocation: receiptItems.additionalLocation,
-        storageInstructions: receiptItems.storageInstructions,
-        condition: receiptItems.condition,
-        notes: receiptItems.notes,
-        photos: receiptItems.photos,
-        verifiedAt: receiptItems.verifiedAt,
-        createdAt: receiptItems.createdAt,
-        updatedAt: receiptItems.updatedAt
+        receiptItem: receiptItems,
+        purchaseItem: purchaseItems,
+        consolidationItem: consolidationItems
       })
       .from(receiptItems)
+      .leftJoin(purchaseItems, and(
+        eq(receiptItems.itemType, 'purchase'),
+        eq(receiptItems.itemId, purchaseItems.id)
+      ))
+      .leftJoin(consolidationItems, and(
+        eq(receiptItems.itemType, 'consolidation'),
+        eq(receiptItems.itemId, consolidationItems.id)
+      ))
       .where(eq(receiptItems.receiptId, receipt.id));
     
-    // For each receipt item, fetch the related purchase item if it exists
-    const itemsWithDetails = await Promise.all(
-      receiptItemsList.map(async (receiptItem) => {
-        let purchaseItem = null;
-        let consolidationItem = null;
-        
-        if (receiptItem.itemType === 'purchase' && receiptItem.itemId) {
-          const [item] = await db
-            .select()
-            .from(purchaseItems)
-            .where(eq(purchaseItems.id, receiptItem.itemId));
-          purchaseItem = item;
-        } else if (receiptItem.itemType === 'consolidation' && receiptItem.itemId) {
-          const [item] = await db
-            .select()
-            .from(consolidationItems)
-            .where(eq(consolidationItems.id, receiptItem.itemId));
-          consolidationItem = item;
-        }
-        
-        return {
-          ...receiptItem,
-          purchaseItem,
-          consolidationItem
-        };
-      })
-    );
+    // Transform the results to match the expected format
+    const itemsWithDetails = receiptItemsWithDetails.map(row => ({
+      ...row.receiptItem,
+      purchaseItem: row.purchaseItem,
+      consolidationItem: row.consolidationItem
+    }));
     
     // Return shipment, receipt, and items with details
     res.json({
