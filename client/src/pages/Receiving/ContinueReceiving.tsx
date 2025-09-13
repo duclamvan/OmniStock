@@ -1327,37 +1327,39 @@ export default function ContinueReceiving() {
                         `}
                       >
                         <div className="p-4">
-                          {/* Header Row with Image, Status Icon, Name, and Status Badge */}
-                          <div className="flex items-start gap-3 mb-3">
-                            {/* Product Image */}
-                            <div className="flex-shrink-0">
-                              {item.imageUrl ? (
-                                <img 
-                                  src={item.imageUrl} 
-                                  alt={item.name}
-                                  className="w-12 h-12 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
-                                  onError={(e) => {
-                                    // Fallback to placeholder if image fails to load
-                                    e.currentTarget.style.display = 'none';
-                                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                                  }}
-                                />
-                              ) : null}
-                              <div className={`${item.imageUrl ? 'hidden' : ''} w-12 h-12 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 flex items-center justify-center`}>
-                                <Package2 className="h-6 w-6 text-gray-400" />
+                          {/* Grid Layout: Left Column (Image) + Right Column (Details & Controls) */}
+                          <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-4">
+                            {/* Left Column - Product Image */}
+                            <div className="flex justify-center sm:justify-start">
+                              <div className="relative flex-shrink-0">
+                                {item.imageUrl ? (
+                                  <img 
+                                    src={item.imageUrl} 
+                                    alt={item.name}
+                                    className="w-20 h-20 object-cover rounded-lg border-2 border-gray-300 dark:border-gray-600 shadow-lg bg-white dark:bg-gray-800"
+                                    onError={(e) => {
+                                      // Fallback to placeholder if image fails to load
+                                      e.currentTarget.style.display = 'none';
+                                      e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                    }}
+                                  />
+                                ) : null}
+                                <div className={`${item.imageUrl ? 'hidden' : ''} w-20 h-20 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 shadow-lg flex items-center justify-center`}>
+                                  <Package2 className="h-8 w-8 text-gray-400" />
+                                </div>
+                                {/* Status Icon Overlay */}
+                                <div className={`absolute -top-1 -right-1 w-6 h-6 rounded-full bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center transition-transform duration-200 ${isComplete ? 'scale-110' : ''}`}>
+                                  <StatusIcon className={`h-3 w-3 ${iconColor}`} />
+                                </div>
                               </div>
                             </div>
                             
-                            {/* Status Icon/Checkbox */}
-                            <div className={`mt-0.5 transition-transform duration-200 ${isComplete ? 'scale-110' : ''}`}>
-                              <StatusIcon className={`h-6 w-6 ${iconColor}`} />
-                            </div>
-                            
-                            {/* Item Details */}
-                            <div className="flex-1 min-w-0">
+                            {/* Right Column - All Item Details and Controls */}
+                            <div className="flex flex-col gap-3 min-w-0">
+                              {/* Header Section: Name, SKU, and Status Badge */}
                               <div className="flex items-start justify-between gap-2">
-                                <div className="flex-1">
-                                  <h4 className={`font-semibold text-base ${isComplete ? 'line-through opacity-60' : ''}`}>
+                                <div className="flex-1 min-w-0">
+                                  <h4 className={`font-semibold text-base leading-tight ${isComplete ? 'line-through opacity-60' : ''}`}>
                                     {item.name}
                                   </h4>
                                   {item.sku && (
@@ -1367,9 +1369,9 @@ export default function ContinueReceiving() {
                                   )}
                                 </div>
                                 
-                                {/* Status Badge - Top Right */}
+                                {/* Status Badge */}
                                 <Badge 
-                                  className={`text-xs whitespace-nowrap ${getItemStatusColor(item.status)}`}
+                                  className={`text-xs whitespace-nowrap flex-shrink-0 ${getItemStatusColor(item.status)}`}
                                   variant={isComplete ? 'default' : isPending ? 'outline' : 'secondary'}
                                 >
                                   {item.status === 'partial_damaged' ? 'PARTIAL DMG' : 
@@ -1378,9 +1380,9 @@ export default function ContinueReceiving() {
                                 </Badge>
                               </div>
                               
-                              {/* Progress Bar */}
-                              <div className="mt-2">
-                                <div className="flex items-center justify-between mb-1">
+                              {/* Progress Section */}
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
                                   <span className="text-xs text-muted-foreground">Progress</span>
                                   <span className={`text-sm font-bold ${
                                     progress >= 100 ? 'text-green-600' : 
@@ -1401,98 +1403,98 @@ export default function ContinueReceiving() {
                                   />
                                 </div>
                               </div>
+                              
+                              {/* Controls Section */}
+                              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                                {/* Quantity Controls */}
+                                <div className="flex items-center gap-2 bg-white dark:bg-gray-800 rounded-lg p-1 border shadow-sm">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => updateItemQuantity(item.id, -1)}
+                                    disabled={item.receivedQty === 0}
+                                    className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                  >
+                                    <Minus className="h-4 w-4" />
+                                  </Button>
+                                  <span className="text-base font-bold font-mono w-16 text-center px-2">
+                                    {item.receivedQty}/{item.expectedQty}
+                                  </span>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => updateItemQuantity(item.id, 1)}
+                                    className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                  >
+                                    <Plus className="h-4 w-4" />
+                                  </Button>
+                                </div>
+
+                                {/* Action Buttons Group */}
+                                <div className="flex gap-2 flex-wrap">
+                                  <Button
+                                    variant={item.status === 'complete' ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => {
+                                      const updatedItems = receivingItems.map(i => 
+                                        i.id === item.id 
+                                          ? { ...i, receivedQty: i.expectedQty, status: 'complete' as const, checked: true }
+                                          : i
+                                      );
+                                      setReceivingItems(updatedItems);
+                                      triggerAutoSave(updatedItems);
+                                    }}
+                                    className={`min-w-[70px] transition-colors shadow-sm ${
+                                      item.status === 'complete'
+                                        ? 'bg-green-600 hover:bg-green-700 border-green-600 text-white'
+                                        : 'border-green-500 hover:border-green-600 hover:bg-green-50 text-green-700'
+                                    }`}
+                                  >
+                                    <Check className="h-3 w-3 mr-1" />
+                                    OK
+                                  </Button>
+                                  <Button
+                                    variant={isDamaged ? "destructive" : "outline"}
+                                    size="sm"
+                                    onClick={() => toggleItemStatus(item.id, 'damaged')}
+                                    className={`min-w-[70px] transition-colors shadow-sm ${
+                                      isDamaged
+                                        ? 'bg-red-600 hover:bg-red-700 border-red-600 text-white'
+                                        : 'border-red-500 hover:border-red-600 hover:bg-red-50 text-red-700'
+                                    }`}
+                                  >
+                                    <AlertTriangle className="h-3 w-3 mr-1" />
+                                    DMG
+                                  </Button>
+                                  <Button
+                                    variant={isMissing ? "secondary" : "outline"}
+                                    size="sm"
+                                    onClick={() => toggleItemStatus(item.id, 'missing')}
+                                    className={`min-w-[70px] transition-colors shadow-sm ${
+                                      isMissing
+                                        ? 'bg-gray-600 hover:bg-gray-700 border-gray-600 text-white'
+                                        : 'border-gray-500 hover:border-gray-600 hover:bg-gray-50 text-gray-700'
+                                    }`}
+                                  >
+                                    <X className="h-3 w-3 mr-1" />
+                                    MISS
+                                  </Button>
+                                </div>
+                              </div>
+
+                              {/* Notes Field - Show when needed */}
+                              {(isDamaged || isMissing || item.notes) && (
+                                <div className="transition-all duration-200">
+                                  <Input
+                                    value={item.notes || ''}
+                                    onChange={(e) => updateItemNotes(item.id, e.target.value)}
+                                    placeholder="Add notes about this item..."
+                                    className="text-sm bg-white dark:bg-gray-800"
+                                  />
+                                </div>
+                              )}
                             </div>
                           </div>
-
-                          {/* Quantity Controls and Action Buttons */}
-                          <div className="flex items-center gap-3 mt-3">
-                            {/* Quantity Controls */}
-                            <div className="flex items-center gap-2 bg-white dark:bg-gray-800 rounded-lg p-1 border">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => updateItemQuantity(item.id, -1)}
-                                disabled={item.receivedQty === 0}
-                                className="h-8 w-8 p-0"
-                              >
-                                <Minus className="h-4 w-4" />
-                              </Button>
-                              <span className="text-base font-bold font-mono w-20 text-center">
-                                {item.receivedQty}/{item.expectedQty}
-                              </span>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => updateItemQuantity(item.id, 1)}
-                                className="h-8 w-8 p-0"
-                              >
-                                <Plus className="h-4 w-4" />
-                              </Button>
-                            </div>
-
-                            {/* Action Buttons Group */}
-                            <div className="flex gap-2 flex-wrap ml-auto">
-                              <Button
-                                variant={item.status === 'complete' ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => {
-                                  const updatedItems = receivingItems.map(i => 
-                                    i.id === item.id 
-                                      ? { ...i, receivedQty: i.expectedQty, status: 'complete' as const, checked: true }
-                                      : i
-                                  );
-                                  setReceivingItems(updatedItems);
-                                  triggerAutoSave(updatedItems);
-                                }}
-                                className={`min-w-[70px] transition-colors ${
-                                  item.status === 'complete'
-                                    ? 'bg-green-600 hover:bg-green-700 border-green-600 text-white'
-                                    : 'border-green-500 hover:border-green-600 hover:bg-green-50 text-green-700'
-                                }`}
-                              >
-                                <Check className="h-3 w-3 mr-1" />
-                                OK
-                              </Button>
-                              <Button
-                                variant={isDamaged ? "destructive" : "outline"}
-                                size="sm"
-                                onClick={() => toggleItemStatus(item.id, 'damaged')}
-                                className={`min-w-[70px] transition-colors ${
-                                  isDamaged
-                                    ? 'bg-red-600 hover:bg-red-700 border-red-600 text-white'
-                                    : 'border-red-500 hover:border-red-600 hover:bg-red-50 text-red-700'
-                                }`}
-                              >
-                                <AlertTriangle className="h-3 w-3 mr-1" />
-                                DMG
-                              </Button>
-                              <Button
-                                variant={isMissing ? "secondary" : "outline"}
-                                size="sm"
-                                onClick={() => toggleItemStatus(item.id, 'missing')}
-                                className={`min-w-[70px] transition-colors ${
-                                  isMissing
-                                    ? 'bg-gray-600 hover:bg-gray-700 border-gray-600 text-white'
-                                    : 'border-gray-500 hover:border-gray-600 hover:bg-gray-50 text-gray-700'
-                                }`}
-                              >
-                                <X className="h-3 w-3 mr-1" />
-                                MISS
-                              </Button>
-                            </div>
-                          </div>
-
-                          {/* Notes Field - Show when needed */}
-                          {(isDamaged || isMissing || item.notes) && (
-                            <div className="mt-3 transition-all duration-200">
-                              <Input
-                                value={item.notes || ''}
-                                onChange={(e) => updateItemNotes(item.id, e.target.value)}
-                                placeholder="Add notes about this item..."
-                                className="text-sm bg-white dark:bg-gray-800"
-                              />
-                            </div>
-                          )}
                         </div>
                       </div>
                     );
