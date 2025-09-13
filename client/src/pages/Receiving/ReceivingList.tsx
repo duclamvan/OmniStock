@@ -213,17 +213,21 @@ export default function ReceivingList() {
     }
   });
 
-  // Fetch shipments ready to receive
+  // Fetch shipments ready to receive with smart caching
   const { data: toReceiveShipments = [], isLoading: isLoadingToReceive } = useQuery({
     queryKey: ['/api/imports/shipments/receivable'],
     queryFn: async () => {
       const response = await fetch('/api/imports/shipments/receivable');
       if (!response.ok) throw new Error('Failed to fetch receivable shipments');
       return response.json();
-    }
+    },
+    staleTime: 30 * 1000, // 30 seconds - shipments don't change that frequently
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    refetchOnWindowFocus: false, // Prevent refetch on window focus
+    refetchOnMount: true // Only refetch if stale
   });
 
-  // Fetch shipments currently being received with receipt data
+  // Fetch shipments currently being received with receipt data (optimized caching)
   const { data: receivingShipments = [], isLoading: isLoadingReceiving, refetch: refetchReceiving } = useQuery({
     queryKey: ['/api/imports/shipments/by-status/receiving'],
     queryFn: async () => {
@@ -256,29 +260,38 @@ export default function ReceivingList() {
 
       return shipments;
     },
-    refetchOnWindowFocus: true,
-    refetchOnMount: 'always',
-    staleTime: 0
+    staleTime: 15 * 1000, // 15 seconds - receiving status changes more frequently
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    refetchOnWindowFocus: false, // Prevent refetch on window focus
+    refetchOnMount: true // Only refetch if stale
   });
 
-  // Fetch shipments pending approval
+  // Fetch shipments pending approval with caching
   const { data: approvalShipments = [], isLoading: isLoadingApproval } = useQuery({
     queryKey: ['/api/imports/shipments/by-status/pending_approval'],
     queryFn: async () => {
       const response = await fetch('/api/imports/shipments/by-status/pending_approval');
       if (!response.ok) throw new Error('Failed to fetch approval shipments');
       return response.json();
-    }
+    },
+    staleTime: 30 * 1000, // 30 seconds
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    refetchOnWindowFocus: false,
+    refetchOnMount: true
   });
 
-  // Fetch completed shipments
+  // Fetch completed shipments with longer caching (they don't change)
   const { data: completedShipments = [], isLoading: isLoadingCompleted } = useQuery({
     queryKey: ['/api/imports/shipments/by-status/completed'],
     queryFn: async () => {
       const response = await fetch('/api/imports/shipments/by-status/completed');
       if (!response.ok) throw new Error('Failed to fetch completed shipments');
       return response.json();
-    }
+    },
+    staleTime: 60 * 1000, // 60 seconds - completed shipments rarely change
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+    refetchOnWindowFocus: false,
+    refetchOnMount: true
   });
 
   // Expand/Collapse All functions
@@ -291,7 +304,7 @@ export default function ReceivingList() {
     setExpandedShipments(new Set());
   };
 
-  // Fetch all receipts
+  // Fetch all receipts with smart caching
   const { data: receipts = [], isLoading: isLoadingReceipts } = useQuery({
     queryKey: ['/api/imports/receipts'],
     queryFn: async () => {
@@ -299,9 +312,10 @@ export default function ReceivingList() {
       if (!response.ok) throw new Error('Failed to fetch receipts');
       return response.json();
     },
-    refetchOnWindowFocus: true,
-    refetchOnMount: 'always',
-    staleTime: 0
+    staleTime: 30 * 1000, // 30 seconds - receipts list doesn't change frequently
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    refetchOnWindowFocus: false, // Prevent refetch on window focus
+    refetchOnMount: true // Only refetch if stale
   });
 
   // Get the current shipments based on active tab

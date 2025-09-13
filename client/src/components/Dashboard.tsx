@@ -11,25 +11,107 @@ import { ExpensesChart } from "./charts/ExpensesChart";
 import { YearlyChart } from "./charts/YearlyChart";
 import { formatCurrency } from "@/lib/currencyUtils";
 
+// Define types for dashboard data
+interface DashboardMetrics {
+  fulfillOrdersToday: number;
+  totalOrdersToday: number;
+  totalRevenueToday: number;
+  totalProfitToday: number;
+  thisMonthRevenue: number;
+  thisMonthProfit: number;
+  lastMonthRevenue: number;
+  lastMonthProfit: number;
+}
+
+interface FinancialSummaryItem {
+  month: string;
+  orderCount: number;
+  totalProfitEur: number;
+  totalRevenueEur: number;
+  profitCzkOrders: number;
+  revenueCzkOrders: number;
+  profitEurOrders: number;
+  revenueEurOrders: number;
+  totalProfitCzk: number;
+  totalRevenueCzk: number;
+}
+
+interface Activity {
+  id: string;
+  user?: {
+    firstName?: string;
+    lastName?: string;
+  };
+  description: string;
+  createdAt: string;
+}
+
+interface UnpaidOrder {
+  id: string;
+  orderId: string;
+  customer?: {
+    name?: string;
+  };
+  createdAt: string;
+  grandTotal: string;
+  currency: string;
+  paymentStatus: string;
+}
+
+interface LowStockProduct {
+  id: string;
+  name: string;
+  category?: {
+    name?: string;
+  };
+  sku: string;
+  quantity: number;
+  lowStockAlert: number;
+  supplier?: {
+    name?: string;
+  };
+}
+
 export function Dashboard() {
-  const { data: metrics, isLoading: metricsLoading } = useQuery({
+  // Dashboard data with 5-minute caching (data doesn't change frequently)
+  const { data: metrics, isLoading: metricsLoading } = useQuery<DashboardMetrics>({
     queryKey: ['/api/dashboard/metrics'],
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+    refetchOnWindowFocus: false,
+    refetchOnMount: true, // Only refetch if stale
   });
 
-  const { data: financialSummary, isLoading: summaryLoading } = useQuery({
+  const { data: financialSummary, isLoading: summaryLoading } = useQuery<FinancialSummaryItem[]>({
     queryKey: ['/api/dashboard/financial-summary'],
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+    refetchOnWindowFocus: false,
+    refetchOnMount: true,
   });
 
-  const { data: activities, isLoading: activitiesLoading } = useQuery({
+  const { data: activities, isLoading: activitiesLoading } = useQuery<Activity[]>({
     queryKey: ['/api/dashboard/activities'],
+    staleTime: 2 * 60 * 1000, // 2 minutes (activities update more frequently)
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: true,
   });
 
-  const { data: unpaidOrders, isLoading: unpaidLoading } = useQuery({
+  const { data: unpaidOrders, isLoading: unpaidLoading } = useQuery<UnpaidOrder[]>({
     queryKey: ['/api/orders/unpaid'],
+    staleTime: 60 * 1000, // 1 minute (orders can change more frequently)
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: true,
   });
 
-  const { data: lowStockProducts, isLoading: lowStockLoading } = useQuery({
+  const { data: lowStockProducts, isLoading: lowStockLoading } = useQuery<LowStockProduct[]>({
     queryKey: ['/api/products/low-stock'],
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: true,
   });
 
   if (metricsLoading) {
@@ -259,7 +341,7 @@ export function Dashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {unpaidOrders?.slice(0, 4).map((order: any) => (
+                      {unpaidOrders?.slice(0, 4).map((order) => (
                         <TableRow key={order.id}>
                           <TableCell className="flex items-center space-x-2">
                             <Avatar className="h-6 w-6">
@@ -301,7 +383,7 @@ export function Dashboard() {
               {activitiesLoading ? (
                 <div>Loading activities...</div>
               ) : (
-                activities?.map((activity: any) => (
+                activities?.map((activity) => (
                   <div key={activity.id} className="flex items-center space-x-3">
                     <Avatar className="h-8 w-8">
                       <AvatarFallback className="text-xs">
@@ -359,7 +441,7 @@ export function Dashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {lowStockProducts?.slice(0, 5).map((product: any) => (
+                  {lowStockProducts?.slice(0, 5).map((product) => (
                     <TableRow key={product.id}>
                       <TableCell>#{product.id.slice(-6)}</TableCell>
                       <TableCell>{product.name}</TableCell>
@@ -415,7 +497,7 @@ export function Dashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {financialSummary?.filter((month: any) => month.orderCount > 0 || new Date().getFullYear() === parseInt('20' + month.month.split('-')[1])).map((month: any) => (
+                  {financialSummary?.filter((month) => month.orderCount > 0 || new Date().getFullYear() === parseInt('20' + month.month.split('-')[1])).map((month) => (
                     <TableRow key={month.month}>
                       <TableCell>{month.month}</TableCell>
                       <TableCell>{formatCurrency(month.totalProfitEur || 0, 'EUR')}</TableCell>

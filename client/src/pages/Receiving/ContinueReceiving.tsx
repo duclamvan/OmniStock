@@ -134,8 +134,7 @@ export default function ContinueReceiving() {
   const [hasShownCompletionToast, setHasShownCompletionToast] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
-  // WORLD-RECORD SPEED OPTIMIZATION: Parallel queries with smart caching
-  // These run simultaneously for maximum speed
+  // OPTIMIZED QUERIES: Smart caching prevents duplicate requests
   const { data: shipment, isLoading } = useQuery({
     queryKey: [`/api/imports/shipments/${id}`],
     queryFn: async () => {
@@ -144,14 +143,14 @@ export default function ContinueReceiving() {
       return response.json();
     },
     enabled: !!id,
-    staleTime: 30 * 1000, // Data is fresh for 30 seconds
-    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    staleTime: 60 * 1000, // Data is fresh for 60 seconds (shipments don't change frequently)
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
     refetchOnMount: false, // Use cached data when available
     refetchOnWindowFocus: false,
     refetchOnReconnect: false
   });
 
-  // Fetch receipt in parallel with shipment
+  // Fetch receipt with smart caching - only refetch if stale
   const { data: receipt, isLoading: receiptLoading } = useQuery({
     queryKey: [`/api/imports/receipts/by-shipment/${id}`],
     queryFn: async () => {
@@ -160,9 +159,9 @@ export default function ContinueReceiving() {
       return response.json();
     },
     enabled: !!id,
-    staleTime: 10 * 1000, // Receipt data fresh for 10 seconds
-    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
-    refetchOnMount: 'always', // Always check for updates on mount
+    staleTime: 10 * 1000, // Receipt data fresh for 10 seconds during active editing
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+    refetchOnMount: true, // Only refetch if stale (respects staleTime)
     refetchOnWindowFocus: false,
     refetchOnReconnect: false
   });
@@ -176,7 +175,7 @@ export default function ContinueReceiving() {
         const response = await fetch('/api/imports/receipts');
         return response.json();
       },
-      staleTime: 30 * 1000
+      staleTime: 60 * 1000 // Receipts list fresh for 60 seconds
     });
   }, []);
 
@@ -907,64 +906,123 @@ export default function ContinueReceiving() {
   // Use useRef to maintain save state and timers
   const [isSaving, setIsSaving] = useState(false);
   const saveStatusTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const metaSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingMetaUpdates = useRef<{ [key: string]: any }>({});
+
+  // ================ DEBOUNCED META UPDATE FUNCTION ================
+  const debouncedMetaUpdate = useCallback((field: string, value: any) => {
+    // Store the pending update
+    pendingMetaUpdates.current[field] = value;
+    setSaveStatus('saving');
+    
+    // Clear existing timer
+    if (metaSaveTimerRef.current) {
+      clearTimeout(metaSaveTimerRef.current);
+    }
+    
+    // Set new timer to save after 500ms of inactivity
+    metaSaveTimerRef.current = setTimeout(() => {
+      // Get all pending updates
+      const updates = { ...pendingMetaUpdates.current };
+      pendingMetaUpdates.current = {};
+      
+      // Send all updates in a single request
+      Object.entries(updates).forEach(([updateField, updateValue]) => {
+        updateMetaMutation.mutate({ field: updateField, value: updateValue }, {
+          onSuccess: () => {
+            setSaveStatus('saved');
+            setTimeout(() => setSaveStatus('idle'), 1000);
+          },
+          onError: () => {
+            setSaveStatus('idle');
+          }
+        });
+      });
+    }, 500); // Wait 500ms after last change before saving
+  }, [updateMetaMutation]);
 
   // ================ OPTIMIZED FIELD-SPECIFIC HANDLERS ================
   
-  // Text input handlers - save only the specific field
+  // Text input handlers - debounced saves
   const handleReceivedByChange = (value: string) => {
     setReceivedBy(value);
-    setSaveStatus('saving');
-    updateMetaMutation.mutate({ field: 'receivedBy', value }, {
-      onSuccess: () => {
-        setSaveStatus('saved');
-        setTimeout(() => setSaveStatus('idle'), 1000);
-      }
-    });
+    debouncedMetaUpdate('receivedBy', value);
   };
   
   const handleReceivedByBlur = () => {
-    // No-op - already saved on change
+    // Force save on blur if there are pending updates
+    if (metaSaveTimerRef.current) {
+      clearTimeout(metaSaveTimerRef.current);
+      metaSaveTimerRef.current = null;
+      
+      const updates = { ...pendingMetaUpdates.current };
+      pendingMetaUpdates.current = {};
+      
+      Object.entries(updates).forEach(([field, value]) => {
+        updateMetaMutation.mutate({ field, value });
+      });
+    }
   };
 
   const handleCarrierChange = (value: string) => {
     setCarrier(value);
-    setSaveStatus('saving');
-    updateMetaMutation.mutate({ field: 'carrier', value }, {
-      onSuccess: () => {
-        setSaveStatus('saved');
-        setTimeout(() => setSaveStatus('idle'), 1000);
-      }
-    });
+    debouncedMetaUpdate('carrier', value);
   };
   
   const handleCarrierBlur = () => {
-    // No-op - already saved on change
+    // Force save on blur if there are pending updates
+    if (metaSaveTimerRef.current) {
+      clearTimeout(metaSaveTimerRef.current);
+      metaSaveTimerRef.current = null;
+      
+      const updates = { ...pendingMetaUpdates.current };
+      pendingMetaUpdates.current = {};
+      
+      Object.entries(updates).forEach(([field, value]) => {
+        updateMetaMutation.mutate({ field, value });
+      });
+    }
   };
 
   // Ref to track button save timer (removed - using immediate saves)
   const buttonSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Number input handlers - optimized field-specific saves
+  // Number input handlers - immediate saves for buttons, debounced for typing
   const handleParcelCountChange = (value: number, isButton?: boolean) => {
     setParcelCount(value);
-    setSaveStatus('saving');
-    updateMetaMutation.mutate({ field: 'parcelCount', value }, {
-      onSuccess: () => {
-        setSaveStatus('saved');
-        setTimeout(() => setSaveStatus('idle'), 1000);
-      }
-    });
+    if (isButton) {
+      // Immediate save for button clicks
+      setSaveStatus('saving');
+      updateMetaMutation.mutate({ field: 'parcelCount', value }, {
+        onSuccess: () => {
+          setSaveStatus('saved');
+          setTimeout(() => setSaveStatus('idle'), 1000);
+        }
+      });
+    } else {
+      // Debounced save for typing
+      debouncedMetaUpdate('parcelCount', value);
+    }
   };
   
   const handleParcelCountBlur = () => {
-    // No-op - already saved on change
+    // Force save on blur if there are pending updates
+    if (metaSaveTimerRef.current && pendingMetaUpdates.current.parcelCount !== undefined) {
+      clearTimeout(metaSaveTimerRef.current);
+      metaSaveTimerRef.current = null;
+      
+      const value = pendingMetaUpdates.current.parcelCount;
+      delete pendingMetaUpdates.current.parcelCount;
+      
+      updateMetaMutation.mutate({ field: 'parcelCount', value });
+    }
   };
 
   const handleScannedParcelsChange = (value: number, isButton?: boolean, options?: { trackingNumbers?: string[] }) => {
     setScannedParcels(value);
     setSaveStatus('saving');
     
-    // Update scanned parcels count
+    // Scanned parcels should save immediately as they're from barcode scanning
     updateMetaMutation.mutate({ field: 'scannedParcels', value }, {
       onSuccess: () => {
         setSaveStatus('saved');
