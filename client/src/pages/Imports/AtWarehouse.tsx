@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, memo, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -10,10 +10,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { FixedSizeList as List } from "react-window";
 import { Plus, Package, Plane, Ship, Zap, Truck, MapPin, Clock, Weight, Users, ShoppingCart, Star, Trash2, Package2, PackageOpen, AlertCircle, CheckCircle, Edit, MoreHorizontal, ArrowUp, ArrowDown, Archive, Send, RefreshCw, Flag, Shield, Grip, AlertTriangle, ChevronDown, ChevronRight, Box, Sparkles, X, Search, SortAsc, CheckSquare, Square, ChevronsDown, ChevronsUp, Filter, Calendar, Hash, Camera, ArrowRightToLine, MoreVertical, Edit2, Train } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
@@ -147,6 +149,356 @@ const sourceColors: Record<string, string> = {
   alibaba: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
   other: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
 };
+
+// Memoized skeleton components for loading states
+const OrderCardSkeleton = memo(() => (
+  <Card className="shadow-sm">
+    <CardContent className="pt-6">
+      <div className="flex items-start justify-between">
+        <div className="flex-1 space-y-3">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-6 w-6" />
+            <Skeleton className="h-6 w-32" />
+            <Skeleton className="h-5 w-20 rounded-full" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-48" />
+            <Skeleton className="h-4 w-36" />
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-6 w-16 rounded" />
+            <Skeleton className="h-6 w-16 rounded" />
+            <Skeleton className="h-6 w-16 rounded" />
+          </div>
+        </div>
+        <Skeleton className="h-9 w-32" />
+      </div>
+    </CardContent>
+  </Card>
+));
+OrderCardSkeleton.displayName = 'OrderCardSkeleton';
+
+const ItemCardSkeleton = memo(() => (
+  <Card className="hover:shadow-md transition-shadow">
+    <CardContent className="p-4">
+      <div className="flex items-start justify-between">
+        <div className="flex-1 space-y-2">
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-5 w-5 rounded" />
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="h-5 w-20 rounded-full" />
+          </div>
+          <Skeleton className="h-4 w-32" />
+          <div className="flex gap-4">
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Skeleton className="h-9 w-24" />
+          <Skeleton className="h-9 w-9" />
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+));
+ItemCardSkeleton.displayName = 'ItemCardSkeleton';
+
+const StatsCardSkeleton = memo(() => (
+  <Card>
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <Skeleton className="h-4 w-24" />
+      <Skeleton className="h-4 w-4" />
+    </CardHeader>
+    <CardContent>
+      <Skeleton className="h-8 w-12" />
+    </CardContent>
+  </Card>
+));
+StatsCardSkeleton.displayName = 'StatsCardSkeleton';
+
+// Memoized item card component for virtualized list
+const ItemCard = memo(({
+  item,
+  index,
+  selectedItemsForAI,
+  setSelectedItemsForAI,
+  expandedItems,
+  toggleItemExpanded,
+  updateItemClassificationMutation,
+  handleEditItem,
+  setDeleteTarget,
+  setMoveToConsolidationItem,
+  unpackItemMutation,
+  getClassificationIcon,
+  getSourceBadge,
+  itemSortBy
+}: any) => {
+  const handleClick = useCallback((e: any) => {
+    const target = e.target as HTMLElement;
+    if (!target.closest('button') && !target.closest('[data-drag-handle]')) {
+      e.preventDefault();
+      e.stopPropagation();
+      const newSelected = new Set(selectedItemsForAI);
+      if (newSelected.has(item.id)) {
+        newSelected.delete(item.id);
+      } else {
+        newSelected.add(item.id);
+      }
+      setSelectedItemsForAI(newSelected);
+    }
+  }, [item.id, selectedItemsForAI, setSelectedItemsForAI]);
+
+  return (
+    <Draggable key={item.uniqueId} draggableId={item.uniqueId} index={index}>
+      {(provided) => (
+        <div
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          {...provided.dragHandleProps}
+          className={`border rounded-lg p-3 bg-background hover:shadow-md cursor-grab active:cursor-grabbing transition-all ${
+            selectedItemsForAI.has(item.id) 
+              ? 'ring-2 ring-purple-500 bg-purple-50 dark:bg-purple-900/20 border-purple-300' 
+              : 'hover:border-purple-200'
+          }`}
+          onClick={handleClick}
+        >
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-start gap-3">
+                <div className="flex items-center mt-0.5">
+                  <div 
+                    data-drag-handle
+                    className="hover:bg-muted/50 rounded p-0.5 transition-colors"
+                    title={itemSortBy === 'custom' ? "Drag card to reorder items" : "Drag card to consolidation"}
+                  >
+                    <Grip className="h-4 w-4 text-muted-foreground flex-shrink-0 hover:text-primary transition-colors" />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold text-base">{item.name}</span>
+                    {getClassificationIcon(item.classification)}
+                  </div>
+                  
+                  <div className="flex items-center gap-2 mt-1 text-sm text-gray-700 dark:text-gray-300 flex-wrap">
+                    <span>Qty: {item.quantity}</span>
+                    {item.weight && <span>• {item.weight} kg</span>}
+                    {item.source && (
+                      <>
+                        <span>•</span>
+                        {getSourceBadge(item.source)}
+                      </>
+                    )}
+                    {item.orderNumber && (
+                      <span>• {item.orderNumber}</span>
+                    )}
+                    {item.customerName && (
+                      <span>• {item.customerName}</span>
+                    )}
+                    {item.purchaseOrderId && item.orderItems && item.orderItems.length > 0 && (
+                      <>
+                        <span>•</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-5 px-1.5 -ml-1 text-xs hover:bg-muted"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleItemExpanded(item.id);
+                          }}
+                          title={expandedItems.has(item.id) ? "Hide items" : "Show items"}
+                        >
+                          <ChevronDown className={`h-3 w-3 transition-transform ${expandedItems.has(item.id) ? '' : '-rotate-90'}`} />
+                          <span className="ml-1">{item.orderItems.length} items</span>
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                  
+                  {item.purchaseOrderId && item.orderItems && item.orderItems.length > 0 && expandedItems.has(item.id) && (
+                    <div className="mt-2 ml-4 border-l-2 border-muted pl-3 space-y-1">
+                      {item.orderItems.map((orderItem: any, idx: number) => (
+                        <div key={idx} className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-900 dark:text-gray-100">{orderItem.name}</span>
+                            {orderItem.sku && (
+                              <span className="text-gray-600 dark:text-gray-400">({orderItem.sku})</span>
+                            )}
+                          </div>
+                          <span className="text-gray-700 dark:text-gray-300">Qty: {orderItem.quantity}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-1 items-start">
+              {item.purchaseOrderId && item.orderItems && item.orderItems.length > 0 && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-8 px-2"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        unpackItemMutation.mutate(item.id);
+                      }}
+                      className="text-primary"
+                    >
+                      <Package2 className="h-4 w-4 mr-2" />
+                      Unpack All Items
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditItem(item);
+                      }}
+                    >
+                      <Edit2 className="h-4 w-4 mr-2" />
+                      Edit Package
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteTarget({ type: 'item', id: item.id, name: item.name });
+                      }}
+                      className="text-red-600"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete Package
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 px-2"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {item.classification === 'sensitive' ? (
+                      <Flag className="h-4 w-4 text-red-500 fill-red-500" />
+                    ) : item.classification === 'general' ? (
+                      <Flag className="h-4 w-4 text-green-500 fill-green-500" />
+                    ) : (
+                      <div className="h-4 w-4 border-2 border-dashed border-gray-400 rounded" />
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Set Classification</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      updateItemClassificationMutation.mutate({
+                        id: item.id,
+                        classification: null
+                      });
+                    }}
+                  >
+                    <div className="h-4 w-4 border-2 border-dashed border-gray-400 rounded mr-2" />
+                    None
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      updateItemClassificationMutation.mutate({
+                        id: item.id,
+                        classification: 'general'
+                      });
+                    }}
+                  >
+                    <Flag className="h-4 w-4 text-green-500 fill-green-500 mr-2" />
+                    General Goods
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      updateItemClassificationMutation.mutate({
+                        id: item.id,
+                        classification: 'sensitive'
+                      });
+                    }}
+                  >
+                    <Flag className="h-4 w-4 text-red-500 fill-red-500 mr-2" />
+                    Sensitive Goods
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMoveToConsolidationItem({ id: item.id, name: item.name });
+                }}
+                className="h-8 px-2"
+                title="Move to consolidation"
+              >
+                <ArrowRightToLine className="h-4 w-4" />
+              </Button>
+              
+              <Button 
+                size="sm"
+                variant="ghost"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEditItem(item);
+                }}
+                className="h-8 px-2"
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={(e) => e.stopPropagation()}
+                    className="h-8 px-2"
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem 
+                    className="text-red-600"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteTarget({ type: 'item', id: item.id, name: item.name });
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        </div>
+      )}
+    </Draggable>
+  );
+});
+ItemCard.displayName = 'ItemCard';
 
 export default function AtWarehouse() {
   const [isAddCustomItemOpen, setIsAddCustomItemOpen] = useState(false);
@@ -1639,6 +1991,14 @@ export default function AtWarehouse() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {(isLoadingOrders || isLoadingItems || isLoadingConsolidations) ? (
+          <>
+            {[...Array(4)].map((_, i) => (
+              <StatsCardSkeleton key={i} />
+            ))}
+          </>
+        ) : (
+          <>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Incoming Orders</CardTitle>
@@ -1683,6 +2043,8 @@ export default function AtWarehouse() {
             </div>
           </CardContent>
         </Card>
+          </>
+        )}
       </div>
 
       {/* Main Tabs */}
@@ -1698,7 +2060,13 @@ export default function AtWarehouse() {
 
         {/* Incoming Orders Tab */}
         <TabsContent value="incoming" className="space-y-4">
-          {filteredOrders.length === 0 ? (
+          {isLoadingOrders ? (
+            <div className="grid gap-4 animate-in fade-in-50 duration-500">
+              {[...Array(3)].map((_, i) => (
+                <OrderCardSkeleton key={i} />
+              ))}
+            </div>
+          ) : filteredOrders.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Package className="h-12 w-12 text-muted-foreground mb-4" />
@@ -2210,7 +2578,48 @@ export default function AtWarehouse() {
                           data-testid="available-items-container"
                           className="space-y-2 min-h-[400px] p-2 rounded-lg"
                         >
-                          {sortedAndFilteredItems.map((item, index) => (
+                          {isLoadingItems ? (
+                            <div className="space-y-2 animate-in fade-in-50 duration-500">
+                              {[...Array(5)].map((_, i) => (
+                                <ItemCardSkeleton key={i} />
+                              ))}
+                            </div>
+                          ) : sortedAndFilteredItems.length > 50 ? (
+                            // Use virtualization for large lists
+                            <List
+                              height={600}
+                              itemCount={sortedAndFilteredItems.length}
+                              itemSize={100}
+                              width="100%"
+                              itemData={sortedAndFilteredItems}
+                            >
+                              {({ index, style, data }) => {
+                                const item = data[index];
+                                return (
+                                  <div style={style} key={item.uniqueId}>
+                                    <ItemCard 
+                                      item={item} 
+                                      index={index}
+                                      selectedItemsForAI={selectedItemsForAI}
+                                      setSelectedItemsForAI={setSelectedItemsForAI}
+                                      expandedItems={expandedItems}
+                                      toggleItemExpanded={toggleItemExpanded}
+                                      updateItemClassificationMutation={updateItemClassificationMutation}
+                                      handleEditItem={handleEditItem}
+                                      setDeleteTarget={setDeleteTarget}
+                                      setMoveToConsolidationItem={setMoveToConsolidationItem}
+                                      unpackItemMutation={unpackItemMutation}
+                                      getClassificationIcon={getClassificationIcon}
+                                      getSourceBadge={getSourceBadge}
+                                      itemSortBy={itemSortBy}
+                                    />
+                                  </div>
+                                );
+                              }}
+                            </List>
+                          ) : (
+                            // Regular rendering for smaller lists
+                            sortedAndFilteredItems.map((item, index) => (
                             <Draggable key={item.uniqueId} draggableId={item.uniqueId} index={index}>
                               {(provided) => (
                                 <div
@@ -2476,7 +2885,7 @@ export default function AtWarehouse() {
                                 </div>
                               )}
                             </Draggable>
-                          ))}
+                          )))}
                           {provided.placeholder}
                         </div>
                       )}

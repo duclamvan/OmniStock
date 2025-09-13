@@ -1,12 +1,14 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, memo, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { FixedSizeList as List } from "react-window";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -152,6 +154,212 @@ const getUnitTypeIcon = (unitType: string, className = "h-3 w-3") => {
   }
   return <Package className={`${className} text-muted-foreground`} />;
 };
+
+// Memoized skeleton component for shipment cards
+const ShipmentCardSkeleton = memo(() => (
+  <Card className="border">
+    <CardContent className="p-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-1">
+          <Skeleton className="h-8 w-8" />
+          <Skeleton className="h-5 w-5" />
+          <div className="flex-1 space-y-2">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-5 w-20 rounded-full" />
+            </div>
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-16" />
+            </div>
+            <Skeleton className="h-3 w-48" />
+          </div>
+        </div>
+        <Skeleton className="h-9 w-32" />
+      </div>
+      <div className="flex items-center gap-6 text-sm mb-3 sm:pl-11">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-4 w-20" />
+        <Skeleton className="h-4 w-28" />
+      </div>
+    </CardContent>
+  </Card>
+));
+ShipmentCardSkeleton.displayName = 'ShipmentCardSkeleton';
+
+// Memoized shipment card component for virtualized list
+const ShipmentCard = memo(({ 
+  shipment, 
+  isExpanded, 
+  selectedShipments, 
+  toggleShipmentSelection, 
+  expandedShipments, 
+  setExpandedShipments,
+  getStatusColor 
+}: any) => {
+  const handleExpand = useCallback(() => {
+    const newExpanded = new Set(expandedShipments);
+    if (isExpanded) {
+      newExpanded.delete(shipment.id);
+    } else {
+      newExpanded.add(shipment.id);
+    }
+    setExpandedShipments(newExpanded);
+  }, [isExpanded, shipment.id, expandedShipments, setExpandedShipments]);
+
+  return (
+    <Card className="border hover:shadow-md transition-shadow">
+      <CardContent className="p-4">
+        {/* Shipment Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="p-1"
+              onClick={handleExpand}
+              data-testid={`button-toggle-${shipment.id}`}
+            >
+              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </Button>
+            <Checkbox
+              checked={selectedShipments.has(shipment.id)}
+              onCheckedChange={() => toggleShipmentSelection(shipment.id)}
+              data-testid={`checkbox-shipment-${shipment.id}`}
+            />
+            <div className="flex-1">
+              {/* First Row: Title and Status */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="font-semibold text-sm sm:text-base">
+                  {shipment.shipmentName || `Shipment #${shipment.id}`}
+                </h3>
+                <Badge className={getStatusColor(shipment.status)}>
+                  {shipment.status?.replace('_', ' ').toUpperCase()}
+                </Badge>
+              </div>
+
+              {/* Second Row: Shipment Type, Carrier, Units */}
+              <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground mt-2">
+                {(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod) && (
+                  <>
+                    <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                      {getShipmentTypeIcon(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod || '')}
+                      {formatShipmentType(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod || '')}
+                    </Badge>
+                    <span className="text-muted-foreground">•</span>
+                  </>
+                )}
+                <span className="font-semibold">
+                  {shipment.endCarrier || shipment.carrier}
+                </span>
+                <span className="text-muted-foreground">•</span>
+                <span className="flex items-center gap-1">
+                  {getUnitTypeIcon(shipment.unitType || 'items')}
+                  {shipment.totalUnits} {shipment.unitType || 'items'}
+                </span>
+              </div>
+
+              {/* Third Row: Route and Tracking */}
+              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-1">
+                <span className="flex items-center gap-1">
+                  <MapPin className="h-3 w-3" />
+                  {shipment.origin?.split(',')[0]} - {shipment.destination?.split(',')[0]}
+                </span>
+                <span>•</span>
+                <span className="font-mono">Tracking: {shipment.trackingNumber}</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            <Link href={`/receiving/start/${shipment.id}`}>
+              <Button 
+                size="sm" 
+                className="bg-sky-600 hover:bg-sky-700 text-white shadow-sm hover:shadow-md transition-all"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Start Receiving
+              </Button>
+            </Link>
+          </div>
+        </div>
+
+        {/* Additional Info Bar */}
+        <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-xs sm:text-sm mb-3 sm:pl-11">
+          {shipment.consolidation?.warehouse && (
+            <div className="flex items-center gap-1">
+              <Warehouse className="h-3 w-3 text-muted-foreground" />
+              <span className="text-muted-foreground">
+                {shipment.consolidation.warehouse}
+              </span>
+            </div>
+          )}
+          {shipment.estimatedDelivery && (
+            <div className="flex items-center gap-1">
+              <Calendar className="h-3 w-3 text-muted-foreground" />
+              <span className="text-muted-foreground">
+                Est: {format(new Date(shipment.estimatedDelivery), 'MMM dd')}
+              </span>
+            </div>
+          )}
+          {shipment.actualWeight && (
+            <div className="flex items-center gap-1">
+              <Package2 className="h-3 w-3 text-muted-foreground" />
+              <span className="font-semibold">
+                Weight: {shipment.actualWeight} kg
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Items Table - Only visible when expanded */}
+        {isExpanded && (
+          <div className="sm:pl-11">
+            {(!shipment.items || shipment.items.length === 0) ? (
+              <div className="text-center py-6 bg-muted/30 rounded-lg">
+                <p className="text-muted-foreground text-sm">No items details available</p>
+              </div>
+            ) : (
+              <div className="rounded-lg border bg-card overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="border-b bg-muted/50">
+                    <tr>
+                      <th className="p-2 text-left font-medium">Item</th>
+                      <th className="p-2 text-left font-medium">SKU</th>
+                      <th className="p-2 text-center font-medium">Quantity</th>
+                      <th className="p-2 text-left font-medium">Category</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {shipment.items.map((item: any, index: number) => (
+                      <tr key={index} className="hover:bg-muted/30">
+                        <td className="p-2">{item.name}</td>
+                        <td className="p-2 font-mono text-xs">{item.sku || '-'}</td>
+                        <td className="p-2 text-center">{item.quantity}</td>
+                        <td className="p-2">{item.category || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Notes */}
+        {shipment.notes && isExpanded && (
+          <div className="mt-3 sm:pl-11">
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <p className="text-xs text-muted-foreground mb-1">Notes:</p>
+              <p className="text-sm">{shipment.notes}</p>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+});
+ShipmentCard.displayName = 'ShipmentCard';
 
 export default function ReceivingList() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -1102,9 +1310,10 @@ export default function ReceivingList() {
 
         <TabsContent value="to-receive" className="mt-6">
           {isLoadingToReceive ? (
-            <div className="text-center py-8">
-              <Package className="h-12 w-12 text-muted-foreground mx-auto mb-2 animate-pulse" />
-              <p className="text-muted-foreground">Loading shipments...</p>
+            <div className="space-y-4 animate-in fade-in-50 duration-500">
+              {[...Array(5)].map((_, i) => (
+                <ShipmentCardSkeleton key={i} />
+              ))}
             </div>
           ) : sortedShipments.length === 0 ? (
             <div className="text-center py-8">
@@ -1282,9 +1491,10 @@ export default function ReceivingList() {
 
         <TabsContent value="receiving" className="mt-6">
           {isLoadingReceiving ? (
-            <div className="text-center py-8">
-              <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-2 animate-pulse" />
-              <p className="text-muted-foreground">Loading shipments...</p>
+            <div className="space-y-4 animate-in fade-in-50 duration-500">
+              {[...Array(3)].map((_, i) => (
+                <ShipmentCardSkeleton key={i} />
+              ))}
             </div>
           ) : receivingShipments.length === 0 ? (
             <div className="text-center py-8">

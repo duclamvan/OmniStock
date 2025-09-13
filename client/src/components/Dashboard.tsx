@@ -5,11 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { MobileCardView } from "@/components/ui/responsive-table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Truck, Package, Euro, TrendingUp, Filter, ArrowUpDown } from "lucide-react";
 import { RevenueChart } from "./charts/RevenueChart";
 import { ExpensesChart } from "./charts/ExpensesChart";
 import { YearlyChart } from "./charts/YearlyChart";
 import { formatCurrency } from "@/lib/currencyUtils";
+import { memo, useMemo } from "react";
+import { FixedSizeList as List } from "react-window";
 
 // Define types for dashboard data
 interface DashboardMetrics {
@@ -72,6 +75,59 @@ interface LowStockProduct {
   };
 }
 
+// Memoized skeleton components for better performance
+const MetricCardSkeleton = memo(() => (
+  <Card>
+    <CardContent className="p-4 sm:p-6">
+      <div className="flex items-center justify-between">
+        <div className="flex-1 space-y-2">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-8 w-32" />
+          <Skeleton className="h-3 w-20" />
+        </div>
+        <Skeleton className="h-12 w-12 rounded-lg ml-4" />
+      </div>
+    </CardContent>
+  </Card>
+));
+MetricCardSkeleton.displayName = 'MetricCardSkeleton';
+
+const ChartSkeleton = memo(() => (
+  <Card>
+    <CardHeader className="flex flex-row items-center justify-between">
+      <Skeleton className="h-6 w-32" />
+      <Skeleton className="h-8 w-24" />
+    </CardHeader>
+    <CardContent>
+      <Skeleton className="h-64 w-full" />
+    </CardContent>
+  </Card>
+));
+ChartSkeleton.displayName = 'ChartSkeleton';
+
+const TableRowSkeleton = memo(() => (
+  <TableRow>
+    <TableCell><Skeleton className="h-8 w-8 rounded-full" /></TableCell>
+    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+    <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+    <TableCell><Skeleton className="h-6 w-16 rounded" /></TableCell>
+  </TableRow>
+));
+TableRowSkeleton.displayName = 'TableRowSkeleton';
+
+const ActivitySkeleton = memo(() => (
+  <div className="flex items-center space-x-3">
+    <Skeleton className="h-8 w-8 rounded-full" />
+    <div className="flex-1 space-y-1">
+      <Skeleton className="h-4 w-32" />
+      <Skeleton className="h-3 w-48" />
+    </div>
+    <Skeleton className="h-3 w-16" />
+  </div>
+));
+ActivitySkeleton.displayName = 'ActivitySkeleton';
+
 export function Dashboard() {
   // Dashboard data with 5-minute caching (data doesn't change frequently)
   const { data: metrics, isLoading: metricsLoading } = useQuery<DashboardMetrics>({
@@ -114,8 +170,30 @@ export function Dashboard() {
     refetchOnMount: true,
   });
 
-  if (metricsLoading) {
-    return <div>Loading dashboard...</div>;
+  // Show skeleton loading state for dashboard
+  if (metricsLoading && !metrics) {
+    return (
+      <div className="space-y-4 sm:space-y-6 lg:space-y-8 animate-in fade-in-50 duration-500">
+        {/* Skeleton Metrics Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+          {[...Array(4)].map((_, i) => (
+            <MetricCardSkeleton key={i} />
+          ))}
+        </div>
+        {/* Skeleton Monthly Metrics */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+          {[...Array(4)].map((_, i) => (
+            <MetricCardSkeleton key={i} />
+          ))}
+        </div>
+        {/* Skeleton Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <ChartSkeleton />
+          <ChartSkeleton />
+        </div>
+        <ChartSkeleton />
+      </div>
+    );
   }
 
   return (
@@ -290,7 +368,40 @@ export function Dashboard() {
           </CardHeader>
           <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
             {unpaidLoading ? (
-              <div className="text-center py-4">Loading unpaid orders...</div>
+              <div className="space-y-2 animate-in fade-in-50 duration-500">
+                {/* Mobile Card Skeleton */}
+                <div className="block sm:hidden space-y-4">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="p-4 border rounded-lg space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Skeleton className="h-8 w-8 rounded-full" />
+                        <Skeleton className="h-6 w-20 rounded" />
+                      </div>
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-6 w-24" />
+                    </div>
+                  ))}
+                </div>
+                {/* Desktop Table Skeleton */}
+                <div className="hidden sm:block">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Customer Name</TableHead>
+                        <TableHead>Order ID</TableHead>
+                        <TableHead>Order Date</TableHead>
+                        <TableHead>Order Value</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {[...Array(4)].map((_, i) => (
+                        <TableRowSkeleton key={i} />
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
             ) : (
               <>
                 {/* Mobile Card View */}
@@ -381,7 +492,11 @@ export function Dashboard() {
           <CardContent>
             <div className="space-y-4">
               {activitiesLoading ? (
-                <div>Loading activities...</div>
+                <div className="space-y-4 animate-in fade-in-50 duration-500">
+                  {[...Array(5)].map((_, i) => (
+                    <ActivitySkeleton key={i} />
+                  ))}
+                </div>
               ) : (
                 activities?.map((activity) => (
                   <div key={activity.id} className="flex items-center space-x-3">
@@ -425,7 +540,36 @@ export function Dashboard() {
         <CardContent>
           <div className="overflow-x-auto">
             {lowStockLoading ? (
-              <div>Loading low stock products...</div>
+              <div className="animate-in fade-in-50 duration-500">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Product ID</TableHead>
+                      <TableHead>Product Name</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>SKU</TableHead>
+                      <TableHead>Current Stock</TableHead>
+                      <TableHead>Low Stock Alert</TableHead>
+                      <TableHead>Supplier</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {[...Array(5)].map((_, i) => (
+                      <TableRow key={i}>
+                        <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-6 w-20 rounded" /></TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             ) : (
               <Table>
                 <TableHeader>
@@ -480,7 +624,38 @@ export function Dashboard() {
         <CardContent>
           <div className="overflow-x-auto">
             {summaryLoading ? (
-              <div>Loading financial summary...</div>
+              <div className="animate-in fade-in-50 duration-500">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Month</TableHead>
+                      <TableHead>Total Profit EUR</TableHead>
+                      <TableHead>Total Revenue EUR</TableHead>
+                      <TableHead>Profit CZK Orders</TableHead>
+                      <TableHead>Revenue CZK Orders</TableHead>
+                      <TableHead>Profit EUR Orders</TableHead>
+                      <TableHead>Revenue EUR Orders</TableHead>
+                      <TableHead>Total Profit CZK</TableHead>
+                      <TableHead>Total Revenue CZK</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {[...Array(6)].map((_, i) => (
+                      <TableRow key={i}>
+                        <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             ) : (
               <Table>
                 <TableHeader>
