@@ -493,8 +493,8 @@ export default function ContinueReceiving() {
         return item;
       });
       
-      // Use debounced save for quantity changes to reduce API calls
-      triggerAutoSave(updatedItems, false);
+      // Use immediate save for quantity changes to ensure data persistence
+      triggerAutoSave(updatedItems, true);
       return updatedItems;
     });
   };
@@ -532,8 +532,8 @@ export default function ContinueReceiving() {
     });
     
     setReceivingItems(updatedItems);
-    // Use debounced save for status changes to reduce API calls
-    triggerAutoSave(updatedItems, false);
+    // Use immediate save for status changes to ensure data persistence
+    triggerAutoSave(updatedItems, true);
   };
 
   // Update item notes

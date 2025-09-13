@@ -5,6 +5,13 @@ Davie Supply is a comprehensive warehouse and order management system designed a
 Preferred communication style: Simple, everyday language.
 
 # Recent Changes
+- **January 25, 2025**: Fixed auto-save issues and enhanced loading experiences in receiving workflow
+  - Fixed item quantity auto-save to trigger immediately on every change (was using debounced save)
+  - Fixed status button changes (OK, DMG, MISS) to save immediately to prevent data loss
+  - Added skeleton loading placeholders for photos while they load from database
+  - Enhanced photo loading with smooth transitions and proper loading states
+  - Ensured all user actions save immediately to database for reliable data persistence
+
 - **January 25, 2025**: Enhanced imports management with AI screenshot reader and improved UI
   - Added AI screenshot reader to extract order details from Pinduoduo/Taobao screenshots
   - Simplified Add Custom Item modal by removing weight, dimensions, customer fields
