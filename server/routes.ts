@@ -28,6 +28,7 @@ import { ObjectPermission } from "./objectAcl";
 // import { putawayRouter } from "./routes/putaway";
 // import { importOrdersRouter } from "./routes/importOrders";
 import imports from './routes/imports';
+import optimizeDb from './routes/optimize-db';
 import { weightCalculationService } from "./services/weightCalculation";
 import { ImageCompressionService } from "./services/imageCompression";
 
@@ -3485,6 +3486,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Import routes
   app.use('/api/imports', imports);
+  
+  // World-record speed optimization routes
+  app.use('/api/optimize', optimizeDb);
   
   // Returns endpoints
   app.get('/api/returns', async (req, res) => {

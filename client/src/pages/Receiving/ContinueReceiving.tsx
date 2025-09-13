@@ -100,6 +100,8 @@ export default function ContinueReceiving() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const barcodeRef = useRef<HTMLInputElement>(null);
+  const lastSaveDataRef = useRef<any>(null); // Fix missing ref error for world-record speed
+  const dataInitializedRef = useRef(false); // Prevent double initialization
   
   // Handle back navigation with proper query invalidation
   const handleBackNavigation = useCallback(() => {
@@ -130,7 +132,8 @@ export default function ContinueReceiving() {
   const [hasShownCompletionToast, setHasShownCompletionToast] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
-  // Fetch shipment details
+  // WORLD-RECORD SPEED OPTIMIZATION: Parallel queries with smart caching
+  // These run simultaneously for maximum speed
   const { data: shipment, isLoading } = useQuery({
     queryKey: [`/api/imports/shipments/${id}`],
     queryFn: async () => {
@@ -139,11 +142,14 @@ export default function ContinueReceiving() {
       return response.json();
     },
     enabled: !!id,
-    refetchOnMount: 'always', // Always refetch when component mounts
-    refetchOnWindowFocus: false // Don't refetch on window focus
+    staleTime: 30 * 1000, // Data is fresh for 30 seconds
+    cacheTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    refetchOnMount: false, // Use cached data when available
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false
   });
 
-  // Fetch existing receipt if available - always fetch fresh data
+  // Fetch receipt in parallel with shipment
   const { data: receipt, isLoading: receiptLoading } = useQuery({
     queryKey: [`/api/imports/receipts/by-shipment/${id}`],
     queryFn: async () => {
@@ -152,20 +158,40 @@ export default function ContinueReceiving() {
       return response.json();
     },
     enabled: !!id,
-    refetchOnMount: 'always', // Always refetch when component mounts to get latest data
-    refetchOnWindowFocus: false, // Don't refetch on window focus
-    staleTime: 0 // Consider data stale immediately
+    staleTime: 10 * 1000, // Receipt data fresh for 10 seconds
+    cacheTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    refetchOnMount: 'always', // Always check for updates on mount
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false
   });
+
+  // Prefetch the next likely navigation for instant back navigation
+  useEffect(() => {
+    // Prefetch receiving list for instant back navigation
+    queryClient.prefetchQuery({
+      queryKey: ['/api/imports/receipts'],
+      queryFn: async () => {
+        const response = await fetch('/api/imports/receipts');
+        return response.json();
+      },
+      staleTime: 30 * 1000
+    });
+  }, []);
 
   // Determine if this is a pallet shipment
   const isPalletShipment = shipment?.unitType?.toLowerCase().includes('pallet') || false;
   const unitLabel = isPalletShipment ? 'Pallets' : 'Parcels';
 
-  // Initialize data when shipment and receipt loads
+  // OPTIMIZED: Initialize data with prevention of unnecessary re-renders
   useEffect(() => {
-    console.log('Loading receipt data:', { shipment: !!shipment, receipt: !!receipt, receiptLoading });
+    // Prevent double initialization and unnecessary re-renders
+    const dataKey = `${shipment?.id}-${receipt?.receipt?.id || 'none'}`;
+    if (dataInitializedRef.current === dataKey) {
+      return; // Skip if already initialized with this data
+    }
     
     if (shipment && receipt && !receiptLoading) {
+      dataInitializedRef.current = dataKey;
       // Load existing receipt data - receipt object has structure: { receipt: {...}, items: [...] }
       const receiptData = receipt.receipt || receipt;
       console.log('Receipt data found:', { 
@@ -185,13 +211,14 @@ export default function ContinueReceiving() {
       setCarrier(receiptData.carrier || shipment.endCarrier || shipment.carrier || "");
       setParcelCount(receiptData.parcelCount || shipment.totalUnits || 1);
       
-      // Load photos from receipt if available
+      // LAZY LOAD: Photos loaded asynchronously without blocking main content
       if (receiptData.photos && Array.isArray(receiptData.photos) && receiptData.photos.length > 0) {
-        console.log(`Loading ${receiptData.photos.length} photos from saved data`);
-        setUploadedPhotos(receiptData.photos);
-        setPhotosLoading(false);
+        // Load photos in next tick to not block UI updates
+        requestAnimationFrame(() => {
+          setUploadedPhotos(receiptData.photos);
+          setPhotosLoading(false);
+        });
       } else {
-        console.log('No photos to load');
         setUploadedPhotos([]);
         setPhotosLoading(false);
       }
