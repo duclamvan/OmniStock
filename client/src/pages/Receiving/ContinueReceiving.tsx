@@ -375,18 +375,14 @@ export default function ContinueReceiving() {
   // Save data on component unmount to ensure changes are persisted
   useEffect(() => {
     return () => {
-      // Clear ALL pending timers
-      if (autoSaveTimerRef.current) {
-        clearTimeout(autoSaveTimerRef.current);
-        autoSaveTimerRef.current = null;
+      // Clear pending timers
+      if (saveStatusTimerRef.current) {
+        clearTimeout(saveStatusTimerRef.current);
+        saveStatusTimerRef.current = null;
       }
       if (buttonSaveTimerRef.current) {
         clearTimeout(buttonSaveTimerRef.current);
         buttonSaveTimerRef.current = null;
-      }
-      if (saveStatusTimerRef.current) {
-        clearTimeout(saveStatusTimerRef.current);
-        saveStatusTimerRef.current = null;
       }
       
       // Save any pending data synchronously before unmount
@@ -444,62 +440,61 @@ export default function ContinueReceiving() {
     setBarcodeScan("");
   };
 
-  // Update item quantity with functional state update to prevent rapid-click issues
+  // Update item quantity - direct state update with immediate save
   const updateItemQuantity = (itemId: string, delta: number) => {
-    setReceivingItems(prevItems => {
-      const updatedItems = prevItems.map(item => {
-        if (item.id === itemId) {
-          const newQty = Math.max(0, item.receivedQty + delta);
-          let status: ReceivingItem['status'] = item.status; // Preserve existing status for damaged/missing
-          
-          // Only update status if it's not already set to damaged or missing
-          if (item.status !== 'damaged' && item.status !== 'missing' && 
-              item.status !== 'partial_damaged' && item.status !== 'partial_missing') {
-            if (newQty === 0) {
-              status = 'pending';
-            } else if (newQty >= item.expectedQty) {
-              status = 'complete'; // Complete when received >= expected
-            } else if (newQty > 0 && newQty < item.expectedQty) {
-              status = 'partial';
+    const currentItems = receivingItems;
+    const updatedItems = currentItems.map(item => {
+      if (item.id === itemId) {
+        const newQty = Math.max(0, item.receivedQty + delta);
+        let status: ReceivingItem['status'] = item.status;
+        
+        // Only update status if it's not already set to damaged or missing
+        if (item.status !== 'damaged' && item.status !== 'missing' && 
+            item.status !== 'partial_damaged' && item.status !== 'partial_missing') {
+          if (newQty === 0) {
+            status = 'pending';
+          } else if (newQty >= item.expectedQty) {
+            status = 'complete';
+          } else if (newQty > 0 && newQty < item.expectedQty) {
+            status = 'partial';
+          }
+        } else {
+          // Handle partial damaged/missing cases
+          if (item.status === 'damaged' || item.status === 'partial_damaged') {
+            if (newQty > 0 && newQty < item.expectedQty) {
+              status = 'partial_damaged';
+            } else if (newQty === 0) {
+              status = 'damaged';
+            } else {
+              status = 'damaged';
             }
-          } else {
-            // Handle partial damaged/missing cases
-            if (item.status === 'damaged' || item.status === 'partial_damaged') {
-              if (newQty > 0 && newQty < item.expectedQty) {
-                status = 'partial_damaged';
-              } else if (newQty === 0) {
-                status = 'damaged';
-              } else {
-                status = 'damaged'; // Keep as damaged even if over-received
-              }
-            } else if (item.status === 'missing' || item.status === 'partial_missing') {
-              if (newQty > 0 && newQty < item.expectedQty) {
-                status = 'partial_missing';
-              } else if (newQty === 0) {
-                status = 'missing';
-              } else {
-                status = 'missing'; // Keep as missing even if over-received
-              }
+          } else if (item.status === 'missing' || item.status === 'partial_missing') {
+            if (newQty > 0 && newQty < item.expectedQty) {
+              status = 'partial_missing';
+            } else if (newQty === 0) {
+              status = 'missing';
+            } else {
+              status = 'missing';
             }
           }
-          
-          return {
-            ...item,
-            receivedQty: newQty,
-            status,
-            checked: newQty > 0
-          };
         }
-        return item;
-      });
-      
-      // Use immediate save for quantity changes to ensure data persistence
-      triggerAutoSave(updatedItems, true);
-      return updatedItems;
+        
+        return {
+          ...item,
+          receivedQty: newQty,
+          status,
+          checked: newQty > 0
+        };
+      }
+      return item;
     });
+    
+    setReceivingItems(updatedItems);
+    // Immediate save for quantity changes
+    triggerAutoSave(updatedItems, true);
   };
 
-  // Toggle item status
+  // Toggle item status with immediate save
   const toggleItemStatus = (itemId: string, status: ReceivingItem['status']) => {
     const updatedItems = receivingItems.map(item => {
       if (item.id === itemId) {
@@ -510,14 +505,12 @@ export default function ContinueReceiving() {
           updatedItem.receivedQty = item.expectedQty;
           finalStatus = 'complete';
         } else if (status === 'damaged') {
-          // If there's partial quantity received, mark as partial_damaged
           if (item.receivedQty > 0 && item.receivedQty < item.expectedQty) {
             finalStatus = 'partial_damaged';
           } else {
             finalStatus = 'damaged';
           }
         } else if (status === 'missing') {
-          // If there's partial quantity received, mark as partial_missing  
           if (item.receivedQty > 0 && item.receivedQty < item.expectedQty) {
             finalStatus = 'partial_missing';
           } else {
@@ -532,11 +525,11 @@ export default function ContinueReceiving() {
     });
     
     setReceivingItems(updatedItems);
-    // Use immediate save for status changes to ensure data persistence
+    // Immediate save for status changes
     triggerAutoSave(updatedItems, true);
   };
 
-  // Update item notes
+  // Update item notes with immediate save
   const updateItemNotes = (itemId: string, notes: string) => {
     const updatedItems = receivingItems.map(item => {
       if (item.id === itemId) {
@@ -546,8 +539,8 @@ export default function ContinueReceiving() {
     });
     
     setReceivingItems(updatedItems);
-    // Debounced save for notes changes
-    triggerAutoSave(updatedItems, false);
+    // Immediate save for notes changes
+    triggerAutoSave(updatedItems, true);
   };
 
   // Update receipt mutation
@@ -675,79 +668,59 @@ export default function ContinueReceiving() {
     }
   });
 
-  // Use useRef to maintain stable debounce timer across renders
-  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // Use useRef to maintain save state
   const [isSaving, setIsSaving] = useState(false);
   const lastSaveDataRef = useRef<any>(null);
-  const lastSaveTimeRef = useRef<number>(0);
   const saveStatusTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingSaveRef = useRef<boolean>(false);
   
   
-  // Immediate save function for button clicks
+  // Immediate save function with queue prevention
   const immediateAutoSave = useCallback((data: any) => {
-    // Cancel any pending debounced saves
-    if (autoSaveTimerRef.current) {
-      clearTimeout(autoSaveTimerRef.current);
-      autoSaveTimerRef.current = null;
+    // Prevent duplicate saves
+    if (pendingSaveRef.current) {
+      // Store the latest data to save after current save completes
+      lastSaveDataRef.current = data;
+      return;
     }
-    // Store the data for potential cleanup save
+    
+    pendingSaveRef.current = true;
     lastSaveDataRef.current = data;
     setIsSaving(true);
     setSaveStatus('saving');
+    
     autoSaveMutation.mutate(data, {
       onSettled: () => {
+        pendingSaveRef.current = false;
         setIsSaving(false);
         setSaveStatus('saved');
-        // Clear saved status after 2 seconds
+        
+        // Clear saved status after 1 second
         if (saveStatusTimerRef.current) {
           clearTimeout(saveStatusTimerRef.current);
         }
         saveStatusTimerRef.current = setTimeout(() => {
           setSaveStatus('idle');
-        }, 2000);
+        }, 1000);
+        
+        // If there's pending data, save it now
+        if (lastSaveDataRef.current && lastSaveDataRef.current !== data) {
+          const pendingData = lastSaveDataRef.current;
+          lastSaveDataRef.current = null;
+          setTimeout(() => immediateAutoSave(pendingData), 100);
+        }
       }
     });
   }, []);
   
-  // Debounced auto-save function for text inputs (saves on blur or after delay)
+  // All saves are now immediate for better performance
   const debouncedAutoSave = useCallback((data: any, immediate?: boolean) => {
-    if (immediate) {
-      immediateAutoSave(data);
-      return;
-    }
-    
-    // Store the data for potential cleanup save
-    lastSaveDataRef.current = data;
-    
-    // Clear any existing timer
-    if (autoSaveTimerRef.current) {
-      clearTimeout(autoSaveTimerRef.current);
-    }
-    
-    // Set new timer for 3 seconds for text inputs (increased from 2)
-    autoSaveTimerRef.current = setTimeout(() => {
-      lastSaveTimeRef.current = Date.now();
-      setIsSaving(true);
-      setSaveStatus('saving');
-      autoSaveMutation.mutate(data, {
-        onSettled: () => {
-          setIsSaving(false);
-          setSaveStatus('saved');
-          // Clear saved status after 2 seconds
-          if (saveStatusTimerRef.current) {
-            clearTimeout(saveStatusTimerRef.current);
-          }
-          saveStatusTimerRef.current = setTimeout(() => {
-            setSaveStatus('idle');
-          }, 2000);
-        }
-      });
-      autoSaveTimerRef.current = null;
-    }, 3000); // Save after 3 seconds of inactivity for text inputs
+    // Always use immediate save
+    immediateAutoSave(data);
   }, [immediateAutoSave]);
 
-  // Auto-save current progress with different strategies
-  const triggerAutoSave = useCallback((updatedItems?: any[], immediate?: boolean, overrides?: { scannedParcels?: number, parcelCount?: number, trackingNumbers?: string[], photos?: string[] }) => {
+  // Auto-save current progress - always immediate
+  const triggerAutoSave = useCallback((updatedItems?: any[], immediate?: boolean, overrides?: { scannedParcels?: number, parcelCount?: number, trackingNumbers?: string[], photos?: string[], notes?: string }) => {
     if (!shipment) return;
     
     // Use provided items or fall back to state items
@@ -759,13 +732,13 @@ export default function ContinueReceiving() {
       consolidationId: shipment.consolidationId,
       receivedBy,
       parcelCount: overrides?.parcelCount ?? parcelCount,
-      scannedParcels: overrides?.scannedParcels ?? scannedParcels, // Use override or state value
+      scannedParcels: overrides?.scannedParcels ?? scannedParcels,
       carrier,
-      notes,
-      photos: overrides?.photos ?? uploadedPhotos, // Include photos
-      trackingNumbers: overrides?.trackingNumbers ?? scannedTrackingNumbers, // Include tracking numbers
+      notes: overrides?.notes ?? notes,
+      photos: overrides?.photos ?? uploadedPhotos,
+      trackingNumbers: overrides?.trackingNumbers ?? scannedTrackingNumbers,
       items: itemsToSave.map(item => ({
-        itemId: parseInt(item.id) || item.id, // Convert string ID back to integer for API
+        itemId: parseInt(item.id) || item.id,
         expectedQuantity: item.expectedQty,
         receivedQuantity: item.receivedQty,
         status: item.status,
@@ -773,92 +746,66 @@ export default function ContinueReceiving() {
       }))
     };
     
-    // Always store the latest data for cleanup save
-    lastSaveDataRef.current = progressData;
-    
-    debouncedAutoSave(progressData, immediate);
-  }, [shipment, receivedBy, parcelCount, scannedParcels, carrier, notes, uploadedPhotos, receivingItems, scannedTrackingNumbers, debouncedAutoSave]);
+    // Always immediate save
+    immediateAutoSave(progressData);
+  }, [shipment, receivedBy, parcelCount, scannedParcels, carrier, notes, uploadedPhotos, receivingItems, scannedTrackingNumbers, immediateAutoSave]);
 
-  // Text input handlers - save on blur
+  // Text input handlers - save immediately
   const handleReceivedByChange = (value: string) => {
     setReceivedBy(value);
-    // Don't trigger auto-save here, wait for blur
+    triggerAutoSave(undefined, true);
   };
   
   const handleReceivedByBlur = () => {
-    triggerAutoSave(undefined, false); // Use debounced save
+    // Save on blur as well to ensure data is saved
+    triggerAutoSave(undefined, true);
   };
 
   const handleCarrierChange = (value: string) => {
     setCarrier(value);
-    // Don't trigger auto-save here, wait for blur
+    triggerAutoSave(undefined, true);
   };
   
   const handleCarrierBlur = () => {
-    triggerAutoSave(undefined, false); // Use debounced save
+    // Save on blur as well to ensure data is saved
+    triggerAutoSave(undefined, true);
   };
 
-  // Ref to track button save timer
+  // Ref to track button save timer (removed - using immediate saves)
   const buttonSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Number input handlers - batch saves for rapid button clicks
+  // Number input handlers - immediate saves
   const handleParcelCountChange = (value: number, isButton?: boolean) => {
     setParcelCount(value);
-    if (isButton) {
-      // Clear any existing button save timer
-      if (buttonSaveTimerRef.current) {
-        clearTimeout(buttonSaveTimerRef.current);
-      }
-      // Set a short delay to batch rapid clicks (300ms)
-      // Pass the new value directly to avoid closure issues
-      buttonSaveTimerRef.current = setTimeout(() => {
-        triggerAutoSave(undefined, true, { parcelCount: value });
-        buttonSaveTimerRef.current = null;
-      }, 300);
-    }
+    // Always save immediately
+    triggerAutoSave(undefined, true, { parcelCount: value });
   };
   
   const handleParcelCountBlur = () => {
-    // Clear button timer if exists
-    if (buttonSaveTimerRef.current) {
-      clearTimeout(buttonSaveTimerRef.current);
-      buttonSaveTimerRef.current = null;
-    }
-    triggerAutoSave(undefined, false); // Save on blur for manual input
+    // Save on blur as well
+    triggerAutoSave(undefined, true);
   };
 
   const handleScannedParcelsChange = (value: number, isButton?: boolean, options?: { trackingNumbers?: string[] }) => {
     setScannedParcels(value);
-    if (isButton) {
-      // Clear any existing button save timer
-      if (buttonSaveTimerRef.current) {
-        clearTimeout(buttonSaveTimerRef.current);
-      }
-      // Set a short delay to batch rapid clicks (300ms)
-      // Pass the new value directly to avoid closure issues
-      buttonSaveTimerRef.current = setTimeout(() => {
-        triggerAutoSave(undefined, true, { scannedParcels: value, trackingNumbers: options?.trackingNumbers });
-        buttonSaveTimerRef.current = null;
-      }, 300);
-    }
+    // Always save immediately
+    triggerAutoSave(undefined, true, { scannedParcels: value, trackingNumbers: options?.trackingNumbers });
   };
   
   const handleScannedParcelsBlur = () => {
-    // Clear button timer if exists
-    if (buttonSaveTimerRef.current) {
-      clearTimeout(buttonSaveTimerRef.current);
-      buttonSaveTimerRef.current = null;
-    }
-    triggerAutoSave(undefined, false); // Save on blur for manual input
+    // Save on blur as well
+    triggerAutoSave(undefined, true);
   };
 
   const handleNotesChange = (value: string) => {
     setNotes(value);
-    // Don't trigger auto-save here, wait for blur
+    // Save notes immediately
+    triggerAutoSave(undefined, true, { notes: value });
   };
   
   const handleNotesBlur = () => {
-    triggerAutoSave(undefined, false); // Use debounced save
+    // Save on blur as well to ensure data is saved
+    triggerAutoSave(undefined, true);
   };
 
   const handleSubmit = async () => {
