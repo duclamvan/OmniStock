@@ -577,6 +577,7 @@ export default function ContinueReceiving() {
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const lastSaveDataRef = useRef<any>(null);
+  const lastSaveTimeRef = useRef<number>(0);
   
   
   // Immediate save function for button clicks
