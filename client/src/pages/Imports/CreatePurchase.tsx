@@ -28,7 +28,7 @@ import {
   Plus, Package, Trash2, Calculator, DollarSign, 
   Truck, Calendar, FileText, Save, ArrowLeft,
   Check, UserPlus, Clock, Search, MoreVertical, Edit, X, RotateCcw,
-  Copy, PackagePlus, ListPlus, Loader2
+  Copy, PackagePlus, ListPlus, Loader2, ChevronDown
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
@@ -80,6 +80,7 @@ export default function CreatePurchase() {
   const queryClient = useQueryClient();
   const supplierDropdownRef = useRef<HTMLDivElement>(null);
   const productDropdownRef = useRef<HTMLDivElement>(null);
+  const categoryDropdownRef = useRef<HTMLDivElement>(null);
   const locationDropdownRef = useRef<HTMLDivElement>(null);
 
   // Form state
@@ -143,6 +144,9 @@ export default function CreatePurchase() {
   
   // Product search state
   const [productDropdownOpen, setProductDropdownOpen] = useState(false);
+  
+  // Category dropdown state
+  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   
   // Location search state
   const [locationDropdownOpen, setLocationDropdownOpen] = useState(false);
@@ -264,6 +268,9 @@ export default function CreatePurchase() {
       }
       if (productDropdownRef.current && !productDropdownRef.current.contains(event.target as Node)) {
         setProductDropdownOpen(false);
+      }
+      if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target as Node)) {
+        setCategoryDropdownOpen(false);
       }
       if (locationDropdownRef.current && !locationDropdownRef.current.contains(event.target as Node)) {
         setLocationDropdownOpen(false);
@@ -1504,39 +1511,54 @@ export default function CreatePurchase() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="category">Item Category</Label>
-                  <Select
-                    value={currentItem.categoryId?.toString() || ""}
-                    onValueChange={(value) => {
-                      if (value === "add-new") {
-                        setNewCategoryDialogOpen(true);
-                      } else {
-                        const categoryId = parseInt(value);
-                        const category = categories.find(c => c.id === categoryId);
-                        setCurrentItem({
-                          ...currentItem, 
-                          categoryId, 
-                          category: category?.name || category?.name_en || ""
-                        });
-                      }
-                    }}
-                  >
-                    <SelectTrigger id="category" data-testid="select-category">
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id.toString()}>
-                          {category.name || category.name_en}
-                        </SelectItem>
-                      ))}
-                      <SelectItem value="add-new" className="text-primary">
-                        <div className="flex items-center">
-                          <Plus className="h-3 w-3 mr-1" />
-                          Add new category
+                  <div className="relative" ref={categoryDropdownRef}>
+                    <div 
+                      className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
+                      data-testid="select-category"
+                    >
+                      <span className={currentItem.categoryId ? "text-foreground" : "text-muted-foreground"}>
+                        {currentItem.categoryId 
+                          ? categories.find(c => c.id === currentItem.categoryId)?.name || "Select a category"
+                          : "Select a category"
+                        }
+                      </span>
+                      <ChevronDown className="h-4 w-4 opacity-50" />
+                    </div>
+                    
+                    {categoryDropdownOpen && (
+                      <div className="absolute z-50 top-full mt-1 w-full rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
+                        <div className="max-h-60 overflow-y-auto">
+                          {categories.map((category) => (
+                            <div
+                              key={category.id}
+                              className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+                              onClick={() => {
+                                setCurrentItem({
+                                  ...currentItem, 
+                                  categoryId: category.id, 
+                                  category: category.name || category.name_en || ""
+                                });
+                                setCategoryDropdownOpen(false);
+                              }}
+                            >
+                              {category.name || category.name_en}
+                            </div>
+                          ))}
+                          <div
+                            className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground text-primary"
+                            onClick={() => {
+                              setNewCategoryDialogOpen(true);
+                              setCategoryDropdownOpen(false);
+                            }}
+                          >
+                            <Plus className="h-3 w-3 mr-2" />
+                            Add new category
+                          </div>
                         </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="barcode">Barcode (EAN-13)</Label>
