@@ -2810,52 +2810,7 @@ router.put("/receipts/:id", async (req, res) => {
   }
 });
 
-// Update receipt item verification
-router.patch("/receipts/:id/items/:itemId", async (req, res) => {
-  try {
-    const receiptId = parseInt(req.params.id);
-    const itemId = parseInt(req.params.itemId);
-    const {
-      receivedQuantity,
-      damagedQuantity,
-      missingQuantity,
-      barcode,
-      warehouseLocation,
-      additionalLocation,
-      storageInstructions,
-      condition,
-      notes,
-      photos
-    } = req.body;
-
-    const [updated] = await db
-      .update(receiptItems)
-      .set({
-        receivedQuantity,
-        damagedQuantity,
-        missingQuantity,
-        barcode,
-        warehouseLocation,
-        additionalLocation,
-        storageInstructions,
-        condition,
-        notes,
-        photos,
-        verifiedAt: new Date(),
-        updatedAt: new Date()
-      })
-      .where(and(
-        eq(receiptItems.receiptId, receiptId),
-        eq(receiptItems.id, itemId)
-      ))
-      .returning();
-
-    res.json(updated);
-  } catch (error) {
-    console.error("Error updating receipt item:", error);
-    res.status(500).json({ message: "Failed to update receipt item" });
-  }
-});
+// NOTE: Removed duplicate endpoint - using optimized version below
 
 // Complete verification and send for approval
 router.post("/receipts/:id/verify", async (req, res) => {
@@ -3453,6 +3408,221 @@ router.post("/receipts/auto-save", async (req, res) => {
   } catch (error) {
     console.error("Error auto-saving receipt:", error);
     res.status(500).json({ message: "Failed to auto-save progress" });
+  }
+});
+
+// ================ OPTIMIZED PATCH ENDPOINTS FOR MICRO-UPDATES ================
+
+// PATCH endpoint for updating receipt meta fields only (receivedBy, carrier, parcelCount, notes)
+router.patch("/receipts/:id/meta", async (req, res) => {
+  try {
+    const receiptId = parseInt(req.params.id);
+    const { receivedBy, carrier, parcelCount, notes, scannedParcels } = req.body;
+    
+    // Build update object with only provided fields
+    const updateData: any = { updatedAt: new Date() };
+    if (receivedBy !== undefined) updateData.receivedBy = receivedBy;
+    if (carrier !== undefined) updateData.carrier = carrier;
+    if (parcelCount !== undefined) updateData.parcelCount = parcelCount;
+    if (notes !== undefined) updateData.notes = notes;
+    
+    // Handle scannedParcels in trackingNumbers JSON field
+    if (scannedParcels !== undefined) {
+      const [currentReceipt] = await db
+        .select({ trackingNumbers: receipts.trackingNumbers })
+        .from(receipts)
+        .where(eq(receipts.id, receiptId));
+      
+      updateData.trackingNumbers = {
+        ...(currentReceipt?.trackingNumbers as any || {}),
+        scannedParcels
+      };
+    }
+    
+    // Single efficient update query
+    const [updated] = await db
+      .update(receipts)
+      .set(updateData)
+      .where(eq(receipts.id, receiptId))
+      .returning({ 
+        id: receipts.id, 
+        receivedBy: receipts.receivedBy,
+        carrier: receipts.carrier,
+        parcelCount: receipts.parcelCount,
+        notes: receipts.notes,
+        trackingNumbers: receipts.trackingNumbers
+      });
+    
+    if (!updated) {
+      return res.status(404).json({ success: false, message: "Receipt not found" });
+    }
+    
+    res.json({ success: true, updated });
+  } catch (error) {
+    console.error("Error updating receipt meta:", error);
+    res.status(500).json({ success: false, message: "Failed to update receipt meta" });
+  }
+});
+
+// PATCH endpoint for updating a single receipt item
+router.patch("/receipts/:id/items/:itemId", async (req, res) => {
+  try {
+    const receiptId = parseInt(req.params.id);
+    const itemId = parseInt(req.params.itemId);
+    const { receivedQuantity, status, notes } = req.body;
+    
+    // Build update object with only provided fields
+    const updateData: any = { updatedAt: new Date() };
+    if (receivedQuantity !== undefined) updateData.receivedQuantity = receivedQuantity;
+    if (status !== undefined) updateData.status = status;
+    if (notes !== undefined) updateData.notes = notes;
+    
+    // Single efficient update query
+    const [updated] = await db
+      .update(receiptItems)
+      .set(updateData)
+      .where(and(
+        eq(receiptItems.receiptId, receiptId),
+        eq(receiptItems.id, itemId)
+      ))
+      .returning({ 
+        id: receiptItems.id,
+        receivedQuantity: receiptItems.receivedQuantity,
+        notes: receiptItems.notes
+      });
+    
+    if (!updated) {
+      return res.status(404).json({ success: false, message: "Receipt item not found" });
+    }
+    
+    res.json({ success: true, updated });
+  } catch (error) {
+    console.error("Error updating receipt item:", error);
+    res.status(500).json({ success: false, message: "Failed to update receipt item" });
+  }
+});
+
+// PATCH endpoint for atomic increment/decrement of item quantity
+router.patch("/receipts/:id/items/:itemId/increment", async (req, res) => {
+  try {
+    const receiptId = parseInt(req.params.id);
+    const itemId = parseInt(req.params.itemId);
+    const { delta } = req.body; // delta can be positive or negative
+    
+    if (delta === undefined || delta === 0) {
+      return res.status(400).json({ success: false, message: "Delta value required" });
+    }
+    
+    // Atomic increment using SQL
+    const [updated] = await db
+      .update(receiptItems)
+      .set({ 
+        receivedQuantity: sql`GREATEST(0, ${receiptItems.receivedQuantity} + ${delta})`,
+        updatedAt: new Date()
+      })
+      .where(and(
+        eq(receiptItems.receiptId, receiptId),
+        eq(receiptItems.id, itemId)
+      ))
+      .returning({ 
+        id: receiptItems.id,
+        receivedQuantity: receiptItems.receivedQuantity
+      });
+    
+    if (!updated) {
+      return res.status(404).json({ success: false, message: "Receipt item not found" });
+    }
+    
+    res.json({ success: true, updated });
+  } catch (error) {
+    console.error("Error incrementing item quantity:", error);
+    res.status(500).json({ success: false, message: "Failed to increment quantity" });
+  }
+});
+
+// PATCH endpoint for tracking numbers
+router.patch("/receipts/:id/tracking", async (req, res) => {
+  try {
+    const receiptId = parseInt(req.params.id);
+    const { action, trackingNumber } = req.body;
+    
+    if (!action || !trackingNumber) {
+      return res.status(400).json({ success: false, message: "Action and tracking number required" });
+    }
+    
+    // Get current tracking numbers
+    const [receipt] = await db
+      .select({ trackingNumbers: receipts.trackingNumbers })
+      .from(receipts)
+      .where(eq(receipts.id, receiptId));
+    
+    if (!receipt) {
+      return res.status(404).json({ success: false, message: "Receipt not found" });
+    }
+    
+    const trackingData = receipt.trackingNumbers as any || { numbers: [] };
+    const numbers = trackingData.numbers || [];
+    
+    if (action === 'add' && !numbers.includes(trackingNumber)) {
+      numbers.push(trackingNumber);
+    } else if (action === 'remove') {
+      const index = numbers.indexOf(trackingNumber);
+      if (index > -1) numbers.splice(index, 1);
+    }
+    
+    trackingData.numbers = numbers;
+    
+    // Update with modified tracking numbers
+    const [updated] = await db
+      .update(receipts)
+      .set({ 
+        trackingNumbers: trackingData,
+        updatedAt: new Date()
+      })
+      .where(eq(receipts.id, receiptId))
+      .returning({ 
+        id: receipts.id,
+        trackingNumbers: receipts.trackingNumbers
+      });
+    
+    res.json({ success: true, updated });
+  } catch (error) {
+    console.error("Error updating tracking numbers:", error);
+    res.status(500).json({ success: false, message: "Failed to update tracking numbers" });
+  }
+});
+
+// PATCH endpoint for photos (optimized)
+router.patch("/receipts/:id/photos", async (req, res) => {
+  try {
+    const receiptId = parseInt(req.params.id);
+    const { photos } = req.body;
+    
+    if (!Array.isArray(photos)) {
+      return res.status(400).json({ success: false, message: "Photos must be an array" });
+    }
+    
+    // Single efficient update for photos
+    const [updated] = await db
+      .update(receipts)
+      .set({ 
+        photos,
+        updatedAt: new Date()
+      })
+      .where(eq(receipts.id, receiptId))
+      .returning({ 
+        id: receipts.id,
+        photos: receipts.photos
+      });
+    
+    if (!updated) {
+      return res.status(404).json({ success: false, message: "Receipt not found" });
+    }
+    
+    res.json({ success: true, updated });
+  } catch (error) {
+    console.error("Error updating photos:", error);
+    res.status(500).json({ success: false, message: "Failed to update photos" });
   }
 });
 

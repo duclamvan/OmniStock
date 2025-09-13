@@ -346,33 +346,9 @@ export default function ContinueReceiving() {
     }
   }, [scanMode]);
 
-  // Keep track of current state values for cleanup save
-  useEffect(() => {
-    if (shipment) {
-      // Update the ref with current state values whenever they change
-      const currentData = {
-        shipmentId: shipment.id,
-        consolidationId: shipment.consolidationId,
-        receivedBy,
-        parcelCount,
-        scannedParcels,
-        carrier,
-        notes,
-        photos: uploadedPhotos,
-        trackingNumbers: scannedTrackingNumbers,
-        items: receivingItems.map(item => ({
-          itemId: parseInt(item.id) || item.id,
-          expectedQuantity: item.expectedQty,
-          receivedQuantity: item.receivedQty,
-          status: item.status,
-          notes: item.notes
-        }))
-      };
-      lastSaveDataRef.current = currentData;
-    }
-  }, [shipment, receivedBy, parcelCount, scannedParcels, carrier, notes, uploadedPhotos, receivingItems]);
+  // No longer needed with optimized field-specific saves
 
-  // Save data on component unmount to ensure changes are persisted
+  // Clear timers on unmount
   useEffect(() => {
     return () => {
       // Clear pending timers
@@ -384,18 +360,8 @@ export default function ContinueReceiving() {
         clearTimeout(buttonSaveTimerRef.current);
         buttonSaveTimerRef.current = null;
       }
-      
-      // Save any pending data synchronously before unmount
-      if (lastSaveDataRef.current && shipment) {
-        // Use navigator.sendBeacon for reliable unmount saves
-        const saveUrl = '/api/imports/receipts/auto-save';
-        const blob = new Blob([JSON.stringify(lastSaveDataRef.current)], {
-          type: 'application/json'
-        });
-        navigator.sendBeacon(saveUrl, blob);
-      }
     };
-  }, [shipment]);
+  }, []);
 
   // Handle barcode scan
   const handleBarcodeScan = (value: string) => {
@@ -415,7 +381,18 @@ export default function ContinueReceiving() {
       const newCount = Math.min(scannedParcels + 1, parcelCount);
       const newTrackingNumbers = [...scannedTrackingNumbers, value];
       setScannedTrackingNumbers(newTrackingNumbers);
-      handleScannedParcelsChange(newCount, true, { trackingNumbers: newTrackingNumbers }); // Immediate save for scans with correct value
+      
+      // Update scanned parcels count
+      setSaveStatus('saving');
+      updateMetaMutation.mutate({ field: 'scannedParcels', value: newCount }, {
+        onSuccess: () => {
+          // Add tracking number
+          updateTrackingMutation.mutate({ action: 'add', trackingNumber: value });
+          setSaveStatus('saved');
+          setTimeout(() => setSaveStatus('idle'), 1000);
+        }
+      });
+      
       toast({
         title: `${isPalletShipment ? 'Pallet' : 'Parcel'} Scanned`,
         description: `Scanned ${newCount} of ${parcelCount} ${unitLabel.toLowerCase()} - ${value}`
@@ -440,107 +417,161 @@ export default function ContinueReceiving() {
     setBarcodeScan("");
   };
 
-  // Update item quantity - direct state update with immediate save
+  // Update item quantity - optimistic update with atomic server increment
   const updateItemQuantity = (itemId: string, delta: number) => {
-    const currentItems = receivingItems;
-    const updatedItems = currentItems.map(item => {
-      if (item.id === itemId) {
-        const newQty = Math.max(0, item.receivedQty + delta);
-        let status: ReceivingItem['status'] = item.status;
-        
-        // Only update status if it's not already set to damaged or missing
-        if (item.status !== 'damaged' && item.status !== 'missing' && 
-            item.status !== 'partial_damaged' && item.status !== 'partial_missing') {
-          if (newQty === 0) {
-            status = 'pending';
-          } else if (newQty >= item.expectedQty) {
-            status = 'complete';
-          } else if (newQty > 0 && newQty < item.expectedQty) {
-            status = 'partial';
-          }
+    // Find the item to update
+    const itemToUpdate = receivingItems.find(item => item.id === itemId);
+    if (!itemToUpdate) return;
+    
+    // Calculate new quantity and status
+    const newQty = Math.max(0, itemToUpdate.receivedQty + delta);
+    let newStatus: ReceivingItem['status'] = itemToUpdate.status;
+    
+    // Only update status if it's not already set to damaged or missing
+    if (itemToUpdate.status !== 'damaged' && itemToUpdate.status !== 'missing' && 
+        itemToUpdate.status !== 'partial_damaged' && itemToUpdate.status !== 'partial_missing') {
+      if (newQty === 0) {
+        newStatus = 'pending';
+      } else if (newQty >= itemToUpdate.expectedQty) {
+        newStatus = 'complete';
+      } else if (newQty > 0 && newQty < itemToUpdate.expectedQty) {
+        newStatus = 'partial';
+      }
+    } else {
+      // Handle partial damaged/missing cases
+      if (itemToUpdate.status === 'damaged' || itemToUpdate.status === 'partial_damaged') {
+        if (newQty > 0 && newQty < itemToUpdate.expectedQty) {
+          newStatus = 'partial_damaged';
+        } else if (newQty === 0) {
+          newStatus = 'damaged';
         } else {
-          // Handle partial damaged/missing cases
-          if (item.status === 'damaged' || item.status === 'partial_damaged') {
-            if (newQty > 0 && newQty < item.expectedQty) {
-              status = 'partial_damaged';
-            } else if (newQty === 0) {
-              status = 'damaged';
-            } else {
-              status = 'damaged';
-            }
-          } else if (item.status === 'missing' || item.status === 'partial_missing') {
-            if (newQty > 0 && newQty < item.expectedQty) {
-              status = 'partial_missing';
-            } else if (newQty === 0) {
-              status = 'missing';
-            } else {
-              status = 'missing';
-            }
-          }
+          newStatus = 'damaged';
         }
-        
+      } else if (itemToUpdate.status === 'missing' || itemToUpdate.status === 'partial_missing') {
+        if (newQty > 0 && newQty < itemToUpdate.expectedQty) {
+          newStatus = 'partial_missing';
+        } else if (newQty === 0) {
+          newStatus = 'missing';
+        } else {
+          newStatus = 'missing';
+        }
+      }
+    }
+    
+    // Optimistic update
+    const updatedItems = receivingItems.map(item => {
+      if (item.id === itemId) {
         return {
           ...item,
           receivedQty: newQty,
-          status,
+          status: newStatus,
           checked: newQty > 0
         };
       }
       return item;
     });
-    
     setReceivingItems(updatedItems);
-    // Immediate save for quantity changes
-    triggerAutoSave(updatedItems, true, { skipPhotos: true });
+    
+    // Send atomic increment to server
+    setSaveStatus('saving');
+    updateItemQuantityMutation.mutate({ itemId, delta }, {
+      onSuccess: () => {
+        // If status changed, update it separately
+        if (newStatus !== itemToUpdate.status) {
+          updateItemFieldMutation.mutate({ itemId, field: 'status', value: newStatus });
+        }
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 1000);
+      },
+      onError: () => {
+        // Revert optimistic update on error
+        setReceivingItems(receivingItems);
+      }
+    });
   };
 
-  // Toggle item status with immediate save
+  // Toggle item status - optimized with field-specific save
   const toggleItemStatus = (itemId: string, status: ReceivingItem['status']) => {
+    const itemToUpdate = receivingItems.find(item => item.id === itemId);
+    if (!itemToUpdate) return;
+    
+    let finalStatus = status;
+    let finalQty = itemToUpdate.receivedQty;
+    
+    if (status === 'complete') {
+      finalQty = itemToUpdate.expectedQty;
+      finalStatus = 'complete';
+    } else if (status === 'damaged') {
+      if (itemToUpdate.receivedQty > 0 && itemToUpdate.receivedQty < itemToUpdate.expectedQty) {
+        finalStatus = 'partial_damaged';
+      } else {
+        finalStatus = 'damaged';
+      }
+    } else if (status === 'missing') {
+      if (itemToUpdate.receivedQty > 0 && itemToUpdate.receivedQty < itemToUpdate.expectedQty) {
+        finalStatus = 'partial_missing';
+      } else {
+        finalStatus = 'missing';
+      }
+    }
+    
+    // Optimistic update
     const updatedItems = receivingItems.map(item => {
       if (item.id === itemId) {
-        let finalStatus = status;
-        let updatedItem = { ...item, checked: true };
-        
-        if (status === 'complete') {
-          updatedItem.receivedQty = item.expectedQty;
-          finalStatus = 'complete';
-        } else if (status === 'damaged') {
-          if (item.receivedQty > 0 && item.receivedQty < item.expectedQty) {
-            finalStatus = 'partial_damaged';
-          } else {
-            finalStatus = 'damaged';
-          }
-        } else if (status === 'missing') {
-          if (item.receivedQty > 0 && item.receivedQty < item.expectedQty) {
-            finalStatus = 'partial_missing';
-          } else {
-            finalStatus = 'missing';
-          }
-        }
-        
-        updatedItem.status = finalStatus;
-        return updatedItem;
+        return {
+          ...item,
+          receivedQty: finalQty,
+          status: finalStatus,
+          checked: true
+        };
       }
       return item;
     });
-    
     setReceivingItems(updatedItems);
-    // Immediate save for status changes
-    triggerAutoSave(updatedItems, true, { skipPhotos: true });
+    
+    // Send field-specific update to server
+    setSaveStatus('saving');
+    
+    // Update status
+    updateItemFieldMutation.mutate({ itemId, field: 'status', value: finalStatus }, {
+      onSuccess: () => {
+        // If quantity changed (for complete status), update it separately
+        if (finalQty !== itemToUpdate.receivedQty) {
+          updateItemFieldMutation.mutate({ itemId, field: 'receivedQuantity', value: finalQty });
+        }
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 1000);
+      },
+      onError: () => {
+        // Revert optimistic update on error
+        setReceivingItems(receivingItems);
+      }
+    });
   };
 
-  // Update item notes with immediate save
+  // Update item notes - optimized with field-specific save
   const updateItemNotes = (itemId: string, notes: string) => {
+    // Optimistic update
     const updatedItems = receivingItems.map(item => {
       if (item.id === itemId) {
         return { ...item, notes };
       }
       return item;
     });
-    
     setReceivingItems(updatedItems);
-    // Immediate save for notes changes
-    triggerAutoSave(updatedItems, true, { skipPhotos: true });
+    
+    // Send field-specific update to server
+    setSaveStatus('saving');
+    updateItemFieldMutation.mutate({ itemId, field: 'notes', value: notes }, {
+      onSuccess: () => {
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 1000);
+      },
+      onError: () => {
+        // Revert optimistic update on error
+        setReceivingItems(receivingItems);
+      }
+    });
   };
 
   // Update receipt mutation
@@ -613,7 +644,141 @@ export default function ContinueReceiving() {
     }
   });
 
-  // Auto-save mutation for preserving progress in real-time
+  // ================ OPTIMIZED FIELD-SPECIFIC MUTATIONS ================
+  
+  // Mutation for updating meta fields (receivedBy, carrier, parcelCount, notes)
+  const updateMetaMutation = useMutation({
+    mutationFn: async ({ field, value }: { field: string; value: any }) => {
+      const receiptId = receipt?.receipt?.id || receipt?.id;
+      if (!receiptId) {
+        // Create receipt first if it doesn't exist
+        const response = await apiRequest('/api/imports/receipts/auto-save', 'POST', {
+          shipmentId: shipment?.id,
+          consolidationId: shipment?.consolidationId,
+          receivedBy: field === 'receivedBy' ? value : receivedBy,
+          carrier: field === 'carrier' ? value : carrier,
+          parcelCount: field === 'parcelCount' ? value : parcelCount,
+          notes: field === 'notes' ? value : notes,
+          scannedParcels: field === 'scannedParcels' ? value : scannedParcels
+        });
+        return response;
+      }
+      
+      // Update only the specific field
+      const payload: any = {};
+      payload[field] = value;
+      
+      const response = await fetch(`/api/imports/receipts/${receiptId}/meta`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      if (!response.ok) throw new Error('Failed to update');
+      return response.json();
+    },
+    onError: (error) => {
+      console.error('Meta update failed:', error);
+    }
+  });
+  
+  // Mutation for updating item quantities atomically
+  const updateItemQuantityMutation = useMutation({
+    mutationFn: async ({ itemId, delta }: { itemId: string; delta: number }) => {
+      const receiptId = receipt?.receipt?.id || receipt?.id;
+      if (!receiptId) return;
+      
+      const response = await fetch(`/api/imports/receipts/${receiptId}/items/${itemId}/increment`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ delta })
+      });
+      
+      if (!response.ok) throw new Error('Failed to update quantity');
+      return response.json();
+    },
+    onError: (error) => {
+      console.error('Item quantity update failed:', error);
+    }
+  });
+  
+  // Mutation for updating item status and notes
+  const updateItemFieldMutation = useMutation({
+    mutationFn: async ({ itemId, field, value }: { itemId: string; field: string; value: any }) => {
+      const receiptId = receipt?.receipt?.id || receipt?.id;
+      if (!receiptId) return;
+      
+      const payload: any = {};
+      payload[field] = value;
+      
+      const response = await fetch(`/api/imports/receipts/${receiptId}/items/${itemId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      if (!response.ok) throw new Error('Failed to update item');
+      return response.json();
+    },
+    onError: (error) => {
+      console.error('Item update failed:', error);
+    }
+  });
+  
+  // Mutation for tracking numbers
+  const updateTrackingMutation = useMutation({
+    mutationFn: async ({ action, trackingNumber }: { action: 'add' | 'remove'; trackingNumber: string }) => {
+      const receiptId = receipt?.receipt?.id || receipt?.id;
+      if (!receiptId) return;
+      
+      const response = await fetch(`/api/imports/receipts/${receiptId}/tracking`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, trackingNumber })
+      });
+      
+      if (!response.ok) throw new Error('Failed to update tracking');
+      return response.json();
+    },
+    onError: (error) => {
+      console.error('Tracking update failed:', error);
+    }
+  });
+  
+  // Mutation for photos (keep existing but optimized)
+  const updatePhotosMutation = useMutation({
+    mutationFn: async (photos: string[]) => {
+      const receiptId = receipt?.receipt?.id || receipt?.id;
+      if (!receiptId) {
+        // Create receipt first if it doesn't exist
+        const response = await apiRequest('/api/imports/receipts/auto-save', 'POST', {
+          shipmentId: shipment?.id,
+          consolidationId: shipment?.consolidationId,
+          receivedBy,
+          carrier,
+          parcelCount,
+          notes,
+          photos,
+          scannedParcels
+        });
+        return response;
+      }
+      
+      const response = await fetch(`/api/imports/receipts/${receiptId}/photos`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ photos })
+      });
+      
+      if (!response.ok) throw new Error('Failed to update photos');
+      return response.json();
+    },
+    onError: (error) => {
+      console.error('Photos update failed:', error);
+    }
+  });
+  
+  // Legacy auto-save mutation for initial creation and items batch update
   const autoSaveMutation = useMutation({
     mutationFn: async (data: any) => {
       return await apiRequest('/api/imports/receipts/auto-save', 'POST', data);
@@ -668,154 +833,101 @@ export default function ContinueReceiving() {
     }
   });
 
-  // Use useRef to maintain save state
+  // Use useRef to maintain save state and timers
   const [isSaving, setIsSaving] = useState(false);
-  const lastSaveDataRef = useRef<any>(null);
   const saveStatusTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const pendingSaveRef = useRef<boolean>(false);
-  
-  
-  // Immediate save function that always captures the last value
-  const immediateAutoSave = useCallback((data: any) => {
-    // Always store the latest data
-    lastSaveDataRef.current = data;
-    
-    // If already saving, the latest data will be saved when current save completes
-    if (pendingSaveRef.current) {
-      return;
-    }
-    
-    pendingSaveRef.current = true;
-    setIsSaving(true);
-    setSaveStatus('saving');
-    
-    autoSaveMutation.mutate(data, {
-      onSettled: () => {
-        pendingSaveRef.current = false;
-        setIsSaving(false);
-        setSaveStatus('saved');
-        
-        // Clear saved status after 1 second
-        if (saveStatusTimerRef.current) {
-          clearTimeout(saveStatusTimerRef.current);
-        }
-        saveStatusTimerRef.current = setTimeout(() => {
-          setSaveStatus('idle');
-        }, 1000);
-        
-        // Check if newer data arrived while we were saving
-        if (lastSaveDataRef.current && JSON.stringify(lastSaveDataRef.current) !== JSON.stringify(data)) {
-          const pendingData = lastSaveDataRef.current;
-          // Small delay to prevent too rapid saves
-          setTimeout(() => immediateAutoSave(pendingData), 50);
-        } else {
-          // Clear the ref if we've saved the latest data
-          lastSaveDataRef.current = null;
-        }
-      }
-    });
-  }, []);
-  
-  // All saves are now immediate for better performance
-  const debouncedAutoSave = useCallback((data: any, immediate?: boolean) => {
-    // Always use immediate save
-    immediateAutoSave(data);
-  }, [immediateAutoSave]);
 
-  // Auto-save current progress - always immediate
-  const triggerAutoSave = useCallback((updatedItems?: any[], immediate?: boolean, overrides?: { scannedParcels?: number, parcelCount?: number, trackingNumbers?: string[], photos?: string[] | null, notes?: string, skipPhotos?: boolean }) => {
-    if (!shipment) return;
-    
-    // Use provided items or fall back to state items
-    const itemsToSave = updatedItems || receivingItems;
-    
-    // Use overridden values if provided, otherwise fall back to state values
-    const progressData = {
-      shipmentId: shipment.id,
-      consolidationId: shipment.consolidationId,
-      receivedBy,
-      parcelCount: overrides?.parcelCount ?? parcelCount,
-      scannedParcels: overrides?.scannedParcels ?? scannedParcels,
-      carrier,
-      notes: overrides?.notes ?? notes,
-      // Only include photos if explicitly provided or if not skipping
-      photos: overrides?.skipPhotos ? undefined : (overrides?.photos !== undefined ? overrides.photos : uploadedPhotos),
-      trackingNumbers: overrides?.trackingNumbers ?? scannedTrackingNumbers,
-      items: itemsToSave.map(item => ({
-        itemId: parseInt(item.id) || item.id,
-        expectedQuantity: item.expectedQty,
-        receivedQuantity: item.receivedQty,
-        status: item.status,
-        notes: item.notes
-      }))
-    };
-    
-    // Always immediate save
-    immediateAutoSave(progressData);
-  }, [shipment, receivedBy, parcelCount, scannedParcels, carrier, notes, uploadedPhotos, receivingItems, scannedTrackingNumbers, immediateAutoSave]);
-
-  // Text input handlers - save immediately without photos
+  // ================ OPTIMIZED FIELD-SPECIFIC HANDLERS ================
+  
+  // Text input handlers - save only the specific field
   const handleReceivedByChange = (value: string) => {
     setReceivedBy(value);
-    triggerAutoSave(undefined, true, { skipPhotos: true });
+    setSaveStatus('saving');
+    updateMetaMutation.mutate({ field: 'receivedBy', value }, {
+      onSuccess: () => {
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 1000);
+      }
+    });
   };
   
   const handleReceivedByBlur = () => {
-    // Save on blur as well to ensure data is saved
-    triggerAutoSave(undefined, true, { skipPhotos: true });
+    // No-op - already saved on change
   };
 
   const handleCarrierChange = (value: string) => {
     setCarrier(value);
-    triggerAutoSave(undefined, true, { skipPhotos: true });
+    setSaveStatus('saving');
+    updateMetaMutation.mutate({ field: 'carrier', value }, {
+      onSuccess: () => {
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 1000);
+      }
+    });
   };
   
   const handleCarrierBlur = () => {
-    // Save on blur as well to ensure data is saved
-    triggerAutoSave(undefined, true, { skipPhotos: true });
+    // No-op - already saved on change
   };
 
   // Ref to track button save timer (removed - using immediate saves)
   const buttonSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Number input handlers - immediate saves without photos for speed
+  // Number input handlers - optimized field-specific saves
   const handleParcelCountChange = (value: number, isButton?: boolean) => {
     setParcelCount(value);
-    // Always save immediately without photos for speed
-    triggerAutoSave(undefined, true, { parcelCount: value, skipPhotos: true });
+    setSaveStatus('saving');
+    updateMetaMutation.mutate({ field: 'parcelCount', value }, {
+      onSuccess: () => {
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 1000);
+      }
+    });
   };
   
   const handleParcelCountBlur = () => {
-    // Save on blur as well without photos
-    triggerAutoSave(undefined, true, { skipPhotos: true });
+    // No-op - already saved on change
   };
 
   const handleScannedParcelsChange = (value: number, isButton?: boolean, options?: { trackingNumbers?: string[] }) => {
     setScannedParcels(value);
-    // Always save immediately without photos for speed
-    triggerAutoSave(undefined, true, { scannedParcels: value, trackingNumbers: options?.trackingNumbers, skipPhotos: true });
+    setSaveStatus('saving');
+    
+    // Update scanned parcels count
+    updateMetaMutation.mutate({ field: 'scannedParcels', value }, {
+      onSuccess: () => {
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 1000);
+      }
+    });
+    
+    // If tracking numbers changed, update them separately
+    if (options?.trackingNumbers && options.trackingNumbers.length > scannedTrackingNumbers.length) {
+      const newTrackingNumber = options.trackingNumbers[options.trackingNumbers.length - 1];
+      updateTrackingMutation.mutate({ action: 'add', trackingNumber: newTrackingNumber });
+    }
   };
   
   const handleScannedParcelsBlur = () => {
-    // Save on blur as well without photos
-    triggerAutoSave(undefined, true, { skipPhotos: true });
+    // No-op - already saved on change
   };
 
   const handleNotesChange = (value: string) => {
     setNotes(value);
-    // Save notes immediately without photos
-    triggerAutoSave(undefined, true, { notes: value, skipPhotos: true });
+    setSaveStatus('saving');
+    updateMetaMutation.mutate({ field: 'notes', value }, {
+      onSuccess: () => {
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 1000);
+      }
+    });
   };
   
   const handleNotesBlur = () => {
-    // Save on blur as well without photos
-    triggerAutoSave(undefined, true, { skipPhotos: true });
+    // No-op - already saved on change
   };
 
   const handleSubmit = async () => {
-    // First make sure all data is saved
-    await triggerAutoSave(undefined, true);
-    
     // Check if all items have been processed
     const pendingItems = receivingItems.filter(item => item.status === 'pending');
     
@@ -826,6 +938,31 @@ export default function ContinueReceiving() {
         variant: "destructive"
       });
       return;
+    }
+    
+    // Ensure receipt exists before completing
+    const receiptId = receipt?.receipt?.id || receipt?.id;
+    if (!receiptId) {
+      // Create receipt first with current data
+      const response = await apiRequest('/api/imports/receipts/auto-save', 'POST', {
+        shipmentId: shipment?.id,
+        consolidationId: shipment?.consolidationId,
+        receivedBy,
+        carrier,
+        parcelCount,
+        notes,
+        photos: uploadedPhotos,
+        scannedParcels,
+        items: receivingItems.map(item => ({
+          itemId: parseInt(item.id) || item.id,
+          expectedQuantity: item.expectedQty,
+          receivedQuantity: item.receivedQty,
+          status: item.status,
+          notes: item.notes
+        }))
+      });
+      // Refetch receipt data
+      await queryClient.invalidateQueries({ queryKey: [`/api/imports/receipts/by-shipment/${id}`] });
     }
     
     // Show confirmation dialog
@@ -948,43 +1085,26 @@ export default function ContinueReceiving() {
           newPhotos.push(reader.result);
           processedCount++;
           
-          // When all files are processed, update state and trigger auto-save
+          // When all files are processed, update state and save photos only
           if (processedCount === totalFiles) {
             setUploadedPhotos(prev => {
               const updated = [...prev, ...newPhotos];
               
-              // Immediately update lastSaveDataRef for cleanup save
-              if (shipment) {
-                const progressData = {
-                  shipmentId: shipment.id,
-                  consolidationId: shipment.consolidationId,
-                  receivedBy,
-                  parcelCount,
-                  scannedParcels,
-                  carrier,
-                  notes,
-                  photos: updated,
-                  trackingNumbers: scannedTrackingNumbers,
-                  items: receivingItems.map(item => ({
-                    itemId: parseInt(item.id) || item.id,
-                    expectedQuantity: item.expectedQty,
-                    receivedQuantity: item.receivedQty,
-                    status: item.status,
-                    notes: item.notes
-                  }))
-                };
-                lastSaveDataRef.current = progressData;
-              }
-              
-              // Trigger immediate auto-save
-              triggerAutoSave(undefined, true, { photos: updated });
-              
-              // Show confirmation toast
-              toast({
-                title: "Photos Uploaded",
-                description: `${newPhotos.length} photo${newPhotos.length > 1 ? 's' : ''} added and saved`,
-                className: "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800",
-                duration: 3000
+              // Save photos only - optimized
+              setSaveStatus('saving');
+              updatePhotosMutation.mutate(updated, {
+                onSuccess: () => {
+                  setSaveStatus('saved');
+                  setTimeout(() => setSaveStatus('idle'), 1000);
+                  
+                  // Show confirmation toast
+                  toast({
+                    title: "Photos Uploaded",
+                    description: `${newPhotos.length} photo${newPhotos.length > 1 ? 's' : ''} added and saved`,
+                    className: "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800",
+                    duration: 3000
+                  });
+                }
               });
               
               return updated;
@@ -1003,38 +1123,21 @@ export default function ContinueReceiving() {
     setUploadedPhotos(prev => {
       const updated = prev.filter((_, i) => i !== index);
       
-      // Immediately update lastSaveDataRef for cleanup save
-      if (shipment) {
-        const progressData = {
-          shipmentId: shipment.id,
-          consolidationId: shipment.consolidationId,
-          receivedBy,
-          parcelCount,
-          scannedParcels,
-          carrier,
-          notes,
-          photos: updated,
-          trackingNumbers: scannedTrackingNumbers,
-          items: receivingItems.map(item => ({
-            itemId: parseInt(item.id) || item.id,
-            expectedQuantity: item.expectedQty,
-            receivedQuantity: item.receivedQty,
-            status: item.status,
-            notes: item.notes
-          }))
-        };
-        lastSaveDataRef.current = progressData;
-      }
-      
-      // Trigger immediate auto-save
-      triggerAutoSave(undefined, true, { photos: updated });
-      
-      // Show confirmation toast
-      toast({
-        title: "Photo Removed",
-        description: "Photo deleted and changes saved",
-        className: "bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800",
-        duration: 2000
+      // Save photos only - optimized
+      setSaveStatus('saving');
+      updatePhotosMutation.mutate(updated, {
+        onSuccess: () => {
+          setSaveStatus('saved');
+          setTimeout(() => setSaveStatus('idle'), 1000);
+          
+          // Show confirmation toast
+          toast({
+            title: "Photo Removed",
+            description: "Photo deleted and changes saved",
+            className: "bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800",
+            duration: 2000
+          });
+        }
       });
       
       return updated;
@@ -1367,9 +1470,15 @@ export default function ContinueReceiving() {
                         variant="ghost"
                         size="sm"
                         onClick={() => {
+                          // Clear local state
                           setScannedTrackingNumbers([]);
                           setScannedParcels(0);
-                          triggerAutoSave(undefined, true, { scannedParcels: 0, trackingNumbers: [] });
+                          // Update server state to clear scanned parcels
+                          updateMetaMutation.mutate({ field: 'scannedParcels', value: 0 });
+                          // Remove all tracking numbers
+                          scannedTrackingNumbers.forEach(tn => {
+                            updateTrackingMutation.mutate({ action: 'remove', trackingNumber: tn });
+                          });
                           toast({
                             title: "Cleared",
                             description: "All tracking numbers have been cleared"
@@ -1776,7 +1885,17 @@ export default function ContinueReceiving() {
                                           : i
                                       );
                                       setReceivingItems(updatedItems);
-                                      triggerAutoSave(updatedItems, true, { skipPhotos: true });
+                                      // Update the item on server
+                                      const itemToUpdate = updatedItems.find(i => i.id === item.id);
+                                      if (itemToUpdate) {
+                                        // Update quantity to expected
+                                        const delta = itemToUpdate.expectedQty - item.receivedQty;
+                                        if (delta !== 0) {
+                                          updateItemQuantityMutation.mutate({ itemId: item.id, delta });
+                                        }
+                                        // Update status to complete
+                                        updateItemFieldMutation.mutate({ itemId: item.id, field: 'status', value: 'complete' });
+                                      }
                                     }}
                                     className={`min-w-[70px] transition-colors shadow-sm ${
                                       item.status === 'complete'
