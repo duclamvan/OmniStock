@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import { nanoid } from "nanoid";
 import { useLocation, useParams } from "wouter";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -28,7 +29,7 @@ import {
   Plus, Package, Trash2, Calculator, DollarSign, 
   Truck, Calendar, FileText, Save, ArrowLeft,
   Check, UserPlus, Clock, Search, MoreVertical, Edit, X, RotateCcw,
-  Copy, PackagePlus, ListPlus, Loader2, ChevronDown
+  Copy, PackagePlus, ListPlus, Loader2, ChevronDown, Upload, ImageIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
@@ -49,6 +50,9 @@ interface PurchaseItem {
   costWithShipping: number;
   isVariant?: boolean;
   variantName?: string;
+  productId?: string;
+  imageUrl?: string;
+  imageFile?: File | null;
 }
 
 interface Supplier {
@@ -69,6 +73,9 @@ interface Product {
   price?: number;
   weight?: number;
   dimensions?: string;
+  categoryId?: number;
+  category?: string;
+  imageUrl?: string;
 }
 
 export default function CreatePurchase() {
@@ -144,6 +151,9 @@ export default function CreatePurchase() {
   
   // Product search state
   const [productDropdownOpen, setProductDropdownOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [productImageFile, setProductImageFile] = useState<File | null>(null);
+  const [productImagePreview, setProductImagePreview] = useState<string | null>(null);
   
   // Category dropdown state
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
@@ -561,9 +571,60 @@ export default function CreatePurchase() {
       sku: product.sku || "",
       unitPrice: product.price || currentItem.unitPrice || 0,
       weight: product.weight || currentItem.weight || 0,
-      dimensions: product.dimensions || currentItem.dimensions || ""
+      dimensions: product.dimensions || currentItem.dimensions || "",
+      barcode: product.barcode || "",
+      categoryId: product.categoryId || undefined,
+      category: product.category || ""
     });
+    setSelectedProduct(product);
+    setProductImageFile(null);
+    setProductImagePreview(null);
     setProductDropdownOpen(false);
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Please select an image smaller than 10MB",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      setProductImageFile(file);
+      setSelectedProduct(null);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProductImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const clearProductSelection = () => {
+    setSelectedProduct(null);
+    setProductImageFile(null);
+    setProductImagePreview(null);
+    setCurrentItem({
+      id: nanoid(),
+      name: "",
+      sku: "",
+      category: "",
+      categoryId: undefined,
+      barcode: "",
+      quantity: 1,
+      unitPrice: 0,
+      weight: 0,
+      dimensions: "",
+      notes: "",
+      totalPrice: 0,
+      costWithShipping: 0
+    });
   };
 
   // Search for locations using Nominatim API
@@ -712,13 +773,20 @@ export default function CreatePurchase() {
       dimensions: currentItem.dimensions || "",
       notes: currentItem.notes || "",
       totalPrice: (currentItem.quantity || 1) * (currentItem.unitPrice || 0),
-      costWithShipping: 0
+      costWithShipping: 0,
+      // Store product image reference if available
+      productId: selectedProduct?.id,
+      imageUrl: selectedProduct?.imageUrl,
+      imageFile: productImageFile
     };
 
     const updatedItems = [...items, newItem];
     updateItemsWithShipping(updatedItems);
     
-    // Reset form
+    // Reset form and image states
+    setSelectedProduct(null);
+    setProductImageFile(null);
+    setProductImagePreview(null);
     setCurrentItem({
       name: "",
       sku: "",
@@ -913,12 +981,17 @@ export default function CreatePurchase() {
       name: `${currentItem.name} - ${variant.name}`,
       sku: variant.sku || currentItem.sku || "",
       category: currentItem.category || "",
+      categoryId: currentItem.categoryId,
       barcode: currentItem.barcode || "",
       quantity: variant.quantity,
       unitPrice: variant.unitPrice,
       weight: variant.weight,
       dimensions: variant.dimensions,
       notes: currentItem.notes || "",
+      // Include product image for variants
+      productId: selectedProduct?.id,
+      imageUrl: selectedProduct?.imageUrl,
+      imageFile: productImageFile,
       totalPrice: variant.quantity * variant.unitPrice,
       costWithShipping: 0,
       isVariant: true,
@@ -943,6 +1016,11 @@ export default function CreatePurchase() {
     });
     setVariants([]);
     setShowVariants(false);
+    
+    // Clear product selection and images
+    setSelectedProduct(null);
+    setProductImageFile(null);
+    setProductImagePreview(null);
     
     toast({
       title: "Success",
@@ -1437,6 +1515,88 @@ export default function CreatePurchase() {
               <CardDescription>Add products to this purchase order</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Product Image Section */}
+              <div className="flex justify-center">
+                <div className="relative group">
+                  {selectedProduct?.imageUrl ? (
+                    // Show existing product image
+                    <div className="relative">
+                      <img
+                        src={selectedProduct.imageUrl}
+                        alt={selectedProduct.name}
+                        className="w-32 h-32 object-cover rounded-lg border-2 border-gray-200"
+                      />
+                      <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="text-center text-white">
+                          <ImageIcon className="h-6 w-6 mx-auto mb-1" />
+                          <p className="text-xs">Existing Product</p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : productImagePreview ? (
+                    // Show uploaded image preview
+                    <div className="relative">
+                      <img
+                        src={productImagePreview}
+                        alt="Product preview"
+                        className="w-32 h-32 object-cover rounded-lg border-2 border-primary"
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="destructive"
+                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                        onClick={() => {
+                          setProductImageFile(null);
+                          setProductImagePreview(null);
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                      <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="text-center text-white">
+                          <Upload className="h-6 w-6 mx-auto mb-1" />
+                          <p className="text-xs">New Image</p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    // Show upload button for new products
+                    <label className="cursor-pointer">
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        data-testid="input-product-image"
+                      />
+                      <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center hover:border-primary hover:bg-primary/5 transition-colors">
+                        <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                        <p className="text-xs text-gray-500 text-center">
+                          {currentItem.name ? "Upload Image" : "Select product first"}
+                        </p>
+                      </div>
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              {/* Clear selection button if product is selected */}
+              {(selectedProduct || productImagePreview) && (
+                <div className="flex justify-center">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={clearProductSelection}
+                    className="text-xs"
+                  >
+                    <RotateCcw className="h-3 w-3 mr-1" />
+                    Clear Selection
+                  </Button>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="itemName">Item Name *</Label>
@@ -1446,6 +1606,7 @@ export default function CreatePurchase() {
                       value={currentItem.name}
                       onChange={(e) => {
                         setCurrentItem({...currentItem, name: e.target.value, sku: ""});
+                        setSelectedProduct(null);
                         setProductDropdownOpen(true);
                       }}
                       onFocus={() => setProductDropdownOpen(true)}
