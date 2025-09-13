@@ -223,7 +223,7 @@ export default function ReceivingList() {
   });
 
   // Fetch shipments currently being received with receipt data
-  const { data: receivingShipments = [], isLoading: isLoadingReceiving } = useQuery({
+  const { data: receivingShipments = [], isLoading: isLoadingReceiving, refetch: refetchReceiving } = useQuery({
     queryKey: ['/api/imports/shipments/by-status/receiving'],
     queryFn: async () => {
       const response = await fetch('/api/imports/shipments/by-status/receiving');
@@ -254,7 +254,10 @@ export default function ReceivingList() {
       setReceiptDataMap(newReceiptMap);
 
       return shipments;
-    }
+    },
+    refetchOnWindowFocus: true,
+    refetchOnMount: 'always',
+    staleTime: 0
   });
 
   // Fetch shipments pending approval
@@ -294,7 +297,10 @@ export default function ReceivingList() {
       const response = await fetch('/api/imports/receipts');
       if (!response.ok) throw new Error('Failed to fetch receipts');
       return response.json();
-    }
+    },
+    refetchOnWindowFocus: true,
+    refetchOnMount: 'always',
+    staleTime: 0
   });
 
   // Get the current shipments based on active tab

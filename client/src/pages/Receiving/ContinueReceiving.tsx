@@ -66,6 +66,15 @@ export default function ContinueReceiving() {
   const { toast } = useToast();
   const barcodeRef = useRef<HTMLInputElement>(null);
   
+  // Handle back navigation with proper query invalidation
+  const handleBackNavigation = useCallback(() => {
+    // Invalidate all receipt-related queries to ensure fresh data
+    queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts'] });
+    queryClient.invalidateQueries({ queryKey: [`/api/imports/receipts/by-shipment/${id}`] });
+    queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/receiving'] });
+    navigate('/receiving');
+  }, [id, navigate]);
+  
   // Form state
   const [receivedBy, setReceivedBy] = useState("Employee #1");
   const [carrier, setCarrier] = useState("");
@@ -845,12 +854,10 @@ export default function ContinueReceiving() {
           <CardContent className="p-6 text-center">
             <Package className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
             <p className="text-muted-foreground">Shipment not found</p>
-            <Link href="/receiving">
-              <Button variant="outline" className="mt-4">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Receiving
-              </Button>
-            </Link>
+            <Button variant="outline" className="mt-4" onClick={() => navigate('/receiving')}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Receiving
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -862,12 +869,10 @@ export default function ContinueReceiving() {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <Link href="/receiving">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-          </Link>
+          <Button variant="ghost" size="sm" onClick={handleBackNavigation}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
           <div>
             <h1 className="text-2xl font-bold">Continue Receiving</h1>
             <p className="text-sm text-muted-foreground">
