@@ -32,7 +32,6 @@ import {
   Copy, PackagePlus, ListPlus, Loader2, ChevronDown, Upload, ImageIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 
 interface PurchaseItem {
   id: string;
@@ -216,12 +215,6 @@ export default function CreatePurchase() {
   const [newCategoryDialogOpen, setNewCategoryDialogOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [savingCategory, setSavingCategory] = useState(false);
-  
-  // Column sizes for resizable table
-  const [columnSizes, setColumnSizes] = useState<number[]>(() => {
-    const saved = localStorage.getItem('orderEdit-columnSizes');
-    return saved ? JSON.parse(saved) : [25, 20, 10, 15, 15, 15];
-  });
 
   // Set default purchase date to now
   useEffect(() => {
@@ -1995,81 +1988,58 @@ export default function CreatePurchase() {
                 <CardTitle>Order Items</CardTitle>
                 <CardDescription>Review and manage items in this purchase order</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <ResizablePanelGroup 
-                    direction="horizontal" 
-                    className="min-h-0 border-b"
-                    onLayout={(sizes) => {
-                      setColumnSizes(sizes);
-                      localStorage.setItem('orderEdit-columnSizes', JSON.stringify(sizes));
-                    }}
-                  >
-                    <ResizablePanel defaultSize={columnSizes[0]} minSize={10}>
-                      <div className="px-2 py-2 font-semibold text-sm">Item</div>
-                    </ResizablePanel>
-                    <ResizableHandle withHandle className="mx-1" />
-                    <ResizablePanel defaultSize={columnSizes[1]} minSize={10}>
-                      <div className="px-2 py-2 font-semibold text-sm">Category</div>
-                    </ResizablePanel>
-                    <ResizableHandle withHandle className="mx-1" />
-                    <ResizablePanel defaultSize={columnSizes[2]} minSize={8}>
-                      <div className="px-2 py-2 font-semibold text-sm text-center">Qty</div>
-                    </ResizablePanel>
-                    <ResizableHandle withHandle className="mx-1" />
-                    <ResizablePanel defaultSize={columnSizes[3]} minSize={10}>
-                      <div className="px-2 py-2 font-semibold text-sm text-right">Unit Price</div>
-                    </ResizablePanel>
-                    <ResizableHandle withHandle className="mx-1 hidden sm:flex" />
-                    <ResizablePanel defaultSize={columnSizes[4]} minSize={10} className="hidden sm:block">
-                      <div className="px-2 py-2 font-semibold text-sm text-right">Total</div>
-                    </ResizablePanel>
-                    <ResizableHandle withHandle className="mx-1 hidden md:flex" />
-                    <ResizablePanel defaultSize={columnSizes[5]} minSize={10} className="hidden md:block">
-                      <div className="px-2 py-2 font-semibold text-sm text-right">Cost w/ Shipping</div>
-                    </ResizablePanel>
-                    <div className="w-10">
-                      <div className="px-2 py-2"></div>
-                    </div>
-                  </ResizablePanelGroup>
-                  <Table>
-                    <TableHeader className="sr-only">
-                      <TableRow>
-                        <TableHead>Item</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Qty</TableHead>
-                        <TableHead>Unit Price</TableHead>
-                        <TableHead>Total</TableHead>
-                        <TableHead>Cost w/ Shipping</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {items.map((item) => {
-                        return (
-                          <TableRow key={item.id} className="hover:bg-muted/50 transition-colors">
-                            <TableCell className="font-medium" style={{ width: `${columnSizes[0]}%` }}>
-                              <div className="space-y-0.5">
-                                <Input
-                                  value={item.name}
-                                  onChange={(e) => {
-                                    const updatedItems = items.map(i => 
-                                      i.id === item.id ? {...i, name: e.target.value} : i
-                                    );
-                                    setItems(updatedItems);
-                                  }}
-                                  className="h-7 text-sm font-medium border-0 bg-transparent hover:bg-muted focus:bg-background focus:border-input px-2"
-                                  placeholder="Item name"
+              <CardContent className="p-0 lg:p-6">
+                {/* Mobile/Tablet View - Card Layout */}
+                <div className="lg:hidden">
+                  <div className="divide-y">
+                    {items.map((item) => (
+                      <div key={item.id} className="p-4 hover:bg-muted/50 transition-colors">
+                        <div className="flex gap-3">
+                          {/* Product Image */}
+                          <div className="flex-shrink-0">
+                            <div className="w-[60px] h-[60px] rounded-lg border bg-muted flex items-center justify-center overflow-hidden">
+                              {item.imageUrl ? (
+                                <img 
+                                  src={item.imageUrl} 
+                                  alt={item.name}
+                                  className="w-full h-full object-cover"
                                 />
-                                {item.notes && (
-                                  <div className="text-xs text-muted-foreground px-2">{item.notes}</div>
-                                )}
-                                {item.dimensions && (
-                                  <div className="text-xs text-muted-foreground px-2">Dimensions: {item.dimensions}</div>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell style={{ width: `${columnSizes[1]}%` }}>
+                              ) : (
+                                <Package className="h-6 w-6 text-muted-foreground" />
+                              )}
+                            </div>
+                          </div>
+                          
+                          {/* Product Details */}
+                          <div className="flex-1 space-y-2">
+                            {/* Name and Delete */}
+                            <div className="flex items-start justify-between">
+                              <Input
+                                value={item.name}
+                                onChange={(e) => {
+                                  const updatedItems = items.map(i => 
+                                    i.id === item.id ? {...i, name: e.target.value} : i
+                                  );
+                                  setItems(updatedItems);
+                                }}
+                                className="h-auto p-0 font-medium text-base border-0 bg-transparent hover:bg-muted focus:bg-background focus:border-input focus:px-2 focus:py-1"
+                                placeholder="Item name"
+                              />
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 -mr-2 text-muted-foreground hover:text-destructive"
+                                onClick={() => removeItem(item.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            
+                            {/* SKU and Category */}
+                            <div className="flex items-center gap-2 text-sm">
+                              {item.sku && (
+                                <span className="text-muted-foreground">SKU: {item.sku}</span>
+                              )}
                               <Select
                                 value={item.categoryId?.toString() || ""}
                                 onValueChange={(value) => {
@@ -2087,8 +2057,8 @@ export default function CreatePurchase() {
                                   }
                                 }}
                               >
-                                <SelectTrigger className="h-7 border-0 bg-transparent hover:bg-muted focus:bg-background focus:border-input">
-                                  <SelectValue placeholder="Select category" />
+                                <SelectTrigger className="h-7 w-auto border-0 bg-transparent hover:bg-muted focus:bg-background focus:border-input text-sm px-2">
+                                  <SelectValue placeholder="Category" />
                                 </SelectTrigger>
                                 <SelectContent>
                                   {categories.map((category) => (
@@ -2104,143 +2074,330 @@ export default function CreatePurchase() {
                                   </SelectItem>
                                 </SelectContent>
                               </Select>
-                            </TableCell>
-                            <TableCell className="text-center" style={{ width: `${columnSizes[2]}%` }}>
-                              <Input
-                                type="number"
-                                value={item.quantity}
-                                onChange={(e) => {
-                                  const updatedItems = items.map(i => 
-                                    i.id === item.id ? {...i, quantity: parseInt(e.target.value) || 1, totalPrice: (parseInt(e.target.value) || 1) * i.unitPrice} : i
-                                  );
-                                  updateItemsWithShipping(updatedItems);
-                                }}
-                                className="h-7 w-12 sm:w-16 mx-auto text-sm text-center border-0 bg-transparent hover:bg-muted focus:bg-background focus:border-input [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                min="1"
-                              />
-                            </TableCell>
-                            <TableCell className="text-right" style={{ width: `${columnSizes[3]}%` }}>
-                              <div className="flex items-center justify-end">
-                                <span className="font-mono text-sm mr-1">{currencySymbol}</span>
+                            </div>
+                            
+                            {/* Quantity and Price Row */}
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-1">
+                                <span className="text-sm text-muted-foreground">Qty:</span>
                                 <Input
                                   type="number"
-                                  value={item.unitPrice}
+                                  value={item.quantity}
                                   onChange={(e) => {
                                     const updatedItems = items.map(i => 
-                                      i.id === item.id ? {...i, unitPrice: parseFloat(e.target.value) || 0, totalPrice: i.quantity * (parseFloat(e.target.value) || 0)} : i
+                                      i.id === item.id ? {...i, quantity: parseInt(e.target.value) || 1, totalPrice: (parseInt(e.target.value) || 1) * i.unitPrice} : i
                                     );
                                     updateItemsWithShipping(updatedItems);
                                   }}
-                                  className="h-7 w-14 sm:w-20 text-sm text-right border-0 bg-transparent hover:bg-muted focus:bg-background focus:border-input [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                  step="0.01"
-                                  min="0"
+                                  className="h-7 w-16 text-sm text-center border bg-background [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                  min="1"
                                 />
                               </div>
-                            </TableCell>
-                            <TableCell className="text-right hidden sm:table-cell" style={{ width: `${columnSizes[4]}%` }}>
-                              <span className="font-medium text-sm">
-                                {currencySymbol}
-                                {item.totalPrice.toFixed(2)}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-right hidden md:table-cell" style={{ width: `${columnSizes[5]}%` }}>
-                              {(() => {
-                                const selectedCurrency = itemCurrencyDisplay[item.id] || purchaseCurrency;
-                                const rate = exchangeRates[selectedCurrency] / exchangeRates[purchaseCurrency];
-                                const convertedCost = item.costWithShipping * rate;
-                                const symbol = getCurrencySymbol(selectedCurrency);
-                                
-                                return (
-                                  <div className="space-y-1">
-                                    <span className="text-green-600 font-medium text-sm">
-                                      {symbol}{convertedCost.toFixed(2)}
-                                    </span>
-                                    {selectedCurrency !== purchaseCurrency && (
-                                      <div className="text-xs text-muted-foreground">
-                                        {selectedCurrency}
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              })()}
-                            </TableCell>
-                            <TableCell className="px-1" style={{ width: '40px' }}>
-                              <div className="flex items-center justify-end">
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                                      <MoreVertical className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                      <DropdownMenuSub>
-                                        <DropdownMenuSubTrigger>
-                                          <DollarSign className="mr-2 h-4 w-4" />
-                                          Show Cost in Currency
-                                        </DropdownMenuSubTrigger>
-                                        <DropdownMenuSubContent>
-                                          <DropdownMenuItem onClick={() => setItemCurrencyDisplay(prev => ({...prev, [item.id]: "USD"}))}>
-                                            <Check className={cn("mr-2 h-4 w-4", itemCurrencyDisplay[item.id] === "USD" ? "opacity-100" : "opacity-0")} />
-                                            USD
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem onClick={() => setItemCurrencyDisplay(prev => ({...prev, [item.id]: "EUR"}))}>
-                                            <Check className={cn("mr-2 h-4 w-4", itemCurrencyDisplay[item.id] === "EUR" ? "opacity-100" : "opacity-0")} />
-                                            EUR
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem onClick={() => setItemCurrencyDisplay(prev => ({...prev, [item.id]: "CZK"}))}>
-                                            <Check className={cn("mr-2 h-4 w-4", itemCurrencyDisplay[item.id] === "CZK" ? "opacity-100" : "opacity-0")} />
-                                            CZK
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem onClick={() => setItemCurrencyDisplay(prev => ({...prev, [item.id]: "VND"}))}>
-                                            <Check className={cn("mr-2 h-4 w-4", itemCurrencyDisplay[item.id] === "VND" ? "opacity-100" : "opacity-0")} />
-                                            VND
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem onClick={() => setItemCurrencyDisplay(prev => ({...prev, [item.id]: "CNY"}))}>
-                                            <Check className={cn("mr-2 h-4 w-4", itemCurrencyDisplay[item.id] === "CNY" ? "opacity-100" : "opacity-0")} />
-                                            CNY
-                                          </DropdownMenuItem>
-                                          {customCurrencies.map(currency => (
-                                            <DropdownMenuItem key={currency} onClick={() => setItemCurrencyDisplay(prev => ({...prev, [item.id]: currency}))}>
-                                              <Check className={cn("mr-2 h-4 w-4", itemCurrencyDisplay[item.id] === currency ? "opacity-100" : "opacity-0")} />
-                                              {currency}
-                                            </DropdownMenuItem>
-                                          ))}
-                                          <DropdownMenuSeparator />
-                                          <DropdownMenuItem onClick={() => setItemCurrencyDisplay(prev => ({...prev, [item.id]: purchaseCurrency}))}>
-                                            <RotateCcw className="mr-2 h-4 w-4" />
-                                            Reset to Original
-                                          </DropdownMenuItem>
-                                        </DropdownMenuSubContent>
-                                      </DropdownMenuSub>
-                                      <DropdownMenuSeparator />
-                                      <DropdownMenuItem 
-                                        onClick={() => removeItem(item.id)}
-                                        className="text-destructive focus:text-destructive"
-                                      >
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        Delete Item
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
+                              
+                              <div className="flex items-center gap-1">
+                                <span className="text-sm text-muted-foreground">Price:</span>
+                                <div className="flex items-center">
+                                  <span className="text-sm mr-1">{currencySymbol}</span>
+                                  <Input
+                                    type="number"
+                                    value={item.unitPrice}
+                                    onChange={(e) => {
+                                      const updatedItems = items.map(i => 
+                                        i.id === item.id ? {...i, unitPrice: parseFloat(e.target.value) || 0, totalPrice: i.quantity * (parseFloat(e.target.value) || 0)} : i
+                                      );
+                                      updateItemsWithShipping(updatedItems);
+                                    }}
+                                    className="h-7 w-20 text-sm text-right border bg-background [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                    step="0.01"
+                                    min="0"
+                                  />
                                 </div>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
+                              </div>
+                              
+                              <div className="ml-auto text-right">
+                                <div className="text-sm font-medium">
+                                  {currencySymbol}{item.totalPrice.toFixed(2)}
+                                </div>
+                                <div className="text-xs text-green-600">
+                                  +ship: {currencySymbol}{item.costWithShipping.toFixed(2)}
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Notes and Dimensions */}
+                            {(item.notes || item.dimensions) && (
+                              <div className="text-xs text-muted-foreground space-y-0.5">
+                                {item.notes && <div>{item.notes}</div>}
+                                {item.dimensions && <div>Dimensions: {item.dimensions}</div>}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {/* Mobile Totals */}
+                    <div className="p-4 bg-muted/30">
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span>Total Items:</span>
+                          <span className="font-medium">{totalQuantity}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span>Subtotal:</span>
+                          <span className="font-medium">{currencySymbol}{subtotal.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span>Shipping:</span>
+                          <span className="font-medium">{currencySymbol}{shippingCost.toFixed(2)}</span>
+                        </div>
+                        <Separator className="my-2" />
+                        <div className="flex justify-between">
+                          <span className="font-semibold">Total with Shipping:</span>
+                          <span className="font-semibold text-green-600">{currencySymbol}{grandTotal.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Desktop View - Table Layout */}
+                <div className="hidden lg:block">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="hover:bg-transparent">
+                        <TableHead className="w-[48px]">Image</TableHead>
+                        <TableHead className="min-w-[200px]">Item Details</TableHead>
+                        <TableHead className="w-[180px]">Category</TableHead>
+                        <TableHead className="w-[80px] text-center">Qty</TableHead>
+                        <TableHead className="w-[120px] text-right">Unit Price</TableHead>
+                        <TableHead className="w-[120px] text-right">Total</TableHead>
+                        <TableHead className="w-[140px] text-right">Cost w/ Shipping</TableHead>
+                        <TableHead className="w-[48px]"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {items.map((item) => (
+                        <TableRow key={item.id} className="hover:bg-muted/50">
+                          {/* Image Column */}
+                          <TableCell className="p-2">
+                            <div className="w-12 h-12 rounded-md border bg-muted flex items-center justify-center overflow-hidden">
+                              {item.imageUrl ? (
+                                <img 
+                                  src={item.imageUrl} 
+                                  alt={item.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <Package className="h-5 w-5 text-muted-foreground" />
+                              )}
+                            </div>
+                          </TableCell>
+                          
+                          {/* Item Details */}
+                          <TableCell className="font-medium">
+                            <div className="space-y-1">
+                              <Input
+                                value={item.name}
+                                onChange={(e) => {
+                                  const updatedItems = items.map(i => 
+                                    i.id === item.id ? {...i, name: e.target.value} : i
+                                  );
+                                  setItems(updatedItems);
+                                }}
+                                className="h-7 text-sm font-medium border-0 bg-transparent hover:bg-muted focus:bg-background focus:border-input px-2"
+                                placeholder="Item name"
+                              />
+                              {item.sku && (
+                                <div className="text-xs text-muted-foreground px-2">SKU: {item.sku}</div>
+                              )}
+                              {item.notes && (
+                                <div className="text-xs text-muted-foreground px-2">{item.notes}</div>
+                              )}
+                              {item.dimensions && (
+                                <div className="text-xs text-muted-foreground px-2">Dimensions: {item.dimensions}</div>
+                              )}
+                            </div>
+                          </TableCell>
+                          
+                          {/* Category */}
+                          <TableCell>
+                            <Select
+                              value={item.categoryId?.toString() || ""}
+                              onValueChange={(value) => {
+                                if (value === "add-new") {
+                                  setNewCategoryDialogOpen(true);
+                                } else {
+                                  const categoryId = parseInt(value);
+                                  const category = categories.find(c => c.id === categoryId);
+                                  const updatedItems = items.map(i => 
+                                    i.id === item.id 
+                                      ? {...i, categoryId, category: category?.name || category?.name_en || ""} 
+                                      : i
+                                  );
+                                  setItems(updatedItems);
+                                }
+                              }}
+                            >
+                              <SelectTrigger className="h-7 border-0 bg-transparent hover:bg-muted focus:bg-background focus:border-input">
+                                <SelectValue placeholder="Select category" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {categories.map((category) => (
+                                  <SelectItem key={category.id} value={category.id.toString()}>
+                                    {category.name || category.name_en}
+                                  </SelectItem>
+                                ))}
+                                <SelectItem value="add-new" className="text-primary">
+                                  <div className="flex items-center">
+                                    <Plus className="h-3 w-3 mr-1" />
+                                    Add new category
+                                  </div>
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          
+                          {/* Quantity */}
+                          <TableCell className="text-center">
+                            <Input
+                              type="number"
+                              value={item.quantity}
+                              onChange={(e) => {
+                                const updatedItems = items.map(i => 
+                                  i.id === item.id ? {...i, quantity: parseInt(e.target.value) || 1, totalPrice: (parseInt(e.target.value) || 1) * i.unitPrice} : i
+                                );
+                                updateItemsWithShipping(updatedItems);
+                              }}
+                              className="h-7 w-16 mx-auto text-sm text-center border-0 bg-transparent hover:bg-muted focus:bg-background focus:border-input [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              min="1"
+                            />
+                          </TableCell>
+                          
+                          {/* Unit Price */}
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end">
+                              <span className="text-sm mr-1">{currencySymbol}</span>
+                              <Input
+                                type="number"
+                                value={item.unitPrice}
+                                onChange={(e) => {
+                                  const updatedItems = items.map(i => 
+                                    i.id === item.id ? {...i, unitPrice: parseFloat(e.target.value) || 0, totalPrice: i.quantity * (parseFloat(e.target.value) || 0)} : i
+                                  );
+                                  updateItemsWithShipping(updatedItems);
+                                }}
+                                className="h-7 w-20 text-sm text-right border-0 bg-transparent hover:bg-muted focus:bg-background focus:border-input [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                step="0.01"
+                                min="0"
+                              />
+                            </div>
+                          </TableCell>
+                          
+                          {/* Total */}
+                          <TableCell className="text-right">
+                            <span className="font-medium text-sm">
+                              {currencySymbol}{item.totalPrice.toFixed(2)}
+                            </span>
+                          </TableCell>
+                          
+                          {/* Cost with Shipping */}
+                          <TableCell className="text-right">
+                            {(() => {
+                              const selectedCurrency = itemCurrencyDisplay[item.id] || purchaseCurrency;
+                              const rate = exchangeRates[selectedCurrency] / exchangeRates[purchaseCurrency];
+                              const convertedCost = item.costWithShipping * rate;
+                              const symbol = getCurrencySymbol(selectedCurrency);
+                              
+                              return (
+                                <div className="space-y-1">
+                                  <span className="text-green-600 font-medium text-sm">
+                                    {symbol}{convertedCost.toFixed(2)}
+                                  </span>
+                                  {selectedCurrency !== purchaseCurrency && (
+                                    <div className="text-xs text-muted-foreground">
+                                      {selectedCurrency}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })()}
+                          </TableCell>
+                          
+                          {/* Actions */}
+                          <TableCell className="p-2">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuSub>
+                                  <DropdownMenuSubTrigger>
+                                    <DollarSign className="mr-2 h-4 w-4" />
+                                    Show Cost in Currency
+                                  </DropdownMenuSubTrigger>
+                                  <DropdownMenuSubContent>
+                                    <DropdownMenuItem onClick={() => setItemCurrencyDisplay(prev => ({...prev, [item.id]: "USD"}))}>
+                                      <Check className={cn("mr-2 h-4 w-4", itemCurrencyDisplay[item.id] === "USD" ? "opacity-100" : "opacity-0")} />
+                                      USD
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setItemCurrencyDisplay(prev => ({...prev, [item.id]: "EUR"}))}>
+                                      <Check className={cn("mr-2 h-4 w-4", itemCurrencyDisplay[item.id] === "EUR" ? "opacity-100" : "opacity-0")} />
+                                      EUR
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setItemCurrencyDisplay(prev => ({...prev, [item.id]: "CZK"}))}>
+                                      <Check className={cn("mr-2 h-4 w-4", itemCurrencyDisplay[item.id] === "CZK" ? "opacity-100" : "opacity-0")} />
+                                      CZK
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setItemCurrencyDisplay(prev => ({...prev, [item.id]: "VND"}))}>
+                                      <Check className={cn("mr-2 h-4 w-4", itemCurrencyDisplay[item.id] === "VND" ? "opacity-100" : "opacity-0")} />
+                                      VND
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setItemCurrencyDisplay(prev => ({...prev, [item.id]: "CNY"}))}>
+                                      <Check className={cn("mr-2 h-4 w-4", itemCurrencyDisplay[item.id] === "CNY" ? "opacity-100" : "opacity-0")} />
+                                      CNY
+                                    </DropdownMenuItem>
+                                    {customCurrencies.map(currency => (
+                                      <DropdownMenuItem key={currency} onClick={() => setItemCurrencyDisplay(prev => ({...prev, [item.id]: currency}))}>
+                                        <Check className={cn("mr-2 h-4 w-4", itemCurrencyDisplay[item.id] === currency ? "opacity-100" : "opacity-0")} />
+                                        {currency}
+                                      </DropdownMenuItem>
+                                    ))}
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={() => setItemCurrencyDisplay(prev => ({...prev, [item.id]: purchaseCurrency}))}>
+                                      <RotateCcw className="mr-2 h-4 w-4" />
+                                      Reset to Original
+                                    </DropdownMenuItem>
+                                  </DropdownMenuSubContent>
+                                </DropdownMenuSub>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem 
+                                  onClick={() => removeItem(item.id)}
+                                  className="text-destructive focus:text-destructive"
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete Item
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
                     </TableBody>
                     <TableFooter>
                       <TableRow>
-                        <TableCell className="font-bold" style={{ width: `${columnSizes[0]}%` }}>Totals</TableCell>
-                        <TableCell style={{ width: `${columnSizes[1]}%` }}></TableCell>
-                        <TableCell className="text-center font-bold" style={{ width: `${columnSizes[2]}%` }}>{totalQuantity}</TableCell>
-                        <TableCell style={{ width: `${columnSizes[3]}%` }}></TableCell>
-                        <TableCell className="text-right font-bold hidden sm:table-cell" style={{ width: `${columnSizes[4]}%` }}>
+                        <TableCell colSpan={3} className="font-bold">Totals</TableCell>
+                        <TableCell className="text-center font-bold">{totalQuantity}</TableCell>
+                        <TableCell></TableCell>
+                        <TableCell className="text-right font-bold">
                           {currencySymbol}{subtotal.toFixed(2)}
                         </TableCell>
-                        <TableCell className="text-right font-bold text-green-600 hidden md:table-cell" style={{ width: `${columnSizes[5]}%` }}>
+                        <TableCell className="text-right font-bold text-green-600">
                           {currencySymbol}{grandTotal.toFixed(2)}
                         </TableCell>
-                        <TableCell style={{ width: '40px' }}></TableCell>
+                        <TableCell></TableCell>
                       </TableRow>
                     </TableFooter>
                   </Table>
