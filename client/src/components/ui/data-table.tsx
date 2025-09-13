@@ -262,80 +262,84 @@ export function DataTable<T>({
                 const isSelected = selectedRows.has(key);
                 const isExpanded = expandedRows.has(key);
                 
-                return (
-                  <React.Fragment key={key}>
-                    <TableRow 
-                      data-state={isSelected && "selected"}
-                      className={cn(
-                        onRowClick && "cursor-pointer hover:bg-muted/50",
-                        isExpanded && "border-b-0"
-                      )}
-                    >
-                      {expandable && (
-                        <TableCell className="w-12">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleToggleExpand(key);
-                            }}
-                          >
-                            {isExpanded ? (
-                              expandable.collapseIcon || <ChevronUp className="h-4 w-4" />
-                            ) : (
-                              expandable.expandIcon || <ChevronDown className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </TableCell>
-                      )}
-                      {bulkActions && (
-                        <TableCell>
-                          <Checkbox
-                            checked={isSelected}
-                            onCheckedChange={(checked) => handleSelectRow(key, checked as boolean)}
-                            aria-label="Select row"
-                            className="translate-y-[2px]"
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        </TableCell>
-                      )}
-                      {columns.map((column) => (
-                        <TableCell 
-                          key={column.key} 
-                          className={cn(
-                            compact && "py-1 px-3",
-                            column.className
-                          )}
-                          onClick={() => onRowClick && onRowClick(item)}
-                        >
-                          {column.cell ? column.cell(item) : (item as any)[column.key]}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                    {expandable && isExpanded && (
-                      <>
-                        <TableRow className="hover:bg-transparent">
-                          <TableCell
-                            colSpan={columns.length + (bulkActions ? 1 : 0) + 1}
-                            className="bg-slate-50 dark:bg-slate-900/30 p-6 border-l-4 border-l-blue-500 shadow-inner"
-                          >
-                            <div className="relative">
-                              {expandable.render(item)}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                        <TableRow className="hover:bg-transparent border-b-2 border-slate-200 dark:border-slate-700">
-                          <TableCell 
-                            colSpan={columns.length + (bulkActions ? 1 : 0) + 1} 
-                            className="p-0 h-2 bg-gradient-to-b from-slate-50 dark:from-slate-900/30 to-transparent"
-                          />
-                        </TableRow>
-                      </>
+                const elements = [
+                  <TableRow 
+                    key={key}
+                    data-state={isSelected && "selected"}
+                    className={cn(
+                      onRowClick && "cursor-pointer hover:bg-muted/50",
+                      isExpanded && "border-b-0"
                     )}
-                  </React.Fragment>
-                );
+                  >
+                    {expandable && (
+                      <TableCell className="w-12">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleExpand(key);
+                          }}
+                        >
+                          {isExpanded ? (
+                            expandable.collapseIcon || <ChevronUp className="h-4 w-4" />
+                          ) : (
+                            expandable.expandIcon || <ChevronDown className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </TableCell>
+                    )}
+                    {bulkActions && (
+                      <TableCell>
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={(checked) => handleSelectRow(key, checked as boolean)}
+                          aria-label="Select row"
+                          className="translate-y-[2px]"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </TableCell>
+                    )}
+                    {columns.map((column) => (
+                      <TableCell 
+                        key={column.key} 
+                        className={cn(
+                          compact && "py-1 px-3",
+                          column.className
+                        )}
+                        onClick={() => onRowClick && onRowClick(item)}
+                      >
+                        {column.cell ? column.cell(item) : (item as any)[column.key]}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ];
+                
+                if (expandable && isExpanded) {
+                  elements.push(
+                    <TableRow key={`${key}-expanded-1`} className="hover:bg-transparent">
+                      <TableCell
+                        colSpan={columns.length + (bulkActions ? 1 : 0) + 1}
+                        className="bg-slate-50 dark:bg-slate-900/30 p-6 border-l-4 border-l-blue-500 shadow-inner"
+                      >
+                        <div className="relative">
+                          {expandable.render(item)}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                  elements.push(
+                    <TableRow key={`${key}-expanded-2`} className="hover:bg-transparent border-b-2 border-slate-200 dark:border-slate-700">
+                      <TableCell 
+                        colSpan={columns.length + (bulkActions ? 1 : 0) + 1} 
+                        className="p-0 h-2 bg-gradient-to-b from-slate-50 dark:from-slate-900/30 to-transparent"
+                      />
+                    </TableRow>
+                  );
+                }
+                
+                return elements;
               })
             )}
           </TableBody>
