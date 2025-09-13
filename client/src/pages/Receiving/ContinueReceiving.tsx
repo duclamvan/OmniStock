@@ -1,5 +1,6 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -62,6 +63,37 @@ interface ReceivingItem {
   checked: boolean;
   imageUrl?: string;
 }
+
+// Lazy loading image component
+const LazyImage = ({ src, alt, className }: { src?: string; alt: string; className: string }) => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+  
+  return (
+    <>
+      {isLoading && !hasError && (
+        <Skeleton className={`${className} absolute inset-0`} />
+      )}
+      {src && !hasError ? (
+        <img 
+          src={src} 
+          alt={alt}
+          className={`${className} ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
+          onLoad={() => setIsLoading(false)}
+          onError={() => {
+            setIsLoading(false);
+            setHasError(true);
+          }}
+        />
+      ) : null}
+      {(hasError || !src) && !isLoading && (
+        <div className={`${className} bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center`}>
+          <Package2 className="h-8 w-8 text-gray-400" />
+        </div>
+      )}
+    </>
+  );
+};
 
 export default function ContinueReceiving() {
   const { id } = useParams();
@@ -1103,95 +1135,141 @@ export default function ContinueReceiving() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Basic Info */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Received By *</Label>
-                  <Input
-                    value={receivedBy}
-                    onChange={(e) => handleReceivedByChange(e.target.value)}
-                    onBlur={handleReceivedByBlur}
-                    placeholder="Your name"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label>Carrier *</Label>
-                  <Input
-                    value={carrier}
-                    onChange={(e) => handleCarrierChange(e.target.value)}
-                    onBlur={handleCarrierBlur}
-                    placeholder="DHL, UPS, FedEx..."
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Parcel Count */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Expected {unitLabel}</Label>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleParcelCountChange(Math.max(1, parcelCount - 1), true)}
-                    >
-                      <Minus className="h-4 w-4" />
-                    </Button>
-                    <Input
-                      type="number"
-                      value={parcelCount}
-                      onChange={(e) => handleParcelCountChange(Math.max(1, parseInt(e.target.value) || 1), false)}
-                      onBlur={handleParcelCountBlur}
-                      className="text-center"
-                      min="1"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleParcelCountChange(parcelCount + 1, true)}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
+              {/* Show skeleton loading when data is loading */}
+              {(receiptLoading || isLoading) ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Skeleton className="h-4 w-20 mb-2" />
+                      <Skeleton className="h-10 w-full" />
+                    </div>
+                    <div>
+                      <Skeleton className="h-4 w-16 mb-2" />
+                      <Skeleton className="h-10 w-full" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Skeleton className="h-4 w-24 mb-2" />
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-10 w-10" />
+                        <Skeleton className="h-10 flex-1" />
+                        <Skeleton className="h-10 w-10" />
+                      </div>
+                    </div>
+                    <div>
+                      <Skeleton className="h-4 w-28 mb-2" />
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-10 w-10" />
+                        <Skeleton className="h-10 flex-1" />
+                        <Skeleton className="h-10 w-10" />
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <Skeleton className="h-4 w-20 mb-2" />
+                    <Skeleton className="h-20 w-full" />
+                  </div>
+                  <div>
+                    <Skeleton className="h-4 w-16 mb-2" />
+                    <div className="grid grid-cols-3 gap-2">
+                      <Skeleton className="h-24 w-full rounded-lg" />
+                      <Skeleton className="h-24 w-full rounded-lg" />
+                      <Skeleton className="h-24 w-full rounded-lg" />
+                    </div>
                   </div>
                 </div>
-
-                <div>
-                  <Label>Received {unitLabel} (Manual)</Label>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleScannedParcelsChange(Math.max(0, scannedParcels - 1), true)}
-                      disabled={scannedParcels === 0}
-                    >
-                      <Minus className="h-4 w-4" />
-                    </Button>
-                    <Input
-                      type="number"
-                      value={scannedParcels}
-                      onChange={(e) => handleScannedParcelsChange(Math.max(0, Math.min(parcelCount, parseInt(e.target.value) || 0)), false)}
-                      onBlur={handleScannedParcelsBlur}
-                      className="text-center"
-                      min="0"
-                      max={parcelCount}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleScannedParcelsChange(Math.min(parcelCount, scannedParcels + 1), true)}
-                      disabled={scannedParcels >= parcelCount}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
+              ) : (
+                <>
+                  {/* Basic Info */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label>Received By *</Label>
+                      <Input
+                        value={receivedBy}
+                        onChange={(e) => handleReceivedByChange(e.target.value)}
+                        onBlur={handleReceivedByBlur}
+                        placeholder="Your name"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label>Carrier *</Label>
+                      <Input
+                        value={carrier}
+                        onChange={(e) => handleCarrierChange(e.target.value)}
+                        onBlur={handleCarrierBlur}
+                        placeholder="DHL, UPS, FedEx..."
+                        required
+                      />
+                    </div>
                   </div>
-                </div>
-              </div>
+
+                  {/* Parcel Count */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label>Expected {unitLabel}</Label>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleParcelCountChange(Math.max(1, parcelCount - 1), true)}
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <Input
+                          type="number"
+                          value={parcelCount}
+                          onChange={(e) => handleParcelCountChange(Math.max(1, parseInt(e.target.value) || 1), false)}
+                          onBlur={handleParcelCountBlur}
+                          className="text-center"
+                          min="1"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleParcelCountChange(parcelCount + 1, true)}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label>Received {unitLabel} (Manual)</Label>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleScannedParcelsChange(Math.max(0, scannedParcels - 1), true)}
+                          disabled={scannedParcels === 0}
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <Input
+                          type="number"
+                          value={scannedParcels}
+                          onChange={(e) => handleScannedParcelsChange(Math.max(0, Math.min(parcelCount, parseInt(e.target.value) || 0)), false)}
+                          onBlur={handleScannedParcelsBlur}
+                          className="text-center"
+                          min="0"
+                          max={parcelCount}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleScannedParcelsChange(Math.min(parcelCount, scannedParcels + 1), true)}
+                          disabled={scannedParcels >= parcelCount}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
 
               {/* Auto-Receive All Button */}
               <div>
@@ -1307,36 +1385,38 @@ export default function ContinueReceiving() {
                 </div>
               </div>
 
-              {/* Quick Notes */}
-              <div>
-                <Label>Initial Notes</Label>
-                <Textarea
-                  value={notes}
-                  onChange={(e) => handleNotesChange(e.target.value)}
-                  onBlur={handleNotesBlur}
-                  placeholder="Any initial observations..."
-                  rows={2}
-                />
-              </div>
+                  {/* Quick Notes */}
+                  <div>
+                    <Label>Initial Notes</Label>
+                    <Textarea
+                      value={notes}
+                      onChange={(e) => handleNotesChange(e.target.value)}
+                      onBlur={handleNotesBlur}
+                      placeholder="Any initial observations..."
+                      rows={2}
+                    />
+                  </div>
 
-              <Button
-                onClick={() => setCurrentStep(2)}
-                disabled={!receivedBy || !carrier}
-                className="w-full"
-                size="lg"
-              >
-                {scannedParcels > 0 ? (
-                  <>
-                    Continue to Item Checklist
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </>
-                ) : (
-                  <>
-                    Continue to Item Checklist
-                    <CheckSquare className="h-4 w-4 ml-2" />
-                  </>
-                )}
-              </Button>
+                  <Button
+                    onClick={() => setCurrentStep(2)}
+                    disabled={!receivedBy || !carrier}
+                    className="w-full"
+                    size="lg"
+                  >
+                    {scannedParcels > 0 ? (
+                      <>
+                        Continue to Item Checklist
+                        <ArrowRight className="h-4 w-4 ml-2" />
+                      </>
+                    ) : (
+                      <>
+                        Continue to Item Checklist
+                        <CheckSquare className="h-4 w-4 ml-2" />
+                      </>
+                    )}
+                  </Button>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -1448,7 +1528,34 @@ export default function ContinueReceiving() {
 
               {/* Items List */}
               <div className="max-h-96 overflow-y-auto space-y-3 pr-1">
-                {(() => {
+                {/* Show skeleton loading when items are still loading */}
+                {receiptLoading || isLoading ? (
+                  // Show skeleton items while loading
+                  [...Array(3)].map((_, index) => (
+                    <div key={`skeleton-${index}`} className="border rounded-lg p-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-4">
+                        <Skeleton className="w-20 h-20 rounded-lg" />
+                        <div className="flex flex-col gap-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1">
+                              <Skeleton className="h-5 w-32 mb-2" />
+                              <Skeleton className="h-3 w-20" />
+                            </div>
+                            <Skeleton className="h-6 w-16" />
+                          </div>
+                          <div className="space-y-2">
+                            <Skeleton className="h-2 w-full" />
+                            <div className="flex gap-2">
+                              <Skeleton className="h-8 w-24" />
+                              <Skeleton className="h-8 w-16" />
+                              <Skeleton className="h-8 w-16" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (() => {
                   const filteredItems = receivingItems.filter(item => 
                     showAllItems || item.status === 'pending' || item.receivedQty < item.expectedQty
                   );
@@ -1522,24 +1629,14 @@ export default function ContinueReceiving() {
                           <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-4">
                             {/* Left Column - Product Image */}
                             <div className="flex justify-center sm:justify-start">
-                              <div className="relative flex-shrink-0">
-                                {item.imageUrl ? (
-                                  <img 
-                                    src={item.imageUrl} 
-                                    alt={item.name}
-                                    className="w-20 h-20 object-cover rounded-lg border-2 border-gray-300 dark:border-gray-600 shadow-lg bg-white dark:bg-gray-800"
-                                    onError={(e) => {
-                                      // Fallback to placeholder if image fails to load
-                                      e.currentTarget.style.display = 'none';
-                                      e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                                    }}
-                                  />
-                                ) : null}
-                                <div className={`${item.imageUrl ? 'hidden' : ''} w-20 h-20 rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 shadow-lg flex items-center justify-center`}>
-                                  <Package2 className="h-8 w-8 text-gray-400" />
-                                </div>
+                              <div className="relative flex-shrink-0 w-20 h-20">
+                                <LazyImage 
+                                  src={item.imageUrl}
+                                  alt={item.name}
+                                  className="w-20 h-20 object-cover rounded-lg border-2 border-gray-300 dark:border-gray-600 shadow-lg bg-white dark:bg-gray-800"
+                                />
                                 {/* Status Icon Overlay */}
-                                <div className={`absolute -top-1 -right-1 w-6 h-6 rounded-full bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center transition-transform duration-200 ${isComplete ? 'scale-110' : ''}`}>
+                                <div className={`absolute -top-1 -right-1 w-6 h-6 rounded-full bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center transition-transform duration-200 ${isComplete ? 'scale-110' : ''} z-10`}>
                                   <StatusIcon className={`h-3 w-3 ${iconColor}`} />
                                 </div>
                               </div>
@@ -1770,13 +1867,13 @@ export default function ContinueReceiving() {
                       >
                         {/* Photo Container */}
                         <div className="relative w-32 h-32 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-600 transition-colors">
-                          <img
+                          <LazyImage
                             src={photo}
                             alt={`Upload ${index + 1}`}
                             className="w-full h-full object-cover"
                           />
                           {/* Overlay with photo number */}
-                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 z-10">
                             <span className="text-white text-xs font-medium">
                               Photo {index + 1}
                             </span>
