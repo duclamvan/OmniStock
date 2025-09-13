@@ -950,11 +950,31 @@ export default function ContinueReceiving() {
       {/* Step 1: Parcel Verification */}
       {currentStep === 1 && (
         <div className="space-y-4">
-          <Card>
+          <Card className={`
+            transition-all duration-500 border-2
+            ${scannedParcels === parcelCount && parcelCount > 0 
+              ? 'border-green-400 bg-green-50/50 dark:bg-green-950/20 shadow-green-100 dark:shadow-green-900/20' 
+              : scannedParcels > 0 
+                ? 'border-amber-400 bg-amber-50/50 dark:bg-amber-950/20 shadow-amber-100 dark:shadow-amber-900/20'
+                : 'border-gray-200 dark:border-gray-700'
+            }
+          `}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                {isPalletShipment ? <Layers className="h-5 w-5" /> : <Package className="h-5 w-5" />}
+                {scannedParcels === parcelCount && parcelCount > 0 ? (
+                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                ) : scannedParcels > 0 ? (
+                  <Clock className="h-5 w-5 text-amber-600" />
+                ) : (
+                  isPalletShipment ? <Layers className="h-5 w-5" /> : <Package className="h-5 w-5" />
+                )}
                 {unitLabel} Verification
+                {scannedParcels === parcelCount && parcelCount > 0 && (
+                  <Badge className="ml-auto bg-green-600 text-white">Complete</Badge>
+                )}
+                {scannedParcels > 0 && scannedParcels < parcelCount && (
+                  <Badge className="ml-auto bg-amber-600 text-white">In Progress</Badge>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -1200,12 +1220,32 @@ export default function ContinueReceiving() {
       {/* Step 2: Item Checklist */}
       {currentStep === 2 && (
         <div className="space-y-4">
-          <Card>
+          <Card className={`
+            transition-all duration-500 border-2
+            ${completedItems === totalItems && totalItems > 0 
+              ? 'border-green-400 bg-green-50/50 dark:bg-green-950/20 shadow-green-100 dark:shadow-green-900/20' 
+              : completedItems > 0 
+                ? 'border-amber-400 bg-amber-50/50 dark:bg-amber-950/20 shadow-amber-100 dark:shadow-amber-900/20'
+                : 'border-gray-200 dark:border-gray-700'
+            }
+          `}>
             <CardHeader>
               <div className="flex items-center justify-between mb-3">
                 <CardTitle className="flex items-center gap-2">
-                  <CheckSquare className="h-5 w-5" />
+                  {completedItems === totalItems && totalItems > 0 ? (
+                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  ) : completedItems > 0 ? (
+                    <Clock className="h-5 w-5 text-amber-600" />
+                  ) : (
+                    <CheckSquare className="h-5 w-5" />
+                  )}
                   Item Verification ({completedItems}/{totalItems})
+                  {completedItems === totalItems && totalItems > 0 && (
+                    <Badge className="ml-auto bg-green-600 text-white">Complete</Badge>
+                  )}
+                  {completedItems > 0 && completedItems < totalItems && (
+                    <Badge className="ml-auto bg-amber-600 text-white">In Progress</Badge>
+                  )}
                 </CardTitle>
                 <div className="flex gap-2">
                   <Button
