@@ -3483,7 +3483,7 @@ router.patch("/receipts/:id/items/:itemId", async (req, res) => {
       .set(updateData)
       .where(and(
         eq(receiptItems.receiptId, receiptId),
-        eq(receiptItems.id, itemId)
+        eq(receiptItems.itemId, itemId)  // Fixed: use itemId field, not id
       ))
       .returning({ 
         id: receiptItems.id,
@@ -3522,7 +3522,7 @@ router.patch("/receipts/:id/items/:itemId/increment", async (req, res) => {
       })
       .where(and(
         eq(receiptItems.receiptId, receiptId),
-        eq(receiptItems.id, itemId)
+        eq(receiptItems.itemId, itemId)  // Fixed: use itemId field, not id
       ))
       .returning({ 
         id: receiptItems.id,
