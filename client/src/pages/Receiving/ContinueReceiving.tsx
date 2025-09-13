@@ -119,6 +119,7 @@ export default function ContinueReceiving() {
   const [notes, setNotes] = useState("");
   const [scannedTrackingNumbers, setScannedTrackingNumbers] = useState<string[]>([]);
   const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
+  const [photosLoading, setPhotosLoading] = useState(false);
   
   // UI state
   const [currentStep, setCurrentStep] = useState(1);
@@ -184,12 +185,19 @@ export default function ContinueReceiving() {
       setParcelCount(receiptData.parcelCount || shipment.totalUnits || 1);
       
       // Load photos from receipt if available
-      if (receiptData.photos && Array.isArray(receiptData.photos)) {
+      if (receiptData.photos && Array.isArray(receiptData.photos) && receiptData.photos.length > 0) {
         console.log(`Loading ${receiptData.photos.length} photos from saved data`);
-        setUploadedPhotos(receiptData.photos);
+        setPhotosLoading(true);
+        
+        // Simulate async loading of photos to show loading state
+        setTimeout(() => {
+          setUploadedPhotos(receiptData.photos);
+          setPhotosLoading(false);
+        }, 100); // Small delay to show loading state
       } else {
         console.log('No photos to load');
         setUploadedPhotos([]);
+        setPhotosLoading(false);
       }
       
       // Load scanned parcels and tracking numbers from tracking numbers JSON if available
@@ -1905,56 +1913,77 @@ export default function ContinueReceiving() {
               </div>
 
               {/* Photos Grid - Horizontal Scrollable Layout */}
-              {uploadedPhotos.length > 0 && (
+              {(uploadedPhotos.length > 0 || photosLoading) && (
                 <div className="relative">
                   <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
-                    {uploadedPhotos.map((photo, index) => (
-                      <div
-                        key={index}
-                        className="relative flex-shrink-0 group"
-                      >
-                        {/* Photo Container */}
-                        <div className="relative w-32 h-32 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-600 transition-colors">
-                          <LazyImage
-                            src={photo}
-                            alt={`Upload ${index + 1}`}
-                            className="w-full h-full object-cover"
-                          />
-                          {/* Overlay with photo number */}
-                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 z-10">
-                            <span className="text-white text-xs font-medium">
-                              Photo {index + 1}
-                            </span>
-                          </div>
-                          {/* Remove button */}
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="icon"
-                            onClick={() => handleRemovePhoto(index)}
-                            className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                    {photosLoading ? (
+                      // Show skeleton loaders while photos are loading
+                      <>
+                        {[...Array(3)].map((_, index) => (
+                          <div
+                            key={`skeleton-${index}`}
+                            className="relative flex-shrink-0 group"
                           >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
+                            <div className="relative w-32 h-32 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700">
+                              <Skeleton className="w-full h-full" />
+                              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+                                <Skeleton className="h-3 w-16" />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </>
+                    ) : (
+                      <>
+                        {uploadedPhotos.map((photo, index) => (
+                          <div
+                            key={index}
+                            className="relative flex-shrink-0 group"
+                          >
+                            {/* Photo Container */}
+                            <div className="relative w-32 h-32 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-600 transition-colors">
+                              <LazyImage
+                                src={photo}
+                                alt={`Upload ${index + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                              {/* Overlay with photo number */}
+                              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 z-10">
+                                <span className="text-white text-xs font-medium">
+                                  Photo {index + 1}
+                                </span>
+                              </div>
+                              {/* Remove button */}
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                onClick={() => handleRemovePhoto(index)}
+                                className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                        {/* Upload more placeholder */}
+                        <div
+                          className="flex-shrink-0 w-32 h-32 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-600 transition-colors cursor-pointer flex flex-col items-center justify-center"
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                          <span className="text-xs text-gray-500 dark:text-gray-400 text-center px-2">
+                            Add more
+                          </span>
                         </div>
-                      </div>
-                    ))}
-                    {/* Upload more placeholder */}
-                    <div
-                      className="flex-shrink-0 w-32 h-32 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-600 transition-colors cursor-pointer flex flex-col items-center justify-center"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                      <span className="text-xs text-gray-500 dark:text-gray-400 text-center px-2">
-                        Add more
-                      </span>
-                    </div>
+                      </>
+                    )}
                   </div>
                 </div>
               )}
 
               {/* Empty State */}
-              {uploadedPhotos.length === 0 && (
+              {uploadedPhotos.length === 0 && !photosLoading && (
                 <div className="flex flex-col items-center justify-center py-8 px-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700">
                   <Camera className="h-12 w-12 text-gray-400 mb-3" />
                   <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
