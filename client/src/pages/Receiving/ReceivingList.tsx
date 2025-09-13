@@ -621,8 +621,13 @@ export default function ReceivingList() {
     refetchOnMount: true // Only refetch if stale
   });
 
-  // Get the current shipments based on active tab
-  const getCurrentShipments = (): any[] => {
+  // Helper function to determine if shipment is urgent (removed functionality)
+  const isUrgent = useCallback((_shipment: any) => {
+    return false; // Always false to remove urgent functionality
+  }, []);
+
+  // Get the current shipments based on active tab - wrapped in useMemo for consistent hook ordering
+  const currentShipments = useMemo<any[]>(() => {
     switch (activeTab) {
       case 'to-receive':
         return toReceiveShipments || [];
@@ -635,42 +640,43 @@ export default function ReceivingList() {
       default:
         return toReceiveShipments || [];
     }
-  };
+  }, [activeTab, toReceiveShipments, receivingShipments, approvalShipments, completedShipments]);
 
-  const currentShipments: any[] = getCurrentShipments();
+  // Get unique carriers from shipments - wrapped in useMemo for consistent hook ordering
+  const uniqueCarriers = useMemo<string[]>(() => {
+    return Array.from(new Set(
+      currentShipments
+        .map((s: any) => String(s.endCarrier || s.carrier || ''))
+        .filter((carrier: string) => carrier.length > 0)
+    )).sort();
+  }, [currentShipments]);
 
-  // Get unique carriers from shipments
-  const uniqueCarriers: string[] = Array.from(new Set(
-    currentShipments
-      .map((s: any) => String(s.endCarrier || s.carrier || ''))
-      .filter((carrier: string) => carrier.length > 0)
-  )).sort();
+  // Get unique shipment types from shipments - wrapped in useMemo for consistent hook ordering
+  const uniqueShipmentTypes = useMemo<string[]>(() => {
+    return Array.from(new Set(
+      currentShipments
+        .map((s: any) => String(s.shipmentType || 'N/A'))
+        .filter((type: string) => type.length > 0)
+    )).sort();
+  }, [currentShipments]);
 
-  // Get unique shipment types from shipments
-  const uniqueShipmentTypes: string[] = Array.from(new Set(
-    currentShipments
-      .map((s: any) => String(s.shipmentType || 'N/A'))
-      .filter((type: string) => type.length > 0)
-  )).sort();
+  // Get unique packaging types (unitType) from shipments - wrapped in useMemo for consistent hook ordering
+  const uniqueCartonTypes = useMemo<string[]>(() => {
+    return Array.from(new Set(
+      currentShipments
+        .map((s: any) => String(s.unitType || 'items'))
+        .filter((type: string) => type.length > 0)
+    )).sort();
+  }, [currentShipments]);
 
-  // Get unique packaging types (unitType) from shipments
-  const uniqueCartonTypes: string[] = Array.from(new Set(
-    currentShipments
-      .map((s: any) => String(s.unitType || 'items'))
-      .filter((type: string) => type.length > 0)
-  )).sort();
-
-  // Get unique warehouses from shipments
-  const uniqueWarehouses: string[] = Array.from(new Set(
-    currentShipments
-      .map((s: any) => s.consolidation?.warehouse)
-      .filter((warehouse: string | undefined) => warehouse && warehouse.length > 0)
-  )).sort();
-
-  // Helper function to determine if shipment is urgent (removed functionality)
-  const isUrgent = (_shipment: any) => {
-    return false; // Always false to remove urgent functionality
-  };
+  // Get unique warehouses from shipments - wrapped in useMemo for consistent hook ordering
+  const uniqueWarehouses = useMemo<string[]>(() => {
+    return Array.from(new Set(
+      currentShipments
+        .map((s: any) => s.consolidation?.warehouse)
+        .filter((warehouse: string | undefined) => warehouse && warehouse.length > 0)
+    )).sort() as string[];
+  }, [currentShipments]);
 
   // Filter shipments based on all filters
   const filteredShipments = useMemo(() => {
@@ -749,7 +755,8 @@ export default function ReceivingList() {
     carrierFilter, 
     shipmentTypeFilter, 
     cartonTypeFilter,
-    warehouseFilter
+    warehouseFilter,
+    isUrgent
   ]);
 
   // Sort filtered shipments
@@ -801,7 +808,7 @@ export default function ReceivingList() {
         ? (aValue > bValue ? 1 : -1)
         : (bValue > aValue ? 1 : -1);
     });
-  }, [filteredShipments, sortBy, sortOrder]);
+  }, [filteredShipments, sortBy, sortOrder, isUrgent]);
 
   // Handle barcode scan
   useEffect(() => {
