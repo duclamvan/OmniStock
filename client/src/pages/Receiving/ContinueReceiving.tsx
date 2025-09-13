@@ -491,7 +491,7 @@ export default function ContinueReceiving() {
     
     setReceivingItems(updatedItems);
     // Immediate save for quantity changes
-    triggerAutoSave(updatedItems, true);
+    triggerAutoSave(updatedItems, true, { skipPhotos: true });
   };
 
   // Toggle item status with immediate save
@@ -526,7 +526,7 @@ export default function ContinueReceiving() {
     
     setReceivingItems(updatedItems);
     // Immediate save for status changes
-    triggerAutoSave(updatedItems, true);
+    triggerAutoSave(updatedItems, true, { skipPhotos: true });
   };
 
   // Update item notes with immediate save
@@ -540,7 +540,7 @@ export default function ContinueReceiving() {
     
     setReceivingItems(updatedItems);
     // Immediate save for notes changes
-    triggerAutoSave(updatedItems, true);
+    triggerAutoSave(updatedItems, true, { skipPhotos: true });
   };
 
   // Update receipt mutation
@@ -723,7 +723,7 @@ export default function ContinueReceiving() {
   }, [immediateAutoSave]);
 
   // Auto-save current progress - always immediate
-  const triggerAutoSave = useCallback((updatedItems?: any[], immediate?: boolean, overrides?: { scannedParcels?: number, parcelCount?: number, trackingNumbers?: string[], photos?: string[], notes?: string }) => {
+  const triggerAutoSave = useCallback((updatedItems?: any[], immediate?: boolean, overrides?: { scannedParcels?: number, parcelCount?: number, trackingNumbers?: string[], photos?: string[] | null, notes?: string, skipPhotos?: boolean }) => {
     if (!shipment) return;
     
     // Use provided items or fall back to state items
@@ -738,7 +738,8 @@ export default function ContinueReceiving() {
       scannedParcels: overrides?.scannedParcels ?? scannedParcels,
       carrier,
       notes: overrides?.notes ?? notes,
-      photos: overrides?.photos ?? uploadedPhotos,
+      // Only include photos if explicitly provided or if not skipping
+      photos: overrides?.skipPhotos ? undefined : (overrides?.photos !== undefined ? overrides.photos : uploadedPhotos),
       trackingNumbers: overrides?.trackingNumbers ?? scannedTrackingNumbers,
       items: itemsToSave.map(item => ({
         itemId: parseInt(item.id) || item.id,
@@ -753,62 +754,62 @@ export default function ContinueReceiving() {
     immediateAutoSave(progressData);
   }, [shipment, receivedBy, parcelCount, scannedParcels, carrier, notes, uploadedPhotos, receivingItems, scannedTrackingNumbers, immediateAutoSave]);
 
-  // Text input handlers - save immediately
+  // Text input handlers - save immediately without photos
   const handleReceivedByChange = (value: string) => {
     setReceivedBy(value);
-    triggerAutoSave(undefined, true);
+    triggerAutoSave(undefined, true, { skipPhotos: true });
   };
   
   const handleReceivedByBlur = () => {
     // Save on blur as well to ensure data is saved
-    triggerAutoSave(undefined, true);
+    triggerAutoSave(undefined, true, { skipPhotos: true });
   };
 
   const handleCarrierChange = (value: string) => {
     setCarrier(value);
-    triggerAutoSave(undefined, true);
+    triggerAutoSave(undefined, true, { skipPhotos: true });
   };
   
   const handleCarrierBlur = () => {
     // Save on blur as well to ensure data is saved
-    triggerAutoSave(undefined, true);
+    triggerAutoSave(undefined, true, { skipPhotos: true });
   };
 
   // Ref to track button save timer (removed - using immediate saves)
   const buttonSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Number input handlers - immediate saves
+  // Number input handlers - immediate saves without photos for speed
   const handleParcelCountChange = (value: number, isButton?: boolean) => {
     setParcelCount(value);
-    // Always save immediately
-    triggerAutoSave(undefined, true, { parcelCount: value });
+    // Always save immediately without photos for speed
+    triggerAutoSave(undefined, true, { parcelCount: value, skipPhotos: true });
   };
   
   const handleParcelCountBlur = () => {
-    // Save on blur as well
-    triggerAutoSave(undefined, true);
+    // Save on blur as well without photos
+    triggerAutoSave(undefined, true, { skipPhotos: true });
   };
 
   const handleScannedParcelsChange = (value: number, isButton?: boolean, options?: { trackingNumbers?: string[] }) => {
     setScannedParcels(value);
-    // Always save immediately
-    triggerAutoSave(undefined, true, { scannedParcels: value, trackingNumbers: options?.trackingNumbers });
+    // Always save immediately without photos for speed
+    triggerAutoSave(undefined, true, { scannedParcels: value, trackingNumbers: options?.trackingNumbers, skipPhotos: true });
   };
   
   const handleScannedParcelsBlur = () => {
-    // Save on blur as well
-    triggerAutoSave(undefined, true);
+    // Save on blur as well without photos
+    triggerAutoSave(undefined, true, { skipPhotos: true });
   };
 
   const handleNotesChange = (value: string) => {
     setNotes(value);
-    // Save notes immediately
-    triggerAutoSave(undefined, true, { notes: value });
+    // Save notes immediately without photos
+    triggerAutoSave(undefined, true, { notes: value, skipPhotos: true });
   };
   
   const handleNotesBlur = () => {
-    // Save on blur as well to ensure data is saved
-    triggerAutoSave(undefined, true);
+    // Save on blur as well without photos
+    triggerAutoSave(undefined, true, { skipPhotos: true });
   };
 
   const handleSubmit = async () => {
@@ -1775,7 +1776,7 @@ export default function ContinueReceiving() {
                                           : i
                                       );
                                       setReceivingItems(updatedItems);
-                                      triggerAutoSave(updatedItems);
+                                      triggerAutoSave(updatedItems, true, { skipPhotos: true });
                                     }}
                                     className={`min-w-[70px] transition-colors shadow-sm ${
                                       item.status === 'complete'
