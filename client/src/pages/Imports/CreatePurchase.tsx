@@ -619,40 +619,43 @@ export default function CreatePurchase() {
   // Load existing purchase data for editing - only once
   useEffect(() => {
     if (isEditMode && existingPurchase && !dataLoaded) {
+      // Type-safe access to purchase data
+      const purchase = existingPurchase as any;
+      
       // Set basic fields with explicit type conversions to ensure state updates
-      setSupplier(String(existingPurchase.supplier || ""));
-      setSupplierId(existingPurchase.supplierId || null);
-      setSupplierLink(String(existingPurchase.supplierLink || ""));
-      setSupplierLocation(String(existingPurchase.supplierLocation || ""));
-      setTrackingNumber(String(existingPurchase.trackingNumber || ""));
-      setNotes(String(existingPurchase.notes || ""));
-      setShippingCost(Number(existingPurchase.shippingCost) || 0);
+      setSupplier(String(purchase?.supplier || ""));
+      setSupplierId(purchase?.supplierId || null);
+      setSupplierLink(String(purchase?.supplierLink || ""));
+      setSupplierLocation(String(purchase?.supplierLocation || ""));
+      setTrackingNumber(String(purchase?.trackingNumber || ""));
+      setNotes(String(purchase?.notes || ""));
+      setShippingCost(Number(purchase?.shippingCost) || 0);
       
       // Set currencies
-      setPurchaseCurrency(String(existingPurchase.purchaseCurrency || existingPurchase.paymentCurrency || "USD"));
-      setPaymentCurrency(String(existingPurchase.paymentCurrency || "USD"));
-      setTotalPaid(Number(existingPurchase.totalPaid) || 0);
-      setDisplayCurrency(String(existingPurchase.purchaseCurrency || existingPurchase.paymentCurrency || "USD"));
+      setPurchaseCurrency(String(purchase?.purchaseCurrency || purchase?.paymentCurrency || "USD"));
+      setPaymentCurrency(String(purchase?.paymentCurrency || "USD"));
+      setTotalPaid(Number(purchase?.totalPaid) || 0);
+      setDisplayCurrency(String(purchase?.purchaseCurrency || purchase?.paymentCurrency || "USD"));
       
       // Set purchase date
-      if (existingPurchase.createdAt) {
-        const date = new Date(existingPurchase.createdAt);
+      if (purchase?.createdAt) {
+        const date = new Date(purchase.createdAt);
         const localDateTime = date.toISOString().slice(0, 16);
         setPurchaseDate(localDateTime);
       }
       
       // Set estimated arrival date and processing time
-      if (existingPurchase.estimatedArrival) {
-        const arrivalDate = new Date(existingPurchase.estimatedArrival);
-        const purchaseDate = new Date(existingPurchase.createdAt);
+      if (purchase?.estimatedArrival) {
+        const arrivalDate = new Date(purchase.estimatedArrival);
+        const purchaseDate = new Date(purchase.createdAt);
         const daysDiff = Math.ceil((arrivalDate.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24));
         setProcessingTime(String(daysDiff));
         setProcessingUnit("days");
       }
       
       // Load items with proper currency display
-      if (existingPurchase.items && existingPurchase.items.length > 0) {
-        const loadedItems = existingPurchase.items.map((item: any) => ({
+      if (purchase?.items && purchase.items.length > 0) {
+        const loadedItems = purchase.items.map((item: any) => ({
           id: String(item.id),
           name: String(item.name),
           sku: String(item.sku || ""),
@@ -669,7 +672,7 @@ export default function CreatePurchase() {
         // Set item currency display for all items
         const currencyDisplay: {[key: string]: string} = {};
         loadedItems.forEach((item: PurchaseItem) => {
-          currencyDisplay[item.id] = existingPurchase.purchaseCurrency || "USD";
+          currencyDisplay[item.id] = purchase?.purchaseCurrency || "USD";
         });
         setItemCurrencyDisplay(currencyDisplay);
       }

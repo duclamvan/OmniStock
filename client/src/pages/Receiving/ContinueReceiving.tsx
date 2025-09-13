@@ -585,28 +585,9 @@ export default function ContinueReceiving() {
     });
   }, []);
   
-  // Rate limit for immediate saves to prevent spam
-  const lastSaveTimeRef = useRef<number>(0);
-  const SAVE_COOLDOWN = 1000; // 1 second minimum between saves
-
   // Debounced auto-save function for text inputs (saves on blur or after delay)
   const debouncedAutoSave = useCallback((data: any, immediate?: boolean) => {
     if (immediate) {
-      // Check if we're in cooldown period
-      const now = Date.now();
-      if (now - lastSaveTimeRef.current < SAVE_COOLDOWN) {
-        // If in cooldown, queue for later
-        if (autoSaveTimerRef.current) {
-          clearTimeout(autoSaveTimerRef.current);
-        }
-        autoSaveTimerRef.current = setTimeout(() => {
-          lastSaveTimeRef.current = Date.now();
-          immediateAutoSave(data);
-          autoSaveTimerRef.current = null;
-        }, SAVE_COOLDOWN - (now - lastSaveTimeRef.current));
-        return;
-      }
-      lastSaveTimeRef.current = now;
       immediateAutoSave(data);
       return;
     }
