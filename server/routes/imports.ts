@@ -3235,6 +3235,30 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
   try {
     const shipmentId = parseInt(req.params.shipmentId);
     
+    // Get the shipment details
+    const [shipmentData] = await db
+      .select({
+        id: shipments.id,
+        name: shipments.shipmentName,
+        trackingNumber: shipments.trackingNumber,
+        carrier: shipments.carrier,
+        endCarrier: shipments.endCarrier,
+        totalUnits: shipments.totalUnits,
+        unitType: shipments.unitType,
+        shipmentType: shipments.shipmentType,
+        deliveredAt: shipments.deliveredAt,
+        estimatedDelivery: shipments.estimatedDelivery,
+        totalWeight: shipments.totalWeight,
+        status: shipments.status,
+        consolidationId: shipments.consolidationId
+      })
+      .from(shipments)
+      .where(eq(shipments.id, shipmentId));
+    
+    if (!shipmentData) {
+      return res.status(404).json({ message: "Shipment not found" });
+    }
+    
     // Get the receipt for this shipment
     const [receipt] = await db
       .select()
@@ -3251,8 +3275,9 @@ router.get("/receipts/by-shipment/:shipmentId", async (req, res) => {
       .from(receiptItems)
       .where(eq(receiptItems.receiptId, receipt.id));
     
-    // Return receipt with items
+    // Return shipment, receipt, and items
     res.json({
+      shipment: shipmentData,
       receipt: receipt,
       items: receiptItemsList
     });
