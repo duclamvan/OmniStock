@@ -1024,6 +1024,27 @@ export default function ContinueReceiving() {
                 </div>
               </div>
 
+              {/* Auto-Receive All Button */}
+              <div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    handleScannedParcelsChange(parcelCount, true);
+                    toast({
+                      title: "Auto-Receive Complete",
+                      description: `All ${parcelCount} ${unitLabel.toLowerCase()} have been automatically received`
+                    });
+                  }}
+                  disabled={scannedParcels >= parcelCount}
+                  className="w-full"
+                >
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  Receive All ({parcelCount})
+                </Button>
+              </div>
+
               {/* Parcel Progress */}
               <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
@@ -1113,25 +1134,6 @@ export default function ContinueReceiving() {
                     className={scanMode ? 'bg-blue-50 border-blue-300' : ''}
                   >
                     <Camera className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="mt-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      handleScannedParcelsChange(parcelCount, true);
-                      toast({
-                        title: "Auto-Receive Complete",
-                        description: `All ${parcelCount} ${unitLabel.toLowerCase()} have been automatically received`
-                      });
-                    }}
-                    disabled={scannedParcels >= parcelCount}
-                    className="w-full"
-                  >
-                    <CheckCircle2 className="h-4 w-4 mr-2" />
-                    Receive All ({parcelCount})
                   </Button>
                 </div>
               </div>
