@@ -26,6 +26,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import ProductVariants from "@/components/ProductVariants";
+import ProductLocations from "@/components/ProductLocations";
 
 const editProductSchema = z.object({
   name: z.string().min(1, "Product name is required"),
@@ -546,6 +547,9 @@ export default function EditProduct() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Product Locations */}
+        {id && <ProductLocations productId={id} productName={product?.name} />}
 
         {/* Product Variants */}
         {id && <ProductVariants productId={id} />}
