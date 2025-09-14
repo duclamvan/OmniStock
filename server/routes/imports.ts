@@ -59,26 +59,37 @@ router.get("/suppliers/frequent", async (req, res) => {
   }
 });
 
-// Get all import purchases with items
+// Get all import purchases with items (optimized with single query)
 router.get("/purchases", async (req, res) => {
   try {
     const purchaseList = await db.select().from(importPurchases).orderBy(desc(importPurchases.createdAt));
     
-    // Get items for each purchase
-    const purchasesWithItems = await Promise.all(
-      purchaseList.map(async (purchase) => {
-        const items = await db
-          .select()
-          .from(purchaseItems)
-          .where(eq(purchaseItems.purchaseId, purchase.id));
-        
-        return {
-          ...purchase,
-          items,
-          itemCount: items.length
-        };
-      })
-    );
+    if (purchaseList.length === 0) {
+      return res.json([]);
+    }
+    
+    // Get all items for all purchases in a single query
+    const purchaseIds = purchaseList.map(p => p.id);
+    const allItems = await db
+      .select()
+      .from(purchaseItems)
+      .where(inArray(purchaseItems.purchaseId, purchaseIds));
+    
+    // Group items by purchaseId in memory
+    const itemsByPurchaseId: Record<number, typeof allItems> = {};
+    for (const item of allItems) {
+      if (!itemsByPurchaseId[item.purchaseId]) {
+        itemsByPurchaseId[item.purchaseId] = [];
+      }
+      itemsByPurchaseId[item.purchaseId].push(item);
+    }
+    
+    // Combine purchases with their items
+    const purchasesWithItems = purchaseList.map(purchase => ({
+      ...purchase,
+      items: itemsByPurchaseId[purchase.id] || [],
+      itemCount: (itemsByPurchaseId[purchase.id] || []).length
+    }));
     
     res.json(purchasesWithItems);
   } catch (error) {
@@ -87,7 +98,7 @@ router.get("/purchases", async (req, res) => {
   }
 });
 
-// Get purchases at warehouse
+// Get purchases at warehouse (optimized with single query)
 router.get("/purchases/at-warehouse", async (req, res) => {
   try {
     const purchases = await db
@@ -96,21 +107,32 @@ router.get("/purchases/at-warehouse", async (req, res) => {
       .where(eq(importPurchases.status, 'at_warehouse'))
       .orderBy(desc(importPurchases.createdAt));
     
-    // Get items for each purchase
-    const purchasesWithItems = await Promise.all(
-      purchases.map(async (purchase) => {
-        const items = await db
-          .select()
-          .from(purchaseItems)
-          .where(eq(purchaseItems.purchaseId, purchase.id));
-        
-        return {
-          ...purchase,
-          items,
-          itemCount: items.length
-        };
-      })
-    );
+    if (purchases.length === 0) {
+      return res.json([]);
+    }
+    
+    // Get all items for all purchases in a single query
+    const purchaseIds = purchases.map(p => p.id);
+    const allItems = await db
+      .select()
+      .from(purchaseItems)
+      .where(inArray(purchaseItems.purchaseId, purchaseIds));
+    
+    // Group items by purchaseId in memory
+    const itemsByPurchaseId: Record<number, typeof allItems> = {};
+    for (const item of allItems) {
+      if (!itemsByPurchaseId[item.purchaseId]) {
+        itemsByPurchaseId[item.purchaseId] = [];
+      }
+      itemsByPurchaseId[item.purchaseId].push(item);
+    }
+    
+    // Combine purchases with their items
+    const purchasesWithItems = purchases.map(purchase => ({
+      ...purchase,
+      items: itemsByPurchaseId[purchase.id] || [],
+      itemCount: (itemsByPurchaseId[purchase.id] || []).length
+    }));
     
     res.json(purchasesWithItems);
   } catch (error) {

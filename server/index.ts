@@ -1,8 +1,26 @@
 import express, { type Request, Response, NextFunction } from "express";
+import compression from "compression";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
+
+// Add compression middleware for all responses
+app.use(compression({
+  // Enable compression for all response types
+  filter: (req, res) => {
+    // Don't compress for WebSocket upgrade requests
+    if (req.headers['upgrade'] === 'websocket') {
+      return false;
+    }
+    // Use compression for everything else
+    return compression.filter(req, res);
+  },
+  // Use maximum compression level for better performance
+  level: 6, // Balanced compression (1-9, where 9 is max compression)
+  threshold: 1024 // Only compress responses > 1KB
+}));
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 

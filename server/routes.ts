@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth } from "./replitAuth";
 import { seedMockData } from "./mockData";
+import { cacheMiddleware, invalidateCache } from "./cache";
 import multer from "multer";
 import path from "path";
 import { promises as fs } from "fs";
@@ -64,8 +65,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Dashboard endpoints
-  app.get('/api/dashboard/metrics', async (req, res) => {
+  // Dashboard endpoints with caching
+  app.get('/api/dashboard/metrics', cacheMiddleware(60000), async (req, res) => {
     try {
       // Fetch exchange rates from free API
       const exchangeRateResponse = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eur.json');
@@ -195,7 +196,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/dashboard/financial-summary', async (req, res) => {
+  app.get('/api/dashboard/financial-summary', cacheMiddleware(60000), async (req, res) => {
     try {
       // Fetch exchange rates from free API
       const exchangeRateResponse = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eur.json');
@@ -304,7 +305,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/dashboard/activities', async (req, res) => {
+  app.get('/api/dashboard/activities', cacheMiddleware(30000), async (req, res) => {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
       const activities = await storage.getUserActivities(limit);

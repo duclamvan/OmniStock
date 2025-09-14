@@ -1,3 +1,4 @@
+import { lazy, Suspense, memo, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,12 +8,13 @@ import { MobileCardView } from "@/components/ui/responsive-table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Truck, Package, Euro, TrendingUp, Filter, ArrowUpDown } from "lucide-react";
-import { RevenueChart } from "./charts/RevenueChart";
-import { ExpensesChart } from "./charts/ExpensesChart";
-import { YearlyChart } from "./charts/YearlyChart";
 import { formatCurrency } from "@/lib/currencyUtils";
-import { memo, useMemo } from "react";
 import { FixedSizeList as List } from "react-window";
+
+// Lazy load heavy chart components to reduce initial bundle size
+const RevenueChart = lazy(() => import("./charts/RevenueChart").then(m => ({ default: m.RevenueChart })));
+const ExpensesChart = lazy(() => import("./charts/ExpensesChart").then(m => ({ default: m.ExpensesChart })));
+const YearlyChart = lazy(() => import("./charts/YearlyChart").then(m => ({ default: m.YearlyChart })));
 
 // Define types for dashboard data
 interface DashboardMetrics {
@@ -129,45 +131,45 @@ const ActivitySkeleton = memo(() => (
 ActivitySkeleton.displayName = 'ActivitySkeleton';
 
 export function Dashboard() {
-  // Dashboard data with 5-minute caching (data doesn't change frequently)
+  // Dashboard data with optimized caching settings to reduce unnecessary requests
   const { data: metrics, isLoading: metricsLoading } = useQuery<DashboardMetrics>({
     queryKey: ['/api/dashboard/metrics'],
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 60 * 1000, // 60 seconds - metrics are cached on backend
     gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
     refetchOnWindowFocus: false,
-    refetchOnMount: true, // Only refetch if stale
+    refetchOnMount: false, // Prevent refetch on component mount
   });
 
   const { data: financialSummary, isLoading: summaryLoading } = useQuery<FinancialSummaryItem[]>({
     queryKey: ['/api/dashboard/financial-summary'],
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 60 * 1000, // 60 seconds - summary is cached on backend
     gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
     refetchOnWindowFocus: false,
-    refetchOnMount: true,
+    refetchOnMount: false, // Prevent refetch on component mount
   });
 
   const { data: activities, isLoading: activitiesLoading } = useQuery<Activity[]>({
     queryKey: ['/api/dashboard/activities'],
-    staleTime: 2 * 60 * 1000, // 2 minutes (activities update more frequently)
+    staleTime: 30 * 1000, // 30 seconds - activities are cached on backend
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
-    refetchOnMount: true,
+    refetchOnMount: false, // Prevent refetch on component mount
   });
 
   const { data: unpaidOrders, isLoading: unpaidLoading } = useQuery<UnpaidOrder[]>({
     queryKey: ['/api/orders/unpaid'],
-    staleTime: 60 * 1000, // 1 minute (orders can change more frequently)
+    staleTime: 60 * 1000, // 60 seconds
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
-    refetchOnMount: true,
+    refetchOnMount: false, // Prevent refetch on component mount
   });
 
   const { data: lowStockProducts, isLoading: lowStockLoading } = useQuery<LowStockProduct[]>({
     queryKey: ['/api/products/low-stock'],
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 60 * 1000, // 60 seconds - low stock is cached on backend
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
-    refetchOnMount: true,
+    refetchOnMount: false, // Prevent refetch on component mount
   });
 
   // Show skeleton loading state for dashboard
@@ -323,7 +325,9 @@ export function Dashboard() {
             </select>
           </CardHeader>
           <CardContent>
-            <RevenueChart />
+            <Suspense fallback={<ChartSkeleton />}>
+              <RevenueChart />
+            </Suspense>
           </CardContent>
         </Card>
 
@@ -336,7 +340,9 @@ export function Dashboard() {
             </select>
           </CardHeader>
           <CardContent>
-            <ExpensesChart />
+            <Suspense fallback={<ChartSkeleton />}>
+              <ExpensesChart />
+            </Suspense>
           </CardContent>
         </Card>
       </div>
@@ -356,7 +362,9 @@ export function Dashboard() {
           </div>
         </CardHeader>
         <CardContent>
-          <YearlyChart />
+          <Suspense fallback={<ChartSkeleton />}>
+            <YearlyChart />
+          </Suspense>
         </CardContent>
       </Card>
       {/* Data Tables Section */}
