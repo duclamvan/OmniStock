@@ -5,6 +5,15 @@ Davie Supply is a comprehensive warehouse and order management system designed a
 Preferred communication style: Simple, everyday language.
 
 # Recent Changes
+- **January 26, 2025**: Implemented comprehensive document management system for products
+  - Created product_files table for multi-language document storage
+  - Support for SDS, CPNP certificates, flyers, manuals in multiple languages
+  - File upload with drag & drop (PDF, DOC, DOCX, JPG, PNG up to 10MB)
+  - Document selection during order creation with checkboxes
+  - Display selected documents in Pick & Pack with print indicators
+  - Language support: EN, CS, DE, FR, ES, VN, ZH, PL, SK, HU
+  - Full CRUD operations with download functionality
+
 - **January 26, 2025**: Implemented packing instructions system for products
   - Added packing instructions fields to products (text and image/GIF support)
   - Created PackingInstructionsUploader component with drag & drop image upload
