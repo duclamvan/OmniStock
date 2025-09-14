@@ -209,7 +209,10 @@ export default function ContinueReceiving() {
   // OPTIMIZED: Initialize data with prevention of unnecessary re-renders
   useEffect(() => {
     // Prevent double initialization and unnecessary re-renders
-    const dataKey = `${shipment?.id}-${receipt?.receipt?.id || 'none'}`;
+    // Include scannedParcels in dataKey to re-init when it changes
+    const trackingData = receipt?.receipt?.trackingNumbers || {};
+    const serverScannedParcels = trackingData.scannedParcels || receipt?.receipt?.receivedParcels || 0;
+    const dataKey = `${shipment?.id}-${receipt?.receipt?.id || 'none'}-${serverScannedParcels}`;
     if (dataInitializedRef.current === dataKey) {
       return; // Skip if already initialized with this data
     }
@@ -1097,6 +1100,8 @@ export default function ContinueReceiving() {
       onSuccess: () => {
         setSaveStatus('saved');
         setTimeout(() => setSaveStatus('idle'), 1000);
+        // Invalidate the receipt query to ensure fresh data when navigating
+        queryClient.invalidateQueries({ queryKey: [`/api/imports/receipts/by-shipment/${id}`] });
       }
     });
     
