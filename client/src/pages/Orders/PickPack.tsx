@@ -154,6 +154,8 @@ interface OrderItem {
     type?: string | null;
     description?: string | null;
   } | null;
+  packingInstructionsText?: string | null;
+  packingInstructionsImage?: string | null;
 }
 
 interface PickPackOrder {
@@ -3178,6 +3180,32 @@ export default function PickPack() {
                                               <div className="font-medium text-red-700">{item.packingMaterial.name}</div>
                                               <div className="text-red-500">{item.packingMaterial.description}</div>
                                             </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {/* Packing Instructions Display */}
+                                {(item.packingInstructionsText || item.packingInstructionsImage) && (
+                                  <div className="mt-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-l-4 border-blue-400">
+                                    <div className="flex items-start gap-2">
+                                      <Package className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                                      <div className="flex-1">
+                                        <div className="text-xs font-semibold text-blue-700 mb-1">PACKING INSTRUCTIONS</div>
+                                        {item.packingInstructionsImage && (
+                                          <div className="mb-2">
+                                            <img 
+                                              src={item.packingInstructionsImage} 
+                                              alt="Packing instructions"
+                                              className="w-full max-w-sm rounded-lg border border-blue-200"
+                                            />
+                                          </div>
+                                        )}
+                                        {item.packingInstructionsText && (
+                                          <div className="text-xs text-blue-600 leading-relaxed whitespace-pre-line">
+                                            {item.packingInstructionsText}
                                           </div>
                                         )}
                                       </div>

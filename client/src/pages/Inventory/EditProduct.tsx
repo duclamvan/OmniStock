@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import ProductVariants from "@/components/ProductVariants";
 import ProductLocations from "@/components/ProductLocations";
+import PackingInstructionsUploader from "@/components/PackingInstructionsUploader";
 
 const editProductSchema = z.object({
   name: z.string().min(1, "Product name is required"),
@@ -56,6 +57,8 @@ export default function EditProduct() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [packingInstructionsText, setPackingInstructionsText] = useState<string>("");
+  const [packingInstructionsImage, setPackingInstructionsImage] = useState<string | null>(null);
 
   // Fetch product details
   const { data: product, isLoading: productLoading } = useQuery<any>({
@@ -109,6 +112,9 @@ export default function EditProduct() {
         height: product.height ? parseFloat(product.height) : undefined,
         weight: product.weight ? parseFloat(product.weight) : undefined,
       });
+      // Set packing instructions state
+      setPackingInstructionsText(product.packingInstructionsText || "");
+      setPackingInstructionsImage(product.packingInstructionsImage || null);
     }
   }, [product, form]);
 
@@ -131,6 +137,10 @@ export default function EditProduct() {
         const { imageUrl } = await uploadResponse.json();
         data.imageUrl = imageUrl;
       }
+      
+      // Add packing instructions to the data
+      data.packingInstructionsText = packingInstructionsText;
+      data.packingInstructionsImage = packingInstructionsImage;
       
       await apiRequest('PATCH', `/api/products/${id}`, data);
     },
@@ -547,6 +557,15 @@ export default function EditProduct() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Packing Instructions */}
+        <PackingInstructionsUploader
+          packingInstructionsText={packingInstructionsText}
+          packingInstructionsImage={packingInstructionsImage || ""}
+          onTextChange={setPackingInstructionsText}
+          onImageChange={setPackingInstructionsImage}
+          productId={id}
+        />
 
         {/* Product Locations */}
         {id && <ProductLocations productId={id} productName={product?.name} />}

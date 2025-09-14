@@ -308,7 +308,10 @@ export const products = pgTable('products', {
   updatedAt: timestamp('updated_at').defaultNow(),
   warehouseLocation: varchar('warehouse_location'),
   shipmentNotes: text('shipment_notes'),
-  packingMaterialId: varchar('packing_material_id')
+  packingMaterialId: varchar('packing_material_id'),
+  // Packing instructions fields
+  packingInstructionsText: text('packing_instructions_text'),
+  packingInstructionsImage: text('packing_instructions_image')
 });
 
 export const orders = pgTable('orders', {

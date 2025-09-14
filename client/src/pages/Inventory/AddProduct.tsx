@@ -44,6 +44,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import PackingInstructionsUploader from "@/components/PackingInstructionsUploader";
 import {
   Dialog,
   DialogContent,
@@ -104,6 +105,8 @@ export default function AddProduct() {
     importCostCzk: "",
     importCostEur: "",
   });
+  const [packingInstructionsText, setPackingInstructionsText] = useState<string>("");
+  const [packingInstructionsImage, setPackingInstructionsImage] = useState<string | null>(null);
   
   // Auto-conversion state
   const conversionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -480,6 +483,8 @@ export default function AddProduct() {
       categoryId: data.categoryId || undefined,
       warehouseId: data.warehouseId || undefined,
       supplierId: data.supplierId || undefined,
+      packingInstructionsText: packingInstructionsText,
+      packingInstructionsImage: packingInstructionsImage,
       supplierLink: data.supplierLink || undefined,
       barcode: data.barcode || undefined,
     };
@@ -1127,6 +1132,14 @@ export default function AddProduct() {
             )}
           </CardContent>
         </Card>
+
+        {/* Packing Instructions */}
+        <PackingInstructionsUploader
+          packingInstructionsText={packingInstructionsText}
+          packingInstructionsImage={packingInstructionsImage || ""}
+          onTextChange={setPackingInstructionsText}
+          onImageChange={setPackingInstructionsImage}
+        />
             </div>
             {/* End of Main Column */}
 
