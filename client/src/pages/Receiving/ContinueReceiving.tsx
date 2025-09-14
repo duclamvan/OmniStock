@@ -145,6 +145,8 @@ export default function ContinueReceiving() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const photoProcessingRef = useRef<boolean>(false);
+  const photoUpdateTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingPhotoUpdatesRef = useRef<PhotoData[]>([]);
   
   // UI state
   const [currentStep, setCurrentStep] = useState(1);
@@ -1388,52 +1390,69 @@ export default function ContinueReceiving() {
   };
   
   const handleRemovePhoto = (index: number) => {
-    // Optimistic update - remove immediately from UI
+    // Store the photo being removed for potential restoration
     const photoToRemove = uploadedPhotos[index];
     
+    // Immediate optimistic UI update using functional setState
+    // This ensures we're always working with the latest state
     setUploadedPhotos(prev => {
+      // Filter out the photo at the specified index
       const updated = prev.filter((_, i) => i !== index);
       
-      // Save to server in background - non-blocking
-      // Convert to simple array for server (backward compatible)
-      const photosForServer = updated.map(photo => 
-        typeof photo === 'string' ? photo : photo.compressed
-      );
+      // Store the updated state in ref for the debounced server update
+      pendingPhotoUpdatesRef.current = updated;
       
-      setSaveStatus('saving');
-      updatePhotosMutation.mutate(photosForServer, {
-        onSuccess: () => {
-          setSaveStatus('saved');
-          setTimeout(() => setSaveStatus('idle'), 1000);
-          // Invalidate receipt query to ensure fresh photos when navigating back
-          queryClient.invalidateQueries({ queryKey: [`/api/imports/receipts/by-shipment/${id}`] });
-        },
-        onError: () => {
-          // Revert on error
-          setUploadedPhotos(current => {
-            // Re-insert the photo at the same position
-            const reverted = [...current];
-            reverted.splice(index, 0, photoToRemove);
-            return reverted;
-          });
-          
-          toast({
-            title: "Remove Failed",
-            description: "Failed to remove photo. Please try again.",
-            variant: "destructive"
-          });
-        }
-      });
+      // Clear any existing timer to debounce rapid removals
+      if (photoUpdateTimerRef.current) {
+        clearTimeout(photoUpdateTimerRef.current);
+      }
+      
+      // Set a new timer to send the update after a short delay
+      // This batches multiple rapid removals into a single server request
+      photoUpdateTimerRef.current = setTimeout(() => {
+        // Get the final state after all removals
+        const finalPhotos = pendingPhotoUpdatesRef.current;
+        
+        // Convert to simple array for server (backward compatible)
+        const photosForServer = finalPhotos.map(photo => 
+          typeof photo === 'string' ? photo : photo.compressed
+        );
+        
+        setSaveStatus('saving');
+        updatePhotosMutation.mutate(photosForServer, {
+          onSuccess: () => {
+            setSaveStatus('saved');
+            setTimeout(() => setSaveStatus('idle'), 1000);
+            // Invalidate receipt query to ensure fresh photos when navigating back
+            queryClient.invalidateQueries({ queryKey: [`/api/imports/receipts/by-shipment/${id}`] });
+          },
+          onError: () => {
+            // On error, sync state with what we tried to save
+            // This prevents inconsistency between UI and server
+            setUploadedPhotos(pendingPhotoUpdatesRef.current);
+            
+            toast({
+              title: "Save Failed",
+              description: "Failed to save photo changes. The photos have been restored.",
+              variant: "destructive"
+            });
+            setSaveStatus('idle');
+          }
+        });
+        
+        // Clear the timer ref
+        photoUpdateTimerRef.current = null;
+      }, 300); // 300ms delay to batch rapid removals
       
       return updated;
     });
     
-    // Instant feedback
+    // Instant feedback for each removal
     toast({
       title: "Photo Removed",
       description: "Photo deleted",
       className: "bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800",
-      duration: 2000
+      duration: 1500
     });
   };
 
