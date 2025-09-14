@@ -167,3 +167,98 @@ export function calculateSizeReduction(
   const reduction = ((originalSize - base64Size) / originalSize) * 100;
   return Math.max(0, Math.round(reduction));
 }
+
+/**
+ * Compress an image to generate both thumbnail and compressed versions
+ * @param file - The image file to process
+ * @param options - Compression options for the main image
+ * @returns Promise with both compressed and thumbnail versions as base64 data URLs
+ */
+export async function compressImageWithThumbnail(
+  file: File,
+  options: CompressionOptions = {}
+): Promise<{ compressed: string; thumbnail: string; originalSize: number }> {
+  const originalSize = file.size;
+  
+  // Generate compressed version (main image)
+  const compressedPromise = compressImage(file, {
+    maxWidth: options.maxWidth || 1920,
+    maxHeight: options.maxHeight || 1920,
+    quality: options.quality || 0.8,
+    format: options.format || 'jpeg'
+  });
+  
+  // Generate thumbnail version (small preview)
+  const thumbnailPromise = compressImage(file, {
+    maxWidth: 150,
+    maxHeight: 150,
+    quality: 0.7,
+    format: 'jpeg' // Always use JPEG for thumbnails for smaller size
+  });
+  
+  // Process both in parallel for efficiency
+  const [compressed, thumbnail] = await Promise.all([
+    compressedPromise,
+    thumbnailPromise
+  ]);
+  
+  return {
+    compressed,
+    thumbnail,
+    originalSize
+  };
+}
+
+/**
+ * Process multiple images with thumbnail generation in parallel
+ * @param files - Array of image files to process
+ * @param options - Compression options
+ * @param onProgress - Optional callback for progress updates
+ * @returns Promise with array of compressed images with thumbnails
+ */
+export async function compressImagesWithThumbnailsInParallel(
+  files: File[],
+  options: CompressionOptions = {},
+  onProgress?: (processed: number, total: number) => void
+): Promise<Array<{ compressed: string; thumbnail: string; originalSize: number }>> {
+  let processedCount = 0;
+  
+  const compressionPromises = files.map(async (file) => {
+    try {
+      const result = await compressImageWithThumbnail(file, options);
+      processedCount++;
+      onProgress?.(processedCount, files.length);
+      return result;
+    } catch (error) {
+      console.error('Failed to compress image:', file.name, error);
+      // Return original as fallback
+      processedCount++;
+      onProgress?.(processedCount, files.length);
+      return new Promise<{ compressed: string; thumbnail: string; originalSize: number }>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const dataUrl = reader.result as string;
+          resolve({
+            compressed: dataUrl,
+            thumbnail: dataUrl, // Use same image as fallback
+            originalSize: file.size
+          });
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+  });
+  
+  return Promise.all(compressionPromises);
+}
+
+/**
+ * Calculate base64 data URL size in bytes
+ * @param dataUrl - The base64 data URL
+ * @returns Size in bytes
+ */
+export function getBase64Size(dataUrl: string): number {
+  if (!dataUrl || !dataUrl.includes(',')) return 0;
+  return Math.round((dataUrl.length - dataUrl.indexOf(',') - 1) * 0.75);
+}

@@ -24,10 +24,12 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { 
-  compressImagesInParallel, 
+  compressImagesInParallel,
+  compressImagesWithThumbnailsInParallel, 
   createImagePreview, 
   revokeImagePreview,
-  calculateSizeReduction 
+  calculateSizeReduction,
+  getBase64Size
 } from "@/lib/imageCompression";
 import { 
   ArrowLeft, 
@@ -72,15 +74,26 @@ interface ReceivingItem {
 }
 
 // Enhanced Lazy loading image component with progressive loading and blur-up effect
-const LazyImage = ({ src, alt, className }: { src?: string; alt: string; className: string }) => {
+const LazyImage = ({ 
+  src, 
+  thumbnailSrc, 
+  alt, 
+  className,
+  loadFull = false
+}: { 
+  src?: string;
+  thumbnailSrc?: string;
+  alt: string;
+  className: string;
+  loadFull?: boolean;
+}) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [lowQualityLoaded, setLowQualityLoaded] = useState(false);
   
-  // Create a low-quality placeholder by using a smaller version if available
-  const lowQualitySrc = src && src.includes('base64') ? 
-    src : // For base64, use the original (already compressed)
-    src; // For URLs, could potentially use a thumbnail service
+  // Use thumbnail if available, otherwise use src
+  const lowQualitySrc = thumbnailSrc || src;
+  const fullSrc = loadFull ? src : thumbnailSrc || src;
   
   return (
     <>
@@ -104,9 +117,9 @@ const LazyImage = ({ src, alt, className }: { src?: string; alt: string; classNa
       )}
       
       {/* Main image with fade-in transition */}
-      {src && !hasError ? (
+      {fullSrc && !hasError ? (
         <img 
-          src={src} 
+          src={fullSrc} 
           alt={alt}
           className={`${className} ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-500 ease-out`}
           onLoad={() => {
@@ -123,7 +136,7 @@ const LazyImage = ({ src, alt, className }: { src?: string; alt: string; classNa
       ) : null}
       
       {/* Error fallback */}
-      {(hasError || !src) && !isLoading && (
+      {(hasError || (!src && !thumbnailSrc)) && !isLoading && (
         <div className={`${className} bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center`}>
           <Package2 className="h-8 w-8 text-gray-400" />
         </div>
@@ -159,7 +172,15 @@ export default function ContinueReceiving() {
   const [receivingItems, setReceivingItems] = useState<ReceivingItem[]>([]);
   const [notes, setNotes] = useState("");
   const [scannedTrackingNumbers, setScannedTrackingNumbers] = useState<string[]>([]);
-  const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
+  // Photo type for backward compatibility
+  type PhotoData = {
+    id: string;
+    compressed: string;
+    thumbnail: string;
+    originalSize?: number;
+  } | string; // Keep string for backward compatibility
+  
+  const [uploadedPhotos, setUploadedPhotos] = useState<PhotoData[]>([]);
   const [photosLoading, setPhotosLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
@@ -256,7 +277,20 @@ export default function ContinueReceiving() {
       if (receiptData.photos && Array.isArray(receiptData.photos) && receiptData.photos.length > 0) {
         // Load photos in next tick to not block UI updates
         requestAnimationFrame(() => {
-          setUploadedPhotos(receiptData.photos);
+          // Handle backward compatibility - photos can be strings or objects
+          const processedPhotos: PhotoData[] = receiptData.photos.map((photo: any, index: number) => {
+            // If it's already in new format, keep it
+            if (typeof photo === 'object' && 'compressed' in photo && 'thumbnail' in photo) {
+              return photo;
+            }
+            // If it's a string (old format), keep as is for backward compatibility
+            if (typeof photo === 'string') {
+              return photo;
+            }
+            // Shouldn't happen, but handle gracefully
+            return String(photo);
+          });
+          setUploadedPhotos(processedPhotos);
           setPhotosLoading(false);
         });
       } else {
@@ -1261,8 +1295,8 @@ export default function ContinueReceiving() {
     setUploadProgress(0);
     
     try {
-      // Compress all images in parallel for maximum speed
-      const compressedPhotos = await compressImagesInParallel(
+      // Compress all images with thumbnails in parallel for maximum speed
+      const compressedPhotosWithThumbnails = await compressImagesWithThumbnailsInParallel(
         filesArray,
         {
           maxWidth: 1920,
@@ -1278,18 +1312,32 @@ export default function ContinueReceiving() {
       
       // Calculate total size reduction for user feedback
       const originalSize = filesArray.reduce((sum, file) => sum + file.size, 0);
-      const compressedSize = compressedPhotos.reduce((sum, photo) => {
-        // Estimate base64 size
-        return sum + ((photo.length - photo.indexOf(',') - 1) * 0.75);
+      const compressedSize = compressedPhotosWithThumbnails.reduce((sum, photo) => {
+        // Calculate actual sizes
+        return sum + getBase64Size(photo.compressed) + getBase64Size(photo.thumbnail);
       }, 0);
       const reduction = Math.round(((originalSize - compressedSize) / originalSize) * 100);
       
-      // Update state with compressed photos
+      // Generate unique IDs and create photo objects
+      const newPhotos: PhotoData[] = compressedPhotosWithThumbnails.map((photo, index) => ({
+        id: `photo_${Date.now()}_${index}_${Math.random().toString(36).substring(2, 9)}`,
+        compressed: photo.compressed,
+        thumbnail: photo.thumbnail,
+        originalSize: photo.originalSize
+      }));
+      
+      // Update state with new photo objects
       setUploadedPhotos(prev => {
-        const updated = [...prev, ...compressedPhotos];
+        // Maintain backward compatibility - keep existing strings as is
+        const updated = [...prev, ...newPhotos];
         
-        // Save compressed photos to server - non-blocking
-        updatePhotosMutation.mutate(updated, {
+        // Save photos to server - non-blocking
+        // Convert to simple array for server (backward compatible)
+        const photosForServer = updated.map(photo => 
+          typeof photo === 'string' ? photo : photo.compressed
+        );
+        
+        updatePhotosMutation.mutate(photosForServer, {
           onSuccess: () => {
             setSaveStatus('saved');
             setTimeout(() => setSaveStatus('idle'), 1000);
@@ -1310,10 +1358,14 @@ export default function ContinueReceiving() {
         return updated;
       });
       
-      // Show success with size reduction info
+      // Show success with size reduction info and thumbnail info
+      const thumbnailSizeKB = Math.round(compressedPhotosWithThumbnails.reduce(
+        (sum, p) => sum + getBase64Size(p.thumbnail), 0
+      ) / 1024);
+      
       toast({
         title: "Photos Uploaded",
-        description: `Successfully uploaded ${totalFiles} photo${totalFiles > 1 ? 's' : ''}${reduction > 0 ? ` (${reduction}% smaller)` : ''}`,
+        description: `Successfully uploaded ${totalFiles} photo${totalFiles > 1 ? 's' : ''}${reduction > 0 ? ` (${reduction}% smaller)` : ''} • Thumbnails: ${thumbnailSizeKB}KB total`,
         className: "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800",
         duration: 3000
       });
@@ -1353,8 +1405,13 @@ export default function ContinueReceiving() {
       const updated = prev.filter((_, i) => i !== index);
       
       // Save to server in background - non-blocking
+      // Convert to simple array for server (backward compatible)
+      const photosForServer = updated.map(photo => 
+        typeof photo === 'string' ? photo : photo.compressed
+      );
+      
       setSaveStatus('saving');
-      updatePhotosMutation.mutate(updated, {
+      updatePhotosMutation.mutate(photosForServer, {
         onSuccess: () => {
           setSaveStatus('saved');
           setTimeout(() => setSaveStatus('idle'), 1000);
@@ -2309,37 +2366,70 @@ export default function ContinueReceiving() {
                     ))}
                     
                     {/* Regular uploaded photos */}
-                    {uploadedPhotos.map((photo, index) => (
-                      <div
-                        key={index}
-                        className="relative flex-shrink-0 group"
-                      >
-                        {/* Photo Container */}
-                        <div className="relative w-32 h-32 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-600 transition-colors">
-                          <LazyImage
-                            src={photo}
-                            alt={`Upload ${index + 1}`}
-                            className="w-full h-full object-cover"
-                          />
-                          {/* Overlay with photo number */}
-                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 z-10">
-                            <span className="text-white text-xs font-medium">
-                              Photo {index + 1}
-                            </span>
-                          </div>
-                          {/* Remove button */}
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="icon"
-                            onClick={() => handleRemovePhoto(index)}
-                            className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                    {uploadedPhotos.map((photo, index) => {
+                      // Handle both new format (with thumbnail) and old format (string)
+                      const isNewFormat = typeof photo === 'object' && 'thumbnail' in photo;
+                      const thumbnailSrc = isNewFormat ? photo.thumbnail : typeof photo === 'string' ? photo : undefined;
+                      const fullSrc = isNewFormat ? photo.compressed : typeof photo === 'string' ? photo : undefined;
+                      const sizeInfo = isNewFormat && photo.originalSize 
+                        ? `${Math.round(getBase64Size(photo.thumbnail) / 1024)}KB / ${Math.round(getBase64Size(photo.compressed) / 1024)}KB`
+                        : null;
+                      
+                      return (
+                        <div
+                          key={isNewFormat ? photo.id : `photo-${index}`}
+                          className="relative flex-shrink-0 group"
+                        >
+                          {/* Photo Container */}
+                          <div className="relative w-32 h-32 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-600 transition-colors cursor-pointer"
+                            onClick={() => {
+                              // TODO: Open in modal to view full image
+                              console.log('View full image:', fullSrc ? 'Full image available' : 'Legacy format');
+                            }}
                           >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
+                            <LazyImage
+                              src={fullSrc}
+                              thumbnailSrc={thumbnailSrc}
+                              alt={`Upload ${index + 1}`}
+                              className="w-full h-full object-cover"
+                              loadFull={false} // Only load thumbnail in grid
+                            />
+                            {/* Overlay with photo info */}
+                            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 z-10">
+                              <span className="text-white text-xs font-medium block">
+                                Photo {index + 1}
+                              </span>
+                              {sizeInfo && (
+                                <span className="text-white/80 text-[10px]">
+                                  {sizeInfo}
+                                </span>
+                              )}
+                            </div>
+                            {/* Remove button */}
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="icon"
+                              onClick={(e) => {
+                                e.stopPropagation(); // Prevent opening modal
+                                handleRemovePhoto(index);
+                              }}
+                              className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                            {/* Optimization indicator for new format */}
+                            {isNewFormat && (
+                              <div className="absolute top-1 left-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="bg-green-600 text-white text-[10px] px-1.5 py-0.5 rounded-full font-medium">
+                                  ⚡ Optimized
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                     
                     {/* Upload more placeholder - only show when not loading */}
                     {!photosLoading && (
