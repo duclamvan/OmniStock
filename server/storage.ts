@@ -10,6 +10,7 @@ import {
   customers,
   suppliers,
   products,
+  productLocations,
   orders,
   orderItems,
   warehouses,
@@ -35,6 +36,8 @@ import {
   type InsertSupplier,
   type Product,
   type InsertProduct,
+  type ProductLocation,
+  type InsertProductLocation,
   type Order,
   type InsertOrder,
   type OrderItem,
@@ -140,6 +143,13 @@ export interface IStorage {
   createProductVariant(variant: any): Promise<ProductVariant>;
   updateProductVariant(id: string, variant: any): Promise<ProductVariant | undefined>;
   deleteProductVariant(id: string): Promise<boolean>;
+  
+  // Product Locations
+  getProductLocations(productId: string): Promise<ProductLocation[]>;
+  createProductLocation(location: InsertProductLocation): Promise<ProductLocation>;
+  updateProductLocation(id: string, location: Partial<InsertProductLocation>): Promise<ProductLocation | undefined>;
+  deleteProductLocation(id: string): Promise<boolean>;
+  moveInventory(fromLocationId: string, toLocationId: string, quantity: number): Promise<boolean>;
   
   // Customers
   getCustomers(): Promise<Customer[]>;
@@ -707,7 +717,29 @@ export class DatabaseStorage implements IStorage {
   async getProducts(): Promise<Product[]> {
     try {
       const productsData = await db.select().from(products).orderBy(desc(products.createdAt));
-      return productsData;
+      
+      // Include primary location for each product
+      const productsWithLocations = await Promise.all(
+        productsData.map(async (product) => {
+          const [primaryLocation] = await db
+            .select()
+            .from(productLocations)
+            .where(
+              and(
+                eq(productLocations.productId, product.id),
+                eq(productLocations.isPrimary, true)
+              )
+            )
+            .limit(1);
+          
+          return {
+            ...product,
+            primaryLocation: primaryLocation || null
+          };
+        })
+      );
+      
+      return productsWithLocations;
     } catch (error) {
       console.error('Error fetching products:', error);
       return [];
@@ -717,7 +749,22 @@ export class DatabaseStorage implements IStorage {
   async getProduct(id: string): Promise<Product | undefined> {
     try {
       const [product] = await db.select().from(products).where(eq(products.id, id));
-      return product || undefined;
+      
+      if (!product) {
+        return undefined;
+      }
+      
+      // Include all locations for this product
+      const locations = await db
+        .select()
+        .from(productLocations)
+        .where(eq(productLocations.productId, id))
+        .orderBy(desc(productLocations.isPrimary), productLocations.locationCode);
+      
+      return {
+        ...product,
+        locations
+      };
     } catch (error) {
       console.error('Error fetching product:', error);
       return undefined;
@@ -806,6 +853,155 @@ export class DatabaseStorage implements IStorage {
 
   async deleteProductVariant(id: string): Promise<boolean> {
     return true;
+  }
+
+  // Product Locations
+  async getProductLocations(productId: string): Promise<ProductLocation[]> {
+    try {
+      const locations = await db
+        .select()
+        .from(productLocations)
+        .where(eq(productLocations.productId, productId))
+        .orderBy(desc(productLocations.isPrimary), productLocations.locationCode);
+      return locations;
+    } catch (error) {
+      console.error('Error fetching product locations:', error);
+      return [];
+    }
+  }
+
+  async createProductLocation(location: InsertProductLocation): Promise<ProductLocation> {
+    try {
+      // Check if location code already exists for this product
+      const existing = await db
+        .select()
+        .from(productLocations)
+        .where(
+          and(
+            eq(productLocations.productId, location.productId),
+            eq(productLocations.locationCode, location.locationCode)
+          )
+        );
+      
+      if (existing.length > 0) {
+        throw new Error('Location code already exists for this product');
+      }
+
+      // If this is marked as primary, unset other primary locations
+      if (location.isPrimary) {
+        await db
+          .update(productLocations)
+          .set({ isPrimary: false })
+          .where(eq(productLocations.productId, location.productId));
+      }
+
+      const [newLocation] = await db
+        .insert(productLocations)
+        .values(location)
+        .returning();
+      return newLocation;
+    } catch (error) {
+      console.error('Error creating product location:', error);
+      throw error;
+    }
+  }
+
+  async updateProductLocation(id: string, location: Partial<InsertProductLocation>): Promise<ProductLocation | undefined> {
+    try {
+      // If updating to primary, unset other primary locations
+      if (location.isPrimary) {
+        const [currentLocation] = await db
+          .select()
+          .from(productLocations)
+          .where(eq(productLocations.id, id));
+        
+        if (currentLocation) {
+          await db
+            .update(productLocations)
+            .set({ isPrimary: false })
+            .where(
+              and(
+                eq(productLocations.productId, currentLocation.productId),
+                ne(productLocations.id, id)
+              )
+            );
+        }
+      }
+
+      const [updated] = await db
+        .update(productLocations)
+        .set({ ...location, updatedAt: new Date() })
+        .where(eq(productLocations.id, id))
+        .returning();
+      return updated || undefined;
+    } catch (error) {
+      console.error('Error updating product location:', error);
+      return undefined;
+    }
+  }
+
+  async deleteProductLocation(id: string): Promise<boolean> {
+    try {
+      const result = await db
+        .delete(productLocations)
+        .where(eq(productLocations.id, id));
+      return (result.rowCount ?? 0) > 0;
+    } catch (error) {
+      console.error('Error deleting product location:', error);
+      return false;
+    }
+  }
+
+  async moveInventory(fromLocationId: string, toLocationId: string, quantity: number): Promise<boolean> {
+    try {
+      // Start a transaction
+      return await db.transaction(async (tx) => {
+        // Get both locations
+        const [fromLocation] = await tx
+          .select()
+          .from(productLocations)
+          .where(eq(productLocations.id, fromLocationId));
+        
+        const [toLocation] = await tx
+          .select()
+          .from(productLocations)
+          .where(eq(productLocations.id, toLocationId));
+        
+        if (!fromLocation || !toLocation) {
+          throw new Error('One or both locations not found');
+        }
+        
+        if (fromLocation.productId !== toLocation.productId) {
+          throw new Error('Locations must be for the same product');
+        }
+        
+        if (fromLocation.quantity < quantity) {
+          throw new Error('Insufficient quantity at source location');
+        }
+        
+        // Update quantities
+        await tx
+          .update(productLocations)
+          .set({ 
+            quantity: fromLocation.quantity - quantity,
+            updatedAt: new Date() 
+          })
+          .where(eq(productLocations.id, fromLocationId));
+        
+        await tx
+          .update(productLocations)
+          .set({ 
+            quantity: toLocation.quantity + quantity,
+            updatedAt: new Date() 
+          })
+          .where(eq(productLocations.id, toLocationId));
+        
+        return true;
+      });
+    } catch (error) {
+      console.error('Error moving inventory:', error);
+      return false;
+    }
   }
 
   // Customers

@@ -361,6 +361,19 @@ export const orderItems = pgTable('order_items', {
   createdAt: timestamp('created_at').notNull().defaultNow()
 });
 
+// Product warehouse locations table
+export const productLocations = pgTable('product_locations', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  productId: varchar('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
+  locationType: text('location_type').notNull().default('warehouse'), // display, warehouse, pallet, other
+  locationCode: varchar('location_code').notNull(), // WH1-A01-R02-L03 format
+  quantity: integer('quantity').notNull().default(0),
+  isPrimary: boolean('is_primary').default(false), // main location for this product
+  notes: text('notes'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
 export const discounts = pgTable('discounts', {
   id: serial('id').primaryKey(),
   discountId: text('discount_id').notNull().unique(),
@@ -500,7 +513,15 @@ export const productsRelations = relations(products, ({ one, many }) => ({
     fields: [products.warehouseId],
     references: [warehouses.id]
   }),
-  orderItems: many(orderItems)
+  orderItems: many(orderItems),
+  locations: many(productLocations)
+}));
+
+export const productLocationsRelations = relations(productLocations, ({ one }) => ({
+  product: one(products, {
+    fields: [productLocations.productId],
+    references: [products.id]
+  })
 }));
 
 export const ordersRelations = relations(orders, ({ one, many }) => ({
@@ -550,6 +571,15 @@ export const insertWarehouseSchema = createInsertSchema(warehouses).omit({ creat
 export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true });
 export const insertOrderItemSchema = createInsertSchema(orderItems).omit({ id: true, createdAt: true });
+export const insertProductLocationSchema = createInsertSchema(productLocations)
+  .omit({ id: true, createdAt: true, updatedAt: true })
+  .extend({
+    locationCode: z.string().regex(/^WH\d+-[A-Z]\d{2}-R\d{2}-L\d{2}$/, {
+      message: 'Location code must be in format: WH1-A01-R02-L03'
+    }),
+    locationType: z.enum(['display', 'warehouse', 'pallet', 'other']),
+    quantity: z.number().int().min(0, 'Quantity must be non-negative')
+  });
 export const insertDiscountSchema = createInsertSchema(discounts).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertExpenseSchema = createInsertSchema(expenses).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertUserActivitySchema = createInsertSchema(userActivities).omit({ id: true, createdAt: true });
@@ -591,6 +621,8 @@ export type Order = typeof orders.$inferSelect;
 export type InsertOrder = z.infer<typeof insertOrderSchema>;
 export type OrderItem = typeof orderItems.$inferSelect;
 export type InsertOrderItem = z.infer<typeof insertOrderItemSchema>;
+export type ProductLocation = typeof productLocations.$inferSelect;
+export type InsertProductLocation = z.infer<typeof insertProductLocationSchema>;
 export type Discount = typeof discounts.$inferSelect;
 export type InsertDiscount = z.infer<typeof insertDiscountSchema>;
 export type Expense = typeof expenses.$inferSelect;

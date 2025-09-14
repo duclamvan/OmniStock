@@ -12,6 +12,7 @@ import {
   insertCustomerSchema,
   insertSupplierSchema,
   insertProductSchema,
+  insertProductLocationSchema,
   insertOrderSchema,
   insertOrderItemSchema,
   insertDiscountSchema,
@@ -1424,6 +1425,161 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting product variants in bulk:", error);
       res.status(500).json({ message: "Failed to delete product variants" });
+    }
+  });
+
+  // Product Locations endpoints
+  app.get('/api/products/:id/locations', async (req, res) => {
+    try {
+      const productId = req.params.id;
+      const locations = await storage.getProductLocations(productId);
+      res.json(locations);
+    } catch (error) {
+      console.error("Error fetching product locations:", error);
+      res.status(500).json({ message: "Failed to fetch product locations" });
+    }
+  });
+
+  app.post('/api/products/:id/locations', async (req: any, res) => {
+    try {
+      const productId = req.params.id;
+      
+      // Validate product exists
+      const product = await storage.getProduct(productId);
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+      
+      // Parse and validate location data
+      const locationData = insertProductLocationSchema.parse({
+        ...req.body,
+        productId
+      });
+      
+      const location = await storage.createProductLocation(locationData);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'created',
+        entityType: 'product_location',
+        entityId: location.id,
+        description: `Added location ${location.locationCode} for product`,
+      });
+      
+      res.status(201).json(location);
+    } catch (error: any) {
+      console.error("Error creating product location:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ 
+          message: "Validation error", 
+          errors: error.errors 
+        });
+      }
+      if (error.message?.includes('Location code already exists')) {
+        return res.status(409).json({ message: error.message });
+      }
+      res.status(500).json({ message: "Failed to create product location" });
+    }
+  });
+
+  app.patch('/api/products/:id/locations/:locationId', async (req: any, res) => {
+    try {
+      const { locationId } = req.params;
+      
+      // Validate update data (partial schema)
+      const updateData = insertProductLocationSchema.partial().parse(req.body);
+      
+      const location = await storage.updateProductLocation(locationId, updateData);
+      
+      if (!location) {
+        return res.status(404).json({ message: "Location not found" });
+      }
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'updated',
+        entityType: 'product_location',
+        entityId: location.id,
+        description: `Updated location ${location.locationCode}`,
+      });
+      
+      res.json(location);
+    } catch (error: any) {
+      console.error("Error updating product location:", error);
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ 
+          message: "Validation error", 
+          errors: error.errors 
+        });
+      }
+      res.status(500).json({ message: "Failed to update product location" });
+    }
+  });
+
+  app.delete('/api/products/:id/locations/:locationId', async (req: any, res) => {
+    try {
+      const { locationId } = req.params;
+      
+      const success = await storage.deleteProductLocation(locationId);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Location not found" });
+      }
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'deleted',
+        entityType: 'product_location',
+        entityId: locationId,
+        description: `Deleted product location`,
+      });
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting product location:", error);
+      res.status(500).json({ message: "Failed to delete product location" });
+    }
+  });
+
+  app.post('/api/products/:id/locations/move', async (req: any, res) => {
+    try {
+      const { fromLocationId, toLocationId, quantity } = req.body;
+      
+      // Validate required fields
+      if (!fromLocationId || !toLocationId || !quantity) {
+        return res.status(400).json({ 
+          message: "Missing required fields: fromLocationId, toLocationId, quantity" 
+        });
+      }
+      
+      if (quantity <= 0) {
+        return res.status(400).json({ 
+          message: "Quantity must be greater than 0" 
+        });
+      }
+      
+      const success = await storage.moveInventory(fromLocationId, toLocationId, quantity);
+      
+      if (!success) {
+        return res.status(400).json({ 
+          message: "Failed to move inventory. Check locations and quantity." 
+        });
+      }
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'moved',
+        entityType: 'inventory',
+        entityId: req.params.id,
+        description: `Moved ${quantity} items between locations`,
+      });
+      
+      res.json({ message: "Inventory moved successfully", quantity });
+    } catch (error: any) {
+      console.error("Error moving inventory:", error);
+      res.status(500).json({ 
+        message: error.message || "Failed to move inventory" 
+      });
     }
   });
 
