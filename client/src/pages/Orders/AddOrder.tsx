@@ -19,6 +19,7 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 import { calculateShippingCost } from "@/lib/shippingCosts";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import OrderDocumentSelector from "@/components/OrderDocumentSelector";
 import { 
   Plus, 
   Search, 
@@ -97,6 +98,7 @@ export default function AddOrder() {
   const [debouncedProductSearch, setDebouncedProductSearch] = useState("");
   const [debouncedCustomerSearch, setDebouncedCustomerSearch] = useState("");
   const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
+  const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
   const [newCustomer, setNewCustomer] = useState({
     name: "",
     facebookName: "",
@@ -422,7 +424,14 @@ export default function AddOrder() {
       }
       
       console.log('Creating order with customerId:', data.customerId);
-      await apiRequest('/api/orders', 'POST', data);
+      
+      // Include selected document IDs with the order
+      const orderData = {
+        ...data,
+        selectedDocumentIds: selectedDocumentIds.length > 0 ? selectedDocumentIds : undefined
+      };
+      
+      await apiRequest('/api/orders', 'POST', orderData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
@@ -1414,6 +1423,18 @@ export default function AddOrder() {
             )}
           </CardContent>
         </Card>
+
+        {/* Document Selection */}
+        <OrderDocumentSelector
+          orderItems={orderItems.map(item => ({
+            productId: item.productId,
+            productName: item.productName,
+            sku: item.sku,
+            quantity: item.quantity
+          }))}
+          selectedDocumentIds={selectedDocumentIds}
+          onDocumentSelectionChange={setSelectedDocumentIds}
+        />
 
         {/* Payment Details - Mobile Optimized */}
         <Card className="shadow-sm">

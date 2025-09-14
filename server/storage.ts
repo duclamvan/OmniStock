@@ -10,6 +10,7 @@ import {
   customers,
   suppliers,
   products,
+  productFiles,
   productLocations,
   orders,
   orderItems,
@@ -36,6 +37,8 @@ import {
   type InsertSupplier,
   type Product,
   type InsertProduct,
+  type ProductFile,
+  type InsertProductFile,
   type ProductLocation,
   type InsertProductLocation,
   type Order,
@@ -150,6 +153,12 @@ export interface IStorage {
   updateProductLocation(id: string, location: Partial<InsertProductLocation>): Promise<ProductLocation | undefined>;
   deleteProductLocation(id: string): Promise<boolean>;
   moveInventory(fromLocationId: string, toLocationId: string, quantity: number): Promise<boolean>;
+  
+  // Product Files
+  getProductFiles(productId: string): Promise<ProductFile[]>;
+  getProductFile(id: string): Promise<ProductFile | undefined>;
+  createProductFile(file: InsertProductFile): Promise<ProductFile>;
+  deleteProductFile(id: string): Promise<boolean>;
   
   // Customers
   getCustomers(): Promise<Customer[]>;
@@ -948,6 +957,59 @@ export class DatabaseStorage implements IStorage {
       return (result.rowCount ?? 0) > 0;
     } catch (error) {
       console.error('Error deleting product location:', error);
+      return false;
+    }
+  }
+
+  // Product Files
+  async getProductFiles(productId: string): Promise<ProductFile[]> {
+    try {
+      const files = await db
+        .select()
+        .from(productFiles)
+        .where(eq(productFiles.productId, productId))
+        .orderBy(productFiles.fileType, productFiles.language);
+      return files;
+    } catch (error) {
+      console.error('Error fetching product files:', error);
+      return [];
+    }
+  }
+
+  async getProductFile(id: string): Promise<ProductFile | undefined> {
+    try {
+      const [file] = await db
+        .select()
+        .from(productFiles)
+        .where(eq(productFiles.id, id));
+      return file || undefined;
+    } catch (error) {
+      console.error('Error fetching product file:', error);
+      return undefined;
+    }
+  }
+
+  async createProductFile(file: InsertProductFile): Promise<ProductFile> {
+    try {
+      const [newFile] = await db
+        .insert(productFiles)
+        .values(file)
+        .returning();
+      return newFile;
+    } catch (error) {
+      console.error('Error creating product file:', error);
+      throw error;
+    }
+  }
+
+  async deleteProductFile(id: string): Promise<boolean> {
+    try {
+      const result = await db
+        .delete(productFiles)
+        .where(eq(productFiles.id, id));
+      return (result.rowCount ?? 0) > 0;
+    } catch (error) {
+      console.error('Error deleting product file:', error);
       return false;
     }
   }

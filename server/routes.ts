@@ -1119,6 +1119,133 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Product Files endpoints
+  app.get('/api/products/:id/files', async (req, res) => {
+    try {
+      const files = await storage.getProductFiles(req.params.id);
+      res.json(files);
+    } catch (error) {
+      console.error("Error fetching product files:", error);
+      res.status(500).json({ message: "Failed to fetch product files" });
+    }
+  });
+
+  // Configure multer for product file uploads
+  const productFileUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+    fileFilter: (req, file, cb) => {
+      const allowedTypes = /pdf|doc|docx|jpg|jpeg|png/;
+      const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+      
+      if (extname) {
+        return cb(null, true);
+      } else {
+        cb(new Error('Only PDF, DOC, DOCX, JPG, and PNG files are allowed'));
+      }
+    }
+  });
+
+  app.post('/api/products/:id/files', productFileUpload.single('file'), async (req: any, res) => {
+    try {
+      const productId = req.params.id;
+      
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+      
+      // Ensure upload directory exists
+      const uploadDir = 'server/uploads/product-files';
+      await fs.mkdir(uploadDir, { recursive: true });
+      
+      // Generate unique filename
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const ext = path.extname(req.file.originalname);
+      const filename = uniqueSuffix + ext;
+      const filepath = path.join(uploadDir, filename);
+      
+      // Save the file
+      await fs.writeFile(filepath, req.file.buffer);
+      
+      // Create database record
+      const fileData = {
+        productId,
+        fileType: req.body.fileType || 'other',
+        fileName: req.file.originalname,
+        filePath: filepath,
+        language: req.body.language || 'en',
+        displayName: req.body.displayName || req.file.originalname,
+        fileSize: req.file.size,
+        mimeType: req.file.mimetype
+      };
+      
+      const newFile = await storage.createProductFile(fileData);
+      
+      res.json(newFile);
+    } catch (error) {
+      console.error("Error uploading product file:", error);
+      res.status(500).json({ message: "Failed to upload product file" });
+    }
+  });
+
+  app.delete('/api/product-files/:fileId', async (req, res) => {
+    try {
+      const file = await storage.getProductFile(req.params.fileId);
+      
+      if (!file) {
+        return res.status(404).json({ message: "File not found" });
+      }
+      
+      // Delete physical file
+      try {
+        await fs.unlink(file.filePath);
+      } catch (error) {
+        console.error("Error deleting physical file:", error);
+        // Continue even if physical file deletion fails
+      }
+      
+      // Delete database record
+      const deleted = await storage.deleteProductFile(req.params.fileId);
+      
+      if (!deleted) {
+        return res.status(500).json({ message: "Failed to delete file" });
+      }
+      
+      res.json({ message: "File deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting product file:", error);
+      res.status(500).json({ message: "Failed to delete product file" });
+    }
+  });
+
+  app.get('/api/product-files/:fileId/download', async (req, res) => {
+    try {
+      const file = await storage.getProductFile(req.params.fileId);
+      
+      if (!file) {
+        return res.status(404).json({ message: "File not found" });
+      }
+      
+      // Check if file exists
+      try {
+        await fs.access(file.filePath);
+      } catch (error) {
+        return res.status(404).json({ message: "File not found on disk" });
+      }
+      
+      // Set appropriate headers
+      res.setHeader('Content-Type', file.mimeType);
+      res.setHeader('Content-Disposition', `attachment; filename="${file.fileName}"`);
+      
+      // Stream the file
+      const fileBuffer = await fs.readFile(file.filePath);
+      res.send(fileBuffer);
+    } catch (error) {
+      console.error("Error downloading product file:", error);
+      res.status(500).json({ message: "Failed to download product file" });
+    }
+  });
+
   app.post('/api/products/order-counts', async (req, res) => {
     try {
       const { productIds } = req.body;

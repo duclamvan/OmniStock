@@ -3963,6 +3963,60 @@ export default function PickPack() {
                   </CardContent>
                 </Card>
 
+                {/* Selected Documents to Print */}
+                {activePackingOrder?.selectedDocumentIds && activePackingOrder.selectedDocumentIds.length > 0 && (
+                  <Card className="shadow-xl border-0 bg-white">
+                    <CardHeader className="bg-gradient-to-r from-amber-600 to-orange-600 text-white">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        Documents to Include
+                        <Badge className="bg-red-600 text-white ml-auto">
+                          {activePackingOrder.selectedDocumentIds.length} Required
+                        </Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4">
+                      <div className="space-y-2">
+                        <Alert className="border-amber-200 bg-amber-50">
+                          <AlertCircle className="h-4 w-4 text-amber-600" />
+                          <AlertDescription className="text-xs text-amber-800">
+                            Print and include these documents with the shipment
+                          </AlertDescription>
+                        </Alert>
+                        
+                        {/* Mock document display for now - will be replaced with actual data */}
+                        <div className="space-y-2">
+                          {activePackingOrder.selectedDocumentIds.map((docId) => (
+                            <div key={docId} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                              <div className="flex items-center gap-3">
+                                <FileText className="h-4 w-4 text-gray-600" />
+                                <div>
+                                  <div className="text-sm font-medium">Document ID: {docId}</div>
+                                  <div className="text-xs text-gray-500">Ready to print</div>
+                                </div>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8"
+                                onClick={() => {
+                                  toast({
+                                    title: "Document Printed",
+                                    description: `Document ${docId} has been sent to printer`,
+                                  });
+                                }}
+                              >
+                                <Printer className="h-3 w-3 mr-1" />
+                                Print
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* Shipping Label Generator */}
                 <Card className="shadow-xl border-0">
                   <CardHeader className="bg-gradient-to-r from-indigo-500 to-blue-500 text-white">

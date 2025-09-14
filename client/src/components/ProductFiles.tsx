@@ -1,0 +1,527 @@
+import { useState } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { queryClient, apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  FileText,
+  Shield,
+  FileImage,
+  Award,
+  Book,
+  File,
+  Upload,
+  Download,
+  Trash2,
+  Plus,
+  X,
+} from 'lucide-react';
+
+interface ProductFile {
+  id: string;
+  productId: string;
+  fileType: string;
+  fileName: string;
+  filePath: string;
+  language: string;
+  displayName: string;
+  uploadedAt: string;
+  fileSize: number;
+  mimeType: string;
+}
+
+interface ProductFilesProps {
+  productId: string;
+}
+
+const FILE_TYPES = [
+  { value: 'sds', label: 'Safety Data Sheet (SDS)', icon: Shield },
+  { value: 'cpnp', label: 'CPNP Certificate', icon: Award },
+  { value: 'flyer', label: 'Product Flyer', icon: FileImage },
+  { value: 'certificate', label: 'Certificate', icon: Award },
+  { value: 'manual', label: 'User Manual', icon: Book },
+  { value: 'other', label: 'Other', icon: File },
+];
+
+const LANGUAGES = [
+  { value: 'en', label: 'English', flag: '🇬🇧' },
+  { value: 'cs', label: 'Czech', flag: '🇨🇿' },
+  { value: 'de', label: 'German', flag: '🇩🇪' },
+  { value: 'fr', label: 'French', flag: '🇫🇷' },
+  { value: 'es', label: 'Spanish', flag: '🇪🇸' },
+  { value: 'zh', label: 'Chinese', flag: '🇨🇳' },
+  { value: 'vn', label: 'Vietnamese', flag: '🇻🇳' },
+];
+
+function getFileTypeIcon(fileType: string) {
+  const type = FILE_TYPES.find(t => t.value === fileType);
+  return type ? type.icon : FileText;
+}
+
+function getFileTypeLabel(fileType: string) {
+  const type = FILE_TYPES.find(t => t.value === fileType);
+  return type ? type.label : fileType;
+}
+
+function getLanguageDisplay(language: string) {
+  const lang = LANGUAGES.find(l => l.value === language);
+  return lang ? `${lang.flag} ${lang.label}` : language;
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+}
+
+export default function ProductFiles({ productId }: ProductFilesProps) {
+  const { toast } = useToast();
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [uploadData, setUploadData] = useState({
+    fileType: 'other',
+    language: 'en',
+    displayName: '',
+    file: null as File | null,
+  });
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Fetch product files
+  const { data: files = [], isLoading } = useQuery<ProductFile[]>({
+    queryKey: ['/api/products', productId, 'files'],
+    queryFn: async () => {
+      const response = await fetch(`/api/products/${productId}/files`);
+      if (!response.ok) throw new Error('Failed to fetch product files');
+      return response.json();
+    },
+    enabled: !!productId,
+  });
+
+  // Upload file mutation
+  const uploadMutation = useMutation({
+    mutationFn: async () => {
+      if (!uploadData.file) throw new Error('No file selected');
+      
+      const formData = new FormData();
+      formData.append('file', uploadData.file);
+      formData.append('fileType', uploadData.fileType);
+      formData.append('language', uploadData.language);
+      formData.append('displayName', uploadData.displayName || uploadData.file.name);
+      
+      const response = await fetch(`/api/products/${productId}/files`, {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) throw new Error('Failed to upload file');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/products', productId, 'files'] });
+      toast({
+        title: 'Success',
+        description: 'File uploaded successfully',
+      });
+      setIsUploadOpen(false);
+      setUploadData({
+        fileType: 'other',
+        language: 'en',
+        displayName: '',
+        file: null,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Delete file mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (fileId: string) => {
+      await apiRequest('DELETE', `/api/product-files/${fileId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/products', productId, 'files'] });
+      toast({
+        title: 'Success',
+        description: 'File deleted successfully',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Group files by type
+  const groupedFiles = files.reduce((acc, file) => {
+    if (!acc[file.fileType]) {
+      acc[file.fileType] = [];
+    }
+    acc[file.fileType].push(file);
+    return acc;
+  }, {} as Record<string, ProductFile[]>);
+
+  const handleDownload = (file: ProductFile) => {
+    window.open(`/api/product-files/${file.id}/download`, '_blank');
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      const file = files[0];
+      setUploadData(prev => ({ ...prev, file }));
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      setUploadData(prev => ({ ...prev, file: files[0] }));
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Product Documents</CardTitle>
+          <CardDescription>Manage product documentation and certificates</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>
+              Product Documents 
+              {files.length > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {files.length} {files.length === 1 ? 'file' : 'files'}
+                </Badge>
+              )}
+            </CardTitle>
+            <CardDescription>Manage product documentation and certificates</CardDescription>
+          </div>
+          <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
+            <DialogTrigger asChild>
+              <Button data-testid="button-upload-document">
+                <Plus className="h-4 w-4 mr-2" />
+                Upload Document
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Upload Product Document</DialogTitle>
+                <DialogDescription>
+                  Add a new document or certificate for this product
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="fileType">Document Type</Label>
+                  <Select
+                    value={uploadData.fileType}
+                    onValueChange={(value) => setUploadData(prev => ({ ...prev, fileType: value }))}
+                  >
+                    <SelectTrigger data-testid="select-file-type">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {FILE_TYPES.map(type => {
+                        const Icon = type.icon;
+                        return (
+                          <SelectItem key={type.value} value={type.value}>
+                            <div className="flex items-center">
+                              <Icon className="h-4 w-4 mr-2" />
+                              {type.label}
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="language">Language</Label>
+                  <Select
+                    value={uploadData.language}
+                    onValueChange={(value) => setUploadData(prev => ({ ...prev, language: value }))}
+                  >
+                    <SelectTrigger data-testid="select-language">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LANGUAGES.map(lang => (
+                        <SelectItem key={lang.value} value={lang.value}>
+                          <span>{lang.flag} {lang.label}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="displayName">Display Name (optional)</Label>
+                  <Input
+                    id="displayName"
+                    data-testid="input-display-name"
+                    value={uploadData.displayName}
+                    onChange={(e) => setUploadData(prev => ({ ...prev, displayName: e.target.value }))}
+                    placeholder="Enter a friendly name for this document"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>File</Label>
+                  <div
+                    className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                      isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'
+                    }`}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                  >
+                    {uploadData.file ? (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <FileText className="h-4 w-4 mr-2" />
+                          <span className="text-sm">{uploadData.file.name}</span>
+                          <Badge variant="secondary" className="ml-2">
+                            {formatFileSize(uploadData.file.size)}
+                          </Badge>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setUploadData(prev => ({ ...prev, file: null }))}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Drag and drop a file here, or click to browse
+                        </p>
+                        <Input
+                          type="file"
+                          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                          onChange={handleFileSelect}
+                          className="hidden"
+                          id="file-upload"
+                          data-testid="input-file"
+                        />
+                        <label htmlFor="file-upload">
+                          <Button variant="secondary" size="sm" asChild>
+                            <span>Choose File</span>
+                          </Button>
+                        </label>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          PDF, DOC, DOCX, JPG, PNG (max 10MB)
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsUploadOpen(false)}
+                  disabled={uploadMutation.isPending}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => uploadMutation.mutate()}
+                  disabled={!uploadData.file || uploadMutation.isPending}
+                  data-testid="button-upload"
+                >
+                  {uploadMutation.isPending ? 'Uploading...' : 'Upload'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {files.length === 0 ? (
+          <div className="text-center py-8">
+            <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <p className="text-muted-foreground">No documents uploaded yet</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Upload documents to make them available for orders
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {Object.entries(groupedFiles).map(([fileType, typeFiles]) => {
+              const Icon = getFileTypeIcon(fileType);
+              return (
+                <div key={fileType} className="space-y-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Icon className="h-5 w-5 text-muted-foreground" />
+                    <h3 className="font-medium">{getFileTypeLabel(fileType)}</h3>
+                    <Badge variant="outline">{typeFiles.length}</Badge>
+                  </div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Language</TableHead>
+                        <TableHead>Size</TableHead>
+                        <TableHead>Uploaded</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {typeFiles.map((file) => (
+                        <TableRow key={file.id}>
+                          <TableCell data-testid={`text-file-name-${file.id}`}>
+                            {file.displayName}
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm">{getLanguageDisplay(file.language)}</span>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">
+                              {formatFileSize(file.fileSize)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {new Date(file.uploadedAt).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDownload(file)}
+                                data-testid={`button-download-${file.id}`}
+                              >
+                                <Download className="h-4 w-4" />
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    data-testid={`button-delete-${file.id}`}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Document</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to delete "{file.displayName}"? This action cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => deleteMutation.mutate(file.id)}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

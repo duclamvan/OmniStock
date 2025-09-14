@@ -28,6 +28,7 @@ import {
 import ProductVariants from "@/components/ProductVariants";
 import ProductLocations from "@/components/ProductLocations";
 import PackingInstructionsUploader from "@/components/PackingInstructionsUploader";
+import ProductFiles from "@/components/ProductFiles";
 
 const editProductSchema = z.object({
   name: z.string().min(1, "Product name is required"),
@@ -569,6 +570,9 @@ export default function EditProduct() {
 
         {/* Product Locations */}
         {id && <ProductLocations productId={id} productName={product?.name} />}
+
+        {/* Product Files */}
+        {id && <ProductFiles productId={id} />}
 
         {/* Product Variants */}
         {id && <ProductVariants productId={id} />}

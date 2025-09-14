@@ -351,7 +351,22 @@ export const orders = pgTable('orders', {
   modifiedAfterPacking: boolean('modified_after_packing').default(false),
   modificationNotes: text('modification_notes'),
   lastModifiedAt: timestamp('last_modified_at'),
-  previousPackStatus: varchar('previous_pack_status')
+  previousPackStatus: varchar('previous_pack_status'),
+  selectedDocumentIds: text('selected_document_ids').array() // Array of product_file IDs to print
+});
+
+// Product Files table for document management
+export const productFiles = pgTable('product_files', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  productId: varchar('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
+  fileType: varchar('file_type').notNull(), // 'sds', 'cpnp', 'flyer', 'certificate', 'manual', 'other'
+  fileName: text('file_name').notNull(),
+  filePath: text('file_path').notNull(),
+  language: varchar('language').notNull().default('en'), // 'en', 'cs', 'de', 'fr', 'es', 'zh'
+  displayName: text('display_name').notNull(),
+  uploadedAt: timestamp('uploaded_at').notNull().defaultNow(),
+  fileSize: integer('file_size').notNull(),
+  mimeType: varchar('mime_type').notNull()
 });
 
 export const orderItems = pgTable('order_items', {
@@ -572,6 +587,7 @@ export const insertCustomerSchema = createInsertSchema(customers).omit({ id: tru
 export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertWarehouseSchema = createInsertSchema(warehouses).omit({ createdAt: true });
 export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertProductFileSchema = createInsertSchema(productFiles).omit({ id: true, uploadedAt: true });
 export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true });
 export const insertOrderItemSchema = createInsertSchema(orderItems).omit({ id: true, createdAt: true });
 export const insertProductLocationSchema = createInsertSchema(productLocations)
@@ -620,6 +636,8 @@ export type Warehouse = typeof warehouses.$inferSelect;
 export type InsertWarehouse = z.infer<typeof insertWarehouseSchema>;
 export type Product = typeof products.$inferSelect;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
+export type ProductFile = typeof productFiles.$inferSelect;
+export type InsertProductFile = z.infer<typeof insertProductFileSchema>;
 export type Order = typeof orders.$inferSelect;
 export type InsertOrder = z.infer<typeof insertOrderSchema>;
 export type OrderItem = typeof orderItems.$inferSelect;
