@@ -73,75 +73,35 @@ interface ReceivingItem {
   imageUrl?: string;
 }
 
-// Enhanced Lazy loading image component with progressive loading and blur-up effect
+// Optimized thumbnail-only image component for maximum speed
 const LazyImage = ({ 
-  src, 
   thumbnailSrc, 
   alt, 
-  className,
-  loadFull = false
+  className
 }: { 
-  src?: string;
   thumbnailSrc?: string;
   alt: string;
   className: string;
-  loadFull?: boolean;
 }) => {
-  const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
-  const [lowQualityLoaded, setLowQualityLoaded] = useState(false);
   
-  // Use thumbnail if available, otherwise use src
-  const lowQualitySrc = thumbnailSrc || src;
-  const fullSrc = loadFull ? src : thumbnailSrc || src;
+  // Direct display with minimal overhead - thumbnails are tiny and load instantly
+  if (!thumbnailSrc || hasError) {
+    return (
+      <div className={`${className} bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center`}>
+        <Package2 className="h-8 w-8 text-gray-400" />
+      </div>
+    );
+  }
   
   return (
-    <>
-      {/* Blurred placeholder backdrop */}
-      {isLoading && !hasError && (
-        <div className={`${className} absolute inset-0 animate-pulse`}>
-          {/* Progressive blur effect */}
-          <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900" />
-          {lowQualityLoaded && src && (
-            <img 
-              src={lowQualitySrc}
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover filter blur-sm scale-110 opacity-50"
-              aria-hidden="true"
-            />
-          )}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Loader2 className="h-6 w-6 text-gray-400 animate-spin" />
-          </div>
-        </div>
-      )}
-      
-      {/* Main image with fade-in transition */}
-      {fullSrc && !hasError ? (
-        <img 
-          src={fullSrc} 
-          alt={alt}
-          className={`${className} ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-500 ease-out`}
-          onLoad={() => {
-            setLowQualityLoaded(true);
-            // Small delay for smoother transition
-            setTimeout(() => setIsLoading(false), 50);
-          }}
-          onError={() => {
-            setIsLoading(false);
-            setHasError(true);
-          }}
-          loading="lazy"
-        />
-      ) : null}
-      
-      {/* Error fallback */}
-      {(hasError || (!src && !thumbnailSrc)) && !isLoading && (
-        <div className={`${className} bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center`}>
-          <Package2 className="h-8 w-8 text-gray-400" />
-        </div>
-      )}
-    </>
+    <img 
+      src={thumbnailSrc} 
+      alt={alt}
+      className={className}
+      onError={() => setHasError(true)}
+      loading="eager" // Eager load thumbnails for instant display
+    />
   );
 };
 
@@ -211,7 +171,7 @@ export default function ContinueReceiving() {
     refetchOnReconnect: false
   });
 
-  // Fetch receipt with smart caching - always refetch on mount to ensure fresh data
+  // Fetch receipt with instant update on mount - critical for photo sync
   const { data: receipt, isLoading: receiptLoading } = useQuery({
     queryKey: [`/api/imports/receipts/by-shipment/${id}`],
     queryFn: async () => {
@@ -220,10 +180,10 @@ export default function ContinueReceiving() {
       return response.json();
     },
     enabled: !!id,
-    staleTime: 10 * 1000, // Receipt data fresh for 10 seconds during active editing
+    staleTime: 0, // Always consider stale for instant photo updates
     gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
-    refetchOnMount: 'always', // Always refetch on mount to ensure fresh photos
-    refetchOnWindowFocus: false,
+    refetchOnMount: 'always', // Critical: Always refetch on mount for fresh photos
+    refetchOnWindowFocus: true, // Refetch when returning to tab
     refetchOnReconnect: false
   });
 
@@ -575,7 +535,7 @@ export default function ContinueReceiving() {
     }
   });
   
-  // Mutation for photos (keep existing but optimized)
+  // Optimized photo mutation with instant cache updates
   const updatePhotosMutation = useMutation({
     mutationFn: async (photos: string[]) => {
       const receiptId = receipt?.receipt?.id || receipt?.id;
@@ -603,12 +563,42 @@ export default function ContinueReceiving() {
       if (!response.ok) throw new Error('Failed to update photos');
       return response.json();
     },
-    onSuccess: () => {
-      // Invalidate receipt query to ensure fresh data when navigating back
-      queryClient.invalidateQueries({ queryKey: [`/api/imports/receipts/by-shipment/${id}`] });
+    onMutate: async (newPhotos) => {
+      // Optimistic update for instant UI response
+      await queryClient.cancelQueries({ queryKey: [`/api/imports/receipts/by-shipment/${id}`] });
+      
+      const previousData = queryClient.getQueryData([`/api/imports/receipts/by-shipment/${id}`]);
+      
+      // Update cache immediately for instant feedback
+      queryClient.setQueryData([`/api/imports/receipts/by-shipment/${id}`], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          receipt: {
+            ...old.receipt,
+            photos: newPhotos
+          }
+        };
+      });
+      
+      return { previousData };
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
+      // Rollback on error
+      if (context?.previousData) {
+        queryClient.setQueryData([`/api/imports/receipts/by-shipment/${id}`], context.previousData);
+      }
       console.error('Photos update failed:', error);
+      toast({
+        title: "Failed to update photos",
+        description: "Please try again",
+        variant: "destructive"
+      });
+    },
+    onSuccess: () => {
+      // Double-ensure fresh data with immediate invalidation
+      queryClient.invalidateQueries({ queryKey: [`/api/imports/receipts/by-shipment/${id}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts'] });
     }
   });
 
@@ -2089,7 +2079,7 @@ export default function ContinueReceiving() {
                             <div className="flex justify-center sm:justify-start">
                               <div className="relative flex-shrink-0 w-20 h-20">
                                 <LazyImage 
-                                  src={item.imageUrl}
+                                  thumbnailSrc={item.imageUrl}
                                   alt={item.name}
                                   className="w-20 h-20 object-cover rounded-lg border-2 border-gray-300 dark:border-gray-600 shadow-lg bg-white dark:bg-gray-800"
                                 />
@@ -2365,14 +2355,13 @@ export default function ContinueReceiving() {
                       </div>
                     ))}
                     
-                    {/* Regular uploaded photos */}
+                    {/* Optimized thumbnail-only photo display */}
                     {uploadedPhotos.map((photo, index) => {
                       // Handle both new format (with thumbnail) and old format (string)
                       const isNewFormat = typeof photo === 'object' && 'thumbnail' in photo;
                       const thumbnailSrc = isNewFormat ? photo.thumbnail : typeof photo === 'string' ? photo : undefined;
-                      const fullSrc = isNewFormat ? photo.compressed : typeof photo === 'string' ? photo : undefined;
-                      const sizeInfo = isNewFormat && photo.originalSize 
-                        ? `${Math.round(getBase64Size(photo.thumbnail) / 1024)}KB / ${Math.round(getBase64Size(photo.compressed) / 1024)}KB`
+                      const sizeInfo = isNewFormat
+                        ? `${Math.round(getBase64Size(photo.thumbnail) / 1024)}KB`
                         : null;
                       
                       return (
@@ -2380,19 +2369,12 @@ export default function ContinueReceiving() {
                           key={isNewFormat ? photo.id : `photo-${index}`}
                           className="relative flex-shrink-0 group"
                         >
-                          {/* Photo Container */}
-                          <div className="relative w-32 h-32 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-600 transition-colors cursor-pointer"
-                            onClick={() => {
-                              // TODO: Open in modal to view full image
-                              console.log('View full image:', fullSrc ? 'Full image available' : 'Legacy format');
-                            }}
-                          >
+                          {/* Photo Container - optimized for thumbnails only */}
+                          <div className="relative w-32 h-32 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-600 transition-colors">
                             <LazyImage
-                              src={fullSrc}
                               thumbnailSrc={thumbnailSrc}
                               alt={`Upload ${index + 1}`}
                               className="w-full h-full object-cover"
-                              loadFull={false} // Only load thumbnail in grid
                             />
                             {/* Overlay with photo info */}
                             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 z-10">
@@ -2405,13 +2387,13 @@ export default function ContinueReceiving() {
                                 </span>
                               )}
                             </div>
-                            {/* Remove button */}
+                            {/* Remove button - instant update */}
                             <Button
                               type="button"
                               variant="destructive"
                               size="icon"
                               onClick={(e) => {
-                                e.stopPropagation(); // Prevent opening modal
+                                e.stopPropagation();
                                 handleRemovePhoto(index);
                               }}
                               className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -2422,7 +2404,7 @@ export default function ContinueReceiving() {
                             {isNewFormat && (
                               <div className="absolute top-1 left-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <div className="bg-green-600 text-white text-[10px] px-1.5 py-0.5 rounded-full font-medium">
-                                  ⚡ Optimized
+                                  ⚡ Fast
                                 </div>
                               </div>
                             )}
