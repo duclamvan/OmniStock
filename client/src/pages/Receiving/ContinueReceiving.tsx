@@ -24,6 +24,12 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { 
+  compressImagesInParallel, 
+  createImagePreview, 
+  revokeImagePreview,
+  calculateSizeReduction 
+} from "@/lib/imageCompression";
+import { 
   ArrowLeft, 
   Package, 
   Plus,
@@ -47,7 +53,8 @@ import {
   Layers,
   Upload,
   ImagePlus,
-  Trash2
+  Trash2,
+  Loader2
 } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
@@ -64,28 +71,58 @@ interface ReceivingItem {
   imageUrl?: string;
 }
 
-// Lazy loading image component
+// Enhanced Lazy loading image component with progressive loading and blur-up effect
 const LazyImage = ({ src, alt, className }: { src?: string; alt: string; className: string }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [lowQualityLoaded, setLowQualityLoaded] = useState(false);
+  
+  // Create a low-quality placeholder by using a smaller version if available
+  const lowQualitySrc = src && src.includes('base64') ? 
+    src : // For base64, use the original (already compressed)
+    src; // For URLs, could potentially use a thumbnail service
   
   return (
     <>
+      {/* Blurred placeholder backdrop */}
       {isLoading && !hasError && (
-        <Skeleton className={`${className} absolute inset-0`} />
+        <div className={`${className} absolute inset-0 animate-pulse`}>
+          {/* Progressive blur effect */}
+          <div className="absolute inset-0 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900" />
+          {lowQualityLoaded && src && (
+            <img 
+              src={lowQualitySrc}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover filter blur-sm scale-110 opacity-50"
+              aria-hidden="true"
+            />
+          )}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Loader2 className="h-6 w-6 text-gray-400 animate-spin" />
+          </div>
+        </div>
       )}
+      
+      {/* Main image with fade-in transition */}
       {src && !hasError ? (
         <img 
           src={src} 
           alt={alt}
-          className={`${className} ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
-          onLoad={() => setIsLoading(false)}
+          className={`${className} ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-500 ease-out`}
+          onLoad={() => {
+            setLowQualityLoaded(true);
+            // Small delay for smoother transition
+            setTimeout(() => setIsLoading(false), 50);
+          }}
           onError={() => {
             setIsLoading(false);
             setHasError(true);
           }}
+          loading="lazy"
         />
       ) : null}
+      
+      {/* Error fallback */}
       {(hasError || !src) && !isLoading && (
         <div className={`${className} bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center`}>
           <Package2 className="h-8 w-8 text-gray-400" />
@@ -124,6 +161,9 @@ export default function ContinueReceiving() {
   const [scannedTrackingNumbers, setScannedTrackingNumbers] = useState<string[]>([]);
   const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
   const [photosLoading, setPhotosLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const photoProcessingRef = useRef<boolean>(false);
   
   // UI state
   const [currentStep, setCurrentStep] = useState(1);
@@ -1199,77 +1239,146 @@ export default function ContinueReceiving() {
   // Photo upload handlers
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files) return;
+    if (!files || files.length === 0 || photoProcessingRef.current) return;
     
-    let processedCount = 0;
-    const totalFiles = files.length;
-    const newPhotos: string[] = [];
+    // Prevent concurrent uploads
+    photoProcessingRef.current = true;
+    const filesArray = Array.from(files);
+    const totalFiles = filesArray.length;
     
-    Array.from(files).forEach(file => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (reader.result && typeof reader.result === 'string') {
-          newPhotos.push(reader.result);
-          processedCount++;
-          
-          // When all files are processed, update state and save photos only
-          if (processedCount === totalFiles) {
-            setUploadedPhotos(prev => {
-              const updated = [...prev, ...newPhotos];
-              
-              // Save photos only - optimized
-              setSaveStatus('saving');
-              updatePhotosMutation.mutate(updated, {
-                onSuccess: () => {
-                  setSaveStatus('saved');
-                  setTimeout(() => setSaveStatus('idle'), 1000);
-                  
-                  // Show confirmation toast
-                  toast({
-                    title: "Photos Uploaded",
-                    description: `${newPhotos.length} photo${newPhotos.length > 1 ? 's' : ''} added and saved`,
-                    className: "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800",
-                    duration: 3000
-                  });
-                }
-              });
-              
-              return updated;
+    // Create immediate previews using object URLs for instant feedback
+    const immediatePreviewUrls = filesArray.map(file => createImagePreview(file));
+    setPreviewUrls(prev => [...prev, ...immediatePreviewUrls]);
+    
+    // Show upload progress
+    setPhotosLoading(true);
+    setUploadProgress(0);
+    
+    try {
+      // Compress all images in parallel for maximum speed
+      const compressedPhotos = await compressImagesInParallel(
+        filesArray,
+        {
+          maxWidth: 1920,
+          maxHeight: 1920,
+          quality: 0.8,
+          format: 'jpeg'
+        },
+        (processed, total) => {
+          // Update progress
+          setUploadProgress(Math.round((processed / total) * 100));
+        }
+      );
+      
+      // Calculate total size reduction for user feedback
+      const originalSize = filesArray.reduce((sum, file) => sum + file.size, 0);
+      const compressedSize = compressedPhotos.reduce((sum, photo) => {
+        // Estimate base64 size
+        return sum + ((photo.length - photo.indexOf(',') - 1) * 0.75);
+      }, 0);
+      const reduction = Math.round(((originalSize - compressedSize) / originalSize) * 100);
+      
+      // Update state with compressed photos
+      setUploadedPhotos(prev => {
+        const updated = [...prev, ...compressedPhotos];
+        
+        // Save compressed photos to server - non-blocking
+        updatePhotosMutation.mutate(updated, {
+          onSuccess: () => {
+            setSaveStatus('saved');
+            setTimeout(() => setSaveStatus('idle'), 1000);
+          },
+          onError: () => {
+            // Don't revert UI, just show error
+            toast({
+              title: "Save Failed",
+              description: "Photos uploaded but failed to save. They will be saved with next update.",
+              variant: "destructive"
             });
           }
-        }
-      };
-      reader.readAsDataURL(file);
-    });
-    
-    // Clear the input value to allow uploading the same file again
-    e.target.value = '';
+        });
+        
+        setSaveStatus('saving');
+        return updated;
+      });
+      
+      // Show success with size reduction info
+      toast({
+        title: "Photos Uploaded",
+        description: `Successfully uploaded ${totalFiles} photo${totalFiles > 1 ? 's' : ''}${reduction > 0 ? ` (${reduction}% smaller)` : ''}`,
+        className: "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800",
+        duration: 3000
+      });
+      
+      // Clean up preview URLs after successful upload
+      immediatePreviewUrls.forEach(url => revokeImagePreview(url));
+      setPreviewUrls(prev => prev.filter(url => !immediatePreviewUrls.includes(url)));
+      
+    } catch (error) {
+      console.error('Photo upload error:', error);
+      
+      // Clean up preview URLs on error
+      immediatePreviewUrls.forEach(url => revokeImagePreview(url));
+      setPreviewUrls(prev => prev.filter(url => !immediatePreviewUrls.includes(url)));
+      
+      toast({
+        title: "Upload Failed",
+        description: "Failed to process photos. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      // Reset states
+      setPhotosLoading(false);
+      setUploadProgress(0);
+      photoProcessingRef.current = false;
+      
+      // Clear the input value to allow uploading the same file again
+      e.target.value = '';
+    }
   };
   
   const handleRemovePhoto = (index: number) => {
+    // Optimistic update - remove immediately from UI
+    const photoToRemove = uploadedPhotos[index];
+    
     setUploadedPhotos(prev => {
       const updated = prev.filter((_, i) => i !== index);
       
-      // Save photos only - optimized
+      // Save to server in background - non-blocking
       setSaveStatus('saving');
       updatePhotosMutation.mutate(updated, {
         onSuccess: () => {
           setSaveStatus('saved');
           setTimeout(() => setSaveStatus('idle'), 1000);
+        },
+        onError: () => {
+          // Revert on error
+          setUploadedPhotos(current => {
+            // Re-insert the photo at the same position
+            const reverted = [...current];
+            reverted.splice(index, 0, photoToRemove);
+            return reverted;
+          });
           
-          // Show confirmation toast
           toast({
-            title: "Photo Removed",
-            description: "Photo deleted and changes saved",
-            className: "bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800",
-            duration: 2000
+            title: "Remove Failed",
+            description: "Failed to remove photo. Please try again.",
+            variant: "destructive"
           });
         }
       });
       
       return updated;
+    });
+    
+    // Instant feedback
+    toast({
+      title: "Photo Removed",
+      description: "Photo deleted",
+      className: "bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800",
+      duration: 2000
     });
   };
 
@@ -2150,71 +2259,91 @@ export default function ContinueReceiving() {
                 </span>
               </div>
 
+              {/* Upload Progress Bar */}
+              {photosLoading && uploadProgress > 0 && (
+                <div className="mb-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm text-muted-foreground">
+                      Compressing and uploading photos...
+                    </span>
+                    <span className="text-sm font-medium">{uploadProgress}%</span>
+                  </div>
+                  <Progress value={uploadProgress} className="h-2" />
+                </div>
+              )}
+
               {/* Photos Grid - Horizontal Scrollable Layout */}
-              {(uploadedPhotos.length > 0 || photosLoading) && (
+              {(uploadedPhotos.length > 0 || photosLoading || previewUrls.length > 0) && (
                 <div className="relative">
                   <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
-                    {photosLoading ? (
-                      // Show skeleton loaders while photos are loading
-                      <>
-                        {[...Array(3)].map((_, index) => (
-                          <div
-                            key={`skeleton-${index}`}
-                            className="relative flex-shrink-0 group"
-                          >
-                            <div className="relative w-32 h-32 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700">
-                              <Skeleton className="w-full h-full" />
-                              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
-                                <Skeleton className="h-3 w-16" />
-                              </div>
-                            </div>
+                    {/* Show preview URLs while processing */}
+                    {previewUrls.map((preview, index) => (
+                      <div
+                        key={`preview-${index}`}
+                        className="relative flex-shrink-0 group"
+                      >
+                        <div className="relative w-32 h-32 rounded-lg overflow-hidden border-2 border-blue-400 dark:border-blue-600 animate-pulse">
+                          <img
+                            src={preview}
+                            alt={`Processing ${index + 1}`}
+                            className="w-full h-full object-cover opacity-70"
+                          />
+                          <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center">
+                            <Loader2 className="h-6 w-6 text-white animate-spin" />
                           </div>
-                        ))}
-                      </>
-                    ) : (
-                      <>
-                        {uploadedPhotos.map((photo, index) => (
-                          <div
-                            key={index}
-                            className="relative flex-shrink-0 group"
-                          >
-                            {/* Photo Container */}
-                            <div className="relative w-32 h-32 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-600 transition-colors">
-                              <LazyImage
-                                src={photo}
-                                alt={`Upload ${index + 1}`}
-                                className="w-full h-full object-cover"
-                              />
-                              {/* Overlay with photo number */}
-                              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 z-10">
-                                <span className="text-white text-xs font-medium">
-                                  Photo {index + 1}
-                                </span>
-                              </div>
-                              {/* Remove button */}
-                              <Button
-                                type="button"
-                                variant="destructive"
-                                size="icon"
-                                onClick={() => handleRemovePhoto(index)}
-                                className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </div>
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+                            <span className="text-white text-xs font-medium">
+                              Processing...
+                            </span>
                           </div>
-                        ))}
-                        {/* Upload more placeholder */}
-                        <div
-                          className="flex-shrink-0 w-32 h-32 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-600 transition-colors cursor-pointer flex flex-col items-center justify-center"
-                          onClick={() => fileInputRef.current?.click()}
-                        >
-                          <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                          <span className="text-xs text-gray-500 dark:text-gray-400 text-center px-2">
-                            Add more
-                          </span>
                         </div>
-                      </>
+                      </div>
+                    ))}
+                    
+                    {/* Regular uploaded photos */}
+                    {uploadedPhotos.map((photo, index) => (
+                      <div
+                        key={index}
+                        className="relative flex-shrink-0 group"
+                      >
+                        {/* Photo Container */}
+                        <div className="relative w-32 h-32 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-600 transition-colors">
+                          <LazyImage
+                            src={photo}
+                            alt={`Upload ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                          {/* Overlay with photo number */}
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 z-10">
+                            <span className="text-white text-xs font-medium">
+                              Photo {index + 1}
+                            </span>
+                          </div>
+                          {/* Remove button */}
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            onClick={() => handleRemovePhoto(index)}
+                            className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {/* Upload more placeholder - only show when not loading */}
+                    {!photosLoading && (
+                      <div
+                        className="flex-shrink-0 w-32 h-32 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-600 transition-colors cursor-pointer flex flex-col items-center justify-center"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <Upload className="h-8 w-8 text-gray-400 mb-2" />
+                        <span className="text-xs text-gray-500 dark:text-gray-400 text-center px-2">
+                          Add more
+                        </span>
+                      </div>
                     )}
                   </div>
                 </div>
