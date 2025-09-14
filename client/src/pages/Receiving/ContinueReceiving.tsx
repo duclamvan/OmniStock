@@ -190,7 +190,7 @@ export default function ContinueReceiving() {
     refetchOnReconnect: false
   });
 
-  // Fetch receipt with smart caching - only refetch if stale
+  // Fetch receipt with smart caching - always refetch on mount to ensure fresh data
   const { data: receipt, isLoading: receiptLoading } = useQuery({
     queryKey: [`/api/imports/receipts/by-shipment/${id}`],
     queryFn: async () => {
@@ -201,7 +201,7 @@ export default function ContinueReceiving() {
     enabled: !!id,
     staleTime: 10 * 1000, // Receipt data fresh for 10 seconds during active editing
     gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
-    refetchOnMount: true, // Only refetch if stale (respects staleTime)
+    refetchOnMount: 'always', // Always refetch on mount to ensure fresh photos
     refetchOnWindowFocus: false,
     refetchOnReconnect: false
   });
@@ -568,6 +568,10 @@ export default function ContinueReceiving() {
       
       if (!response.ok) throw new Error('Failed to update photos');
       return response.json();
+    },
+    onSuccess: () => {
+      // Invalidate receipt query to ensure fresh data when navigating back
+      queryClient.invalidateQueries({ queryKey: [`/api/imports/receipts/by-shipment/${id}`] });
     },
     onError: (error) => {
       console.error('Photos update failed:', error);
@@ -1289,6 +1293,8 @@ export default function ContinueReceiving() {
           onSuccess: () => {
             setSaveStatus('saved');
             setTimeout(() => setSaveStatus('idle'), 1000);
+            // Invalidate receipt query to ensure fresh photos when navigating back
+            queryClient.invalidateQueries({ queryKey: [`/api/imports/receipts/by-shipment/${id}`] });
           },
           onError: () => {
             // Don't revert UI, just show error
@@ -1352,6 +1358,8 @@ export default function ContinueReceiving() {
         onSuccess: () => {
           setSaveStatus('saved');
           setTimeout(() => setSaveStatus('idle'), 1000);
+          // Invalidate receipt query to ensure fresh photos when navigating back
+          queryClient.invalidateQueries({ queryKey: [`/api/imports/receipts/by-shipment/${id}`] });
         },
         onError: () => {
           // Revert on error
