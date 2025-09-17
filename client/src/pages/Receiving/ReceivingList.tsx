@@ -80,6 +80,8 @@ import { Link, useLocation } from "wouter";
 import { format, differenceInHours, differenceInDays, isToday, isYesterday, isThisWeek, isThisMonth } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
+import { soundEffects } from "@/utils/soundEffects";
+import { ScanFeedback } from "@/components/ScanFeedback";
 
 // Memoized status icon component to avoid recreating functions on every render
 const StatusIcon = memo(({ status }: { status: string }): ReactNode => {
@@ -488,6 +490,11 @@ export default function ReceivingList() {
   const [showMoveBackDialog, setShowMoveBackDialog] = useState(false);
   const [shipmentToMoveBack, setShipmentToMoveBack] = useState<number | null>(null);
 
+
+  // Visual feedback state
+  const [scanFeedbackMessage, setScanFeedbackMessage] = useState("");
+  const [scanFeedbackType, setScanFeedbackType] = useState<'success' | 'error' | 'info' | null>(null);
+
   // Comprehensive barcode scanning state
   const [scannedTrackingNumbers, setScannedTrackingNumbers] = useState<Array<{ number: string; timestamp: Date }>>([]); 
   const [scanInput, setScanInput] = useState("");
@@ -497,6 +504,7 @@ export default function ReceivingList() {
   const [matchedShipments, setMatchedShipments] = useState<any[]>([]);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const scanInputRef = useRef<HTMLInputElement>(null);
+  const scanFeedbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const { toast } = useToast();
   const [, navigate] = useLocation();
@@ -832,8 +840,25 @@ export default function ReceivingList() {
     });
   }, [filteredShipments, sortBy, sortOrder, isUrgent]);
 
+  // Helper function to show visual feedback
+  const showScanFeedback = useCallback((message: string, type: 'success' | 'error' | 'info') => {
+    setScanFeedbackMessage(message);
+    setScanFeedbackType(type);
+    
+    // Clear existing timeout
+    if (scanFeedbackTimeoutRef.current) {
+      clearTimeout(scanFeedbackTimeoutRef.current);
+    }
+    
+    // Auto-hide after 3 seconds
+    scanFeedbackTimeoutRef.current = setTimeout(() => {
+      setScanFeedbackMessage("");
+      setScanFeedbackType(null);
+    }, 3000);
+  }, []);
+
   // Barcode scanning functionality
-  const handleBarcodeInput = useCallback((value: string) => {
+  const handleBarcodeInput = useCallback(async (value: string) => {
     setScanInput(value);
     
     // Check if Enter was pressed (value ends with \n or we detect a complete barcode)
@@ -845,12 +870,21 @@ export default function ReceivingList() {
         const isDuplicate = scannedTrackingNumbers.some(scan => scan.number === cleanedValue);
         
         if (!isDuplicate) {
+          // Play success sound
+          await soundEffects.playSuccessBeep();
+          
+          // Show visual feedback
+          showScanFeedback(`Scanned: ${cleanedValue}`, 'success');
+          
           // Add to scanned list
           const newScan = { number: cleanedValue, timestamp: new Date() };
           setScannedTrackingNumbers(prev => [...prev, newScan]);
           
-          // Clear input
+          // Clear input and refocus
           setScanInput("");
+          if (scanInputRef.current) {
+            scanInputRef.current.focus();
+          }
           
           // Clear any existing timeout
           if (searchTimeoutRef.current) {
@@ -863,16 +897,25 @@ export default function ReceivingList() {
             searchForShipments([...scannedTrackingNumbers, newScan]);
           }, 400);
         } else {
+          // Play error sound for duplicate
+          await soundEffects.playErrorBeep();
+          
+          // Show visual feedback
+          showScanFeedback(`Duplicate: ${cleanedValue} already scanned`, 'error');
+          
           toast({
             title: "Duplicate Scan",
             description: `Tracking number ${cleanedValue} already scanned`,
             variant: "destructive"
           });
           setScanInput("");
+          if (scanInputRef.current) {
+            scanInputRef.current.focus();
+          }
         }
       }
     }
-  }, [scannedTrackingNumbers, toast]);
+  }, [scannedTrackingNumbers, soundEffects, showScanFeedback, toast]);
 
   // Search for shipments by tracking numbers
   const searchForShipments = useCallback(async (scans: Array<{ number: string; timestamp: Date }>) => {
@@ -895,15 +938,55 @@ export default function ReceivingList() {
       
       if (shipments.length === 0) {
         setSearchMessage("No matches yet, keep scanning");
+        showScanFeedback("No matching shipments found. Keep scanning...", 'info');
       } else if (shipments.length === 1) {
-        // Auto-navigate to continue receiving
-        navigate(`/receiving/continue/${shipments[0].id}`, {
-          state: {
-            scannedTrackingNumbers: trackingNumbers,
-            scannedParcels: trackingNumbers.length
-          }
-        });
+        const shipment = shipments[0];
+        
+        // Check if shipment is already being received
+        if (shipment.status === 'receiving') {
+          // Play notification sound
+          await soundEffects.playNotificationSound();
+          
+          // Show info feedback
+          showScanFeedback(`Shipment ${shipment.shipmentName || shipment.id} is already being received. Continuing...`, 'info');
+          
+          // Navigate to continue receiving page
+          setTimeout(() => {
+            navigate(`/receiving/continue/${shipment.id}`, {
+              state: {
+                scannedTrackingNumbers: trackingNumbers,
+                scannedParcels: trackingNumbers.length
+              }
+            });
+          }, 500);
+        } else {
+          // Play completion sound
+          await soundEffects.playCompletionSound();
+          
+          // Show success feedback
+          showScanFeedback(`Match found! Opening shipment ${shipment.shipmentName || shipment.id}...`, 'success');
+          
+          // Auto-navigate to start or continue receiving based on status
+          setTimeout(() => {
+            const targetUrl = shipment.status === 'pending_approval' 
+              ? `/receiving/review/${shipment.id}`
+              : `/receiving/continue/${shipment.id}`;
+            
+            navigate(targetUrl, {
+              state: {
+                scannedTrackingNumbers: trackingNumbers,
+                scannedParcels: trackingNumbers.length
+              }
+            });
+          }, 500);
+        }
       } else {
+        // Play notification sound for multiple matches
+        await soundEffects.playNotificationSound();
+        
+        // Show info feedback
+        showScanFeedback(`Found ${shipments.length} matching shipments. Please select one.`, 'info');
+        
         // Show selection dialog
         setMatchedShipments(shipments);
         setShowShipmentSelectionDialog(true);
@@ -911,10 +994,16 @@ export default function ReceivingList() {
     } catch (error) {
       console.error('Search error:', error);
       setSearchMessage("Error searching for shipments");
+      
+      // Play error sound
+      await soundEffects.playErrorBeep();
+      
+      // Show error feedback
+      showScanFeedback("Error searching for shipments. Please try again.", 'error');
     } finally {
       setIsSearching(false);
     }
-  }, [navigate]);
+  }, [navigate, soundEffects, showScanFeedback]);
 
   // Remove a scanned tracking number
   const removeScannedTracking = useCallback((numberToRemove: string) => {
@@ -922,37 +1011,84 @@ export default function ReceivingList() {
     // Clear search message if no more tracking numbers
     if (scannedTrackingNumbers.length === 1) {
       setSearchMessage("");
+      setScanFeedbackMessage("");
+      setScanFeedbackType(null);
     }
+    // Refocus scan input
+    setTimeout(() => {
+      if (scanInputRef.current) {
+        scanInputRef.current.focus();
+      }
+    }, 50);
   }, [scannedTrackingNumbers]);
 
   // Clear all scanned tracking numbers
-  const clearAllScans = useCallback(() => {
+  const clearAllScans = useCallback(async () => {
     setScannedTrackingNumbers([]);
     setScanInput("");
     setSearchMessage("");
+    setScanFeedbackMessage("");
+    setScanFeedbackType(null);
+    setIsSearching(false);
+    
+    // Clear any pending timeouts
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
+      searchTimeoutRef.current = null;
     }
-  }, []);
+    if (scanFeedbackTimeoutRef.current) {
+      clearTimeout(scanFeedbackTimeoutRef.current);
+      scanFeedbackTimeoutRef.current = null;
+    }
+    
+    // Play a subtle clear sound
+    try {
+      await soundEffects.playSuccessBeep();
+    } catch (error) {
+      console.error('Error playing clear sound:', error);
+    }
+    
+    // Refocus the scan input
+    setTimeout(() => {
+      if (scanInputRef.current) {
+        scanInputRef.current.focus();
+      }
+    }, 50);
+  }, [soundEffects]);
 
   // Handle shipment selection from dialog
-  const handleShipmentSelection = useCallback((shipmentId: number) => {
+  const handleShipmentSelection = useCallback(async (shipmentId: number) => {
     const trackingNumbers = scannedTrackingNumbers.map(s => s.number);
-    navigate(`/receiving/continue/${shipmentId}`, {
-      state: {
-        scannedTrackingNumbers: trackingNumbers,
-        scannedParcels: trackingNumbers.length
-      }
-    });
-    setShowShipmentSelectionDialog(false);
-  }, [scannedTrackingNumbers, navigate]);
+    
+    // Play completion sound
+    await soundEffects.playCompletionSound();
+    
+    // Show success feedback
+    showScanFeedback(`Opening shipment ${shipmentId}...`, 'success');
+    
+    // Navigate with a slight delay for user feedback
+    setTimeout(() => {
+      navigate(`/receiving/continue/${shipmentId}`, {
+        state: {
+          scannedTrackingNumbers: trackingNumbers,
+          scannedParcels: trackingNumbers.length
+        }
+      });
+      setShowShipmentSelectionDialog(false);
+    }, 500);
+  }, [scannedTrackingNumbers, navigate, showScanFeedback]);
 
-  // Auto-focus scan input when component mounts
+  // Auto-focus scan input when component mounts and when tab changes
   useEffect(() => {
-    if (scanInputRef.current) {
-      scanInputRef.current.focus();
-    }
-  }, []);
+    // Delay to ensure DOM is ready
+    const focusTimer = setTimeout(() => {
+      if (scanInputRef.current && activeTab === 'to-receive') {
+        scanInputRef.current.focus();
+      }
+    }, 100);
+    
+    return () => clearTimeout(focusTimer);
+  }, [activeTab]);
 
   // Handle barcode scan from legacy barcode field
   useEffect(() => {
@@ -961,6 +1097,19 @@ export default function ReceivingList() {
       setBarcodeScan("");
     }
   }, [barcodeScan, handleBarcodeInput]);
+  
+  // Clean up on component unmount
+  useEffect(() => {
+    return () => {
+      // Clear any pending timeouts
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+      if (scanFeedbackTimeoutRef.current) {
+        clearTimeout(scanFeedbackTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Auto-expand all shipments in receiving tab
   useEffect(() => {
@@ -1244,38 +1393,65 @@ export default function ReceivingList() {
                 </Badge>
               </div>
               {scannedTrackingNumbers.length > 0 && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={clearAllScans}
-                  data-testid="button-clear-all-scans"
-                >
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  Clear All
-                </Button>
+                <div className="flex gap-2">
+                  {isSearching && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => {
+                        if (searchTimeoutRef.current) {
+                          clearTimeout(searchTimeoutRef.current);
+                        }
+                        setIsSearching(false);
+                        setSearchMessage("");
+                      }}
+                      data-testid="button-cancel-search"
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Cancel Search
+                    </Button>
+                  )}
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={clearAllScans}
+                    data-testid="button-clear-all-scans"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Clear All
+                  </Button>
+                </div>
               )}
             </div>
 
             {/* Scan Input */}
-            <div className="relative">
-              <ScanLine className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                ref={scanInputRef}
-                placeholder="Scan or enter tracking number"
-                value={scanInput}
-                onChange={(e) => handleBarcodeInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && scanInput) {
-                    handleBarcodeInput(scanInput + '\n');
-                  }
-                }}
-                className="pl-10 font-mono"
-                data-testid="input-scan-barcode"
-                autoFocus
+            <div className="space-y-2">
+              <div className="relative">
+                <ScanLine className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  ref={scanInputRef}
+                  placeholder="Scan or enter tracking number"
+                  value={scanInput}
+                  onChange={(e) => handleBarcodeInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && scanInput) {
+                      handleBarcodeInput(scanInput + '\n');
+                    }
+                  }}
+                  className="pl-10 font-mono"
+                  data-testid="input-scan-barcode"
+                  autoFocus
+                />
+                {isSearching && (
+                  <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-primary" />
+                )}
+              </div>
+              
+              {/* Visual Feedback Component */}
+              <ScanFeedback
+                message={scanFeedbackMessage}
+                type={scanFeedbackType}
               />
-              {isSearching && (
-                <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-primary" />
-              )}
             </div>
 
             {/* Search Message */}
