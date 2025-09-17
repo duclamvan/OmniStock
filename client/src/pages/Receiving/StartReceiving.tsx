@@ -913,11 +913,15 @@ export default function StartReceiving() {
         }
       });
       
-      toast({
+      const { dismiss } = toast({
         title: `${isPalletShipment ? 'Pallet' : 'Parcel'} Scanned`,
         description: `Scanned ${newCount} of ${parcelCount} ${unitLabel.toLowerCase()} - ${value}`,
-        duration: 3000
       });
+      
+      // Auto-dismiss after 3 seconds
+      setTimeout(() => {
+        dismiss();
+      }, 3000);
     } else if (currentStep === 2) {
       // Step 2: Scanning item barcodes
       const item = receivingItems.find(item => item.sku === value);
