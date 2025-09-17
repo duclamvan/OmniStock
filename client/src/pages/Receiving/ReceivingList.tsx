@@ -80,8 +80,6 @@ import { Link, useLocation } from "wouter";
 import { format, differenceInHours, differenceInDays, isToday, isYesterday, isThisWeek, isThisMonth } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
-import { soundEffects } from "@/utils/soundEffects";
-import { ScanFeedback } from "@/components/ScanFeedback";
 
 // Memoized status icon component to avoid recreating functions on every render
 const StatusIcon = memo(({ status }: { status: string }): ReactNode => {
@@ -490,11 +488,6 @@ export default function ReceivingList() {
   const [showMoveBackDialog, setShowMoveBackDialog] = useState(false);
   const [shipmentToMoveBack, setShipmentToMoveBack] = useState<number | null>(null);
 
-
-  // Visual feedback state
-  const [scanFeedbackMessage, setScanFeedbackMessage] = useState("");
-  const [scanFeedbackType, setScanFeedbackType] = useState<'success' | 'error' | 'duplicate' | 'complete' | null>(null);
-
   // Comprehensive barcode scanning state
   const [scannedTrackingNumbers, setScannedTrackingNumbers] = useState<Array<{ number: string; timestamp: Date }>>([]); 
   const [scanInput, setScanInput] = useState("");
@@ -504,7 +497,6 @@ export default function ReceivingList() {
   const [matchedShipments, setMatchedShipments] = useState<any[]>([]);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const scanInputRef = useRef<HTMLInputElement>(null);
-  const scanFeedbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const { toast } = useToast();
   const [, navigate] = useLocation();
@@ -581,14 +573,14 @@ export default function ReceivingList() {
 
       // Wait for all promises to resolve in parallel
       const receipts = await Promise.all(receiptsPromises);
-      
+
       // Build the receipt map more efficiently
       const newReceiptMap = new Map(
         receipts
           .filter(({ receiptData }) => receiptData !== null)
           .map(({ shipmentId, receiptData }) => [shipmentId, receiptData])
       );
-      
+
       setReceiptDataMap(newReceiptMap);
 
       return shipments;
@@ -840,87 +832,52 @@ export default function ReceivingList() {
     });
   }, [filteredShipments, sortBy, sortOrder, isUrgent]);
 
-  // Helper function to show visual feedback
-  const showScanFeedback = useCallback((message: string, type: 'success' | 'error' | 'info') => {
-    setScanFeedbackMessage(message);
-    setScanFeedbackType(type);
-    
-    // Clear existing timeout
-    if (scanFeedbackTimeoutRef.current) {
-      clearTimeout(scanFeedbackTimeoutRef.current);
-    }
-    
-    // Auto-hide after 3 seconds
-    scanFeedbackTimeoutRef.current = setTimeout(() => {
-      setScanFeedbackMessage("");
-      setScanFeedbackType(null);
-    }, 3000);
-  }, []);
-
   // Barcode scanning functionality
-  const handleBarcodeInput = useCallback(async (value: string) => {
+  const handleBarcodeInput = useCallback((value: string) => {
     setScanInput(value);
-    
+
     // Check if Enter was pressed (value ends with \n or we detect a complete barcode)
     if (value.length > 0 && (value.includes('\n') || value.length >= 10)) {
       const cleanedValue = value.trim().replace(/\n/g, '');
-      
+
       if (cleanedValue) {
         // Check for duplicate
         const isDuplicate = scannedTrackingNumbers.some(scan => scan.number === cleanedValue);
-        
+
         if (!isDuplicate) {
-          // Play success sound
-          await soundEffects.playSuccessBeep();
-          
-          // Show visual feedback
-          showScanFeedback(`Scanned: ${cleanedValue}`, 'success');
-          
           // Add to scanned list
           const newScan = { number: cleanedValue, timestamp: new Date() };
           setScannedTrackingNumbers(prev => [...prev, newScan]);
-          
-          // Clear input and refocus
+
+          // Clear input
           setScanInput("");
-          if (scanInputRef.current) {
-            scanInputRef.current.focus();
-          }
-          
+
           // Clear any existing timeout
           if (searchTimeoutRef.current) {
             clearTimeout(searchTimeoutRef.current);
           }
-          
+
           // Set up debounced search
           setSearchMessage("Searching for matching shipments...");
           searchTimeoutRef.current = setTimeout(() => {
             searchForShipments([...scannedTrackingNumbers, newScan]);
           }, 400);
         } else {
-          // Play error sound for duplicate
-          await soundEffects.playErrorBeep();
-          
-          // Show visual feedback
-          showScanFeedback(`Duplicate: ${cleanedValue} already scanned`, 'error');
-          
           toast({
             title: "Duplicate Scan",
             description: `Tracking number ${cleanedValue} already scanned`,
             variant: "destructive"
           });
           setScanInput("");
-          if (scanInputRef.current) {
-            scanInputRef.current.focus();
-          }
         }
       }
     }
-  }, [scannedTrackingNumbers, soundEffects, showScanFeedback, toast]);
+  }, [scannedTrackingNumbers, toast]);
 
   // Search for shipments by tracking numbers
   const searchForShipments = useCallback(async (scans: Array<{ number: string; timestamp: Date }>) => {
     if (scans.length === 0) return;
-    
+
     setIsSearching(true);
     try {
       const trackingNumbers = scans.map(s => s.number);
@@ -929,64 +886,24 @@ export default function ReceivingList() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ trackingNumbers })
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to search shipments');
       }
-      
+
       const shipments = await response.json();
-      
+
       if (shipments.length === 0) {
         setSearchMessage("No matches yet, keep scanning");
-        showScanFeedback("No matching shipments found. Keep scanning...", 'info');
       } else if (shipments.length === 1) {
-        const shipment = shipments[0];
-        
-        // Check if shipment is already being received
-        if (shipment.status === 'receiving') {
-          // Play notification sound
-          await soundEffects.playNotificationSound();
-          
-          // Show info feedback
-          showScanFeedback(`Shipment ${shipment.shipmentName || shipment.id} is already being received. Continuing...`, 'info');
-          
-          // Navigate to continue receiving page
-          setTimeout(() => {
-            navigate(`/receiving/continue/${shipment.id}`, {
-              state: {
-                scannedTrackingNumbers: trackingNumbers,
-                scannedParcels: trackingNumbers.length
-              }
-            });
-          }, 500);
-        } else {
-          // Play completion sound
-          await soundEffects.playCompletionSound();
-          
-          // Show success feedback
-          showScanFeedback(`Match found! Opening shipment ${shipment.shipmentName || shipment.id}...`, 'success');
-          
-          // Auto-navigate to start or continue receiving based on status
-          setTimeout(() => {
-            const targetUrl = shipment.status === 'pending_approval' 
-              ? `/receiving/review/${shipment.id}`
-              : `/receiving/continue/${shipment.id}`;
-            
-            navigate(targetUrl, {
-              state: {
-                scannedTrackingNumbers: trackingNumbers,
-                scannedParcels: trackingNumbers.length
-              }
-            });
-          }, 500);
-        }
+        // Auto-navigate to continue receiving
+        navigate(`/receiving/continue/${shipments[0].id}`, {
+          state: {
+            scannedTrackingNumbers: trackingNumbers,
+            scannedParcels: trackingNumbers.length
+          }
+        });
       } else {
-        // Play notification sound for multiple matches
-        await soundEffects.playNotificationSound();
-        
-        // Show info feedback
-        showScanFeedback(`Found ${shipments.length} matching shipments. Please select one.`, 'info');
-        
         // Show selection dialog
         setMatchedShipments(shipments);
         setShowShipmentSelectionDialog(true);
@@ -994,16 +911,10 @@ export default function ReceivingList() {
     } catch (error) {
       console.error('Search error:', error);
       setSearchMessage("Error searching for shipments");
-      
-      // Play error sound
-      await soundEffects.playErrorBeep();
-      
-      // Show error feedback
-      showScanFeedback("Error searching for shipments. Please try again.", 'error');
     } finally {
       setIsSearching(false);
     }
-  }, [navigate, soundEffects, showScanFeedback]);
+  }, [navigate]);
 
   // Remove a scanned tracking number
   const removeScannedTracking = useCallback((numberToRemove: string) => {
@@ -1011,84 +922,37 @@ export default function ReceivingList() {
     // Clear search message if no more tracking numbers
     if (scannedTrackingNumbers.length === 1) {
       setSearchMessage("");
-      setScanFeedbackMessage("");
-      setScanFeedbackType(null);
     }
-    // Refocus scan input
-    setTimeout(() => {
-      if (scanInputRef.current) {
-        scanInputRef.current.focus();
-      }
-    }, 50);
   }, [scannedTrackingNumbers]);
 
   // Clear all scanned tracking numbers
-  const clearAllScans = useCallback(async () => {
+  const clearAllScans = useCallback(() => {
     setScannedTrackingNumbers([]);
     setScanInput("");
     setSearchMessage("");
-    setScanFeedbackMessage("");
-    setScanFeedbackType(null);
-    setIsSearching(false);
-    
-    // Clear any pending timeouts
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
-      searchTimeoutRef.current = null;
     }
-    if (scanFeedbackTimeoutRef.current) {
-      clearTimeout(scanFeedbackTimeoutRef.current);
-      scanFeedbackTimeoutRef.current = null;
-    }
-    
-    // Play a subtle clear sound
-    try {
-      await soundEffects.playSuccessBeep();
-    } catch (error) {
-      console.error('Error playing clear sound:', error);
-    }
-    
-    // Refocus the scan input
-    setTimeout(() => {
-      if (scanInputRef.current) {
-        scanInputRef.current.focus();
-      }
-    }, 50);
-  }, [soundEffects]);
+  }, []);
 
   // Handle shipment selection from dialog
-  const handleShipmentSelection = useCallback(async (shipmentId: number) => {
+  const handleShipmentSelection = useCallback((shipmentId: number) => {
     const trackingNumbers = scannedTrackingNumbers.map(s => s.number);
-    
-    // Play completion sound
-    await soundEffects.playCompletionSound();
-    
-    // Show success feedback
-    showScanFeedback(`Opening shipment ${shipmentId}...`, 'success');
-    
-    // Navigate with a slight delay for user feedback
-    setTimeout(() => {
-      navigate(`/receiving/continue/${shipmentId}`, {
-        state: {
-          scannedTrackingNumbers: trackingNumbers,
-          scannedParcels: trackingNumbers.length
-        }
-      });
-      setShowShipmentSelectionDialog(false);
-    }, 500);
-  }, [scannedTrackingNumbers, navigate, showScanFeedback]);
-
-  // Auto-focus scan input when component mounts and when tab changes
-  useEffect(() => {
-    // Delay to ensure DOM is ready
-    const focusTimer = setTimeout(() => {
-      if (scanInputRef.current && activeTab === 'to-receive') {
-        scanInputRef.current.focus();
+    navigate(`/receiving/continue/${shipmentId}`, {
+      state: {
+        scannedTrackingNumbers: trackingNumbers,
+        scannedParcels: trackingNumbers.length
       }
-    }, 100);
-    
-    return () => clearTimeout(focusTimer);
-  }, [activeTab]);
+    });
+    setShowShipmentSelectionDialog(false);
+  }, [scannedTrackingNumbers, navigate]);
+
+  // Auto-focus scan input when component mounts
+  useEffect(() => {
+    if (scanInputRef.current) {
+      scanInputRef.current.focus();
+    }
+  }, []);
 
   // Handle barcode scan from legacy barcode field
   useEffect(() => {
@@ -1097,19 +961,6 @@ export default function ReceivingList() {
       setBarcodeScan("");
     }
   }, [barcodeScan, handleBarcodeInput]);
-  
-  // Clean up on component unmount
-  useEffect(() => {
-    return () => {
-      // Clear any pending timeouts
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-      if (scanFeedbackTimeoutRef.current) {
-        clearTimeout(scanFeedbackTimeoutRef.current);
-      }
-    };
-  }, []);
 
   // Auto-expand all shipments in receiving tab
   useEffect(() => {
@@ -1393,65 +1244,38 @@ export default function ReceivingList() {
                 </Badge>
               </div>
               {scannedTrackingNumbers.length > 0 && (
-                <div className="flex gap-2">
-                  {isSearching && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => {
-                        if (searchTimeoutRef.current) {
-                          clearTimeout(searchTimeoutRef.current);
-                        }
-                        setIsSearching(false);
-                        setSearchMessage("");
-                      }}
-                      data-testid="button-cancel-search"
-                    >
-                      <X className="h-4 w-4 mr-1" />
-                      Cancel Search
-                    </Button>
-                  )}
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={clearAllScans}
-                    data-testid="button-clear-all-scans"
-                  >
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    Clear All
-                  </Button>
-                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={clearAllScans}
+                  data-testid="button-clear-all-scans"
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Clear All
+                </Button>
               )}
             </div>
 
             {/* Scan Input */}
-            <div className="space-y-2">
-              <div className="relative">
-                <ScanLine className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  ref={scanInputRef}
-                  placeholder="Scan or enter tracking number"
-                  value={scanInput}
-                  onChange={(e) => handleBarcodeInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && scanInput) {
-                      handleBarcodeInput(scanInput + '\n');
-                    }
-                  }}
-                  className="pl-10 font-mono"
-                  data-testid="input-scan-barcode"
-                  autoFocus
-                />
-                {isSearching && (
-                  <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-primary" />
-                )}
-              </div>
-              
-              {/* Visual Feedback Component */}
-              <ScanFeedback
-                message={scanFeedbackMessage}
-                type={scanFeedbackType}
+            <div className="relative">
+              <ScanLine className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                ref={scanInputRef}
+                placeholder="Scan or enter tracking number"
+                value={scanInput}
+                onChange={(e) => handleBarcodeInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && scanInput) {
+                    handleBarcodeInput(scanInput + '\n');
+                  }
+                }}
+                className="pl-10 font-mono"
+                data-testid="input-scan-barcode"
+                autoFocus
               />
+              {isSearching && (
+                <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-primary" />
+              )}
             </div>
 
             {/* Search Message */}
@@ -1493,52 +1317,6 @@ export default function ReceivingList() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Shipment Selection Dialog */}
-      <Dialog open={showShipmentSelectionDialog} onOpenChange={setShowShipmentSelectionDialog}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Select Shipment</DialogTitle>
-            <DialogDescription>
-              Multiple shipments match your scanned tracking numbers. Select the correct shipment to continue receiving.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3 max-h-[400px] overflow-y-auto">
-            {matchedShipments.map((shipment) => (
-              <Card 
-                key={shipment.id} 
-                className="cursor-pointer hover:bg-muted/50 transition-colors"
-                onClick={() => handleShipmentSelection(shipment.id)}
-                data-testid={`shipment-option-${shipment.id}`}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h4 className="font-semibold">
-                        {shipment.shipmentName || `Shipment #${shipment.id}`}
-                      </h4>
-                      <p className="text-sm text-muted-foreground">
-                        Tracking: {shipment.trackingNumber}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="outline" className="text-xs">
-                          {shipment.carrier || shipment.endCarrier}
-                        </Badge>
-                        {shipment.totalUnits && (
-                          <span className="text-xs text-muted-foreground">
-                            {shipment.totalUnits} {shipment.unitType || 'items'}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Search and Filters */}
       <Card className="mb-6">
@@ -2064,7 +1842,7 @@ export default function ReceivingList() {
                 const isExpanded = expandedShipments.has(shipment.id);
                 const receiptData = receiptDataMap.get(shipment.id);
                 const receiptItems = receiptData?.items || [];
-                
+
                 // Create O(1) lookup map for receipt items by itemId for performance
                 // Note: Not using useMemo here to avoid hooks rules violation in map
                 const receiptItemsMap = new Map();
@@ -2167,7 +1945,7 @@ export default function ReceivingList() {
                                     {({ index, style }) => {
                                       const item = shipment.items[index];
                                       const receiptItem = receiptItemsMap.get(String(item.id));
-                                      
+
                                       return (
                                         <div style={style}>
                                           <ReceiptItemRow
@@ -2196,7 +1974,7 @@ export default function ReceivingList() {
                                       {shipment.items.map((item: any, index: number) => {
                                         // O(1) lookup for receipt data using the pre-built map
                                         const receiptItem = receiptItemsMap.get(String(item.id));
-                                        
+
                                         return (
                                           <ReceiptItemRow 
                                             key={item.id || index}
@@ -2215,9 +1993,9 @@ export default function ReceivingList() {
                         </div>
                       )}
                     </CardContent>
-                    </Card>
-                  );
-                })}
+                  </Card>
+                );
+              })}
             </div>
           )}
         </TabsContent>
@@ -2365,6 +2143,52 @@ export default function ReceivingList() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Shipment Selection Dialog */}
+      <Dialog open={showShipmentSelectionDialog} onOpenChange={setShowShipmentSelectionDialog}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Select Shipment</DialogTitle>
+            <DialogDescription>
+              Multiple shipments match your scanned tracking numbers. Select the correct shipment to continue receiving.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 max-h-[400px] overflow-y-auto">
+            {matchedShipments.map((shipment) => (
+              <Card 
+                key={shipment.id} 
+                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => handleShipmentSelection(shipment.id)}
+                data-testid={`shipment-option-${shipment.id}`}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h4 className="font-semibold">
+                        {shipment.shipmentName || `Shipment #${shipment.id}`}
+                      </h4>
+                      <p className="text-sm text-muted-foreground">
+                        Tracking: {shipment.trackingNumber}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant="outline" className="text-xs">
+                          {shipment.carrier || shipment.endCarrier}
+                        </Badge>
+                        {shipment.totalUnits && (
+                          <span className="text-xs text-muted-foreground">
+                            {shipment.totalUnits} {shipment.unitType || 'items'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
