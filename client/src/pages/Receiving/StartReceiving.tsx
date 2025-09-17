@@ -2155,9 +2155,9 @@ export default function StartReceiving() {
               </div>
 
               {/* Scan Parcels */}
-              <div>
+              <div className="col-span-full">
                 <Label>Scan {unitLabel}</Label>
-                <div className="flex gap-2">
+                <div className="flex gap-2 w-full">
                   <ScanInputPulse isScanning={scanMode}>
                     <div className="relative flex-1">
                       <Input
