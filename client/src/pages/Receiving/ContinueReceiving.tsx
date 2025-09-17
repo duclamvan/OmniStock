@@ -68,13 +68,15 @@ interface ReceivingItem {
   itemId?: number; // Add itemId field for API calls (references shipment item)
   name: string;
   sku?: string;
+  productId?: string; // Product ID for fetching real locations
   expectedQty: number;
   receivedQty: number;
   status: 'pending' | 'complete' | 'partial' | 'damaged' | 'missing' | 'partial_damaged' | 'partial_missing';
   notes?: string;
   checked: boolean;
   imageUrl?: string;
-  warehouseLocation?: string; // Warehouse bin location code
+  warehouseLocations?: string[]; // Array of warehouse bin location codes
+  isNewProduct?: boolean; // Flag to indicate if product is new (not in inventory)
 }
 
 // Helper function to generate warehouse location with proper formatting
@@ -88,6 +90,21 @@ const generateWarehouseLocation = (itemId?: number | string, sku?: string, index
   const level = String(1 + ((numericSeed >> 4) % 4)).padStart(2, '0'); // L01-L04
   
   return `WH1-A${aisle}-R${rack}-L${level}`;
+};
+
+// Helper function to fetch real product locations
+const fetchProductLocations = async (productId: string): Promise<string[]> => {
+  try {
+    const response = await fetch(`/api/product-locations/${productId}`);
+    if (!response.ok) {
+      return [];
+    }
+    const locations = await response.json();
+    return locations.map((loc: any) => loc.locationCode).filter(Boolean);
+  } catch (error) {
+    console.error('Error fetching product locations:', error);
+    return [];
+  }
 };
 
 // Optimized thumbnail-only image component for maximum speed
@@ -2286,15 +2303,38 @@ export default function ContinueReceiving() {
                                       SKU: {item.sku}
                                     </p>
                                   )}
-                                  {item.warehouseLocation && (
-                                    <p 
-                                      className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1 flex items-center gap-1"
-                                      data-testid={`text-bin-location-${item.id}`}
-                                    >
-                                      <Package className="h-3 w-3" />
-                                      Bin: {item.warehouseLocation}
-                                    </p>
-                                  )}
+                                  {/* Warehouse Locations Display */}
+                                  <div className="mt-1">
+                                    {item.isNewProduct ? (
+                                      <p 
+                                        className="text-xs text-orange-600 dark:text-orange-400 font-medium flex items-center gap-1"
+                                        data-testid={`text-bin-location-${item.id}`}
+                                      >
+                                        <Package className="h-3 w-3" />
+                                        Bin: TBA (New Product)
+                                      </p>
+                                    ) : item.warehouseLocations && item.warehouseLocations.length > 0 ? (
+                                      <div>
+                                        <p className="text-xs text-blue-600 dark:text-blue-400 font-medium flex items-center gap-1 mb-1">
+                                          <Package className="h-3 w-3" />
+                                          Bin{item.warehouseLocations.length > 1 ? 's' : ''}:
+                                        </p>
+                                        <div 
+                                          className="flex flex-wrap gap-1"
+                                          data-testid={`text-bin-location-${item.id}`}
+                                        >
+                                          {item.warehouseLocations.map((location, index) => (
+                                            <span
+                                              key={index}
+                                              className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded-md font-mono"
+                                            >
+                                              {location}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    ) : null}
+                                  </div>
                                 </div>
                                 
                                 {/* Status Badge */}
