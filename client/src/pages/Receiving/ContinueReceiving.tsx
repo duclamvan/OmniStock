@@ -97,12 +97,26 @@ const fetchProductLocations = async (productId: string): Promise<string[]> => {
   try {
     const response = await fetch(`/api/product-locations/${productId}`);
     if (!response.ok) {
+      console.info(`Product locations API returned ${response.status} for product ${productId}, showing TBA`);
       return [];
     }
+    
+    // Check if response is JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      console.info(`Product locations API returned non-JSON response for product ${productId}, showing TBA`);
+      return [];
+    }
+    
     const locations = await response.json();
+    if (!Array.isArray(locations)) {
+      console.info(`Product locations API returned invalid format for product ${productId}, showing TBA`);
+      return [];
+    }
+    
     return locations.map((loc: any) => loc.locationCode).filter(Boolean);
   } catch (error) {
-    console.error('Error fetching product locations:', error);
+    console.info(`Product locations API call failed for product ${productId}, showing TBA:`, error.message);
     return [];
   }
 };
