@@ -413,6 +413,46 @@ export default function ContinueReceiving() {
     }
   }, [scanMode]);
 
+  // Global barcode scanner listener for Bluetooth scanners
+  useEffect(() => {
+    if (!scanMode || currentStep !== 1) return;
+
+    let scanBuffer = '';
+    let scanTimeout: NodeJS.Timeout;
+
+    const handleGlobalKeyPress = (e: KeyboardEvent) => {
+      // Skip if user is typing in another input field
+      if (e.target instanceof HTMLInputElement && e.target !== barcodeRef.current) return;
+      if (e.target instanceof HTMLTextAreaElement) return;
+
+      // Clear buffer on Enter (most scanners send Enter after barcode)
+      if (e.key === 'Enter' && scanBuffer.length > 3) {
+        e.preventDefault();
+        handleBarcodeScan(scanBuffer.trim());
+        scanBuffer = '';
+        clearTimeout(scanTimeout);
+        return;
+      }
+
+      // Add printable characters to buffer
+      if (e.key.length === 1 && !e.ctrlKey && !e.altKey) {
+        scanBuffer += e.key;
+        
+        // Auto-clear buffer after 2 seconds of inactivity
+        clearTimeout(scanTimeout);
+        scanTimeout = setTimeout(() => {
+          scanBuffer = '';
+        }, 2000);
+      }
+    };
+
+    document.addEventListener('keydown', handleGlobalKeyPress);
+    return () => {
+      document.removeEventListener('keydown', handleGlobalKeyPress);
+      clearTimeout(scanTimeout);
+    };
+  }, [scanMode, currentStep]);
+
   // No longer needed with optimized field-specific saves
 
   // Clear timers on unmount
@@ -1832,12 +1872,25 @@ export default function ContinueReceiving() {
                       value={barcodeScan}
                       onChange={(e) => setBarcodeScan(e.target.value)}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter' && barcodeScan) {
-                          handleBarcodeScan(barcodeScan);
+                        if (e.key === 'Enter' && barcodeScan.trim()) {
+                          e.preventDefault();
+                          handleBarcodeScan(barcodeScan.trim());
+                        }
+                      }}
+                      onBlur={(e) => {
+                        // Handle Bluetooth scanner input that doesn't trigger Enter
+                        if (e.target.value.trim() && e.target.value !== barcodeScan) {
+                          setTimeout(() => {
+                            if (barcodeRef.current?.value.trim()) {
+                              handleBarcodeScan(barcodeRef.current.value.trim());
+                            }
+                          }, 100);
                         }
                       }}
                       placeholder={`Scan or type ${isPalletShipment ? 'pallet' : 'parcel'} tracking number`}
                       className={scanMode ? 'border-blue-500 ring-2 ring-blue-200' : ''}
+                      autoComplete="off"
+                      spellCheck={false}
                     />
                     <ScanLine className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   </div>
