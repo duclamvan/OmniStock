@@ -58,7 +58,8 @@ import {
   Upload,
   ImagePlus,
   Trash2,
-  Loader2
+  Loader2,
+  Warehouse
 } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
@@ -2934,6 +2935,16 @@ export default function ContinueReceiving() {
               className="flex-1"
             >
               Back to Step 1
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => navigate(`/receiving/store/${receipt?.receipt?.id || receipt?.id}`)}
+              disabled={!receipt || isLoading || receivingItems.length === 0}
+              className="flex-1"
+              size="lg"
+            >
+              <Warehouse className="h-4 w-4 mr-2" />
+              Store Items
             </Button>
             <Button
               onClick={handleSubmit}

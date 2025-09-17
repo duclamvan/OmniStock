@@ -5,6 +5,18 @@ Davie Supply is a comprehensive warehouse and order management system designed a
 Preferred communication style: Simple, everyday language.
 
 # Recent Changes
+- **January 28, 2025**: Implemented comprehensive Store Items warehouse location management system
+  - Created StoreItems page with professional barcode scanning for warehouse locations
+  - Supports multiple location assignments per item with quantity tracking
+  - Primary location designation for optimal warehouse organization
+  - Shows existing product locations when items are already in inventory
+  - Location format validation (WH1-A01-R02-L03) with location type detection
+  - Real-time quantity allocation with auto-advance to next item when complete
+  - Integration with product_locations table for actual inventory tracking
+  - Backend endpoints for fetching storage items and saving location assignments
+  - Automatic product stock level updates when items are stored
+  - Professional sound and visual feedback for scanning operations
+  - Store Items button added to receiving workflow for seamless transition
 - **January 28, 2025**: Implemented smart barcode scanning system for automatic shipment matching
   - Added barcode scanner interface to main receiving page that collects tracking numbers
   - Created backend API endpoint to search shipments by multiple tracking numbers
