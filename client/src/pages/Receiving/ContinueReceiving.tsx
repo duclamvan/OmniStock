@@ -1529,6 +1529,21 @@ export default function ContinueReceiving() {
     });
   };
 
+  // Initialize audio on first user interaction
+  useEffect(() => {
+    const initAudio = () => {
+      soundEffects.initAudio();
+      document.removeEventListener('click', initAudio);
+      document.removeEventListener('keydown', initAudio);
+    };
+    document.addEventListener('click', initAudio);
+    document.addEventListener('keydown', initAudio);
+    return () => {
+      document.removeEventListener('click', initAudio);
+      document.removeEventListener('keydown', initAudio);
+    };
+  }, []);
+
   if (isLoading) {
     return (
       <div className="container mx-auto p-4">
@@ -1556,21 +1571,6 @@ export default function ContinueReceiving() {
       </div>
     );
   }
-
-  // Initialize audio on first user interaction
-  useEffect(() => {
-    const initAudio = () => {
-      soundEffects.initAudio();
-      document.removeEventListener('click', initAudio);
-      document.removeEventListener('keydown', initAudio);
-    };
-    document.addEventListener('click', initAudio);
-    document.addEventListener('keydown', initAudio);
-    return () => {
-      document.removeEventListener('click', initAudio);
-      document.removeEventListener('keydown', initAudio);
-    };
-  }, []);
 
   return (
     <div className="container mx-auto p-4 max-w-4xl relative">
