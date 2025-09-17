@@ -2155,52 +2155,81 @@ export default function ContinueReceiving() {
               </div>
 
               {/* Scan Parcels */}
-              <div>
-                <Label>Scan {unitLabel}</Label>
-                <div className="flex gap-2">
+              <div className="col-span-full">
+                <Label className="text-base font-medium mb-3 block">Scan {unitLabel}</Label>
+                <div className="w-full">
                   <ScanInputPulse isScanning={scanMode}>
-                    <div className="relative flex-1">
-                      <Input
-                        ref={barcodeRef}
-                        value={barcodeScan}
-                        onChange={(e) => setBarcodeScan(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && barcodeScan.trim()) {
-                            e.preventDefault();
-                            handleBarcodeScan(barcodeScan.trim());
-                          }
-                        }}
-                        onBlur={(e) => {
-                          // Handle Bluetooth scanner input that doesn't trigger Enter
-                          if (e.target.value.trim() && e.target.value !== barcodeScan) {
-                            setTimeout(() => {
-                              if (barcodeRef.current?.value.trim()) {
-                                handleBarcodeScan(barcodeRef.current.value.trim());
+                    <div className={`relative w-full rounded-lg border-2 transition-all duration-300 overflow-hidden ${
+                      scanMode 
+                        ? 'border-blue-400 bg-blue-50 dark:bg-blue-950/30 shadow-lg ring-2 ring-blue-200 dark:ring-blue-800' 
+                        : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 hover:border-gray-400 dark:hover:border-gray-500'
+                    }`}>
+                      <div className="flex items-center">
+                        <div className="flex-1 relative">
+                          <Input
+                            ref={barcodeRef}
+                            value={barcodeScan}
+                            onChange={(e) => setBarcodeScan(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && barcodeScan.trim()) {
+                                e.preventDefault();
+                                handleBarcodeScan(barcodeScan.trim());
                               }
-                            }, 100);
-                          }
-                        }}
-                        placeholder={`Scan or type ${isPalletShipment ? 'pallet' : 'parcel'} tracking number`}
-                        className={`w-full ${scanMode ? 'border-blue-500 ring-2 ring-blue-200 transition-all duration-200' : ''}`}
-                        autoComplete="off"
-                        spellCheck={false}
-                      />
-                      <ScanLine className={`absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 ${scanMode ? 'text-blue-500 animate-pulse' : 'text-muted-foreground'}`} />
+                            }}
+                            onBlur={(e) => {
+                              // Handle Bluetooth scanner input that doesn't trigger Enter
+                              if (e.target.value.trim() && e.target.value !== barcodeScan) {
+                                setTimeout(() => {
+                                  if (barcodeRef.current?.value.trim()) {
+                                    handleBarcodeScan(barcodeRef.current.value.trim());
+                                  }
+                                }, 100);
+                              }
+                            }}
+                            placeholder={`Scan or type ${isPalletShipment ? 'pallet' : 'parcel'} tracking number...`}
+                            className="border-0 bg-transparent focus:ring-0 focus:outline-none text-lg h-14 px-4 pr-12 placeholder:text-gray-500 dark:placeholder:text-gray-400 font-mono"
+                            autoComplete="off"
+                            spellCheck={false}
+                          />
+                          <ScanLine className={`absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 transition-all duration-200 ${
+                            scanMode ? 'text-blue-500 animate-pulse' : 'text-gray-400'
+                          }`} />
+                        </div>
+                        <div className="flex-shrink-0 border-l border-gray-200 dark:border-gray-700">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="lg"
+                            onClick={() => {
+                              setScanMode(!scanMode);
+                              if (!scanMode) {
+                                setTimeout(() => barcodeRef.current?.focus(), 100);
+                              }
+                            }}
+                            className={`h-14 px-6 rounded-none hover:bg-transparent transition-all duration-200 ${
+                              scanMode 
+                                ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400' 
+                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                            }`}
+                          >
+                            <Camera className={`h-6 w-6 transition-transform duration-200 ${
+                              scanMode ? 'scale-110' : ''
+                            }`} />
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   </ScanInputPulse>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setScanMode(!scanMode);
-                      if (!scanMode) {
-                        setTimeout(() => barcodeRef.current?.focus(), 100);
-                      }
-                    }}
-                    className={scanMode ? 'bg-blue-50 border-blue-300' : ''}
-                  >
-                    <Camera className="h-4 w-4" />
-                  </Button>
+                  
+                  {/* Scan Mode Indicator */}
+                  {scanMode && (
+                    <div className="mt-2 text-center">
+                      <span className="inline-flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 font-medium">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                        Scanner Active - Point camera at barcode or type manually
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
