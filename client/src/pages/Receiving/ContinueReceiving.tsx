@@ -665,6 +665,7 @@ export default function ContinueReceiving() {
       const newCount = Math.min(scannedParcels + 1, parcelCount);
       const newTrackingNumbers = [...scannedTrackingNumbers, value];
       setScannedTrackingNumbers(newTrackingNumbers);
+      setScannedParcels(newCount); // Update local state for immediate UI refresh
       
       // Update scanned parcels count
       setSaveStatus('saving');
