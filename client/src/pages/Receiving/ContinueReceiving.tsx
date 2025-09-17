@@ -116,6 +116,7 @@ export default function ContinueReceiving() {
   const dataInitializedRef = useRef<string>(''); // Prevent double initialization - stores data key
   const updateQueueRef = useRef<Map<string, number>>(new Map()); // Queue for rapid updates
   const updateTimerRef = useRef<NodeJS.Timeout | null>(null); // Timer for debounced updates
+  const isInitialLoadRef = useRef<boolean>(true); // Track if we're in the initial load phase
   
   // Handle back navigation with proper query invalidation
   const handleBackNavigation = useCallback(() => {
@@ -353,30 +354,36 @@ export default function ContinueReceiving() {
       }
       
       // Determine which step to show based on completion status
-      // Check if Step 1 is completed (has basic info)
-      const isStep1Complete = 
-        receiptData.receivedBy && 
-        receiptData.carrier && 
-        (trackingData.scannedParcels > 0 || receiptData.parcelCount > 0);
-      
-      // Check if Step 2 has partial progress (some items received)
-      const hasStep2Progress = receipt.items && receipt.items.some((item: any) => 
-        item.receivedQuantity > 0 || 
-        item.status !== 'pending'
-      );
-      
-      // Only show Step 2 if Step 1 is complete AND Step 2 has progress
-      // Otherwise default to Step 1
-      console.log('Step determination:', {
-        isStep1Complete,
-        hasStep2Progress,
-        selectedStep: isStep1Complete && hasStep2Progress ? 2 : 1
-      });
-      
-      if (isStep1Complete && hasStep2Progress) {
-        setCurrentStep(2);
-      } else {
-        setCurrentStep(1);
+      // Only do automatic step determination on initial load
+      if (isInitialLoadRef.current) {
+        // Check if Step 1 is completed (has basic info)
+        const isStep1Complete = 
+          receiptData.receivedBy && 
+          receiptData.carrier && 
+          (trackingData.scannedParcels > 0 || receiptData.parcelCount > 0);
+        
+        // Check if Step 2 has partial progress (some items received)
+        const hasStep2Progress = receipt.items && receipt.items.some((item: any) => 
+          item.receivedQuantity > 0 || 
+          item.status !== 'pending'
+        );
+        
+        // Only show Step 2 if Step 1 is complete AND Step 2 has progress
+        // Otherwise default to Step 1
+        console.log('Initial step determination:', {
+          isStep1Complete,
+          hasStep2Progress,
+          selectedStep: isStep1Complete && hasStep2Progress ? 2 : 1
+        });
+        
+        if (isStep1Complete && hasStep2Progress) {
+          setCurrentStep(2);
+        } else {
+          setCurrentStep(1);
+        }
+        
+        // Mark initial load as complete
+        isInitialLoadRef.current = false;
       }
     } else if (shipment && !receipt && !receiptLoading) {
       // Only initialize from shipment if we don't already have data
