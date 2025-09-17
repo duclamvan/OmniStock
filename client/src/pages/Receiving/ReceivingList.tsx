@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, memo, useCallback, ReactNode } from "react";
+import { useState, useEffect, useMemo, memo, useCallback, ReactNode, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { 
   Package, 
   Search, 
@@ -63,9 +71,12 @@ import {
   Weight,
   Hash,
   MoreHorizontal,
-  Undo2
+  Undo2,
+  X,
+  Loader2,
+  Trash2
 } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { format, differenceInHours, differenceInDays, isToday, isYesterday, isThisWeek, isThisMonth } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
@@ -477,7 +488,18 @@ export default function ReceivingList() {
   const [showMoveBackDialog, setShowMoveBackDialog] = useState(false);
   const [shipmentToMoveBack, setShipmentToMoveBack] = useState<number | null>(null);
 
+  // Comprehensive barcode scanning state
+  const [scannedTrackingNumbers, setScannedTrackingNumbers] = useState<Array<{ number: string; timestamp: Date }>>([]); 
+  const [scanInput, setScanInput] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchMessage, setSearchMessage] = useState("");
+  const [showShipmentSelectionDialog, setShowShipmentSelectionDialog] = useState(false);
+  const [matchedShipments, setMatchedShipments] = useState<any[]>([]);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const scanInputRef = useRef<HTMLInputElement>(null);
+
   const { toast } = useToast();
+  const [, navigate] = useLocation();
 
   // Mutation to move shipment back to receivable status
   const moveBackToReceiveMutation = useMutation({
@@ -810,13 +832,135 @@ export default function ReceivingList() {
     });
   }, [filteredShipments, sortBy, sortOrder, isUrgent]);
 
-  // Handle barcode scan
+  // Barcode scanning functionality
+  const handleBarcodeInput = useCallback((value: string) => {
+    setScanInput(value);
+    
+    // Check if Enter was pressed (value ends with \n or we detect a complete barcode)
+    if (value.length > 0 && (value.includes('\n') || value.length >= 10)) {
+      const cleanedValue = value.trim().replace(/\n/g, '');
+      
+      if (cleanedValue) {
+        // Check for duplicate
+        const isDuplicate = scannedTrackingNumbers.some(scan => scan.number === cleanedValue);
+        
+        if (!isDuplicate) {
+          // Add to scanned list
+          const newScan = { number: cleanedValue, timestamp: new Date() };
+          setScannedTrackingNumbers(prev => [...prev, newScan]);
+          
+          // Clear input
+          setScanInput("");
+          
+          // Clear any existing timeout
+          if (searchTimeoutRef.current) {
+            clearTimeout(searchTimeoutRef.current);
+          }
+          
+          // Set up debounced search
+          setSearchMessage("Searching for matching shipments...");
+          searchTimeoutRef.current = setTimeout(() => {
+            searchForShipments([...scannedTrackingNumbers, newScan]);
+          }, 400);
+        } else {
+          toast({
+            title: "Duplicate Scan",
+            description: `Tracking number ${cleanedValue} already scanned`,
+            variant: "destructive"
+          });
+          setScanInput("");
+        }
+      }
+    }
+  }, [scannedTrackingNumbers, toast]);
+
+  // Search for shipments by tracking numbers
+  const searchForShipments = useCallback(async (scans: Array<{ number: string; timestamp: Date }>) => {
+    if (scans.length === 0) return;
+    
+    setIsSearching(true);
+    try {
+      const trackingNumbers = scans.map(s => s.number);
+      const response = await fetch('/api/imports/shipments/search-by-tracking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trackingNumbers })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to search shipments');
+      }
+      
+      const shipments = await response.json();
+      
+      if (shipments.length === 0) {
+        setSearchMessage("No matches yet, keep scanning");
+      } else if (shipments.length === 1) {
+        // Auto-navigate to continue receiving
+        navigate(`/receiving/continue/${shipments[0].id}`, {
+          state: {
+            scannedTrackingNumbers: trackingNumbers,
+            scannedParcels: trackingNumbers.length
+          }
+        });
+      } else {
+        // Show selection dialog
+        setMatchedShipments(shipments);
+        setShowShipmentSelectionDialog(true);
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      setSearchMessage("Error searching for shipments");
+    } finally {
+      setIsSearching(false);
+    }
+  }, [navigate]);
+
+  // Remove a scanned tracking number
+  const removeScannedTracking = useCallback((numberToRemove: string) => {
+    setScannedTrackingNumbers(prev => prev.filter(scan => scan.number !== numberToRemove));
+    // Clear search message if no more tracking numbers
+    if (scannedTrackingNumbers.length === 1) {
+      setSearchMessage("");
+    }
+  }, [scannedTrackingNumbers]);
+
+  // Clear all scanned tracking numbers
+  const clearAllScans = useCallback(() => {
+    setScannedTrackingNumbers([]);
+    setScanInput("");
+    setSearchMessage("");
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+  }, []);
+
+  // Handle shipment selection from dialog
+  const handleShipmentSelection = useCallback((shipmentId: number) => {
+    const trackingNumbers = scannedTrackingNumbers.map(s => s.number);
+    navigate(`/receiving/continue/${shipmentId}`, {
+      state: {
+        scannedTrackingNumbers: trackingNumbers,
+        scannedParcels: trackingNumbers.length
+      }
+    });
+    setShowShipmentSelectionDialog(false);
+  }, [scannedTrackingNumbers, navigate]);
+
+  // Auto-focus scan input when component mounts
+  useEffect(() => {
+    if (scanInputRef.current) {
+      scanInputRef.current.focus();
+    }
+  }, []);
+
+  // Handle barcode scan from legacy barcode field
   useEffect(() => {
     if (barcodeScan) {
-      setSearchQuery(barcodeScan);
+      handleBarcodeInput(barcodeScan + '\n');
       setBarcodeScan("");
     }
-  }, [barcodeScan]);
+  }, [barcodeScan, handleBarcodeInput]);
 
   // Auto-expand all shipments in receiving tab
   useEffect(() => {
@@ -1085,6 +1229,140 @@ export default function ReceivingList() {
           Manage incoming shipments and verify received items
         </p>
       </div>
+
+      {/* Comprehensive Barcode Scanning Panel - Sticky at top */}
+      <Card className="mb-6 sticky top-0 z-10 shadow-lg bg-background">
+        <CardContent className="p-4">
+          <div className="space-y-4">
+            {/* Scanning Header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ScanLine className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold">Barcode Scanner</h3>
+                <Badge variant="secondary" data-testid="badge-scan-counter">
+                  {scannedTrackingNumbers.length} tracking numbers scanned
+                </Badge>
+              </div>
+              {scannedTrackingNumbers.length > 0 && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={clearAllScans}
+                  data-testid="button-clear-all-scans"
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Clear All
+                </Button>
+              )}
+            </div>
+
+            {/* Scan Input */}
+            <div className="relative">
+              <ScanLine className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                ref={scanInputRef}
+                placeholder="Scan or enter tracking number"
+                value={scanInput}
+                onChange={(e) => handleBarcodeInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && scanInput) {
+                    handleBarcodeInput(scanInput + '\n');
+                  }
+                }}
+                className="pl-10 font-mono"
+                data-testid="input-scan-barcode"
+                autoFocus
+              />
+              {isSearching && (
+                <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-primary" />
+              )}
+            </div>
+
+            {/* Search Message */}
+            {searchMessage && (
+              <div className="text-sm text-muted-foreground flex items-center gap-2">
+                {isSearching && <Loader2 className="h-3 w-3 animate-spin" />}
+                {searchMessage}
+              </div>
+            )}
+
+            {/* Scanned Tracking Numbers List */}
+            {scannedTrackingNumbers.length > 0 && (
+              <div className="max-h-32 overflow-y-auto space-y-2 border rounded-lg p-3 bg-muted/30">
+                {scannedTrackingNumbers.map((scan) => (
+                  <div 
+                    key={scan.number} 
+                    className="flex items-center justify-between p-2 bg-background rounded-md border"
+                    data-testid={`scanned-tracking-${scan.number}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <span className="font-mono text-sm">{scan.number}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {format(scan.timestamp, 'HH:mm:ss')}
+                      </span>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => removeScannedTracking(scan.number)}
+                      data-testid={`button-remove-${scan.number}`}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Shipment Selection Dialog */}
+      <Dialog open={showShipmentSelectionDialog} onOpenChange={setShowShipmentSelectionDialog}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Select Shipment</DialogTitle>
+            <DialogDescription>
+              Multiple shipments match your scanned tracking numbers. Select the correct shipment to continue receiving.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 max-h-[400px] overflow-y-auto">
+            {matchedShipments.map((shipment) => (
+              <Card 
+                key={shipment.id} 
+                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => handleShipmentSelection(shipment.id)}
+                data-testid={`shipment-option-${shipment.id}`}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h4 className="font-semibold">
+                        {shipment.shipmentName || `Shipment #${shipment.id}`}
+                      </h4>
+                      <p className="text-sm text-muted-foreground">
+                        Tracking: {shipment.trackingNumber}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant="outline" className="text-xs">
+                          {shipment.carrier || shipment.endCarrier}
+                        </Badge>
+                        {shipment.totalUnits && (
+                          <span className="text-xs text-muted-foreground">
+                            {shipment.totalUnits} {shipment.unitType || 'items'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Search and Filters */}
       <Card className="mb-6">
