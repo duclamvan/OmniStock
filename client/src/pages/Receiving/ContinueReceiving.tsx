@@ -771,7 +771,8 @@ export default function ContinueReceiving() {
         toast({
           title: "Already Scanned",
           description: `Tracking number ${value} has already been scanned`,
-          variant: "destructive"
+          variant: "destructive",
+          duration: 3000
         });
         setBarcodeScan("");
         return;
@@ -809,7 +810,8 @@ export default function ContinueReceiving() {
       
       toast({
         title: `${isPalletShipment ? 'Pallet' : 'Parcel'} Scanned`,
-        description: `Scanned ${newCount} of ${parcelCount} ${unitLabel.toLowerCase()} - ${value}`
+        description: `Scanned ${newCount} of ${parcelCount} ${unitLabel.toLowerCase()} - ${value}`,
+        duration: 2000
       });
     } else if (currentStep === 2) {
       // Step 2: Scanning item barcodes
@@ -821,7 +823,8 @@ export default function ContinueReceiving() {
         updateItemQuantity(item.id, 1);
         toast({
           title: "Item Scanned",
-          description: `${item.name} - Quantity updated`
+          description: `${item.name} - Quantity updated`,
+          duration: 2000
         });
       } else {
         await soundEffects.playErrorBeep();
@@ -830,7 +833,8 @@ export default function ContinueReceiving() {
         toast({
           title: "Item Not Found",
           description: "This SKU is not in the current shipment",
-          variant: "destructive"
+          variant: "destructive",
+          duration: 3000
         });
       }
     }
@@ -1578,7 +1582,8 @@ export default function ContinueReceiving() {
       toast({
         title: "Upload Failed",
         description: "Failed to process photos. Please try again.",
-        variant: "destructive"
+        variant: "destructive",
+        duration: 4000
       });
     } finally {
       // Reset states
