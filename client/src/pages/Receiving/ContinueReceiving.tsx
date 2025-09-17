@@ -2173,7 +2173,7 @@ export default function ContinueReceiving() {
                           variant="secondary" 
                           className="text-xs py-1 px-2"
                         >
-                          {trackingNumber}
+                          {index + 1}. {trackingNumber}
                         </Badge>
                       ))}
                     </div>
