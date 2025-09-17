@@ -5,6 +5,14 @@ Davie Supply is a comprehensive warehouse and order management system designed a
 Preferred communication style: Simple, everyday language.
 
 # Recent Changes
+- **January 28, 2025**: Implemented smart barcode scanning system for automatic shipment matching
+  - Added barcode scanner interface to main receiving page that collects tracking numbers
+  - Created backend API endpoint to search shipments by multiple tracking numbers
+  - Auto-navigation to Continue Receiving when matching shipment is found
+  - Prefills scanned tracking numbers and parcel count in Continue Receiving page
+  - Includes professional audio/visual feedback (success beeps, duplicate warnings, completion sounds)
+  - Supports selection dialog when multiple shipments match the scanned tracking numbers
+  - Seamless workflow from scanning to receiving with automatic data persistence
 - **January 28, 2025**: Unified receiving workflow pages - Quick Receiving and Continue Receiving now use the same page
   - Changed route `/receiving/receipt/:id` to use ContinueReceiving component instead of ReceiptDetails
   - Created new route `/receiving/details/:id` for viewing receipt details separately

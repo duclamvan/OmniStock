@@ -493,7 +493,7 @@ export default function ReceivingList() {
 
   // Visual feedback state
   const [scanFeedbackMessage, setScanFeedbackMessage] = useState("");
-  const [scanFeedbackType, setScanFeedbackType] = useState<'success' | 'error' | 'info' | null>(null);
+  const [scanFeedbackType, setScanFeedbackType] = useState<'success' | 'error' | 'duplicate' | 'complete' | null>(null);
 
   // Comprehensive barcode scanning state
   const [scannedTrackingNumbers, setScannedTrackingNumbers] = useState<Array<{ number: string; timestamp: Date }>>([]); 
