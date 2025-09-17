@@ -1991,7 +1991,7 @@ export default function ContinueReceiving() {
                           }
                         }}
                         placeholder={`Scan or type ${isPalletShipment ? 'pallet' : 'parcel'} tracking number`}
-                        className={scanMode ? 'border-blue-500 ring-2 ring-blue-200 transition-all duration-200' : ''}
+                        className={`w-full ${scanMode ? 'border-blue-500 ring-2 ring-blue-200 transition-all duration-200' : ''}`}
                         autoComplete="off"
                         spellCheck={false}
                       />
