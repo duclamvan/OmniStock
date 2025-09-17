@@ -13,8 +13,8 @@ export function Toaster() {
 
   // Calculate stacking styles - all 3 toasts stacked vertically with no overlap
   const getStackStyles = (index: number): React.CSSProperties => {
-    // Stack all toasts vertically with generous spacing to prevent overlap
-    const translateY = index * -110 // 110px gap between each toast (no overlap)
+    // Stack all toasts vertically with extra generous spacing to prevent overlap
+    const translateY = index * -140 // 140px gap between each toast (plenty of space)
     const scale = 1 - (index * 0.02) // Very subtle scaling for depth
     const opacity = 1 - (index * 0.1) // Slight opacity reduction for older toasts
     
