@@ -3609,7 +3609,7 @@ router.patch("/receipts/:id/meta", async (req, res) => {
 router.patch("/receipts/:id/items/:itemId", async (req, res) => {
   try {
     const receiptId = parseInt(req.params.id);
-    const itemId = parseInt(req.params.itemId);
+    const receiptItemId = parseInt(req.params.itemId); // This is the receipt_items.id
     const { receivedQuantity, status, notes } = req.body;
     
     // Build update object with only provided fields
@@ -3624,7 +3624,7 @@ router.patch("/receipts/:id/items/:itemId", async (req, res) => {
       .set(updateData)
       .where(and(
         eq(receiptItems.receiptId, receiptId),
-        eq(receiptItems.itemId, itemId)  // Fixed: use itemId field, not id
+        eq(receiptItems.id, receiptItemId)  // Use the receipt item's own id
       ))
       .returning({ 
         id: receiptItems.id,
@@ -3647,7 +3647,7 @@ router.patch("/receipts/:id/items/:itemId", async (req, res) => {
 router.patch("/receipts/:id/items/:itemId/increment", async (req, res) => {
   try {
     const receiptId = parseInt(req.params.id);
-    const itemId = parseInt(req.params.itemId);
+    const receiptItemId = parseInt(req.params.itemId); // This is the receipt_items.id
     const { delta } = req.body; // delta can be positive or negative
     
     if (delta === undefined || delta === 0) {
@@ -3663,7 +3663,7 @@ router.patch("/receipts/:id/items/:itemId/increment", async (req, res) => {
       })
       .where(and(
         eq(receiptItems.receiptId, receiptId),
-        eq(receiptItems.itemId, itemId)  // Fixed: use itemId field, not id
+        eq(receiptItems.id, receiptItemId)  // Use the receipt item's own id
       ))
       .returning({ 
         id: receiptItems.id,

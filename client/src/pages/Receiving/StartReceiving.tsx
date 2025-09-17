@@ -1018,8 +1018,8 @@ export default function StartReceiving() {
       })
     );
     
-    // Queue the update for batched sending to server - use itemToUpdate.itemId for API
-    const queueKey = itemToUpdate.itemId ? itemToUpdate.itemId.toString() : itemId; // Convert to string for API
+    // Queue the update for batched sending to server - use the receipt item's ID
+    const queueKey = itemId; // Use the receipt item's own ID
     const currentDelta = updateQueueRef.current.get(queueKey) || 0;
     updateQueueRef.current.set(queueKey, currentDelta + delta);
     
@@ -1034,9 +1034,9 @@ export default function StartReceiving() {
       setSaveStatus('saving');
       
       // Update status if changed
-      if (newStatus !== itemToUpdate.status && itemToUpdate.itemId) {
-        // Use itemToUpdate.itemId for the API call, converting to string
-        updateItemFieldMutation.mutate({ itemId: itemToUpdate.itemId.toString(), field: 'status', value: newStatus });
+      if (newStatus !== itemToUpdate.status) {
+        // Use the receipt item's ID for the API call
+        updateItemFieldMutation.mutate({ itemId: itemId, field: 'status', value: newStatus });
       }
       
       setSaveStatus('saved');
@@ -1087,20 +1087,12 @@ export default function StartReceiving() {
     // Send field-specific update to server without reverting on error
     setSaveStatus('saving');
     
-    // Update status - use itemToUpdate.itemId for API calls
-    if (!itemToUpdate.itemId) {
-      toast({
-        title: "Update Failed",
-        description: "Item ID missing. Please try again.",
-        variant: "destructive"
-      });
-      return;
-    }
-    updateItemFieldMutation.mutate({ itemId: itemToUpdate.itemId.toString(), field: 'status', value: finalStatus }, {
+    // Update status - use the receipt item's ID for API calls
+    updateItemFieldMutation.mutate({ itemId: itemId, field: 'status', value: finalStatus }, {
       onSuccess: () => {
         // If quantity changed (for complete status), update it separately
-        if (finalQty !== itemToUpdate.receivedQty && itemToUpdate.itemId) {
-          updateItemFieldMutation.mutate({ itemId: itemToUpdate.itemId.toString(), field: 'receivedQuantity', value: finalQty });
+        if (finalQty !== itemToUpdate.receivedQty) {
+          updateItemFieldMutation.mutate({ itemId: itemId, field: 'receivedQuantity', value: finalQty });
         }
         setSaveStatus('saved');
         setTimeout(() => setSaveStatus('idle'), 1000);
@@ -1118,12 +1110,12 @@ export default function StartReceiving() {
 
   // Update item notes - optimistic update without revert on error
   const updateItemNotes = useCallback((itemId: string, notes: string) => {
-    // Find the item to get its itemId
+    // Find the item
     const itemToUpdate = receivingItems.find(item => item.id === itemId);
-    if (!itemToUpdate || !itemToUpdate.itemId) {
+    if (!itemToUpdate) {
       toast({
         title: "Update Failed",
-        description: "Item not found or ID missing.",
+        description: "Item not found.",
         variant: "destructive"
       });
       return;
@@ -1141,7 +1133,7 @@ export default function StartReceiving() {
     
     // Send field-specific update to server without reverting on error
     setSaveStatus('saving');
-    updateItemFieldMutation.mutate({ itemId: itemToUpdate.itemId.toString(), field: 'notes', value: notes }, {
+    updateItemFieldMutation.mutate({ itemId: itemId, field: 'notes', value: notes }, {
       onSuccess: () => {
         setSaveStatus('saved');
         setTimeout(() => setSaveStatus('idle'), 1000);
@@ -2617,13 +2609,11 @@ export default function StartReceiving() {
                                       if (itemToUpdate) {
                                         // Update quantity to expected
                                         const delta = itemToUpdate.expectedQty - item.receivedQty;
-                                        if (delta !== 0 && item.itemId) {
-                                          updateItemQuantityMutation.mutate({ itemId: item.itemId.toString(), delta });
+                                        if (delta !== 0) {
+                                          updateItemQuantityMutation.mutate({ itemId: item.id, delta });
                                         }
                                         // Update status to complete
-                                        if (item.itemId) {
-                                          updateItemFieldMutation.mutate({ itemId: item.itemId.toString(), field: 'status', value: 'complete' });
-                                        }
+                                        updateItemFieldMutation.mutate({ itemId: item.id, field: 'status', value: 'complete' });
                                       }
                                     }}
                                     className={`min-w-[70px] transition-colors shadow-sm ${
