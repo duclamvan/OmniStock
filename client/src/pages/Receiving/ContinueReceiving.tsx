@@ -465,10 +465,14 @@ export default function ContinueReceiving() {
   useEffect(() => {
     if (receivingItems.length === 0) return;
 
+    // Create a stable key based on product IDs to detect when the set of products changes
+    const productIdsKey = receivingItems.map(item => item.productId || `no-${item.id}`).join('|');
+
     const updateItemsWithLocations = async () => {
       const updatedItems = await Promise.all(
         receivingItems.map(async (item) => {
-          if (!item.productId) {
+          // If no productId, mark as new product
+          if (!item.productId || item.productId === item.id) {
             return { ...item, isNewProduct: true };
           }
 
@@ -489,15 +493,16 @@ export default function ContinueReceiving() {
       setReceivingItems(updatedItems);
     };
 
-    // Only fetch locations if items don't already have them
+    // Only fetch locations if items don't already have them or if product set changed
     const needsLocationUpdate = receivingItems.some(
-      item => !item.warehouseLocations || item.warehouseLocations.length === 0
+      item => (!item.warehouseLocations || item.warehouseLocations.length === 0) && 
+               item.isNewProduct === false // Don't refetch for items already marked as new
     );
 
     if (needsLocationUpdate) {
       updateItemsWithLocations();
     }
-  }, [receivingItems.length]); // Only trigger on items count change, not on every items update
+  }, [receivingItems.map(item => item.productId || `no-${item.id}`).join('|')]);
 
   // Auto-focus barcode input in scan mode
   useEffect(() => {
