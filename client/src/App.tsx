@@ -67,7 +67,6 @@ import StartReceiving from "@/pages/Receiving/StartReceiving";
 import ContinueReceiving from "@/pages/Receiving/ContinueReceiving";
 import ReceiptDetails from "@/pages/Receiving/ReceiptDetails";
 import ReviewApprove from "@/pages/Receiving/ReviewApprove";
-import StoreItems from "@/pages/Receiving/StoreItems";
 import ItemsToStore from "@/pages/Receiving/ItemsToStore";
 // Legacy imports - commented out
 // import AllImports from "@/pages/Imports/AllImports";
