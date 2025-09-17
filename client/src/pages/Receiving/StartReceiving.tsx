@@ -916,7 +916,7 @@ export default function StartReceiving() {
       toast({
         title: `${isPalletShipment ? 'Pallet' : 'Parcel'} Scanned`,
         description: `Scanned ${newCount} of ${parcelCount} ${unitLabel.toLowerCase()} - ${value}`,
-        duration: 2000
+        duration: 3000
       });
     } else if (currentStep === 2) {
       // Step 2: Scanning item barcodes
