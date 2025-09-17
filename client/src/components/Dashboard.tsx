@@ -7,9 +7,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { MobileCardView } from "@/components/ui/responsive-table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Truck, Package, Euro, TrendingUp, Filter, ArrowUpDown } from "lucide-react";
+import { Truck, Package, Euro, TrendingUp, Filter, ArrowUpDown, Bell, Info, AlertCircle, CheckCircle2 } from "lucide-react";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { FixedSizeList as List } from "react-window";
+import { useToast } from "@/hooks/use-toast";
 
 // Lazy load heavy chart components to reduce initial bundle size
 const RevenueChart = lazy(() => import("./charts/RevenueChart").then(m => ({ default: m.RevenueChart })));
@@ -131,6 +132,65 @@ const ActivitySkeleton = memo(() => (
 ActivitySkeleton.displayName = 'ActivitySkeleton';
 
 export function Dashboard() {
+  const { toast } = useToast();
+  
+  // Test functions for the stacked notification system
+  const triggerSuccessToast = () => {
+    toast({
+      title: "✅ Success!",
+      description: "Your order has been successfully processed and shipped.",
+      variant: "default",
+    });
+  };
+  
+  const triggerErrorToast = () => {
+    toast({
+      title: "❌ Error Occurred",
+      description: "Failed to process payment. Please check your card details.",
+      variant: "destructive",
+    });
+  };
+  
+  const triggerInfoToast = () => {
+    toast({
+      title: "ℹ️ Information",
+      description: "New inventory items have been added to warehouse location A-1-3.",
+      variant: "default",
+    });
+  };
+  
+  const triggerMultipleToasts = () => {
+    // Trigger multiple toasts to test stacking
+    setTimeout(() => {
+      toast({
+        title: "📦 Order Received",
+        description: "Order #12345 has been received and is being prepared.",
+      });
+    }, 0);
+    
+    setTimeout(() => {
+      toast({
+        title: "🚚 Shipment Update",
+        description: "Your shipment is out for delivery and will arrive today.",
+      });
+    }, 100);
+    
+    setTimeout(() => {
+      toast({
+        title: "✨ New Feature",
+        description: "Check out our new inventory management dashboard!",
+      });
+    }, 200);
+    
+    setTimeout(() => {
+      toast({
+        title: "⚠️ Low Stock Alert",
+        description: "Product SKU-789 is running low on stock. Reorder soon.",
+        variant: "destructive",
+      });
+    }, 300);
+  };
+
   // Dashboard data with optimized caching settings to reduce unnecessary requests
   const { data: metrics, isLoading: metricsLoading } = useQuery<DashboardMetrics>({
     queryKey: ['/api/dashboard/metrics'],
@@ -200,6 +260,57 @@ export function Dashboard() {
 
   return (
     <div className="space-y-4 sm:space-y-6 lg:space-y-8">
+      {/* Test Notification System - Remove in production */}
+      <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Bell className="h-5 w-5" />
+            Test Notification System
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-gray-600 mb-4">Click buttons to test the stacked notification system (max 3 visible)</p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={triggerSuccessToast}
+              className="bg-green-600 hover:bg-green-700"
+              size="sm"
+              data-testid="button-success-toast"
+            >
+              <CheckCircle2 className="h-4 w-4 mr-1" />
+              Success
+            </Button>
+            <Button
+              onClick={triggerErrorToast}
+              variant="destructive"
+              size="sm"
+              data-testid="button-error-toast"
+            >
+              <AlertCircle className="h-4 w-4 mr-1" />
+              Error
+            </Button>
+            <Button
+              onClick={triggerInfoToast}
+              className="bg-blue-600 hover:bg-blue-700"
+              size="sm"
+              data-testid="button-info-toast"
+            >
+              <Info className="h-4 w-4 mr-1" />
+              Info
+            </Button>
+            <Button
+              onClick={triggerMultipleToasts}
+              variant="outline"
+              size="sm"
+              data-testid="button-multiple-toasts"
+            >
+              <Bell className="h-4 w-4 mr-1" />
+              Trigger 4 Toasts (Test Stacking)
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Key Metrics Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         {/* Fulfill Orders Today */}
