@@ -23,6 +23,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { ScanFeedback, ScanLineAnimation, ScanInputPulse, SuccessCheckmark } from "@/components/ScanFeedback";
+import { soundEffects } from "@/utils/soundEffects";
 import { 
   compressImagesInParallel,
   compressImagesWithThumbnailsInParallel, 
@@ -156,6 +158,8 @@ export default function ContinueReceiving() {
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [hasShownCompletionToast, setHasShownCompletionToast] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [scanFeedback, setScanFeedback] = useState<{ type: 'success' | 'error' | 'duplicate' | 'complete' | null; message: string }>({ type: null, message: '' });
+  const [showSuccessCheckmark, setShowSuccessCheckmark] = useState(false);
 
   // OPTIMIZED QUERIES: Smart caching prevents duplicate requests
   const { data: shipment, isLoading } = useQuery({
@@ -648,11 +652,14 @@ export default function ContinueReceiving() {
   });
 
   // Handle barcode scan
-  const handleBarcodeScan = (value: string) => {
+  const handleBarcodeScan = async (value: string) => {
     if (currentStep === 1) {
       // Step 1: Scanning parcel barcodes
       // Check if tracking number already scanned
       if (scannedTrackingNumbers.includes(value)) {
+        await soundEffects.playDuplicateBeep();
+        setScanFeedback({ type: 'duplicate', message: `Already scanned: ${value}` });
+        setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
         toast({
           title: "Already Scanned",
           description: `Tracking number ${value} has already been scanned`,
@@ -666,6 +673,20 @@ export default function ContinueReceiving() {
       const newTrackingNumbers = [...scannedTrackingNumbers, value];
       setScannedTrackingNumbers(newTrackingNumbers);
       setScannedParcels(newCount); // Update local state for immediate UI refresh
+      
+      // Play success sound and show visual feedback
+      await soundEffects.playSuccessBeep();
+      setScanFeedback({ type: 'success', message: `Scanned: ${value}` });
+      setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
+      
+      // Check if all parcels are scanned
+      if (newCount === parcelCount && parcelCount > 0) {
+        setTimeout(async () => {
+          await soundEffects.playCompletionSound();
+          setShowSuccessCheckmark(true);
+          setTimeout(() => setShowSuccessCheckmark(false), 2000);
+        }, 500);
+      }
       
       // Update scanned parcels count
       setSaveStatus('saving');
@@ -686,12 +707,18 @@ export default function ContinueReceiving() {
       // Step 2: Scanning item barcodes
       const item = receivingItems.find(item => item.sku === value);
       if (item) {
+        await soundEffects.playSuccessBeep();
+        setScanFeedback({ type: 'success', message: `Scanned: ${item.name}` });
+        setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
         updateItemQuantity(item.id, 1);
         toast({
           title: "Item Scanned",
           description: `${item.name} - Quantity updated`
         });
       } else {
+        await soundEffects.playErrorBeep();
+        setScanFeedback({ type: 'error', message: 'Item not found' });
+        setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
         toast({
           title: "Item Not Found",
           description: "This SKU is not in the current shipment",
@@ -1530,8 +1557,27 @@ export default function ContinueReceiving() {
     );
   }
 
+  // Initialize audio on first user interaction
+  useEffect(() => {
+    const initAudio = () => {
+      soundEffects.initAudio();
+      document.removeEventListener('click', initAudio);
+      document.removeEventListener('keydown', initAudio);
+    };
+    document.addEventListener('click', initAudio);
+    document.addEventListener('keydown', initAudio);
+    return () => {
+      document.removeEventListener('click', initAudio);
+      document.removeEventListener('keydown', initAudio);
+    };
+  }, []);
+
   return (
     <div className="container mx-auto p-4 max-w-4xl relative">
+      {/* Visual Feedback Components */}
+      <ScanFeedback type={scanFeedback.type} message={scanFeedback.message} />
+      <ScanLineAnimation isActive={scanMode} />
+      <SuccessCheckmark show={showSuccessCheckmark} />
       {/* Save Status Indicator */}
       <div className="fixed top-4 right-4 z-50">
         {saveStatus === 'saving' && (
@@ -1867,34 +1913,36 @@ export default function ContinueReceiving() {
               <div>
                 <Label>Scan {unitLabel}</Label>
                 <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <Input
-                      ref={barcodeRef}
-                      value={barcodeScan}
-                      onChange={(e) => setBarcodeScan(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && barcodeScan.trim()) {
-                          e.preventDefault();
-                          handleBarcodeScan(barcodeScan.trim());
-                        }
-                      }}
-                      onBlur={(e) => {
-                        // Handle Bluetooth scanner input that doesn't trigger Enter
-                        if (e.target.value.trim() && e.target.value !== barcodeScan) {
-                          setTimeout(() => {
-                            if (barcodeRef.current?.value.trim()) {
-                              handleBarcodeScan(barcodeRef.current.value.trim());
-                            }
-                          }, 100);
-                        }
-                      }}
-                      placeholder={`Scan or type ${isPalletShipment ? 'pallet' : 'parcel'} tracking number`}
-                      className={scanMode ? 'border-blue-500 ring-2 ring-blue-200' : ''}
-                      autoComplete="off"
-                      spellCheck={false}
-                    />
-                    <ScanLine className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  </div>
+                  <ScanInputPulse isScanning={scanMode}>
+                    <div className="relative flex-1">
+                      <Input
+                        ref={barcodeRef}
+                        value={barcodeScan}
+                        onChange={(e) => setBarcodeScan(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && barcodeScan.trim()) {
+                            e.preventDefault();
+                            handleBarcodeScan(barcodeScan.trim());
+                          }
+                        }}
+                        onBlur={(e) => {
+                          // Handle Bluetooth scanner input that doesn't trigger Enter
+                          if (e.target.value.trim() && e.target.value !== barcodeScan) {
+                            setTimeout(() => {
+                              if (barcodeRef.current?.value.trim()) {
+                                handleBarcodeScan(barcodeRef.current.value.trim());
+                              }
+                            }, 100);
+                          }
+                        }}
+                        placeholder={`Scan or type ${isPalletShipment ? 'pallet' : 'parcel'} tracking number`}
+                        className={scanMode ? 'border-blue-500 ring-2 ring-blue-200 transition-all duration-200' : ''}
+                        autoComplete="off"
+                        spellCheck={false}
+                      />
+                      <ScanLine className={`absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 ${scanMode ? 'text-blue-500 animate-pulse' : 'text-muted-foreground'}`} />
+                    </div>
+                  </ScanInputPulse>
                   <Button
                     type="button"
                     variant="outline"
@@ -2036,20 +2084,22 @@ export default function ContinueReceiving() {
             <CardContent className="space-y-3">
               {/* Scan Input */}
               {scanMode && (
-                <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded-lg">
-                  <Input
-                    ref={barcodeRef}
-                    value={barcodeScan}
-                    onChange={(e) => setBarcodeScan(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && barcodeScan) {
-                        handleBarcodeScan(barcodeScan);
-                      }
-                    }}
-                    placeholder="Scan item barcode here..."
-                    className="border-blue-300"
-                  />
-                </div>
+                <ScanInputPulse isScanning={scanMode}>
+                  <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded-lg transition-all duration-300">
+                    <Input
+                      ref={barcodeRef}
+                      value={barcodeScan}
+                      onChange={(e) => setBarcodeScan(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && barcodeScan) {
+                          handleBarcodeScan(barcodeScan);
+                        }
+                      }}
+                      placeholder="Scan item barcode here..."
+                      className="border-blue-300 transition-all duration-200"
+                    />
+                  </div>
+                </ScanInputPulse>
               )}
 
               {/* Items List */}

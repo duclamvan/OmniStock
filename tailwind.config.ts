@@ -79,10 +79,28 @@ export default {
             height: "0",
           },
         },
+        "scan-line": {
+          "0%": {
+            transform: "translateY(0vh)",
+          },
+          "100%": {
+            transform: "translateY(100vh)",
+          },
+        },
+        "pulse-ring": {
+          "0%, 100%": {
+            boxShadow: "0 0 0 0 rgba(59, 130, 246, 0.5)",
+          },
+          "50%": {
+            boxShadow: "0 0 0 8px rgba(59, 130, 246, 0)",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "scan-line": "scan-line 2s linear infinite",
+        "pulse-ring": "pulse-ring 2s cubic-bezier(0, 0, 0.2, 1) infinite",
       },
     },
   },
