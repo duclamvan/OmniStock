@@ -1175,8 +1175,8 @@ export default function ContinueReceiving() {
       onSuccess: () => {
         setSaveStatus('saved');
         setTimeout(() => setSaveStatus('idle'), 1000);
-        // Invalidate the receipt query to ensure fresh data when navigating
-        queryClient.invalidateQueries({ queryKey: [`/api/imports/receipts/by-shipment/${id}`] });
+        // Don't invalidate query for scannedParcels to prevent race condition
+        // The local state is already updated, so no need to refetch
       }
     });
     
@@ -1775,6 +1775,8 @@ export default function ContinueReceiving() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleParcelCountChange(Math.max(1, parcelCount - 1), true)}
+                          disabled={parcelCount <= 1 || updateMetaMutation.isPending}
+                          className={updateMetaMutation.isPending ? 'opacity-50' : ''}
                         >
                           <Minus className="h-4 w-4" />
                         </Button>
@@ -1791,6 +1793,8 @@ export default function ContinueReceiving() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleParcelCountChange(parcelCount + 1, true)}
+                          disabled={updateMetaMutation.isPending}
+                          className={updateMetaMutation.isPending ? 'opacity-50' : ''}
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
@@ -1805,7 +1809,8 @@ export default function ContinueReceiving() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleScannedParcelsChange(Math.max(0, scannedParcels - 1), true)}
-                          disabled={scannedParcels === 0}
+                          disabled={scannedParcels === 0 || updateMetaMutation.isPending}
+                          className={updateMetaMutation.isPending ? 'opacity-50' : ''}
                         >
                           <Minus className="h-4 w-4" />
                         </Button>
@@ -1823,7 +1828,8 @@ export default function ContinueReceiving() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleScannedParcelsChange(Math.min(parcelCount, scannedParcels + 1), true)}
-                          disabled={scannedParcels >= parcelCount}
+                          disabled={scannedParcels >= parcelCount || updateMetaMutation.isPending}
+                          className={updateMetaMutation.isPending ? 'opacity-50' : ''}
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
@@ -1844,8 +1850,8 @@ export default function ContinueReceiving() {
                       description: `All ${parcelCount} ${unitLabel.toLowerCase()} have been automatically received`
                     });
                   }}
-                  disabled={scannedParcels >= parcelCount}
-                  className="w-full"
+                  disabled={scannedParcels >= parcelCount || updateMetaMutation.isPending}
+                  className={`w-full ${updateMetaMutation.isPending ? 'opacity-50' : ''}`}
                 >
                   <CheckCircle2 className="h-4 w-4 mr-2" />
                   Receive All ({parcelCount})
