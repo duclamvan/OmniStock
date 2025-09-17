@@ -359,6 +359,7 @@ export default function ContinueReceiving() {
             return {
               id: itemId,
               itemId: shipmentItem.id, // Add itemId field for API calls
+              productId: shipmentItem.productId?.toString() || shipmentItem.id?.toString(),
               name: shipmentItem.name || shipmentItem.productName || `Item ${index + 1}`,
               sku: shipmentItem.sku || '',
               expectedQty,
@@ -367,13 +368,15 @@ export default function ContinueReceiving() {
               notes: receiptItem.notes || '',
               checked: receivedQty > 0,
               imageUrl: shipmentItem.imageUrl || '',
-              warehouseLocation: shipmentItem.warehouseLocation || receiptItem.warehouseLocation || generateWarehouseLocation(shipmentItem.id, shipmentItem.sku, index)
+              warehouseLocations: [] as string[], // Will be populated after initialization
+              isNewProduct: false // Will be determined when fetching locations
             };
           } else {
             // No receipt data yet, use shipment defaults
             return {
               id: itemId,
               itemId: shipmentItem.id, // Add itemId field for API calls
+              productId: shipmentItem.productId?.toString() || shipmentItem.id?.toString(),
               name: shipmentItem.name || shipmentItem.productName || `Item ${index + 1}`,
               sku: shipmentItem.sku || '',
               expectedQty: shipmentItem.quantity || 1,
@@ -382,7 +385,8 @@ export default function ContinueReceiving() {
               notes: '',
               checked: false,
               imageUrl: shipmentItem.imageUrl || '',
-              warehouseLocation: shipmentItem.warehouseLocation || generateWarehouseLocation(shipmentItem.id, shipmentItem.sku, index)
+              warehouseLocations: [] as string[], // Will be populated after initialization
+              isNewProduct: false // Will be determined when fetching locations
             };
           }
         });
@@ -439,6 +443,7 @@ export default function ContinueReceiving() {
           const items = shipment.items.map((item: any, index: number) => ({
             id: item.id ? item.id.toString() : `item-${index}`, // Convert to string for UI, but store original ID
             itemId: item.id, // Add itemId field for API calls
+            productId: item.productId?.toString() || item.id?.toString(),
             name: item.name || item.productName || `Item ${index + 1}`,
             sku: item.sku || '',
             expectedQty: item.quantity || 1,
@@ -447,13 +452,52 @@ export default function ContinueReceiving() {
             notes: '',
             checked: false,
             imageUrl: item.imageUrl || '',
-            warehouseLocation: item.warehouseLocation || generateWarehouseLocation(item.id, item.sku, index)
+            warehouseLocations: [] as string[], // Will be populated after initialization
+            isNewProduct: false // Will be determined when fetching locations
           }));
           setReceivingItems(items);
         }
       }
     }
   }, [shipment, receipt, receiptLoading]);
+
+  // Fetch real product locations after items are initialized
+  useEffect(() => {
+    if (receivingItems.length === 0) return;
+
+    const updateItemsWithLocations = async () => {
+      const updatedItems = await Promise.all(
+        receivingItems.map(async (item) => {
+          if (!item.productId) {
+            return { ...item, isNewProduct: true };
+          }
+
+          try {
+            const locations = await fetchProductLocations(item.productId);
+            if (locations.length === 0) {
+              return { ...item, isNewProduct: true };
+            } else {
+              return { ...item, warehouseLocations: locations, isNewProduct: false };
+            }
+          } catch (error) {
+            console.error(`Error fetching locations for product ${item.productId}:`, error);
+            return { ...item, isNewProduct: true };
+          }
+        })
+      );
+
+      setReceivingItems(updatedItems);
+    };
+
+    // Only fetch locations if items don't already have them
+    const needsLocationUpdate = receivingItems.some(
+      item => !item.warehouseLocations || item.warehouseLocations.length === 0
+    );
+
+    if (needsLocationUpdate) {
+      updateItemsWithLocations();
+    }
+  }, [receivingItems.length]); // Only trigger on items count change, not on every items update
 
   // Auto-focus barcode input in scan mode
   useEffect(() => {
