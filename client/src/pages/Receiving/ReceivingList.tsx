@@ -569,12 +569,12 @@ export default function ReceivingList() {
     refetchOnMount: true // Only refetch if stale
   });
 
-  // Fetch shipments pending approval with caching
-  const { data: approvalShipments = [], isLoading: isLoadingApproval } = useQuery({
+  // Fetch shipments ready for storage with caching
+  const { data: storageShipments = [], isLoading: isLoadingStorage } = useQuery({
     queryKey: ['/api/imports/shipments/by-status/pending_approval'],
     queryFn: async () => {
       const response = await fetch('/api/imports/shipments/by-status/pending_approval');
-      if (!response.ok) throw new Error('Failed to fetch approval shipments');
+      if (!response.ok) throw new Error('Failed to fetch storage shipments');
       return response.json();
     },
     staleTime: 30 * 1000, // 30 seconds
@@ -633,14 +633,14 @@ export default function ReceivingList() {
         return toReceiveShipments || [];
       case 'receiving':
         return receivingShipments || [];
-      case 'approval':
-        return approvalShipments || [];
+      case 'storage':
+        return storageShipments || [];
       case 'completed':
         return completedShipments || [];
       default:
         return toReceiveShipments || [];
     }
-  }, [activeTab, toReceiveShipments, receivingShipments, approvalShipments, completedShipments]);
+  }, [activeTab, toReceiveShipments, receivingShipments, storageShipments, completedShipments]);
 
   // Get unique carriers from shipments - wrapped in useMemo for consistent hook ordering
   const uniqueCarriers = useMemo<string[]>(() => {
@@ -688,8 +688,8 @@ export default function ReceivingList() {
       case 'receiving':
         shipmentsData = receivingShipments;
         break;
-      case 'approval':
-        shipmentsData = approvalShipments;
+      case 'storage':
+        shipmentsData = storageShipments;
         break;
       case 'completed':
         shipmentsData = completedShipments;
@@ -748,7 +748,7 @@ export default function ReceivingList() {
     activeTab, 
     toReceiveShipments, 
     receivingShipments, 
-    approvalShipments, 
+    storageShipments, 
     completedShipments, 
     searchQuery, 
     priorityFilter, 
@@ -1075,7 +1075,7 @@ export default function ReceivingList() {
     </Card>
   );
 
-  const isLoading = isLoadingToReceive || isLoadingReceiving || isLoadingApproval || isLoadingCompleted || isLoadingReceipts;
+  const isLoading = isLoadingToReceive || isLoadingReceiving || isLoadingStorage || isLoadingCompleted || isLoadingReceipts;
 
   return (
     <div className="container mx-auto p-6">
@@ -1374,20 +1374,20 @@ export default function ReceivingList() {
           </button>
 
           <button
-            onClick={() => setActiveTab('approval')}
+            onClick={() => setActiveTab('storage')}
             className={`
               flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all
-              ${activeTab === 'approval' 
+              ${activeTab === 'storage' 
                 ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/20' 
                 : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
               }
             `}
-            data-testid="tab-approval"
+            data-testid="tab-storage"
           >
-            <AlertCircle className="h-4 w-4" />
-            <span>Approval</span>
-            <span className={`${activeTab === 'approval' ? 'text-white/90' : 'text-gray-500'}`}>
-              ({approvalShipments.length})
+            <Warehouse className="h-4 w-4" />
+            <span>Storage</span>
+            <span className={`${activeTab === 'storage' ? 'text-white/90' : 'text-gray-500'}`}>
+              ({storageShipments.length})
             </span>
           </button>
 
@@ -1768,27 +1768,27 @@ export default function ReceivingList() {
           )}
         </TabsContent>
 
-        <TabsContent value="approval" className="mt-6">
-          {isLoadingApproval ? (
+        <TabsContent value="storage" className="mt-6">
+          {isLoadingStorage ? (
             <div className="text-center py-8">
               <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-2 animate-pulse" />
               <p className="text-muted-foreground">Loading shipments...</p>
             </div>
-          ) : approvalShipments.length === 0 ? (
+          ) : storageShipments.length === 0 ? (
             <div className="text-center py-8">
               <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-              <p className="text-muted-foreground">No shipments pending approval</p>
+              <p className="text-muted-foreground">No shipments ready for storage</p>
             </div>
           ) : (
             <div className="space-y-4">
-              {approvalShipments.map((shipment: any) => {
+              {storageShipments.map((shipment: any) => {
                 return (
                   <Card key={shipment.id} className="border hover:shadow-md transition-shadow border-orange-300">
                     <CardContent className="p-4">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div className="flex items-center gap-3 flex-1">
                           <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100">
-                            Pending Approval
+                            Ready for Storage
                           </Badge>
                           <div className="flex-1">
                             <h3 className="font-semibold">{shipment.shipmentName || `Shipment #${shipment.id}`}</h3>
@@ -1797,9 +1797,9 @@ export default function ReceivingList() {
                             </p>
                           </div>
                         </div>
-                        <Link href={`/receiving/approve/${shipment.id}`}>
+                        <Link href={`/receiving/storage/${shipment.id}`}>
                           <Button size="sm" className="bg-orange-600 hover:bg-orange-700 text-white">
-                            Review & Approve
+                            Store Items
                           </Button>
                         </Link>
                       </div>
