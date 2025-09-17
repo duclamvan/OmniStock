@@ -2029,11 +2029,6 @@ export default function ReceivingList() {
                             </p>
                           </div>
                         </div>
-                        <Link href={`/receiving/storage/${shipment.id}`}>
-                          <Button size="sm" className="bg-orange-600 hover:bg-orange-700 text-white">
-                            Store Items
-                          </Button>
-                        </Link>
                       </div>
                     </CardContent>
                   </Card>

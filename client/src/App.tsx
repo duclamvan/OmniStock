@@ -68,6 +68,7 @@ import ContinueReceiving from "@/pages/Receiving/ContinueReceiving";
 import ReceiptDetails from "@/pages/Receiving/ReceiptDetails";
 import ReviewApprove from "@/pages/Receiving/ReviewApprove";
 import StoreItems from "@/pages/Receiving/StoreItems";
+import ItemsToStore from "@/pages/Receiving/ItemsToStore";
 // Legacy imports - commented out
 // import AllImports from "@/pages/Imports/AllImports";
 // import AddImportOrder from "@/pages/Imports/AddImportOrder";
@@ -163,12 +164,12 @@ function Router() {
         </Route>
         {/* Receiving Routes */}
         <Route path="/receiving" component={ReceivingList} />
+        <Route path="/receiving/items-to-store" component={ItemsToStore} />
         <Route path="/receiving/start/:id" component={StartReceiving} />
         <Route path="/receiving/continue/:id" component={ContinueReceiving} />
         <Route path="/receiving/receipt/:id" component={ContinueReceiving} />
         <Route path="/receiving/details/:id" component={ReceiptDetails} />
         <Route path="/receiving/approve/:id" component={ReviewApprove} />
-        <Route path="/receiving/storage/:id" component={StoreItems} />
         <Route path="/reports">
           {() => <div>Reports page coming soon</div>}
         </Route>

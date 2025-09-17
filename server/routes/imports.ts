@@ -2842,6 +2842,121 @@ router.post("/receipts", async (req, res) => {
   }
 });
 
+// Get all items pending storage from all receipts - MUST BE BEFORE /:id ROUTE
+router.get("/receipts/items-to-store", async (req, res) => {
+  try {
+    // Get all receipts with pending_approval status (received but not stored)
+    const pendingReceipts = await db
+      .select({
+        receipt: receipts,
+        shipment: shipments
+      })
+      .from(receipts)
+      .leftJoin(shipments, eq(receipts.shipmentId, shipments.id))
+      .where(eq(receipts.status, 'pending_approval'))
+      .orderBy(desc(receipts.createdAt));
+    
+    if (pendingReceipts.length === 0) {
+      return res.json({
+        receipts: [],
+        totalItems: 0,
+        totalQuantity: 0
+      });
+    }
+    
+    // Get all items for these receipts
+    const receiptIds = pendingReceipts.map(r => r.receipt.id);
+    const allReceiptItems = await db
+      .select()
+      .from(receiptItems)
+      .where(inArray(receiptItems.receiptId, receiptIds))
+      .orderBy(receiptItems.receiptId, receiptItems.id);
+    
+    // Get product information and existing locations for all items at once
+    const productIds = allReceiptItems
+      .filter(item => item.productId)
+      .map(item => item.productId as string);
+    
+    let productsInfo = [];
+    let productLocationsInfo = [];
+    
+    if (productIds.length > 0) {
+      // Get product details
+      productsInfo = await db
+        .select()
+        .from(products)
+        .where(inArray(products.id, productIds));
+      
+      // Get existing warehouse locations
+      productLocationsInfo = await db
+        .select()
+        .from(productLocations)
+        .where(inArray(productLocations.productId, productIds));
+    }
+    
+    // Create maps for quick lookup
+    const productsMap = Object.fromEntries(
+      productsInfo.map(p => [p.id, p])
+    );
+    
+    const locationsMap: Record<string, any[]> = {};
+    productLocationsInfo.forEach(loc => {
+      if (!locationsMap[loc.productId]) {
+        locationsMap[loc.productId] = [];
+      }
+      locationsMap[loc.productId].push(loc);
+    });
+    
+    // Group items by receipt
+    const itemsByReceipt: Record<number, any[]> = {};
+    allReceiptItems.forEach(item => {
+      if (!itemsByReceipt[item.receiptId]) {
+        itemsByReceipt[item.receiptId] = [];
+      }
+      
+      // Enhance item with product info and locations
+      const product = item.productId ? productsMap[item.productId] : null;
+      const existingLocations = item.productId ? (locationsMap[item.productId] || []) : [];
+      
+      itemsByReceipt[item.receiptId].push({
+        ...item,
+        productName: product?.name || item.description || `Item #${item.itemId}`,
+        sku: product?.sku || item.sku,
+        barcode: product?.barcode,
+        existingLocations: existingLocations.map(loc => ({
+          id: loc.id.toString(),
+          locationCode: loc.locationCode,
+          locationType: loc.locationType || 'warehouse',
+          quantity: loc.quantity,
+          isPrimary: loc.isPrimary || false
+        }))
+      });
+    });
+    
+    // Combine receipts with their items
+    const receiptsWithItems = pendingReceipts.map(r => ({
+      receipt: r.receipt,
+      shipment: r.shipment,
+      items: itemsByReceipt[r.receipt.id] || []
+    }));
+    
+    // Calculate totals
+    const totalItems = allReceiptItems.length;
+    const totalQuantity = allReceiptItems.reduce((sum, item) => 
+      sum + (item.receivedQuantity || 0), 0
+    );
+    
+    res.json({
+      receipts: receiptsWithItems,
+      totalItems,
+      totalQuantity
+    });
+  } catch (error) {
+    console.error("Error fetching items to store:", error);
+    res.status(500).json({ message: "Failed to fetch items to store" });
+  }
+});
+
 // Get receipt with items
 router.get("/receipts/:id", async (req, res) => {
   try {

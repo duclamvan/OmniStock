@@ -77,6 +77,14 @@ const navigation = [
     ],
   },
   {
+    name: "Receiving",
+    icon: Package,
+    children: [
+      { name: "Receiving List", href: "/receiving" },
+      { name: "Items To Store", href: "/receiving/items-to-store" },
+    ],
+  },
+  {
     name: "Reports",
     href: "/reports",
     icon: BarChart3,
