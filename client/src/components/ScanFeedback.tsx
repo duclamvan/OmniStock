@@ -21,9 +21,16 @@ export function ScanFeedback({ type, message }: ScanFeedbackProps) {
       // Auto-hide after animation
       const timer = setTimeout(() => {
         setIsVisible(false);
+        setCurrentType(null);
+        setCurrentMessage('');
       }, 2000);
       
       return () => clearTimeout(timer);
+    } else {
+      // Immediately hide when type is null
+      setIsVisible(false);
+      setCurrentType(null);
+      setCurrentMessage('');
     }
   }, [type, message]);
 
