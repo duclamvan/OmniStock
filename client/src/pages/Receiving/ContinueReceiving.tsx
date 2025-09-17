@@ -74,7 +74,21 @@ interface ReceivingItem {
   notes?: string;
   checked: boolean;
   imageUrl?: string;
+  warehouseLocation?: string; // Warehouse bin location code
 }
+
+// Helper function to generate warehouse location with proper formatting
+const generateWarehouseLocation = (itemId?: number | string, sku?: string, index?: number): string => {
+  // Use a stable seed from itemId or SKU to ensure deterministic generation
+  const seed = itemId?.toString() || sku || index?.toString() || '0';
+  const numericSeed = seed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  
+  const aisle = String(1 + (numericSeed % 6)).padStart(2, '0'); // A01-A06
+  const rack = String(1 + ((numericSeed >> 2) % 8)).padStart(2, '0'); // R01-R08
+  const level = String(1 + ((numericSeed >> 4) % 4)).padStart(2, '0'); // L01-L04
+  
+  return `WH1-A${aisle}-R${rack}-L${level}`;
+};
 
 // Optimized thumbnail-only image component for maximum speed
 const LazyImage = ({ 
@@ -335,7 +349,8 @@ export default function ContinueReceiving() {
               status: calculatedStatus,
               notes: receiptItem.notes || '',
               checked: receivedQty > 0,
-              imageUrl: shipmentItem.imageUrl || ''
+              imageUrl: shipmentItem.imageUrl || '',
+              warehouseLocation: shipmentItem.warehouseLocation || receiptItem.warehouseLocation || generateWarehouseLocation(shipmentItem.id, shipmentItem.sku, index)
             };
           } else {
             // No receipt data yet, use shipment defaults
@@ -349,7 +364,8 @@ export default function ContinueReceiving() {
               status: 'pending' as const,
               notes: '',
               checked: false,
-              imageUrl: shipmentItem.imageUrl || ''
+              imageUrl: shipmentItem.imageUrl || '',
+              warehouseLocation: shipmentItem.warehouseLocation || generateWarehouseLocation(shipmentItem.id, shipmentItem.sku, index)
             };
           }
         });
@@ -413,7 +429,8 @@ export default function ContinueReceiving() {
             status: 'pending' as const,
             notes: '',
             checked: false,
-            imageUrl: item.imageUrl || ''
+            imageUrl: item.imageUrl || '',
+            warehouseLocation: item.warehouseLocation || generateWarehouseLocation(item.id, item.sku, index)
           }));
           setReceivingItems(items);
         }
@@ -2267,6 +2284,15 @@ export default function ContinueReceiving() {
                                   {item.sku && (
                                     <p className="text-xs text-muted-foreground font-mono mt-1">
                                       SKU: {item.sku}
+                                    </p>
+                                  )}
+                                  {item.warehouseLocation && (
+                                    <p 
+                                      className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1 flex items-center gap-1"
+                                      data-testid={`text-bin-location-${item.id}`}
+                                    >
+                                      <Package className="h-3 w-3" />
+                                      Bin: {item.warehouseLocation}
                                     </p>
                                   )}
                                 </div>
