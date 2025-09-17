@@ -57,7 +57,7 @@ interface StorageItem {
 
 export default function StoreItems() {
   const [location, navigate] = useLocation();
-  const [match, params] = useRoute("/receiving/store/:id");
+  const [match, params] = useRoute("/receiving/storage/:id");
   const { id } = params!;
   const { toast } = useToast();
   
@@ -311,7 +311,7 @@ export default function StoreItems() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => navigate(`/receiving/receipt/${id}`)}>
+          <Button variant="ghost" size="sm" onClick={() => navigate(`/receiving/details/${id}`)}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>

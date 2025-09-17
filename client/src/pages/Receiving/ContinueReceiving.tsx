@@ -2938,7 +2938,7 @@ export default function ContinueReceiving() {
             </Button>
             <Button
               variant="outline"
-              onClick={() => navigate(`/receiving/store/${receipt?.receipt?.id || receipt?.id}`)}
+              onClick={() => navigate(`/receiving/storage/${receipt?.receipt?.id || receipt?.id}`)}
               disabled={!receipt || isLoading || receivingItems.length === 0}
               className="flex-1"
               size="lg"
