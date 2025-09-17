@@ -3609,7 +3609,7 @@ router.patch("/receipts/:id/meta", async (req, res) => {
 router.patch("/receipts/:id/items/:itemId", async (req, res) => {
   try {
     const receiptId = parseInt(req.params.id);
-    const receiptItemId = parseInt(req.params.itemId); // This is the receipt_items.id
+    const shipmentItemId = parseInt(req.params.itemId); // This is the shipment/purchase item ID
     const { receivedQuantity, status, notes } = req.body;
     
     // Build update object with only provided fields
@@ -3618,13 +3618,13 @@ router.patch("/receipts/:id/items/:itemId", async (req, res) => {
     if (status !== undefined) updateData.status = status;
     if (notes !== undefined) updateData.notes = notes;
     
-    // Single efficient update query
+    // Single efficient update query - look for receipt item by its item_id field
     const [updated] = await db
       .update(receiptItems)
       .set(updateData)
       .where(and(
         eq(receiptItems.receiptId, receiptId),
-        eq(receiptItems.id, receiptItemId)  // Use the receipt item's own id
+        eq(receiptItems.itemId, shipmentItemId)  // Use item_id to find the receipt item
       ))
       .returning({ 
         id: receiptItems.id,
@@ -3647,14 +3647,14 @@ router.patch("/receipts/:id/items/:itemId", async (req, res) => {
 router.patch("/receipts/:id/items/:itemId/increment", async (req, res) => {
   try {
     const receiptId = parseInt(req.params.id);
-    const receiptItemId = parseInt(req.params.itemId); // This is the receipt_items.id
+    const shipmentItemId = parseInt(req.params.itemId); // This is the shipment/purchase item ID
     const { delta } = req.body; // delta can be positive or negative
     
     if (delta === undefined || delta === 0) {
       return res.status(400).json({ success: false, message: "Delta value required" });
     }
     
-    // Atomic increment using SQL
+    // Atomic increment using SQL - look for receipt item by its item_id field
     const [updated] = await db
       .update(receiptItems)
       .set({ 
@@ -3663,7 +3663,7 @@ router.patch("/receipts/:id/items/:itemId/increment", async (req, res) => {
       })
       .where(and(
         eq(receiptItems.receiptId, receiptId),
-        eq(receiptItems.id, receiptItemId)  // Use the receipt item's own id
+        eq(receiptItems.itemId, shipmentItemId)  // Use item_id to find the receipt item
       ))
       .returning({ 
         id: receiptItems.id,
