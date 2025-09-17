@@ -13,9 +13,10 @@ import {
   receipts,
   receiptItems,
   landedCosts,
-  products
+  products,
+  productLocations
 } from "@shared/schema";
-import { eq, desc, sql, and, like, or, isNull, inArray } from "drizzle-orm";
+import { eq, desc, sql, and, like, or, isNull, inArray, ne } from "drizzle-orm";
 import { addDays, differenceInDays } from "date-fns";
 import multer from "multer";
 
@@ -3982,6 +3983,298 @@ router.post("/receipts/complete/:receiptId", async (req, res) => {
     console.error("Error completing receipt:", error);
     res.status(500).json({ 
       message: "Failed to complete receiving",
+      error: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+});
+
+// Get storage items for a receipt (items ready to be placed in warehouse)
+router.get('/receipts/:id/storage-items', async (req, res) => {
+  try {
+    const receiptId = parseInt(req.params.id);
+    
+    // Get receipt with shipment and items
+    const [receipt] = await db
+      .select()
+      .from(receipts)
+      .where(eq(receipts.id, receiptId));
+    
+    if (!receipt) {
+      return res.status(404).json({ message: "Receipt not found" });
+    }
+    
+    // Get receipt items with product information
+    const receiptItemsList = await db
+      .select({
+        id: receiptItems.id,
+        itemId: receiptItems.itemId,
+        itemType: receiptItems.itemType,
+        expectedQuantity: receiptItems.expectedQuantity,
+        receivedQuantity: receiptItems.receivedQuantity,
+        damagedQuantity: receiptItems.damagedQuantity,
+        missingQuantity: receiptItems.missingQuantity,
+        barcode: receiptItems.barcode,
+        warehouseLocation: receiptItems.warehouseLocation,
+        additionalLocation: receiptItems.additionalLocation,
+        notes: receiptItems.notes,
+        condition: receiptItems.condition
+      })
+      .from(receiptItems)
+      .where(eq(receiptItems.receiptId, receiptId));
+    
+    // For each item, get product details and existing locations
+    const itemsWithDetails = await Promise.all(receiptItemsList.map(async (item) => {
+      let productInfo = null;
+      let existingLocations = [];
+      
+      if (item.itemType === 'purchase') {
+        // Get purchase item details
+        const [purchaseItem] = await db
+          .select()
+          .from(purchaseItems)
+          .where(eq(purchaseItems.id, item.itemId));
+        
+        if (purchaseItem) {
+          // Try to find matching product by SKU or barcode
+          const [product] = await db
+            .select()
+            .from(products)
+            .where(
+              or(
+                eq(products.sku, purchaseItem.sku || ''),
+                eq(products.barcode, item.barcode || '')
+              )
+            )
+            .limit(1);
+          
+          if (product) {
+            productInfo = {
+              productId: product.id,
+              productName: product.name,
+              sku: product.sku,
+              barcode: product.barcode
+            };
+            
+            // Get existing locations for this product
+            existingLocations = await db
+              .select({
+                id: productLocations.id,
+                locationCode: productLocations.locationCode,
+                locationType: productLocations.locationType,
+                quantity: productLocations.quantity,
+                isPrimary: productLocations.isPrimary,
+                notes: productLocations.notes
+              })
+              .from(productLocations)
+              .where(eq(productLocations.productId, product.id));
+          } else {
+            // No matching product found, use purchase item details
+            productInfo = {
+              productId: null,
+              productName: purchaseItem.name || `Item #${item.itemId}`,
+              sku: purchaseItem.sku,
+              barcode: item.barcode
+            };
+          }
+        }
+      } else if (item.itemType === 'custom') {
+        // Get custom item details
+        const [customItem] = await db
+          .select()
+          .from(consolidationItems)
+          .where(eq(consolidationItems.id, item.itemId));
+        
+        if (customItem) {
+          productInfo = {
+            productId: null,
+            productName: `Custom Item #${item.itemId}`,
+            sku: null,
+            barcode: item.barcode
+          };
+        }
+      }
+      
+      return {
+        ...item,
+        ...productInfo,
+        existingLocations
+      };
+    }));
+    
+    // Get shipment details
+    const [shipment] = await db
+      .select({
+        id: shipments.id,
+        consolidationId: shipments.consolidationId,
+        trackingNumber: shipments.trackingNumber,
+        shipmentName: shipments.shipmentName,
+        status: shipments.status
+      })
+      .from(shipments)
+      .where(eq(shipments.id, receipt.shipmentId));
+    
+    res.json({
+      receipt: {
+        id: receipt.id,
+        shipmentId: receipt.shipmentId,
+        shipmentName: shipment?.shipmentName || `Shipment #${receipt.shipmentId}`,
+        status: receipt.status
+      },
+      items: itemsWithDetails
+    });
+  } catch (error) {
+    console.error("Error fetching storage items:", error);
+    res.status(500).json({ 
+      message: "Failed to fetch storage items",
+      error: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+});
+
+// Store items in warehouse locations
+router.post('/receipts/:id/store-items', async (req, res) => {
+  try {
+    const receiptId = parseInt(req.params.id);
+    const { locations } = req.body;
+    
+    if (!locations || !Array.isArray(locations)) {
+      return res.status(400).json({ message: "Locations array is required" });
+    }
+    
+    // Verify receipt exists
+    const [receipt] = await db
+      .select()
+      .from(receipts)
+      .where(eq(receipts.id, receiptId));
+    
+    if (!receipt) {
+      return res.status(404).json({ message: "Receipt not found" });
+    }
+    
+    // Process each location assignment
+    const results = await db.transaction(async (tx) => {
+      const processedLocations = [];
+      
+      for (const location of locations) {
+        const { receiptItemId, productId, locationCode, locationType, quantity, isPrimary, notes } = location;
+        
+        // Update receipt item with warehouse location
+        await tx
+          .update(receiptItems)
+          .set({
+            warehouseLocation: locationCode,
+            storageInstructions: notes,
+            updatedAt: new Date()
+          })
+          .where(eq(receiptItems.id, receiptItemId));
+        
+        // If product exists, update or create product location
+        if (productId) {
+          // Check if location already exists for this product
+          const [existingLocation] = await tx
+            .select()
+            .from(productLocations)
+            .where(
+              and(
+                eq(productLocations.productId, productId),
+                eq(productLocations.locationCode, locationCode)
+              )
+            );
+          
+          if (existingLocation) {
+            // Update existing location - add to quantity
+            const [updatedLocation] = await tx
+              .update(productLocations)
+              .set({
+                quantity: existingLocation.quantity + quantity,
+                isPrimary: isPrimary || existingLocation.isPrimary,
+                notes: notes || existingLocation.notes,
+                updatedAt: new Date()
+              })
+              .where(eq(productLocations.id, existingLocation.id))
+              .returning();
+            
+            processedLocations.push(updatedLocation);
+          } else {
+            // Create new location
+            const [newLocation] = await tx
+              .insert(productLocations)
+              .values({
+                productId,
+                locationCode,
+                locationType: locationType || 'warehouse',
+                quantity,
+                isPrimary,
+                notes
+              })
+              .returning();
+            
+            processedLocations.push(newLocation);
+          }
+          
+          // If this is set as primary, unset other locations as primary
+          if (isPrimary) {
+            await tx
+              .update(productLocations)
+              .set({ isPrimary: false })
+              .where(
+                and(
+                  eq(productLocations.productId, productId),
+                  ne(productLocations.locationCode, locationCode)
+                )
+              );
+          }
+          
+          // Update product stock levels
+          const totalStock = await tx
+            .select({
+              total: sql<number>`COALESCE(SUM(${productLocations.quantity}), 0)`
+            })
+            .from(productLocations)
+            .where(eq(productLocations.productId, productId));
+          
+          await tx
+            .update(products)
+            .set({
+              updatedAt: new Date()
+            })
+            .where(eq(products.id, productId));
+        }
+      }
+      
+      // Update receipt status to stored if all items have been stored
+      const unstored = await tx
+        .select({ count: sql<number>`COUNT(*)` })
+        .from(receiptItems)
+        .where(
+          and(
+            eq(receiptItems.receiptId, receiptId),
+            isNull(receiptItems.warehouseLocation)
+          )
+        );
+      
+      if (unstored[0]?.count === 0) {
+        await tx
+          .update(receipts)
+          .set({
+            status: 'stored',
+            updatedAt: new Date()
+          })
+          .where(eq(receipts.id, receiptId));
+      }
+      
+      return processedLocations;
+    });
+    
+    res.json({
+      success: true,
+      message: `Successfully stored ${results.length} items in warehouse locations`,
+      locations: results
+    });
+  } catch (error) {
+    console.error("Error storing items:", error);
+    res.status(500).json({ 
+      message: "Failed to store items",
       error: error instanceof Error ? error.message : "Unknown error"
     });
   }
