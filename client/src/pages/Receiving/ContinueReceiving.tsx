@@ -254,108 +254,6 @@ export default function ContinueReceiving() {
     });
   }, []);
 
-  // Process prefilled tracking data from navigation state (e.g., from QR bulk scan)
-  useEffect(() => {
-    // Only process once and only if we have prefilled data
-    if (prefilledDataProcessedRef.current) return;
-    
-    // Check if we have navigation state with prefilled tracking data
-    const navigationState = (location as any)?.state;
-    const prefilledTrackingNumbers = navigationState?.scannedTrackingNumbers as string[] | undefined;
-    const prefilledScannedParcels = navigationState?.scannedParcels as number | undefined;
-    
-    if (prefilledTrackingNumbers && prefilledTrackingNumbers.length > 0) {
-      // Mark as processed immediately to prevent double processing
-      prefilledDataProcessedRef.current = true;
-      
-      console.log('Processing prefilled tracking data:', {
-        trackingNumbers: prefilledTrackingNumbers.length,
-        scannedParcels: prefilledScannedParcels
-      });
-      
-      // Process the prefilled data after a brief delay to ensure component is mounted
-      setTimeout(() => {
-        // Merge with existing tracking numbers (avoid duplicates)
-        const existingNumbers = new Set(scannedTrackingNumbers);
-        const newNumbers: string[] = [];
-        
-        prefilledTrackingNumbers.forEach(num => {
-          if (!existingNumbers.has(num)) {
-            newNumbers.push(num);
-          }
-        });
-        
-        if (newNumbers.length > 0) {
-          // Update state with merged tracking numbers
-          const mergedTrackingNumbers = [...scannedTrackingNumbers, ...newNumbers];
-          setScannedTrackingNumbers(mergedTrackingNumbers);
-          
-          // Update scanned parcels count - use max of existing and prefilled
-          const newScannedCount = prefilledScannedParcels 
-            ? Math.max(scannedParcels, prefilledScannedParcels)
-            : scannedParcels + newNumbers.length;
-          setScannedParcels(Math.min(newScannedCount, parcelCount));
-          
-          // Save to backend immediately
-          const receiptId = receipt?.receipt?.id || receipt?.id;
-          if (receiptId) {
-            // Update existing receipt with new tracking numbers
-            newNumbers.forEach(trackingNumber => {
-              updateTrackingMutation.mutate({ action: 'add', trackingNumber });
-            });
-            
-            // Update scanned parcels count
-            updateMetaMutation.mutate({ field: 'scannedParcels', value: newScannedCount });
-          } else {
-            // Create new receipt with prefilled data
-            updateMetaMutation.mutate({ field: 'scannedParcels', value: newScannedCount });
-            
-            // Add tracking numbers after receipt is created
-            setTimeout(() => {
-              newNumbers.forEach(trackingNumber => {
-                updateTrackingMutation.mutate({ action: 'add', trackingNumber });
-              });
-            }, 500);
-          }
-          
-          // Play success sound
-          soundEffects.playSuccessSound();
-          
-          // Show toast notification
-          toast({
-            title: "Pre-scanned Data Loaded",
-            description: `Loaded ${newNumbers.length} pre-scanned tracking number${newNumbers.length > 1 ? 's' : ''}`,
-            duration: 4000,
-          });
-          
-          // Show success feedback
-          setScanFeedback({ 
-            type: 'success', 
-            message: `${newNumbers.length} tracking number${newNumbers.length > 1 ? 's' : ''} loaded from bulk scan` 
-          });
-          setTimeout(() => setScanFeedback({ type: null, message: '' }), 3000);
-        } else if (prefilledTrackingNumbers.length > 0) {
-          // All tracking numbers were duplicates
-          toast({
-            title: "Tracking Numbers Already Scanned",
-            description: `All ${prefilledTrackingNumbers.length} tracking numbers were already recorded`,
-            variant: "default",
-            duration: 3000,
-          });
-        }
-      }, 100);
-    }
-  }, [
-    (location as any)?.state?.scannedTrackingNumbers,
-    (location as any)?.state?.scannedParcels,
-    scannedTrackingNumbers,
-    scannedParcels,
-    parcelCount,
-    receipt,
-    updateTrackingMutation,
-    updateMetaMutation,
-    toast
-  ])
 
   // Determine if this is a pallet shipment
   const isPalletShipment = shipment?.unitType?.toLowerCase().includes('pallet') || false;
@@ -795,6 +693,109 @@ export default function ContinueReceiving() {
       console.error('Tracking update failed:', error);
     }
   });
+  
+  // Process prefilled tracking data from navigation state (e.g., from QR bulk scan)
+  useEffect(() => {
+    // Only process once and only if we have prefilled data
+    if (prefilledDataProcessedRef.current) return;
+    
+    // Check if we have navigation state with prefilled tracking data
+    const navigationState = (location as any)?.state;
+    const prefilledTrackingNumbers = navigationState?.scannedTrackingNumbers as string[] | undefined;
+    const prefilledScannedParcels = navigationState?.scannedParcels as number | undefined;
+    
+    if (prefilledTrackingNumbers && prefilledTrackingNumbers.length > 0) {
+      // Mark as processed immediately to prevent double processing
+      prefilledDataProcessedRef.current = true;
+      
+      console.log('Processing prefilled tracking data:', {
+        trackingNumbers: prefilledTrackingNumbers.length,
+        scannedParcels: prefilledScannedParcels
+      });
+      
+      // Process the prefilled data after a brief delay to ensure component is mounted
+      setTimeout(() => {
+        // Merge with existing tracking numbers (avoid duplicates)
+        const existingNumbers = new Set(scannedTrackingNumbers);
+        const newNumbers: string[] = [];
+        
+        prefilledTrackingNumbers.forEach(num => {
+          if (!existingNumbers.has(num)) {
+            newNumbers.push(num);
+          }
+        });
+        
+        if (newNumbers.length > 0) {
+          // Update state with merged tracking numbers
+          const mergedTrackingNumbers = [...scannedTrackingNumbers, ...newNumbers];
+          setScannedTrackingNumbers(mergedTrackingNumbers);
+          
+          // Update scanned parcels count - use max of existing and prefilled
+          const newScannedCount = prefilledScannedParcels 
+            ? Math.max(scannedParcels, prefilledScannedParcels)
+            : scannedParcels + newNumbers.length;
+          setScannedParcels(Math.min(newScannedCount, parcelCount));
+          
+          // Save to backend immediately
+          const receiptId = receipt?.receipt?.id || receipt?.id;
+          if (receiptId) {
+            // Update existing receipt with new tracking numbers
+            newNumbers.forEach(trackingNumber => {
+              updateTrackingMutation.mutate({ action: 'add', trackingNumber });
+            });
+            
+            // Update scanned parcels count
+            updateMetaMutation.mutate({ field: 'scannedParcels', value: newScannedCount });
+          } else {
+            // Create new receipt with prefilled data
+            updateMetaMutation.mutate({ field: 'scannedParcels', value: newScannedCount });
+            
+            // Add tracking numbers after receipt is created
+            setTimeout(() => {
+              newNumbers.forEach(trackingNumber => {
+                updateTrackingMutation.mutate({ action: 'add', trackingNumber });
+              });
+            }, 500);
+          }
+          
+          // Play success sound
+          soundEffects.playSuccessSound();
+          
+          // Show toast notification
+          toast({
+            title: "Pre-scanned Data Loaded",
+            description: `Loaded ${newNumbers.length} pre-scanned tracking number${newNumbers.length > 1 ? 's' : ''}`,
+            duration: 4000,
+          });
+          
+          // Show success feedback
+          setScanFeedback({ 
+            type: 'success', 
+            message: `${newNumbers.length} tracking number${newNumbers.length > 1 ? 's' : ''} loaded from bulk scan` 
+          });
+          setTimeout(() => setScanFeedback({ type: null, message: '' }), 3000);
+        } else if (prefilledTrackingNumbers.length > 0) {
+          // All tracking numbers were duplicates
+          toast({
+            title: "Tracking Numbers Already Scanned",
+            description: `All ${prefilledTrackingNumbers.length} tracking numbers were already recorded`,
+            variant: "default",
+            duration: 3000,
+          });
+        }
+      }, 100);
+    }
+  }, [
+    (location as any)?.state?.scannedTrackingNumbers,
+    (location as any)?.state?.scannedParcels,
+    scannedTrackingNumbers,
+    scannedParcels,
+    parcelCount,
+    receipt,
+    updateTrackingMutation,
+    updateMetaMutation,
+    toast
+  ])
   
   // Optimized photo mutation with instant cache updates
   const updatePhotosMutation = useMutation({
