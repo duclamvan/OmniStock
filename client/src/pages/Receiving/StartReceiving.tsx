@@ -60,6 +60,7 @@ export default function StartReceiving() {
   const [carrier, setCarrier] = useState("");
   const [parcelCount, setParcelCount] = useState(1);
   const [scannedParcels, setScannedParcels] = useState(0);
+  const [scannedTrackingNumbers, setScannedTrackingNumbers] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
   const [receivingItems, setReceivingItems] = useState<ReceivingItem[]>([]);
 
@@ -126,6 +127,7 @@ export default function StartReceiving() {
       setCarrier(receipt.carrier || "");
       setParcelCount(receipt.parcelCount || 1);
       setScannedParcels(receipt.parcelCount || 0); // Assume all parcels were scanned before
+      setScannedTrackingNumbers(receipt.trackingNumbers || []); // Load preserved tracking numbers
       setNotes(receipt.notes || "");
 
       // Load preserved item data if available
@@ -166,6 +168,7 @@ export default function StartReceiving() {
       const isFirstParcel = scannedParcels === 0 && newScannedCount === 1;
 
       setScannedParcels(newScannedCount);
+      setScannedTrackingNumbers(prev => [...prev, value]); // Add scanned tracking number
       toast({
         title: "Parcel Scanned",
         description: `Scanned ${newScannedCount} of ${parcelCount} parcels`
@@ -223,7 +226,7 @@ export default function StartReceiving() {
         if (item.id === itemId) {
           let finalStatus = status;
           let updatedItem = { ...item, checked: true };
-          
+
           if (status === 'complete') {
             updatedItem.receivedQty = item.expectedQty;
             finalStatus = 'complete';
@@ -242,7 +245,7 @@ export default function StartReceiving() {
               finalStatus = 'missing';
             }
           }
-          
+
           updatedItem.status = finalStatus;
           return updatedItem;
         }
@@ -359,6 +362,7 @@ export default function StartReceiving() {
           parcelCount,
           carrier,
           notes,
+          trackingNumbers: scannedTrackingNumbers, // Include tracking numbers
           items: receivingItems.map(item => ({
             itemId: item.id,
             expectedQuantity: item.expectedQty,
@@ -561,7 +565,10 @@ export default function StartReceiving() {
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => setScannedParcels(Math.max(0, scannedParcels - 1))}
+                      onClick={() => {
+                        setScannedParcels(Math.max(0, scannedParcels - 1));
+                        setScannedTrackingNumbers(prev => prev.slice(0, Math.max(0, scannedParcels - 1)));
+                      }}
                       disabled={scannedParcels === 0}
                     >
                       <Minus className="h-4 w-4" />
@@ -569,7 +576,24 @@ export default function StartReceiving() {
                     <Input
                       type="number"
                       value={scannedParcels}
-                      onChange={(e) => setScannedParcels(Math.max(0, Math.min(parcelCount, parseInt(e.target.value) || 0)))}
+                      onChange={(e) => {
+                        const newCount = Math.max(0, Math.min(parcelCount, parseInt(e.target.value) || 0));
+                        const currentCount = scannedParcels;
+
+                        if (newCount > currentCount) {
+                          // Add dummy tracking numbers for the difference
+                          const newTrackingNumbers = [];
+                          for (let i = currentCount; i < newCount; i++) {
+                            newTrackingNumbers.push(`MANUAL-${Date.now()}-${i + 1}`);
+                          }
+                          setScannedTrackingNumbers(prev => [...prev, ...newTrackingNumbers]);
+                        } else if (newCount < currentCount) {
+                          // Remove tracking numbers from the end
+                          setScannedTrackingNumbers(prev => prev.slice(0, newCount));
+                        }
+
+                        setScannedParcels(newCount);
+                      }}
                       className="text-center"
                       min="0"
                       max={parcelCount}
@@ -582,6 +606,7 @@ export default function StartReceiving() {
                         const newCount = Math.min(parcelCount, scannedParcels + 1);
                         const isFirstParcel = scannedParcels === 0 && newCount === 1;
                         setScannedParcels(newCount);
+                        setScannedTrackingNumbers(prev => [...prev, `MANUAL-${Date.now()}-${newCount}`]); // Add a dummy tracking number
 
                         // Auto-move to "Currently Receiving" tab when first parcel is received
                         if (isFirstParcel && !startReceivingMutation.isPending) {
