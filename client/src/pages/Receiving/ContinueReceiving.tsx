@@ -209,6 +209,8 @@ export default function ContinueReceiving() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [scanFeedback, setScanFeedback] = useState<{ type: 'success' | 'error' | 'duplicate' | 'complete' | null; message: string }>({ type: null, message: '' });
   const [showSuccessCheckmark, setShowSuccessCheckmark] = useState(false);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState<string>('');
 
   // OPTIMIZED QUERIES: Smart caching prevents duplicate requests
   const { data: shipment, isLoading } = useQuery({
@@ -1185,6 +1187,46 @@ export default function ContinueReceiving() {
       }
     });
   }, [receivingItems, toast, updateItemFieldMutation]);
+
+  // Handle direct quantity edit
+  const handleQuantityEdit = useCallback((itemId: string, value: string) => {
+    const item = receivingItems.find(i => i.id === itemId);
+    if (!item) return;
+
+    // Parse the input value
+    const newQty = parseInt(value, 10);
+    if (isNaN(newQty) || newQty < 0) {
+      // Invalid input, cancel editing
+      setEditingItemId(null);
+      return;
+    }
+
+    // Cap at expected quantity
+    const finalQty = Math.min(newQty, item.expectedQty);
+    const delta = finalQty - (item.receivedQty || 0);
+
+    if (delta === 0) {
+      // No change, just exit edit mode
+      setEditingItemId(null);
+      return;
+    }
+
+    // Update using existing updateItemQuantity logic
+    updateItemQuantity(itemId, delta);
+    
+    // Exit edit mode
+    setEditingItemId(null);
+  }, [receivingItems, updateItemQuantity]);
+
+  const startEditing = useCallback((itemId: string, currentQty: number) => {
+    setEditingItemId(itemId);
+    setEditingValue(currentQty.toString());
+  }, []);
+
+  const cancelEditing = useCallback(() => {
+    setEditingItemId(null);
+    setEditingValue('');
+  }, []);
 
   // Update receipt mutation
   const updateReceiptMutation = useMutation({
@@ -2616,9 +2658,33 @@ export default function ContinueReceiving() {
                                   >
                                     <Minus className="h-4 w-4" />
                                   </Button>
-                                  <span className="text-base font-bold font-mono w-16 text-center px-2">
-                                    {item.receivedQty}/{item.expectedQty}
-                                  </span>
+                                  {editingItemId === item.id ? (
+                                    <input
+                                      type="number"
+                                      value={editingValue}
+                                      onChange={(e) => setEditingValue(e.target.value)}
+                                      onBlur={() => handleQuantityEdit(item.id, editingValue)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          handleQuantityEdit(item.id, editingValue);
+                                        } else if (e.key === 'Escape') {
+                                          cancelEditing();
+                                        }
+                                      }}
+                                      className="w-16 text-center text-base font-bold font-mono px-1 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800"
+                                      min="0"
+                                      max={item.expectedQty}
+                                      autoFocus
+                                    />
+                                  ) : (
+                                    <span 
+                                      className="text-base font-bold font-mono w-16 text-center px-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                                      onClick={() => startEditing(item.id, item.receivedQty)}
+                                      title="Click to edit quantity"
+                                    >
+                                      {item.receivedQty}/{item.expectedQty}
+                                    </span>
+                                  )}
                                   <Button
                                     variant="ghost"
                                     size="sm"
