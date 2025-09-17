@@ -319,8 +319,19 @@ export default function ContinueReceiving() {
       // Load scanned parcels and tracking numbers from tracking numbers JSON if available
       const trackingData = receiptData.trackingNumbers || {};
       const savedScannedParcels = trackingData.scannedParcels || receiptData.receivedParcels || 0;
-      const savedTrackingNumbers = trackingData.numbers || [];
-      setScannedParcels(savedScannedParcels);
+      // Validate and filter tracking numbers to ensure they are reasonable
+      const savedTrackingNumbers = Array.isArray(trackingData.numbers) 
+        ? trackingData.numbers.filter((num: any) => 
+            typeof num === 'string' && 
+            num.trim().length > 0 && 
+            num.trim().length <= 100
+          ).map((num: string) => num.trim())
+        : [];
+      
+      // Ensure scanned parcels count doesn't exceed tracking numbers count
+      const validScannedParcels = Math.min(savedScannedParcels, savedTrackingNumbers.length);
+      
+      setScannedParcels(validScannedParcels);
       setScannedTrackingNumbers(savedTrackingNumbers);
       setNotes(receiptData.notes || "");
       
@@ -868,23 +879,43 @@ export default function ContinueReceiving() {
   const handleBarcodeScan = async (value: string) => {
     if (currentStep === 1) {
       // Step 1: Scanning parcel barcodes
-      // Check if tracking number already scanned
-      if (scannedTrackingNumbers.includes(value)) {
-        await soundEffects.playDuplicateBeep();
-        setScanFeedback({ type: 'duplicate', message: `Already scanned: ${value}` });
+      // Validate tracking number
+      const trimmedValue = value.trim();
+      if (trimmedValue.length === 0 || trimmedValue.length > 100) {
+        await soundEffects.playErrorSound();
+        setScanFeedback({ type: 'error', message: 'Invalid tracking number length' });
         setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
-        toast({
-          title: "Already Scanned",
-          description: `Tracking number ${value} has already been scanned`,
-          variant: "destructive",
-          duration: 3000
+        const { dismiss } = toast({
+          title: "Invalid Tracking Number",
+          description: "Tracking number must be between 1-100 characters",
+          variant: "destructive"
         });
+        setTimeout(() => dismiss(), 3000);
+        setBarcodeScan("");
+        return;
+      }
+      
+      // Check if tracking number already scanned (case-insensitive)
+      const isDuplicate = scannedTrackingNumbers.some(
+        existing => existing.toLowerCase() === trimmedValue.toLowerCase()
+      );
+      
+      if (isDuplicate) {
+        await soundEffects.playDuplicateBeep();
+        setScanFeedback({ type: 'duplicate', message: `Already scanned: ${trimmedValue}` });
+        setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
+        const { dismiss } = toast({
+          title: "Already Scanned",
+          description: `Tracking number ${trimmedValue} has already been scanned`,
+          variant: "destructive"
+        });
+        setTimeout(() => dismiss(), 3000);
         setBarcodeScan("");
         return;
       }
       
       const newCount = Math.min(scannedParcels + 1, parcelCount);
-      const newTrackingNumbers = [...scannedTrackingNumbers, value];
+      const newTrackingNumbers = [...scannedTrackingNumbers, trimmedValue];
       setScannedTrackingNumbers(newTrackingNumbers);
       setScannedParcels(newCount); // Update local state for immediate UI refresh
       
@@ -907,7 +938,7 @@ export default function ContinueReceiving() {
       updateMetaMutation.mutate({ field: 'scannedParcels', value: newCount }, {
         onSuccess: () => {
           // Add tracking number
-          updateTrackingMutation.mutate({ action: 'add', trackingNumber: value });
+          updateTrackingMutation.mutate({ action: 'add', trackingNumber: trimmedValue });
           setSaveStatus('saved');
           setTimeout(() => setSaveStatus('idle'), 1000);
         }

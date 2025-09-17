@@ -3691,6 +3691,15 @@ router.patch("/receipts/:id/tracking", async (req, res) => {
       return res.status(400).json({ success: false, message: "Action and tracking number required" });
     }
     
+    // Validate tracking number (ensure it's a reasonable string)
+    const trimmedTracking = trackingNumber.trim();
+    if (trimmedTracking.length === 0 || trimmedTracking.length > 100) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Invalid tracking number length (must be 1-100 characters)" 
+      });
+    }
+    
     // Get current tracking numbers
     const [receipt] = await db
       .select({ trackingNumbers: receipts.trackingNumbers })
@@ -3701,17 +3710,60 @@ router.patch("/receipts/:id/tracking", async (req, res) => {
       return res.status(404).json({ success: false, message: "Receipt not found" });
     }
     
-    const trackingData = receipt.trackingNumbers as any || { numbers: [] };
-    const numbers = trackingData.numbers || [];
-    
-    if (action === 'add' && !numbers.includes(trackingNumber)) {
-      numbers.push(trackingNumber);
-    } else if (action === 'remove') {
-      const index = numbers.indexOf(trackingNumber);
-      if (index > -1) numbers.splice(index, 1);
+    // Ensure proper structure for tracking data
+    const trackingData = receipt.trackingNumbers as any || { numbers: [], scannedParcels: 0 };
+    if (!Array.isArray(trackingData.numbers)) {
+      trackingData.numbers = [];
     }
     
-    trackingData.numbers = numbers;
+    // Handle add/remove actions
+    if (action === 'add') {
+      // Check for duplicate (case-insensitive)
+      const exists = trackingData.numbers.some((num: string) => 
+        num.toLowerCase() === trimmedTracking.toLowerCase()
+      );
+      
+      if (!exists) {
+        trackingData.numbers.push(trimmedTracking);
+        // Auto-increment scannedParcels when adding tracking numbers
+        if (typeof trackingData.scannedParcels === 'number') {
+          trackingData.scannedParcels = Math.min(
+            trackingData.scannedParcels + 1, 
+            trackingData.numbers.length
+          );
+        } else {
+          trackingData.scannedParcels = trackingData.numbers.length;
+        }
+      } else {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Tracking number already exists" 
+        });
+      }
+    } else if (action === 'remove') {
+      const index = trackingData.numbers.findIndex((num: string) => 
+        num.toLowerCase() === trimmedTracking.toLowerCase()
+      );
+      
+      if (index > -1) {
+        trackingData.numbers.splice(index, 1);
+        // Auto-decrement scannedParcels when removing tracking numbers
+        if (typeof trackingData.scannedParcels === 'number' && trackingData.scannedParcels > 0) {
+          trackingData.scannedParcels = Math.max(0, trackingData.scannedParcels - 1);
+        }
+      }
+    } else {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Invalid action. Use 'add' or 'remove'" 
+      });
+    }
+    
+    // Ensure scannedParcels doesn't exceed the number of tracking numbers
+    trackingData.scannedParcels = Math.min(
+      trackingData.scannedParcels || 0, 
+      trackingData.numbers.length
+    );
     
     // Update with modified tracking numbers
     const [updated] = await db
@@ -3726,7 +3778,7 @@ router.patch("/receipts/:id/tracking", async (req, res) => {
         trackingNumbers: receipts.trackingNumbers
       });
     
-    res.json({ success: true, updated });
+    res.json({ success: true, updated, trackingData });
   } catch (error) {
     console.error("Error updating tracking numbers:", error);
     res.status(500).json({ success: false, message: "Failed to update tracking numbers" });
