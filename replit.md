@@ -5,6 +5,10 @@ Davie Supply is a comprehensive warehouse and order management system designed a
 Preferred communication style: Simple, everyday language.
 
 # Recent Changes
+- **January 28, 2025**: Unified receiving workflow pages - Quick Receiving and Continue Receiving now use the same page
+  - Changed route `/receiving/receipt/:id` to use ContinueReceiving component instead of ReceiptDetails
+  - Created new route `/receiving/details/:id` for viewing receipt details separately
+  - Ensures consistent experience whether starting new receiving or continuing existing one
 - **January 28, 2025**: Changed Approval tab to Storage for warehouse location management
   - Renamed "Approval" tab to "Storage" to reflect storing received items in warehouse locations
   - Updated icon from AlertCircle to Warehouse for better visual representation

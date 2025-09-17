@@ -163,7 +163,8 @@ function Router() {
         <Route path="/receiving" component={ReceivingList} />
         <Route path="/receiving/start/:id" component={StartReceiving} />
         <Route path="/receiving/continue/:id" component={ContinueReceiving} />
-        <Route path="/receiving/receipt/:id" component={ReceiptDetails} />
+        <Route path="/receiving/receipt/:id" component={ContinueReceiving} />
+        <Route path="/receiving/details/:id" component={ReceiptDetails} />
         <Route path="/receiving/approve/:id" component={ReviewApprove} />
         <Route path="/reports">
           {() => <div>Reports page coming soon</div>}
