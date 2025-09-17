@@ -318,7 +318,6 @@ export default function ContinueReceiving() {
       
       // Load scanned parcels and tracking numbers from tracking numbers JSON if available
       const trackingData = receiptData.trackingNumbers || {};
-      const savedScannedParcels = trackingData.scannedParcels || receiptData.receivedParcels || 0;
       // Validate and filter tracking numbers to ensure they are reasonable
       const savedTrackingNumbers = Array.isArray(trackingData.numbers) 
         ? trackingData.numbers.filter((num: any) => 
@@ -328,8 +327,9 @@ export default function ContinueReceiving() {
           ).map((num: string) => num.trim())
         : [];
       
-      // Ensure scanned parcels count doesn't exceed tracking numbers count
-      const validScannedParcels = Math.min(savedScannedParcels, savedTrackingNumbers.length);
+      // ALWAYS use the actual count of tracking numbers, ignore saved scannedParcels
+      // This ensures they are always in sync
+      const validScannedParcels = savedTrackingNumbers.length;
       
       setScannedParcels(validScannedParcels);
       setScannedTrackingNumbers(savedTrackingNumbers);
@@ -914,8 +914,9 @@ export default function ContinueReceiving() {
         return;
       }
       
-      const newCount = Math.min(scannedParcels + 1, parcelCount);
       const newTrackingNumbers = [...scannedTrackingNumbers, trimmedValue];
+      // Always use actual tracking numbers count
+      const newCount = Math.min(newTrackingNumbers.length, parcelCount);
       setScannedTrackingNumbers(newTrackingNumbers);
       setScannedParcels(newCount); // Update local state for immediate UI refresh
       
@@ -925,7 +926,7 @@ export default function ContinueReceiving() {
       setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
       
       // Check if all parcels are scanned
-      if (newCount === parcelCount && parcelCount > 0) {
+      if (newTrackingNumbers.length >= parcelCount && parcelCount > 0) {
         setTimeout(async () => {
           await soundEffects.playCompletionSound();
           setShowSuccessCheckmark(true);
