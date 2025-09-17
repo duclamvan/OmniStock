@@ -11,7 +11,7 @@ import {
 export function Toaster() {
   const { toasts } = useToast()
 
-  // Calculate stacking styles - all 3 toasts stacked vertically on top of each other
+  // Calculate stacking styles - all 3 toasts stacked vertically with smooth animations
   const getStackStyles = (index: number): React.CSSProperties => {
     // Stack all toasts vertically with clear spacing
     const translateY = index * -80 // 80px gap between each toast
@@ -23,8 +23,9 @@ export function Toaster() {
       transformOrigin: 'bottom right',
       zIndex: 100 - index,
       opacity: opacity,
-      transition: 'all 400ms cubic-bezier(0.32, 0.72, 0, 1)',
-      willChange: 'transform, opacity',
+      // Enhanced smooth transitions with spring-like easing
+      transition: 'all 600ms cubic-bezier(0.165, 0.84, 0.44, 1), transform 600ms cubic-bezier(0.165, 0.84, 0.44, 1)',
+      willChange: 'transform, opacity, box-shadow',
       boxShadow: index === 0 
         ? '0 10px 40px rgba(0, 0, 0, 0.2), 0 2px 10px rgba(0, 0, 0, 0.1)'
         : `0 ${8 - index * 2}px ${25 - index * 5}px rgba(0, 0, 0, ${0.15 - index * 0.03})`,
@@ -54,6 +55,9 @@ export function Toaster() {
               style={{
                 ...getStackStyles(index),
                 pointerEvents: 'auto', // Re-enable pointer events for toasts
+                // Smooth entry animation for new toasts
+                animationDelay: index === 0 ? '0ms' : '0ms',
+                animationFillMode: 'both',
               }}
             >
             <div className="grid gap-1">
