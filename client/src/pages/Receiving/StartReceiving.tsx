@@ -620,38 +620,39 @@ export default function StartReceiving() {
                   </div>
                 </div>
 
-                <div>
-                  <Label>Scan Parcels</Label>
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <Input
-                        ref={barcodeRef}
-                        value={barcodeScan}
-                        onChange={(e) => setBarcodeScan(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && barcodeScan) {
-                            handleBarcodeScan(barcodeScan);
-                          }
-                        }}
-                        placeholder="Scan or type barcode"
-                        className={scanMode ? 'border-blue-500 ring-2 ring-blue-200' : ''}
-                      />
-                      <ScanLine className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        setScanMode(!scanMode);
-                        if (!scanMode) {
-                          setTimeout(() => barcodeRef.current?.focus(), 100);
+                </div>
+
+              <div className="col-span-full">
+                <Label>Scan Parcels</Label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Input
+                      ref={barcodeRef}
+                      value={barcodeScan}
+                      onChange={(e) => setBarcodeScan(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && barcodeScan) {
+                          handleBarcodeScan(barcodeScan);
                         }
                       }}
-                      className={scanMode ? 'bg-blue-50 border-blue-300' : ''}
-                    >
-                      <Camera className="h-4 w-4" />
-                    </Button>
+                      placeholder="Scan or type barcode"
+                      className={scanMode ? 'border-blue-500 ring-2 ring-blue-200' : ''}
+                    />
+                    <ScanLine className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setScanMode(!scanMode);
+                      if (!scanMode) {
+                        setTimeout(() => barcodeRef.current?.focus(), 100);
+                      }
+                    }}
+                    className={scanMode ? 'bg-blue-50 border-blue-300' : ''}
+                  >
+                    <Camera className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
 
