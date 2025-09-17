@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { z } from "zod";
 import { db } from "../db";
 import { 
   importPurchases, 
@@ -1268,6 +1269,148 @@ router.get("/shipments", async (req, res) => {
   } catch (error) {
     console.error("Error fetching shipments:", error);
     res.status(500).json({ message: "Failed to fetch shipments" });
+  }
+});
+
+// Search shipments by tracking numbers
+router.post("/shipments/search-by-tracking", async (req, res) => {
+  try {
+    // Define Zod schema for validation
+    const searchSchema = z.object({
+      trackingNumbers: z.array(z.string()).min(1).max(100)
+    });
+    
+    // Validate request body
+    const validationResult = searchSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      return res.status(400).json({ 
+        message: "Invalid request body",
+        errors: validationResult.error.errors 
+      });
+    }
+    
+    const { trackingNumbers } = validationResult.data;
+    
+    // Get all shipments with status 'at_warehouse'
+    const warehouseShipments = await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.status, 'at_warehouse'))
+      .orderBy(desc(shipments.createdAt));
+    
+    if (warehouseShipments.length === 0) {
+      return res.json([]);
+    }
+    
+    // Create a set of tracking numbers for efficient lookup
+    const trackingSet = new Set(trackingNumbers.map(t => t.trim().toLowerCase()));
+    
+    // Process each shipment to find matches
+    const shipmentsWithMatches = await Promise.all(
+      warehouseShipments.map(async (shipment) => {
+        let matchCount = 0;
+        const matchedTrackingNumbers = new Set<string>();
+        
+        // Check if main tracking number matches
+        if (trackingSet.has(shipment.trackingNumber.toLowerCase())) {
+          matchCount++;
+          matchedTrackingNumbers.add(shipment.trackingNumber);
+        }
+        
+        // Check if end tracking number matches (if exists)
+        if (shipment.endTrackingNumber && trackingSet.has(shipment.endTrackingNumber.toLowerCase())) {
+          matchCount++;
+          matchedTrackingNumbers.add(shipment.endTrackingNumber);
+        }
+        
+        // Check trackingNumbers JSONB field (array of tracking numbers)
+        if (shipment.trackingNumbers) {
+          const shipmentTrackingNumbers = Array.isArray(shipment.trackingNumbers) 
+            ? shipment.trackingNumbers 
+            : typeof shipment.trackingNumbers === 'string' 
+              ? JSON.parse(shipment.trackingNumbers)
+              : [];
+          
+          for (const tn of shipmentTrackingNumbers) {
+            if (typeof tn === 'string' && trackingSet.has(tn.toLowerCase())) {
+              matchCount++;
+              matchedTrackingNumbers.add(tn);
+            }
+          }
+        }
+        
+        // Get related items if consolidation exists
+        let relatedItemMatches = 0;
+        if (shipment.consolidationId) {
+          // Get purchase items through consolidation
+          const purchaseItemsWithTracking = await db
+            .select({
+              trackingNumber: purchaseItems.trackingNumber
+            })
+            .from(consolidationItems)
+            .innerJoin(purchaseItems, eq(consolidationItems.purchaseItemId, purchaseItems.id))
+            .where(and(
+              eq(consolidationItems.consolidationId, shipment.consolidationId),
+              isNull(consolidationItems.customItemId)
+            ));
+          
+          // Get custom items through consolidation
+          const customItemsWithTracking = await db
+            .select({
+              trackingNumber: customItems.trackingNumber
+            })
+            .from(consolidationItems)
+            .innerJoin(customItems, eq(consolidationItems.customItemId, customItems.id))
+            .where(and(
+              eq(consolidationItems.consolidationId, shipment.consolidationId),
+              isNull(consolidationItems.purchaseItemId)
+            ));
+          
+          // Check matches in related items
+          const allRelatedItems = [...purchaseItemsWithTracking, ...customItemsWithTracking];
+          for (const item of allRelatedItems) {
+            if (item.trackingNumber && trackingSet.has(item.trackingNumber.toLowerCase())) {
+              relatedItemMatches++;
+              matchedTrackingNumbers.add(item.trackingNumber);
+            }
+          }
+        }
+        
+        matchCount += relatedItemMatches;
+        
+        // Only include shipments with at least one match
+        if (matchCount > 0) {
+          return {
+            id: shipment.id,
+            status: shipment.status,
+            carrier: shipment.carrier,
+            trackingNumbers: shipment.trackingNumbers || [],
+            mainTrackingNumber: shipment.trackingNumber,
+            endTrackingNumber: shipment.endTrackingNumber,
+            matchCount,
+            matchedTrackingNumbers: Array.from(matchedTrackingNumbers),
+            consolidationId: shipment.consolidationId,
+            origin: shipment.origin,
+            destination: shipment.destination,
+            shipmentName: shipment.shipmentName,
+            estimatedDelivery: shipment.estimatedDelivery,
+            createdAt: shipment.createdAt
+          };
+        }
+        
+        return null;
+      })
+    );
+    
+    // Filter out null results and sort by matchCount
+    const matchingShipments = shipmentsWithMatches
+      .filter(s => s !== null)
+      .sort((a, b) => b!.matchCount - a!.matchCount);
+    
+    res.json(matchingShipments);
+  } catch (error) {
+    console.error("Error searching shipments by tracking:", error);
+    res.status(500).json({ message: "Failed to search shipments by tracking numbers" });
   }
 });
 
