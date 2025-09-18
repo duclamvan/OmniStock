@@ -5,6 +5,7 @@ import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { nanoid } from "nanoid";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -63,6 +64,34 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
+
+// Photo type with unique ID for safe concurrent deletion
+type PhotoData = {
+  id: string; // Unique ID for safe deletion
+  compressed: string;
+  thumbnail: string;
+  originalSize?: number;
+} | string; // Keep string for backward compatibility
+
+// Generate a stable ID for legacy string photos using hash
+const generateLegacyPhotoId = (photoString: string): string => {
+  // Use simple hash function for browser environment - stable and deterministic
+  let hash = 0;
+  for (let i = 0; i < Math.min(photoString.length, 100); i++) {
+    const char = photoString.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return 'legacy_' + Math.abs(hash).toString(36).substring(0, 10);
+};
+
+// Get the ID from a photo (handles both new and legacy formats)
+const getPhotoId = (photo: PhotoData): string => {
+  if (typeof photo === 'string') {
+    return generateLegacyPhotoId(photo);
+  }
+  return photo.id;
+};
 
 interface ReceivingItem {
   id: string;
@@ -183,15 +212,8 @@ export default function ContinueReceiving() {
   const [receivingItems, setReceivingItems] = useState<ReceivingItem[]>([]);
   const [notes, setNotes] = useState("");
   const [scannedTrackingNumbers, setScannedTrackingNumbers] = useState<string[]>([]);
-  // Photo type for backward compatibility
-  type PhotoData = {
-    id: string;
-    compressed: string;
-    thumbnail: string;
-    originalSize?: number;
-  } | string; // Keep string for backward compatibility
-  
   const [uploadedPhotos, setUploadedPhotos] = useState<PhotoData[]>([]);
+  const [deletingPhotoIds, setDeletingPhotoIds] = useState<Set<string>>(new Set()); // Track photos being deleted
   const [photosLoading, setPhotosLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
@@ -1775,9 +1797,19 @@ export default function ContinueReceiving() {
   const handleRemovePhoto = async (index: number) => {
     // Store the photo being removed for potential restoration
     const photoToRemove = uploadedPhotos[index];
+    const photoId = getPhotoId(photoToRemove);
     const receiptId = receipt?.receipt?.id || receipt?.id;
     
+    // Prevent rapid clicks by checking if this photo is already being deleted
+    if (deletingPhotoIds.has(photoId)) {
+      return; // Already deleting this photo
+    }
+    
+    // Mark photo as being deleted to disable the button
+    setDeletingPhotoIds(prev => new Set(prev).add(photoId));
+    
     // Immediate optimistic UI update - remove photo instantly
+    const originalPhotos = [...uploadedPhotos];
     setUploadedPhotos(prev => prev.filter((_, i) => i !== index));
     
     // Cancel any existing debounced updates to prevent conflicts
@@ -1786,22 +1818,24 @@ export default function ContinueReceiving() {
       photoUpdateTimerRef.current = null;
     }
     
-    // If we have a receipt ID, use the optimized DELETE endpoint
+    // If we have a receipt ID, use the optimized DELETE endpoint with photo ID
     if (receiptId) {
       try {
         // Show saving indicator
         setSaveStatus('saving');
         
-        // Call the dedicated DELETE endpoint - FAST operation
-        const response = await fetch(`/api/imports/receipts/${receiptId}/photos/${index}`, {
+        // Call the dedicated DELETE endpoint with photo ID - SAFE operation
+        const response = await fetch(`/api/imports/receipts/${receiptId}/photos/${photoId}`, {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json'
           }
         });
         
-        if (!response.ok) {
-          throw new Error('Failed to delete photo');
+        const result = await response.json();
+        
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || 'Failed to delete photo');
         }
         
         // Success - photo is deleted instantly
@@ -1818,42 +1852,54 @@ export default function ContinueReceiving() {
         
         toast({
           title: "Photo Deleted",
-          description: "Photo removed instantly",
+          description: "Photo removed successfully",
           className: "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800",
           duration: 1500
         });
       } catch (error) {
-        // On error, rollback the UI change
-        setUploadedPhotos(prev => {
-          // Restore the photo at the correct position
-          const restored = [...prev];
-          restored.splice(index, 0, photoToRemove);
-          return restored;
-        });
+        // On error, rollback the UI change - restore photo at original position
+        setUploadedPhotos(originalPhotos);
         
         setSaveStatus('idle');
         
+        const errorMessage = error instanceof Error ? error.message : "Failed to remove photo";
         toast({
           title: "Delete Failed",
-          description: "Failed to remove photo. Please try again.",
+          description: errorMessage,
           variant: "destructive"
+        });
+      } finally {
+        // Always remove from deleting set to re-enable button
+        setDeletingPhotoIds(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(photoId);
+          return newSet;
         });
       }
     } else {
       // No receipt yet - just update locally, will be saved when receipt is created
-      pendingPhotoUpdatesRef.current = uploadedPhotos.filter((_, i) => i !== index);
-      
-      // Clean up blob URL if needed
-      if (typeof photoToRemove === 'object' && photoToRemove?.compressed?.startsWith('blob:')) {
-        revokeImagePreview(photoToRemove.compressed);
+      try {
+        pendingPhotoUpdatesRef.current = uploadedPhotos.filter((_, i) => i !== index);
+        
+        // Clean up blob URL if needed
+        if (typeof photoToRemove === 'object' && photoToRemove?.compressed?.startsWith('blob:')) {
+          revokeImagePreview(photoToRemove.compressed);
+        }
+        
+        toast({
+          title: "Photo Removed",
+          description: "Photo removed from pending uploads",
+          className: "bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800",
+          duration: 1500
+        });
+      } finally {
+        // Remove from deleting set
+        setDeletingPhotoIds(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(photoId);
+          return newSet;
+        });
       }
-      
-      toast({
-        title: "Photo Removed",
-        description: "Photo removed from pending uploads",
-        className: "bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800",
-        duration: 1500
-      });
     }
   };
 
@@ -2910,6 +2956,8 @@ export default function ContinueReceiving() {
                       const sizeInfo = isNewFormat
                         ? `${Math.round(getBase64Size(photo.thumbnail) / 1024)}KB`
                         : null;
+                      const photoId = getPhotoId(photo);
+                      const isDeleting = deletingPhotoIds.has(photoId);
                       
                       return (
                         <div
@@ -2917,12 +2965,18 @@ export default function ContinueReceiving() {
                           className="relative flex-shrink-0 group"
                         >
                           {/* Photo Container - optimized for thumbnails only */}
-                          <div className="relative w-32 h-32 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-600 transition-colors">
+                          <div className={`relative w-32 h-32 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-600 transition-colors ${isDeleting ? 'opacity-50' : ''}`}>
                             <LazyImage
                               thumbnailSrc={thumbnailSrc}
                               alt={`Upload ${index + 1}`}
                               className="w-full h-full object-cover"
                             />
+                            {/* Show loading overlay when deleting */}
+                            {isDeleting && (
+                              <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-20">
+                                <Loader2 className="h-6 w-6 text-white animate-spin" />
+                              </div>
+                            )}
                             {/* Overlay with photo info */}
                             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2 z-10">
                               <span className="text-white text-xs font-medium block">
@@ -2934,18 +2988,25 @@ export default function ContinueReceiving() {
                                 </span>
                               )}
                             </div>
-                            {/* Remove button - instant update */}
+                            {/* Remove button - disabled during deletion */}
                             <Button
                               type="button"
                               variant="destructive"
                               size="icon"
+                              disabled={isDeleting}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleRemovePhoto(index);
+                                if (!isDeleting) {
+                                  handleRemovePhoto(index);
+                                }
                               }}
-                              className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                              className={`absolute top-1 right-1 h-6 w-6 ${isDeleting ? 'opacity-100 cursor-not-allowed' : 'opacity-0 group-hover:opacity-100'} transition-opacity z-30`}
                             >
-                              <Trash2 className="h-3 w-3" />
+                              {isDeleting ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-3 w-3" />
+                              )}
                             </Button>
                             {/* Optimization indicator for new format */}
                             {isNewFormat && (
