@@ -5,6 +5,10 @@ Davie Supply is a comprehensive warehouse and order management system designed a
 Preferred communication style: Simple, everyday language.
 
 # Recent Changes
+- **January 28, 2025**: Updated navigation structure - Items To Store is now a standalone main sidebar menu item
+  - Moved Items To Store from Receiving submenu to main sidebar level for direct access
+  - Changed Receiving to be a direct link to the receiving list instead of a collapsible menu
+  - Items To Store has its own icon (PackageCheck) for better visual identification
 - **January 28, 2025**: Implemented comprehensive Store Items warehouse location management system
   - Created StoreItems page with professional barcode scanning for warehouse locations
   - Supports multiple location assignments per item with quantity tracking

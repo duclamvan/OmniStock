@@ -14,7 +14,8 @@ import {
   Truck,
   Ship,
   FileText,
-  Globe
+  Globe,
+  PackageCheck
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -78,11 +79,13 @@ const navigation = [
   },
   {
     name: "Receiving",
+    href: "/receiving",
     icon: Package,
-    children: [
-      { name: "Receiving List", href: "/receiving" },
-      { name: "Items To Store", href: "/receiving/items-to-store" },
-    ],
+  },
+  {
+    name: "Items To Store",
+    href: "/receiving/items-to-store",
+    icon: PackageCheck,
   },
   {
     name: "Reports",
