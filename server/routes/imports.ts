@@ -3935,6 +3935,58 @@ router.patch("/receipts/:id/photos", async (req, res) => {
   }
 });
 
+// DELETE endpoint for single photo removal (optimized for speed)
+router.delete("/receipts/:receiptId/photos/:photoIndex", async (req, res) => {
+  try {
+    const receiptId = parseInt(req.params.receiptId);
+    const photoIndex = parseInt(req.params.photoIndex);
+    
+    if (isNaN(receiptId) || isNaN(photoIndex) || photoIndex < 0) {
+      return res.status(400).json({ success: false, message: "Invalid receipt ID or photo index" });
+    }
+    
+    // Use a transaction for atomic update
+    await db.transaction(async (tx) => {
+      // First, get the current photos array
+      const [currentReceipt] = await tx
+        .select({ photos: receipts.photos })
+        .from(receipts)
+        .where(eq(receipts.id, receiptId))
+        .limit(1);
+      
+      if (!currentReceipt) {
+        throw new Error("Receipt not found");
+      }
+      
+      const photos = currentReceipt.photos || [];
+      
+      if (photoIndex >= photos.length) {
+        throw new Error("Photo index out of bounds");
+      }
+      
+      // Remove the photo at the specified index
+      const updatedPhotos = photos.filter((_, index) => index !== photoIndex);
+      
+      // Update only the photos field (fast operation)
+      await tx
+        .update(receipts)
+        .set({ 
+          photos: updatedPhotos,
+          updatedAt: new Date()
+        })
+        .where(eq(receipts.id, receiptId));
+    });
+    
+    // Quick response - no need to return the full receipt
+    res.json({ success: true, message: "Photo deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting photo:", error);
+    const message = error instanceof Error ? error.message : "Failed to delete photo";
+    res.status(error instanceof Error && error.message === "Receipt not found" ? 404 : 500)
+       .json({ success: false, message });
+  }
+});
+
 // Complete receiving process for a shipment
 router.post("/receipts/complete/:receiptId", async (req, res) => {
   try {
