@@ -27,7 +27,8 @@ import {
   RotateCcw,
   DollarSign,
   Store,
-  Globe
+  Globe,
+  PackageCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -159,6 +160,11 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
       name: "Receiving",
       href: "/receiving",
       icon: Package,
+    },
+    {
+      name: "Items To Store",
+      href: "/receiving/items-to-store",
+      icon: PackageCheck,
     },
     {
       name: "Shipping",
