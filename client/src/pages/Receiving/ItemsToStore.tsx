@@ -65,6 +65,8 @@ interface StorageItem {
   receiptId?: number;
   shipmentTrackingNumber?: string;
   receivedAt?: string;
+  imageUrl?: string;
+  description?: string;
 }
 
 interface ReceiptWithItems {
@@ -115,7 +117,9 @@ export default function ItemsToStore() {
             newLocations: [],
             receiptId: receiptData.receipt.id,
             shipmentTrackingNumber: receiptData.shipment?.trackingNumber,
-            receivedAt: receiptData.receipt.receivedAt
+            receivedAt: receiptData.receipt.receivedAt,
+            imageUrl: item.imageUrl || null,
+            description: item.description || null
           });
         });
       });
@@ -575,20 +579,51 @@ export default function ItemsToStore() {
                     <button
                       key={`${item.receiptId}-${item.receiptItemId}`}
                       onClick={() => setSelectedItemIndex(index)}
-                      className={`w-full text-left p-4 rounded-lg border transition-all ${
+                      className={`w-full text-left p-4 rounded-lg border transition-all hover:shadow-md ${
                         isSelected
-                          ? 'border-primary bg-primary/5'
+                          ? 'border-primary bg-primary/5 shadow-md'
                           : 'border-border hover:border-primary/50'
                       }`}
                     >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Package className="h-4 w-4 text-primary" />
-                            <div className="flex-1">
-                              <span className="font-medium line-clamp-1" data-testid={`item-name-${item.receiptItemId}`}>
+                      <div className="flex items-center gap-4">
+                        {/* Product Image */}
+                        <div className="flex-shrink-0">
+                          {item.imageUrl ? (
+                            <>
+                              <img 
+                                src={item.imageUrl}
+                                alt={item.productName}
+                                className="h-[60px] w-[60px] object-cover rounded-lg border border-border shadow-sm"
+                                onError={(e) => {
+                                  e.currentTarget.onerror = null;
+                                  e.currentTarget.style.display = 'none';
+                                  const placeholder = e.currentTarget.parentElement?.querySelector('.placeholder-icon');
+                                  if (placeholder) {
+                                    (placeholder as HTMLElement).style.display = 'flex';
+                                  }
+                                }}
+                                data-testid={`item-image-${item.receiptItemId}`}
+                              />
+                              <div 
+                                className="placeholder-icon h-[60px] w-[60px] bg-muted rounded-lg border border-border hidden items-center justify-center"
+                              >
+                                <Package className="h-7 w-7 text-muted-foreground" />
+                              </div>
+                            </>
+                          ) : (
+                            <div className="h-[60px] w-[60px] bg-muted rounded-lg border border-border flex items-center justify-center">
+                              <Package className="h-7 w-7 text-muted-foreground" />
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Product Details */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium line-clamp-1 text-base" data-testid={`item-name-${item.receiptItemId}`}>
                                 {item.productName}
-                              </span>
+                              </h4>
                               {item.description && item.description !== item.productName && (
                                 <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5" data-testid={`item-description-${item.receiptItemId}`}>
                                   {item.description}
@@ -596,27 +631,38 @@ export default function ItemsToStore() {
                               )}
                             </div>
                             {isComplete && (
-                              <Badge variant="outline" className="ml-2 flex-shrink-0">
+                              <Badge variant="outline" className="flex-shrink-0">
                                 <Check className="h-3 w-3 mr-1" />
                                 Assigned
                               </Badge>
                             )}
                           </div>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                             {item.sku && (
-                              <span>SKU: {item.sku}</span>
+                              <span className="flex items-center gap-1">
+                                <Hash className="h-3 w-3" />
+                                {item.sku}
+                              </span>
                             )}
                             {item.barcode && (
-                              <span>Barcode: {item.barcode}</span>
+                              <span className="flex items-center gap-1">
+                                <QrCode className="h-3 w-3" />
+                                {item.barcode}
+                              </span>
                             )}
-                            <span className="font-medium">Qty: {item.receivedQuantity}</span>
+                            <span className="font-medium text-foreground">
+                              Qty: {item.receivedQuantity}
+                            </span>
                             {item.newLocations.length > 0 && (
-                              <span className="text-primary font-medium">
+                              <span className="text-primary font-medium flex items-center gap-1">
+                                <MapPin className="h-3 w-3" />
                                 {item.newLocations.length} location(s)
                               </span>
                             )}
                           </div>
                         </div>
+                        
+                        {/* Chevron */}
                         <ChevronRight className={`h-5 w-5 text-muted-foreground transition-transform flex-shrink-0 ${
                           isSelected ? 'rotate-90' : ''
                         }`} />
