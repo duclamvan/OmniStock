@@ -2908,11 +2908,53 @@ router.get("/receipts/items-to-store", async (req, res) => {
       locationsMap[loc.productId].push(loc);
     });
     
+    // Fetch original item details (purchaseItems or customItems)
+    const purchaseItemIds = allReceiptItems
+      .filter(item => item.itemType === 'purchase')
+      .map(item => item.itemId);
+    
+    const customItemIds = allReceiptItems
+      .filter(item => item.itemType === 'custom')
+      .map(item => item.itemId);
+    
+    let originalPurchaseItems = [];
+    let originalCustomItems = [];
+    
+    if (purchaseItemIds.length > 0) {
+      originalPurchaseItems = await db
+        .select()
+        .from(purchaseItems)
+        .where(inArray(purchaseItems.id, purchaseItemIds));
+    }
+    
+    if (customItemIds.length > 0) {
+      originalCustomItems = await db
+        .select()
+        .from(customItems)
+        .where(inArray(customItems.id, customItemIds));
+    }
+    
+    // Create maps for original items
+    const purchaseItemsMap = Object.fromEntries(
+      originalPurchaseItems.map(item => [item.id, item])
+    );
+    const customItemsMap = Object.fromEntries(
+      originalCustomItems.map(item => [item.id, item])
+    );
+    
     // Group items by receipt
     const itemsByReceipt: Record<number, any[]> = {};
     allReceiptItems.forEach(item => {
       if (!itemsByReceipt[item.receiptId]) {
         itemsByReceipt[item.receiptId] = [];
+      }
+      
+      // Get original item details
+      let originalItem = null;
+      if (item.itemType === 'purchase') {
+        originalItem = purchaseItemsMap[item.itemId];
+      } else if (item.itemType === 'custom') {
+        originalItem = customItemsMap[item.itemId];
       }
       
       // Enhance item with product info and locations
@@ -2921,9 +2963,10 @@ router.get("/receipts/items-to-store", async (req, res) => {
       
       itemsByReceipt[item.receiptId].push({
         ...item,
-        productName: product?.name || item.description || `Item #${item.itemId}`,
-        sku: product?.sku || item.sku,
-        barcode: product?.barcode,
+        productName: product?.name || originalItem?.name || `Item #${item.itemId}`,
+        description: originalItem?.name || originalItem?.notes || item.notes,
+        sku: product?.sku || originalItem?.sku || item.sku,
+        barcode: product?.barcode || item.barcode,
         existingLocations: existingLocations.map(loc => ({
           id: loc.id.toString(),
           locationCode: loc.locationCode,

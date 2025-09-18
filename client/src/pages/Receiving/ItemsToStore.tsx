@@ -35,7 +35,8 @@ import {
   Hash,
   ChevronRight,
   Calendar,
-  User
+  User,
+  Truck
 } from "lucide-react";
 import { ScanFeedback } from "@/components/ScanFeedback";
 import { soundEffects } from "@/utils/soundEffects";
@@ -481,34 +482,58 @@ export default function ItemsToStore() {
                   return (
                     <button
                       key={receiptData.receipt.id}
+                      data-testid={`receipt-card-${receiptData.receipt.id}`}
                       onClick={() => {
                         setSelectedReceipt(receiptData.receipt.id);
                         setSelectedItemIndex(0);
                       }}
-                      className={`flex-shrink-0 p-4 rounded-lg border transition-all ${
+                      className={`flex-shrink-0 p-4 rounded-lg border transition-all min-w-[280px] ${
                         selectedReceipt === receiptData.receipt.id
                           ? 'border-primary bg-primary/5'
                           : 'border-border hover:border-primary/50'
                       }`}
                     >
-                      <div className="text-left">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Ship className="h-4 w-4 text-primary" />
-                          <span className="font-semibold">
-                            {receiptData.shipment?.trackingNumber || `Receipt #${receiptData.receipt.id}`}
-                          </span>
+                      <div className="text-left space-y-2">
+                        {/* Shipment Info */}
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Ship className="h-4 w-4 text-blue-500" />
+                            <span className="font-semibold text-sm" data-testid={`shipment-tracking-${receiptData.receipt.id}`}>
+                              Shipment: {receiptData.shipment?.trackingNumber || `Receipt #${receiptData.receipt.id}`}
+                            </span>
+                          </div>
+                          {receiptData.shipment?.carrier && (
+                            <div className="flex items-center gap-2 ml-6">
+                              <Truck className="h-4 w-4 text-green-500" />
+                              <span className="text-sm font-medium" data-testid={`shipment-carrier-${receiptData.receipt.id}`}>
+                                Carrier: {receiptData.shipment.carrier}
+                              </span>
+                            </div>
+                          )}
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        
+                        {/* Metadata */}
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <Package className="h-3 w-3" />
                             {receiptItems.length} items
                           </span>
                           <span className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            {format(new Date(receiptData.receipt.receivedAt), "MMM d")}
+                            {format(new Date(receiptData.receipt.receivedAt), "MMM d, yyyy")}
                           </span>
                         </div>
-                        <Progress value={(assignedCount / receiptItems.length) * 100} className="h-1 mt-2" />
+                        
+                        {/* Progress */}
+                        <div>
+                          <div className="flex justify-between text-xs mb-1">
+                            <span className="text-muted-foreground">Progress</span>
+                            <span className="font-medium">
+                              {assignedCount}/{receiptItems.length} assigned
+                            </span>
+                          </div>
+                          <Progress value={(assignedCount / receiptItems.length) * 100} className="h-1.5" />
+                        </div>
                       </div>
                     </button>
                   );
@@ -560,9 +585,18 @@ export default function ItemsToStore() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <Package className="h-4 w-4 text-primary" />
-                            <span className="font-medium line-clamp-1">{item.productName}</span>
+                            <div className="flex-1">
+                              <span className="font-medium line-clamp-1" data-testid={`item-name-${item.receiptItemId}`}>
+                                {item.productName}
+                              </span>
+                              {item.description && item.description !== item.productName && (
+                                <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5" data-testid={`item-description-${item.receiptItemId}`}>
+                                  {item.description}
+                                </p>
+                              )}
+                            </div>
                             {isComplete && (
-                              <Badge variant="outline" className="ml-auto">
+                              <Badge variant="outline" className="ml-2 flex-shrink-0">
                                 <Check className="h-3 w-3 mr-1" />
                                 Assigned
                               </Badge>
@@ -572,15 +606,18 @@ export default function ItemsToStore() {
                             {item.sku && (
                               <span>SKU: {item.sku}</span>
                             )}
-                            <span>Qty: {item.receivedQuantity}</span>
+                            {item.barcode && (
+                              <span>Barcode: {item.barcode}</span>
+                            )}
+                            <span className="font-medium">Qty: {item.receivedQuantity}</span>
                             {item.newLocations.length > 0 && (
-                              <span className="text-primary">
+                              <span className="text-primary font-medium">
                                 {item.newLocations.length} location(s)
                               </span>
                             )}
                           </div>
                         </div>
-                        <ChevronRight className={`h-5 w-5 text-muted-foreground transition-transform ${
+                        <ChevronRight className={`h-5 w-5 text-muted-foreground transition-transform flex-shrink-0 ${
                           isSelected ? 'rotate-90' : ''
                         }`} />
                       </div>
