@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { db } from "../db";
+import crypto from "crypto";
 import { 
   importPurchases, 
   purchaseItems, 
@@ -3966,7 +3967,6 @@ router.delete("/receipts/:receiptId/photos/:photoId", async (req, res) => {
         // Handle both string (legacy) and object formats
         if (typeof photo === 'string') {
           // For legacy strings, use hash of the string as ID
-          const crypto = require('crypto');
           const legacyId = crypto.createHash('sha256').update(photo).digest('hex').substring(0, 10);
           return legacyId === photoId;
         }
