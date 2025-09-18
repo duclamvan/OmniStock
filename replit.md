@@ -1,57 +1,157 @@
 # Overview
-Davie Supply is a full-stack web application for comprehensive warehouse and order management. It streamlines the entire order lifecycle, tracks inventory, manages customers, and provides multi-currency financial reporting. Key features include real-time Vietnamese diacritics search, customer-specific pricing, and integration with external shipping APIs. The project aims to deliver a robust and efficient platform for supply chain operations, incorporating advanced warehouse mapping and a comprehensive Pick & Pack workflow.
+Davie Supply is a comprehensive warehouse and order management system designed as a full-stack web application. Its primary purpose is to manage the complete order lifecycle from creation to fulfillment, track inventory, manage customers, and provide financial reporting with multi-currency support. Key capabilities include real-time Vietnamese diacritics search, customer-specific pricing system, and integration with external shipping APIs for order tracking. The business vision is to provide a robust, efficient platform for streamlined supply chain operations, including advanced warehouse mapping and a comprehensive Pick & Pack workflow.
 
 # User Preferences
 Preferred communication style: Simple, everyday language.
 
+# Recent Changes
+- **January 28, 2025**: Implemented comprehensive Store Items warehouse location management system
+  - Created StoreItems page with professional barcode scanning for warehouse locations
+  - Supports multiple location assignments per item with quantity tracking
+  - Primary location designation for optimal warehouse organization
+  - Shows existing product locations when items are already in inventory
+  - Location format validation (WH1-A01-R02-L03) with location type detection
+  - Real-time quantity allocation with auto-advance to next item when complete
+  - Integration with product_locations table for actual inventory tracking
+  - Backend endpoints for fetching storage items and saving location assignments
+  - Automatic product stock level updates when items are stored
+  - Professional sound and visual feedback for scanning operations
+  - Store Items button added to receiving workflow for seamless transition
+- **January 28, 2025**: Implemented smart barcode scanning system for automatic shipment matching
+  - Added barcode scanner interface to main receiving page that collects tracking numbers
+  - Created backend API endpoint to search shipments by multiple tracking numbers
+  - Auto-navigation to Continue Receiving when matching shipment is found
+  - Prefills scanned tracking numbers and parcel count in Continue Receiving page
+  - Includes professional audio/visual feedback (success beeps, duplicate warnings, completion sounds)
+  - Supports selection dialog when multiple shipments match the scanned tracking numbers
+  - Seamless workflow from scanning to receiving with automatic data persistence
+- **January 28, 2025**: Unified receiving workflow pages - Quick Receiving and Continue Receiving now use the same page
+  - Changed route `/receiving/receipt/:id` to use ContinueReceiving component instead of ReceiptDetails
+  - Created new route `/receiving/details/:id` for viewing receipt details separately
+  - Ensures consistent experience whether starting new receiving or continuing existing one
+- **January 28, 2025**: Changed Approval tab to Storage for warehouse location management
+  - Renamed "Approval" tab to "Storage" to reflect storing received items in warehouse locations
+  - Updated icon from AlertCircle to Warehouse for better visual representation
+  - Changed button text from "Review & Approve" to "Store Items"
+  - Updated all related descriptions and status messages for storage functionality
+  - Tab now handles assigning received items to multiple warehouse locations
+- **January 28, 2025**: Implemented professional barcode scanning with sound and visual feedback
+  - Created Web Audio API sound effects for success, error, duplicate, and completion sounds
+  - Added visual feedback components with animations (scan line, pulse effects, success checkmarks)
+  - Integrated feedback into both parcel and item scanning workflows
+  - Fixed scanned parcels state synchronization issue for instant updates
+  - Supports both manual input and Bluetooth barcode scanners
+  - Professional UX with immediate audio/visual confirmation of scans
+- **January 26, 2025**: Implemented comprehensive document management system for products
+  - Created product_files table for multi-language document storage
+  - Support for SDS, CPNP certificates, flyers, manuals in multiple languages
+  - File upload with drag & drop (PDF, DOC, DOCX, JPG, PNG up to 10MB)
+  - Document selection during order creation with checkboxes
+  - Display selected documents in Pick & Pack with print indicators
+  - Language support: EN, CS, DE, FR, ES, VN, ZH, PL, SK, HU
+  - Full CRUD operations with download functionality
+
+- **January 26, 2025**: Implemented packing instructions system for products
+  - Added packing instructions fields to products (text and image/GIF support)
+  - Created PackingInstructionsUploader component with drag & drop image upload
+  - Integrated packing instructions into Add/Edit Product pages
+  - Display packing instructions prominently in Pick & Pack workflow
+  - Support for jpg, png, gif, webp formats up to 5MB
+  - Automatic image compression and optimization
+  - Visual indicators in Pick & Pack to ensure proper packaging
+
+- **January 26, 2025**: Implemented comprehensive warehouse location management system
+  - Created product_locations table for multiple location tracking per product
+  - Location code format: WH1-A01-R02-L03 (Warehouse-Aisle-Rack-Level)
+  - Support for display shelves, warehouse storage, and pallet locations
+  - Visual location code builder with dropdowns and manual entry mode
+  - Primary location designation and quantity tracking per location
+  - Move inventory between locations functionality
+  - Full integration with Edit Product page under Inventory & Stock section
+
+- **January 26, 2025**: Major performance optimizations eliminating web app stuttering
+  - Added 60-second in-memory caching for dashboard endpoints
+  - Fixed N+1 database queries (single query instead of multiple round-trips)
+  - Added response compression middleware (60-80% payload reduction)
+  - Implemented lazy loading for heavy chart components
+  - Added critical database indexes for faster queries
+  - Optimized React Query settings to prevent unnecessary refetches
+  - API response times reduced from 200-900ms to under 50ms for cached requests
+  - Dashboard now loads instantly with no stuttering
+
+- **January 25, 2025**: Fixed auto-save issues and enhanced loading experiences in receiving workflow
+  - Fixed item quantity auto-save to trigger immediately on every change (was using debounced save)
+  - Fixed status button changes (OK, DMG, MISS) to save immediately to prevent data loss
+  - Fixed Additional Notes textarea to properly save changes automatically on blur
+  - Fixed photo loading to display immediately without delay on page load
+  - Added skeleton loading placeholders for photos while they load from database
+  - Enhanced photo loading with smooth transitions and proper loading states
+  - Ensured all user actions save immediately to database for reliable data persistence
+
+- **January 25, 2025**: Enhanced imports management with AI screenshot reader and improved UI
+  - Added AI screenshot reader to extract order details from Pinduoduo/Taobao screenshots
+  - Simplified Add Custom Item modal by removing weight, dimensions, customer fields
+  - Implemented multi-item extraction with editable table for bulk imports
+  - Added comprehensive sorting (10+ options) and search functionality to At Warehouse page
+  - Created bulk selection with checkboxes and bulk actions for classification
+  - Added expand/collapse all with localStorage persistence
+
+- **January 24, 2025**: Migrated imports management system from mock data to real database implementation
+  - Created database tables: import_purchases, purchase_items, consolidation_items, shipment_items
+  - Implemented full API endpoints for import purchases with CRUD operations
+  - Updated frontend components to use real API calls with React Query
+  - Fixed form state management issues in CreatePurchase component
+  - Added proper error handling and success notifications
+
 # System Architecture
 
 ## Frontend
-The client uses React and TypeScript with Vite, built on a component-based architecture using Shadcn/ui (Radix UI primitives) and Tailwind CSS. It leverages TanStack Query for state management, Wouter for routing, and React Hook Form with Zod for form handling. UI/UX prioritizes mobile-first responsive design, card-based layouts, and clear visual separation. The system includes an interactive Pick & Pack page optimized for mobile, and advanced warehouse mapping with an interactive 2D floor plan, zone utilization visualization, and a CAD-like layout designer.
+The client-side uses React and TypeScript with Vite, built on a component-based architecture. It leverages Shadcn/ui (Radix UI primitives) for UI components, Tailwind CSS for styling, TanStack Query for state management, Wouter for routing, and React Hook Form with Zod for form handling. UI/UX decisions prioritize mobile-first responsive design, card-based layouts, sticky elements for navigation, and clear visual separation to enhance user experience. A comprehensive Pick & Pack page is implemented with interactive picking dialogs, progress tracking, warehouse location display, and mobile optimization for handheld devices. Warehouse mapping features an interactive 2D floor plan with zone utilization visualization, and an advanced layout designer with CAD-like functionalities including scalable shapes, multi-element selection, alignment tools, undo/redo, and layers.
 
 ## Backend
-The server is built with Express.js and TypeScript (ESM modules), providing RESTful API endpoints with consistent error handling.
+The server-side is built with Express.js and TypeScript (ESM modules), providing RESTful API endpoints with consistent error handling.
 
 ## Authentication System
-Authentication is handled via Replit's OpenID Connect (OIDC), with PostgreSQL-backed sessions secured by HTTP-only cookies.
+The application uses Replit's OpenID Connect (OIDC) for user authentication, with PostgreSQL-backed sessions secured by HTTP-only cookies.
 
 ## Database Design
-The PostgreSQL database, utilizing Neon serverless driver and Drizzle ORM, supports a comprehensive e-commerce workflow. It includes entities for users, products (with variants and stock), orders, customers, warehouses, suppliers, returns, and financial tracking (sales, expenses, purchases with multi-currency). An audit trail for user activities is also maintained.
+The schema supports a comprehensive e-commerce workflow, encompassing core entities such as users, products, orders, customers, warehouses, suppliers, and returns. It facilitates complete order lifecycle management, inventory tracking (including product variants and stock), financial tracking (sales, expenses, purchases with multi-currency support), and an audit trail for user activities. PostgreSQL with Neon serverless driver and Drizzle ORM are utilized for type-safe operations and migrations.
 
 ## Core Features
-- **Product Management**: Comprehensive details, pricing, location tracking, and barcode scanning.
-- **Order Management**: Enhanced creation, shipping/payment selection, automatic shipping cost calculation, full CRUD, detailed views with timelines, and real-time data sync.
-- **Inventory Management**: Soft product deletion, bulk variant operations, detailed UI, and comprehensive categories management.
-- **Customer Management**: Enhanced tables with order statistics, forms with address lookup, and "Pay Later" badge.
-- **Discount Management**: Advanced system supporting various types (percentage, fixed, Buy X Get Y) and flexible application scopes.
-- **Customer-Specific Pricing**: Custom pricing per customer-product combination with validity periods and bulk import.
-- **Supplier Management**: Full CRUD, file upload, and purchase history.
-- **Warehouse Management**: Comprehensive management with file management and location code tracking.
-- **Returns Management**: Complete management with listing, add/edit forms, and integration from order details.
-- **Expenses Management**: Modern UI, enhanced stats, and streamlined forms.
-- **Product Bundles**: Comprehensive system with variant support, multiple pricing modes, and detailed views.
-- **Point of Sale (POS)**: Full-featured system for walk-in customers with thermal printer support, multi-currency, real-time cart, VAT calculation, and receipt generation.
-- **AI-Powered Packing System**: Advanced carton selection algorithm based on item dimensions, weight, and fragility, with cost efficiency analysis, visual carton representations, packing workflow with checklists, automatic weight calculation, and shipping label integration.
-- **Files Management System**: Comprehensive document management for product-related files (MSDS, CPNP, etc.) with categorization, product linking, tagging, and quick access during packing.
-- **Image Compression System**: Automatic lossless image compression to WebP format using Sharp library, with thumbnail generation and batch processing.
+- **Product Management**: Comprehensive product details, pricing, location tracking, and barcode scanning capabilities.
+- **Order Management**: Enhanced order creation, shipping and payment selection, automatic shipping cost calculation, full CRUD, detailed order views with timelines, and real-time data synchronization.
+- **Inventory Management**: Soft product deletion, optimized bulk variant operations, detailed inventory UI, and comprehensive categories management with CRUD operations.
+- **Customer Management**: Enhanced customer tables with order statistics, comprehensive add/edit/details forms with address lookup, and "Pay Later" badge functionality.
+- **Discount Management**: Advanced discount system supporting various types (percentage, fixed, Buy X Get Y) with flexible application scopes and dynamic UI.
+- **Customer-Specific Pricing**: Custom pricing per customer-product combination with validity periods, bulk import, and integration into the order creation process.
+- **Supplier Management**: Full CRUD for suppliers, file upload, and purchase history tracking.
+- **Warehouse Management**: Comprehensive management with file management and location code tracking for precise product placement.
+- **Returns Management**: Complete returns management with listing, add/edit forms, details pages, and integration from order details.
+- **Expenses Management**: Redesigned expenses page with modern UI, enhanced stats, and streamlined forms.
+- **Product Bundles**: Comprehensive management system with standalone creation, robust product variant support, multiple pricing modes, advanced variant selection, detailed view pages with statistics, and duplicate/activate/deactivate functionality.
+- **Point of Sale (POS)**: Full-featured POS system for walk-in customers with thermal printer support, multi-currency support, real-time cart management, VAT calculation, receipt generation, and mobile optimization.
+- **AI-Powered Packing System**: Advanced carton selection algorithm that analyzes item dimensions, weight, and fragility to recommend optimal box combinations with cost efficiency analysis, visual carton representations with code names (E1-E2 for envelopes, K1-K3 for standard cartons, F1 for fragile protection, B1 for bottles), comprehensive packing workflow with smart checklists, automatic weight calculation, and shipping label integration.
+- **Files Management System**: Comprehensive document management for MSDS, CPNP certificates, leaflets, and other product-related files with categorization by type, product linking, tagging system, and quick access during packing operations.
+- **Image Compression System**: Automatic lossless image compression for all uploads (products, packing materials, etc.) using WebP format with Sharp library, reducing storage size by up to 95% while maintaining quality. Features include automatic thumbnail generation, batch compression API, and compression statistics display.
 - **Multi-Currency Support**: Supports five currencies (CZK, EUR, USD, VND, CNY) with simplified exchange rate conversion.
-- **Search Functionality**: Real-time Vietnamese diacritics search.
+- **Search Functionality**: Real-time Vietnamese diacritics search with custom character normalization.
+- **Reusable Components**: Generic DataTable component with bulk selection, sorting, pagination, and actions.
 - **Reporting**: Comprehensive sales, inventory, customer, and financial reports with filtering.
 
 # External Dependencies
 
 ## Database Services
-- **Neon PostgreSQL**
-- **Drizzle Kit**
+- **Neon PostgreSQL**: Serverless PostgreSQL database.
+- **Drizzle Kit**: Database migration and schema management.
 
 ## Authentication Services
-- **Replit OIDC**
-- **OpenID Client**
+- **Replit OIDC**: OAuth 2.0/OpenID Connect provider.
+- **OpenID Client**: OIDC client library.
 
 ## UI and Styling
-- **Radix UI**
-- **Tailwind CSS**
-- **Lucide React**
+- **Radix UI**: Headless UI component primitives.
+- **Tailwind CSS**: Utility-first CSS framework.
+- **Lucide React**: SVG icon library.
 
 ## Other APIs
 - **OpenStreetMap Nominatim API**: For address geocoding.
