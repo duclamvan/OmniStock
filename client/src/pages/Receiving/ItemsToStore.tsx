@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Fragment } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -79,6 +79,199 @@ interface ReceiptWithItems {
   receipt: any;
   shipment: any;
   items: any[];
+}
+
+// Segmented Location Input Component
+interface SegmentedLocationInputProps {
+  onComplete: (code: string) => void;
+  autoFocus?: boolean;
+}
+
+function SegmentedLocationInput({ onComplete, autoFocus }: SegmentedLocationInputProps) {
+  const [segments, setSegments] = useState<string[]>(["", "", "", ""]);
+  const segmentLabels = ["Warehouse", "Aisle", "Rack", "Level"];
+  const segmentMaxLengths = [3, 3, 3, 3];
+  const segmentPlaceholders = ["WH1", "A01", "R02", "L03"];
+  
+  // Refs for each input
+  const inputRefs = [
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null)
+  ];
+  
+  // Hidden input for barcode scanning
+  const scanInputRef = useRef<HTMLInputElement>(null);
+  
+  // Auto-focus first input on mount
+  useEffect(() => {
+    if (autoFocus) {
+      inputRefs[0].current?.focus();
+    }
+  }, [autoFocus]);
+  
+  // Parse scanned or pasted location code
+  const parseFullCode = (code: string) => {
+    const cleaned = code.trim().toUpperCase();
+    const parts = cleaned.split('-');
+    
+    if (parts.length === 4) {
+      const newSegments = parts.slice(0, 4).map((part, i) => 
+        part.substring(0, segmentMaxLengths[i])
+      );
+      setSegments(newSegments);
+      
+      // Check if complete and call onComplete
+      if (newSegments.every((seg, i) => seg.length === segmentMaxLengths[i])) {
+        onComplete(newSegments.join('-'));
+      }
+    }
+  };
+  
+  // Handle input change for each segment
+  const handleSegmentChange = (index: number, value: string) => {
+    // Clean input - only allow alphanumeric
+    const cleaned = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const maxLen = segmentMaxLengths[index];
+    const newValue = cleaned.substring(0, maxLen);
+    
+    const newSegments = [...segments];
+    newSegments[index] = newValue;
+    setSegments(newSegments);
+    
+    // Auto-advance to next field when current is filled
+    if (newValue.length === maxLen && index < 3) {
+      inputRefs[index + 1].current?.focus();
+    }
+    
+    // Check if all segments are complete
+    if (index === 3 && newValue.length === maxLen) {
+      const allComplete = newSegments.every((seg, i) => seg.length === segmentMaxLengths[i]);
+      if (allComplete) {
+        onComplete(newSegments.join('-'));
+      }
+    }
+  };
+  
+  // Handle keyboard navigation
+  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && segments[index] === '' && index > 0) {
+      // Move to previous field on backspace when empty
+      e.preventDefault();
+      inputRefs[index - 1].current?.focus();
+    } else if (e.key === 'ArrowLeft' && index > 0) {
+      inputRefs[index - 1].current?.focus();
+    } else if (e.key === 'ArrowRight' && index < 3) {
+      inputRefs[index + 1].current?.focus();
+    } else if (e.key === 'Enter') {
+      // Submit if all segments are complete
+      const allComplete = segments.every((seg, i) => seg.length === segmentMaxLengths[i]);
+      if (allComplete) {
+        onComplete(segments.join('-'));
+      }
+    } else if (e.key === '-' && segments[index].length > 0 && index < 3) {
+      // Dash moves to next field
+      e.preventDefault();
+      inputRefs[index + 1].current?.focus();
+    }
+  };
+  
+  // Handle paste event
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const pasted = e.clipboardData.getData('text');
+    if (pasted.includes('-')) {
+      e.preventDefault();
+      parseFullCode(pasted);
+    }
+  };
+  
+  // Handle barcode scan input
+  const handleScanInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value.includes('-') || value.length > 3) {
+      parseFullCode(value);
+      // Clear the hidden input
+      if (scanInputRef.current) {
+        scanInputRef.current.value = '';
+      }
+    }
+  };
+  
+  return (
+    <div className="space-y-3">
+      {/* Hidden input for barcode scanning */}
+      <input
+        ref={scanInputRef}
+        type="text"
+        onChange={handleScanInput}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && e.currentTarget.value) {
+            parseFullCode(e.currentTarget.value);
+            e.currentTarget.value = '';
+          }
+        }}
+        className="sr-only"
+        aria-hidden="true"
+        tabIndex={-1}
+        style={{ position: 'absolute', left: '-9999px' }}
+      />
+      
+      {/* Visible segmented inputs */}
+      <div className="flex items-center gap-2">
+        <QrCode className="h-5 w-5 text-gray-400 flex-shrink-0" />
+        <div className="flex items-center gap-1 flex-1">
+          {segments.map((segment, index) => (
+            <Fragment key={index}>
+              <div className="flex-1">
+                <input
+                  ref={inputRefs[index]}
+                  type="text"
+                  value={segment}
+                  onChange={(e) => handleSegmentChange(index, e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(index, e)}
+                  onPaste={handlePaste}
+                  onFocus={(e) => {
+                    // Ensure hidden scanner input stays active
+                    if (scanInputRef.current && document.activeElement !== scanInputRef.current) {
+                      setTimeout(() => scanInputRef.current?.focus(), 0);
+                    }
+                    e.target.select();
+                  }}
+                  placeholder={segmentPlaceholders[index]}
+                  className="w-full px-3 py-4 text-center text-lg font-mono border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  maxLength={segmentMaxLengths[index]}
+                  data-testid={`input-loc-${segmentLabels[index].toLowerCase()}`}
+                />
+              </div>
+              {index < 3 && (
+                <span className="text-gray-400 text-lg font-bold">-</span>
+              )}
+            </Fragment>
+          ))}
+        </div>
+      </div>
+      
+      {/* Labels */}
+      <div className="flex items-center gap-1 pl-8">
+        {segmentLabels.map((label, index) => (
+          <Fragment key={label}>
+            <div className="flex-1 text-center">
+              <span className="text-xs text-muted-foreground">{label}</span>
+            </div>
+            {index < 3 && (
+              <span className="w-4"></span>
+            )}
+          </Fragment>
+        ))}
+      </div>
+      
+      {/* Helper text */}
+      <div className="text-center text-xs text-muted-foreground">
+        Scan barcode or type location code
+      </div>
+    </div>
+  );
 }
 
 export default function ItemsToStore() {
@@ -729,72 +922,14 @@ export default function ItemsToStore() {
             </SheetDescription>
           </SheetHeader>
           <div className="mt-6 space-y-4">
-            {/* Visual Segmented Input */}
-            <div className="space-y-2">
-              <Label className="text-sm text-muted-foreground">Location Code</Label>
-              <div className="relative">
-                <Input
-                  ref={locationInputRef}
-                  value={locationScan}
-                  onChange={(e) => setLocationScan(e.target.value.toUpperCase())}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleLocationScan();
-                    }
-                  }}
-                  placeholder="WH1-A01-R02-L03"
-                  className="text-lg font-mono py-6 pl-12 tracking-wider"
-                  style={{
-                    letterSpacing: '0.1em',
-                    backgroundImage: `repeating-linear-gradient(
-                      90deg,
-                      transparent,
-                      transparent 3.5ch,
-                      #e5e7eb 3.5ch,
-                      #e5e7eb 3.8ch,
-                      transparent 3.8ch,
-                      transparent 7.5ch,
-                      #e5e7eb 7.5ch,
-                      #e5e7eb 7.8ch,
-                      transparent 7.8ch,
-                      transparent 11.5ch,
-                      #e5e7eb 11.5ch,
-                      #e5e7eb 11.8ch,
-                      transparent 11.8ch
-                    )`,
-                    backgroundPosition: '3.2rem 0',
-                    backgroundSize: '100% 100%',
-                    backgroundRepeat: 'no-repeat'
-                  }}
-                  autoFocus
-                />
-                <QrCode className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-              </div>
-              
-              {/* Visual Segments Guide */}
-              <div className="flex items-center gap-1 pl-12">
-                <div className="flex items-center">
-                  <span className="text-xs text-muted-foreground bg-gray-100 px-2 py-1 rounded">WH1</span>
-                  <span className="text-xs text-gray-400 mx-1">-</span>
-                  <span className="text-xs text-muted-foreground bg-gray-100 px-2 py-1 rounded">A01</span>
-                  <span className="text-xs text-gray-400 mx-1">-</span>
-                  <span className="text-xs text-muted-foreground bg-gray-100 px-2 py-1 rounded">R02</span>
-                  <span className="text-xs text-gray-400 mx-1">-</span>
-                  <span className="text-xs text-muted-foreground bg-gray-100 px-2 py-1 rounded">L03</span>
-                </div>
-              </div>
-              
-              {/* Segment Labels */}
-              <div className="flex items-center gap-1 pl-12 text-xs">
-                <span className="text-muted-foreground">Warehouse</span>
-                <span className="text-gray-300 mx-1">•</span>
-                <span className="text-muted-foreground">Aisle</span>
-                <span className="text-gray-300 mx-1">•</span>
-                <span className="text-muted-foreground">Rack</span>
-                <span className="text-gray-300 mx-1">•</span>
-                <span className="text-muted-foreground">Level</span>
-              </div>
-            </div>
+            {/* Segmented Location Input */}
+            <SegmentedLocationInput 
+              onComplete={(code) => {
+                setLocationScan(code);
+                handleLocationScan();
+              }}
+              autoFocus
+            />
             
             <ScanFeedback type={scanFeedback.type} message={scanFeedback.message} />
             
