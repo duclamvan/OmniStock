@@ -729,21 +729,71 @@ export default function ItemsToStore() {
             </SheetDescription>
           </SheetHeader>
           <div className="mt-6 space-y-4">
-            <div className="relative">
-              <Input
-                ref={locationInputRef}
-                value={locationScan}
-                onChange={(e) => setLocationScan(e.target.value.toUpperCase())}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleLocationScan();
-                  }
-                }}
-                placeholder="WH1-A01-R02-L03"
-                className="text-lg font-mono py-6 pl-12"
-                autoFocus
-              />
-              <QrCode className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+            {/* Visual Segmented Input */}
+            <div className="space-y-2">
+              <Label className="text-sm text-muted-foreground">Location Code</Label>
+              <div className="relative">
+                <Input
+                  ref={locationInputRef}
+                  value={locationScan}
+                  onChange={(e) => setLocationScan(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleLocationScan();
+                    }
+                  }}
+                  placeholder="WH1-A01-R02-L03"
+                  className="text-lg font-mono py-6 pl-12 tracking-wider"
+                  style={{
+                    letterSpacing: '0.1em',
+                    backgroundImage: `repeating-linear-gradient(
+                      90deg,
+                      transparent,
+                      transparent 3.5ch,
+                      #e5e7eb 3.5ch,
+                      #e5e7eb 3.8ch,
+                      transparent 3.8ch,
+                      transparent 7.5ch,
+                      #e5e7eb 7.5ch,
+                      #e5e7eb 7.8ch,
+                      transparent 7.8ch,
+                      transparent 11.5ch,
+                      #e5e7eb 11.5ch,
+                      #e5e7eb 11.8ch,
+                      transparent 11.8ch
+                    )`,
+                    backgroundPosition: '3.2rem 0',
+                    backgroundSize: '100% 100%',
+                    backgroundRepeat: 'no-repeat'
+                  }}
+                  autoFocus
+                />
+                <QrCode className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+              </div>
+              
+              {/* Visual Segments Guide */}
+              <div className="flex items-center gap-1 pl-12">
+                <div className="flex items-center">
+                  <span className="text-xs text-muted-foreground bg-gray-100 px-2 py-1 rounded">WH1</span>
+                  <span className="text-xs text-gray-400 mx-1">-</span>
+                  <span className="text-xs text-muted-foreground bg-gray-100 px-2 py-1 rounded">A01</span>
+                  <span className="text-xs text-gray-400 mx-1">-</span>
+                  <span className="text-xs text-muted-foreground bg-gray-100 px-2 py-1 rounded">R02</span>
+                  <span className="text-xs text-gray-400 mx-1">-</span>
+                  <span className="text-xs text-muted-foreground bg-gray-100 px-2 py-1 rounded">L03</span>
+                </div>
+              </div>
+              
+              {/* Segment Labels */}
+              <div className="flex items-center gap-1 pl-12 text-xs">
+                <span className="text-muted-foreground">Warehouse</span>
+                <span className="text-gray-300 mx-1">•</span>
+                <span className="text-muted-foreground">Aisle</span>
+                <span className="text-gray-300 mx-1">•</span>
+                <span className="text-muted-foreground">Rack</span>
+                <span className="text-gray-300 mx-1">•</span>
+                <span className="text-muted-foreground">Level</span>
+              </div>
             </div>
             
             <ScanFeedback type={scanFeedback.type} message={scanFeedback.message} />
