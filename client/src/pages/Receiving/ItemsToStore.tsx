@@ -89,6 +89,7 @@ interface SegmentedLocationInputProps {
 
 function SegmentedLocationInput({ onComplete, autoFocus }: SegmentedLocationInputProps) {
   const [segments, setSegments] = useState<string[]>(["", "", "", ""]);
+  const [isManualInput, setIsManualInput] = useState(false);
   const segmentLabels = ["Warehouse", "Aisle", "Rack", "Level"];
   const segmentMaxLengths = [3, 3, 3, 3];
   const segmentPlaceholders = ["WH1", "A01", "R02", "L03"];
@@ -101,8 +102,8 @@ function SegmentedLocationInput({ onComplete, autoFocus }: SegmentedLocationInpu
     useRef<HTMLInputElement>(null)
   ];
   
-  // Hidden input for barcode scanning
-  const scanInputRef = useRef<HTMLInputElement>(null);
+  // Track if any input is focused
+  const containerRef = useRef<HTMLDivElement>(null);
   
   // Auto-focus first input on mount
   useEffect(() => {
@@ -131,6 +132,12 @@ function SegmentedLocationInput({ onComplete, autoFocus }: SegmentedLocationInpu
   
   // Handle input change for each segment
   const handleSegmentChange = (index: number, value: string) => {
+    // Check if this looks like a full barcode scan (contains dashes)
+    if (value.includes('-') && index === 0) {
+      parseFullCode(value);
+      return;
+    }
+    
     // Clean input - only allow alphanumeric
     const cleaned = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
     const maxLen = segmentMaxLengths[index];
@@ -142,7 +149,7 @@ function SegmentedLocationInput({ onComplete, autoFocus }: SegmentedLocationInpu
     
     // Auto-advance to next field when current is filled
     if (newValue.length === maxLen && index < 3) {
-      inputRefs[index + 1].current?.focus();
+      setTimeout(() => inputRefs[index + 1].current?.focus(), 50);
     }
     
     // Check if all segments are complete
@@ -165,6 +172,13 @@ function SegmentedLocationInput({ onComplete, autoFocus }: SegmentedLocationInpu
     } else if (e.key === 'ArrowRight' && index < 3) {
       inputRefs[index + 1].current?.focus();
     } else if (e.key === 'Enter') {
+      // Check if this is the first field and has a full code
+      const currentValue = e.currentTarget.value;
+      if (index === 0 && currentValue.includes('-')) {
+        e.preventDefault();
+        parseFullCode(currentValue);
+        return;
+      }
       // Submit if all segments are complete
       const allComplete = segments.every((seg, i) => seg.length === segmentMaxLengths[i]);
       if (allComplete) {
@@ -186,37 +200,8 @@ function SegmentedLocationInput({ onComplete, autoFocus }: SegmentedLocationInpu
     }
   };
   
-  // Handle barcode scan input
-  const handleScanInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    if (value.includes('-') || value.length > 3) {
-      parseFullCode(value);
-      // Clear the hidden input
-      if (scanInputRef.current) {
-        scanInputRef.current.value = '';
-      }
-    }
-  };
-  
   return (
-    <div className="space-y-3">
-      {/* Hidden input for barcode scanning */}
-      <input
-        ref={scanInputRef}
-        type="text"
-        onChange={handleScanInput}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && e.currentTarget.value) {
-            parseFullCode(e.currentTarget.value);
-            e.currentTarget.value = '';
-          }
-        }}
-        className="sr-only"
-        aria-hidden="true"
-        tabIndex={-1}
-        style={{ position: 'absolute', left: '-9999px' }}
-      />
-      
+    <div className="space-y-3" ref={containerRef}>
       {/* Visible segmented inputs */}
       <div className="flex items-center gap-2">
         <QrCode className="h-5 w-5 text-gray-400 flex-shrink-0" />
@@ -232,10 +217,6 @@ function SegmentedLocationInput({ onComplete, autoFocus }: SegmentedLocationInpu
                   onKeyDown={(e) => handleKeyDown(index, e)}
                   onPaste={handlePaste}
                   onFocus={(e) => {
-                    // Ensure hidden scanner input stays active
-                    if (scanInputRef.current && document.activeElement !== scanInputRef.current) {
-                      setTimeout(() => scanInputRef.current?.focus(), 0);
-                    }
                     e.target.select();
                   }}
                   placeholder={segmentPlaceholders[index]}
