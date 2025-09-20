@@ -905,9 +905,25 @@ export default function ItemsToStore() {
           <div className="mt-6 space-y-4">
             {/* Segmented Location Input */}
             <SegmentedLocationInput 
-              onComplete={(code) => {
+              onComplete={async (code) => {
+                // Play success sound
+                await soundEffects.playSuccessBeep();
+                
+                // Show popup notification
+                toast({
+                  title: "✓ Location Scanned",
+                  description: code,
+                  duration: 2000,
+                });
+                
+                // Set the location and process
                 setLocationScan(code);
-                handleLocationScan();
+                
+                // Close the scanner window
+                setTimeout(() => {
+                  setShowScanner(false);
+                  handleLocationScan();
+                }, 300);
               }}
               autoFocus
             />
