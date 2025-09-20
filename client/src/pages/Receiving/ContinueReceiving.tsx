@@ -146,7 +146,7 @@ const fetchProductLocations = async (productId: string): Promise<string[]> => {
     
     return locations.map((loc: any) => loc.locationCode).filter(Boolean);
   } catch (error) {
-    console.info(`Product locations API call failed for product ${productId}, showing TBA:`, error.message);
+    console.info(`Product locations API call failed for product ${productId}, showing TBA:`, (error as any).message);
     return [];
   }
 };
@@ -683,6 +683,10 @@ export default function ContinueReceiving() {
         description: "Failed to save quantity update. Please try again.",
         variant: "destructive"
       });
+    },
+    onSuccess: () => {
+      // Invalidate items-to-store query for real-time updates
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts/items-to-store'] });
     }
   });
   
@@ -707,6 +711,10 @@ export default function ContinueReceiving() {
     onError: (error, variables) => {
       console.error('Item update failed:', error);
       // Error handling is done in the calling function
+    },
+    onSuccess: () => {
+      // Invalidate items-to-store query for real-time updates
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts/items-to-store'] });
     }
   });
   
@@ -795,7 +803,7 @@ export default function ContinueReceiving() {
           }
           
           // Play success sound
-          soundEffects.playSuccessSound();
+          soundEffects.playSuccessBeep();
           
           // Show toast notification
           toast({
@@ -907,7 +915,7 @@ export default function ContinueReceiving() {
       // Validate tracking number
       const trimmedValue = value.trim();
       if (trimmedValue.length === 0 || trimmedValue.length > 100) {
-        await soundEffects.playErrorSound();
+        await soundEffects.playErrorBeep();
         setScanFeedback({ type: 'error', message: 'Invalid tracking number length' });
         setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
         const { dismiss } = toast({
@@ -1328,6 +1336,8 @@ export default function ContinueReceiving() {
     onSuccess: (response) => {
       // Don't invalidate cache during active editing to prevent jumping values
       // Data will be fresh when component remounts
+      // Invalidate items-to-store query for real-time updates
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts/items-to-store'] });
     },
     onError: (error: any) => {
       console.error("Auto-save failed:", error);
@@ -1364,6 +1374,8 @@ export default function ContinueReceiving() {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/receivable'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/receiving'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/pending_approval'] });
+      // Invalidate items-to-store query for real-time updates
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts/items-to-store'] });
       navigate('/receiving');
     },
     onError: (error: any) => {

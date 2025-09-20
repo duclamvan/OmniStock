@@ -177,6 +177,9 @@ export const receiptItems = pgTable('receipt_items', {
   receiptId: integer('receipt_id').notNull().references(() => receipts.id, { onDelete: 'cascade' }),
   itemId: integer('item_id').notNull(), // References purchaseItems.id or customItems.id
   itemType: text('item_type').notNull(), // 'purchase' or 'custom'
+  productId: text('product_id'), // Product ID for linking with products table
+  sku: text('sku'), // SKU for the item
+  status: text('status').default('ok'), // ok, damaged, partial
   expectedQuantity: integer('expected_quantity').notNull(),
   receivedQuantity: integer('received_quantity').notNull(),
   damagedQuantity: integer('damaged_quantity').default(0),

@@ -47,6 +47,7 @@ import { ScanFeedback } from "@/components/ScanFeedback";
 import { soundEffects } from "@/utils/soundEffects";
 import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
+import { nanoid } from "nanoid";
 
 interface LocationAssignment {
   id: string;
@@ -81,14 +82,41 @@ interface ReceiptWithItems {
   items: any[];
 }
 
+// Helper function to get suggested location for an item
+function getSuggestedLocation(item: StorageItem): string | null {
+  if (item.existingLocations && item.existingLocations.length > 0) {
+    // First try to find primary location
+    const primaryLoc = item.existingLocations.find(loc => loc.isPrimary);
+    if (primaryLoc) return primaryLoc.locationCode;
+    
+    // Otherwise use location with highest quantity
+    const sortedByQty = [...item.existingLocations].sort((a, b) => b.quantity - a.quantity);
+    if (sortedByQty.length > 0) return sortedByQty[0].locationCode;
+  }
+  return null;
+}
+
 // Segmented Location Input Component
 interface SegmentedLocationInputProps {
   onComplete: (code: string) => void;
   autoFocus?: boolean;
+  initialCode?: string | null;
 }
 
-function SegmentedLocationInput({ onComplete, autoFocus }: SegmentedLocationInputProps) {
-  const [segments, setSegments] = useState<string[]>(["", "", "", ""]);
+function SegmentedLocationInput({ onComplete, autoFocus, initialCode }: SegmentedLocationInputProps) {
+  // Parse initial code into segments
+  const parseInitialCode = (code: string | null | undefined): string[] => {
+    if (!code) return ["", "", "", ""];
+    const parts = code.split('-');
+    return [
+      parts[0] || "",
+      parts[1] || "",
+      parts[2] || "",
+      parts[3] || ""
+    ];
+  };
+  
+  const [segments, setSegments] = useState<string[]>(parseInitialCode(initialCode));
   const [isManualInput, setIsManualInput] = useState(false);
   const segmentLabels = ["Warehouse", "Aisle", "Rack", "Level"];
   const segmentMaxLengths = [3, 3, 3, 3];
@@ -270,10 +298,17 @@ export default function ItemsToStore() {
   const [showScanner, setShowScanner] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [activeTab, setActiveTab] = useState<'pending' | 'completed'>('pending');
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanningProgress, setScanningProgress] = useState({ current: 0, total: 0 });
+  const [lastScanResult, setLastScanResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [sessionsLocations, setSessionsLocations] = useState<string[]>([]);
+  const [scanBuffer, setScanBuffer] = useState("");
   
   // Refs
   const locationInputRef = useRef<HTMLInputElement>(null);
   const quantityInputRef = useRef<HTMLInputElement>(null);
+  const scanInputRef = useRef<HTMLInputElement>(null);
+  const quickScanTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   // Fetch all items pending storage
   const { data: storageData, isLoading } = useQuery<any>({
@@ -336,6 +371,139 @@ export default function ItemsToStore() {
     item.assignedQuantity >= item.receivedQuantity || item.newLocations.length > 0
   ).length;
   const progress = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
+  
+  // Handler for Quick Scan location processing
+  const handleQuickScanLocation = async (code: string) => {
+    if (!currentItem || !code) return;
+    
+    // Play success sound
+    await soundEffects.playSuccessBeep();
+    
+    // Add location to current item using functional updates
+    const newLocation: LocationAssignment = {
+      id: nanoid(),
+      locationCode: code.toUpperCase(),
+      locationType: 'warehouse',
+      quantity: currentItem.receivedQuantity - totalAssigned,
+      isPrimary: currentItem.newLocations.length === 0,
+      isNew: true
+    };
+    
+    // Use functional update to avoid stale closures
+    setItems(prevItems => {
+      const updatedItems = [...prevItems];
+      const currentGlobalIndex = prevItems.findIndex(item => 
+        item.receiptItemId === currentItem.receiptItemId && 
+        item.receiptId === currentItem.receiptId
+      );
+      if (currentGlobalIndex >= 0) {
+        updatedItems[currentGlobalIndex] = {
+          ...updatedItems[currentGlobalIndex],
+          newLocations: [...updatedItems[currentGlobalIndex].newLocations, newLocation]
+        };
+      }
+      return updatedItems;
+    });
+    
+    // Update last scan result
+    setLastScanResult({
+      success: true,
+      message: `Location ${code} assigned to ${currentItem.productName}`
+    });
+    
+    // Auto-progress to next item using functional state update
+    setTimeout(() => {
+      setSelectedItemIndex(prevIndex => {
+        // Find next pending item from current position
+        const currentFilteredItems = selectedReceipt 
+          ? items.filter(item => item.receiptId === selectedReceipt)
+          : items;
+        
+        const currentDisplayItems = activeTab === 'pending'
+          ? currentFilteredItems.filter(item => item.newLocations.length === 0 && !item.existingLocations.length)
+          : currentFilteredItems.filter(item => item.newLocations.length > 0 || item.existingLocations.length > 0);
+        
+        const nextIndex = currentDisplayItems.findIndex((item, idx) => 
+          idx > prevIndex && item.newLocations.length === 0 && !item.existingLocations.length
+        );
+        
+        if (nextIndex !== -1) {
+          setScanningProgress(prev => ({ 
+            ...prev, 
+            current: prev.current + 1 
+          }));
+          return nextIndex;
+        } else {
+          // All items processed
+          setIsScanning(false);
+          toast({
+            title: "✓ Scanning Complete",
+            description: "All items have been assigned locations",
+            duration: 3000,
+          });
+          return prevIndex;
+        }
+      });
+    }, 1000);
+  };
+  
+  // Handle barcode scanner input
+  const handleScanInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setScanBuffer(e.target.value);
+    
+    // Clear any existing timer
+    if (quickScanTimerRef.current) {
+      clearTimeout(quickScanTimerRef.current);
+    }
+    
+    // Set timer to auto-process after a brief pause (barcode scanners send data quickly)
+    quickScanTimerRef.current = setTimeout(() => {
+      if (e.target.value.length >= 3) {
+        handleQuickScanLocation(e.target.value);
+        setScanBuffer("");
+        // Refocus the hidden input
+        scanInputRef.current?.focus();
+      }
+    }, 300);
+  };
+  
+  // Handle keyboard completion for scanner
+  const handleScanComplete = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && scanBuffer.length > 0) {
+      e.preventDefault();
+      // Clear timer to avoid duplicate processing
+      if (quickScanTimerRef.current) {
+        clearTimeout(quickScanTimerRef.current);
+      }
+      handleQuickScanLocation(scanBuffer);
+      setScanBuffer("");
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setIsScanning(false);
+      setLastScanResult(null);
+      setScanBuffer("");
+    }
+  };
+  
+  // Effect to focus hidden input when scanning starts
+  useEffect(() => {
+    if (isScanning) {
+      // Focus the hidden input after a small delay to ensure DOM is ready
+      setTimeout(() => {
+        scanInputRef.current?.focus();
+      }, 100);
+      
+      // Play activation sound
+      soundEffects.playSuccessBeep();
+    }
+    
+    // Cleanup timer on unmount or when isScanning changes
+    return () => {
+      if (quickScanTimerRef.current) {
+        clearTimeout(quickScanTimerRef.current);
+      }
+    };
+  }, [isScanning]);
   
   // Handle location barcode scan
   const handleLocationScan = async () => {
@@ -723,12 +891,10 @@ export default function ItemsToStore() {
                         <p className="text-xs text-muted-foreground line-clamp-1">{item.description}</p>
                       )}
                       <div className="flex items-center gap-3 mt-2">
-                        {item.sku && (
-                          <span className="text-xs text-muted-foreground">
-                            SKU: {item.sku}
-                          </span>
-                        )}
-                        <Badge variant="outline" className="text-xs">
+                        <span className="text-xs text-muted-foreground" data-testid={`location-${item.receiptItemId}`}>
+                          Location: {getSuggestedLocation(item) || 'TBA'}
+                        </span>
+                        <Badge variant="outline" className="text-xs" data-testid={`qty-${item.receiptItemId}`}>
                           Qty: {item.receivedQuantity}
                         </Badge>
                       </div>
@@ -764,6 +930,22 @@ export default function ItemsToStore() {
                     className="border-t bg-gray-50"
                   >
                     <div className="p-4 space-y-3">
+                      {/* Prominent Location Display */}
+                      <div className="bg-primary/10 rounded-lg p-3 border border-primary/20">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-5 w-5 text-primary" />
+                          <span className="text-2xl font-mono font-bold text-primary">
+                            {getSuggestedLocation(item) || 'TBA'}
+                          </span>
+                          {item.existingLocations.some(loc => loc.isPrimary) && (
+                            <Badge className="ml-2 bg-yellow-500 text-white">
+                              <Star className="h-3 w-3 mr-1" fill="currentColor" />
+                              Primary
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      
                       {/* Quick Stats */}
                       <div className="grid grid-cols-2 gap-3">
                         <div className="bg-white rounded-lg p-3 border">
@@ -829,13 +1011,30 @@ export default function ItemsToStore() {
                         <button
                           onClick={() => setShowScanner(true)}
                           className="flex-1 bg-primary text-white rounded-lg py-3 flex items-center justify-center gap-2"
+                          data-testid="button-scan-location"
                         >
                           <QrCode className="h-5 w-5" />
                           <span className="font-medium">Scan Location</span>
                         </button>
                         <button
+                          onClick={() => {
+                            setIsScanning(true);
+                            setScanningProgress({ 
+                              current: selectedItemIndex + 1, 
+                              total: displayItems.filter((_, i) => i >= selectedItemIndex && 
+                                items[i].newLocations.length === 0).length 
+                            });
+                          }}
+                          className="flex-1 bg-green-600 text-white rounded-lg py-3 flex items-center justify-center gap-2"
+                          data-testid="button-quick-scan"
+                        >
+                          <ScanLine className="h-5 w-5" />
+                          <span className="font-medium">Quick Scan</span>
+                        </button>
+                        <button
                           onClick={() => setShowDetails(true)}
                           className="p-3 bg-white border rounded-lg"
+                          data-testid="button-item-details"
                         >
                           <Eye className="h-5 w-5" />
                         </button>
@@ -893,50 +1092,90 @@ export default function ItemsToStore() {
         </div>
       </div>
       
-      {/* Scanner Sheet */}
-      <Sheet open={showScanner} onOpenChange={setShowScanner}>
-        <SheetContent side="bottom" className="h-[50vh]">
+      {/* Scanner Sheet with Multi-Location Support */}
+      <Sheet open={showScanner} onOpenChange={(open) => {
+        setShowScanner(open);
+        if (!open) {
+          setSessionsLocations([]);
+        }
+      }}>
+        <SheetContent side="bottom" className="h-[70vh] overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Scan Location</SheetTitle>
             <SheetDescription>
-              Scan or enter the warehouse location code
+              {currentItem && (
+                <div className="mt-2 p-2 bg-primary/10 rounded-lg">
+                  <p className="text-xs font-medium">Current Location:</p>
+                  <p className="text-lg font-mono font-bold">
+                    {getSuggestedLocation(currentItem) || "New item - no current location"}
+                  </p>
+                </div>
+              )}
             </SheetDescription>
           </SheetHeader>
-          <div className="mt-6 space-y-4">
+          <div className="mt-4 space-y-4">
+            {/* Session Locations */}
+            {sessionsLocations.length > 0 && (
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-xs font-medium text-muted-foreground mb-2">Added in this session:</p>
+                <div className="space-y-1">
+                  {sessionsLocations.map((loc, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      <span className="font-mono text-sm">{loc}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
             {/* Segmented Location Input */}
             <SegmentedLocationInput 
+              initialCode={currentItem ? getSuggestedLocation(currentItem) : null}
               onComplete={async (code) => {
                 // Play success sound
                 await soundEffects.playSuccessBeep();
                 
-                // Show popup notification
+                // Add to session locations
+                setSessionsLocations(prev => [...prev, code]);
+                
+                // Set the location and process
+                setLocationScan(code);
+                handleLocationScan();
+                
+                // Show success feedback but don't close
                 toast({
-                  title: "✓ Location Scanned",
+                  title: "✓ Location Added",
                   description: code,
                   duration: 2000,
                 });
                 
-                // Set the location and process
-                setLocationScan(code);
-                
-                // Close the scanner window
-                setTimeout(() => {
-                  setShowScanner(false);
-                  handleLocationScan();
-                }, 300);
+                // Clear input for next scan (by reinitializing the component)
+                setLocationScan("");
               }}
               autoFocus
             />
             
             <ScanFeedback type={scanFeedback.type} message={scanFeedback.message} />
             
-            <Button
-              onClick={handleLocationScan}
-              className="w-full py-6 text-lg"
-              size="lg"
-            >
-              Add Location
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleLocationScan}
+                className="flex-1 py-6 text-lg"
+                size="lg"
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                Add Location
+              </Button>
+              <Button
+                onClick={() => setShowScanner(false)}
+                variant="outline"
+                className="py-6"
+                size="lg"
+              >
+                Done
+              </Button>
+            </div>
             
             {/* Example locations */}
             <div className="text-center text-sm text-muted-foreground">
@@ -946,78 +1185,258 @@ export default function ItemsToStore() {
         </SheetContent>
       </Sheet>
       
-      {/* Item Details Sheet */}
+      {/* Enhanced Item Details Sheet */}
       <Sheet open={showDetails} onOpenChange={setShowDetails}>
-        <SheetContent side="bottom" className="h-[70vh]">
+        <SheetContent side="bottom" className="h-[85vh] overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Item Details</SheetTitle>
           </SheetHeader>
           {currentItem && (
-            <div className="mt-6 space-y-4">
-              {/* Product Image */}
-              {currentItem.imageUrl && (
-                <img 
-                  src={currentItem.imageUrl} 
-                  alt={currentItem.productName}
-                  className="w-full h-48 object-cover rounded-lg"
-                />
-              )}
-              
-              {/* Product Info */}
-              <div className="space-y-3">
-                <div>
-                  <p className="text-sm text-muted-foreground">Product Name</p>
-                  <p className="font-medium">{currentItem.productName}</p>
-                </div>
-                
-                {currentItem.description && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">Description</p>
-                    <p className="text-sm">{currentItem.description}</p>
+            <div className="mt-4 space-y-6">
+              {/* Hero Product Image */}
+              <div className="aspect-video rounded-lg overflow-hidden bg-gray-100">
+                {currentItem.imageUrl ? (
+                  <img 
+                    src={currentItem.imageUrl} 
+                    alt={currentItem.productName}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Package className="h-16 w-16 text-gray-400" />
                   </div>
                 )}
-                
-                <div className="grid grid-cols-2 gap-3">
-                  {currentItem.sku && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">SKU</p>
-                      <p className="font-mono">{currentItem.sku}</p>
-                    </div>
-                  )}
-                  
-                  {currentItem.barcode && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Barcode</p>
-                      <p className="font-mono text-sm">{currentItem.barcode}</p>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Tracking #</p>
-                    <p className="font-mono text-sm">{currentItem.shipmentTrackingNumber}</p>
-                  </div>
-                  
-                  <div>
-                    <p className="text-sm text-muted-foreground">Received</p>
-                    <p className="text-sm">{format(new Date(currentItem.receivedAt || ''), "MMM d, yyyy")}</p>
-                  </div>
-                </div>
-                
-                <div>
-                  <p className="text-sm text-muted-foreground">Quantity</p>
-                  <div className="flex items-center gap-4 mt-1">
-                    <Badge variant="outline">Received: {currentItem.receivedQuantity}</Badge>
-                    <Badge variant="default">Assigned: {totalAssigned}</Badge>
-                    <Badge variant="secondary">Remaining: {remainingQuantity}</Badge>
-                  </div>
-                </div>
               </div>
+              
+              {/* Identification Section */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm uppercase tracking-wider text-muted-foreground">
+                    <Hash className="inline h-4 w-4 mr-2" />
+                    Identification
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Product Name</p>
+                    <p className="font-semibold">{currentItem.productName}</p>
+                  </div>
+                  
+                  {currentItem.description && currentItem.description !== currentItem.productName && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Description</p>
+                      <p className="text-sm">{currentItem.description}</p>
+                    </div>
+                  )}
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    {currentItem.sku && (
+                      <div>
+                        <p className="text-xs text-muted-foreground">SKU</p>
+                        <p className="font-mono text-sm">{currentItem.sku}</p>
+                      </div>
+                    )}
+                    
+                    {currentItem.barcode && (
+                      <div>
+                        <p className="text-xs text-muted-foreground">Barcode</p>
+                        <p className="font-mono text-xs">{currentItem.barcode}</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+              
+              {/* Shipment Section */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm uppercase tracking-wider text-muted-foreground">
+                    <Ship className="inline h-4 w-4 mr-2" />
+                    Shipment
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Tracking #</p>
+                      <p className="font-mono text-xs">{currentItem.shipmentTrackingNumber || 'N/A'}</p>
+                    </div>
+                    
+                    <div>
+                      <p className="text-xs text-muted-foreground">Received</p>
+                      <p className="text-sm">{currentItem.receivedAt ? format(new Date(currentItem.receivedAt), "MMM d, yyyy") : 'N/A'}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              {/* Quantities Section */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm uppercase tracking-wider text-muted-foreground">
+                    <Boxes className="inline h-4 w-4 mr-2" />
+                    Quantities
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div>
+                      <Progress value={(totalAssigned / currentItem.receivedQuantity) * 100} className="h-2" />
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge variant="outline" className="bg-gray-50">
+                        <Package className="h-3 w-3 mr-1" />
+                        Received: {currentItem.receivedQuantity}
+                      </Badge>
+                      <Badge className="bg-green-600">
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        Assigned: {totalAssigned}
+                      </Badge>
+                      <Badge variant="secondary" className="bg-amber-100 text-amber-900">
+                        <Clock className="h-3 w-3 mr-1" />
+                        Remaining: {remainingQuantity}
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           )}
         </SheetContent>
       </Sheet>
+      
+      {/* Quick Scan Continuous Mode HUD */}
+      {isScanning && (
+        <motion.div
+          initial={{ y: 100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 100, opacity: 0 }}
+          className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 to-black/80 text-white p-6 z-50 backdrop-blur-md"
+        >
+          {/* Hidden input for barcode scanning - properly captures keyboard input */}
+          <input
+            ref={scanInputRef}
+            type="text"
+            className="sr-only"
+            value={scanBuffer}
+            onChange={handleScanInput}
+            onKeyDown={handleScanComplete}
+            aria-label="Quick scan barcode input"
+            autoFocus
+            tabIndex={0}
+            data-testid="quick-scan-input"
+          />
+          
+          <div className="max-w-2xl mx-auto">
+            {/* Status Header */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <ScanLine className="h-6 w-6 text-green-400 animate-pulse" />
+                <div>
+                  <p className="text-lg font-bold">Quick Scan Active</p>
+                  <p className="text-xs text-gray-300">
+                    {currentItem?.productName || 'No item selected'}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Press ESC to exit • Scan barcode to continue
+                  </p>
+                </div>
+              </div>
+              <Badge className="bg-white/20 text-white">
+                {scanningProgress.current} of {scanningProgress.total}
+              </Badge>
+            </div>
+            
+            {/* Progress Bar */}
+            <Progress 
+              value={(scanningProgress.current / scanningProgress.total) * 100} 
+              className="h-2 mb-4 bg-white/10"
+            />
+            
+            {/* Last Scan Result */}
+            {lastScanResult && (
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className={`p-3 rounded-lg mb-4 flex items-center gap-2 ${
+                  lastScanResult.success 
+                    ? 'bg-green-500/20 text-green-300 border border-green-500/30' 
+                    : 'bg-red-500/20 text-red-300 border border-red-500/30'
+                }`}
+              >
+                {lastScanResult.success ? (
+                  <CheckCircle2 className="h-5 w-5" />
+                ) : (
+                  <AlertCircle className="h-5 w-5" />
+                )}
+                <span className="text-sm">{lastScanResult.message}</span>
+              </motion.div>
+            )}
+            
+            {/* Control Buttons */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setIsScanning(false);
+                  setLastScanResult(null);
+                  setScanBuffer("");
+                }}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium"
+                data-testid="button-exit-quick-scan"
+              >
+                <X className="inline h-4 w-4 mr-2" />
+                Exit (ESC)
+              </button>
+              <button
+                onClick={() => {
+                  // Use functional update to ensure fresh state
+                  setSelectedItemIndex(prevIndex => {
+                    const currentFilteredItems = selectedReceipt 
+                      ? items.filter(item => item.receiptId === selectedReceipt)
+                      : items;
+                    
+                    const currentDisplayItems = activeTab === 'pending'
+                      ? currentFilteredItems.filter(item => item.newLocations.length === 0 && !item.existingLocations.length)
+                      : currentFilteredItems.filter(item => item.newLocations.length > 0 || item.existingLocations.length > 0);
+                    
+                    const nextIndex = currentDisplayItems.findIndex((item, idx) => 
+                      idx > prevIndex && item.newLocations.length === 0 && !item.existingLocations.length
+                    );
+                    
+                    if (nextIndex !== -1) {
+                      setScanningProgress(prev => ({ 
+                        ...prev, 
+                        current: prev.current + 1 
+                      }));
+                      return nextIndex;
+                    } else {
+                      setIsScanning(false);
+                      toast({
+                        title: "✓ All items processed",
+                        description: "No more items to scan",
+                      });
+                      return prevIndex;
+                    }
+                  });
+                }}
+                className="px-4 py-2 bg-gray-700 text-white rounded-lg font-medium"
+                data-testid="button-skip-item"
+              >
+                <ArrowRight className="inline h-4 w-4 mr-2" />
+                Skip
+              </button>
+              <button
+                onClick={() => setShowScanner(true)}
+                className="flex-1 px-4 py-2 bg-white/20 text-white rounded-lg font-medium"
+                data-testid="button-manual-entry"
+              >
+                <Layers className="inline h-4 w-4 mr-2" />
+                Manual Entry
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 }

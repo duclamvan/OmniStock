@@ -17,7 +17,7 @@ import {
   products,
   productLocations
 } from "@shared/schema";
-import { eq, desc, sql, and, like, or, isNull, inArray, ne } from "drizzle-orm";
+import { eq, desc, sql, and, like, or, isNull, inArray, ne, gte } from "drizzle-orm";
 import { addDays, differenceInDays } from "date-fns";
 import multer from "multer";
 
@@ -2846,7 +2846,7 @@ router.post("/receipts", async (req, res) => {
 // Get all items pending storage from all receipts - MUST BE BEFORE /:id ROUTE
 router.get("/receipts/items-to-store", async (req, res) => {
   try {
-    // Get all receipts with pending_approval status (received but not stored)
+    // Get all receipts with pending_approval or receiving status (received but not stored)
     const pendingReceipts = await db
       .select({
         receipt: receipts,
@@ -2854,7 +2854,10 @@ router.get("/receipts/items-to-store", async (req, res) => {
       })
       .from(receipts)
       .leftJoin(shipments, eq(receipts.shipmentId, shipments.id))
-      .where(eq(receipts.status, 'pending_approval'))
+      .where(or(
+        eq(receipts.status, 'pending_approval'),
+        eq(receipts.status, 'receiving')
+      ))
       .orderBy(desc(receipts.createdAt));
     
     if (pendingReceipts.length === 0) {
@@ -2865,16 +2868,28 @@ router.get("/receipts/items-to-store", async (req, res) => {
       });
     }
     
-    // Get all items for these receipts
+    // Get all items for these receipts - simplified for now to avoid SQL issues
     const receiptIds = pendingReceipts.map(r => r.receipt.id);
-    const allReceiptItems = await db
+    const allReceiptItems = receiptIds.length > 0 ? await db
       .select()
       .from(receiptItems)
-      .where(inArray(receiptItems.receiptId, receiptIds))
-      .orderBy(receiptItems.receiptId, receiptItems.id);
+      .where(and(
+        inArray(receiptItems.receiptId, receiptIds),
+        isNull(receiptItems.warehouseLocation)
+      ))
+      .orderBy(receiptItems.receiptId, receiptItems.id) : [];
+    
+    // Filter in memory to show only items ready for storage
+    const filteredReceiptItems = allReceiptItems.filter(item => {
+      // Check if status is ok or not set
+      const statusOk = !item.status || item.status === 'ok' || item.condition === 'good';
+      // Check if fully received
+      const fullyReceived = item.receivedQuantity >= item.expectedQuantity;
+      return statusOk && fullyReceived;
+    });
     
     // Get product information and existing locations for all items at once
-    const productIds = allReceiptItems
+    const productIds = filteredReceiptItems
       .filter(item => item.productId)
       .map(item => item.productId as string);
     
@@ -2909,11 +2924,11 @@ router.get("/receipts/items-to-store", async (req, res) => {
     });
     
     // Fetch original item details (purchaseItems or customItems)
-    const purchaseItemIds = allReceiptItems
+    const purchaseItemIds = filteredReceiptItems
       .filter(item => item.itemType === 'purchase')
       .map(item => item.itemId);
     
-    const customItemIds = allReceiptItems
+    const customItemIds = filteredReceiptItems
       .filter(item => item.itemType === 'custom')
       .map(item => item.itemId);
     
@@ -2944,7 +2959,7 @@ router.get("/receipts/items-to-store", async (req, res) => {
     
     // Group items by receipt
     const itemsByReceipt: Record<number, any[]> = {};
-    allReceiptItems.forEach(item => {
+    filteredReceiptItems.forEach(item => {
       if (!itemsByReceipt[item.receiptId]) {
         itemsByReceipt[item.receiptId] = [];
       }
@@ -2986,8 +3001,8 @@ router.get("/receipts/items-to-store", async (req, res) => {
     }));
     
     // Calculate totals
-    const totalItems = allReceiptItems.length;
-    const totalQuantity = allReceiptItems.reduce((sum, item) => 
+    const totalItems = filteredReceiptItems.length;
+    const totalQuantity = filteredReceiptItems.reduce((sum, item) => 
       sum + (item.receivedQuantity || 0), 0
     );
     
