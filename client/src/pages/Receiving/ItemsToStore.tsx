@@ -10,9 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { 
   Warehouse, 
   Package, 
@@ -36,11 +34,19 @@ import {
   ChevronRight,
   Calendar,
   User,
-  Truck
+  Truck,
+  ScanLine,
+  ArrowUp,
+  ArrowDown,
+  Navigation,
+  PackageCheck,
+  Boxes,
+  Eye
 } from "lucide-react";
 import { ScanFeedback } from "@/components/ScanFeedback";
 import { soundEffects } from "@/utils/soundEffects";
 import { format } from "date-fns";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface LocationAssignment {
   id: string;
@@ -86,8 +92,10 @@ export default function ItemsToStore() {
   const [locationScan, setLocationScan] = useState("");
   const [quantityScan, setQuantityScan] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  const [scanMode, setScanMode] = useState<'location' | 'quantity'>('location');
   const [selectedReceipt, setSelectedReceipt] = useState<number | null>(null);
+  const [showScanner, setShowScanner] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+  const [activeTab, setActiveTab] = useState<'pending' | 'completed'>('pending');
   
   // Refs
   const locationInputRef = useRef<HTMLInputElement>(null);
@@ -118,8 +126,8 @@ export default function ItemsToStore() {
             receiptId: receiptData.receipt.id,
             shipmentTrackingNumber: receiptData.shipment?.trackingNumber,
             receivedAt: receiptData.receipt.receivedAt,
-            imageUrl: item.imageUrl || null,
-            description: item.description || null
+            imageUrl: item.imageUrl,
+            description: item.description
           });
         });
       });
@@ -133,10 +141,20 @@ export default function ItemsToStore() {
     }
   }, [storageData, selectedReceipt]);
   
-  // Filter items by selected receipt
+  // Filter items by selected receipt and tab
   const filteredItems = selectedReceipt 
     ? items.filter(item => item.receiptId === selectedReceipt)
     : items;
+  
+  const displayItems = activeTab === 'pending'
+    ? filteredItems.filter(item => item.newLocations.length === 0 && !item.existingLocations.length)
+    : filteredItems.filter(item => item.newLocations.length > 0 || item.existingLocations.length > 0);
+  
+  const currentItem = displayItems[selectedItemIndex];
+  const totalAssigned = currentItem ? 
+    currentItem.newLocations.reduce((sum, loc) => sum + loc.quantity, 0) : 0;
+  const remainingQuantity = currentItem ? 
+    currentItem.receivedQuantity - totalAssigned : 0;
   
   // Calculate progress
   const totalItems = filteredItems.length;
@@ -145,15 +163,9 @@ export default function ItemsToStore() {
   ).length;
   const progress = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
   
-  const currentItem = filteredItems[selectedItemIndex];
-  const totalAssigned = currentItem ? 
-    currentItem.newLocations.reduce((sum, loc) => sum + loc.quantity, 0) : 0;
-  const remainingQuantity = currentItem ? 
-    currentItem.receivedQuantity - totalAssigned : 0;
-  
   // Handle location barcode scan
-  const handleLocationScan = async (value: string) => {
-    const trimmedValue = value.trim().toUpperCase();
+  const handleLocationScan = async () => {
+    const trimmedValue = locationScan.trim().toUpperCase();
     
     if (!trimmedValue) return;
     
@@ -192,7 +204,7 @@ export default function ItemsToStore() {
       id: `new-${Date.now()}`,
       locationCode: trimmedValue,
       locationType,
-      quantity: 0,
+      quantity: remainingQuantity, // Auto-fill with remaining quantity
       isPrimary: currentItem?.newLocations.length === 0 && currentItem?.existingLocations.length === 0,
       isNew: true
     };
@@ -213,10 +225,16 @@ export default function ItemsToStore() {
     setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
     
     setLocationScan("");
+    setShowScanner(false);
     
-    // Auto-switch to quantity input
-    setScanMode('quantity');
-    setTimeout(() => quantityInputRef.current?.focus(), 100);
+    // Auto-advance to next item if quantity is fully assigned
+    if (remainingQuantity <= newLocation.quantity) {
+      setTimeout(() => {
+        if (selectedItemIndex < displayItems.length - 1) {
+          setSelectedItemIndex(selectedItemIndex + 1);
+        }
+      }, 500);
+    }
   };
   
   // Handle quantity update for a location
@@ -230,16 +248,36 @@ export default function ItemsToStore() {
     if (globalIndex < 0) return;
     
     const updatedItems = [...items];
-    const maxQuantity = currentItem.receivedQuantity - 
-      currentItem.newLocations.reduce((sum, loc, idx) => 
-        idx === locationIndex ? 0 : sum + loc.quantity, 0);
-    
-    updatedItems[globalIndex].newLocations[locationIndex].quantity = 
-      Math.min(quantity, maxQuantity);
+    updatedItems[globalIndex].newLocations[locationIndex].quantity = quantity;
     
     // Update assigned quantity
-    updatedItems[globalIndex].assignedQuantity = 
-      updatedItems[globalIndex].newLocations.reduce((sum, loc) => sum + loc.quantity, 0);
+    const totalAssigned = updatedItems[globalIndex].newLocations.reduce((sum, loc) => sum + loc.quantity, 0);
+    updatedItems[globalIndex].assignedQuantity = totalAssigned;
+    
+    setItems(updatedItems);
+    
+    // Play feedback sound
+    if (totalAssigned >= currentItem.receivedQuantity) {
+      soundEffects.playCompletionSound();
+    }
+  };
+  
+  // Remove location
+  const removeLocation = (locationIndex: number) => {
+    if (!currentItem) return;
+    
+    const globalIndex = items.findIndex(item => 
+      item.receiptItemId === currentItem.receiptItemId && 
+      item.receiptId === currentItem.receiptId
+    );
+    if (globalIndex < 0) return;
+    
+    const updatedItems = [...items];
+    updatedItems[globalIndex].newLocations.splice(locationIndex, 1);
+    
+    // Update assigned quantity
+    const totalAssigned = updatedItems[globalIndex].newLocations.reduce((sum, loc) => sum + loc.quantity, 0);
+    updatedItems[globalIndex].assignedQuantity = totalAssigned;
     
     setItems(updatedItems);
   };
@@ -255,44 +293,19 @@ export default function ItemsToStore() {
     if (globalIndex < 0) return;
     
     const updatedItems = [...items];
-    // Remove primary from all locations
+    
+    // Clear other primary flags
     updatedItems[globalIndex].newLocations.forEach((loc, idx) => {
       loc.isPrimary = idx === locationIndex;
     });
-    setItems(updatedItems);
-  };
-  
-  // Remove a location assignment
-  const removeLocation = (locationIndex: number) => {
-    if (!currentItem) return;
-    
-    const globalIndex = items.findIndex(item => 
-      item.receiptItemId === currentItem.receiptItemId && 
-      item.receiptId === currentItem.receiptId
-    );
-    if (globalIndex < 0) return;
-    
-    const updatedItems = [...items];
-    updatedItems[globalIndex].newLocations.splice(locationIndex, 1);
-    
-    // Update assigned quantity
-    updatedItems[globalIndex].assignedQuantity = 
-      updatedItems[globalIndex].newLocations.reduce((sum, loc) => sum + loc.quantity, 0);
-    
-    // Set first location as primary if needed
-    if (updatedItems[globalIndex].newLocations.length > 0 && 
-        !updatedItems[globalIndex].newLocations.some(loc => loc.isPrimary)) {
-      updatedItems[globalIndex].newLocations[0].isPrimary = true;
-    }
     
     setItems(updatedItems);
   };
   
-  // Save storage assignments
+  // Save storage mutation
   const saveStorageMutation = useMutation({
     mutationFn: async () => {
-      // Prepare data for saving
-      const storageAssignments = items
+      const assignments = items
         .filter(item => item.newLocations.length > 0)
         .map(item => ({
           receiptItemId: item.receiptItemId,
@@ -306,76 +319,63 @@ export default function ItemsToStore() {
           }))
         }));
       
-      if (storageAssignments.length === 0) {
-        throw new Error("No storage assignments to save");
+      if (assignments.length === 0) {
+        throw new Error("No items to store");
       }
       
-      return await apiRequest(
-        '/api/imports/receipts/store-items', 
-        'POST', 
-        { assignments: storageAssignments }
+      return apiRequest(
+        "/api/imports/receipts/store-items",
+        "POST",
+        { 
+          receiptId: selectedReceipt, 
+          assignments 
+        }
       );
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts/items-to-store'] });
       toast({
         title: "Success",
-        description: "Storage assignments saved successfully",
-        duration: 3000
+        description: "Items have been stored in warehouse locations",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts/items-to-store'] });
       navigate('/receiving');
     },
-    onError: (error: any) => {
+    onError: (error) => {
+      console.error("Failed to save storage:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to save storage assignments",
+        description: "Failed to save storage assignments",
         variant: "destructive",
-        duration: 5000
       });
     }
   });
   
   const handleSave = () => {
-    if (items.filter(item => item.newLocations.length > 0).length === 0) {
-      toast({
-        title: "No Assignments",
-        description: "Please assign locations to at least one item",
-        variant: "destructive",
-        duration: 3000
-      });
-      return;
-    }
-    
     saveStorageMutation.mutate();
   };
   
-  // Loading state
   if (isLoading) {
     return (
-      <div className="container max-w-7xl mx-auto p-6">
+      <div className="min-h-screen bg-gray-50 p-4">
         <div className="space-y-4">
-          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-32 w-full" />
           <Skeleton className="h-64 w-full" />
-          <Skeleton className="h-96 w-full" />
         </div>
       </div>
     );
   }
   
-  // No items state
-  if (!storageData?.receipts || storageData.receipts.length === 0) {
+  if (!storageData || storageData.receipts.length === 0) {
     return (
-      <div className="container max-w-7xl mx-auto p-6">
+      <div className="min-h-screen bg-gray-50 p-4">
         <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <Package className="h-16 w-16 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No Items to Store</h3>
-            <p className="text-muted-foreground text-center max-w-md">
-              There are currently no items pending storage. Items will appear here after they have been received and are ready to be stored in warehouse locations.
-            </p>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Boxes className="h-16 w-16 text-muted-foreground mb-4" />
+            <p className="text-lg font-medium text-center mb-6">No items pending storage</p>
             <Button
               variant="outline"
-              className="mt-6"
               onClick={() => navigate('/receiving')}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -388,490 +388,454 @@ export default function ItemsToStore() {
   }
   
   return (
-    <div className="container max-w-7xl mx-auto p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Warehouse className="h-8 w-8 text-primary" />
-            Items to Store
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Assign warehouse locations to received items from all pending receipts
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <Button
-            variant="outline"
-            onClick={() => navigate('/receiving')}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Receiving
-          </Button>
-          <Button
+    <div className="min-h-screen bg-gray-50 pb-20">
+      {/* Mobile Header */}
+      <div className="sticky top-0 z-40 bg-white border-b shadow-sm">
+        <div className="flex items-center justify-between p-4">
+          <button onClick={() => navigate('/receiving')} className="p-2 -ml-2">
+            <ArrowLeft className="h-6 w-6" />
+          </button>
+          <h1 className="text-lg font-semibold">Items to Store</h1>
+          <button 
             onClick={handleSave}
             disabled={items.filter(item => item.newLocations.length > 0).length === 0 || saveStorageMutation.isPending}
+            className="p-2 -mr-2"
           >
             {saveStorageMutation.isPending ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Saving...
-              </>
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
             ) : (
-              <>
-                <Save className="h-4 w-4 mr-2" />
-                Save Assignments
-              </>
+              <Save className={`h-6 w-6 ${items.filter(item => item.newLocations.length > 0).length === 0 ? 'text-gray-300' : 'text-primary'}`} />
             )}
-          </Button>
+          </button>
+        </div>
+        
+        {/* Progress Bar */}
+        <div className="px-4 pb-2">
+          <div className="flex justify-between text-xs text-muted-foreground mb-1">
+            <span>{completedItems} of {totalItems} items</span>
+            <span>{Math.round(progress)}%</span>
+          </div>
+          <Progress value={progress} className="h-2" />
         </div>
       </div>
       
-      {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card>
-          <CardContent className="flex items-center gap-3 p-4">
-            <FileText className="h-8 w-8 text-blue-500" />
-            <div>
-              <p className="text-sm text-muted-foreground">Pending Receipts</p>
-              <p className="text-2xl font-bold">{storageData.receipts.length}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-3 p-4">
-            <Package className="h-8 w-8 text-green-500" />
-            <div>
-              <p className="text-sm text-muted-foreground">Total Items</p>
-              <p className="text-2xl font-bold">{storageData.totalItems}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-3 p-4">
-            <Hash className="h-8 w-8 text-purple-500" />
-            <div>
-              <p className="text-sm text-muted-foreground">Total Quantity</p>
-              <p className="text-2xl font-bold">{storageData.totalQuantity}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex items-center gap-3 p-4">
-            <CheckCircle2 className="h-8 w-8 text-emerald-500" />
-            <div>
-              <p className="text-sm text-muted-foreground">Assigned</p>
-              <p className="text-2xl font-bold">
-                {items.filter(item => item.newLocations.length > 0).length} / {items.length}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-      
-      {/* Receipt Selection Tabs */}
+      {/* Receipt Selector - Horizontal Scroll */}
       {storageData.receipts.length > 1 && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Select Receipt</CardTitle>
-            <CardDescription>Choose a receipt to work with its items</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="w-full">
-              <div className="flex gap-2 pb-2">
-                {storageData.receipts.map((receiptData: ReceiptWithItems) => {
-                  const receiptItems = items.filter(item => item.receiptId === receiptData.receipt.id);
-                  const assignedCount = receiptItems.filter(item => item.newLocations.length > 0).length;
-                  
-                  return (
-                    <button
-                      key={receiptData.receipt.id}
-                      data-testid={`receipt-card-${receiptData.receipt.id}`}
-                      onClick={() => {
-                        setSelectedReceipt(receiptData.receipt.id);
-                        setSelectedItemIndex(0);
-                      }}
-                      className={`flex-shrink-0 p-4 rounded-lg border transition-all min-w-[280px] ${
-                        selectedReceipt === receiptData.receipt.id
-                          ? 'border-primary bg-primary/5'
-                          : 'border-border hover:border-primary/50'
-                      }`}
-                    >
-                      <div className="text-left space-y-2">
-                        {/* Shipment Info */}
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <Ship className="h-4 w-4 text-blue-500" />
-                            <span className="font-semibold text-sm" data-testid={`shipment-tracking-${receiptData.receipt.id}`}>
-                              Shipment: {receiptData.shipment?.trackingNumber || `Receipt #${receiptData.receipt.id}`}
-                            </span>
-                          </div>
-                          {receiptData.shipment?.carrier && (
-                            <div className="flex items-center gap-2 ml-6">
-                              <Truck className="h-4 w-4 text-green-500" />
-                              <span className="text-sm font-medium" data-testid={`shipment-carrier-${receiptData.receipt.id}`}>
-                                Carrier: {receiptData.shipment.carrier}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                        
-                        {/* Metadata */}
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Package className="h-3 w-3" />
-                            {receiptItems.length} items
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {format(new Date(receiptData.receipt.receivedAt), "MMM d, yyyy")}
-                          </span>
-                        </div>
-                        
-                        {/* Progress */}
-                        <div>
-                          <div className="flex justify-between text-xs mb-1">
-                            <span className="text-muted-foreground">Progress</span>
-                            <span className="font-medium">
-                              {assignedCount}/{receiptItems.length} assigned
-                            </span>
-                          </div>
-                          <Progress value={(assignedCount / receiptItems.length) * 100} className="h-1.5" />
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
+        <div className="bg-white border-b">
+          <div className="px-4 py-3 overflow-x-auto">
+            <div className="flex gap-2">
+              {storageData.receipts.map((receiptData: ReceiptWithItems) => {
+                const receiptItems = items.filter(item => item.receiptId === receiptData.receipt.id);
+                const assignedCount = receiptItems.filter(item => item.newLocations.length > 0).length;
+                
+                return (
+                  <button
+                    key={receiptData.receipt.id}
+                    onClick={() => {
+                      setSelectedReceipt(receiptData.receipt.id);
+                      setSelectedItemIndex(0);
+                    }}
+                    className={`flex-shrink-0 p-3 rounded-lg border transition-all min-w-[140px] ${
+                      selectedReceipt === receiptData.receipt.id
+                        ? 'border-primary bg-primary/5 shadow-sm'
+                        : 'border-gray-200'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <Ship className="h-4 w-4 text-blue-500" />
+                      <span className="text-xs font-medium truncate">
+                        {receiptData.shipment?.trackingNumber?.slice(-8) || `#${receiptData.receipt.id}`}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Package className="h-3 w-3" />
+                      <span>{assignedCount}/{receiptItems.length}</span>
+                    </div>
+                    <Progress value={(assignedCount / receiptItems.length) * 100} className="h-1 mt-2" />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       )}
       
-      {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left: Item Selection and Details */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Items to Store</CardTitle>
-            <CardDescription>
-              {filteredItems.length} items from selected receipt
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {/* Progress */}
-            <div className="mb-4">
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-muted-foreground">Storage Progress</span>
-                <span className="font-medium">{completedItems} / {totalItems} items</span>
-              </div>
-              <Progress value={progress} className="h-2" />
-            </div>
+      {/* Tab Selector */}
+      <div className="bg-white border-b sticky top-[88px] z-30">
+        <div className="flex">
+          <button
+            onClick={() => {
+              setActiveTab('pending');
+              setSelectedItemIndex(0);
+            }}
+            className={`flex-1 py-3 text-sm font-medium transition-all relative ${
+              activeTab === 'pending' 
+                ? 'text-primary' 
+                : 'text-muted-foreground'
+            }`}
+          >
+            Pending ({filteredItems.filter(item => item.newLocations.length === 0 && !item.existingLocations.length).length})
+            {activeTab === 'pending' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+            )}
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab('completed');
+              setSelectedItemIndex(0);
+            }}
+            className={`flex-1 py-3 text-sm font-medium transition-all relative ${
+              activeTab === 'completed' 
+                ? 'text-primary' 
+                : 'text-muted-foreground'
+            }`}
+          >
+            Completed ({filteredItems.filter(item => item.newLocations.length > 0 || item.existingLocations.length > 0).length})
+            {activeTab === 'completed' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+            )}
+          </button>
+        </div>
+      </div>
+      
+      {/* Item Cards */}
+      <div className="p-4 space-y-3">
+        <AnimatePresence mode="wait">
+          {displayItems.map((item, index) => {
+            const isSelected = index === selectedItemIndex;
+            const isComplete = item.newLocations.length > 0 || item.existingLocations.length > 0;
             
-            {/* Item List */}
-            <ScrollArea className="h-[400px] pr-4">
-              <div className="space-y-2">
-                {filteredItems.map((item, index) => {
-                  const isComplete = item.assignedQuantity >= item.receivedQuantity || item.newLocations.length > 0;
-                  const isSelected = index === selectedItemIndex;
-                  
-                  return (
-                    <button
-                      key={`${item.receiptId}-${item.receiptItemId}`}
-                      onClick={() => setSelectedItemIndex(index)}
-                      className={`w-full text-left p-4 rounded-lg border transition-all hover:shadow-md ${
-                        isSelected
-                          ? 'border-primary bg-primary/5 shadow-md'
-                          : 'border-border hover:border-primary/50'
-                      }`}
-                    >
-                      <div className="flex items-center gap-4">
-                        {/* Product Image */}
-                        <div className="flex-shrink-0">
-                          {item.imageUrl ? (
-                            <>
-                              <img 
-                                src={item.imageUrl}
-                                alt={item.productName}
-                                className="h-[60px] w-[60px] object-cover rounded-lg border border-border shadow-sm"
-                                onError={(e) => {
-                                  e.currentTarget.onerror = null;
-                                  e.currentTarget.style.display = 'none';
-                                  const placeholder = e.currentTarget.parentElement?.querySelector('.placeholder-icon');
-                                  if (placeholder) {
-                                    (placeholder as HTMLElement).style.display = 'flex';
-                                  }
-                                }}
-                                data-testid={`item-image-${item.receiptItemId}`}
-                              />
-                              <div 
-                                className="placeholder-icon h-[60px] w-[60px] bg-muted rounded-lg border border-border hidden items-center justify-center"
-                              >
-                                <Package className="h-7 w-7 text-muted-foreground" />
-                              </div>
-                            </>
-                          ) : (
-                            <div className="h-[60px] w-[60px] bg-muted rounded-lg border border-border flex items-center justify-center">
-                              <Package className="h-7 w-7 text-muted-foreground" />
-                            </div>
-                          )}
+            return (
+              <motion.div
+                key={`${item.receiptId}-${item.receiptItemId}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.2 }}
+                onClick={() => setSelectedItemIndex(index)}
+                className={`bg-white rounded-xl border-2 overflow-hidden transition-all ${
+                  isSelected 
+                    ? 'border-primary shadow-lg' 
+                    : 'border-gray-200 shadow-sm'
+                }`}
+              >
+                {/* Item Header */}
+                <div className="p-4">
+                  <div className="flex items-start gap-3">
+                    {/* Product Image */}
+                    <div className="relative">
+                      {item.imageUrl ? (
+                        <img 
+                          src={item.imageUrl} 
+                          alt={item.productName}
+                          className="w-16 h-16 rounded-lg object-cover border"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center">
+                          <Package className="h-8 w-8 text-gray-400" />
                         </div>
-                        
-                        {/* Product Details */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2 mb-1">
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-medium line-clamp-1 text-base" data-testid={`item-name-${item.receiptItemId}`}>
-                                {item.productName}
-                              </h4>
-                              {item.description && item.description !== item.productName && (
-                                <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5" data-testid={`item-description-${item.receiptItemId}`}>
-                                  {item.description}
-                                </p>
-                              )}
-                            </div>
-                            {isComplete && (
-                              <Badge variant="outline" className="flex-shrink-0">
-                                <Check className="h-3 w-3 mr-1" />
-                                Assigned
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                            {item.sku && (
-                              <span className="flex items-center gap-1">
-                                <Hash className="h-3 w-3" />
-                                {item.sku}
-                              </span>
-                            )}
-                            {item.barcode && (
-                              <span className="flex items-center gap-1">
-                                <QrCode className="h-3 w-3" />
-                                {item.barcode}
-                              </span>
-                            )}
-                            <span className="font-medium text-foreground">
-                              Qty: {item.receivedQuantity}
-                            </span>
-                            {item.newLocations.length > 0 && (
-                              <span className="text-primary font-medium flex items-center gap-1">
-                                <MapPin className="h-3 w-3" />
-                                {item.newLocations.length} location(s)
-                              </span>
-                            )}
-                          </div>
+                      )}
+                      {isComplete && (
+                        <div className="absolute -top-1 -right-1 bg-green-500 rounded-full p-1">
+                          <Check className="h-3 w-3 text-white" />
                         </div>
-                        
-                        {/* Chevron */}
-                        <ChevronRight className={`h-5 w-5 text-muted-foreground transition-transform flex-shrink-0 ${
-                          isSelected ? 'rotate-90' : ''
-                        }`} />
+                      )}
+                    </div>
+                    
+                    {/* Product Info */}
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-sm line-clamp-1">{item.productName}</h3>
+                      {item.description && item.description !== item.productName && (
+                        <p className="text-xs text-muted-foreground line-clamp-1">{item.description}</p>
+                      )}
+                      <div className="flex items-center gap-3 mt-2">
+                        {item.sku && (
+                          <span className="text-xs text-muted-foreground">
+                            SKU: {item.sku}
+                          </span>
+                        )}
+                        <Badge variant="outline" className="text-xs">
+                          Qty: {item.receivedQuantity}
+                        </Badge>
                       </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-        
-        {/* Right: Location Assignment */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Location Assignment</CardTitle>
-            <CardDescription>
-              {currentItem ? currentItem.productName : "Select an item to assign locations"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {currentItem ? (
-              <div className="space-y-4">
-                {/* Item Details */}
-                <div className="bg-muted/50 rounded-lg p-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Received Quantity</p>
-                      <p className="text-xl font-bold">{currentItem.receivedQuantity}</p>
                     </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Remaining to Assign</p>
-                      <p className="text-xl font-bold text-primary">{remainingQuantity}</p>
-                    </div>
+                    
+                    {/* Expand Icon */}
+                    <ChevronRight className={`h-5 w-5 text-gray-400 transition-transform ${
+                      isSelected ? 'rotate-90' : ''
+                    }`} />
                   </div>
-                  {currentItem.barcode && (
+                  
+                  {/* Location Summary */}
+                  {(item.newLocations.length > 0 || item.existingLocations.length > 0) && (
                     <div className="mt-3 pt-3 border-t">
-                      <p className="text-sm text-muted-foreground">Barcode</p>
-                      <p className="font-mono">{currentItem.barcode}</p>
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-primary" />
+                        <span className="text-xs text-muted-foreground">
+                          {item.newLocations.length > 0 && `${item.newLocations.length} new location(s)`}
+                          {item.existingLocations.length > 0 && ` • ${item.existingLocations.length} existing`}
+                        </span>
+                      </div>
                     </div>
                   )}
                 </div>
                 
-                {/* Existing Locations */}
-                {currentItem.existingLocations.length > 0 && (
-                  <div>
-                    <h4 className="font-semibold mb-2">Existing Locations</h4>
-                    <div className="space-y-2">
-                      {currentItem.existingLocations.map((loc, index) => (
-                        <div key={loc.id} className="flex items-center gap-2 p-2 bg-muted/30 rounded">
-                          <MapPin className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-mono">{loc.locationCode}</span>
-                          <Badge variant="secondary">{loc.quantity} units</Badge>
-                          {loc.isPrimary && (
-                            <Badge variant="default">
-                              <Star className="h-3 w-3 mr-1" />
-                              Primary
-                            </Badge>
-                          )}
+                {/* Expanded Actions - Only show for selected item */}
+                {isSelected && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="border-t bg-gray-50"
+                  >
+                    <div className="p-4 space-y-3">
+                      {/* Quick Stats */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-white rounded-lg p-3 border">
+                          <p className="text-xs text-muted-foreground">Received</p>
+                          <p className="text-lg font-bold">{item.receivedQuantity}</p>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                {/* New Location Scanner */}
-                <div>
-                  <h4 className="font-semibold mb-2">Add New Location</h4>
-                  <Tabs value={scanMode} onValueChange={(v) => setScanMode(v as any)}>
-                    <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger value="location">
-                        <QrCode className="h-4 w-4 mr-2" />
-                        Location
-                      </TabsTrigger>
-                      <TabsTrigger value="quantity" disabled={currentItem.newLocations.length === 0}>
-                        <Hash className="h-4 w-4 mr-2" />
-                        Quantity
-                      </TabsTrigger>
-                    </TabsList>
-                    
-                    <TabsContent value="location" className="space-y-4">
-                      <div>
-                        <Label htmlFor="location-scan">Scan Location Barcode</Label>
-                        <Input
-                          ref={locationInputRef}
-                          id="location-scan"
-                          value={locationScan}
-                          onChange={(e) => setLocationScan(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              handleLocationScan(locationScan);
-                            }
-                          }}
-                          placeholder="Scan or enter location code (e.g., WH1-A01-R02-L03)"
-                          className="font-mono"
-                          autoFocus
-                        />
+                        <div className="bg-white rounded-lg p-3 border">
+                          <p className="text-xs text-muted-foreground">Remaining</p>
+                          <p className="text-lg font-bold text-primary">{remainingQuantity}</p>
+                        </div>
                       </div>
-                    </TabsContent>
-                    
-                    <TabsContent value="quantity" className="space-y-4">
-                      {currentItem.newLocations.length > 0 && (
-                        <div>
-                          <Label>
-                            Enter quantity for: {currentItem.newLocations[currentItem.newLocations.length - 1].locationCode}
-                          </Label>
-                          <Input
-                            ref={quantityInputRef}
-                            type="number"
-                            value={quantityScan}
-                            onChange={(e) => setQuantityScan(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' && quantityScan) {
-                                const qty = parseInt(quantityScan);
-                                if (!isNaN(qty) && qty > 0) {
-                                  handleQuantityUpdate(currentItem.newLocations.length - 1, qty);
-                                  setQuantityScan("");
-                                  setScanMode('location');
-                                  setTimeout(() => locationInputRef.current?.focus(), 100);
-                                }
-                              }
-                            }}
-                            placeholder="Enter quantity"
-                            min="1"
-                            max={remainingQuantity + (currentItem.newLocations[currentItem.newLocations.length - 1]?.quantity || 0)}
-                          />
+                      
+                      {/* Existing Locations */}
+                      {item.existingLocations.length > 0 && (
+                        <div className="bg-white rounded-lg p-3 border">
+                          <p className="text-xs font-medium text-muted-foreground mb-2">Current Locations</p>
+                          {item.existingLocations.map(loc => (
+                            <div key={loc.id} className="flex items-center gap-2 py-1">
+                              <MapPin className="h-3 w-3 text-gray-400" />
+                              <span className="text-sm font-mono">{loc.locationCode}</span>
+                              <Badge variant="secondary" className="text-xs ml-auto">
+                                {loc.quantity}
+                              </Badge>
+                            </div>
+                          ))}
                         </div>
                       )}
-                    </TabsContent>
-                  </Tabs>
-                  
-                  <ScanFeedback type={scanFeedback.type} message={scanFeedback.message} />
+                      
+                      {/* New Locations */}
+                      {item.newLocations.length > 0 && (
+                        <div className="space-y-2">
+                          {item.newLocations.map((loc, locIndex) => (
+                            <div key={loc.id} className="bg-white rounded-lg p-3 border flex items-center gap-2">
+                              <MapPin className="h-4 w-4 text-primary" />
+                              <span className="font-mono text-sm font-medium">{loc.locationCode}</span>
+                              <input
+                                type="number"
+                                value={loc.quantity}
+                                onChange={(e) => handleQuantityUpdate(locIndex, parseInt(e.target.value) || 0)}
+                                className="w-16 px-2 py-1 text-sm border rounded ml-auto"
+                                min="0"
+                                max={remainingQuantity + loc.quantity}
+                              />
+                              <button
+                                onClick={() => togglePrimaryLocation(locIndex)}
+                                className={`p-1 ${loc.isPrimary ? 'text-yellow-500' : 'text-gray-300'}`}
+                              >
+                                <Star className="h-4 w-4" fill={loc.isPrimary ? 'currentColor' : 'none'} />
+                              </button>
+                              <button
+                                onClick={() => removeLocation(locIndex)}
+                                className="p-1 text-red-500"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* Action Buttons */}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setShowScanner(true)}
+                          className="flex-1 bg-primary text-white rounded-lg py-3 flex items-center justify-center gap-2"
+                        >
+                          <QrCode className="h-5 w-5" />
+                          <span className="font-medium">Scan Location</span>
+                        </button>
+                        <button
+                          onClick={() => setShowDetails(true)}
+                          className="p-3 bg-white border rounded-lg"
+                        >
+                          <Eye className="h-5 w-5" />
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
+      </div>
+      
+      {/* Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-40">
+        <div className="p-4 flex gap-2">
+          <button
+            onClick={() => {
+              if (selectedItemIndex > 0) {
+                setSelectedItemIndex(selectedItemIndex - 1);
+              }
+            }}
+            disabled={selectedItemIndex === 0}
+            className={`p-3 rounded-lg border ${
+              selectedItemIndex === 0 
+                ? 'bg-gray-50 text-gray-300' 
+                : 'bg-white text-gray-700'
+            }`}
+          >
+            <ArrowUp className="h-5 w-5" />
+          </button>
+          <button
+            onClick={() => {
+              if (selectedItemIndex < displayItems.length - 1) {
+                setSelectedItemIndex(selectedItemIndex + 1);
+              }
+            }}
+            disabled={selectedItemIndex === displayItems.length - 1}
+            className={`p-3 rounded-lg border ${
+              selectedItemIndex === displayItems.length - 1
+                ? 'bg-gray-50 text-gray-300' 
+                : 'bg-white text-gray-700'
+            }`}
+          >
+            <ArrowDown className="h-5 w-5" />
+          </button>
+          <button
+            onClick={() => setShowScanner(true)}
+            disabled={!currentItem}
+            className="flex-1 bg-primary text-white rounded-lg py-3 flex items-center justify-center gap-2 font-medium"
+          >
+            <ScanLine className="h-5 w-5" />
+            Quick Scan
+          </button>
+        </div>
+      </div>
+      
+      {/* Scanner Sheet */}
+      <Sheet open={showScanner} onOpenChange={setShowScanner}>
+        <SheetContent side="bottom" className="h-[50vh]">
+          <SheetHeader>
+            <SheetTitle>Scan Location</SheetTitle>
+            <SheetDescription>
+              Scan or enter the warehouse location code
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-6 space-y-4">
+            <div className="relative">
+              <Input
+                ref={locationInputRef}
+                value={locationScan}
+                onChange={(e) => setLocationScan(e.target.value.toUpperCase())}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleLocationScan();
+                  }
+                }}
+                placeholder="WH1-A01-R02-L03"
+                className="text-lg font-mono py-6 pl-12"
+                autoFocus
+              />
+              <QrCode className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+            </div>
+            
+            <ScanFeedback type={scanFeedback.type} message={scanFeedback.message} />
+            
+            <Button
+              onClick={handleLocationScan}
+              className="w-full py-6 text-lg"
+              size="lg"
+            >
+              Add Location
+            </Button>
+            
+            {/* Example locations */}
+            <div className="text-center text-sm text-muted-foreground">
+              Examples: WH1-A01-R02-L03, DS1-F01-S01, PL1-B01
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+      
+      {/* Item Details Sheet */}
+      <Sheet open={showDetails} onOpenChange={setShowDetails}>
+        <SheetContent side="bottom" className="h-[70vh]">
+          <SheetHeader>
+            <SheetTitle>Item Details</SheetTitle>
+          </SheetHeader>
+          {currentItem && (
+            <div className="mt-6 space-y-4">
+              {/* Product Image */}
+              {currentItem.imageUrl && (
+                <img 
+                  src={currentItem.imageUrl} 
+                  alt={currentItem.productName}
+                  className="w-full h-48 object-cover rounded-lg"
+                />
+              )}
+              
+              {/* Product Info */}
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm text-muted-foreground">Product Name</p>
+                  <p className="font-medium">{currentItem.productName}</p>
                 </div>
                 
-                {/* Assigned Locations */}
-                {currentItem.newLocations.length > 0 && (
+                {currentItem.description && (
                   <div>
-                    <h4 className="font-semibold mb-2">Assigned Locations</h4>
-                    <div className="space-y-2">
-                      {currentItem.newLocations.map((loc, index) => (
-                        <div key={loc.id} className="flex items-center gap-2 p-3 border rounded-lg">
-                          <MapPin className="h-4 w-4 text-primary" />
-                          <span className="font-mono font-medium">{loc.locationCode}</span>
-                          <Input
-                            type="number"
-                            value={loc.quantity}
-                            onChange={(e) => handleQuantityUpdate(index, parseInt(e.target.value) || 0)}
-                            className="w-20 h-8"
-                            min="0"
-                            max={remainingQuantity + loc.quantity}
-                          />
-                          <Button
-                            variant={loc.isPrimary ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => togglePrimaryLocation(index)}
-                          >
-                            <Star className={`h-3 w-3 ${loc.isPrimary ? 'fill-current' : ''}`} />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeLocation(index)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
+                    <p className="text-sm text-muted-foreground">Description</p>
+                    <p className="text-sm">{currentItem.description}</p>
                   </div>
                 )}
                 
-                {/* Quick Actions */}
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      if (selectedItemIndex > 0) {
-                        setSelectedItemIndex(selectedItemIndex - 1);
-                        setScanMode('location');
-                      }
-                    }}
-                    disabled={selectedItemIndex === 0}
-                  >
-                    Previous Item
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      if (selectedItemIndex < filteredItems.length - 1) {
-                        setSelectedItemIndex(selectedItemIndex + 1);
-                        setScanMode('location');
-                      }
-                    }}
-                    disabled={selectedItemIndex === filteredItems.length - 1}
-                  >
-                    Next Item
-                  </Button>
+                <div className="grid grid-cols-2 gap-3">
+                  {currentItem.sku && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">SKU</p>
+                      <p className="font-mono">{currentItem.sku}</p>
+                    </div>
+                  )}
+                  
+                  {currentItem.barcode && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Barcode</p>
+                      <p className="font-mono text-sm">{currentItem.barcode}</p>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Tracking #</p>
+                    <p className="font-mono text-sm">{currentItem.shipmentTrackingNumber}</p>
+                  </div>
+                  
+                  <div>
+                    <p className="text-sm text-muted-foreground">Received</p>
+                    <p className="text-sm">{format(new Date(currentItem.receivedAt || ''), "MMM d, yyyy")}</p>
+                  </div>
+                </div>
+                
+                <div>
+                  <p className="text-sm text-muted-foreground">Quantity</p>
+                  <div className="flex items-center gap-4 mt-1">
+                    <Badge variant="outline">Received: {currentItem.receivedQuantity}</Badge>
+                    <Badge variant="default">Assigned: {totalAssigned}</Badge>
+                    <Badge variant="secondary">Remaining: {remainingQuantity}</Badge>
+                  </div>
                 </div>
               </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12">
-                <Info className="h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground text-center">
-                  Select an item from the list to start assigning warehouse locations
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
