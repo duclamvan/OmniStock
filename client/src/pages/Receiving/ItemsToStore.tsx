@@ -97,6 +97,39 @@ function getSuggestedLocation(item: StorageItem): string | null {
   return null;
 }
 
+// Generate suggested location for new items based on product characteristics
+function generateSuggestedLocation(item: StorageItem): string {
+  // Use product characteristics to generate a smart suggestion
+  const seed = item.productId || item.sku || item.productName || 'default';
+  const hash = seed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  
+  // Smart zone assignment based on product type hints
+  let zone = 'A'; // Default zone
+  const productNameLower = item.productName?.toLowerCase() || '';
+  
+  // Assign zones based on product type
+  if (productNameLower.includes('mask') || productNameLower.includes('medical')) {
+    zone = 'M'; // Medical zone
+  } else if (productNameLower.includes('electronic') || productNameLower.includes('phone')) {
+    zone = 'E'; // Electronics zone
+  } else if (productNameLower.includes('clothing') || productNameLower.includes('shirt')) {
+    zone = 'C'; // Clothing zone
+  } else if (productNameLower.includes('food') || productNameLower.includes('snack')) {
+    zone = 'F'; // Food zone
+  } else if (productNameLower.includes('toy') || productNameLower.includes('game')) {
+    zone = 'T'; // Toys zone
+  } else if (productNameLower.includes('book') || productNameLower.includes('paper')) {
+    zone = 'B'; // Books/Paper zone
+  }
+  
+  // Generate aisle, rack, and level based on hash
+  const aisle = String((hash % 6) + 1).padStart(2, '0');
+  const rack = String((hash % 8) + 1).padStart(2, '0');
+  const level = String((hash % 4) + 1).padStart(2, '0');
+  
+  return `WH1-${zone}${aisle}-R${rack}-L${level}`;
+}
+
 // Segmented Location Input Component
 interface SegmentedLocationInputProps {
   onComplete: (code: string) => void;
@@ -1096,9 +1129,15 @@ export default function ItemsToStore() {
                     {getSuggestedLocation(currentItem) ? (
                       <span>{getSuggestedLocation(currentItem)}</span>
                     ) : (
-                      <div className="flex items-center gap-2 text-orange-600">
-                        <AlertCircle className="h-5 w-5" />
-                        <span>New item - no current location</span>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-orange-600">
+                          <AlertCircle className="h-5 w-5" />
+                          <span>New item - no current location</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-blue-600">
+                          <Navigation className="h-5 w-5" />
+                          <span className="text-sm">Suggested Location: <span className="font-mono">{generateSuggestedLocation(currentItem)}</span></span>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1124,7 +1163,7 @@ export default function ItemsToStore() {
 
             {/* Segmented Location Input */}
             <SegmentedLocationInput 
-              initialCode={currentItem ? getSuggestedLocation(currentItem) : null}
+              initialCode={currentItem ? (getSuggestedLocation(currentItem) || generateSuggestedLocation(currentItem)) : null}
               onComplete={async (code) => {
                 // Play success sound
                 await soundEffects.playSuccessBeep();
