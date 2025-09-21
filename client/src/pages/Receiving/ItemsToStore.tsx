@@ -1018,21 +1018,6 @@ export default function ItemsToStore() {
                           <span className="font-medium">Scan Location</span>
                         </button>
                         <button
-                          onClick={() => {
-                            setIsScanning(true);
-                            setScanningProgress({ 
-                              current: selectedItemIndex + 1, 
-                              total: displayItems.filter((_, i) => i >= selectedItemIndex && 
-                                items[i].newLocations.length === 0).length 
-                            });
-                          }}
-                          className="flex-1 bg-green-600 text-white rounded-lg py-3 flex items-center justify-center gap-2"
-                          data-testid="button-quick-scan"
-                        >
-                          <ScanLine className="h-5 w-5" />
-                          <span className="font-medium">Quick Scan</span>
-                        </button>
-                        <button
                           onClick={() => setShowDetails(true)}
                           className="p-3 bg-white border rounded-lg"
                           data-testid="button-item-details"
