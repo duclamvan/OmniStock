@@ -135,9 +135,10 @@ interface SegmentedLocationInputProps {
   onComplete: (code: string) => void;
   autoFocus?: boolean;
   initialCode?: string | null;
+  onSegmentChange?: (segments: string[]) => void;
 }
 
-function SegmentedLocationInput({ onComplete, autoFocus, initialCode }: SegmentedLocationInputProps) {
+function SegmentedLocationInput({ onComplete, autoFocus, initialCode, onSegmentChange }: SegmentedLocationInputProps) {
   // Parse initial code into segments
   const parseInitialCode = (code: string | null | undefined): string[] => {
     if (!code) return ["", "", "", ""];
@@ -184,6 +185,11 @@ function SegmentedLocationInput({ onComplete, autoFocus, initialCode }: Segmente
         part.substring(0, segmentMaxLengths[i])
       );
       setSegments(newSegments);
+      
+      // Notify parent of segment changes
+      if (onSegmentChange) {
+        onSegmentChange(newSegments);
+      }
 
       // Check if complete and call onComplete
       if (newSegments.every((seg, i) => seg.length === segmentMaxLengths[i])) {
@@ -208,6 +214,11 @@ function SegmentedLocationInput({ onComplete, autoFocus, initialCode }: Segmente
     const newSegments = [...segments];
     newSegments[index] = newValue;
     setSegments(newSegments);
+    
+    // Notify parent of segment changes
+    if (onSegmentChange) {
+      onSegmentChange(newSegments);
+    }
 
     // Auto-advance to next field when current is filled
     if (newValue.length === maxLen && index < 3) {
@@ -326,6 +337,7 @@ export default function ItemsToStore() {
   const [selectedItemIndex, setSelectedItemIndex] = useState(0);
   const [scanFeedback, setScanFeedback] = useState<{ type: 'success' | 'error' | 'duplicate' | null; message: string }>({ type: null, message: '' });
   const [locationScan, setLocationScan] = useState("");
+  const [currentSegments, setCurrentSegments] = useState<string[]>(["", "", "", ""]); // Track input segments
   const [quantityScan, setQuantityScan] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState<number | null>(null);
@@ -540,10 +552,24 @@ export default function ItemsToStore() {
   }, [isScanning]);
 
   // Handle location barcode scan
-  const handleLocationScan = async () => {
-    const trimmedValue = locationScan.trim().toUpperCase();
+  const handleLocationScan = async (codeOverride?: string) => {
+    // Use passed code, current locationScan state, or build from segments
+    let trimmedValue = (codeOverride || locationScan).trim().toUpperCase();
+    
+    // If no direct value, try to build from current segments
+    if (!trimmedValue && currentSegments.every(seg => seg.length > 0)) {
+      trimmedValue = currentSegments.join('-').toUpperCase();
+    }
 
-    if (!trimmedValue) return;
+    if (!trimmedValue) {
+      toast({
+        title: "No Location Entered",
+        description: "Please enter or scan a location code",
+        variant: "destructive",
+        duration: 3000
+      });
+      return;
+    }
 
     // Validate location code format (e.g., WH1-A01-R02-L03)
     const locationPattern = /^[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+$/;
@@ -678,6 +704,57 @@ export default function ItemsToStore() {
     setItems(updatedItems);
   };
 
+  // Helper to process individual location save (when not saving all at once)
+  const saveIndividualLocation = async () => {
+    if (!currentItem || !locationScan) return;
+    
+    // Create a temporary assignment just for this item
+    const assignment = {
+      receiptItemId: currentItem.receiptItemId,
+      productId: currentItem.productId,
+      locations: currentItem.newLocations.map(loc => ({
+        locationCode: loc.locationCode,
+        locationType: loc.locationType,
+        quantity: loc.quantity,
+        isPrimary: loc.isPrimary,
+        notes: loc.notes
+      }))
+    };
+    
+    // Find which receipt this item belongs to
+    const receiptId = currentItem.receiptId || selectedReceipt;
+    
+    if (!receiptId) {
+      toast({
+        title: "Error",
+        description: "Cannot save location: No receipt selected",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      await apiRequest(
+        `/api/imports/receipts/${receiptId}/store-items`,
+        "POST",
+        { 
+          locations: [assignment] 
+        }
+      );
+      
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts/items-to-store'] });
+      
+    } catch (error) {
+      console.error("Failed to save location:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save location",
+        variant: "destructive",
+      });
+    }
+  };
+  
   // Save storage mutation
   const saveStorageMutation = useMutation({
     mutationFn: async () => {
@@ -699,12 +776,15 @@ export default function ItemsToStore() {
         throw new Error("No items to store");
       }
 
+      if (!selectedReceipt) {
+        throw new Error("No receipt selected");
+      }
+      
       return apiRequest(
-        "/api/imports/receipts/store-items",
+        `/api/imports/receipts/${selectedReceipt}/store-items`,
         "POST",
         { 
-          receiptId: selectedReceipt, 
-          assignments 
+          locations: assignments 
         }
       );
     },
@@ -1164,6 +1244,10 @@ export default function ItemsToStore() {
             {/* Segmented Location Input */}
             <SegmentedLocationInput 
               initialCode={currentItem ? (getSuggestedLocation(currentItem) || generateSuggestedLocation(currentItem)) : null}
+              onSegmentChange={(segments) => {
+                // Update current segments state for Add Location button
+                setCurrentSegments(segments);
+              }}
               onComplete={async (code) => {
                 // Play success sound
                 await soundEffects.playSuccessBeep();
@@ -1173,7 +1257,7 @@ export default function ItemsToStore() {
 
                 // Set the location and process
                 setLocationScan(code);
-                handleLocationScan();
+                handleLocationScan(code);
 
                 // Show success feedback but don't close
                 toast({
@@ -1184,6 +1268,7 @@ export default function ItemsToStore() {
 
                 // Clear input for next scan (by reinitializing the component)
                 setLocationScan("");
+                setCurrentSegments(["", "", "", ""]);
               }}
               autoFocus
             />
@@ -1192,7 +1277,32 @@ export default function ItemsToStore() {
 
             <div className="flex gap-2">
               <Button
-                onClick={handleLocationScan}
+                onClick={() => {
+                  console.log('Add Location clicked');
+                  console.log('Current segments:', currentSegments);
+                  console.log('Location scan:', locationScan);
+                  
+                  // Build location code from current segments if available
+                  if (currentSegments.every(seg => seg && seg.length > 0)) {
+                    const code = currentSegments.join('-');
+                    console.log('Using segments code:', code);
+                    handleLocationScan(code);
+                    // Clear segments after adding
+                    setCurrentSegments(["", "", "", ""]);
+                    setLocationScan("");
+                  } else if (locationScan) {
+                    console.log('Using locationScan:', locationScan);
+                    handleLocationScan(locationScan);
+                  } else {
+                    console.log('No location data available');
+                    toast({
+                      title: "No Location Entered",
+                      description: "Please enter or scan a location code",
+                      variant: "destructive",
+                      duration: 3000
+                    });
+                  }
+                }}
                 className="flex-1 py-6 text-lg"
                 size="lg"
               >
