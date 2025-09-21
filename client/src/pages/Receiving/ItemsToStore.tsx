@@ -1265,49 +1265,79 @@ export default function ItemsToStore() {
           <SheetHeader className="pb-4 border-b">
             <SheetTitle className="text-lg">Add Storage Locations</SheetTitle>
             {currentItem && (
-              <div className="mt-2 space-y-3">
-                {/* Item Name Section */}
-                <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-3">
-                  <div className="flex items-start gap-3">
-                    <Package className="h-5 w-5 text-primary mt-0.5" />
-                    <div className="flex-1">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Item</p>
-                      <p className="text-base font-semibold">{currentItem.productName}</p>
-                      <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+              <div className="mt-3 space-y-4">
+                {/* Item Name Section - Mobile Optimized */}
+                <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl p-4 sm:p-3">
+                  <div className="space-y-3">
+                    {/* Header Row */}
+                    <div className="flex items-center gap-3">
+                      <div className="bg-primary/20 rounded-lg p-2">
+                        <Package className="h-5 w-5 text-primary" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Current Item</p>
+                      </div>
+                    </div>
+                    
+                    {/* Product Name - Mobile Friendly */}
+                    <div className="space-y-2">
+                      <h3 className="text-lg sm:text-base font-bold leading-tight break-words">
+                        {currentItem.productName}
+                      </h3>
+                      
+                      {/* SKU and Quantity - Stacked on Mobile */}
+                      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                         {currentItem.sku && (
-                          <span className="flex items-center gap-1">
-                            <Hash className="h-3 w-3" />
-                            {currentItem.sku}
-                          </span>
+                          <div className="flex items-center gap-2 bg-white/50 rounded-lg px-3 py-2">
+                            <Hash className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                              <p className="text-xs text-muted-foreground">SKU</p>
+                              <p className="font-mono text-sm font-medium">{currentItem.sku}</p>
+                            </div>
+                          </div>
                         )}
-                        <span className="flex items-center gap-1">
-                          <Boxes className="h-3 w-3" />
-                          Qty: {currentItem.receivedQuantity}
-                        </span>
+                        <div className="flex items-center gap-2 bg-white/50 rounded-lg px-3 py-2">
+                          <Boxes className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <p className="text-xs text-muted-foreground">Quantity</p>
+                            <p className="text-sm font-semibold">{currentItem.receivedQuantity} units</p>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Current/Suggested Location */}
-                <div className="bg-gray-50 rounded-lg p-3">
+                {/* Current/Suggested Location - Mobile Optimized */}
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
                   {getSuggestedLocation(currentItem) ? (
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground mb-1">Current Primary Location</p>
+                    <div className="space-y-2">
                       <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-green-600" />
-                        <span className="font-mono text-sm font-semibold">{getSuggestedLocation(currentItem)}</span>
+                        <div className="bg-green-100 dark:bg-green-900/30 rounded-lg p-1.5">
+                          <MapPin className="h-4 w-4 text-green-600" />
+                        </div>
+                        <p className="text-sm font-medium text-muted-foreground">Current Primary Location</p>
+                      </div>
+                      <div className="bg-white dark:bg-gray-700 rounded-lg p-3 border-l-4 border-green-500">
+                        <p className="font-mono text-base font-bold tracking-wide">{getSuggestedLocation(currentItem)}</p>
                       </div>
                     </div>
                   ) : (
-                    <div>
-                      <div className="flex items-center gap-2 text-orange-600 mb-2">
-                        <AlertCircle className="h-4 w-4" />
-                        <span className="text-sm font-medium">New item - no current location</span>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <div className="bg-orange-100 dark:bg-orange-900/30 rounded-lg p-1.5">
+                          <AlertCircle className="h-4 w-4 text-orange-600" />
+                        </div>
+                        <p className="text-sm font-medium text-orange-600">New item - no current location</p>
                       </div>
-                      <div className="flex items-center gap-2 text-blue-600">
-                        <Navigation className="h-4 w-4" />
-                        <span className="text-xs">Suggested: <span className="font-mono font-semibold">{generateSuggestedLocation(currentItem)}</span></span>
+                      <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border-l-4 border-blue-500">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Navigation className="h-4 w-4 text-blue-600" />
+                          <span className="text-sm font-medium text-blue-600">Suggested Location</span>
+                        </div>
+                        <p className="font-mono text-base font-bold tracking-wide text-blue-800 dark:text-blue-200">
+                          {generateSuggestedLocation(currentItem)}
+                        </p>
                       </div>
                     </div>
                   )}
@@ -1316,28 +1346,43 @@ export default function ItemsToStore() {
             )}
           </SheetHeader>
           <div className="mt-6 space-y-4">
-            {/* Session Locations with Primary Toggle */}
+            {/* Mobile-Optimized Session Locations */}
             {sessionsLocations.length > 0 && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold">Added Locations</p>
-                  <Badge variant="secondary">{sessionsLocations.length} location{sessionsLocations.length !== 1 ? 's' : ''}</Badge>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between bg-green-50 dark:bg-green-900/20 rounded-xl p-3">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                    <p className="text-sm font-semibold text-green-800 dark:text-green-200">Added Locations</p>
+                  </div>
+                  <Badge variant="secondary" className="bg-green-100 text-green-800">
+                    {sessionsLocations.length} location{sessionsLocations.length !== 1 ? 's' : ''}
+                  </Badge>
                 </div>
-                <div className="space-y-2">
+                
+                <div className="space-y-3">
                   {sessionsLocations.map((loc, idx) => (
-                    <div key={idx} className="flex items-center justify-between bg-white border rounded-lg p-3">
-                      <div className="flex items-center gap-3">
-                        <CheckCircle2 className="h-4 w-4 text-green-600" />
-                        <span className="font-mono text-sm font-medium">{loc.code}</span>
-                        <Badge variant={loc.isPrimary ? "default" : "outline"} className="text-xs">
-                          {loc.isPrimary ? "Main" : "Secondary"}
-                        </Badge>
+                    <div key={idx} className="bg-white dark:bg-gray-800 border-2 rounded-xl p-4 shadow-sm">
+                      {/* Location Header */}
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-green-100 dark:bg-green-900/30 rounded-lg p-2">
+                            <MapPin className="h-4 w-4 text-green-600" />
+                          </div>
+                          <div>
+                            <p className="font-mono text-base font-bold tracking-wide">{loc.code}</p>
+                            <Badge variant={loc.isPrimary ? "default" : "outline"} className="text-xs mt-1">
+                              {loc.isPrimary ? "Main Location" : "Secondary"}
+                            </Badge>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      
+                      {/* Mobile Action Buttons */}
+                      <div className="flex gap-2">
                         {!loc.isPrimary && (
                           <Button
                             size="sm"
-                            variant="ghost"
+                            variant="outline"
                             onClick={() => {
                               setSessionsLocations(prev => 
                                 prev.map((l, i) => ({ 
@@ -1351,15 +1396,16 @@ export default function ItemsToStore() {
                                 description: `${loc.code} is now the main location`,
                               });
                             }}
+                            className="flex-1 py-2"
                           >
-                            <Star className="h-4 w-4" />
+                            <Star className="h-4 w-4 mr-1" />
                             Set as Main
                           </Button>
                         )}
                         <Button
                           size="sm"
-                          variant="ghost"
-                          className="text-red-600 hover:text-red-700"
+                          variant="outline"
+                          className="text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50 py-2 px-4"
                           onClick={() => {
                             setSessionsLocations(prev => prev.filter((_, i) => i !== idx));
                             soundEffects.playErrorBeep();
@@ -1375,9 +1421,15 @@ export default function ItemsToStore() {
                     </div>
                   ))}
                 </div>
+                
                 {sessionsLocations.length > 1 && (
-                  <div className="text-xs text-muted-foreground text-center">
-                    Tip: The location marked as "Main" will be the primary storage location
+                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200">
+                    <div className="flex items-start gap-2">
+                      <Info className="h-4 w-4 text-blue-600 mt-0.5" />
+                      <p className="text-xs text-blue-800 dark:text-blue-200">
+                        <strong>Tip:</strong> The location marked as "Main" will be the primary storage location for this item.
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1409,7 +1461,9 @@ export default function ItemsToStore() {
 
             <ScanFeedback type={scanFeedback.type} message={scanFeedback.message} />
 
-            <div className="flex gap-2">
+            {/* Mobile-Optimized Action Buttons */}
+            <div className="space-y-3">
+              {/* Clear Button - Full Width on Mobile */}
               <Button
                 variant="outline"
                 onClick={() => {
@@ -1432,12 +1486,14 @@ export default function ItemsToStore() {
                   
                   soundEffects.playSuccessBeep();
                 }}
-                className="py-6"
+                className="w-full py-4 text-base font-medium"
                 size="lg"
               >
                 <X className="h-5 w-5 mr-2" />
-                Clear
+                Clear Fields
               </Button>
+              
+              {/* Add Location Button - Prominent */}
               <Button
                 onClick={async () => {
                   // Build location code from current segments if available
@@ -1450,17 +1506,27 @@ export default function ItemsToStore() {
                     await addLocationToSession(); // Will show error toast
                   }
                 }}
-                className="flex-1 py-6 text-lg bg-primary hover:bg-primary/90"
+                className="w-full py-6 text-lg font-bold bg-primary hover:bg-primary/90 shadow-lg"
                 size="lg"
                 disabled={sessionsLocations.length >= 10} // Limit to 10 locations
               >
-                <Plus className="h-5 w-5 mr-2" />
-                Add Location {sessionsLocations.length > 0 && `(${sessionsLocations.length})`}
+                <div className="flex items-center justify-center gap-3">
+                  <Plus className="h-6 w-6" />
+                  <span>
+                    Add Location
+                    {sessionsLocations.length > 0 && (
+                      <span className="ml-2 bg-white/20 px-2 py-0.5 rounded-full text-sm font-medium">
+                        {sessionsLocations.length}
+                      </span>
+                    )}
+                  </span>
+                </div>
               </Button>
             </div>
             
-            {/* Action Buttons */}
-            <div className="pt-4 border-t space-y-2">
+            {/* Mobile-Optimized Final Action Buttons */}
+            <div className="pt-6 border-t-2 space-y-3">
+              {/* Primary Action Button */}
               <Button
                 onClick={() => {
                   // Apply all session locations to the item
@@ -1471,32 +1537,40 @@ export default function ItemsToStore() {
                   }
                 }}
                 variant="default"
-                className="w-full py-6 text-lg bg-green-600 hover:bg-green-700"
+                className="w-full py-6 text-lg font-bold bg-green-600 hover:bg-green-700 shadow-xl"
                 size="lg"
                 disabled={sessionsLocations.length === 0}
               >
                 {sessionsLocations.length > 0 ? (
-                  <>
-                    <CheckCircle2 className="h-5 w-5 mr-2" />
-                    Apply {sessionsLocations.length} Location{sessionsLocations.length !== 1 ? 's' : ''}
-                  </>
+                  <div className="flex items-center justify-center gap-3">
+                    <CheckCircle2 className="h-6 w-6" />
+                    <div className="text-center">
+                      <div>Apply Locations</div>
+                      <div className="text-sm font-normal opacity-90">
+                        {sessionsLocations.length} location{sessionsLocations.length !== 1 ? 's' : ''} ready
+                      </div>
+                    </div>
+                  </div>
                 ) : (
-                  <>
-                    <X className="h-5 w-5 mr-2" />
-                    Close
-                  </>
+                  <div className="flex items-center justify-center gap-3">
+                    <X className="h-6 w-6" />
+                    <span>Close Scanner</span>
+                  </div>
                 )}
               </Button>
+              
+              {/* Secondary Cancel Button */}
               <Button
                 onClick={() => {
                   setSessionsLocations([]);
                   setShowScanner(false);
                 }}
                 variant="outline"
-                className="w-full py-4"
+                className="w-full py-4 text-base border-2"
                 size="lg"
               >
-                Cancel
+                <X className="h-4 w-4 mr-2" />
+                Cancel & Discard Changes
               </Button>
             </div>
 
