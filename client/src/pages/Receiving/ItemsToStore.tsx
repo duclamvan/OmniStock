@@ -1092,9 +1092,16 @@ export default function ItemsToStore() {
               {currentItem && (
                 <div className="mt-2 p-2 bg-primary/10 rounded-lg">
                   <p className="text-xs font-medium">Current Location:</p>
-                  <p className="text-lg font-mono font-bold">
-                    {getSuggestedLocation(currentItem) || "New item - no current location"}
-                  </p>
+                  <div className="text-lg font-mono font-bold">
+                    {getSuggestedLocation(currentItem) ? (
+                      <span>{getSuggestedLocation(currentItem)}</span>
+                    ) : (
+                      <div className="flex items-center gap-2 text-orange-600">
+                        <AlertCircle className="h-5 w-5" />
+                        <span>New item - no current location</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </SheetDescription>
