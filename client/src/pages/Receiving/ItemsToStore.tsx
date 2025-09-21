@@ -41,7 +41,8 @@ import {
   Navigation,
   PackageCheck,
   Boxes,
-  Eye
+  Eye,
+  ArrowRight
 } from "lucide-react";
 import { ScanFeedback } from "@/components/ScanFeedback";
 import { soundEffects } from "@/utils/soundEffects";
@@ -88,7 +89,7 @@ function getSuggestedLocation(item: StorageItem): string | null {
     // First try to find primary location
     const primaryLoc = item.existingLocations.find(loc => loc.isPrimary);
     if (primaryLoc) return primaryLoc.locationCode;
-    
+
     // Otherwise use location with highest quantity
     const sortedByQty = [...item.existingLocations].sort((a, b) => b.quantity - a.quantity);
     if (sortedByQty.length > 0) return sortedByQty[0].locationCode;
@@ -115,13 +116,13 @@ function SegmentedLocationInput({ onComplete, autoFocus, initialCode }: Segmente
       parts[3] || ""
     ];
   };
-  
+
   const [segments, setSegments] = useState<string[]>(parseInitialCode(initialCode));
   const [isManualInput, setIsManualInput] = useState(false);
   const segmentLabels = ["Warehouse", "Aisle", "Rack", "Level"];
   const segmentMaxLengths = [3, 3, 3, 3];
   const segmentPlaceholders = ["WH1", "A01", "R02", "L03"];
-  
+
   // Refs for each input
   const inputRefs = [
     useRef<HTMLInputElement>(null),
@@ -129,35 +130,35 @@ function SegmentedLocationInput({ onComplete, autoFocus, initialCode }: Segmente
     useRef<HTMLInputElement>(null),
     useRef<HTMLInputElement>(null)
   ];
-  
+
   // Track if any input is focused
   const containerRef = useRef<HTMLDivElement>(null);
-  
+
   // Auto-focus first input on mount
   useEffect(() => {
     if (autoFocus) {
       inputRefs[0].current?.focus();
     }
   }, [autoFocus]);
-  
+
   // Parse scanned or pasted location code
   const parseFullCode = (code: string) => {
     const cleaned = code.trim().toUpperCase();
     const parts = cleaned.split('-');
-    
+
     if (parts.length === 4) {
       const newSegments = parts.slice(0, 4).map((part, i) => 
         part.substring(0, segmentMaxLengths[i])
       );
       setSegments(newSegments);
-      
+
       // Check if complete and call onComplete
       if (newSegments.every((seg, i) => seg.length === segmentMaxLengths[i])) {
         onComplete(newSegments.join('-'));
       }
     }
   };
-  
+
   // Handle input change for each segment
   const handleSegmentChange = (index: number, value: string) => {
     // Check if this looks like a full barcode scan (contains dashes)
@@ -165,21 +166,21 @@ function SegmentedLocationInput({ onComplete, autoFocus, initialCode }: Segmente
       parseFullCode(value);
       return;
     }
-    
+
     // Clean input - only allow alphanumeric
     const cleaned = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
     const maxLen = segmentMaxLengths[index];
     const newValue = cleaned.substring(0, maxLen);
-    
+
     const newSegments = [...segments];
     newSegments[index] = newValue;
     setSegments(newSegments);
-    
+
     // Auto-advance to next field when current is filled
     if (newValue.length === maxLen && index < 3) {
       setTimeout(() => inputRefs[index + 1].current?.focus(), 50);
     }
-    
+
     // Check if all segments are complete
     if (index === 3 && newValue.length === maxLen) {
       const allComplete = newSegments.every((seg, i) => seg.length === segmentMaxLengths[i]);
@@ -188,7 +189,7 @@ function SegmentedLocationInput({ onComplete, autoFocus, initialCode }: Segmente
       }
     }
   };
-  
+
   // Handle keyboard navigation
   const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Backspace' && segments[index] === '' && index > 0) {
@@ -218,7 +219,7 @@ function SegmentedLocationInput({ onComplete, autoFocus, initialCode }: Segmente
       inputRefs[index + 1].current?.focus();
     }
   };
-  
+
   // Handle paste event
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     const pasted = e.clipboardData.getData('text');
@@ -227,7 +228,7 @@ function SegmentedLocationInput({ onComplete, autoFocus, initialCode }: Segmente
       parseFullCode(pasted);
     }
   };
-  
+
   return (
     <div className="space-y-3" ref={containerRef}>
       {/* Visible segmented inputs */}
@@ -260,7 +261,7 @@ function SegmentedLocationInput({ onComplete, autoFocus, initialCode }: Segmente
           ))}
         </div>
       </div>
-      
+
       {/* Labels */}
       <div className="flex items-center gap-1 pl-8">
         {segmentLabels.map((label, index) => (
@@ -274,7 +275,7 @@ function SegmentedLocationInput({ onComplete, autoFocus, initialCode }: Segmente
           </Fragment>
         ))}
       </div>
-      
+
       {/* Helper text */}
       <div className="text-center text-xs text-muted-foreground">
         Scan barcode or type location code
@@ -286,7 +287,7 @@ function SegmentedLocationInput({ onComplete, autoFocus, initialCode }: Segmente
 export default function ItemsToStore() {
   const [location, navigate] = useLocation();
   const { toast } = useToast();
-  
+
   // State
   const [items, setItems] = useState<StorageItem[]>([]);
   const [selectedItemIndex, setSelectedItemIndex] = useState(0);
@@ -303,23 +304,23 @@ export default function ItemsToStore() {
   const [lastScanResult, setLastScanResult] = useState<{ success: boolean; message: string } | null>(null);
   const [sessionsLocations, setSessionsLocations] = useState<string[]>([]);
   const [scanBuffer, setScanBuffer] = useState("");
-  
+
   // Refs
   const locationInputRef = useRef<HTMLInputElement>(null);
   const quantityInputRef = useRef<HTMLInputElement>(null);
   const scanInputRef = useRef<HTMLInputElement>(null);
   const quickScanTimerRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   // Fetch all items pending storage
   const { data: storageData, isLoading } = useQuery<any>({
     queryKey: ['/api/imports/receipts/items-to-store'],
   });
-  
+
   // Initialize items from receipt data
   useEffect(() => {
     if (storageData?.receipts) {
       const allItems: StorageItem[] = [];
-      
+
       storageData.receipts.forEach((receiptData: ReceiptWithItems) => {
         receiptData.items.forEach((item: any) => {
           allItems.push({
@@ -340,45 +341,45 @@ export default function ItemsToStore() {
           });
         });
       });
-      
+
       setItems(allItems);
-      
+
       // Auto-select first receipt if available
       if (storageData.receipts.length > 0 && !selectedReceipt) {
         setSelectedReceipt(storageData.receipts[0].receipt.id);
       }
     }
   }, [storageData, selectedReceipt]);
-  
+
   // Filter items by selected receipt and tab
   const filteredItems = selectedReceipt 
     ? items.filter(item => item.receiptId === selectedReceipt)
     : items;
-  
+
   const displayItems = activeTab === 'pending'
     ? filteredItems.filter(item => item.newLocations.length === 0 && !item.existingLocations.length)
     : filteredItems.filter(item => item.newLocations.length > 0 || item.existingLocations.length > 0);
-  
+
   const currentItem = displayItems[selectedItemIndex];
   const totalAssigned = currentItem ? 
     currentItem.newLocations.reduce((sum, loc) => sum + loc.quantity, 0) : 0;
   const remainingQuantity = currentItem ? 
     currentItem.receivedQuantity - totalAssigned : 0;
-  
+
   // Calculate progress
   const totalItems = filteredItems.length;
   const completedItems = filteredItems.filter(item => 
     item.assignedQuantity >= item.receivedQuantity || item.newLocations.length > 0
   ).length;
   const progress = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
-  
+
   // Handler for Quick Scan location processing
   const handleQuickScanLocation = async (code: string) => {
     if (!currentItem || !code) return;
-    
+
     // Play success sound
     await soundEffects.playSuccessBeep();
-    
+
     // Add location to current item using functional updates
     const newLocation: LocationAssignment = {
       id: nanoid(),
@@ -388,7 +389,7 @@ export default function ItemsToStore() {
       isPrimary: currentItem.newLocations.length === 0,
       isNew: true
     };
-    
+
     // Use functional update to avoid stale closures
     setItems(prevItems => {
       const updatedItems = [...prevItems];
@@ -404,13 +405,13 @@ export default function ItemsToStore() {
       }
       return updatedItems;
     });
-    
+
     // Update last scan result
     setLastScanResult({
       success: true,
       message: `Location ${code} assigned to ${currentItem.productName}`
     });
-    
+
     // Auto-progress to next item using functional state update
     setTimeout(() => {
       setSelectedItemIndex(prevIndex => {
@@ -418,15 +419,15 @@ export default function ItemsToStore() {
         const currentFilteredItems = selectedReceipt 
           ? items.filter(item => item.receiptId === selectedReceipt)
           : items;
-        
+
         const currentDisplayItems = activeTab === 'pending'
           ? currentFilteredItems.filter(item => item.newLocations.length === 0 && !item.existingLocations.length)
           : currentFilteredItems.filter(item => item.newLocations.length > 0 || item.existingLocations.length > 0);
-        
+
         const nextIndex = currentDisplayItems.findIndex((item, idx) => 
           idx > prevIndex && item.newLocations.length === 0 && !item.existingLocations.length
         );
-        
+
         if (nextIndex !== -1) {
           setScanningProgress(prev => ({ 
             ...prev, 
@@ -446,16 +447,16 @@ export default function ItemsToStore() {
       });
     }, 1000);
   };
-  
+
   // Handle barcode scanner input
   const handleScanInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     setScanBuffer(e.target.value);
-    
+
     // Clear any existing timer
     if (quickScanTimerRef.current) {
       clearTimeout(quickScanTimerRef.current);
     }
-    
+
     // Set timer to auto-process after a brief pause (barcode scanners send data quickly)
     quickScanTimerRef.current = setTimeout(() => {
       if (e.target.value.length >= 3) {
@@ -466,7 +467,7 @@ export default function ItemsToStore() {
       }
     }, 300);
   };
-  
+
   // Handle keyboard completion for scanner
   const handleScanComplete = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && scanBuffer.length > 0) {
@@ -484,7 +485,7 @@ export default function ItemsToStore() {
       setScanBuffer("");
     }
   };
-  
+
   // Effect to focus hidden input when scanning starts
   useEffect(() => {
     if (isScanning) {
@@ -492,11 +493,11 @@ export default function ItemsToStore() {
       setTimeout(() => {
         scanInputRef.current?.focus();
       }, 100);
-      
+
       // Play activation sound
       soundEffects.playSuccessBeep();
     }
-    
+
     // Cleanup timer on unmount or when isScanning changes
     return () => {
       if (quickScanTimerRef.current) {
@@ -504,13 +505,13 @@ export default function ItemsToStore() {
       }
     };
   }, [isScanning]);
-  
+
   // Handle location barcode scan
   const handleLocationScan = async () => {
     const trimmedValue = locationScan.trim().toUpperCase();
-    
+
     if (!trimmedValue) return;
-    
+
     // Validate location code format (e.g., WH1-A01-R02-L03)
     const locationPattern = /^[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+$/;
     if (!locationPattern.test(trimmedValue)) {
@@ -526,7 +527,7 @@ export default function ItemsToStore() {
       setLocationScan("");
       return;
     }
-    
+
     // Check if location already scanned for this item
     if (currentItem?.newLocations.some(loc => loc.locationCode === trimmedValue)) {
       await soundEffects.playDuplicateBeep();
@@ -535,12 +536,12 @@ export default function ItemsToStore() {
       setLocationScan("");
       return;
     }
-    
+
     // Determine location type based on prefix
     let locationType: LocationAssignment['locationType'] = 'warehouse';
     if (trimmedValue.startsWith('DS')) locationType = 'display';
     else if (trimmedValue.startsWith('PL')) locationType = 'pallet';
-    
+
     // Add new location to current item
     const newLocation: LocationAssignment = {
       id: `new-${Date.now()}`,
@@ -550,7 +551,7 @@ export default function ItemsToStore() {
       isPrimary: currentItem?.newLocations.length === 0 && currentItem?.existingLocations.length === 0,
       isNew: true
     };
-    
+
     const updatedItems = [...items];
     const globalIndex = items.findIndex(item => 
       item.receiptItemId === currentItem?.receiptItemId && 
@@ -560,15 +561,15 @@ export default function ItemsToStore() {
       updatedItems[globalIndex].newLocations.push(newLocation);
       setItems(updatedItems);
     }
-    
+
     // Play success sound and show feedback
     await soundEffects.playSuccessBeep();
     setScanFeedback({ type: 'success', message: `Location scanned: ${trimmedValue}` });
     setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
-    
+
     setLocationScan("");
     setShowScanner(false);
-    
+
     // Auto-advance to next item if quantity is fully assigned
     if (remainingQuantity <= newLocation.quantity) {
       setTimeout(() => {
@@ -578,72 +579,72 @@ export default function ItemsToStore() {
       }, 500);
     }
   };
-  
+
   // Handle quantity update for a location
   const handleQuantityUpdate = (locationIndex: number, quantity: number) => {
     if (!currentItem || quantity < 0) return;
-    
+
     const globalIndex = items.findIndex(item => 
       item.receiptItemId === currentItem.receiptItemId && 
       item.receiptId === currentItem.receiptId
     );
     if (globalIndex < 0) return;
-    
+
     const updatedItems = [...items];
     updatedItems[globalIndex].newLocations[locationIndex].quantity = quantity;
-    
+
     // Update assigned quantity
     const totalAssigned = updatedItems[globalIndex].newLocations.reduce((sum, loc) => sum + loc.quantity, 0);
     updatedItems[globalIndex].assignedQuantity = totalAssigned;
-    
+
     setItems(updatedItems);
-    
+
     // Play feedback sound
     if (totalAssigned >= currentItem.receivedQuantity) {
       soundEffects.playCompletionSound();
     }
   };
-  
+
   // Remove location
   const removeLocation = (locationIndex: number) => {
     if (!currentItem) return;
-    
+
     const globalIndex = items.findIndex(item => 
       item.receiptItemId === currentItem.receiptItemId && 
       item.receiptId === currentItem.receiptId
     );
     if (globalIndex < 0) return;
-    
+
     const updatedItems = [...items];
     updatedItems[globalIndex].newLocations.splice(locationIndex, 1);
-    
+
     // Update assigned quantity
     const totalAssigned = updatedItems[globalIndex].newLocations.reduce((sum, loc) => sum + loc.quantity, 0);
     updatedItems[globalIndex].assignedQuantity = totalAssigned;
-    
+
     setItems(updatedItems);
   };
-  
+
   // Toggle primary location
   const togglePrimaryLocation = (locationIndex: number) => {
     if (!currentItem) return;
-    
+
     const globalIndex = items.findIndex(item => 
       item.receiptItemId === currentItem.receiptItemId && 
       item.receiptId === currentItem.receiptId
     );
     if (globalIndex < 0) return;
-    
+
     const updatedItems = [...items];
-    
+
     // Clear other primary flags
     updatedItems[globalIndex].newLocations.forEach((loc, idx) => {
       loc.isPrimary = idx === locationIndex;
     });
-    
+
     setItems(updatedItems);
   };
-  
+
   // Save storage mutation
   const saveStorageMutation = useMutation({
     mutationFn: async () => {
@@ -660,11 +661,11 @@ export default function ItemsToStore() {
             notes: loc.notes
           }))
         }));
-      
+
       if (assignments.length === 0) {
         throw new Error("No items to store");
       }
-      
+
       return apiRequest(
         "/api/imports/receipts/store-items",
         "POST",
@@ -692,11 +693,11 @@ export default function ItemsToStore() {
       });
     }
   });
-  
+
   const handleSave = () => {
     saveStorageMutation.mutate();
   };
-  
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
@@ -708,7 +709,7 @@ export default function ItemsToStore() {
       </div>
     );
   }
-  
+
   if (!storageData || storageData.receipts.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
@@ -728,7 +729,7 @@ export default function ItemsToStore() {
       </div>
     );
   }
-  
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* Mobile Header */}
@@ -750,7 +751,7 @@ export default function ItemsToStore() {
             )}
           </button>
         </div>
-        
+
         {/* Progress Bar */}
         <div className="px-4 pb-2">
           <div className="flex justify-between text-xs text-muted-foreground mb-1">
@@ -760,7 +761,7 @@ export default function ItemsToStore() {
           <Progress value={progress} className="h-2" />
         </div>
       </div>
-      
+
       {/* Receipt Selector - Horizontal Scroll */}
       {storageData.receipts.length > 1 && (
         <div className="bg-white border-b">
@@ -769,7 +770,7 @@ export default function ItemsToStore() {
               {storageData.receipts.map((receiptData: ReceiptWithItems) => {
                 const receiptItems = items.filter(item => item.receiptId === receiptData.receipt.id);
                 const assignedCount = receiptItems.filter(item => item.newLocations.length > 0).length;
-                
+
                 return (
                   <button
                     key={receiptData.receipt.id}
@@ -801,7 +802,7 @@ export default function ItemsToStore() {
           </div>
         </div>
       )}
-      
+
       {/* Tab Selector */}
       <div className="bg-white border-b sticky top-[88px] z-30">
         <div className="flex">
@@ -839,14 +840,14 @@ export default function ItemsToStore() {
           </button>
         </div>
       </div>
-      
+
       {/* Item Cards */}
       <div className="p-4 space-y-3">
         <AnimatePresence mode="wait">
           {displayItems.map((item, index) => {
             const isSelected = index === selectedItemIndex;
             const isComplete = item.newLocations.length > 0 || item.existingLocations.length > 0;
-            
+
             return (
               <motion.div
                 key={`${item.receiptId}-${item.receiptItemId}`}
@@ -883,7 +884,7 @@ export default function ItemsToStore() {
                         </div>
                       )}
                     </div>
-                    
+
                     {/* Product Info */}
                     <div className="flex-1">
                       <h3 className="font-semibold text-sm line-clamp-1">{item.productName}</h3>
@@ -899,13 +900,13 @@ export default function ItemsToStore() {
                         </Badge>
                       </div>
                     </div>
-                    
+
                     {/* Expand Icon */}
                     <ChevronRight className={`h-5 w-5 text-gray-400 transition-transform ${
                       isSelected ? 'rotate-90' : ''
                     }`} />
                   </div>
-                  
+
                   {/* Location Summary */}
                   {(item.newLocations.length > 0 || item.existingLocations.length > 0) && (
                     <div className="mt-3 pt-3 border-t">
@@ -919,7 +920,7 @@ export default function ItemsToStore() {
                     </div>
                   )}
                 </div>
-                
+
                 {/* Expanded Actions - Only show for selected item */}
                 {isSelected && (
                   <motion.div
@@ -945,7 +946,7 @@ export default function ItemsToStore() {
                           )}
                         </div>
                       </div>
-                      
+
                       {/* Quick Stats */}
                       <div className="grid grid-cols-2 gap-3">
                         <div className="bg-white rounded-lg p-3 border">
@@ -957,7 +958,7 @@ export default function ItemsToStore() {
                           <p className="text-lg font-bold text-primary">{remainingQuantity}</p>
                         </div>
                       </div>
-                      
+
                       {/* Existing Locations */}
                       {item.existingLocations.length > 0 && (
                         <div className="bg-white rounded-lg p-3 border">
@@ -973,7 +974,7 @@ export default function ItemsToStore() {
                           ))}
                         </div>
                       )}
-                      
+
                       {/* New Locations */}
                       {item.newLocations.length > 0 && (
                         <div className="space-y-2">
@@ -1005,7 +1006,7 @@ export default function ItemsToStore() {
                           ))}
                         </div>
                       )}
-                      
+
                       {/* Action Buttons */}
                       <div className="flex gap-2">
                         <button
@@ -1047,7 +1048,7 @@ export default function ItemsToStore() {
           })}
         </AnimatePresence>
       </div>
-      
+
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-40">
         <div className="p-4 flex gap-2">
@@ -1091,7 +1092,7 @@ export default function ItemsToStore() {
           </button>
         </div>
       </div>
-      
+
       {/* Scanner Sheet with Multi-Location Support */}
       <Sheet open={showScanner} onOpenChange={(open) => {
         setShowScanner(open);
@@ -1128,36 +1129,36 @@ export default function ItemsToStore() {
                 </div>
               </div>
             )}
-            
+
             {/* Segmented Location Input */}
             <SegmentedLocationInput 
               initialCode={currentItem ? getSuggestedLocation(currentItem) : null}
               onComplete={async (code) => {
                 // Play success sound
                 await soundEffects.playSuccessBeep();
-                
+
                 // Add to session locations
                 setSessionsLocations(prev => [...prev, code]);
-                
+
                 // Set the location and process
                 setLocationScan(code);
                 handleLocationScan();
-                
+
                 // Show success feedback but don't close
                 toast({
                   title: "✓ Location Added",
                   description: code,
                   duration: 2000,
                 });
-                
+
                 // Clear input for next scan (by reinitializing the component)
                 setLocationScan("");
               }}
               autoFocus
             />
-            
+
             <ScanFeedback type={scanFeedback.type} message={scanFeedback.message} />
-            
+
             <div className="flex gap-2">
               <Button
                 onClick={handleLocationScan}
@@ -1176,7 +1177,7 @@ export default function ItemsToStore() {
                 Done
               </Button>
             </div>
-            
+
             {/* Example locations */}
             <div className="text-center text-sm text-muted-foreground">
               Examples: WH1-A01-R02-L03, DS1-F01-S01, PL1-B01
@@ -1184,7 +1185,7 @@ export default function ItemsToStore() {
           </div>
         </SheetContent>
       </Sheet>
-      
+
       {/* Enhanced Item Details Sheet */}
       <Sheet open={showDetails} onOpenChange={setShowDetails}>
         <SheetContent side="bottom" className="h-[85vh] overflow-y-auto">
@@ -1207,7 +1208,7 @@ export default function ItemsToStore() {
                   </div>
                 )}
               </div>
-              
+
               {/* Identification Section */}
               <Card>
                 <CardHeader className="pb-3">
@@ -1221,14 +1222,14 @@ export default function ItemsToStore() {
                     <p className="text-xs text-muted-foreground">Product Name</p>
                     <p className="font-semibold">{currentItem.productName}</p>
                   </div>
-                  
+
                   {currentItem.description && currentItem.description !== currentItem.productName && (
                     <div>
                       <p className="text-xs text-muted-foreground">Description</p>
                       <p className="text-sm">{currentItem.description}</p>
                     </div>
                   )}
-                  
+
                   <div className="grid grid-cols-2 gap-3">
                     {currentItem.sku && (
                       <div>
@@ -1236,7 +1237,7 @@ export default function ItemsToStore() {
                         <p className="font-mono text-sm">{currentItem.sku}</p>
                       </div>
                     )}
-                    
+
                     {currentItem.barcode && (
                       <div>
                         <p className="text-xs text-muted-foreground">Barcode</p>
@@ -1246,7 +1247,7 @@ export default function ItemsToStore() {
                   </div>
                 </CardContent>
               </Card>
-              
+
               {/* Shipment Section */}
               <Card>
                 <CardHeader className="pb-3">
@@ -1261,7 +1262,7 @@ export default function ItemsToStore() {
                       <p className="text-xs text-muted-foreground">Tracking #</p>
                       <p className="font-mono text-xs">{currentItem.shipmentTrackingNumber || 'N/A'}</p>
                     </div>
-                    
+
                     <div>
                       <p className="text-xs text-muted-foreground">Received</p>
                       <p className="text-sm">{currentItem.receivedAt ? format(new Date(currentItem.receivedAt), "MMM d, yyyy") : 'N/A'}</p>
@@ -1269,7 +1270,7 @@ export default function ItemsToStore() {
                   </div>
                 </CardContent>
               </Card>
-              
+
               {/* Quantities Section */}
               <Card>
                 <CardHeader className="pb-3">
@@ -1304,7 +1305,7 @@ export default function ItemsToStore() {
           )}
         </SheetContent>
       </Sheet>
-      
+
       {/* Quick Scan Continuous Mode HUD */}
       {isScanning && (
         <motion.div
@@ -1326,7 +1327,7 @@ export default function ItemsToStore() {
             tabIndex={0}
             data-testid="quick-scan-input"
           />
-          
+
           <div className="max-w-2xl mx-auto">
             {/* Status Header */}
             <div className="flex items-center justify-between mb-4">
@@ -1346,13 +1347,13 @@ export default function ItemsToStore() {
                 {scanningProgress.current} of {scanningProgress.total}
               </Badge>
             </div>
-            
+
             {/* Progress Bar */}
             <Progress 
               value={(scanningProgress.current / scanningProgress.total) * 100} 
               className="h-2 mb-4 bg-white/10"
             />
-            
+
             {/* Last Scan Result */}
             {lastScanResult && (
               <motion.div
@@ -1372,7 +1373,7 @@ export default function ItemsToStore() {
                 <span className="text-sm">{lastScanResult.message}</span>
               </motion.div>
             )}
-            
+
             {/* Control Buttons */}
             <div className="flex gap-2">
               <button
@@ -1394,15 +1395,15 @@ export default function ItemsToStore() {
                     const currentFilteredItems = selectedReceipt 
                       ? items.filter(item => item.receiptId === selectedReceipt)
                       : items;
-                    
+
                     const currentDisplayItems = activeTab === 'pending'
                       ? currentFilteredItems.filter(item => item.newLocations.length === 0 && !item.existingLocations.length)
                       : currentFilteredItems.filter(item => item.newLocations.length > 0 || item.existingLocations.length > 0);
-                    
+
                     const nextIndex = currentDisplayItems.findIndex((item, idx) => 
                       idx > prevIndex && item.newLocations.length === 0 && !item.existingLocations.length
                     );
-                    
+
                     if (nextIndex !== -1) {
                       setScanningProgress(prev => ({ 
                         ...prev, 
