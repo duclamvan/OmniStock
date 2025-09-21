@@ -347,7 +347,7 @@ export default function ItemsToStore() {
   const [isScanning, setIsScanning] = useState(false);
   const [scanningProgress, setScanningProgress] = useState({ current: 0, total: 0 });
   const [lastScanResult, setLastScanResult] = useState<{ success: boolean; message: string } | null>(null);
-  const [sessionsLocations, setSessionsLocations] = useState<{code: string; isPrimary: boolean}[]>([]);
+  const [sessionsLocations, setSessionsLocations] = useState<{code: string; isPrimary: boolean; quantity: number}[]>([]);
   const [scanBuffer, setScanBuffer] = useState("");
 
   // Refs
@@ -551,8 +551,8 @@ export default function ItemsToStore() {
     };
   }, [isScanning]);
 
-  // Handle location barcode scan
-  const handleLocationScan = async (codeOverride?: string) => {
+  // Add location to session only (doesn't modify parent state)
+  const addLocationToSession = async (codeOverride?: string) => {
     // Use passed code, current locationScan state, or build from segments
     let trimmedValue = (codeOverride || locationScan).trim().toUpperCase();
     
@@ -566,9 +566,9 @@ export default function ItemsToStore() {
         title: "No Location Entered",
         description: "Please enter or scan a location code",
         variant: "destructive",
-        duration: 3000
+        duration: 2000
       });
-      return;
+      return false;
     }
 
     // Validate location code format (e.g., WH1-A01-R02-L03)
@@ -581,61 +581,111 @@ export default function ItemsToStore() {
         title: "Invalid Location",
         description: "Location must be in format: WH1-A01-R02-L03",
         variant: "destructive",
-        duration: 3000
+        duration: 2000
       });
-      setLocationScan("");
-      return;
+      return false;
     }
 
-    // Check if location already scanned for this item
-    if (currentItem?.newLocations.some(loc => loc.locationCode === trimmedValue)) {
+    // Check if location already in session
+    if (sessionsLocations.some(loc => loc.code === trimmedValue)) {
       await soundEffects.playDuplicateBeep();
-      setScanFeedback({ type: 'duplicate', message: `Location already added: ${trimmedValue}` });
+      setScanFeedback({ type: 'duplicate', message: `Already added: ${trimmedValue}` });
       setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
-      setLocationScan("");
-      return;
+      return false;
     }
 
-    // Determine location type based on prefix
-    let locationType: LocationAssignment['locationType'] = 'warehouse';
-    if (trimmedValue.startsWith('DS')) locationType = 'display';
-    else if (trimmedValue.startsWith('PL')) locationType = 'pallet';
+    // Check if location already assigned to this item
+    if (currentItem?.newLocations.some(loc => loc.locationCode === trimmedValue) ||
+        currentItem?.existingLocations.some(loc => loc.locationCode === trimmedValue)) {
+      await soundEffects.playDuplicateBeep();
+      setScanFeedback({ type: 'duplicate', message: `Location already assigned: ${trimmedValue}` });
+      setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
+      return false;
+    }
 
-    // Check if this should be marked as primary based on session locations
-    const sessionLocation = sessionsLocations.find(loc => loc.code === trimmedValue);
-    const shouldBePrimary = sessionLocation?.isPrimary || 
-                           (currentItem?.newLocations.length === 0 && currentItem?.existingLocations.length === 0);
+    // Add to session (NOT to actual item yet)
+    const isFirstLocation = sessionsLocations.length === 0 && 
+                           currentItem?.newLocations.length === 0 && 
+                           currentItem?.existingLocations.length === 0;
     
-    // Add new location to current item
-    const newLocation: LocationAssignment = {
-      id: `new-${Date.now()}`,
-      locationCode: trimmedValue,
-      locationType,
-      quantity: remainingQuantity, // Auto-fill with remaining quantity
-      isPrimary: shouldBePrimary,
-      isNew: true
-    };
-
-    const updatedItems = [...items];
-    const globalIndex = items.findIndex(item => 
-      item.receiptItemId === currentItem?.receiptItemId && 
-      item.receiptId === currentItem?.receiptId
-    );
-    if (globalIndex >= 0) {
-      updatedItems[globalIndex].newLocations.push(newLocation);
-      setItems(updatedItems);
-    }
+    setSessionsLocations(prev => [...prev, {
+      code: trimmedValue,
+      isPrimary: isFirstLocation,
+      quantity: Math.min(remainingQuantity, currentItem?.receivedQuantity || 0)
+    }]);
 
     // Play success sound and show feedback
     await soundEffects.playSuccessBeep();
-    setScanFeedback({ type: 'success', message: `Location scanned: ${trimmedValue}` });
+    setScanFeedback({ type: 'success', message: `Added: ${trimmedValue}` });
     setTimeout(() => setScanFeedback({ type: null, message: '' }), 2000);
 
+    // Clear inputs for next entry
     setLocationScan("");
+    setCurrentSegments(["", "", "", ""]);
+    
+    // Focus first input for quick next entry
+    setTimeout(() => {
+      const firstInput = document.querySelector('[data-segment-input="0"]') as HTMLInputElement;
+      if (firstInput) firstInput.focus();
+    }, 100);
+
+    return true;
+  };
+
+  // Apply all session locations when Done is clicked
+  const applySessionLocations = () => {
+    if (!currentItem || sessionsLocations.length === 0) return;
+
+    const updatedItems = [...items];
+    const globalIndex = items.findIndex(item => 
+      item.receiptItemId === currentItem.receiptItemId && 
+      item.receiptId === currentItem.receiptId
+    );
+    
+    if (globalIndex < 0) return;
+
+    // Create new locations from session
+    sessionsLocations.forEach(sessionLoc => {
+      // Determine location type based on prefix
+      let locationType: LocationAssignment['locationType'] = 'warehouse';
+      if (sessionLoc.code.startsWith('DS')) locationType = 'display';
+      else if (sessionLoc.code.startsWith('PL')) locationType = 'pallet';
+
+      const newLocation: LocationAssignment = {
+        id: `new-${Date.now()}-${Math.random()}`,
+        locationCode: sessionLoc.code,
+        locationType,
+        quantity: sessionLoc.quantity,
+        isPrimary: sessionLoc.isPrimary,
+        isNew: true
+      };
+
+      updatedItems[globalIndex].newLocations.push(newLocation);
+    });
+
+    // Update assigned quantity
+    const totalAssigned = updatedItems[globalIndex].newLocations.reduce((sum, loc) => sum + loc.quantity, 0);
+    updatedItems[globalIndex].assignedQuantity = totalAssigned;
+
+    setItems(updatedItems);
+
+    // Play completion sound if fully assigned
+    if (totalAssigned >= currentItem.receivedQuantity) {
+      soundEffects.playCompletionSound();
+    }
+
+    toast({
+      title: "✓ Locations Applied",
+      description: `${sessionsLocations.length} location${sessionsLocations.length > 1 ? 's' : ''} added successfully`,
+      duration: 2000,
+    });
+
+    // Clear session and close
+    setSessionsLocations([]);
     setShowScanner(false);
 
-    // Auto-advance to next item if quantity is fully assigned
-    if (remainingQuantity <= newLocation.quantity) {
+    // Auto-advance if fully assigned
+    if (totalAssigned >= currentItem.receivedQuantity) {
       setTimeout(() => {
         if (selectedItemIndex < displayItems.length - 1) {
           setSelectedItemIndex(selectedItemIndex + 1);
@@ -643,6 +693,9 @@ export default function ItemsToStore() {
       }, 500);
     }
   };
+
+  // Keep handleLocationScan for backward compatibility
+  const handleLocationScan = addLocationToSession;
 
   // Handle quantity update for a location
   const handleQuantityUpdate = (locationIndex: number, quantity: number) => {
@@ -1200,7 +1253,11 @@ export default function ItemsToStore() {
       <Sheet open={showScanner} onOpenChange={(open) => {
         setShowScanner(open);
         if (!open) {
+          // Clear session when closing
           setSessionsLocations([]);
+          setScanFeedback({ type: null, message: '' });
+          setLocationScan("");
+          setCurrentSegments(["", "", "", ""]);
         }
       }}>
         <SheetContent side="bottom" className="h-[85vh] overflow-y-auto">
@@ -1288,6 +1345,7 @@ export default function ItemsToStore() {
                                   isPrimary: i === idx 
                                 }))
                               );
+                              soundEffects.playSuccessBeep();
                               toast({
                                 title: "Primary Location Set",
                                 description: `${loc.code} is now the main location`,
@@ -1304,6 +1362,11 @@ export default function ItemsToStore() {
                           className="text-red-600 hover:text-red-700"
                           onClick={() => {
                             setSessionsLocations(prev => prev.filter((_, i) => i !== idx));
+                            soundEffects.playErrorBeep();
+                            toast({
+                              title: "Location Removed",
+                              description: `${loc.code} has been removed`,
+                            });
                           }}
                         >
                           <X className="h-4 w-4" />
@@ -1312,6 +1375,11 @@ export default function ItemsToStore() {
                     </div>
                   ))}
                 </div>
+                {sessionsLocations.length > 1 && (
+                  <div className="text-xs text-muted-foreground text-center">
+                    Tip: The location marked as "Main" will be the primary storage location
+                  </div>
+                )}
               </div>
             )}
 
@@ -1328,23 +1396,8 @@ export default function ItemsToStore() {
                 // Play success sound
                 await soundEffects.playSuccessBeep();
 
-                // Add to session locations with primary flag
-                const isFirstLocation = sessionsLocations.length === 0;
-                setSessionsLocations(prev => [...prev, { 
-                  code, 
-                  isPrimary: isFirstLocation 
-                }]);
-
-                // Set the location and process
-                setLocationScan(code);
-                handleLocationScan(code);
-
-                // Show success feedback but don't close
-                toast({
-                  title: "✓ Location Added",
-                  description: code,
-                  duration: 2000,
-                });
+                // Just add to session, don't apply yet
+                addLocationToSession(code);
 
                 // Clear input for next scan (by reinitializing the component)
                 setLocationScan("");
@@ -1363,13 +1416,21 @@ export default function ItemsToStore() {
                   // Clear all fields for fresh input
                   setCurrentSegments(["", "", "", ""]);
                   setLocationScan("");
-                  // Force re-render of SegmentedLocationInput by changing key
+                  setScanFeedback({ type: null, message: '' });
+                  
+                  // Clear input values directly
                   const inputs = document.querySelectorAll('[data-segment-input]');
-                  inputs.forEach((input: any) => { input.value = ''; });
-                  toast({
-                    title: "Fields Cleared",
-                    description: "Ready for new location input",
+                  inputs.forEach((input: any) => { 
+                    if (input) input.value = ''; 
                   });
+                  
+                  // Focus first input
+                  setTimeout(() => {
+                    const firstInput = document.querySelector('[data-segment-input="0"]') as HTMLInputElement;
+                    if (firstInput) firstInput.focus();
+                  }, 50);
+                  
+                  soundEffects.playSuccessBeep();
                 }}
                 className="py-6"
                 size="lg"
@@ -1378,64 +1439,64 @@ export default function ItemsToStore() {
                 Clear
               </Button>
               <Button
-                onClick={() => {
-                  console.log('Add Location clicked');
-                  console.log('Current segments:', currentSegments);
-                  console.log('Location scan:', locationScan);
-                  
+                onClick={async () => {
                   // Build location code from current segments if available
                   if (currentSegments.every(seg => seg && seg.length > 0)) {
                     const code = currentSegments.join('-');
-                    console.log('Using segments code:', code);
-                    
-                    // Add to session locations with primary flag
-                    const isFirstLocation = sessionsLocations.length === 0;
-                    setSessionsLocations(prev => [...prev, { 
-                      code, 
-                      isPrimary: isFirstLocation 
-                    }]);
-                    
-                    handleLocationScan(code);
-                    // Clear segments after adding
-                    setCurrentSegments(["", "", "", ""]);
-                    setLocationScan("");
+                    await addLocationToSession(code);
                   } else if (locationScan) {
-                    console.log('Using locationScan:', locationScan);
-                    handleLocationScan(locationScan);
+                    await addLocationToSession(locationScan);
                   } else {
-                    console.log('No location data available');
-                    toast({
-                      title: "No Location Entered",
-                      description: "Please enter or scan a location code",
-                      variant: "destructive",
-                      duration: 3000
-                    });
+                    await addLocationToSession(); // Will show error toast
                   }
                 }}
-                className="flex-1 py-6 text-lg"
+                className="flex-1 py-6 text-lg bg-primary hover:bg-primary/90"
                 size="lg"
+                disabled={sessionsLocations.length >= 10} // Limit to 10 locations
               >
                 <Plus className="h-5 w-5 mr-2" />
-                Add Location
+                Add Location {sessionsLocations.length > 0 && `(${sessionsLocations.length})`}
               </Button>
             </div>
             
-            {/* Done Button */}
-            <div className="pt-4 border-t">
+            {/* Action Buttons */}
+            <div className="pt-4 border-t space-y-2">
               <Button
                 onClick={() => {
-                  // Save all locations when done
+                  // Apply all session locations to the item
                   if (sessionsLocations.length > 0) {
-                    saveStorageMutation.mutate();
+                    applySessionLocations();
+                  } else {
+                    setShowScanner(false);
                   }
-                  setShowScanner(false);
                 }}
                 variant="default"
                 className="w-full py-6 text-lg bg-green-600 hover:bg-green-700"
                 size="lg"
+                disabled={sessionsLocations.length === 0}
               >
-                <CheckCircle2 className="h-5 w-5 mr-2" />
-                Done - Save {sessionsLocations.length} Location{sessionsLocations.length !== 1 ? 's' : ''}
+                {sessionsLocations.length > 0 ? (
+                  <>
+                    <CheckCircle2 className="h-5 w-5 mr-2" />
+                    Apply {sessionsLocations.length} Location{sessionsLocations.length !== 1 ? 's' : ''}
+                  </>
+                ) : (
+                  <>
+                    <X className="h-5 w-5 mr-2" />
+                    Close
+                  </>
+                )}
+              </Button>
+              <Button
+                onClick={() => {
+                  setSessionsLocations([]);
+                  setShowScanner(false);
+                }}
+                variant="outline"
+                className="w-full py-4"
+                size="lg"
+              >
+                Cancel
               </Button>
             </div>
 
