@@ -347,7 +347,7 @@ export default function ItemsToStore() {
   const [isScanning, setIsScanning] = useState(false);
   const [scanningProgress, setScanningProgress] = useState({ current: 0, total: 0 });
   const [lastScanResult, setLastScanResult] = useState<{ success: boolean; message: string } | null>(null);
-  const [sessionsLocations, setSessionsLocations] = useState<string[]>([]);
+  const [sessionsLocations, setSessionsLocations] = useState<{code: string; isPrimary: boolean}[]>([]);
   const [scanBuffer, setScanBuffer] = useState("");
 
   // Refs
@@ -601,13 +601,18 @@ export default function ItemsToStore() {
     if (trimmedValue.startsWith('DS')) locationType = 'display';
     else if (trimmedValue.startsWith('PL')) locationType = 'pallet';
 
+    // Check if this should be marked as primary based on session locations
+    const sessionLocation = sessionsLocations.find(loc => loc.code === trimmedValue);
+    const shouldBePrimary = sessionLocation?.isPrimary || 
+                           (currentItem?.newLocations.length === 0 && currentItem?.existingLocations.length === 0);
+    
     // Add new location to current item
     const newLocation: LocationAssignment = {
       id: `new-${Date.now()}`,
       locationCode: trimmedValue,
       locationType,
       quantity: remainingQuantity, // Auto-fill with remaining quantity
-      isPrimary: currentItem?.newLocations.length === 0 && currentItem?.existingLocations.length === 0,
+      isPrimary: shouldBePrimary,
       isNew: true
     };
 
@@ -1198,51 +1203,122 @@ export default function ItemsToStore() {
           setSessionsLocations([]);
         }
       }}>
-        <SheetContent side="bottom" className="h-[70vh] overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Scan Location</SheetTitle>
-            <SheetDescription>
-              {currentItem && (
-                <div className="mt-2 p-2 bg-primary/10 rounded-lg">
-                  <p className="text-xs font-medium">Current Location:</p>
-                  <div className="text-lg font-mono font-bold">
-                    {getSuggestedLocation(currentItem) ? (
-                      <span>{getSuggestedLocation(currentItem)}</span>
-                    ) : (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-orange-600">
-                          <AlertCircle className="h-5 w-5" />
-                          <span>New item - no current location</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-blue-600">
-                          <Navigation className="h-5 w-5" />
-                          <span className="text-sm">Suggested Location: <span className="font-mono">{generateSuggestedLocation(currentItem)}</span></span>
-                        </div>
+        <SheetContent side="bottom" className="h-[85vh] overflow-y-auto">
+          {/* Header with Item Name */}
+          <SheetHeader className="pb-4 border-b">
+            <SheetTitle className="text-lg">Add Storage Locations</SheetTitle>
+            {currentItem && (
+              <div className="mt-2 space-y-3">
+                {/* Item Name Section */}
+                <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-3">
+                  <div className="flex items-start gap-3">
+                    <Package className="h-5 w-5 text-primary mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Item</p>
+                      <p className="text-base font-semibold">{currentItem.productName}</p>
+                      <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                        {currentItem.sku && (
+                          <span className="flex items-center gap-1">
+                            <Hash className="h-3 w-3" />
+                            {currentItem.sku}
+                          </span>
+                        )}
+                        <span className="flex items-center gap-1">
+                          <Boxes className="h-3 w-3" />
+                          Qty: {currentItem.receivedQuantity}
+                        </span>
                       </div>
-                    )}
+                    </div>
                   </div>
                 </div>
-              )}
-            </SheetDescription>
+
+                {/* Current/Suggested Location */}
+                <div className="bg-gray-50 rounded-lg p-3">
+                  {getSuggestedLocation(currentItem) ? (
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground mb-1">Current Primary Location</p>
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-green-600" />
+                        <span className="font-mono text-sm font-semibold">{getSuggestedLocation(currentItem)}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="flex items-center gap-2 text-orange-600 mb-2">
+                        <AlertCircle className="h-4 w-4" />
+                        <span className="text-sm font-medium">New item - no current location</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-blue-600">
+                        <Navigation className="h-4 w-4" />
+                        <span className="text-xs">Suggested: <span className="font-mono font-semibold">{generateSuggestedLocation(currentItem)}</span></span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </SheetHeader>
-          <div className="mt-4 space-y-4">
-            {/* Session Locations */}
+          <div className="mt-6 space-y-4">
+            {/* Session Locations with Primary Toggle */}
             {sessionsLocations.length > 0 && (
-              <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-xs font-medium text-muted-foreground mb-2">Added in this session:</p>
-                <div className="space-y-1">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold">Added Locations</p>
+                  <Badge variant="secondary">{sessionsLocations.length} location{sessionsLocations.length !== 1 ? 's' : ''}</Badge>
+                </div>
+                <div className="space-y-2">
                   {sessionsLocations.map((loc, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-green-600" />
-                      <span className="font-mono text-sm">{loc}</span>
+                    <div key={idx} className="flex items-center justify-between bg-white border rounded-lg p-3">
+                      <div className="flex items-center gap-3">
+                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                        <span className="font-mono text-sm font-medium">{loc.code}</span>
+                        <Badge variant={loc.isPrimary ? "default" : "outline"} className="text-xs">
+                          {loc.isPrimary ? "Main" : "Secondary"}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {!loc.isPrimary && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setSessionsLocations(prev => 
+                                prev.map((l, i) => ({ 
+                                  ...l, 
+                                  isPrimary: i === idx 
+                                }))
+                              );
+                              toast({
+                                title: "Primary Location Set",
+                                description: `${loc.code} is now the main location`,
+                              });
+                            }}
+                          >
+                            <Star className="h-4 w-4" />
+                            Set as Main
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-red-600 hover:text-red-700"
+                          onClick={() => {
+                            setSessionsLocations(prev => prev.filter((_, i) => i !== idx));
+                          }}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Segmented Location Input */}
-            <SegmentedLocationInput 
+            {/* Add New Location Section */}
+            <div className="space-y-2">
+              <p className="text-sm font-semibold">Add New Location</p>
+              <SegmentedLocationInput 
               initialCode={currentItem ? (getSuggestedLocation(currentItem) || generateSuggestedLocation(currentItem)) : null}
               onSegmentChange={(segments) => {
                 // Update current segments state for Add Location button
@@ -1252,8 +1328,12 @@ export default function ItemsToStore() {
                 // Play success sound
                 await soundEffects.playSuccessBeep();
 
-                // Add to session locations
-                setSessionsLocations(prev => [...prev, code]);
+                // Add to session locations with primary flag
+                const isFirstLocation = sessionsLocations.length === 0;
+                setSessionsLocations(prev => [...prev, { 
+                  code, 
+                  isPrimary: isFirstLocation 
+                }]);
 
                 // Set the location and process
                 setLocationScan(code);
@@ -1271,11 +1351,32 @@ export default function ItemsToStore() {
                 setCurrentSegments(["", "", "", ""]);
               }}
               autoFocus
-            />
+              />
+            </div>
 
             <ScanFeedback type={scanFeedback.type} message={scanFeedback.message} />
 
             <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  // Clear all fields for fresh input
+                  setCurrentSegments(["", "", "", ""]);
+                  setLocationScan("");
+                  // Force re-render of SegmentedLocationInput by changing key
+                  const inputs = document.querySelectorAll('[data-segment-input]');
+                  inputs.forEach((input: any) => { input.value = ''; });
+                  toast({
+                    title: "Fields Cleared",
+                    description: "Ready for new location input",
+                  });
+                }}
+                className="py-6"
+                size="lg"
+              >
+                <X className="h-5 w-5 mr-2" />
+                Clear
+              </Button>
               <Button
                 onClick={() => {
                   console.log('Add Location clicked');
@@ -1286,6 +1387,14 @@ export default function ItemsToStore() {
                   if (currentSegments.every(seg => seg && seg.length > 0)) {
                     const code = currentSegments.join('-');
                     console.log('Using segments code:', code);
+                    
+                    // Add to session locations with primary flag
+                    const isFirstLocation = sessionsLocations.length === 0;
+                    setSessionsLocations(prev => [...prev, { 
+                      code, 
+                      isPrimary: isFirstLocation 
+                    }]);
+                    
                     handleLocationScan(code);
                     // Clear segments after adding
                     setCurrentSegments(["", "", "", ""]);
@@ -1309,20 +1418,44 @@ export default function ItemsToStore() {
                 <Plus className="h-5 w-5 mr-2" />
                 Add Location
               </Button>
+            </div>
+            
+            {/* Done Button */}
+            <div className="pt-4 border-t">
               <Button
-                onClick={() => setShowScanner(false)}
-                variant="outline"
-                className="py-6"
+                onClick={() => {
+                  // Save all locations when done
+                  if (sessionsLocations.length > 0) {
+                    saveStorageMutation.mutate();
+                  }
+                  setShowScanner(false);
+                }}
+                variant="default"
+                className="w-full py-6 text-lg bg-green-600 hover:bg-green-700"
                 size="lg"
               >
-                Done
+                <CheckCircle2 className="h-5 w-5 mr-2" />
+                Done - Save {sessionsLocations.length} Location{sessionsLocations.length !== 1 ? 's' : ''}
               </Button>
             </div>
 
-            {/* Example locations */}
-            <div className="text-center text-sm text-muted-foreground">
-              Examples: WH1-A01-R02-L03, DS1-F01-S01, PL1-B01
-            </div>
+            {/* Help Text */}
+            <Card className="bg-blue-50 border-blue-200">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <Info className="h-5 w-5 text-blue-600 mt-0.5" />
+                  <div className="space-y-2 text-sm">
+                    <p className="font-medium text-blue-900">How to add locations:</p>
+                    <ul className="space-y-1 text-blue-800">
+                      <li>• Type or scan location codes in the fields above</li>
+                      <li>• Press "Add Location" to add multiple locations</li>
+                      <li>• Click "Set as Main" to designate primary storage</li>
+                      <li>• Examples: WH1-A01-R02-L03, DS1-F01-S01, PL1-B01</li>
+                    </ul>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </SheetContent>
       </Sheet>
