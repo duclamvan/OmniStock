@@ -2067,11 +2067,17 @@ export default function ReceivingList() {
                             </p>
                           </div>
                         </div>
-                        <Link href={`/receiving/details/${shipment.id}`}>
-                          <Button size="sm" variant="outline" data-testid={`button-view-details-${shipment.id}`}>
-                            View Details
+                        {shipment.receiptId ? (
+                          <Link href={`/receiving/details/${shipment.receiptId}`}>
+                            <Button size="sm" variant="outline" data-testid={`button-view-details-${shipment.id}`}>
+                              View Details
+                            </Button>
+                          </Link>
+                        ) : (
+                          <Button size="sm" variant="outline" disabled data-testid={`button-no-receipt-${shipment.id}`}>
+                            No Receipt
                           </Button>
-                        </Link>
+                        )}
                       </div>
                     </CardContent>
                   </Card>

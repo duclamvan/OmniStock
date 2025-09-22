@@ -2205,11 +2205,29 @@ router.get("/shipments/by-status/:status", async (req, res) => {
       }
     }
     
+    // If fetching completed shipments, also include receipt IDs
+    let receiptMap: Record<number, number> = {};
+    if (status === 'completed') {
+      const shipmentIds = shipmentsWithStatus.map(s => s.shipment.id);
+      if (shipmentIds.length > 0) {
+        const receiptsList = await db
+          .select({ id: receipts.id, shipmentId: receipts.shipmentId })
+          .from(receipts)
+          .where(inArray(receipts.shipmentId, shipmentIds));
+        
+        receiptMap = receiptsList.reduce((acc, receipt) => {
+          acc[receipt.shipmentId] = receipt.id;
+          return acc;
+        }, {} as Record<number, number>);
+      }
+    }
+    
     // Map results without any additional queries
     const formattedShipments = shipmentsWithStatus.map(({ shipment, consolidation }) => ({
       ...shipment,
       consolidation,
-      items: shipment.consolidationId ? (itemsByConsolidation[shipment.consolidationId] || []) : []
+      items: shipment.consolidationId ? (itemsByConsolidation[shipment.consolidationId] || []) : [],
+      receiptId: receiptMap[shipment.id] || null
     }));
     
     res.json(formattedShipments);
