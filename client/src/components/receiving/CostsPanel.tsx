@@ -145,13 +145,13 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
   });
 
   // Group costs by type
-  const costsByType = costs.reduce((acc: Record<string, ShipmentCost[]>, cost: ShipmentCost) => {
+  const costsByType = Array.isArray(costs) ? costs.reduce((acc: Record<string, ShipmentCost[]>, cost: ShipmentCost) => {
     if (!acc[cost.type]) {
       acc[cost.type] = [];
     }
     acc[cost.type].push(cost);
     return acc;
-  }, {});
+  }, {}) : {};
 
   const getCostIcon = (type: string) => {
     switch (type) {

@@ -5097,59 +5097,17 @@ router.get("/shipments/:id/landing-cost-summary", async (req, res) => {
       return res.status(404).json({ message: "Shipment not found" });
     }
     
-    // Fetch latest cost allocations
-    const allocations = await db
-      .select({
-        purchaseItemId: costAllocations.purchaseItemId,
-        costType: costAllocations.costType,
-        amount: costAllocations.amount,
-        itemName: purchaseItems.name,
-        itemSku: purchaseItems.sku,
-        itemQty: purchaseItems.quantity
-      })
-      .from(costAllocations)
-      .leftJoin(purchaseItems, eq(costAllocations.purchaseItemId, purchaseItems.id))
-      .where(eq(costAllocations.shipmentId, shipmentId));
-    
-    // Group allocations by item
-    const itemAllocations = allocations.reduce((acc, alloc) => {
-      if (!acc[alloc.purchaseItemId]) {
-        acc[alloc.purchaseItemId] = {
-          purchaseItemId: alloc.purchaseItemId,
-          name: alloc.itemName,
-          sku: alloc.itemSku,
-          quantity: alloc.itemQty,
-          costs: {},
-          totalCost: 0
-        };
-      }
-      
-      const amount = Number(alloc.amount);
-      acc[alloc.purchaseItemId].costs[alloc.costType] = amount;
-      acc[alloc.purchaseItemId].totalCost += amount;
-      
-      return acc;
-    }, {} as Record<number, any>);
-    
-    // Calculate summary totals
-    const totals = allocations.reduce((acc, alloc) => {
-      if (!acc[alloc.costType]) {
-        acc[alloc.costType] = 0;
-      }
-      acc[alloc.costType] += Number(alloc.amount);
-      return acc;
-    }, {} as Record<string, number>);
-    
-    const grandTotal = Object.values(totals).reduce((sum, val) => sum + val, 0);
-    
+    // For now, return a simple response indicating no allocations yet
+    // The landing cost calculation needs to be triggered first
     res.json({
       shipmentId,
-      items: Object.values(itemAllocations),
-      totals,
-      grandTotal,
+      items: [],
+      totals: {},
+      grandTotal: 0,
       baseCurrency: 'EUR',
-      hasAllocations: allocations.length > 0,
-      lastCalculated: allocations.length > 0 ? new Date() : null
+      hasAllocations: false,
+      lastCalculated: null,
+      message: "No landing costs calculated yet. Add costs and calculate to see allocations."
     });
   } catch (error) {
     console.error("Error fetching landing cost summary:", error);

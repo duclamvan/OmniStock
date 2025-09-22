@@ -74,11 +74,6 @@ export default function ReceiptDetails() {
   
   // Approval form state
   const [approvedBy, setApprovedBy] = useState("");
-  
-  // Landing costs dialog state
-  const [showLandedCostsDialog, setShowLandedCostsDialog] = useState(false);
-  const [calculationMethod, setCalculationMethod] = useState("weight");
-  const [currency, setCurrency] = useState("EUR");
 
   // Fetch receipt details
   const { data: receipt, isLoading, refetch } = useQuery({
@@ -401,8 +396,8 @@ export default function ReceiptDetails() {
       {/* Tabs for Items and Landing Costs */}
       <Tabs defaultValue="items" className="mb-6">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="items">Items Verification</TabsTrigger>
-          <TabsTrigger value="costs">Landing Costs</TabsTrigger>
+          <TabsTrigger value="items" data-testid="tab-items">Items Verification</TabsTrigger>
+          <TabsTrigger value="costs" data-testid="tab-landing-costs">Landing Costs</TabsTrigger>
         </TabsList>
 
         <TabsContent value="items">
@@ -801,124 +796,6 @@ export default function ReceiptDetails() {
         </DialogContent>
       </Dialog>
 
-      {/* Landed Costs Dialog */}
-      <Dialog open={showLandedCostsDialog} onOpenChange={setShowLandedCostsDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Calculate Landed Costs</DialogTitle>
-            <DialogDescription>
-              Calculate the total landed cost for this shipment
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Calculation Method</Label>
-                <Select value={calculationMethod} onValueChange={setCalculationMethod}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="weight">By Weight</SelectItem>
-                    <SelectItem value="volume">By Volume</SelectItem>
-                    <SelectItem value="price">By Price</SelectItem>
-                    <SelectItem value="average">Average</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Currency</Label>
-                <Select value={currency} onValueChange={setCurrency}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="USD">USD</SelectItem>
-                    <SelectItem value="EUR">EUR</SelectItem>
-                    <SelectItem value="CZK">CZK</SelectItem>
-                    <SelectItem value="VND">VND</SelectItem>
-                    <SelectItem value="CNY">CNY</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Base Cost</Label>
-                <Input
-                  type="number"
-                  value={baseCost}
-                  onChange={(e) => setBaseCost(e.target.value)}
-                  placeholder="0.00"
-                />
-              </div>
-              <div>
-                <Label>Shipping Cost</Label>
-                <Input
-                  type="number"
-                  value={shippingCost}
-                  onChange={(e) => setShippingCost(e.target.value)}
-                  placeholder="0.00"
-                />
-              </div>
-              <div>
-                <Label>Customs Duty</Label>
-                <Input
-                  type="number"
-                  value={customsDuty}
-                  onChange={(e) => setCustomsDuty(e.target.value)}
-                  placeholder="0.00"
-                />
-              </div>
-              <div>
-                <Label>Taxes</Label>
-                <Input
-                  type="number"
-                  value={taxes}
-                  onChange={(e) => setTaxes(e.target.value)}
-                  placeholder="0.00"
-                />
-              </div>
-              <div>
-                <Label>Handling Fees</Label>
-                <Input
-                  type="number"
-                  value={handlingFees}
-                  onChange={(e) => setHandlingFees(e.target.value)}
-                  placeholder="0.00"
-                />
-              </div>
-              <div>
-                <Label>Insurance Cost</Label>
-                <Input
-                  type="number"
-                  value={insuranceCost}
-                  onChange={(e) => setInsuranceCost(e.target.value)}
-                  placeholder="0.00"
-                />
-              </div>
-            </div>
-
-            <div className="p-4 bg-gray-50 dark:bg-gray-900 rounded">
-              <div className="flex items-center justify-between">
-                <span className="text-lg font-medium">Total Landed Cost</span>
-                <span className="text-2xl font-bold">
-                  {currency} {calculateTotalLandedCost()}
-                </span>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowLandedCostsDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSaveLandedCosts}>
-              Save Landed Costs
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
