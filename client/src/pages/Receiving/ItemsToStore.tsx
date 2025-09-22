@@ -1538,13 +1538,13 @@ export default function ItemsToStore() {
               <Button
                 onClick={async () => {
                   // Build location code from current segments if available
-                  if (currentSegments.every(seg => seg && seg.length > 0)) {
+                  if (currentSegments.every(seg => seg.length > 0)) {
                     const code = currentSegments.join('-');
                     await addLocationToSession(code);
                   } else if (locationScan) {
                     await addLocationToSession(locationScan);
                   } else {
-                    await addLocationToSession(); // Will show error toast
+                    await addLocationToSession(); // Will try to build from segments or show error
                   }
                 }}
                 className="w-full py-6 text-lg font-bold bg-primary hover:bg-primary/90 shadow-lg"
