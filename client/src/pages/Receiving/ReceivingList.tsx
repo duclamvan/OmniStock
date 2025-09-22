@@ -2067,8 +2067,8 @@ export default function ReceivingList() {
                             </p>
                           </div>
                         </div>
-                        <Link href={`/receiving/view/${shipment.id}`}>
-                          <Button size="sm" variant="outline">
+                        <Link href={`/receiving/details/${shipment.id}`}>
+                          <Button size="sm" variant="outline" data-testid={`button-view-details-${shipment.id}`}>
                             View Details
                           </Button>
                         </Link>
