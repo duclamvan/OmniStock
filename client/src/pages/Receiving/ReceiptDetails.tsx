@@ -74,6 +74,11 @@ export default function ReceiptDetails() {
   
   // Approval form state
   const [approvedBy, setApprovedBy] = useState("");
+  
+  // Landing costs dialog state
+  const [showLandedCostsDialog, setShowLandedCostsDialog] = useState(false);
+  const [calculationMethod, setCalculationMethod] = useState("weight");
+  const [currency, setCurrency] = useState("EUR");
 
   // Fetch receipt details
   const { data: receipt, isLoading, refetch } = useQuery({
