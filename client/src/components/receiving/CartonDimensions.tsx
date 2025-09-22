@@ -124,17 +124,19 @@ const CartonDimensions = ({ shipmentId }: CartonDimensionsProps) => {
 
   // Initialize local state when cartons are loaded
   useEffect(() => {
-    const newLocalCartons = new Map();
-    cartons.forEach(carton => {
-      newLocalCartons.set(carton.id, {
-        lengthCm: carton.lengthCm,
-        widthCm: carton.widthCm,
-        heightCm: carton.heightCm,
-        grossWeightKg: carton.grossWeightKg
+    if (cartons && cartons.length > 0 && localCartons.size === 0) {
+      const newLocalCartons = new Map();
+      cartons.forEach(carton => {
+        newLocalCartons.set(carton.id, {
+          lengthCm: carton.lengthCm,
+          widthCm: carton.widthCm,
+          heightCm: carton.heightCm,
+          grossWeightKg: carton.grossWeightKg
+        });
       });
-    });
-    setLocalCartons(newLocalCartons);
-  }, [cartons]);
+      setLocalCartons(newLocalCartons);
+    }
+  }, [cartons, localCartons.size]);
 
   const bulkEditForm = useForm<CartonFormValues>({
     resolver: zodResolver(cartonFormSchema),

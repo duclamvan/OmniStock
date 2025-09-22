@@ -4967,24 +4967,41 @@ router.get("/shipments/:id/cartons", async (req, res) => {
       return res.status(404).json({ message: "Shipment not found" });
     }
     
-    // Fetch cartons with associated purchase items
-    const cartons = await db
-      .select({
-        id: shipmentCartons.id,
-        purchaseItemId: shipmentCartons.purchaseItemId,
-        qtyInCarton: shipmentCartons.qtyInCarton,
-        lengthCm: shipmentCartons.lengthCm,
-        widthCm: shipmentCartons.widthCm,
-        heightCm: shipmentCartons.heightCm,
-        grossWeightKg: shipmentCartons.grossWeightKg,
-        notes: shipmentCartons.notes,
-        itemName: purchaseItems.name,
-        itemSku: purchaseItems.sku,
-        totalQty: purchaseItems.quantity
-      })
+    // Fetch cartons - simplified query
+    const cartonsList = await db
+      .select()
       .from(shipmentCartons)
-      .leftJoin(purchaseItems, eq(shipmentCartons.purchaseItemId, purchaseItems.id))
       .where(eq(shipmentCartons.shipmentId, shipmentId));
+    
+    // Fetch item details separately if needed
+    const itemIds = [...new Set(cartonsList.map(c => c.purchaseItemId).filter(id => id !== null))];
+    let itemMap: Record<number, any> = {};
+    
+    if (itemIds.length > 0) {
+      const items = await db
+        .select()
+        .from(purchaseItems)
+        .where(inArray(purchaseItems.id, itemIds));
+      
+      itemMap = items.reduce((acc, item) => {
+        acc[item.id] = item;
+        return acc;
+      }, {} as Record<number, any>);
+    }
+    
+    // Combine cartons with item info
+    const cartons = cartonsList.map(carton => ({
+      id: carton.id,
+      shipmentId: carton.shipmentId,
+      purchaseItemId: carton.purchaseItemId,
+      qtyInCarton: carton.qtyInCarton,
+      lengthCm: carton.lengthCm,
+      widthCm: carton.widthCm,
+      heightCm: carton.heightCm,
+      grossWeightKg: carton.grossWeightKg,
+      notes: carton.notes,
+      item: carton.purchaseItemId ? itemMap[carton.purchaseItemId] : null
+    }));
     
     // Calculate volumetric weights
     const cartonsWithMetrics = cartons.map(carton => {

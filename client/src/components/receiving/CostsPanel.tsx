@@ -25,6 +25,7 @@ import {
   RefreshCcw
 } from "lucide-react";
 import { format } from "date-fns";
+import { formatCurrency } from "@/lib/currencyUtils";
 import AddCostModal from "./AddCostModal";
 import AllocationPreview from "./AllocationPreview";
 import CartonDimensions from "./CartonDimensions";
@@ -82,10 +83,14 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
   const [activeTab, setActiveTab] = useState("overview");
 
   // Fetch costs
-  const { data: costs = [], isLoading: loadingCosts } = useQuery({
+  const { data: costsData, isLoading: loadingCosts } = useQuery({
     queryKey: [`/api/imports/shipments/${shipmentId}/costs`],
     enabled: !!shipmentId
   });
+
+  // Extract costs array from response
+  const costs = Array.isArray(costsData) ? costsData : 
+    (costsData?.costs ? Object.values(costsData.costs).flat() : []);
 
   // Fetch landing cost summary
   const { data: summary, isLoading: loadingSummary } = useQuery({
@@ -145,13 +150,13 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
   });
 
   // Group costs by type
-  const costsByType = Array.isArray(costs) ? costs.reduce((acc: Record<string, ShipmentCost[]>, cost: ShipmentCost) => {
+  const costsByType = costs.reduce((acc: Record<string, ShipmentCost[]>, cost: ShipmentCost) => {
     if (!acc[cost.type]) {
       acc[cost.type] = [];
     }
     acc[cost.type].push(cost);
     return acc;
-  }, {}) : {};
+  }, {});
 
   const getCostIcon = (type: string) => {
     switch (type) {
