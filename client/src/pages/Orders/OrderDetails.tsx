@@ -57,12 +57,16 @@ import {
   Share2,
   MoreVertical,
   RotateCcw,
-  ChevronDown
+  ChevronDown,
+  TrendingUp,
+  BarChart3
 } from "lucide-react";
+import MarginPill from "@/components/orders/MarginPill";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
 
 export default function OrderDetails() {
   const { id } = useParams();
@@ -528,6 +532,18 @@ export default function OrderDetails() {
                               <span>•</span>
                               <span>{formatCurrency(item.unitPrice || item.price || 0, order.currency || 'EUR')} each</span>
                             </div>
+                            {item.landingCost && (
+                              <div className="mt-1">
+                                <MarginPill 
+                                  sellingPrice={item.unitPrice || item.price || 0}
+                                  landingCost={item.landingCost}
+                                  currency={order.currency || 'EUR'}
+                                  quantity={item.quantity}
+                                  showProfit={false}
+                                  className="text-xs"
+                                />
+                              </div>
+                            )}
                           </div>
                           <div className="flex items-center gap-2">
                             <div className="text-right">

@@ -45,8 +45,10 @@ import {
   Percent,
   Copy,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  TrendingUp
 } from "lucide-react";
+import MarginPill from "@/components/orders/MarginPill";
 
 const addOrderSchema = z.object({
   customerId: z.string().optional(),
@@ -83,6 +85,7 @@ interface OrderItem {
   discount: number;
   tax: number;
   total: number;
+  landingCost?: number | null;
 }
 
 export default function AddOrder() {
@@ -523,6 +526,7 @@ export default function AddOrder() {
         discount: 0,
         tax: 0,
         total: productPrice,
+        landingCost: product.landingCost || product.latestLandingCost || null,
       };
       setOrderItems(items => [...items, newItem]);
     }
@@ -1361,6 +1365,7 @@ export default function AddOrder() {
                       <TableHead>Price</TableHead>
                       <TableHead>Discount</TableHead>
                       <TableHead>Total</TableHead>
+                      <TableHead>Margin</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1398,6 +1403,15 @@ export default function AddOrder() {
                         </TableCell>
                         <TableCell>
                           {formatCurrency(item.total, form.watch('currency'))}
+                        </TableCell>
+                        <TableCell>
+                          <MarginPill 
+                            sellingPrice={item.price}
+                            landingCost={item.landingCost}
+                            currency={form.watch('currency')}
+                            quantity={item.quantity}
+                            showProfit={true}
+                          />
                         </TableCell>
                         <TableCell>
                           <Button
@@ -1776,6 +1790,50 @@ export default function AddOrder() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3 pt-6">
+                    {/* Margin Analysis Section */}
+                    {orderItems.length > 0 && (() => {
+                      const totalLandingCost = orderItems.reduce((sum, item) => 
+                        sum + (item.landingCost || 0) * item.quantity, 0);
+                      const totalSellingPrice = orderItems.reduce((sum, item) => 
+                        sum + item.price * item.quantity, 0);
+                      const totalProfit = totalSellingPrice - totalLandingCost;
+                      const avgMargin = totalLandingCost > 0 
+                        ? ((totalProfit / totalSellingPrice) * 100).toFixed(1) 
+                        : null;
+                      
+                      return avgMargin !== null ? (
+                        <>
+                          <div className="pb-3 mb-3 border-b">
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="text-sm font-medium flex items-center gap-1">
+                                <TrendingUp className="h-4 w-4 text-green-600" />
+                                Margin Analysis
+                              </span>
+                              <MarginPill
+                                sellingPrice={totalSellingPrice}
+                                landingCost={totalLandingCost}
+                                currency={form.watch('currency')}
+                                showIcon={true}
+                                showProfit={true}
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-xs">
+                                <span className="text-gray-500">Total Cost:</span>
+                                <span>{formatCurrency(totalLandingCost, form.watch('currency'))}</span>
+                              </div>
+                              <div className="flex justify-between text-xs">
+                                <span className="text-gray-500">Total Profit:</span>
+                                <span className={totalProfit >= 0 ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
+                                  {formatCurrency(totalProfit, form.watch('currency'))}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </>
+                      ) : null;
+                    })()}
+                    
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Subtotal:</span>

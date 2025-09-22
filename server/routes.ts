@@ -1088,15 +1088,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const search = req.query.search as string;
       const includeInactive = req.query.includeInactive === 'true';
-      let products;
+      const includeLandingCost = req.query.includeLandingCost === 'true';
+      let productsResult;
       
       if (search) {
-        products = await storage.searchProducts(search, includeInactive);
+        productsResult = await storage.searchProducts(search, includeInactive);
       } else {
-        products = await storage.getProducts(includeInactive);
+        productsResult = await storage.getProducts(includeInactive);
       }
       
-      res.json(products);
+      // If landing costs are requested, fetch them from the database
+      if (includeLandingCost) {
+        const productsWithCosts = await Promise.all(productsResult.map(async (product) => {
+          const [productWithCost] = await db
+            .select()
+            .from(products)
+            .where(eq(products.id, product.id))
+            .limit(1);
+          
+          return {
+            ...product,
+            landingCost: productWithCost?.latestLandingCost || null
+          };
+        }));
+        
+        res.json(productsWithCosts);
+      } else {
+        res.json(productsResult);
+      }
     } catch (error) {
       console.error("Error fetching products:", error);
       res.status(500).json({ message: "Failed to fetch products" });
@@ -3048,7 +3067,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Order not found" });
       }
       
-      // Order already includes items from getOrderById
+      // Enhance order items with landing costs
+      if (order.items && order.items.length > 0) {
+        const itemsWithLandingCosts = await Promise.all(order.items.map(async (item) => {
+          if (item.productId) {
+            const [productWithCost] = await db
+              .select()
+              .from(products)
+              .where(eq(products.id, item.productId))
+              .limit(1);
+            
+            return {
+              ...item,
+              landingCost: productWithCost?.latestLandingCost || null
+            };
+          }
+          return item;
+        }));
+        
+        order.items = itemsWithLandingCosts;
+      }
+      
       res.json(order);
     } catch (error) {
       console.error("Error fetching order:", error);

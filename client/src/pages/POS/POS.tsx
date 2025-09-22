@@ -20,8 +20,11 @@ import {
   Banknote,
   Building,
   Calendar,
-  X
+  X,
+  TrendingUp,
+  AlertTriangle
 } from 'lucide-react';
+import MarginPill from '@/components/orders/MarginPill';
 import { format } from 'date-fns';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -46,6 +49,7 @@ interface CartItem {
   quantity: number;
   type: 'product' | 'variant' | 'bundle';
   sku?: string;
+  landingCost?: number | null;
 }
 
 export default function POS() {
@@ -62,9 +66,14 @@ export default function POS() {
   // Get today's date
   const today = format(new Date(), 'yyyy-MM-dd');
 
-  // Fetch products
+  // Fetch products with landing costs
   const { data: products = [] } = useQuery<Product[]>({
-    queryKey: ['/api/products']
+    queryKey: ['/api/products', { includeLandingCost: true }],
+    queryFn: async () => {
+      const response = await fetch('/api/products?includeLandingCost=true');
+      if (!response.ok) throw new Error('Failed to fetch products');
+      return response.json();
+    },
   });
 
   // Fetch bundles
@@ -93,6 +102,8 @@ export default function POS() {
     price: number; 
     type: 'product' | 'bundle';
     sku?: string;
+    landingCost?: number | null;
+    latestLandingCost?: number | null;
   }) => {
     const priceInCurrency = currency === 'EUR' 
       ? parseFloat(item.price?.toString() || '0')
@@ -112,7 +123,8 @@ export default function POS() {
         price: priceInCurrency,
         quantity: 1,
         type: item.type,
-        sku: item.sku
+        sku: item.sku,
+        landingCost: item.landingCost || item.latestLandingCost || null
       }]);
     }
   };
@@ -578,9 +590,23 @@ export default function POS() {
                         <div className="flex-1">
                           <h4 className="font-medium text-sm">{item.name}</h4>
                           <p className="text-xs text-muted-foreground">{item.sku || 'No SKU'}</p>
-                          <p className="text-sm mt-1">
-                            {currency} {item.price.toFixed(2)} each
-                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <p className="text-sm">
+                              {currency} {item.price.toFixed(2)} each
+                            </p>
+                            {item.landingCost && (
+                              <MarginPill
+                                sellingPrice={item.price}
+                                landingCost={item.landingCost}
+                                currency={currency}
+                                showProfit={false}
+                                className="text-xs"
+                              />
+                            )}
+                            {item.landingCost && item.price < item.landingCost && (
+                              <AlertTriangle className="h-3 w-3 text-red-500" title="Selling below cost!" />
+                            )}
+                          </div>
                         </div>
                         <Button
                           size="icon"
@@ -628,6 +654,39 @@ export default function POS() {
             {/* Totals */}
             {cart.length > 0 && (
               <div className="space-y-2 pt-4 border-t">
+                {/* Margin Summary */}
+                {(() => {
+                  const totalLandingCost = cart.reduce((sum, item) => 
+                    sum + (item.landingCost || 0) * item.quantity, 0);
+                  const totalSellingPrice = cart.reduce((sum, item) => 
+                    sum + item.price * item.quantity, 0);
+                  const totalProfit = totalSellingPrice - totalLandingCost;
+                  
+                  return totalLandingCost > 0 ? (
+                    <div className="pb-2 mb-2 border-b">
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="flex items-center gap-1">
+                          <TrendingUp className="h-3 w-3 text-green-500" />
+                          Total Profit:
+                        </span>
+                        <span className={totalProfit >= 0 ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
+                          {currency} {totalProfit.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-xs text-muted-foreground">Margin:</span>
+                        <MarginPill
+                          sellingPrice={totalSellingPrice}
+                          landingCost={totalLandingCost}
+                          currency={currency}
+                          showProfit={false}
+                          className="text-xs"
+                        />
+                      </div>
+                    </div>
+                  ) : null;
+                })()}
+                
                 <div className="flex justify-between text-sm">
                   <span>Subtotal:</span>
                   <span>{currency} {subtotal.toFixed(2)}</span>
