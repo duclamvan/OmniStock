@@ -1,0 +1,142 @@
+Implement a landing cost engine that:
+	•	Allocates freight by chargeable weight = max(actual kg, volumetric kg).
+	•	Applies per-cost-line volumetric divisor (e.g., 5000/6000) based on freight mode.
+	•	Allocates other costs by sensible bases (Units / Value).
+	•	Computes customs duty on CIF (EXW + allocated freight + allocated insurance).
+	•	Converts and locks all costs into base currency at entry time before allocations.
+	•	Writes per-unit landing cost to purchase items; keeps auditable allocation records and product cost history.
+	•	Surfaces results in Receiving, Storage, Product pages, and Orders/POS (margin pill).
+	•	Handles missing data with fallbacks; supports multiple freight modes; supports multi-currency with locked FX snapshots.
+
+Functional Requirements
+
+Inputs & Data Needed
+	•	Per shipment:
+	•	Supplier invoice values (EXW) per SKU.
+	•	Freight cost line(s) with mode (AIR/SEA/COURIER) and divisor (e.g., 6000/5000).
+	•	Brokerage/clearance fees, packaging/pallet, insurance, other fees.
+	•	Currency for each cost line + FX rate to base currency (store snapshot).
+	•	Per item/carton:
+	•	SKU / purchase_item link, quantity.
+	•	Actual weight (kg).
+	•	Dimensions (L/W/H cm) to compute volumetric weight.
+	•	HS code + duty rate % (per product).
+	•	Optional carton breakdowns (qty per carton, carton dims/weight).
+
+Multi-Currency Rules
+	•	Convert every cost line to base currency immediately on entry.
+	•	Lock FX rate snapshot at entry (fx_rate_used).
+	•	Store both:
+	•	Original amount + currency.
+	•	Converted amount_base in base currency.
+	•	All allocations and landing-cost calculations happen only in base currency.
+	•	Editing a cost line does not refetch FX automatically; only if user updates it.
+
+Calculations & Allocation Rules
+	•	Volumetric weight (kg) = (L×W×H) / divisor (per freight cost line).
+	•	Chargeable weight (kg) = max(actual, volumetric).
+	•	Freight allocation: (item chargeable kg ÷ total chargeable kg) × freight line’s base amount.
+	•	Insurance allocation: allocate by Value (EXW).
+	•	Brokerage/clearance: allocate by Units.
+	•	Packaging/pallet: allocate by Units.
+	•	CIF per item = EXW + allocated freight + allocated insurance (all in base currency).
+	•	Duty = CIF × duty rate %.
+	•	Landing cost per unit =
+	•	EXW/unit
+	•	freight/unit
+	•	insurance/unit
+	•	brokerage/unit
+	•	packaging/unit
+	•	duty/unit.
+	•	Fallbacks:
+	•	Missing dimensions → use actual kg.
+	•	Mixed freight modes → separate freight lines with divisors; allocations add up.
+	•	Multi-currency → always use locked amount_base.
+
+Triggers (When to Recalculate)
+	•	On save/edit of shipment_costs (freight/fees).
+	•	On edit of dims/weights (cartons or item fallback).
+	•	On edit of duty rate or HS code.
+	•	On Receiving Complete status.
+	•	Must be idempotent and rewrite allocations + landing cost consistently.
+
+UX / UI Integration
+
+Receiving → Shipment Details (/receiving/details/:id)
+	•	Add Costs panel with:
+	•	Cards: Freight, Brokerage, Insurance, Packaging, Other.
+	•	Show both original + converted amounts + FX snapshot.
+	•	Action: Recalculate landing costs.
+	•	Allocation Preview Table (per SKU): Units, Actual/Vol/Chargeable kg, Freight allocated, Duty, Fees, Landing/unit.
+	•	Badge: Costed ✓ / Pending ⚠️ for shipment.
+
+Storage / Items to Store
+	•	On each item card, show Landing: €X.XX pill (tooltip with breakdown).
+	•	If costs incomplete, show: “Landing cost pending—enter freight to finalize.”
+
+Product Detail → Inventory & Stock
+	•	Cost history table/mini-chart from product_cost_history.
+	•	Current Landing cost badge.
+
+Orders / POS
+	•	Margin pill per line: Price – Landing, with color thresholds.
+
+Data Model
+	•	shipment_costs: id, shipment_id, type (FREIGHT/BROKERAGE/INSURANCE/PACKAGING/OTHER), mode, volumetric_divisor, amount_original, currency, fx_rate_used, amount_base, notes.
+	•	shipment_cartons: id, shipment_id, purchase_item_id, qty_in_carton, length_cm, width_cm, height_cm, gross_weight_kg.
+	•	cost_allocations: id, shipment_id, purchase_item_id, cost_type, basis (CHARGEABLE_WEIGHT/UNITS/VALUE), amount_allocated_base, details_json.
+	•	Extend purchase_items: hs_code, duty_rate_percent, unit_gross_weight_kg, unit_length_cm, unit_width_cm, unit_height_cm, landing_cost_unit_base.
+	•	product_cost_history: id, product_id, purchase_item_id, landing_cost_unit_base, method, computed_at.
+
+Backend Work
+	•	Costing service that:
+	•	Aggregates shipment metrics (weights, volumes, values).
+	•	Allocates each cost line by its basis.
+	•	Computes CIF and duty per item.
+	•	Writes cost_allocations + updates purchase_items.landing_cost_unit_base.
+	•	Appends to product_cost_history.
+	•	Endpoints:
+	•	Save/edit cost lines with currency + FX snapshot.
+	•	Recalculate allocations + landing costs.
+	•	Preview allocations for UI.
+
+Settings & Defaults
+	•	Default divisors: Air=6000, Courier=5000, Sea=1.
+	•	Base currency defined (EUR/CZK).
+	•	Multi-currency conversion source: record FX snapshot + timestamp.
+
+Validation
+	•	Positive numbers only.
+	•	Warn if divisor missing for air/courier freight.
+	•	Warn if dims missing → fallback to actual kg.
+	•	Rounding: allocations reconciled per cost line.
+
+Performance
+	•	One transaction per recompute.
+	•	Idempotent operations.
+	•	Debug info stored in details_json.
+	•	Indexes on shipment_id and product_id for fast lookups.
+
+Acceptance Checklist
+	•	Each cost line stored with currency, fx_rate_used, amount_original, amount_base.
+	•	Allocations and duties in base currency only.
+	•	Landing cost per unit stored + history tracked.
+	•	Costs panel in Receiving with original + converted values.
+	•	Landing pill in Storage; margin pill in Orders/POS.
+	•	Missing data handled with fallbacks + warnings.
+	•	Multi-currency conversion snapshot locked, not refetched.
+	•	Badge shows Costed ✓ / Pending ⚠️.
+	•	Mixed freight modes and currencies handled correctly.
+
+QA Scenarios
+	•	Dense item vs bulky item → bulky gets higher freight share.
+	•	Shipment with both air (divisor 6000) and courier (divisor 5000) → allocations sum correctly.
+	•	Missing dims on some items → fallback to actual kg with warning.
+	•	Editing divisor → recalculation updates landing costs.
+	•	Mixed currencies (USD, CNY, EUR) → all converted with locked FX, totals stable.
+
+Tone & Style
+	•	Be explicit, practical, minimal.
+	•	Prefer small clear functions.
+	•	Fail fast with useful warnings.
+	•	Keep all math auditable and deterministic.

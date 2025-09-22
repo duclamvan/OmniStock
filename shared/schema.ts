@@ -64,6 +64,14 @@ export const purchaseItems = pgTable('purchase_items', {
   consolidationId: integer('consolidation_id').references(() => consolidations.id),
   imageUrl: text('image_url'),
   notes: text('notes'),
+  // New landing cost fields
+  hsCode: text('hs_code'),
+  dutyRatePercent: decimal('duty_rate_percent', { precision: 5, scale: 2 }),
+  unitGrossWeightKg: decimal('unit_gross_weight_kg', { precision: 10, scale: 3 }),
+  unitLengthCm: decimal('unit_length_cm', { precision: 10, scale: 2 }),
+  unitWidthCm: decimal('unit_width_cm', { precision: 10, scale: 2 }),
+  unitHeightCm: decimal('unit_height_cm', { precision: 10, scale: 2 }),
+  landingCostUnitBase: decimal('landing_cost_unit_base', { precision: 12, scale: 4 }),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow()
 });
@@ -314,7 +322,9 @@ export const products = pgTable('products', {
   packingMaterialId: varchar('packing_material_id'),
   // Packing instructions fields
   packingInstructionsText: text('packing_instructions_text'),
-  packingInstructionsImage: text('packing_instructions_image')
+  packingInstructionsImage: text('packing_instructions_image'),
+  // Latest landing cost tracking
+  latestLandingCost: decimal('latest_landing_cost', { precision: 12, scale: 4 })
 });
 
 export const orders = pgTable('orders', {
@@ -438,6 +448,61 @@ export const userActivities = pgTable('user_activities', {
   createdAt: timestamp('created_at').notNull().defaultNow()
 });
 
+// Landing Cost Tracking Tables
+
+// Shipment costs breakdown
+export const shipmentCosts = pgTable('shipment_costs', {
+  id: serial('id').primaryKey(),
+  shipmentId: integer('shipment_id').notNull().references(() => shipments.id, { onDelete: 'cascade' }),
+  type: text('type').notNull(), // FREIGHT, BROKERAGE, INSURANCE, PACKAGING, OTHER
+  mode: text('mode'), // AIR, SEA, COURIER - optional, for freight only
+  volumetricDivisor: integer('volumetric_divisor'), // e.g., 5000, 6000
+  amountOriginal: decimal('amount_original', { precision: 12, scale: 4 }).notNull(),
+  currency: text('currency').notNull(),
+  fxRateUsed: decimal('fx_rate_used', { precision: 12, scale: 6 }),
+  amountBase: decimal('amount_base', { precision: 12, scale: 4 }).notNull(), // converted to base currency
+  notes: text('notes'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
+// Shipment cartons tracking
+export const shipmentCartons = pgTable('shipment_cartons', {
+  id: serial('id').primaryKey(),
+  shipmentId: integer('shipment_id').notNull().references(() => shipments.id, { onDelete: 'cascade' }),
+  purchaseItemId: integer('purchase_item_id').notNull().references(() => purchaseItems.id, { onDelete: 'cascade' }),
+  qtyInCarton: integer('qty_in_carton').notNull(),
+  lengthCm: decimal('length_cm', { precision: 10, scale: 2 }),
+  widthCm: decimal('width_cm', { precision: 10, scale: 2 }),
+  heightCm: decimal('height_cm', { precision: 10, scale: 2 }),
+  grossWeightKg: decimal('gross_weight_kg', { precision: 10, scale: 3 }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
+// Cost allocations to items
+export const costAllocations = pgTable('cost_allocations', {
+  id: serial('id').primaryKey(),
+  shipmentId: integer('shipment_id').notNull().references(() => shipments.id, { onDelete: 'cascade' }),
+  purchaseItemId: integer('purchase_item_id').notNull().references(() => purchaseItems.id, { onDelete: 'cascade' }),
+  costType: text('cost_type').notNull(), // FREIGHT, BROKERAGE, INSURANCE, PACKAGING, OTHER, DUTY
+  basis: text('basis').notNull(), // CHARGEABLE_WEIGHT, UNITS, VALUE
+  amountAllocatedBase: decimal('amount_allocated_base', { precision: 12, scale: 4 }).notNull(),
+  detailsJson: jsonb('details_json'), // for audit trail
+  createdAt: timestamp('created_at').notNull().defaultNow()
+});
+
+// Product cost history tracking
+export const productCostHistory = pgTable('product_cost_history', {
+  id: serial('id').primaryKey(),
+  productId: varchar('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
+  purchaseItemId: integer('purchase_item_id').references(() => purchaseItems.id),
+  landingCostUnitBase: decimal('landing_cost_unit_base', { precision: 12, scale: 4 }).notNull(),
+  method: text('method').notNull(), // e.g., "weighted_average", "fifo"
+  computedAt: timestamp('computed_at').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow()
+});
+
 // Junction tables for many-to-many relationships
 export const consolidationItems = pgTable('consolidation_items', {
   id: serial('id').primaryKey(),
@@ -459,7 +524,7 @@ export const importPurchasesRelations = relations(importPurchases, ({ many }) =>
   items: many(purchaseItems)
 }));
 
-export const purchaseItemsRelations = relations(purchaseItems, ({ one }) => ({
+export const purchaseItemsRelations = relations(purchaseItems, ({ one, many }) => ({
   purchase: one(importPurchases, {
     fields: [purchaseItems.purchaseId],
     references: [importPurchases.id]
@@ -467,7 +532,9 @@ export const purchaseItemsRelations = relations(purchaseItems, ({ one }) => ({
   consolidation: one(consolidations, {
     fields: [purchaseItems.consolidationId],
     references: [consolidations.id]
-  })
+  }),
+  cartons: many(shipmentCartons),
+  costAllocations: many(costAllocations)
 }));
 
 export const consolidationsRelations = relations(consolidations, ({ many }) => ({
@@ -482,7 +549,10 @@ export const shipmentsRelations = relations(shipments, ({ many, one }) => ({
     references: [consolidations.id]
   }),
   deliveryHistory: many(deliveryHistory),
-  receipts: many(receipts)
+  receipts: many(receipts),
+  costs: many(shipmentCosts),
+  cartons: many(shipmentCartons),
+  costAllocations: many(costAllocations)
 }));
 
 export const receiptsRelations = relations(receipts, ({ one, many }) => ({
@@ -535,7 +605,8 @@ export const productsRelations = relations(products, ({ one, many }) => ({
     references: [warehouses.id]
   }),
   orderItems: many(orderItems),
-  locations: many(productLocations)
+  locations: many(productLocations),
+  costHistory: many(productCostHistory)
 }));
 
 export const productLocationsRelations = relations(productLocations, ({ one }) => ({
@@ -572,6 +643,47 @@ export const categoriesRelations = relations(categories, ({ many }) => ({
   products: many(products)
 }));
 
+// Landing Cost Tracking Relations
+export const shipmentCostsRelations = relations(shipmentCosts, ({ one }) => ({
+  shipment: one(shipments, {
+    fields: [shipmentCosts.shipmentId],
+    references: [shipments.id]
+  })
+}));
+
+export const shipmentCartonsRelations = relations(shipmentCartons, ({ one }) => ({
+  shipment: one(shipments, {
+    fields: [shipmentCartons.shipmentId],
+    references: [shipments.id]
+  }),
+  purchaseItem: one(purchaseItems, {
+    fields: [shipmentCartons.purchaseItemId],
+    references: [purchaseItems.id]
+  })
+}));
+
+export const costAllocationsRelations = relations(costAllocations, ({ one }) => ({
+  shipment: one(shipments, {
+    fields: [costAllocations.shipmentId],
+    references: [shipments.id]
+  }),
+  purchaseItem: one(purchaseItems, {
+    fields: [costAllocations.purchaseItemId],
+    references: [purchaseItems.id]
+  })
+}));
+
+export const productCostHistoryRelations = relations(productCostHistory, ({ one }) => ({
+  product: one(products, {
+    fields: [productCostHistory.productId],
+    references: [products.id]
+  }),
+  purchaseItem: one(purchaseItems, {
+    fields: [productCostHistory.purchaseItemId],
+    references: [purchaseItems.id]
+  })
+}));
+
 // Export schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCategorySchema = createInsertSchema(categories).omit({ id: true, createdAt: true, updatedAt: true });
@@ -605,6 +717,12 @@ export const insertProductLocationSchema = createInsertSchema(productLocations)
 export const insertDiscountSchema = createInsertSchema(discounts).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertExpenseSchema = createInsertSchema(expenses).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertUserActivitySchema = createInsertSchema(userActivities).omit({ id: true, createdAt: true });
+
+// Landing Cost Tracking Schemas
+export const insertShipmentCostSchema = createInsertSchema(shipmentCosts).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertShipmentCartonSchema = createInsertSchema(shipmentCartons).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCostAllocationSchema = createInsertSchema(costAllocations).omit({ id: true, createdAt: true });
+export const insertProductCostHistorySchema = createInsertSchema(productCostHistory).omit({ id: true, createdAt: true });
 
 // Export types
 export type User = typeof users.$inferSelect;
@@ -653,3 +771,13 @@ export type Expense = typeof expenses.$inferSelect;
 export type InsertExpense = z.infer<typeof insertExpenseSchema>;
 export type UserActivity = typeof userActivities.$inferSelect;
 export type InsertUserActivity = z.infer<typeof insertUserActivitySchema>;
+
+// Landing Cost Tracking Types
+export type ShipmentCost = typeof shipmentCosts.$inferSelect;
+export type InsertShipmentCost = z.infer<typeof insertShipmentCostSchema>;
+export type ShipmentCarton = typeof shipmentCartons.$inferSelect;
+export type InsertShipmentCarton = z.infer<typeof insertShipmentCartonSchema>;
+export type CostAllocation = typeof costAllocations.$inferSelect;
+export type InsertCostAllocation = z.infer<typeof insertCostAllocationSchema>;
+export type ProductCostHistory = typeof productCostHistory.$inferSelect;
+export type InsertProductCostHistory = z.infer<typeof insertProductCostHistorySchema>;

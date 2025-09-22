@@ -1,0 +1,154 @@
+Implement a landing cost engine that:
+	•	Allocates freight by chargeable weight = max(actual kg, volumetric kg).
+	•	Applies per-cost-line volumetric divisor (e.g., 5000/6000) based on freight mode.
+	•	Allocates other costs by sensible bases (Units / Value).
+	•	Computes customs duty on CIF (EXW + allocated freight + allocated insurance).
+	•	Writes per-unit landing cost to purchase items; keeps auditable allocation records and product cost history.
+	•	Surfaces results in Receiving, Storage, Product pages, and Orders/POS (margin pill).
+	•	Handles missing data with fallbacks; supports multi-currency with locked FX snapshots.
+
+Functional Requirements
+
+Inputs & Data Needed
+	•	Per shipment:
+	•	Supplier invoice values (EXW) per SKU.
+	•	Freight cost line(s) with mode (AIR/SEA/COURIER) and divisor (e.g., 6000/5000).
+	•	Brokerage/clearance fees, packaging/pallet, insurance, other fees.
+	•	Currency for each cost line + FX rate to base currency (store snapshot).
+	•	Per item/carton:
+	•	SKU / purchase_item link, quantity.
+	•	Actual weight (kg).
+	•	Dimensions (L/W/H cm) to compute volumetric weight.
+	•	HS code + duty rate % (per product).
+	•	Optional carton breakdowns (qty per carton, carton dims/weight).
+
+Calculations & Allocation Rules
+	•	Volumetric weight (kg) = (L×W×H) / divisor (per freight cost line).
+	•	Chargeable weight (kg) = max(actual, volumetric).
+	•	Freight allocation: proportion of item chargeable kg over shipment total chargeable kg, per freight cost line; sum all lines.
+	•	Insurance allocation: by Value (EXW) unless specified otherwise.
+	•	Brokerage/clearance: allocate by Units (default).
+	•	Packaging/pallet: allocate by Units (default).
+	•	CIF (per item line) = EXW + allocated freight + allocated insurance.
+	•	Customs duty = CIF × duty%.
+	•	Landing cost per unit =
+	•	EXW/unit
+	•	freight/unit
+	•	insurance/unit
+	•	brokerage/unit
+	•	packaging/unit
+	•	duty/unit.
+	•	Fallbacks:
+	•	Missing dimensions → use actual kg for freight allocation.
+	•	Mixed freight modes → separate freight lines, each with its own divisor.
+	•	Multi-currency → convert cost lines on save; lock fx_rate_used.
+
+Triggers (When to Recalculate)
+	•	On save/edit of shipment_costs lines (freight/fees).
+	•	On edit of dims/weights (cartons or item fallbacks).
+	•	On edit of duty rate / HS code.
+	•	On Receiving Complete status.
+	•	Must be idempotent and rewrite allocations + landing cost consistently.
+
+UX / UI Integration
+
+Receiving → Shipment Details (/receiving/details/:id)
+	•	Add “Costs” panel with:
+	•	Cards for Freight (mode, divisor), Brokerage, Insurance, Packaging, Other; currency + FX shown.
+	•	“Recalculate landing costs” action with success/error toasts.
+	•	Allocation Preview Table (per SKU): Units, Actual/Vol/Chargeable kg, Freight allocated, Duty, Fees, Landing/unit.
+	•	Missing data warnings: “Using actual kg fallback (no dimensions).”
+	•	Badge: Costed ✓ / Pending ⚠️ for the shipment.
+
+Storage / Items to Store (Store Items tab)
+	•	On each item card, show Landing: €X.XX pill with tooltip breakdown (EXW, Freight, Duty, Fees).
+	•	If costs pending, show subtle hint: “Landing cost pending—enter freight to finalize.”
+
+Product Detail → Inventory & Stock
+	•	Cost history mini chart/table from product cost history.
+	•	Current Landing cost badge.
+
+Orders / POS
+	•	Margin pill per line: Price – Landing (green/yellow/red thresholds).
+
+Data Model (No code, just create these)
+	•	shipment_costs: id, shipment_id, type(FREIGHT/BROKERAGE/INSURANCE/PACKAGING/OTHER), mode (AIR/SEA/COURIER), volumetric_divisor, amount, currency, fx_rate_used, notes, created_at.
+	•	shipment_cartons (optional but preferred): id, shipment_id, purchase_item_id, qty_in_carton, length_cm, width_cm, height_cm, gross_weight_kg.
+	•	cost_allocations: id, shipment_id, purchase_item_id, cost_type, basis (CHARGEABLE_WEIGHT/UNITS/VALUE), amount_allocated (base currency), details_json (actual kg, vol kg, chargeable kg, share%, line refs).
+	•	Extend purchase_items: hs_code, duty_rate_percent, unit_gross_weight_kg, unit_length_cm, unit_width_cm, unit_height_cm, landing_cost_unit (base currency).
+	•	product_cost_history: id, product_id, purchase_item_id, landing_cost_unit, method (“chargeable_weight_v1”), computed_at.
+
+Backend Work (No code, just implement)
+	•	Create a Costing Service (idempotent) that:
+	•	Aggregates shipment metrics (weights, volumes, values).
+	•	Allocates each cost line by its basis (freight→chargeable kg; brokerage/packaging→units; insurance→value).
+	•	Computes CIF and duty per item.
+	•	Writes rows to cost_allocations and updates purchase_items.landing_cost_unit.
+	•	Appends to product_cost_history.
+	•	Endpoints:
+	•	POST /shipments/:id/costs — create/update cost lines (store currency + fx snapshot).
+	•	POST /shipments/:id/costs/recalculate — recompute allocations + landing/unit.
+	•	GET  /shipments/:id/costs/preview — return allocation preview for UI.
+
+Settings & Defaults
+	•	App setting for default volumetric divisors: AIR=6000, COURIER=5000, SEA=1 (no volumetric).
+	•	Allow override per freight line.
+	•	Base currency defined; always store converted base amounts + fx_rate_used.
+
+Validation & Errors
+	•	Validate positive numbers; warn if divisor missing for AIR/COURIER.
+	•	If dimensions missing → show fallback banner; still proceed.
+	•	If totals don’t sum due to rounding, adjust last item per line to match invoice amount (penny-rounding).
+
+Performance & Reliability
+	•	Use a single transaction for recompute; make the operation idempotent.
+	•	Store concise debug info in details_json to ease audits.
+	•	Add indexes: cost_allocations(shipment_id), shipment_cartons(shipment_id), purchase_items(product_id).
+
+Checklist (Use for acceptance)
+	•	User can enter freight (mode + divisor), brokerage, insurance, packaging, other fees.
+	•	System computes volumetric and chargeable weight per item/carton.
+	•	Freight allocated by chargeable weight; other fees by units/value as defined.
+	•	Duty computed on CIF (EXW + allocated freight + insurance).
+	•	Landing cost/unit saved to purchase items; history stored.
+	•	Receiving page shows Costs panel + Allocation Preview + Recalculate.
+	•	Storage cards show Landing cost pill; pending warning if incomplete.
+	•	Product page shows cost history; Orders/POS show margin pill.
+	•	Fallbacks work when dims are missing.
+	•	Multi-currency snapshot locked at cost-save time.
+	•	Rounding reconciliation per cost line.
+	•	Status badge: “Costed ✓ / Pending ⚠️”.
+
+QA Scenarios
+	•	Dense item (builder gel) vs bulky item (empty bottles) in the same AIR shipment → bottles get higher freight share.
+	•	Mixed modes: AIR and COURIER freight lines in one shipment → both allocate correctly and sum.
+	•	Missing dimensions for one SKU → fallback to actual kg; warning displayed.
+	•	Editing divisor from 6000→5000 changes freight allocation; recompute updates landing costs and margins.
+	•	Different currencies on cost lines (USD, CNY, EUR) → all converted with stored FX rates; totals stable on recompute.
+
+Deliverables (no code here, just ensure they exist)
+	•	DB migrations for tables/columns above.
+	•	Backend service and endpoints implemented and wired.
+	•	Receiving Costs panel + preview table UI.
+	•	Storage, Product, and Orders/POS UI enhancements.
+	•	Documentation markdown: “Landing Cost Engine — How it Works”.
+
+Tone & Style for the AI Pair Programmer
+	•	Be explicit, practical, and minimal; avoid clever abstractions.
+	•	Prefer small, composable functions and clear names.
+	•	Fail fast with helpful messages; surface actionable UI warnings.
+	•	Keep everything deterministic and auditable.
+
+⸻
+
+Also include this mini checklist in comments for the dev:
+	•	Base inputs gathered? ✔
+	•	Volumetric divisor per freight line set? ✔
+	•	Chargeable weight computed per item/carton? ✔
+	•	Freight allocated by chargeable weight? ✔
+	•	Duty on CIF applied? ✔
+	•	Fees allocated (Units/Value) and saved? ✔
+	•	Landing/unit saved + history appended? ✔
+	•	UI shows costs, preview, landing pill, and margins? ✔
+	•	Fallbacks + warnings behave correctly? ✔
+	•	Multi-currency snapshot locked? ✔
