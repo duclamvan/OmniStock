@@ -15,11 +15,16 @@ import {
   receiptItems,
   landedCosts,
   products,
-  productLocations
+  productLocations,
+  shipmentCosts,
+  shipmentCartons,
+  costAllocations,
+  productCostHistory
 } from "@shared/schema";
 import { eq, desc, sql, and, like, or, isNull, inArray, ne, gte } from "drizzle-orm";
 import { addDays, differenceInDays } from "date-fns";
 import multer from "multer";
+import { LandingCostService } from "../services/landingCostService";
 
 // Configure multer for screenshot uploads
 const upload = multer({ 
@@ -4529,6 +4534,705 @@ router.post('/receipts/:id/store-items', async (req, res) => {
       message: "Failed to store items",
       error: error instanceof Error ? error.message : "Unknown error"
     });
+  }
+});
+
+// ===== LANDING COST MANAGEMENT ENDPOINTS =====
+// Initialize landing cost service
+const landingCostService = new LandingCostService();
+
+// Validation schemas for landing cost endpoints
+const addCostSchema = z.object({
+  type: z.enum(['FREIGHT', 'INSURANCE', 'BROKERAGE', 'PACKAGING', 'DUTY', 'OTHER']),
+  mode: z.enum(['AIR', 'SEA', 'COURIER']).optional(),
+  volumetricDivisor: z.number().positive().optional(),
+  amountOriginal: z.number().positive(),
+  currency: z.string().length(3),
+  notes: z.string().optional(),
+  fxRateUsed: z.number().positive().optional()
+});
+
+const updateCostSchema = z.object({
+  type: z.enum(['FREIGHT', 'INSURANCE', 'BROKERAGE', 'PACKAGING', 'DUTY', 'OTHER']).optional(),
+  mode: z.enum(['AIR', 'SEA', 'COURIER']).optional(),
+  volumetricDivisor: z.number().positive().optional(),
+  amountOriginal: z.number().positive().optional(),
+  currency: z.string().length(3).optional(),
+  notes: z.string().optional(),
+  fxRateUsed: z.number().positive().optional()
+});
+
+const cartonSchema = z.object({
+  purchaseItemId: z.number().positive(),
+  qtyInCarton: z.number().positive().int(),
+  lengthCm: z.number().positive(),
+  widthCm: z.number().positive(),
+  heightCm: z.number().positive(),
+  grossWeightKg: z.number().positive(),
+  notes: z.string().optional()
+});
+
+// 1. GET /api/imports/shipments/:id/costs - Get all costs for a shipment
+router.get("/shipments/:id/costs", async (req, res) => {
+  try {
+    const shipmentId = parseInt(req.params.id);
+    
+    // Verify shipment exists
+    const [shipment] = await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.id, shipmentId));
+    
+    if (!shipment) {
+      return res.status(404).json({ message: "Shipment not found" });
+    }
+    
+    // Fetch all costs for this shipment
+    const costs = await db
+      .select()
+      .from(shipmentCosts)
+      .where(eq(shipmentCosts.shipmentId, shipmentId))
+      .orderBy(shipmentCosts.type);
+    
+    // Group costs by type
+    const groupedCosts = costs.reduce((acc, cost) => {
+      if (!acc[cost.type]) {
+        acc[cost.type] = [];
+      }
+      acc[cost.type].push({
+        id: cost.id,
+        mode: cost.mode,
+        volumetricDivisor: cost.volumetricDivisor,
+        amountOriginal: Number(cost.amountOriginal),
+        currency: cost.currency,
+        amountBase: Number(cost.amountBase),
+        fxRateUsed: Number(cost.fxRateUsed || 1),
+        notes: cost.notes,
+        createdAt: cost.createdAt,
+        updatedAt: cost.updatedAt
+      });
+      return acc;
+    }, {} as Record<string, any[]>);
+    
+    // Calculate totals
+    const totals = {
+      originalAmounts: {} as Record<string, number>,
+      baseAmount: costs.reduce((sum, cost) => sum + Number(cost.amountBase || 0), 0)
+    };
+    
+    // Sum original amounts by currency
+    costs.forEach(cost => {
+      if (!totals.originalAmounts[cost.currency]) {
+        totals.originalAmounts[cost.currency] = 0;
+      }
+      totals.originalAmounts[cost.currency] += Number(cost.amountOriginal);
+    });
+    
+    res.json({
+      shipmentId,
+      costs: groupedCosts,
+      totals,
+      baseCurrency: 'EUR'
+    });
+  } catch (error) {
+    console.error("Error fetching shipment costs:", error);
+    res.status(500).json({ message: "Failed to fetch shipment costs" });
+  }
+});
+
+// 2. POST /api/imports/shipments/:id/costs - Add a cost line to a shipment
+router.post("/shipments/:id/costs", async (req, res) => {
+  try {
+    const shipmentId = parseInt(req.params.id);
+    
+    // Validate request body
+    const validationResult = addCostSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      return res.status(400).json({ 
+        message: "Invalid request body",
+        errors: validationResult.error.errors 
+      });
+    }
+    
+    const costData = validationResult.data;
+    
+    // Verify shipment exists
+    const [shipment] = await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.id, shipmentId));
+    
+    if (!shipment) {
+      return res.status(404).json({ message: "Shipment not found" });
+    }
+    
+    // If FX rate not provided and currency is not EUR, fetch current rate
+    let fxRate = costData.fxRateUsed || 1;
+    if (costData.currency !== 'EUR' && !costData.fxRateUsed) {
+      try {
+        // In production, fetch from API - for now use a placeholder
+        // const response = await fetch(`https://api.exchangerate-api.com/v4/latest/${costData.currency}`);
+        // const data = await response.json();
+        // fxRate = data.rates.EUR || 1;
+        
+        // Placeholder rates for common currencies
+        const placeholderRates: Record<string, number> = {
+          'USD': 0.92,
+          'GBP': 1.16,
+          'CNY': 0.13,
+          'JPY': 0.0061,
+          'AUD': 0.60,
+          'CAD': 0.68
+        };
+        fxRate = placeholderRates[costData.currency] || 1;
+      } catch (error) {
+        console.error("Error fetching FX rate:", error);
+        // Continue with rate of 1 if API fails
+      }
+    }
+    
+    // Calculate base amount
+    const amountBase = landingCostService.convertToBaseCurrency(
+      costData.amountOriginal,
+      costData.currency,
+      fxRate
+    );
+    
+    // Insert cost record
+    const [newCost] = await db.insert(shipmentCosts).values({
+      shipmentId,
+      type: costData.type,
+      mode: costData.mode || null,
+      volumetricDivisor: costData.volumetricDivisor?.toString() || null,
+      amountOriginal: costData.amountOriginal.toString(),
+      currency: costData.currency,
+      amountBase: amountBase.toString(),
+      fxRateUsed: fxRate.toString(),
+      notes: costData.notes || null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }).returning();
+    
+    // Trigger landing cost recalculation
+    try {
+      await landingCostService.calculateLandingCosts(shipmentId);
+    } catch (calcError) {
+      console.error("Error recalculating landing costs:", calcError);
+      // Don't fail the request if recalculation fails
+    }
+    
+    res.status(201).json({
+      message: "Cost added successfully",
+      cost: newCost
+    });
+  } catch (error) {
+    console.error("Error adding shipment cost:", error);
+    res.status(500).json({ message: "Failed to add shipment cost" });
+  }
+});
+
+// 3. PUT /api/imports/shipments/:id/costs/:costId - Edit a cost line
+router.put("/shipments/:id/costs/:costId", async (req, res) => {
+  try {
+    const shipmentId = parseInt(req.params.id);
+    const costId = parseInt(req.params.costId);
+    
+    // Validate request body
+    const validationResult = updateCostSchema.safeParse(req.body);
+    if (!validationResult.success) {
+      return res.status(400).json({ 
+        message: "Invalid request body",
+        errors: validationResult.error.errors 
+      });
+    }
+    
+    const updateData = validationResult.data;
+    
+    // Verify cost exists and belongs to shipment
+    const [existingCost] = await db
+      .select()
+      .from(shipmentCosts)
+      .where(and(
+        eq(shipmentCosts.id, costId),
+        eq(shipmentCosts.shipmentId, shipmentId)
+      ));
+    
+    if (!existingCost) {
+      return res.status(404).json({ message: "Cost not found" });
+    }
+    
+    // Prepare update object
+    const updates: any = {
+      updatedAt: new Date()
+    };
+    
+    // Update fields if provided
+    if (updateData.type !== undefined) updates.type = updateData.type;
+    if (updateData.mode !== undefined) updates.mode = updateData.mode;
+    if (updateData.volumetricDivisor !== undefined) updates.volumetricDivisor = updateData.volumetricDivisor.toString();
+    if (updateData.notes !== undefined) updates.notes = updateData.notes;
+    
+    // Handle amount and currency updates
+    if (updateData.amountOriginal !== undefined || updateData.currency !== undefined) {
+      const newAmount = updateData.amountOriginal ?? Number(existingCost.amountOriginal);
+      const newCurrency = updateData.currency ?? existingCost.currency;
+      
+      // Use provided FX rate or existing one
+      let fxRate = updateData.fxRateUsed ?? Number(existingCost.fxRateUsed || 1);
+      
+      // If currency changed and no FX rate provided, fetch new rate
+      if (updateData.currency && !updateData.fxRateUsed && newCurrency !== 'EUR') {
+        // Placeholder rates for common currencies
+        const placeholderRates: Record<string, number> = {
+          'USD': 0.92,
+          'GBP': 1.16,
+          'CNY': 0.13,
+          'JPY': 0.0061,
+          'AUD': 0.60,
+          'CAD': 0.68
+        };
+        fxRate = placeholderRates[newCurrency] || 1;
+      }
+      
+      // Calculate new base amount
+      const amountBase = landingCostService.convertToBaseCurrency(
+        newAmount,
+        newCurrency,
+        fxRate
+      );
+      
+      updates.amountOriginal = newAmount.toString();
+      updates.currency = newCurrency;
+      updates.amountBase = amountBase.toString();
+      updates.fxRateUsed = fxRate.toString();
+    }
+    
+    // Update the cost
+    const [updatedCost] = await db
+      .update(shipmentCosts)
+      .set(updates)
+      .where(eq(shipmentCosts.id, costId))
+      .returning();
+    
+    // Trigger landing cost recalculation
+    try {
+      await landingCostService.calculateLandingCosts(shipmentId);
+    } catch (calcError) {
+      console.error("Error recalculating landing costs:", calcError);
+      // Don't fail the request if recalculation fails
+    }
+    
+    res.json({
+      message: "Cost updated successfully",
+      cost: updatedCost
+    });
+  } catch (error) {
+    console.error("Error updating shipment cost:", error);
+    res.status(500).json({ message: "Failed to update shipment cost" });
+  }
+});
+
+// 4. DELETE /api/imports/shipments/:id/costs/:costId - Remove a cost line
+router.delete("/shipments/:id/costs/:costId", async (req, res) => {
+  try {
+    const shipmentId = parseInt(req.params.id);
+    const costId = parseInt(req.params.costId);
+    
+    // Verify cost exists and belongs to shipment
+    const [existingCost] = await db
+      .select()
+      .from(shipmentCosts)
+      .where(and(
+        eq(shipmentCosts.id, costId),
+        eq(shipmentCosts.shipmentId, shipmentId)
+      ));
+    
+    if (!existingCost) {
+      return res.status(404).json({ message: "Cost not found" });
+    }
+    
+    // Delete the cost
+    await db.delete(shipmentCosts).where(eq(shipmentCosts.id, costId));
+    
+    // Trigger landing cost recalculation
+    try {
+      await landingCostService.calculateLandingCosts(shipmentId);
+    } catch (calcError) {
+      console.error("Error recalculating landing costs:", calcError);
+      // Don't fail the request if recalculation fails
+    }
+    
+    res.json({ message: "Cost deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting shipment cost:", error);
+    res.status(500).json({ message: "Failed to delete shipment cost" });
+  }
+});
+
+// 5. POST /api/imports/shipments/:id/cartons - Add/update carton dimensions
+router.post("/shipments/:id/cartons", async (req, res) => {
+  try {
+    const shipmentId = parseInt(req.params.id);
+    
+    // Validate request body - should be an array of cartons
+    const cartonsSchema = z.array(cartonSchema);
+    const validationResult = cartonsSchema.safeParse(req.body);
+    
+    if (!validationResult.success) {
+      return res.status(400).json({ 
+        message: "Invalid request body",
+        errors: validationResult.error.errors 
+      });
+    }
+    
+    const cartons = validationResult.data;
+    
+    // Verify shipment exists
+    const [shipment] = await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.id, shipmentId));
+    
+    if (!shipment) {
+      return res.status(404).json({ message: "Shipment not found" });
+    }
+    
+    // Use transaction to ensure consistency
+    const result = await db.transaction(async (tx) => {
+      // Delete existing cartons for this shipment
+      await tx.delete(shipmentCartons)
+        .where(eq(shipmentCartons.shipmentId, shipmentId));
+      
+      // Insert new cartons
+      const insertedCartons = [];
+      for (const carton of cartons) {
+        const [inserted] = await tx.insert(shipmentCartons).values({
+          shipmentId,
+          purchaseItemId: carton.purchaseItemId,
+          qtyInCarton: carton.qtyInCarton,
+          lengthCm: carton.lengthCm.toString(),
+          widthCm: carton.widthCm.toString(),
+          heightCm: carton.heightCm.toString(),
+          grossWeightKg: carton.grossWeightKg.toString(),
+          notes: carton.notes || null,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }).returning();
+        insertedCartons.push(inserted);
+      }
+      
+      return insertedCartons;
+    });
+    
+    res.status(201).json({
+      message: "Cartons updated successfully",
+      cartons: result
+    });
+  } catch (error) {
+    console.error("Error updating cartons:", error);
+    res.status(500).json({ message: "Failed to update cartons" });
+  }
+});
+
+// 6. GET /api/imports/shipments/:id/cartons - Get carton details
+router.get("/shipments/:id/cartons", async (req, res) => {
+  try {
+    const shipmentId = parseInt(req.params.id);
+    
+    // Verify shipment exists
+    const [shipment] = await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.id, shipmentId));
+    
+    if (!shipment) {
+      return res.status(404).json({ message: "Shipment not found" });
+    }
+    
+    // Fetch cartons with associated purchase items
+    const cartons = await db
+      .select({
+        id: shipmentCartons.id,
+        purchaseItemId: shipmentCartons.purchaseItemId,
+        qtyInCarton: shipmentCartons.qtyInCarton,
+        lengthCm: shipmentCartons.lengthCm,
+        widthCm: shipmentCartons.widthCm,
+        heightCm: shipmentCartons.heightCm,
+        grossWeightKg: shipmentCartons.grossWeightKg,
+        notes: shipmentCartons.notes,
+        itemName: purchaseItems.name,
+        itemSku: purchaseItems.sku,
+        totalQty: purchaseItems.quantity
+      })
+      .from(shipmentCartons)
+      .leftJoin(purchaseItems, eq(shipmentCartons.purchaseItemId, purchaseItems.id))
+      .where(eq(shipmentCartons.shipmentId, shipmentId));
+    
+    // Calculate volumetric weights
+    const cartonsWithMetrics = cartons.map(carton => {
+      const volumetricWeight = landingCostService.calculateVolumetricWeight(
+        Number(carton.lengthCm),
+        Number(carton.widthCm),
+        Number(carton.heightCm)
+      );
+      
+      const chargeableWeight = landingCostService.calculateChargeableWeight(
+        Number(carton.grossWeightKg),
+        volumetricWeight
+      );
+      
+      return {
+        ...carton,
+        volumetricWeight,
+        chargeableWeight
+      };
+    });
+    
+    res.json({
+      shipmentId,
+      cartons: cartonsWithMetrics,
+      totals: {
+        totalCartons: cartons.length,
+        totalGrossWeight: cartons.reduce((sum, c) => sum + Number(c.grossWeightKg), 0),
+        totalVolumetricWeight: cartonsWithMetrics.reduce((sum, c) => sum + c.volumetricWeight, 0),
+        totalChargeableWeight: cartonsWithMetrics.reduce((sum, c) => sum + c.chargeableWeight, 0)
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching cartons:", error);
+    res.status(500).json({ message: "Failed to fetch cartons" });
+  }
+});
+
+// 7. POST /api/imports/shipments/:id/calculate-landing-costs - Trigger calculation
+router.post("/shipments/:id/calculate-landing-costs", async (req, res) => {
+  try {
+    const shipmentId = parseInt(req.params.id);
+    
+    // Verify shipment exists
+    const [shipment] = await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.id, shipmentId));
+    
+    if (!shipment) {
+      return res.status(404).json({ message: "Shipment not found" });
+    }
+    
+    // Call the landing cost service to calculate costs
+    const result = await landingCostService.calculateLandingCosts(shipmentId);
+    
+    res.json({
+      message: "Landing costs calculated successfully",
+      breakdown: result
+    });
+  } catch (error) {
+    console.error("Error calculating landing costs:", error);
+    res.status(500).json({ 
+      message: "Failed to calculate landing costs",
+      error: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+});
+
+// 8. GET /api/imports/shipments/:id/landing-cost-preview - Preview allocations
+router.get("/shipments/:id/landing-cost-preview", async (req, res) => {
+  try {
+    const shipmentId = parseInt(req.params.id);
+    
+    // Verify shipment exists
+    const [shipment] = await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.id, shipmentId));
+    
+    if (!shipment) {
+      return res.status(404).json({ message: "Shipment not found" });
+    }
+    
+    // Get shipment metrics for preview
+    const metrics = await landingCostService.getShipmentMetrics(shipmentId);
+    
+    // Fetch costs for preview
+    const costs = await db
+      .select()
+      .from(shipmentCosts)
+      .where(eq(shipmentCosts.shipmentId, shipmentId));
+    
+    // Calculate total costs by type
+    const costsByType = costs.reduce((acc, cost) => {
+      if (!acc[cost.type]) {
+        acc[cost.type] = 0;
+      }
+      acc[cost.type] += Number(cost.amountBase || 0);
+      return acc;
+    }, {} as Record<string, number>);
+    
+    res.json({
+      shipmentId,
+      metrics,
+      costsByType,
+      totalCost: Object.values(costsByType).reduce((sum, val) => sum + val, 0),
+      baseCurrency: 'EUR',
+      message: "This is a preview. Use /calculate-landing-costs to save allocations."
+    });
+  } catch (error) {
+    console.error("Error generating landing cost preview:", error);
+    res.status(500).json({ message: "Failed to generate landing cost preview" });
+  }
+});
+
+// 9. GET /api/imports/shipments/:id/landing-cost-summary - Get summary
+router.get("/shipments/:id/landing-cost-summary", async (req, res) => {
+  try {
+    const shipmentId = parseInt(req.params.id);
+    
+    // Verify shipment exists
+    const [shipment] = await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.id, shipmentId));
+    
+    if (!shipment) {
+      return res.status(404).json({ message: "Shipment not found" });
+    }
+    
+    // Fetch latest cost allocations
+    const allocations = await db
+      .select({
+        purchaseItemId: costAllocations.purchaseItemId,
+        costType: costAllocations.costType,
+        amount: costAllocations.amount,
+        itemName: purchaseItems.name,
+        itemSku: purchaseItems.sku,
+        itemQty: purchaseItems.quantity
+      })
+      .from(costAllocations)
+      .leftJoin(purchaseItems, eq(costAllocations.purchaseItemId, purchaseItems.id))
+      .where(eq(costAllocations.shipmentId, shipmentId));
+    
+    // Group allocations by item
+    const itemAllocations = allocations.reduce((acc, alloc) => {
+      if (!acc[alloc.purchaseItemId]) {
+        acc[alloc.purchaseItemId] = {
+          purchaseItemId: alloc.purchaseItemId,
+          name: alloc.itemName,
+          sku: alloc.itemSku,
+          quantity: alloc.itemQty,
+          costs: {},
+          totalCost: 0
+        };
+      }
+      
+      const amount = Number(alloc.amount);
+      acc[alloc.purchaseItemId].costs[alloc.costType] = amount;
+      acc[alloc.purchaseItemId].totalCost += amount;
+      
+      return acc;
+    }, {} as Record<number, any>);
+    
+    // Calculate summary totals
+    const totals = allocations.reduce((acc, alloc) => {
+      if (!acc[alloc.costType]) {
+        acc[alloc.costType] = 0;
+      }
+      acc[alloc.costType] += Number(alloc.amount);
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const grandTotal = Object.values(totals).reduce((sum, val) => sum + val, 0);
+    
+    res.json({
+      shipmentId,
+      items: Object.values(itemAllocations),
+      totals,
+      grandTotal,
+      baseCurrency: 'EUR',
+      hasAllocations: allocations.length > 0,
+      lastCalculated: allocations.length > 0 ? new Date() : null
+    });
+  } catch (error) {
+    console.error("Error fetching landing cost summary:", error);
+    res.status(500).json({ message: "Failed to fetch landing cost summary" });
+  }
+});
+
+// 10. GET /api/imports/exchange-rates - Get current FX rates
+router.get("/exchange-rates", async (req, res) => {
+  try {
+    const { base = 'EUR', currencies = 'USD,GBP,CNY,JPY,AUD,CAD' } = req.query;
+    
+    // Parse currencies into array
+    const currencyList = (currencies as string).split(',').map(c => c.trim().toUpperCase());
+    
+    try {
+      // Fetch from external API (fawazahmed's free currency API)
+      const response = await fetch(`https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/${base.toLowerCase()}.json`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch exchange rates');
+      }
+      
+      const data = await response.json();
+      const rates = data[base.toLowerCase()] || {};
+      
+      // Filter to requested currencies
+      const filteredRates: Record<string, number> = {};
+      for (const currency of currencyList) {
+        if (rates[currency.toLowerCase()]) {
+          filteredRates[currency] = rates[currency.toLowerCase()];
+        }
+      }
+      
+      res.json({
+        base,
+        date: data.date || new Date().toISOString().split('T')[0],
+        rates: filteredRates
+      });
+    } catch (apiError) {
+      // Fallback to placeholder rates if API fails
+      console.error("Error fetching exchange rates from API:", apiError);
+      
+      const placeholderRates: Record<string, Record<string, number>> = {
+        'EUR': {
+          'USD': 1.09,
+          'GBP': 0.86,
+          'CNY': 7.85,
+          'JPY': 164.50,
+          'AUD': 1.66,
+          'CAD': 1.47
+        },
+        'USD': {
+          'EUR': 0.92,
+          'GBP': 0.79,
+          'CNY': 7.20,
+          'JPY': 151.00,
+          'AUD': 1.52,
+          'CAD': 1.35
+        }
+      };
+      
+      const baseRates = placeholderRates[base as string] || placeholderRates['EUR'];
+      const filteredRates: Record<string, number> = {};
+      
+      for (const currency of currencyList) {
+        if (currency === base) {
+          filteredRates[currency] = 1;
+        } else if (baseRates[currency]) {
+          filteredRates[currency] = baseRates[currency];
+        }
+      }
+      
+      res.json({
+        base,
+        date: new Date().toISOString().split('T')[0],
+        rates: filteredRates,
+        source: 'placeholder'
+      });
+    }
+  } catch (error) {
+    console.error("Error in exchange rates endpoint:", error);
+    res.status(500).json({ message: "Failed to fetch exchange rates" });
   }
 });
 
