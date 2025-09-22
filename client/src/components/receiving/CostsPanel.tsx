@@ -1,12 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient } from "@/lib/queryClient";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
   Plus,
   Edit2,
@@ -81,6 +80,18 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
   const [selectedCost, setSelectedCost] = useState<ShipmentCost | null>(null);
   const [costToDelete, setCostToDelete] = useState<ShipmentCost | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
+  const [hasAutoCreatedFreight, setHasAutoCreatedFreight] = useState(false);
+
+  // Fetch shipment data
+  const { data: shipmentData } = useQuery({
+    queryKey: [`/api/imports/shipments/${shipmentId}`],
+    queryFn: async () => {
+      const response = await fetch(`/api/imports/shipments/${shipmentId}`);
+      if (!response.ok) throw new Error('Failed to fetch shipment');
+      return response.json();
+    },
+    enabled: !!shipmentId
+  });
 
   // Fetch costs
   const { data: costsData, isLoading: loadingCosts } = useQuery({
@@ -97,6 +108,45 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
     queryKey: [`/api/imports/shipments/${shipmentId}/landing-cost-summary`],
     enabled: !!shipmentId
   });
+
+  // Auto-create freight cost from shipment data
+  useEffect(() => {
+    if (shipmentData && !hasAutoCreatedFreight && costs.length === 0) {
+      // Check if shipment has shipping cost
+      if (shipmentData.shippingCost && parseFloat(shipmentData.shippingCost) > 0) {
+        const freightCost = {
+          type: 'FREIGHT',
+          mode: shipmentData.shipmentType?.includes('air') ? 'AIR' : 
+                shipmentData.shipmentType?.includes('sea') ? 'SEA' : 
+                shipmentData.shipmentType?.includes('rail') ? 'RAIL' : 'COURIER',
+          amountOriginal: parseFloat(shipmentData.shippingCost),
+          currency: shipmentData.shippingCostCurrency || 'USD',
+          notes: `Auto-populated from shipment: ${shipmentData.shipmentName || 'N/A'}`,
+          volumetricDivisor: shipmentData.shipmentType?.includes('air') ? 6000 : 
+                            shipmentData.shipmentType?.includes('express') ? 5000 : 1000
+        };
+        
+        // Create the freight cost
+        fetch(`/api/imports/shipments/${shipmentId}/costs`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(freightCost),
+          credentials: 'include'
+        }).then(async (res) => {
+          if (!res.ok) throw new Error('Failed to create freight cost');
+          setHasAutoCreatedFreight(true);
+          queryClient.invalidateQueries({ queryKey: [`/api/imports/shipments/${shipmentId}/costs`] });
+          queryClient.invalidateQueries({ queryKey: [`/api/imports/shipments/${shipmentId}/landing-cost-summary`] });
+          toast({
+            title: "Freight Cost Added",
+            description: `Shipping cost of ${formatCurrency(freightCost.amountOriginal, freightCost.currency)} has been automatically added from shipment data`
+          });
+        }).catch((error) => {
+          console.error('Failed to auto-create freight cost:', error);
+        });
+      }
+    }
+  }, [shipmentData, hasAutoCreatedFreight, costs.length, shipmentId, toast]);
 
   // Delete cost mutation
   const deleteCostMutation = useMutation({

@@ -117,10 +117,13 @@ const CartonDimensions = ({ shipmentId }: CartonDimensionsProps) => {
   const [localCartons, setLocalCartons] = useState<Map<number, Partial<Carton>>>(new Map());
 
   // Fetch cartons
-  const { data: cartons = [], isLoading, refetch } = useQuery<Carton[]>({
+  const { data: cartonsResponse, isLoading, refetch } = useQuery({
     queryKey: [`/api/imports/shipments/${shipmentId}/cartons`],
     enabled: !!shipmentId
   });
+  
+  // Extract cartons array from response
+  const cartons: Carton[] = cartonsResponse?.cartons || [];
 
   // Initialize local state when cartons are loaded
   useEffect(() => {
