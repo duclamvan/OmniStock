@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
+import CostsPanel from "@/components/receiving/CostsPanel";
 
 interface ReceiptItem {
   id: number;
@@ -66,7 +67,6 @@ export default function ReceiptDetails() {
   const [selectedItem, setSelectedItem] = useState<ReceiptItem | null>(null);
   const [showVerifyDialog, setShowVerifyDialog] = useState(false);
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
-  const [showLandedCostsDialog, setShowLandedCostsDialog] = useState(false);
   
   // Verification form state
   const [verifiedBy, setVerifiedBy] = useState("");
@@ -74,16 +74,6 @@ export default function ReceiptDetails() {
   
   // Approval form state
   const [approvedBy, setApprovedBy] = useState("");
-  
-  // Landed costs form state
-  const [calculationMethod, setCalculationMethod] = useState("weight");
-  const [baseCost, setBaseCost] = useState("");
-  const [shippingCost, setShippingCost] = useState("");
-  const [customsDuty, setCustomsDuty] = useState("");
-  const [taxes, setTaxes] = useState("");
-  const [handlingFees, setHandlingFees] = useState("");
-  const [insuranceCost, setInsuranceCost] = useState("");
-  const [currency, setCurrency] = useState("USD");
 
   // Fetch receipt details
   const { data: receipt, isLoading, refetch } = useQuery({
@@ -180,34 +170,6 @@ export default function ReceiptDetails() {
     }
   });
 
-  // Save landed costs
-  const saveLandedCostsMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const response = await fetch(`/api/imports/receipts/${id}/landed-costs`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      if (!response.ok) throw new Error('Failed to save landed costs');
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Landed Costs Saved",
-        description: "Cost calculations have been recorded"
-      });
-      refetch();
-      setShowLandedCostsDialog(false);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to save landed costs",
-        variant: "destructive"
-      });
-    }
-  });
-
   const handleItemVerification = (item: ReceiptItem) => {
     setSelectedItem(item);
   };
@@ -242,30 +204,6 @@ export default function ReceiptDetails() {
     approveReceiptMutation.mutate({
       approvedBy
     });
-  };
-
-  const handleSaveLandedCosts = () => {
-    saveLandedCostsMutation.mutate({
-      calculationMethod,
-      baseCost,
-      shippingCost,
-      customsDuty,
-      taxes,
-      handlingFees,
-      insuranceCost,
-      currency
-    });
-  };
-
-  const calculateTotalLandedCost = () => {
-    return (
-      parseFloat(baseCost || "0") +
-      parseFloat(shippingCost || "0") +
-      parseFloat(customsDuty || "0") +
-      parseFloat(taxes || "0") +
-      parseFloat(handlingFees || "0") +
-      parseFloat(insuranceCost || "0")
-    ).toFixed(2);
   };
 
   if (isLoading || !receipt) {
@@ -455,33 +393,40 @@ export default function ReceiptDetails() {
         </Card>
       )}
 
-      {/* Items Verification */}
-      <Card className="mb-6">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Items Verification</CardTitle>
-              <CardDescription>
-                Verify each item's quantity, condition, and location
-              </CardDescription>
-            </div>
-            {hasDamagedItems && (
-              <Badge variant="destructive">
-                <AlertTriangle className="h-3 w-3 mr-1" />
-                Has Damaged Items
-              </Badge>
-            )}
-            {hasMissingItems && (
-              <Badge variant="destructive">
-                <AlertCircle className="h-3 w-3 mr-1" />
-                Has Missing Items
-              </Badge>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {receipt.items?.map((item: ReceiptItem) => (
+      {/* Tabs for Items and Landing Costs */}
+      <Tabs defaultValue="items" className="mb-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="items">Items Verification</TabsTrigger>
+          <TabsTrigger value="costs">Landing Costs</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="items">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Items Verification</CardTitle>
+                  <CardDescription>
+                    Verify each item's quantity, condition, and location
+                  </CardDescription>
+                </div>
+                {hasDamagedItems && (
+                  <Badge variant="destructive">
+                    <AlertTriangle className="h-3 w-3 mr-1" />
+                    Has Damaged Items
+                  </Badge>
+                )}
+                {hasMissingItems && (
+                  <Badge variant="destructive">
+                    <AlertCircle className="h-3 w-3 mr-1" />
+                    Has Missing Items
+                  </Badge>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {receipt.items?.map((item: ReceiptItem) => (
               <div key={item.id} className="border rounded-lg p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div>
@@ -569,31 +514,28 @@ export default function ReceiptDetails() {
           </div>
         </CardContent>
       </Card>
+    </TabsContent>
 
-      {/* Landed Costs */}
-      {receipt.landedCost && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Landed Costs</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Base Cost</p>
-                <p className="font-medium">{receipt.landedCost.currency} {receipt.landedCost.baseCost}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Shipping</p>
-                <p className="font-medium">{receipt.landedCost.currency} {receipt.landedCost.shippingCost}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Landed Cost</p>
-                <p className="font-bold text-lg">{receipt.landedCost.currency} {receipt.landedCost.totalLandedCost}</p>
-              </div>
+    <TabsContent value="costs">
+      {receipt.shipment?.id ? (
+        <CostsPanel 
+          shipmentId={receipt.shipment.id} 
+          receiptId={receipt.id}
+          onUpdate={refetch}
+        />
+      ) : (
+        <Card>
+          <CardContent className="py-8">
+            <div className="text-center text-muted-foreground">
+              <DollarSign className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>No shipment associated with this receipt</p>
+              <p className="text-sm mt-2">Landing costs require a shipment to be linked</p>
             </div>
           </CardContent>
         </Card>
       )}
+    </TabsContent>
+  </Tabs>
 
       {/* Actions */}
       <Card>
@@ -601,14 +543,6 @@ export default function ReceiptDetails() {
           <div className="flex flex-wrap gap-4">
             {receipt.status === 'pending_verification' && (
               <>
-                <Button
-                  onClick={() => setShowLandedCostsDialog(true)}
-                  variant="outline"
-                  data-testid="button-calculate-costs"
-                >
-                  <Calculator className="h-4 w-4 mr-2" />
-                  Calculate Landed Costs
-                </Button>
                 <Button
                   onClick={() => setShowVerifyDialog(true)}
                   disabled={!allItemsVerified}
