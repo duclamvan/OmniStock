@@ -483,6 +483,7 @@ export default function ReceivingList() {
   const [warehouseFilter, setWarehouseFilter] = useState("all"); // Warehouse filter
   const [expandAllReceiving, setExpandAllReceiving] = useState(true);
   const [receiptDataMap, setReceiptDataMap] = useState<Map<number, any>>(new Map());
+  const [showFilters, setShowFilters] = useState(false);
 
   // Move back confirmation dialog state
   const [showMoveBackDialog, setShowMoveBackDialog] = useState(false);
@@ -1320,207 +1321,209 @@ export default function ReceivingList() {
 
       {/* Search and Filters */}
       <Card className="mb-6">
-        <CardContent className="p-4 space-y-4">
-          <div className="flex gap-2 flex-wrap">
-            <div className="relative flex-1 min-w-[200px]">
+        <CardContent className="p-3 sm:p-4 space-y-3">
+          <div className="flex gap-2 items-center">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by shipment name, tracking number, carrier..."
+                placeholder="Search shipments..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
                 data-testid="input-search-receiving"
               />
             </div>
-            <div className="relative">
-              <ScanLine className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Scan barcode"
-                value={barcodeScan}
-                onChange={(e) => setBarcodeScan(e.target.value)}
-                className="pl-10 w-48"
-                data-testid="input-barcode-scan"
-              />
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center gap-2 whitespace-nowrap"
+              data-testid="button-toggle-filters"
+            >
+              <Filter className="h-4 w-4" />
+              <span className="hidden sm:inline">Filters</span>
+              {showFilters ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            </Button>
           </div>
 
-          {/* Filters Row */}
-          <div className="flex gap-2 flex-wrap">
-            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger className="w-40">
-                <AlertTriangle className="h-3 w-3" />
-                <SelectValue placeholder="Priority" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Priorities</SelectItem>
-                <SelectItem value="normal">Normal</SelectItem>
-                <SelectItem value="urgent">Urgent</SelectItem>
-              </SelectContent>
-            </Select>
+          {/* Collapsible Filters */}
+          {showFilters && (
+            <div className="animate-in slide-in-from-top-2 duration-200 space-y-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+                <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                  <SelectTrigger className="w-full">
+                    <AlertTriangle className="h-3 w-3 mr-1" />
+                    <SelectValue placeholder="Priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Priorities</SelectItem>
+                    <SelectItem value="normal">Normal</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
 
-            <Select value={carrierFilter} onValueChange={setCarrierFilter}>
-              <SelectTrigger className="w-40">
-                <Truck className="h-3 w-3" />
-                <SelectValue placeholder="Carrier" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Carriers</SelectItem>
-                {uniqueCarriers.map(carrier => (
-                  <SelectItem key={carrier} value={carrier}>
-                    {carrier}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                <Select value={carrierFilter} onValueChange={setCarrierFilter}>
+                  <SelectTrigger className="w-full">
+                    <Truck className="h-3 w-3 mr-1" />
+                    <SelectValue placeholder="Carrier" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Carriers</SelectItem>
+                    {uniqueCarriers.map(carrier => (
+                      <SelectItem key={carrier} value={carrier}>
+                        {carrier}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-            <Select value={warehouseFilter} onValueChange={setWarehouseFilter}>
-              <SelectTrigger className="w-40">
-                <Warehouse className="h-3 w-3" />
-                <SelectValue placeholder="Warehouse" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Warehouses</SelectItem>
-                {uniqueWarehouses.map(warehouse => (
-                  <SelectItem key={warehouse} value={warehouse}>
-                    {warehouse}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                <Select value={warehouseFilter} onValueChange={setWarehouseFilter}>
+                  <SelectTrigger className="w-full">
+                    <Warehouse className="h-3 w-3 mr-1" />
+                    <SelectValue placeholder="Warehouse" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Warehouses</SelectItem>
+                    {uniqueWarehouses.map(warehouse => (
+                      <SelectItem key={warehouse} value={warehouse}>
+                        {warehouse}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-            <Select value={shipmentTypeFilter} onValueChange={setShipmentTypeFilter}>
-              <SelectTrigger className="w-40">
-                <Package className="h-3 w-3" />
-                <SelectValue placeholder="Shipment Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                {uniqueShipmentTypes.map(type => (
-                  <SelectItem key={type} value={type}>
-                    <div className="flex items-center gap-2">
-                      {getShipmentTypeIcon(type, 'h-4 w-4')}
-                      {formatShipmentType(type)}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                <Select value={shipmentTypeFilter} onValueChange={setShipmentTypeFilter}>
+                  <SelectTrigger className="w-full">
+                    <Package className="h-3 w-3 mr-1" />
+                    <SelectValue placeholder="Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    {uniqueShipmentTypes.map(type => (
+                      <SelectItem key={type} value={type}>
+                        <div className="flex items-center gap-2">
+                          {getShipmentTypeIcon(type, 'h-4 w-4')}
+                          {formatShipmentType(type)}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-            <Select value={cartonTypeFilter} onValueChange={setCartonTypeFilter}>
-              <SelectTrigger className="w-40">
-                <Package2 className="h-3 w-3" />
-                <SelectValue placeholder="Packaging Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Packaging</SelectItem>
-                {uniqueCartonTypes.map(type => (
-                  <SelectItem key={type} value={type}>
-                    <div className="flex items-center gap-1">
-                      {getUnitTypeIcon(type, 'h-4 w-4')}
-                      <span className="capitalize">{type}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                <Select value={cartonTypeFilter} onValueChange={setCartonTypeFilter}>
+                  <SelectTrigger className="w-full">
+                    <Package2 className="h-3 w-3 mr-1" />
+                    <SelectValue placeholder="Packaging" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Packaging</SelectItem>
+                    {uniqueCartonTypes.map(type => (
+                      <SelectItem key={type} value={type}>
+                        <div className="flex items-center gap-1">
+                          {getUnitTypeIcon(type, 'h-4 w-4')}
+                          <span className="capitalize">{type}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            {/* Sort Controls */}
-            <div className="flex gap-1 ml-auto">
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-40">
-                  <ArrowUpDown className="h-3 w-3" />
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="deliveredAt">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      Delivery Date
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="urgency">
-                    <span className="flex items-center gap-1">
-                      <Zap className="h-3 w-3" />
-                      Urgency
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="shipmentName">
-                    <span className="flex items-center gap-1">
-                      <Package className="h-3 w-3" />
-                      Shipment Name
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="carrier">
-                    <span className="flex items-center gap-1">
-                      <Truck className="h-3 w-3" />
-                      Carrier
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="totalUnits">
-                    <span className="flex items-center gap-1">
-                      <Hash className="h-3 w-3" />
-                      Total Units
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="weight">
-                    <span className="flex items-center gap-1">
-                      <Weight className="h-3 w-3" />
-                      Weight
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="estimatedDelivery">
-                    <span className="flex items-center gap-1">
-                      <CalendarDays className="h-3 w-3" />
-                      Est. Delivery
-                    </span>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              {/* Sort Controls */}
+              <div className="flex gap-2 items-center justify-between">
+                <div className="flex gap-2 items-center">
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className="w-[140px] sm:w-[180px]">
+                      <ArrowUpDown className="h-3 w-3 mr-1" />
+                      <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="deliveredAt">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          Delivery Date
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="urgency">
+                        <span className="flex items-center gap-1">
+                          <Zap className="h-3 w-3" />
+                          Urgency
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="shipmentName">
+                        <span className="flex items-center gap-1">
+                          <Package className="h-3 w-3" />
+                          Name
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="carrier">
+                        <span className="flex items-center gap-1">
+                          <Truck className="h-3 w-3" />
+                          Carrier
+                        </span>
+                      </SelectItem>
+                      <SelectItem value="totalUnits">
+                        <span className="flex items-center gap-1">
+                          <Hash className="h-3 w-3" />
+                          Units
+                        </span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
 
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                className="w-10"
-                data-testid="button-sort-order"
-              >
-                {sortOrder === 'asc' ? (
-                  <ArrowUp className="h-4 w-4" />
-                ) : (
-                  <ArrowDown className="h-4 w-4" />
-                )}
-              </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                    className="h-10 w-10 shrink-0"
+                    data-testid="button-sort-order"
+                  >
+                    {sortOrder === 'asc' ? (
+                      <ArrowUp className="h-4 w-4" />
+                    ) : (
+                      <ArrowDown className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+
+                <div className="flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={expandAllShipments}
+                    className="h-8 text-xs px-2"
+                    disabled={sortedShipments.length === 0}
+                    title="Expand all shipment details"
+                  >
+                    <ChevronDown className="h-3 w-3" />
+                    <span className="hidden sm:inline ml-1">Expand</span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={collapseAllShipments}
+                    className="h-8 text-xs px-2"
+                    disabled={sortedShipments.length === 0}
+                    title="Collapse all shipment details"
+                  >
+                    <ChevronUp className="h-3 w-3" />
+                    <span className="hidden sm:inline ml-1">Collapse</span>
+                  </Button>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Expand/Collapse Controls */}
+          {/* Results count - always visible */}
           <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground">Item Details:</span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={expandAllShipments}
-                className="h-7 text-xs"
-                disabled={sortedShipments.length === 0}
-              >
-                <ChevronDown className="h-3 w-3 mr-1" />
-                Expand All
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={collapseAllShipments}
-                className="h-7 text-xs"
-                disabled={sortedShipments.length === 0}
-              >
-                <ChevronUp className="h-3 w-3 mr-1" />
-                Collapse All
-              </Button>
-            </div>
             <span className="text-muted-foreground">
-              {sortedShipments.length} shipment{sortedShipments.length !== 1 ? 's' : ''}
+              {sortedShipments.length} shipment{sortedShipments.length !== 1 ? 's' : ''} found
             </span>
+            {selectedShipments.size > 0 && (
+              <span className="text-blue-600 font-medium">
+                {selectedShipments.size} selected
+              </span>
+            )}
           </div>
 
           {/* Bulk Actions Bar */}
