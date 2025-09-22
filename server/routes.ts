@@ -18,9 +18,16 @@ import {
   insertDiscountSchema,
   insertExpenseSchema,
   insertUserActivitySchema,
+  productCostHistory,
+  products,
+  purchaseItems,
+  receipts,
+  receiptItems,
 } from "@shared/schema";
 import { z } from "zod";
 import { nanoid } from "nanoid";
+import { db } from "./db";
+import { eq, desc, and } from "drizzle-orm";
 import {
   ObjectStorageService,
   ObjectNotFoundError,
@@ -1112,7 +1119,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!product) {
         return res.status(404).json({ message: "Product not found" });
       }
-      res.json(product);
+      
+      // Get the latest landing cost from product table
+      const [productWithCost] = await db
+        .select()
+        .from(products)
+        .where(eq(products.id, req.params.id));
+      
+      // Add latest_landing_cost to the product object
+      const productData = {
+        ...product,
+        latest_landing_cost: productWithCost?.latestLandingCost || null
+      };
+      
+      res.json(productData);
     } catch (error) {
       console.error("Error fetching product:", error);
       res.status(500).json({ message: "Failed to fetch product" });
@@ -1258,6 +1278,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching product order counts:", error);
       res.status(500).json({ message: "Failed to fetch product order counts" });
+    }
+  });
+
+  // Product Cost History endpoint
+  app.get('/api/products/:id/cost-history', async (req, res) => {
+    try {
+      const productId = req.params.id;
+      
+      // Fetch cost history for this product
+      const costHistory = await db
+        .select({
+          id: productCostHistory.id,
+          landingCostUnitBase: productCostHistory.landingCostUnitBase,
+          method: productCostHistory.method,
+          computedAt: productCostHistory.computedAt,
+          createdAt: productCostHistory.createdAt,
+          purchaseItemId: productCostHistory.purchaseItemId,
+        })
+        .from(productCostHistory)
+        .where(eq(productCostHistory.productId, productId))
+        .orderBy(desc(productCostHistory.computedAt));
+      
+      // Get purchase item details if available
+      const costHistoryWithDetails = await Promise.all(
+        costHistory.map(async (history) => {
+          let source = history.method;
+          if (history.purchaseItemId) {
+            const [purchaseItem] = await db
+              .select({
+                name: purchaseItems.name,
+                purchaseId: purchaseItems.purchaseId,
+              })
+              .from(purchaseItems)
+              .where(eq(purchaseItems.id, history.purchaseItemId));
+            
+            if (purchaseItem) {
+              source = `PO-${purchaseItem.purchaseId}: ${purchaseItem.name}`;
+            }
+          }
+          
+          return {
+            ...history,
+            source,
+          };
+        })
+      );
+      
+      res.json(costHistoryWithDetails);
+    } catch (error) {
+      console.error("Error fetching product cost history:", error);
+      res.status(500).json({ message: "Failed to fetch product cost history" });
     }
   });
 

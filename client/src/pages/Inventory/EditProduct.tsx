@@ -29,6 +29,11 @@ import ProductVariants from "@/components/ProductVariants";
 import ProductLocations from "@/components/ProductLocations";
 import PackingInstructionsUploader from "@/components/PackingInstructionsUploader";
 import ProductFiles from "@/components/ProductFiles";
+import CostHistoryChart from "@/components/products/CostHistoryChart";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { format } from "date-fns";
+import { TrendingUp, Euro } from "lucide-react";
 
 const editProductSchema = z.object({
   name: z.string().min(1, "Product name is required"),
@@ -64,6 +69,12 @@ export default function EditProduct() {
   // Fetch product details
   const { data: product, isLoading: productLoading } = useQuery<any>({
     queryKey: ['/api/products', id],
+    enabled: !!id,
+  });
+
+  // Fetch product cost history
+  const { data: costHistory, isLoading: costHistoryLoading } = useQuery<any[]>({
+    queryKey: [`/api/products/${id}/cost-history`],
     enabled: !!id,
   });
 
@@ -435,6 +446,106 @@ export default function EditProduct() {
                   placeholder="5"
                 />
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Landing Costs */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Landing Costs
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Current Landing Cost */}
+            <div className="flex items-center justify-between p-4 bg-muted rounded-lg" data-testid="landing-cost-current">
+              <div>
+                <p className="text-sm text-muted-foreground">Current Landing Cost</p>
+                <p className="text-2xl font-bold flex items-center gap-1">
+                  <Euro className="h-5 w-5" />
+                  {product?.latest_landing_cost ? parseFloat(product.latest_landing_cost).toFixed(2) : '0.00'}
+                </p>
+              </div>
+              {product?.latest_landing_cost && product?.priceEur && (
+                <div className="text-right">
+                  <p className="text-sm text-muted-foreground">Margin</p>
+                  <p className={`text-lg font-semibold ${
+                    ((parseFloat(product.priceEur) - parseFloat(product.latest_landing_cost)) / parseFloat(product.priceEur) * 100) > 30
+                      ? 'text-green-600'
+                      : ((parseFloat(product.priceEur) - parseFloat(product.latest_landing_cost)) / parseFloat(product.priceEur) * 100) > 15
+                      ? 'text-yellow-600'
+                      : 'text-red-600'
+                  }`}>
+                    {((parseFloat(product.priceEur) - parseFloat(product.latest_landing_cost)) / parseFloat(product.priceEur) * 100).toFixed(1)}%
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Cost History Chart */}
+            {costHistory && costHistory.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium mb-3">Cost Trend</h4>
+                <CostHistoryChart 
+                  data-testid="cost-history-chart"
+                  data={costHistory || []} 
+                  isLoading={costHistoryLoading}
+                  currency="€"
+                  height={250}
+                />
+              </div>
+            )}
+
+            {/* Cost History Table */}
+            <div>
+              <h4 className="text-sm font-medium mb-3">Cost History</h4>
+              {costHistoryLoading ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              ) : costHistory && costHistory.length > 0 ? (
+                <div className="border rounded-lg overflow-hidden">
+                  <Table data-testid="cost-history-table">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Landing Cost/Unit</TableHead>
+                        <TableHead>Method</TableHead>
+                        <TableHead>Source</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {costHistory.slice(0, 10).map((history: any) => (
+                        <TableRow key={history.id}>
+                          <TableCell className="text-sm">
+                            {format(new Date(history.computedAt), 'MMM dd, yyyy')}
+                          </TableCell>
+                          <TableCell className="font-mono text-sm">
+                            €{parseFloat(history.landingCostUnitBase).toFixed(2)}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            <Badge variant="outline" className="text-xs">
+                              {history.method}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {history.source || history.method}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>No cost history available</p>
+                  <p className="text-sm mt-2">Landing costs will appear here after purchase orders are received</p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

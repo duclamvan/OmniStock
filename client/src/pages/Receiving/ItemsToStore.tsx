@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { 
   Warehouse, 
   Package, 
@@ -75,6 +76,9 @@ interface StorageItem {
   receivedAt?: string;
   imageUrl?: string;
   description?: string;
+  landingCostUnitBase?: string;
+  hasCompleteLandingCost?: boolean;
+  purchaseItemId?: number;
 }
 
 interface ReceiptWithItems {
@@ -382,7 +386,10 @@ export default function ItemsToStore() {
             shipmentTrackingNumber: receiptData.shipment?.trackingNumber,
             receivedAt: receiptData.receipt.receivedAt,
             imageUrl: item.imageUrl,
-            description: item.description
+            description: item.description,
+            landingCostUnitBase: item.landingCostUnitBase,
+            hasCompleteLandingCost: item.hasCompleteLandingCost,
+            purchaseItemId: item.purchaseItemId
           });
         });
       });
@@ -1069,6 +1076,40 @@ export default function ItemsToStore() {
                         <Badge variant="outline" className="text-xs" data-testid={`qty-${item.receiptItemId}`}>
                           Qty: {item.receivedQuantity}
                         </Badge>
+                        {/* Landing Cost Badge */}
+                        {item.landingCostUnitBase && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge 
+                                  variant={item.hasCompleteLandingCost ? "default" : "secondary"} 
+                                  className={`text-xs ${!item.hasCompleteLandingCost ? 'bg-yellow-100 text-yellow-800' : ''}`}
+                                  data-testid={`landing-cost-${item.receiptItemId}`}
+                                >
+                                  Landing: €{parseFloat(item.landingCostUnitBase).toFixed(2)}
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <div className="text-sm">
+                                  <p className="font-semibold mb-1">Landing Cost Breakdown</p>
+                                  {item.hasCompleteLandingCost ? (
+                                    <>
+                                      <p>Unit Cost: €{parseFloat(item.landingCostUnitBase).toFixed(2)}</p>
+                                      <p className="text-xs text-muted-foreground mt-1">Includes freight, duties, and fees</p>
+                                    </>
+                                  ) : (
+                                    <p className="text-yellow-600">Landing cost pending—enter freight to finalize</p>
+                                  )}
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                        {!item.landingCostUnitBase && item.purchaseItemId && (
+                          <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-800">
+                            Landing cost pending
+                          </Badge>
+                        )}
                       </div>
                     </div>
 

@@ -3,9 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Package, Banknote, BarChart3, Calendar, MapPin, Edit, ShoppingCart, TrendingUp, AlertCircle } from "lucide-react";
+import { ArrowLeft, Package, Banknote, BarChart3, Calendar, MapPin, Edit, ShoppingCart, TrendingUp, AlertCircle, Euro } from "lucide-react";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { format } from "date-fns";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function ProductDetails() {
   const { id } = useParams();
@@ -68,10 +69,23 @@ export default function ProductDetails() {
   const stockStatus = product.quantity <= 5 ? "critical" : product.quantity <= 20 ? "low" : "healthy";
   const stockBadgeVariant = stockStatus === "critical" ? "destructive" : stockStatus === "low" ? "outline" : "default";
 
-  // Calculate profit margin
-  const avgSellingPrice = product.priceCzk || 0;
-  const importCost = product.importCostCzk || 0;
-  const profitMargin = importCost > 0 ? ((avgSellingPrice - importCost) / avgSellingPrice * 100).toFixed(1) : 0;
+  // Calculate profit margin based on landing cost
+  const avgSellingPrice = parseFloat(product.priceEur) || parseFloat(product.priceCzk) || 0;
+  const landingCost = parseFloat(product.latest_landing_cost) || parseFloat(product.importCostEur) || parseFloat(product.importCostCzk) || 0;
+  const profitMargin = avgSellingPrice > 0 && landingCost > 0 ? ((avgSellingPrice - landingCost) / avgSellingPrice * 100).toFixed(1) : 0;
+  
+  // Determine margin color based on percentage
+  const getMarginColor = (margin: number) => {
+    if (margin > 30) return 'text-green-600';
+    if (margin > 15) return 'text-yellow-600';
+    return 'text-red-600';
+  };
+  
+  const getMarginBadgeVariant = (margin: number): "default" | "destructive" | "outline" => {
+    if (margin > 30) return 'default';
+    if (margin > 15) return 'outline';
+    return 'destructive';
+  };
 
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
@@ -189,7 +203,7 @@ export default function ProductDetails() {
       {/* Pricing Information */}
       <Card>
         <CardHeader>
-          <CardTitle>Pricing Information</CardTitle>
+          <CardTitle>Pricing & Landing Cost Analysis</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -212,42 +226,106 @@ export default function ProductDetails() {
             </div>
 
             <div>
-              <div className="text-sm text-slate-500 mb-1">Import Costs</div>
+              <div className="text-sm text-slate-500 mb-1">Landing Cost</div>
               <div className="space-y-2">
-                {product.importCostCzk && (
-                  <div className="flex justify-between">
-                    <span>CZK Cost:</span>
-                    <span className="font-medium">{formatCurrency(product.importCostCzk, "CZK")}</span>
+                {product.latest_landing_cost ? (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="p-3 bg-blue-50 rounded-lg cursor-help" data-testid="landing-cost-display">
+                          <div className="flex justify-between items-center">
+                            <span className="flex items-center gap-1">
+                              <Euro className="h-4 w-4" />
+                              Landing Cost:
+                            </span>
+                            <span className="font-bold text-lg">
+                              €{parseFloat(product.latest_landing_cost).toFixed(2)}
+                            </span>
+                          </div>
+                          <Badge variant="outline" className="mt-2 text-xs">
+                            Per unit, all-in
+                          </Badge>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <div className="text-sm">
+                          <p className="font-semibold mb-1">Landing Cost Breakdown</p>
+                          <p>Includes: Product cost, freight, duties, and fees</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Latest calculated landing cost
+                          </p>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ) : (
+                  <div className="p-3 bg-yellow-50 rounded-lg" data-testid="landing-cost-pending">
+                    <div className="text-yellow-800 text-sm">
+                      Landing cost pending
+                    </div>
+                    <div className="text-xs text-yellow-600 mt-1">
+                      Will be calculated after receiving shipments
+                    </div>
                   </div>
                 )}
-                {product.importCostEur && (
-                  <div className="flex justify-between">
-                    <span>EUR Cost:</span>
-                    <span className="font-medium">{formatCurrency(product.importCostEur, "EUR")}</span>
-                  </div>
-                )}
-                {product.importCostUsd && (
-                  <div className="flex justify-between">
-                    <span>USD Cost:</span>
-                    <span className="font-medium">{formatCurrency(product.importCostUsd, "USD")}</span>
+                
+                {/* Legacy Import Costs for reference */}
+                {(product.importCostCzk || product.importCostEur || product.importCostUsd) && (
+                  <div className="text-xs text-slate-500 space-y-1 mt-2">
+                    {product.importCostCzk && (
+                      <div className="flex justify-between">
+                        <span>Import (CZK):</span>
+                        <span>{formatCurrency(product.importCostCzk, "CZK")}</span>
+                      </div>
+                    )}
+                    {product.importCostEur && (
+                      <div className="flex justify-between">
+                        <span>Import (EUR):</span>
+                        <span>{formatCurrency(product.importCostEur, "EUR")}</span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
             </div>
 
             <div>
-              <div className="text-sm text-slate-500 mb-1">Profitability</div>
+              <div className="text-sm text-slate-500 mb-1">Margin Analysis</div>
               <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span>Margin:</span>
-                  <span className="font-medium text-green-600">{profitMargin}%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Profit per unit (CZK):</span>
-                  <span className="font-medium">
-                    {formatCurrency((product.priceCzk || 0) - (product.importCostCzk || 0), "CZK")}
-                  </span>
-                </div>
+                {product.latest_landing_cost && product.priceEur ? (
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span>Margin:</span>
+                      <Badge 
+                        variant={getMarginBadgeVariant(Number(profitMargin))}
+                        className={`font-bold ${getMarginColor(Number(profitMargin))}`}
+                        data-testid="margin-badge"
+                      >
+                        {profitMargin}%
+                      </Badge>
+                    </div>
+                    <div className="text-xs space-y-1">
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Sell Price:</span>
+                        <span>€{parseFloat(product.priceEur).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Landing Cost:</span>
+                        <span>€{parseFloat(product.latest_landing_cost).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between font-semibold pt-1 border-t" data-testid="profit-per-unit">
+                        <span className="text-slate-600">Profit/Unit:</span>
+                        <span className={getMarginColor(Number(profitMargin))}>
+                          €{(parseFloat(product.priceEur) - parseFloat(product.latest_landing_cost)).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-sm text-slate-500">
+                    Margin calculation pending landing cost data
+                  </div>
+                )}
               </div>
             </div>
           </div>
