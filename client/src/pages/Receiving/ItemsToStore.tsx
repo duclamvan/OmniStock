@@ -1564,56 +1564,6 @@ export default function ItemsToStore() {
                 </div>
               </Button>
             </div>
-            
-            {/* Mobile-Optimized Final Action Buttons */}
-            <div className="pt-6 border-t-2 space-y-3">
-              {/* Primary Action Button */}
-              <Button
-                onClick={() => {
-                  // Apply all session locations to the item
-                  if (sessionsLocations.length > 0) {
-                    applySessionLocations();
-                  } else {
-                    setShowScanner(false);
-                  }
-                }}
-                variant="default"
-                className="w-full py-6 text-lg font-bold bg-green-600 hover:bg-green-700 shadow-xl"
-                size="lg"
-                disabled={sessionsLocations.length === 0}
-              >
-                {sessionsLocations.length > 0 ? (
-                  <div className="flex items-center justify-center gap-3">
-                    <CheckCircle2 className="h-6 w-6" />
-                    <div className="text-center">
-                      <div>Apply Locations</div>
-                      <div className="text-sm font-normal opacity-90">
-                        {sessionsLocations.length} location{sessionsLocations.length !== 1 ? 's' : ''} ready
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center gap-3">
-                    <X className="h-6 w-6" />
-                    <span>Close Scanner</span>
-                  </div>
-                )}
-              </Button>
-              
-              {/* Secondary Cancel Button */}
-              <Button
-                onClick={() => {
-                  setSessionsLocations([]);
-                  setShowScanner(false);
-                }}
-                variant="outline"
-                className="w-full py-4 text-base border-2"
-                size="lg"
-              >
-                <X className="h-4 w-4 mr-2" />
-                Cancel & Discard Changes
-              </Button>
-            </div>
 
           </div>
         </SheetContent>
