@@ -1998,14 +1998,6 @@ export default function ContinueReceiving() {
           <Badge className={getStatusColor(shipment.status)}>
             {shipment.status?.replace('_', ' ').toUpperCase()}
           </Badge>
-          {receipt && (
-            <Link href={`/receiving/details/${receipt.id}`}>
-              <Button variant="outline" size="sm">
-                <FileText className="h-4 w-4 mr-2" />
-                View Receipt
-              </Button>
-            </Link>
-          )}
         </div>
       </div>
 
