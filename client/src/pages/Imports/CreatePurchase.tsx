@@ -52,6 +52,7 @@ interface PurchaseItem {
   productId?: string;
   imageUrl?: string;
   imageFile?: File | null;
+  binLocation?: string;
 }
 
 interface Supplier {
@@ -75,6 +76,7 @@ interface Product {
   categoryId?: number;
   category?: string;
   imageUrl?: string;
+  warehouseLocation?: string;
 }
 
 export default function CreatePurchase() {
@@ -174,7 +176,8 @@ export default function CreatePurchase() {
     unitPrice: 0,
     weight: 0,
     dimensions: "",
-    notes: ""
+    notes: "",
+    binLocation: "TBA"
   });
   
   // Variants state
@@ -557,7 +560,22 @@ export default function CreatePurchase() {
     });
   };
 
-  const selectProduct = (product: Product) => {
+  const selectProduct = async (product: Product) => {
+    // Fetch product location from inventory
+    let binLocation = "TBA";
+    try {
+      const response = await fetch(`/api/products/${product.id}/locations`);
+      if (response.ok) {
+        const locations = await response.json();
+        // Get primary location or first location if exists
+        const primaryLocation = locations.find((loc: any) => loc.isPrimary);
+        const firstLocation = locations[0];
+        binLocation = primaryLocation?.locationCode || firstLocation?.locationCode || product.warehouseLocation || "TBA";
+      }
+    } catch (error) {
+      console.error('Error fetching product location:', error);
+    }
+    
     setCurrentItem({
       ...currentItem,
       name: product.name,
@@ -567,7 +585,8 @@ export default function CreatePurchase() {
       dimensions: product.dimensions || currentItem.dimensions || "",
       barcode: product.barcode || "",
       categoryId: product.categoryId || undefined,
-      category: product.category || ""
+      category: product.category || "",
+      binLocation: binLocation
     });
     setSelectedProduct(product);
     setProductImageFile(null);
@@ -616,7 +635,8 @@ export default function CreatePurchase() {
       dimensions: "",
       notes: "",
       totalPrice: 0,
-      costWithShipping: 0
+      costWithShipping: 0,
+      binLocation: "TBA"
     });
   };
 
@@ -770,7 +790,8 @@ export default function CreatePurchase() {
       // Store product image reference if available
       productId: selectedProduct?.id,
       imageUrl: selectedProduct?.imageUrl,
-      imageFile: productImageFile
+      imageFile: productImageFile,
+      binLocation: currentItem.binLocation || "TBA"
     };
 
     const updatedItems = [...items, newItem];
@@ -790,7 +811,8 @@ export default function CreatePurchase() {
       unitPrice: 0,
       weight: 0,
       dimensions: "",
-      notes: ""
+      notes: "",
+      binLocation: "TBA"
     });
   };
 
@@ -1722,6 +1744,18 @@ export default function CreatePurchase() {
                     onChange={(e) => setCurrentItem({...currentItem, barcode: e.target.value})}
                     placeholder="e.g., 1234567890123"
                     data-testid="input-barcode"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="binLocation">BIN Location</Label>
+                  <Input
+                    id="binLocation"
+                    value={currentItem.binLocation || "TBA"}
+                    onChange={(e) => setCurrentItem({...currentItem, binLocation: e.target.value})}
+                    placeholder="e.g., WH1-A01-R02-L03"
+                    data-testid="input-bin-location"
                   />
                 </div>
               </div>

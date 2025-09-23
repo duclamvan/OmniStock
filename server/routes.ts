@@ -20,6 +20,7 @@ import {
   insertUserActivitySchema,
   productCostHistory,
   products,
+  productLocations,
   purchaseItems,
   receipts,
   receiptItems,
@@ -1155,6 +1156,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching product:", error);
       res.status(500).json({ message: "Failed to fetch product" });
+    }
+  });
+
+  // Product Locations endpoint
+  app.get('/api/products/:id/locations', async (req, res) => {
+    try {
+      const productId = req.params.id;
+      
+      // First check if product exists and get its warehouseLocation
+      const product = await storage.getProductById(productId);
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+      
+      // Get product locations from productLocations table
+      const locations = await db
+        .select()
+        .from(productLocations)
+        .where(eq(productLocations.productId, productId))
+        .orderBy(desc(productLocations.isPrimary), desc(productLocations.quantity));
+      
+      // If no locations in productLocations table, but product has warehouseLocation field
+      if (locations.length === 0 && product.warehouseLocation) {
+        res.json([{
+          id: 'legacy',
+          productId: productId,
+          locationCode: product.warehouseLocation,
+          quantity: product.quantity || 0,
+          isPrimary: true,
+          locationType: 'warehouse'
+        }]);
+      } else {
+        res.json(locations);
+      }
+    } catch (error) {
+      console.error("Error fetching product locations:", error);
+      res.status(500).json({ message: "Failed to fetch product locations" });
     }
   });
 
