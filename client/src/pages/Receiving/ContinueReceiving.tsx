@@ -1999,7 +1999,7 @@ export default function ContinueReceiving() {
             {shipment.status?.replace('_', ' ').toUpperCase()}
           </Badge>
           {receipt && (
-            <Link href={`/receiving/receipt/${receipt.id}`}>
+            <Link href={`/receiving/details/${receipt.id}`}>
               <Button variant="outline" size="sm">
                 <FileText className="h-4 w-4 mr-2" />
                 View Receipt
