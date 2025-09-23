@@ -1301,184 +1301,111 @@ export default function ItemsToStore() {
           setCurrentSegments(["", "", "", ""]);
         }
       }}>
-        <SheetContent side="bottom" className="h-[85vh] overflow-y-auto">
-          {/* Header with Item Name */}
-          <SheetHeader className="pb-4 border-b">
-            <SheetTitle className="text-lg">Add Storage Locations</SheetTitle>
+        <SheetContent side="bottom" className="h-auto max-h-[85vh] overflow-y-auto">
+          {/* Compact Header */}
+          <SheetHeader className="pb-2">
+            <SheetTitle className="text-base font-semibold">Add Location</SheetTitle>
             {currentItem && (
-              <div className="mt-3 space-y-4">
-                {/* Item Name Section - Mobile Optimized */}
-                <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl p-4 sm:p-3">
-                  <div className="space-y-3">
-                    {/* Header Row */}
-                    <div className="flex items-center gap-3">
-                      <div className="bg-primary/20 rounded-lg p-2">
-                        <Package className="h-5 w-5 text-primary" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Current Item</p>
-                      </div>
-                    </div>
-                    
-                    {/* Product Name - Mobile Friendly */}
-                    <div className="space-y-2">
-                      <h3 className="text-lg sm:text-base font-bold leading-tight break-words">
-                        {currentItem.productName}
-                      </h3>
-                      
-                      {/* SKU and Quantity - Stacked on Mobile */}
-                      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+              <div className="mt-2 space-y-2">
+                {/* Compact Item Info */}
+                <div className="bg-gray-50 rounded-lg p-2.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{currentItem.productName}</p>
+                      <div className="flex items-center gap-3 mt-1">
                         {currentItem.sku && (
-                          <div className="flex items-center gap-2 bg-white/50 rounded-lg px-3 py-2">
-                            <Hash className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                              <p className="text-xs text-muted-foreground">SKU</p>
-                              <p className="font-mono text-sm font-medium">{currentItem.sku}</p>
-                            </div>
-                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            SKU: <span className="font-mono">{currentItem.sku}</span>
+                          </span>
                         )}
-                        <div className="flex items-center gap-2 bg-white/50 rounded-lg px-3 py-2">
-                          <Boxes className="h-4 w-4 text-muted-foreground" />
-                          <div>
-                            <p className="text-xs text-muted-foreground">Quantity</p>
-                            <p className="text-sm font-semibold">{currentItem.receivedQuantity} units</p>
-                          </div>
-                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          Qty: <span className="font-semibold">{currentItem.receivedQuantity}</span>
+                        </span>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Current/Suggested Location - Mobile Optimized */}
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
-                  {getSuggestedLocation(currentItem) ? (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <div className="bg-green-100 dark:bg-green-900/30 rounded-lg p-1.5">
-                          <MapPin className="h-4 w-4 text-green-600" />
-                        </div>
-                        <p className="text-sm font-medium text-muted-foreground">Current Primary Location</p>
-                      </div>
-                      <div className="bg-white dark:bg-gray-700 rounded-lg p-3 border-l-4 border-green-500">
-                        <p className="font-mono text-base font-bold tracking-wide">{getSuggestedLocation(currentItem)}</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <div className="bg-orange-100 dark:bg-orange-900/30 rounded-lg p-1.5">
-                          <AlertCircle className="h-4 w-4 text-orange-600" />
-                        </div>
-                        <p className="text-sm font-medium text-orange-600">New item - no current location</p>
-                      </div>
-                      <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border-l-4 border-blue-500">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Navigation className="h-4 w-4 text-blue-600" />
-                          <span className="text-sm font-medium text-blue-600">Suggested Location</span>
-                        </div>
-                        <p className="font-mono text-base font-bold tracking-wide text-blue-800 dark:text-blue-200">
-                          {generateSuggestedLocation(currentItem)}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                {/* Suggested Location - Compact */}
+                {getSuggestedLocation(currentItem) ? (
+                  <div className="flex items-center gap-2 bg-green-50 rounded-lg px-3 py-2">
+                    <MapPin className="h-3.5 w-3.5 text-green-600" />
+                    <span className="text-xs text-green-700">Current:</span>
+                    <span className="font-mono text-xs font-semibold">{getSuggestedLocation(currentItem)}</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 bg-blue-50 rounded-lg px-3 py-2">
+                    <Navigation className="h-3.5 w-3.5 text-blue-600" />
+                    <span className="text-xs text-blue-700">Suggested:</span>
+                    <span className="font-mono text-xs font-semibold">{generateSuggestedLocation(currentItem)}</span>
+                  </div>
+                )}
               </div>
             )}
           </SheetHeader>
-          <div className="mt-6 space-y-4">
-            {/* Mobile-Optimized Session Locations */}
+          <div className="mt-3 space-y-3">
+            {/* Compact Session Locations */}
             {sessionsLocations.length > 0 && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between bg-green-50 dark:bg-green-900/20 rounded-xl p-3">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
-                    <p className="text-sm font-semibold text-green-800 dark:text-green-200">Added Locations</p>
-                  </div>
-                  <Badge variant="secondary" className="bg-green-100 text-green-800">
-                    {sessionsLocations.length} location{sessionsLocations.length !== 1 ? 's' : ''}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-muted-foreground">Added Locations</span>
+                  <Badge variant="secondary" className="h-5 text-xs">
+                    {sessionsLocations.length}
                   </Badge>
                 </div>
                 
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {sessionsLocations.map((loc, idx) => (
-                    <div key={idx} className="bg-white dark:bg-gray-800 border-2 rounded-xl p-4 shadow-sm">
-                      {/* Location Header */}
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <div className="bg-green-100 dark:bg-green-900/30 rounded-lg p-2">
-                            <MapPin className="h-4 w-4 text-green-600" />
-                          </div>
-                          <div>
-                            <p className="font-mono text-base font-bold tracking-wide">{loc.code}</p>
-                            <Badge variant={loc.isPrimary ? "default" : "outline"} className="text-xs mt-1">
-                              {loc.isPrimary ? "Main Location" : "Secondary"}
-                            </Badge>
-                          </div>
+                    <div key={idx} className="bg-white border rounded-lg p-2.5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-3.5 w-3.5 text-gray-500" />
+                          <span className="font-mono text-sm font-medium">{loc.code}</span>
+                          {loc.isPrimary && (
+                            <Badge variant="default" className="h-4 text-xs px-1.5">Main</Badge>
+                          )}
                         </div>
-                      </div>
-                      
-                      {/* Mobile Action Buttons */}
-                      <div className="flex gap-2">
-                        {!loc.isPrimary && (
+                        <div className="flex items-center gap-1">
+                          {!loc.isPrimary && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                setSessionsLocations(prev => 
+                                  prev.map((l, i) => ({ 
+                                    ...l, 
+                                    isPrimary: i === idx 
+                                  }))
+                                );
+                                soundEffects.playSuccessBeep();
+                              }}
+                              className="h-7 px-2 text-xs"
+                            >
+                              <Star className="h-3 w-3" />
+                            </Button>
+                          )}
                           <Button
                             size="sm"
-                            variant="outline"
+                            variant="ghost"
+                            className="h-7 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
                             onClick={() => {
-                              setSessionsLocations(prev => 
-                                prev.map((l, i) => ({ 
-                                  ...l, 
-                                  isPrimary: i === idx 
-                                }))
-                              );
-                              soundEffects.playSuccessBeep();
-                              toast({
-                                title: "Primary Location Set",
-                                description: `${loc.code} is now the main location`,
-                              });
+                              setSessionsLocations(prev => prev.filter((_, i) => i !== idx));
+                              soundEffects.playErrorBeep();
                             }}
-                            className="flex-1 py-2"
                           >
-                            <Star className="h-4 w-4 mr-1" />
-                            Set as Main
+                            <X className="h-3 w-3" />
                           </Button>
-                        )}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-red-600 hover:text-red-700 border-red-200 hover:bg-red-50 py-2 px-4"
-                          onClick={() => {
-                            setSessionsLocations(prev => prev.filter((_, i) => i !== idx));
-                            soundEffects.playErrorBeep();
-                            toast({
-                              title: "Location Removed",
-                              description: `${loc.code} has been removed`,
-                            });
-                          }}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
-                
-                {sessionsLocations.length > 1 && (
-                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200">
-                    <div className="flex items-start gap-2">
-                      <Info className="h-4 w-4 text-blue-600 mt-0.5" />
-                      <p className="text-xs text-blue-800 dark:text-blue-200">
-                        <strong>Tip:</strong> The location marked as "Main" will be the primary storage location for this item.
-                      </p>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 
             {/* Add New Location Section */}
             <div className="space-y-2">
-              <p className="text-sm font-semibold">Add New Location</p>
+              <p className="text-xs font-medium text-muted-foreground">Enter Location Code</p>
               <SegmentedLocationInput 
               initialCode={currentItem ? (getSuggestedLocation(currentItem) || generateSuggestedLocation(currentItem)) : null}
               onSegmentChange={(segments) => {
@@ -1502,24 +1429,20 @@ export default function ItemsToStore() {
 
             <ScanFeedback type={scanFeedback.type} message={scanFeedback.message} />
 
-            {/* Mobile-Optimized Action Buttons */}
-            <div className="space-y-3">
-              {/* Clear Button - Full Width on Mobile */}
+            {/* Compact Action Buttons */}
+            <div className="flex gap-2">
               <Button
                 variant="outline"
                 onClick={() => {
-                  // Clear all fields for fresh input
                   setCurrentSegments(["", "", "", ""]);
                   setLocationScan("");
                   setScanFeedback({ type: null, message: '' });
                   
-                  // Clear input values directly
                   const inputs = document.querySelectorAll('[data-segment-input]');
                   inputs.forEach((input: any) => { 
                     if (input) input.value = ''; 
                   });
                   
-                  // Focus first input
                   setTimeout(() => {
                     const firstInput = document.querySelector('[data-segment-input="0"]') as HTMLInputElement;
                     if (firstInput) firstInput.focus();
@@ -1527,43 +1450,51 @@ export default function ItemsToStore() {
                   
                   soundEffects.playSuccessBeep();
                 }}
-                className="w-full py-4 text-base font-medium"
-                size="lg"
+                className="px-4"
+                size="sm"
               >
-                <X className="h-5 w-5 mr-2" />
-                Clear Fields
+                <X className="h-3.5 w-3.5 mr-1" />
+                Clear
               </Button>
               
-              {/* Add Location Button - Prominent */}
               <Button
                 onClick={async () => {
-                  // Build location code from current segments if available
                   if (currentSegments.every(seg => seg && seg.length > 0)) {
                     const code = currentSegments.join('-');
                     await addLocationToSession(code);
                   } else if (locationScan) {
                     await addLocationToSession(locationScan);
                   } else {
-                    await addLocationToSession(); // Will try to build from segments or show error
+                    await addLocationToSession();
                   }
                 }}
-                className="w-full py-6 text-lg font-bold bg-primary hover:bg-primary/90 shadow-lg"
-                size="lg"
-                disabled={sessionsLocations.length >= 10} // Limit to 10 locations
+                className="flex-1 bg-primary hover:bg-primary/90"
+                size="sm"
+                disabled={sessionsLocations.length >= 10}
               >
-                <div className="flex items-center justify-center gap-3">
-                  <Plus className="h-6 w-6" />
-                  <span>
-                    Add Location
-                    {sessionsLocations.length > 0 && (
-                      <span className="ml-2 bg-white/20 px-2 py-0.5 rounded-full text-sm font-medium">
-                        {sessionsLocations.length}
-                      </span>
-                    )}
+                <Plus className="h-3.5 w-3.5 mr-1" />
+                Add Location
+                {sessionsLocations.length > 0 && (
+                  <span className="ml-1.5 bg-white/20 px-1.5 py-0.5 rounded-full text-xs">
+                    {sessionsLocations.length}
                   </span>
-                </div>
+                )}
               </Button>
             </div>
+            
+            {/* Apply Locations Button */}
+            {sessionsLocations.length > 0 && (
+              <Button
+                onClick={() => {
+                  applySessionLocations();
+                }}
+                className="w-full bg-green-600 hover:bg-green-700 text-white"
+                size="sm"
+              >
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                Apply {sessionsLocations.length} Location{sessionsLocations.length !== 1 ? 's' : ''}
+              </Button>
+            )}
 
           </div>
         </SheetContent>
