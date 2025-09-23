@@ -1615,23 +1615,6 @@ export default function ItemsToStore() {
               </Button>
             </div>
 
-            {/* Help Text */}
-            <Card className="bg-blue-50 border-blue-200">
-              <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                  <Info className="h-5 w-5 text-blue-600 mt-0.5" />
-                  <div className="space-y-2 text-sm">
-                    <p className="font-medium text-blue-900">How to add locations:</p>
-                    <ul className="space-y-1 text-blue-800">
-                      <li>• Type or scan location codes in the fields above</li>
-                      <li>• Press "Add Location" to add multiple locations</li>
-                      <li>• Click "Set as Main" to designate primary storage</li>
-                      <li>• Examples: WH1-A01-R02-L03, DS1-F01-S01, PL1-B01</li>
-                    </ul>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </SheetContent>
       </Sheet>
