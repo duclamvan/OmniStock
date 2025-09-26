@@ -1588,8 +1588,8 @@ export default function ItemsToStore() {
                 onClick={() => {
                   applySessionLocations();
                 }}
-                className="w-full bg-green-600 hover:bg-green-700 text-white"
-                size="sm"
+                className="w-full bg-green-600 hover:bg-green-700 text-white py-4 text-base font-semibold"
+                size="lg"
                 disabled={sessionsLocations.reduce((sum, loc) => sum + loc.quantity, 0) === 0}
               >
                 <CheckCircle2 className="h-4 w-4 mr-2" />
