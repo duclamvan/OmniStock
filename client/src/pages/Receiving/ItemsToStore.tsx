@@ -833,11 +833,30 @@ export default function ItemsToStore() {
     setSessionsLocations([]);
     setShowScanner(false);
 
-    // Auto-advance if fully assigned
+    // Auto-advance to next pending item (don't increment index since current item will be filtered out)
     if (totalAssigned >= currentItem.receivedQuantity) {
       setTimeout(() => {
-        if (selectedItemIndex < displayItems.length - 1) {
-          setSelectedItemIndex(selectedItemIndex + 1);
+        // After applying locations, the current item will be filtered out of pending tab
+        // So we need to stay at the same index to see the next pending item
+        // Or if there are no more pending items at current index or later, find the first available
+        const updatedFilteredItems = selectedReceipt 
+          ? updatedItems.filter(item => item.receiptId === selectedReceipt)
+          : updatedItems;
+
+        const updatedDisplayItems = activeTab === 'pending'
+          ? updatedFilteredItems.filter(item => item.newLocations.length === 0 && !item.existingLocations.length)
+          : updatedFilteredItems.filter(item => item.newLocations.length > 0 || item.existingLocations.length > 0);
+
+        // If there are still items at the current index or later, stay at current index
+        // Otherwise, find the first available item
+        if (updatedDisplayItems.length > 0) {
+          if (selectedItemIndex < updatedDisplayItems.length) {
+            // Stay at current index - the next item will appear there
+            setSelectedItemIndex(selectedItemIndex);
+          } else {
+            // Go to first item if we're beyond the available items
+            setSelectedItemIndex(0);
+          }
         }
       }, 500);
     }
