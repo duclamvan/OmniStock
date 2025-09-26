@@ -1565,9 +1565,12 @@ export default function ItemsToStore() {
                     await addLocationToSession();
                   }
                 }}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                 size="sm"
-                disabled={sessionsLocations.length >= 10}
+                disabled={
+                  sessionsLocations.length >= 10 || 
+                  (!currentSegments.every(seg => seg && seg.length > 0) && !locationScan)
+                }
               >
                 <Plus className="h-3.5 w-3.5 mr-1" />
                 Add Location
