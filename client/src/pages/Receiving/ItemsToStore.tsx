@@ -261,7 +261,7 @@ function SegmentedLocationInput({ onComplete, autoFocus, initialCode, onSegmentC
       return;
     }
 
-    // Clean input - only allow alphanumeric
+    // Clean input - only allow alphanumeric (but don't format while typing)
     const cleaned = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
     const maxLen = segmentMaxLengths[index];
     const newValue = cleaned.substring(0, maxLen);
@@ -270,7 +270,7 @@ function SegmentedLocationInput({ onComplete, autoFocus, initialCode, onSegmentC
     newSegments[index] = newValue;
     setSegments(newSegments);
     
-    // Notify parent of segment changes
+    // Notify parent of segment changes (raw values, not formatted)
     if (onSegmentChange) {
       onSegmentChange(newSegments);
     }
@@ -279,32 +279,18 @@ function SegmentedLocationInput({ onComplete, autoFocus, initialCode, onSegmentC
     const shouldAdvance = (
       // Full length reached
       (newValue.length === maxLen) ||
-      // Common short patterns that indicate completion
-      (index === 1 && /^[A-Z]\d{1,2}$/.test(newValue) && newValue.length >= 2) ||
-      (index === 2 && /^R?\d{1,2}$/.test(newValue) && newValue.length >= 2) ||
-      (index === 3 && /^L?\d{1,2}$/.test(newValue) && newValue.length >= 2)
+      // Common short patterns that indicate completion (but more lenient)
+      (index === 1 && /^[A-Z]\d{2}$/.test(newValue)) || // Only advance on A01, not A0
+      (index === 2 && /^R\d{2}$/.test(newValue)) || // Only advance on R01, not R0
+      (index === 3 && /^L\d{2}$/.test(newValue)) // Only advance on L01, not L0
     );
     
     if (shouldAdvance && index < 3) {
       setTimeout(() => inputRefs[index + 1].current?.focus(), 50);
     }
 
-    // Check if all segments are complete (but don't auto-complete for manual typing if flag is set)
-    if (index === 3 && newValue.length >= 2) {
-      const formattedSegments = newSegments.map((seg, idx) => formatSegmentValue(idx, seg));
-      const allComplete = formattedSegments.every(seg => seg.length > 0);
-      if (allComplete) {
-        // Update with formatted values
-        setSegments(formattedSegments);
-        if (onSegmentChange) {
-          onSegmentChange(formattedSegments);
-        }
-        // Only auto-complete if not in manual-only mode
-        if (!onlyAutoCompleteOnScan) {
-          onComplete(formattedSegments.join('-'));
-        }
-      }
-    }
+    // Don't auto-complete or format while typing - let the user type freely
+    // Formatting will happen on blur or when they explicitly submit
   };
 
   // Handle blur to format the value
@@ -367,30 +353,31 @@ function SegmentedLocationInput({ onComplete, autoFocus, initialCode, onSegmentC
     } else if (e.key === 'ArrowRight' && index < 3) {
       inputRefs[index + 1].current?.focus();
     } else if (e.key === 'Enter') {
-      // Format current field first
-      const value = segments[index];
-      if (value && value.length > 0) {
-        const formatted = formatSegmentValue(index, value);
-        const newSegments = [...segments];
-        newSegments[index] = formatted;
-        setSegments(newSegments);
-        if (onSegmentChange) {
-          onSegmentChange(newSegments);
+      // Format all segments before submission
+      const formattedSegments = segments.map((seg, idx) => {
+        if (seg && seg.length > 0) {
+          return formatSegmentValue(idx, seg);
         }
-        
-        // Check if this is the first field and has a full code
-        if (index === 0 && formatted.includes('-')) {
-          e.preventDefault();
-          parseFullCode(formatted);
-          return;
-        }
-        
-        // Submit if all segments are complete
-        const formattedSegments = newSegments.map((seg, idx) => formatSegmentValue(idx, seg));
-        const allComplete = formattedSegments.every(seg => seg.length > 0);
-        if (allComplete) {
-          onComplete(formattedSegments.join('-'));
-        }
+        return seg;
+      });
+      
+      // Update the display with formatted values
+      setSegments(formattedSegments);
+      if (onSegmentChange) {
+        onSegmentChange(formattedSegments);
+      }
+      
+      // Check if this is the first field and has a full code
+      if (index === 0 && formattedSegments[0].includes('-')) {
+        e.preventDefault();
+        parseFullCode(formattedSegments[0]);
+        return;
+      }
+      
+      // Submit if all segments are complete
+      const allComplete = formattedSegments.every(seg => seg && seg.length > 0);
+      if (allComplete && !onlyAutoCompleteOnScan) {
+        onComplete(formattedSegments.join('-'));
       }
     } else if (e.key === '-' && segments[index].length > 0 && index < 3) {
       // Dash moves to next field after formatting
