@@ -1565,7 +1565,7 @@ export default function ItemsToStore() {
                     await addLocationToSession();
                   }
                 }}
-                className="flex-1 bg-primary hover:bg-primary/90"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
                 size="sm"
                 disabled={sessionsLocations.length >= 10}
               >
