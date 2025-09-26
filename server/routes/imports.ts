@@ -4430,21 +4430,26 @@ router.post('/receipts/:id/store-items', async (req, res) => {
     const results = await db.transaction(async (tx) => {
       const processedLocations = [];
       
-      for (const location of locations) {
-        const { receiptItemId, productId, locationCode, locationType, quantity, isPrimary, notes } = location;
+      // Handle nested structure from frontend
+      for (const assignment of locations) {
+        const { receiptItemId, productId, locations: itemLocations } = assignment;
         
-        // Update receipt item with warehouse location
-        await tx
-          .update(receiptItems)
-          .set({
-            warehouseLocation: locationCode,
-            storageInstructions: notes,
-            updatedAt: new Date()
-          })
-          .where(eq(receiptItems.id, receiptItemId));
-        
-        // If product exists, update or create product location
-        if (productId) {
+        // Process each location for this item
+        for (const loc of (itemLocations || [])) {
+          const { locationCode, locationType, quantity, isPrimary, notes } = loc;
+          
+          // Update receipt item with warehouse location
+          await tx
+            .update(receiptItems)
+            .set({
+              warehouseLocation: locationCode,
+              storageInstructions: notes,
+              updatedAt: new Date()
+            })
+            .where(eq(receiptItems.id, receiptItemId));
+          
+          // If product exists, update or create product location
+          if (productId) {
           // Check if location already exists for this product
           const [existingLocation] = await tx
             .select()
@@ -4514,6 +4519,7 @@ router.post('/receipts/:id/store-items', async (req, res) => {
               updatedAt: new Date()
             })
             .where(eq(products.id, productId));
+          }
         }
       }
       
@@ -4529,6 +4535,7 @@ router.post('/receipts/:id/store-items', async (req, res) => {
         );
       
       if (unstored[0]?.count === 0) {
+        // Mark receipt as stored
         await tx
           .update(receipts)
           .set({
@@ -4536,6 +4543,17 @@ router.post('/receipts/:id/store-items', async (req, res) => {
             updatedAt: new Date()
           })
           .where(eq(receipts.id, receiptId));
+        
+        // Mark shipment as completed since all items have been stored
+        await tx
+          .update(shipments)
+          .set({
+            receivingStatus: 'completed',
+            status: 'delivered',
+            deliveredAt: new Date(),
+            updatedAt: new Date()
+          })
+          .where(eq(shipments.id, receipt.shipmentId));
       }
       
       return processedLocations;
