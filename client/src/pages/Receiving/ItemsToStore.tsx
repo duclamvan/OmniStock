@@ -138,13 +138,14 @@ function generateSuggestedLocation(item: StorageItem): string {
 // Segmented Location Input Component
 interface SegmentedLocationInputProps {
   onComplete: (code: string) => void;
+  onSubmit?: (code: string) => void; // For explicit ENTER submissions
   autoFocus?: boolean;
   initialCode?: string | null;
   onSegmentChange?: (segments: string[]) => void;
   onlyAutoCompleteOnScan?: boolean; // Only auto-complete for barcode scans, not manual typing
 }
 
-function SegmentedLocationInput({ onComplete, autoFocus, initialCode, onSegmentChange, onlyAutoCompleteOnScan = false }: SegmentedLocationInputProps) {
+function SegmentedLocationInput({ onComplete, onSubmit, autoFocus, initialCode, onSegmentChange, onlyAutoCompleteOnScan = false }: SegmentedLocationInputProps) {
   // Parse initial code into segments
   const parseInitialCode = (code: string | null | undefined): string[] => {
     if (!code) return ["", "", "", ""];
@@ -376,8 +377,14 @@ function SegmentedLocationInput({ onComplete, autoFocus, initialCode, onSegmentC
       
       // Submit if all segments are complete
       const allComplete = formattedSegments.every(seg => seg && seg.length > 0);
-      if (allComplete && !onlyAutoCompleteOnScan) {
-        onComplete(formattedSegments.join('-'));
+      if (allComplete) {
+        const code = formattedSegments.join('-');
+        // Use onSubmit for explicit ENTER submissions, onComplete for auto-submissions
+        if (onSubmit) {
+          onSubmit(code);
+        } else if (!onlyAutoCompleteOnScan) {
+          onComplete(code);
+        }
       }
     } else if (e.key === '-' && segments[index].length > 0 && index < 3) {
       // Dash moves to next field after formatting
@@ -1650,6 +1657,19 @@ export default function ItemsToStore() {
                 addLocationToSession(code);
 
                 // Clear input for next scan (by reinitializing the component)
+                setLocationScan("");
+                setCurrentSegments(["", "", "", ""]);
+              }}
+              onSubmit={async (code) => {
+                // This is called when user presses ENTER (explicit submission)
+                
+                // Play success sound
+                await soundEffects.playSuccessBeep();
+
+                // Add to session
+                addLocationToSession(code);
+
+                // Clear input for next entry
                 setLocationScan("");
                 setCurrentSegments(["", "", "", ""]);
               }}
