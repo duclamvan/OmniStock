@@ -1309,7 +1309,7 @@ export default function ItemsToStore() {
                         <div className="flex items-center gap-2">
                           <MapPin className="h-5 w-5 text-primary" />
                           <span className="text-2xl font-mono font-bold text-primary">
-                            {getSuggestedLocation(item) || 'TBA'}
+                            {getSuggestedLocation(item) || generateSuggestedLocation(item)}
                           </span>
                           {item.existingLocations.some(loc => loc.isPrimary) && (
                             <Badge className="ml-2 bg-yellow-500 text-white">
