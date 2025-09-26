@@ -2017,19 +2017,74 @@ export default function ReceivingList() {
           ) : (
             <div className="space-y-4">
               {storageShipments.map((shipment: any) => {
+                const isExpanded = expandedShipments.has(shipment.id);
+                const receiptData = receiptDataMap.get(shipment.id);
+                const receiptItems = receiptData?.items || [];
+
+                // Create O(1) lookup map for receipt items by itemId
+                const receiptItemsMap = new Map();
+                receiptItems.forEach((item: any) => {
+                  receiptItemsMap.set(String(item.itemId), item);
+                });
+
                 return (
                   <Card key={shipment.id} className="border hover:shadow-md transition-shadow border-orange-300">
                     <CardContent className="p-4">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <div className="flex items-center gap-3 flex-1">
-                          <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100">
-                            Ready for Storage
-                          </Badge>
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+                        <div className="flex items-center gap-2 sm:gap-3 flex-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="p-1"
+                            onClick={() => {
+                              const newExpanded = new Set(expandedShipments);
+                              if (isExpanded) {
+                                newExpanded.delete(shipment.id);
+                              } else {
+                                newExpanded.add(shipment.id);
+                              }
+                              setExpandedShipments(newExpanded);
+                            }}
+                            data-testid={`button-toggle-storage-${shipment.id}`}
+                          >
+                            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          </Button>
                           <div className="flex-1">
-                            <h3 className="font-semibold">{shipment.shipmentName || `Shipment #${shipment.id}`}</h3>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {shipment.trackingNumber} • {shipment.endCarrier || shipment.carrier}
-                            </p>
+                            {/* First Row: Title and Status */}
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h3 className="font-semibold text-sm sm:text-base">
+                                {shipment.shipmentName || `Shipment #${shipment.id}`}
+                              </h3>
+                              <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100">
+                                Ready for Storage
+                              </Badge>
+                            </div>
+
+                            {/* Second Row: Shipment Type, Carrier, Units */}
+                            <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground mt-2">
+                              {(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod) && (
+                                <>
+                                  <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                                    {getShipmentTypeIcon(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod || '')}
+                                    {formatShipmentType(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod || '')}
+                                  </Badge>
+                                  <span className="text-muted-foreground">•</span>
+                                </>
+                              )}
+                              <span className="font-semibold">
+                                {shipment.endCarrier || shipment.carrier}
+                              </span>
+                              <span className="text-muted-foreground">•</span>
+                              <span className="flex items-center gap-1">
+                                {getUnitTypeIcon(shipment.unitType || 'items')}
+                                {shipment.totalUnits} {shipment.unitType || 'items'}
+                              </span>
+                            </div>
+
+                            {/* Third Row: Tracking */}
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-1">
+                              <span className="font-mono">Tracking: {shipment.trackingNumber}</span>
+                            </div>
                           </div>
                         </div>
                         <Link href="/receiving/items-to-store">
@@ -2043,6 +2098,156 @@ export default function ReceivingList() {
                           </Button>
                         </Link>
                       </div>
+
+                      {/* Additional Info Bar */}
+                      <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-xs sm:text-sm mb-3 sm:pl-11">
+                        {shipment.consolidation?.warehouse && (
+                          <div className="flex items-center gap-1">
+                            <Warehouse className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-muted-foreground">
+                              {shipment.consolidation.warehouse}
+                            </span>
+                          </div>
+                        )}
+                        {shipment.deliveredAt && (
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-muted-foreground">
+                              Received: {format(new Date(shipment.deliveredAt), 'MMM dd, HH:mm')}
+                            </span>
+                          </div>
+                        )}
+                        {shipment.actualWeight && (
+                          <div className="flex items-center gap-1">
+                            <Package2 className="h-3 w-3 text-muted-foreground" />
+                            <span className="font-semibold">
+                              Weight: {shipment.actualWeight} kg
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Expanded Items List */}
+                      {isExpanded && (
+                        <div className="mt-4 sm:pl-11">
+                          {(!shipment.items || shipment.items.length === 0) ? (
+                            <div className="text-center py-6 bg-muted/30 rounded-lg">
+                              <p className="text-muted-foreground text-sm">No items details available</p>
+                            </div>
+                          ) : (
+                            <div className="rounded-lg border bg-card overflow-hidden">
+                              <div className="p-2 border-b bg-orange-50 dark:bg-orange-950/30">
+                                <h4 className="text-xs font-semibold text-muted-foreground">ITEMS READY FOR STORAGE ({shipment.items.length})</h4>
+                              </div>
+                              {/* Use virtualization for lists with more than 20 items */}
+                              {shipment.items.length > 20 ? (
+                                <div>
+                                  {/* Table header */}
+                                  <div className="border-b bg-muted/20">
+                                    <div className="grid grid-cols-[1fr,100px,80px,100px] text-xs text-muted-foreground">
+                                      <div className="text-left px-2 py-1.5 font-medium">Item</div>
+                                      <div className="text-center px-2 py-1.5 font-medium">Qty</div>
+                                      <div className="text-center px-2 py-1.5 font-medium">Location</div>
+                                      <div className="text-center px-2 py-1.5 font-medium">Status</div>
+                                    </div>
+                                  </div>
+                                  {/* Virtualized list for performance */}
+                                  <List
+                                    height={400}
+                                    itemCount={shipment.items.length}
+                                    itemSize={40}
+                                    width="100%"
+                                  >
+                                    {({ index, style }) => {
+                                      const item = shipment.items[index];
+                                      const receiptItem = receiptItemsMap.get(String(item.id));
+
+                                      return (
+                                        <div style={style}>
+                                          <div className="grid grid-cols-[1fr,100px,80px,100px] text-sm items-center border-b hover:bg-muted/30">
+                                            <div className="px-2 py-2 truncate">
+                                              <span className="font-medium">{item.name}</span>
+                                              {item.sku && (
+                                                <span className="text-xs text-muted-foreground ml-2">({item.sku})</span>
+                                              )}
+                                            </div>
+                                            <div className="px-2 py-2 text-center font-mono text-xs">
+                                              {receiptItem?.receivedQuantity || item.quantity || 0}
+                                            </div>
+                                            <div className="px-2 py-2 text-center">
+                                              <Badge variant="outline" className="text-xs">
+                                                TBA
+                                              </Badge>
+                                            </div>
+                                            <div className="px-2 py-2 text-center">
+                                              <Badge className="bg-orange-100 text-orange-800 text-xs">
+                                                Pending
+                                              </Badge>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      );
+                                    }}
+                                  </List>
+                                </div>
+                              ) : (
+                                /* Regular table for small lists */
+                                <div className="overflow-x-auto">
+                                  <table className="w-full text-sm">
+                                    <thead className="border-b bg-muted/20">
+                                      <tr className="text-xs text-muted-foreground">
+                                        <th className="text-left px-2 py-1.5 font-medium">Item</th>
+                                        <th className="text-center px-2 py-1.5 font-medium min-w-[100px]">Qty</th>
+                                        <th className="text-center px-2 py-1.5 font-medium min-w-[80px]">Location</th>
+                                        <th className="text-center px-2 py-1.5 font-medium">Status</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {shipment.items.map((item: any, index: number) => {
+                                        const receiptItem = receiptItemsMap.get(String(item.id));
+
+                                        return (
+                                          <tr key={item.id || index} className="hover:bg-muted/30 border-b">
+                                            <td className="px-2 py-2">
+                                              <span className="font-medium">{item.name}</span>
+                                              {item.sku && (
+                                                <span className="text-xs text-muted-foreground ml-2">({item.sku})</span>
+                                              )}
+                                            </td>
+                                            <td className="px-2 py-2 text-center font-mono text-xs">
+                                              {receiptItem?.receivedQuantity || item.quantity || 0}
+                                            </td>
+                                            <td className="px-2 py-2 text-center">
+                                              <Badge variant="outline" className="text-xs">
+                                                TBA
+                                              </Badge>
+                                            </td>
+                                            <td className="px-2 py-2 text-center">
+                                              <Badge className="bg-orange-100 text-orange-800 text-xs">
+                                                Pending
+                                              </Badge>
+                                            </td>
+                                          </tr>
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Notes */}
+                      {shipment.notes && isExpanded && (
+                        <div className="mt-3 sm:pl-11">
+                          <div className="p-3 bg-muted/50 rounded-lg">
+                            <p className="text-xs text-muted-foreground mb-1">Notes:</p>
+                            <p className="text-sm">{shipment.notes}</p>
+                          </div>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 );
@@ -2065,25 +2270,81 @@ export default function ReceivingList() {
           ) : (
             <div className="space-y-4">
               {completedShipments.map((shipment: any) => {
+                const isExpanded = expandedShipments.has(shipment.id);
+                const receiptData = receiptDataMap.get(shipment.id);
+                const receiptItems = receiptData?.items || [];
+
+                // Create O(1) lookup map for receipt items by itemId
+                const receiptItemsMap = new Map();
+                receiptItems.forEach((item: any) => {
+                  receiptItemsMap.set(String(item.itemId), item);
+                });
+
                 return (
                   <Card key={shipment.id} className="border hover:shadow-md transition-shadow border-green-300">
                     <CardContent className="p-4">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <div className="flex items-center gap-3 flex-1">
-                          <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100">
-                            Completed
-                          </Badge>
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+                        <div className="flex items-center gap-2 sm:gap-3 flex-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="p-1"
+                            onClick={() => {
+                              const newExpanded = new Set(expandedShipments);
+                              if (isExpanded) {
+                                newExpanded.delete(shipment.id);
+                              } else {
+                                newExpanded.add(shipment.id);
+                              }
+                              setExpandedShipments(newExpanded);
+                            }}
+                            data-testid={`button-toggle-completed-${shipment.id}`}
+                          >
+                            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          </Button>
                           <div className="flex-1">
-                            <h3 className="font-semibold">{shipment.shipmentName || `Shipment #${shipment.id}`}</h3>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {shipment.trackingNumber} • {shipment.endCarrier || shipment.carrier}
-                            </p>
+                            {/* First Row: Title and Status */}
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h3 className="font-semibold text-sm sm:text-base">
+                                {shipment.shipmentName || `Shipment #${shipment.id}`}
+                              </h3>
+                              <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100">
+                                Completed
+                              </Badge>
+                            </div>
+
+                            {/* Second Row: Shipment Type, Carrier, Units */}
+                            <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground mt-2">
+                              {(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod) && (
+                                <>
+                                  <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                                    {getShipmentTypeIcon(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod || '')}
+                                    {formatShipmentType(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod || '')}
+                                  </Badge>
+                                  <span className="text-muted-foreground">•</span>
+                                </>
+                              )}
+                              <span className="font-semibold">
+                                {shipment.endCarrier || shipment.carrier}
+                              </span>
+                              <span className="text-muted-foreground">•</span>
+                              <span className="flex items-center gap-1">
+                                {getUnitTypeIcon(shipment.unitType || 'items')}
+                                {shipment.totalUnits} {shipment.unitType || 'items'}
+                              </span>
+                            </div>
+
+                            {/* Third Row: Tracking */}
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-1">
+                              <span className="font-mono">Tracking: {shipment.trackingNumber}</span>
+                            </div>
                           </div>
                         </div>
                         {shipment.receiptId ? (
                           <Link href={`/receiving/details/${shipment.receiptId}`}>
-                            <Button size="sm" variant="outline" data-testid={`button-view-details-${shipment.id}`}>
-                              View Details
+                            <Button size="sm" variant="outline" className="shadow-sm" data-testid={`button-view-details-${shipment.id}`}>
+                              <Eye className="h-4 w-4 mr-1" />
+                              View Receipt
                             </Button>
                           </Link>
                         ) : (
@@ -2092,6 +2353,178 @@ export default function ReceivingList() {
                           </Button>
                         )}
                       </div>
+
+                      {/* Additional Info Bar */}
+                      <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-xs sm:text-sm mb-3 sm:pl-11">
+                        {shipment.consolidation?.warehouse && (
+                          <div className="flex items-center gap-1">
+                            <Warehouse className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-muted-foreground">
+                              {shipment.consolidation.warehouse}
+                            </span>
+                          </div>
+                        )}
+                        {shipment.deliveredAt && (
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-muted-foreground">
+                              Completed: {format(new Date(shipment.deliveredAt), 'MMM dd, HH:mm')}
+                            </span>
+                          </div>
+                        )}
+                        {shipment.actualWeight && (
+                          <div className="flex items-center gap-1">
+                            <Package2 className="h-3 w-3 text-muted-foreground" />
+                            <span className="font-semibold">
+                              Weight: {shipment.actualWeight} kg
+                            </span>
+                          </div>
+                        )}
+                        {receiptData && (
+                          <div className="flex items-center gap-1">
+                            <User className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-muted-foreground">
+                              Received by: {receiptData.receiver || 'Unknown'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Expanded Items List */}
+                      {isExpanded && (
+                        <div className="mt-4 sm:pl-11">
+                          {(!shipment.items || shipment.items.length === 0) ? (
+                            <div className="text-center py-6 bg-muted/30 rounded-lg">
+                              <p className="text-muted-foreground text-sm">No items details available</p>
+                            </div>
+                          ) : (
+                            <div className="rounded-lg border bg-card overflow-hidden">
+                              <div className="p-2 border-b bg-emerald-50 dark:bg-emerald-950/30">
+                                <h4 className="text-xs font-semibold text-muted-foreground">COMPLETED ITEMS ({shipment.items.length})</h4>
+                              </div>
+                              {/* Use virtualization for lists with more than 20 items */}
+                              {shipment.items.length > 20 ? (
+                                <div>
+                                  {/* Table header */}
+                                  <div className="border-b bg-muted/20">
+                                    <div className="grid grid-cols-[1fr,100px,120px,100px] text-xs text-muted-foreground">
+                                      <div className="text-left px-2 py-1.5 font-medium">Item</div>
+                                      <div className="text-center px-2 py-1.5 font-medium">Qty</div>
+                                      <div className="text-center px-2 py-1.5 font-medium">Location</div>
+                                      <div className="text-center px-2 py-1.5 font-medium">Status</div>
+                                    </div>
+                                  </div>
+                                  {/* Virtualized list for performance */}
+                                  <List
+                                    height={400}
+                                    itemCount={shipment.items.length}
+                                    itemSize={40}
+                                    width="100%"
+                                  >
+                                    {({ index, style }) => {
+                                      const item = shipment.items[index];
+                                      const receiptItem = receiptItemsMap.get(String(item.id));
+
+                                      return (
+                                        <div style={style}>
+                                          <div className="grid grid-cols-[1fr,100px,120px,100px] text-sm items-center border-b hover:bg-muted/30">
+                                            <div className="px-2 py-2 truncate">
+                                              <span className="font-medium">{item.name}</span>
+                                              {item.sku && (
+                                                <span className="text-xs text-muted-foreground ml-2">({item.sku})</span>
+                                              )}
+                                            </div>
+                                            <div className="px-2 py-2 text-center font-mono text-xs">
+                                              {receiptItem?.receivedQuantity || item.quantity || 0}
+                                            </div>
+                                            <div className="px-2 py-2 text-center">
+                                              {receiptItem?.locationCode ? (
+                                                <Badge variant="outline" className="text-xs font-mono">
+                                                  {receiptItem.locationCode}
+                                                </Badge>
+                                              ) : (
+                                                <Badge variant="secondary" className="text-xs">
+                                                  Stored
+                                                </Badge>
+                                              )}
+                                            </div>
+                                            <div className="px-2 py-2 text-center">
+                                              <Badge className="bg-emerald-100 text-emerald-800 text-xs">
+                                                <CheckCircle className="h-3 w-3 mr-1" />
+                                                Complete
+                                              </Badge>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      );
+                                    }}
+                                  </List>
+                                </div>
+                              ) : (
+                                /* Regular table for small lists */
+                                <div className="overflow-x-auto">
+                                  <table className="w-full text-sm">
+                                    <thead className="border-b bg-muted/20">
+                                      <tr className="text-xs text-muted-foreground">
+                                        <th className="text-left px-2 py-1.5 font-medium">Item</th>
+                                        <th className="text-center px-2 py-1.5 font-medium min-w-[100px]">Qty</th>
+                                        <th className="text-center px-2 py-1.5 font-medium min-w-[120px]">Location</th>
+                                        <th className="text-center px-2 py-1.5 font-medium">Status</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {shipment.items.map((item: any, index: number) => {
+                                        const receiptItem = receiptItemsMap.get(String(item.id));
+
+                                        return (
+                                          <tr key={item.id || index} className="hover:bg-muted/30 border-b">
+                                            <td className="px-2 py-2">
+                                              <span className="font-medium">{item.name}</span>
+                                              {item.sku && (
+                                                <span className="text-xs text-muted-foreground ml-2">({item.sku})</span>
+                                              )}
+                                            </td>
+                                            <td className="px-2 py-2 text-center font-mono text-xs">
+                                              {receiptItem?.receivedQuantity || item.quantity || 0}
+                                            </td>
+                                            <td className="px-2 py-2 text-center">
+                                              {receiptItem?.locationCode ? (
+                                                <Badge variant="outline" className="text-xs font-mono">
+                                                  {receiptItem.locationCode}
+                                                </Badge>
+                                              ) : (
+                                                <Badge variant="secondary" className="text-xs">
+                                                  Stored
+                                                </Badge>
+                                              )}
+                                            </td>
+                                            <td className="px-2 py-2 text-center">
+                                              <Badge className="bg-emerald-100 text-emerald-800 text-xs">
+                                                <CheckCircle className="h-3 w-3 mr-1 inline" />
+                                                Complete
+                                              </Badge>
+                                            </td>
+                                          </tr>
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Notes */}
+                      {shipment.notes && isExpanded && (
+                        <div className="mt-3 sm:pl-11">
+                          <div className="p-3 bg-muted/50 rounded-lg">
+                            <p className="text-xs text-muted-foreground mb-1">Notes:</p>
+                            <p className="text-sm">{shipment.notes}</p>
+                          </div>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 );
