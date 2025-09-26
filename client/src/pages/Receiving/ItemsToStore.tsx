@@ -1479,7 +1479,23 @@ export default function ItemsToStore() {
               <div className="mt-2 space-y-2">
                 {/* Compact Item Info */}
                 <div className="bg-gray-50 rounded-lg p-2.5">
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start gap-3">
+                    {/* Product Image */}
+                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-white border flex-shrink-0">
+                      {currentItem.imageUrl ? (
+                        <img 
+                          src={currentItem.imageUrl} 
+                          alt={currentItem.productName}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Package className="h-6 w-6 text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Item Details */}
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate">{currentItem.productName}</p>
                       <div className="flex items-center gap-3 mt-1">
