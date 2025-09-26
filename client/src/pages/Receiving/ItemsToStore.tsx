@@ -203,6 +203,55 @@ function SegmentedLocationInput({ onComplete, autoFocus, initialCode, onSegmentC
     }
   };
 
+  // Format segment value based on warehouse conventions
+  const formatSegmentValue = (index: number, value: string): string => {
+    const upperValue = value.toUpperCase().trim();
+    if (!upperValue) return '';
+    
+    // Format based on segment position
+    if (index === 0) {
+      // Warehouse segment (e.g., WH1 → WH1, M1 → M01, PL1 → PL1)
+      if (/^[A-Z]+\d+$/.test(upperValue)) {
+        const letters = upperValue.match(/[A-Z]+/)?.[0] || '';
+        const numbers = upperValue.match(/\d+/)?.[0] || '';
+        // Only pad single digit numbers for single letter prefixes
+        if (letters.length === 1 && numbers.length === 1) {
+          return letters + numbers.padStart(2, '0');
+        }
+        return upperValue;
+      }
+      return upperValue;
+    } else if (index === 1) {
+      // Aisle segment (e.g., A1 → A01, 5 → 05)
+      if (/^[A-Z]\d+$/.test(upperValue)) {
+        const letter = upperValue[0];
+        const number = upperValue.slice(1).padStart(2, '0');
+        return letter + number;
+      } else if (/^\d+$/.test(upperValue)) {
+        // Just numbers, pad with zeros
+        return upperValue.padStart(2, '0');
+      }
+      return upperValue;
+    } else if (index === 2) {
+      // Rack segment (e.g., R1 → R01, 3 → R03)
+      if (/^R?\d+$/.test(upperValue)) {
+        const hasR = upperValue.startsWith('R');
+        const number = upperValue.replace('R', '');
+        return 'R' + number.padStart(2, '0');
+      }
+      return upperValue;
+    } else if (index === 3) {
+      // Level segment (e.g., L1 → L01, 2 → L02)
+      if (/^L?\d+$/.test(upperValue)) {
+        const hasL = upperValue.startsWith('L');
+        const number = upperValue.replace('L', '');
+        return 'L' + number.padStart(2, '0');
+      }
+      return upperValue;
+    }
+    return upperValue;
+  };
+
   // Handle input change for each segment
   const handleSegmentChange = (index: number, value: string) => {
     // Check if this looks like a full barcode scan (contains dashes)
@@ -225,23 +274,87 @@ function SegmentedLocationInput({ onComplete, autoFocus, initialCode, onSegmentC
       onSegmentChange(newSegments);
     }
 
-    // Auto-advance to next field when current is filled
-    if (newValue.length === maxLen && index < 3) {
+    // Smart auto-advance based on common patterns
+    const shouldAdvance = (
+      // Full length reached
+      (newValue.length === maxLen) ||
+      // Common short patterns that indicate completion
+      (index === 1 && /^[A-Z]\d{1,2}$/.test(newValue) && newValue.length >= 2) ||
+      (index === 2 && /^R?\d{1,2}$/.test(newValue) && newValue.length >= 2) ||
+      (index === 3 && /^L?\d{1,2}$/.test(newValue) && newValue.length >= 2)
+    );
+    
+    if (shouldAdvance && index < 3) {
       setTimeout(() => inputRefs[index + 1].current?.focus(), 50);
     }
 
     // Check if all segments are complete
-    if (index === 3 && newValue.length === maxLen) {
-      const allComplete = newSegments.every((seg, i) => seg.length === segmentMaxLengths[i]);
+    if (index === 3 && newValue.length >= 2) {
+      const formattedSegments = newSegments.map((seg, idx) => formatSegmentValue(idx, seg));
+      const allComplete = formattedSegments.every(seg => seg.length > 0);
       if (allComplete) {
-        onComplete(newSegments.join('-'));
+        // Update with formatted values before completion
+        setSegments(formattedSegments);
+        if (onSegmentChange) {
+          onSegmentChange(formattedSegments);
+        }
+        onComplete(formattedSegments.join('-'));
+      }
+    }
+  };
+
+  // Handle blur to format the value
+  const handleBlur = (index: number) => {
+    const value = segments[index];
+    if (value) {
+      const formatted = formatSegmentValue(index, value);
+      if (formatted !== value) {
+        const newSegments = [...segments];
+        newSegments[index] = formatted;
+        setSegments(newSegments);
+        
+        // Notify parent of formatted change
+        if (onSegmentChange) {
+          onSegmentChange(newSegments);
+        }
+        
+        // Check if complete after formatting
+        if (newSegments.every(seg => seg.length > 0)) {
+          const formattedSegments = newSegments.map((seg, idx) => formatSegmentValue(idx, seg));
+          const code = formattedSegments.join('-');
+          if (formattedSegments.every(seg => seg.length > 0)) {
+            onComplete(code);
+          }
+        }
       }
     }
   };
 
   // Handle keyboard navigation
   const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace' && segments[index] === '' && index > 0) {
+    if (e.key === 'Tab' && !e.shiftKey) {
+      // On Tab, format current field before moving to next
+      const value = segments[index];
+      if (value && value.length > 0) {
+        const formatted = formatSegmentValue(index, value);
+        if (formatted !== value) {
+          e.preventDefault();
+          const newSegments = [...segments];
+          newSegments[index] = formatted;
+          setSegments(newSegments);
+          if (onSegmentChange) {
+            onSegmentChange(newSegments);
+          }
+          // Move to next field after a brief delay
+          if (index < 3) {
+            setTimeout(() => inputRefs[index + 1].current?.focus(), 50);
+          }
+        }
+      }
+    } else if (e.key === 'Tab' && e.shiftKey && index > 0) {
+      // Shift+Tab goes back without formatting
+      // Default behavior is fine
+    } else if (e.key === 'Backspace' && segments[index] === '' && index > 0) {
       // Move to previous field on backspace when empty
       e.preventDefault();
       inputRefs[index - 1].current?.focus();
@@ -250,21 +363,44 @@ function SegmentedLocationInput({ onComplete, autoFocus, initialCode, onSegmentC
     } else if (e.key === 'ArrowRight' && index < 3) {
       inputRefs[index + 1].current?.focus();
     } else if (e.key === 'Enter') {
-      // Check if this is the first field and has a full code
-      const currentValue = e.currentTarget.value;
-      if (index === 0 && currentValue.includes('-')) {
-        e.preventDefault();
-        parseFullCode(currentValue);
-        return;
-      }
-      // Submit if all segments are complete
-      const allComplete = segments.every((seg, i) => seg.length === segmentMaxLengths[i]);
-      if (allComplete) {
-        onComplete(segments.join('-'));
+      // Format current field first
+      const value = segments[index];
+      if (value && value.length > 0) {
+        const formatted = formatSegmentValue(index, value);
+        const newSegments = [...segments];
+        newSegments[index] = formatted;
+        setSegments(newSegments);
+        if (onSegmentChange) {
+          onSegmentChange(newSegments);
+        }
+        
+        // Check if this is the first field and has a full code
+        if (index === 0 && formatted.includes('-')) {
+          e.preventDefault();
+          parseFullCode(formatted);
+          return;
+        }
+        
+        // Submit if all segments are complete
+        const formattedSegments = newSegments.map((seg, idx) => formatSegmentValue(idx, seg));
+        const allComplete = formattedSegments.every(seg => seg.length > 0);
+        if (allComplete) {
+          onComplete(formattedSegments.join('-'));
+        }
       }
     } else if (e.key === '-' && segments[index].length > 0 && index < 3) {
-      // Dash moves to next field
+      // Dash moves to next field after formatting
       e.preventDefault();
+      const value = segments[index];
+      if (value) {
+        const formatted = formatSegmentValue(index, value);
+        const newSegments = [...segments];
+        newSegments[index] = formatted;
+        setSegments(newSegments);
+        if (onSegmentChange) {
+          onSegmentChange(newSegments);
+        }
+      }
       inputRefs[index + 1].current?.focus();
     }
   };
@@ -293,14 +429,17 @@ function SegmentedLocationInput({ onComplete, autoFocus, initialCode, onSegmentC
                   value={segment}
                   onChange={(e) => handleSegmentChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
+                  onBlur={() => handleBlur(index)}
                   onPaste={handlePaste}
                   onFocus={(e) => {
                     e.target.select();
                   }}
                   placeholder={segmentPlaceholders[index]}
-                  className="w-full px-3 py-4 text-center text-lg font-mono border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-4 text-center text-lg font-mono uppercase border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary transition-all hover:border-gray-400"
                   maxLength={segmentMaxLengths[index]}
                   data-testid={`input-loc-${segmentLabels[index].toLowerCase()}`}
+                  autoComplete="off"
+                  spellCheck={false}
                 />
               </div>
               {index < 3 && (
