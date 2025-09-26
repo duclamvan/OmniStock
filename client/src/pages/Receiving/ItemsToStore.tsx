@@ -18,7 +18,8 @@ import {
   QrCode, 
   CheckCircle2, 
   AlertCircle, 
-  Plus, 
+  Plus,
+  Minus, 
   X, 
   Star, 
   MapPin,
@@ -610,6 +611,10 @@ export default function ItemsToStore() {
       return false;
     }
 
+    // Calculate remaining quantity accounting for session locations
+    const sessionTotal = sessionsLocations.reduce((sum, loc) => sum + loc.quantity, 0);
+    const availableForNewLocation = Math.max(0, remainingQuantity - sessionTotal);
+    
     // Add to session (NOT to actual item yet)
     const isFirstLocation = sessionsLocations.length === 0 && 
                            currentItem?.newLocations.length === 0 && 
@@ -618,7 +623,7 @@ export default function ItemsToStore() {
     setSessionsLocations(prev => [...prev, {
       code: trimmedValue,
       isPrimary: isFirstLocation,
-      quantity: Math.min(remainingQuantity, currentItem?.receivedQuantity || 0)
+      quantity: availableForNewLocation > 0 ? availableForNewLocation : 1 // At least 1 for the location
     }]);
 
     // Play success sound and show feedback
@@ -1353,61 +1358,144 @@ export default function ItemsToStore() {
             )}
           </SheetHeader>
           <div className="mt-3 space-y-3">
-            {/* Compact Session Locations */}
+            {/* Compact Session Locations with Quantity */}
             {sessionsLocations.length > 0 && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-muted-foreground">Added Locations</span>
-                  <Badge variant="secondary" className="h-5 text-xs">
-                    {sessionsLocations.length}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="h-5 text-xs">
+                      Total: {sessionsLocations.reduce((sum, loc) => sum + loc.quantity, 0)} / {currentItem?.receivedQuantity || 0}
+                    </Badge>
+                    <Badge variant="secondary" className="h-5 text-xs">
+                      {sessionsLocations.length} location{sessionsLocations.length !== 1 ? 's' : ''}
+                    </Badge>
+                  </div>
                 </div>
                 
                 <div className="space-y-2">
-                  {sessionsLocations.map((loc, idx) => (
-                    <div key={idx} className="bg-white border rounded-lg p-2.5">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-3.5 w-3.5 text-gray-500" />
-                          <span className="font-mono text-sm font-medium">{loc.code}</span>
-                          {loc.isPrimary && (
-                            <Badge variant="default" className="h-4 text-xs px-1.5">Main</Badge>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          {!loc.isPrimary && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => {
-                                setSessionsLocations(prev => 
-                                  prev.map((l, i) => ({ 
-                                    ...l, 
-                                    isPrimary: i === idx 
-                                  }))
-                                );
-                                soundEffects.playSuccessBeep();
-                              }}
-                              className="h-7 px-2 text-xs"
-                            >
-                              <Star className="h-3 w-3" />
-                            </Button>
-                          )}
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-                            onClick={() => {
-                              setSessionsLocations(prev => prev.filter((_, i) => i !== idx));
-                              soundEffects.playErrorBeep();
-                            }}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
+                  {sessionsLocations.map((loc, idx) => {
+                    const totalAllocated = sessionsLocations.reduce((sum, l, i) => i !== idx ? sum + l.quantity : sum, 0);
+                    const maxQuantity = currentItem ? currentItem.receivedQuantity - totalAllocated - totalAssigned : 0;
+                    
+                    return (
+                      <div key={idx} className="bg-white border rounded-lg p-2.5">
+                        <div className="space-y-2">
+                          {/* Location Code Row */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <MapPin className="h-3.5 w-3.5 text-gray-500" />
+                              <span className="font-mono text-sm font-medium">{loc.code}</span>
+                              {loc.isPrimary && (
+                                <Badge variant="default" className="h-4 text-xs px-1.5">Main</Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {!loc.isPrimary && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    setSessionsLocations(prev => 
+                                      prev.map((l, i) => ({ 
+                                        ...l, 
+                                        isPrimary: i === idx 
+                                      }))
+                                    );
+                                    soundEffects.playSuccessBeep();
+                                  }}
+                                  className="h-7 px-2 text-xs"
+                                  title="Set as primary location"
+                                >
+                                  <Star className="h-3 w-3" />
+                                </Button>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 px-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => {
+                                  setSessionsLocations(prev => prev.filter((_, i) => i !== idx));
+                                  soundEffects.playErrorBeep();
+                                }}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                          
+                          {/* Quantity Row */}
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">Quantity:</span>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-6 w-6 p-0"
+                                onClick={() => {
+                                  const newQty = Math.max(1, loc.quantity - 10);
+                                  setSessionsLocations(prev => 
+                                    prev.map((l, i) => i === idx ? { ...l, quantity: newQty } : l)
+                                  );
+                                }}
+                                disabled={loc.quantity <= 1}
+                              >
+                                <Minus className="h-3 w-3" />
+                              </Button>
+                              
+                              <input
+                                type="number"
+                                value={loc.quantity}
+                                onChange={(e) => {
+                                  const val = parseInt(e.target.value) || 0;
+                                  const newQty = Math.min(Math.max(1, val), maxQuantity);
+                                  setSessionsLocations(prev => 
+                                    prev.map((l, i) => i === idx ? { ...l, quantity: newQty } : l)
+                                  );
+                                }}
+                                className="w-16 h-6 text-center text-sm border rounded px-1"
+                                min={1}
+                                max={maxQuantity}
+                              />
+                              
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-6 w-6 p-0"
+                                onClick={() => {
+                                  const newQty = Math.min(maxQuantity, loc.quantity + 10);
+                                  setSessionsLocations(prev => 
+                                    prev.map((l, i) => i === idx ? { ...l, quantity: newQty } : l)
+                                  );
+                                }}
+                                disabled={loc.quantity >= maxQuantity}
+                              >
+                                <Plus className="h-3 w-3" />
+                              </Button>
+                              
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-6 px-2 text-xs"
+                                onClick={() => {
+                                  setSessionsLocations(prev => 
+                                    prev.map((l, i) => i === idx ? { ...l, quantity: maxQuantity } : l)
+                                  );
+                                  soundEffects.playSuccessBeep();
+                                }}
+                                disabled={loc.quantity === maxQuantity}
+                              >
+                                Max
+                              </Button>
+                            </div>
+                            <span className="text-xs text-muted-foreground ml-auto">
+                              (max: {maxQuantity})
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -1499,9 +1587,11 @@ export default function ItemsToStore() {
                 }}
                 className="w-full bg-green-600 hover:bg-green-700 text-white"
                 size="sm"
+                disabled={sessionsLocations.reduce((sum, loc) => sum + loc.quantity, 0) === 0}
               >
                 <CheckCircle2 className="h-4 w-4 mr-2" />
-                Apply {sessionsLocations.length} Location{sessionsLocations.length !== 1 ? 's' : ''}
+                Apply {sessionsLocations.length} Location{sessionsLocations.length !== 1 ? 's' : ''} 
+                ({sessionsLocations.reduce((sum, loc) => sum + loc.quantity, 0)} units)
               </Button>
             )}
 
