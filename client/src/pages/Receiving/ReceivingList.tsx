@@ -74,7 +74,9 @@ import {
   Undo2,
   X,
   Loader2,
-  Trash2
+  Trash2,
+  Eye,
+  User
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { format, differenceInHours, differenceInDays, isToday, isYesterday, isThisWeek, isThisMonth } from "date-fns";
@@ -2101,11 +2103,27 @@ export default function ReceivingList() {
 
                       {/* Additional Info Bar */}
                       <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-xs sm:text-sm mb-3 sm:pl-11">
-                        {shipment.consolidation?.warehouse && (
+                        {shipment.receivingWarehouse && (
                           <div className="flex items-center gap-1">
                             <Warehouse className="h-3 w-3 text-muted-foreground" />
                             <span className="text-muted-foreground">
-                              {shipment.consolidation.warehouse}
+                              Warehouse: {shipment.receivingWarehouse}
+                            </span>
+                          </div>
+                        )}
+                        {shipment.warehouseLocation && (
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-muted-foreground">
+                              Location: {shipment.warehouseLocation}
+                            </span>
+                          </div>
+                        )}
+                        {shipment.consolidationName && (
+                          <div className="flex items-center gap-1">
+                            <Package className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-muted-foreground">
+                              Consolidation: {shipment.consolidationName}
                             </span>
                           </div>
                         )}
@@ -2117,11 +2135,11 @@ export default function ReceivingList() {
                             </span>
                           </div>
                         )}
-                        {shipment.actualWeight && (
+                        {shipment.totalWeight && (
                           <div className="flex items-center gap-1">
                             <Package2 className="h-3 w-3 text-muted-foreground" />
                             <span className="font-semibold">
-                              Weight: {shipment.actualWeight} kg
+                              Weight: {shipment.totalWeight} kg
                             </span>
                           </div>
                         )}
@@ -2356,11 +2374,27 @@ export default function ReceivingList() {
 
                       {/* Additional Info Bar */}
                       <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-xs sm:text-sm mb-3 sm:pl-11">
-                        {shipment.consolidation?.warehouse && (
+                        {shipment.receivingWarehouse && (
                           <div className="flex items-center gap-1">
                             <Warehouse className="h-3 w-3 text-muted-foreground" />
                             <span className="text-muted-foreground">
-                              {shipment.consolidation.warehouse}
+                              Warehouse: {shipment.receivingWarehouse}
+                            </span>
+                          </div>
+                        )}
+                        {shipment.warehouseLocation && (
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-muted-foreground">
+                              Location: {shipment.warehouseLocation}
+                            </span>
+                          </div>
+                        )}
+                        {shipment.consolidationName && (
+                          <div className="flex items-center gap-1">
+                            <Package className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-muted-foreground">
+                              Consolidation: {shipment.consolidationName}
                             </span>
                           </div>
                         )}
@@ -2372,19 +2406,19 @@ export default function ReceivingList() {
                             </span>
                           </div>
                         )}
-                        {shipment.actualWeight && (
+                        {shipment.totalWeight && (
                           <div className="flex items-center gap-1">
                             <Package2 className="h-3 w-3 text-muted-foreground" />
                             <span className="font-semibold">
-                              Weight: {shipment.actualWeight} kg
+                              Weight: {shipment.totalWeight} kg
                             </span>
                           </div>
                         )}
-                        {receiptData && (
+                        {receiptData && receiptData.receivedBy && (
                           <div className="flex items-center gap-1">
                             <User className="h-3 w-3 text-muted-foreground" />
                             <span className="text-muted-foreground">
-                              Received by: {receiptData.receiver || 'Unknown'}
+                              Received by: {receiptData.receivedBy}
                             </span>
                           </div>
                         )}

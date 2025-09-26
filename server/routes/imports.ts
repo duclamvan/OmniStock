@@ -2222,12 +2222,21 @@ router.get("/shipments/by-status/:status", async (req, res) => {
       }
     }
     
-    // Map results without any additional queries
+    // Map results with enhanced details for frontend
     const formattedShipments = shipmentsWithStatus.map(({ shipment, consolidation }) => ({
       ...shipment,
       consolidation,
       items: shipment.consolidationId ? (itemsByConsolidation[shipment.consolidationId] || []) : [],
-      receiptId: receiptMap[shipment.id] || null
+      receiptId: receiptMap[shipment.id] || null,
+      // Expose warehouse details directly for easier frontend access
+      receivingWarehouse: consolidation?.warehouse || null,
+      warehouseLocation: consolidation?.location || null,
+      consolidationName: consolidation?.name || null,
+      shippingMethod: consolidation?.shippingMethod || shipment.shipmentType || null,
+      // Provide formatted timestamps
+      formattedDeliveredAt: shipment.deliveredAt ? shipment.deliveredAt.toISOString() : null,
+      formattedCreatedAt: shipment.createdAt ? shipment.createdAt.toISOString() : null,
+      formattedUpdatedAt: shipment.updatedAt ? shipment.updatedAt.toISOString() : null
     }));
     
     res.json(formattedShipments);
