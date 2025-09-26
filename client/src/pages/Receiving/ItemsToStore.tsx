@@ -141,9 +141,10 @@ interface SegmentedLocationInputProps {
   autoFocus?: boolean;
   initialCode?: string | null;
   onSegmentChange?: (segments: string[]) => void;
+  onlyAutoCompleteOnScan?: boolean; // Only auto-complete for barcode scans, not manual typing
 }
 
-function SegmentedLocationInput({ onComplete, autoFocus, initialCode, onSegmentChange }: SegmentedLocationInputProps) {
+function SegmentedLocationInput({ onComplete, autoFocus, initialCode, onSegmentChange, onlyAutoCompleteOnScan = false }: SegmentedLocationInputProps) {
   // Parse initial code into segments
   const parseInitialCode = (code: string | null | undefined): string[] => {
     if (!code) return ["", "", "", ""];
@@ -288,17 +289,20 @@ function SegmentedLocationInput({ onComplete, autoFocus, initialCode, onSegmentC
       setTimeout(() => inputRefs[index + 1].current?.focus(), 50);
     }
 
-    // Check if all segments are complete
+    // Check if all segments are complete (but don't auto-complete for manual typing if flag is set)
     if (index === 3 && newValue.length >= 2) {
       const formattedSegments = newSegments.map((seg, idx) => formatSegmentValue(idx, seg));
       const allComplete = formattedSegments.every(seg => seg.length > 0);
       if (allComplete) {
-        // Update with formatted values before completion
+        // Update with formatted values
         setSegments(formattedSegments);
         if (onSegmentChange) {
           onSegmentChange(formattedSegments);
         }
-        onComplete(formattedSegments.join('-'));
+        // Only auto-complete if not in manual-only mode
+        if (!onlyAutoCompleteOnScan) {
+          onComplete(formattedSegments.join('-'));
+        }
       }
     }
   };
@@ -318,11 +322,11 @@ function SegmentedLocationInput({ onComplete, autoFocus, initialCode, onSegmentC
           onSegmentChange(newSegments);
         }
         
-        // Check if complete after formatting
+        // Check if complete after formatting (but don't auto-complete for manual typing if flag is set)
         if (newSegments.every(seg => seg.length > 0)) {
           const formattedSegments = newSegments.map((seg, idx) => formatSegmentValue(idx, seg));
           const code = formattedSegments.join('-');
-          if (formattedSegments.every(seg => seg.length > 0)) {
+          if (formattedSegments.every(seg => seg.length > 0) && !onlyAutoCompleteOnScan) {
             onComplete(code);
           }
         }
@@ -1649,6 +1653,9 @@ export default function ItemsToStore() {
                 setCurrentSegments(segments);
               }}
               onComplete={async (code) => {
+                // This should only be called from barcode scanning
+                // For manual typing, user must click "Add Location" button
+                
                 // Play success sound
                 await soundEffects.playSuccessBeep();
 
@@ -1660,6 +1667,7 @@ export default function ItemsToStore() {
                 setCurrentSegments(["", "", "", ""]);
               }}
               autoFocus
+              onlyAutoCompleteOnScan={true} // Disable auto-complete for manual typing
               />
             </div>
 
