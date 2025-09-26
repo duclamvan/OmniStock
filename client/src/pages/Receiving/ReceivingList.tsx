@@ -2032,6 +2032,16 @@ export default function ReceivingList() {
                             </p>
                           </div>
                         </div>
+                        <Link href="/receiving/items-to-store">
+                          <Button 
+                            size="sm" 
+                            className="bg-orange-600 hover:bg-orange-700 text-white shadow-sm hover:shadow-md transition-all"
+                            data-testid={`button-store-items-${shipment.id}`}
+                          >
+                            <Warehouse className="h-4 w-4 mr-1" />
+                            Store Items
+                          </Button>
+                        </Link>
                       </div>
                     </CardContent>
                   </Card>
