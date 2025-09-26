@@ -1299,6 +1299,15 @@ export default function ItemsToStore() {
           setScanFeedback({ type: null, message: '' });
           setLocationScan("");
           setCurrentSegments(["", "", "", ""]);
+        } else if (open && currentItem) {
+          // Initialize segments when opening with suggested location
+          const suggestedLocation = getSuggestedLocation(currentItem) || generateSuggestedLocation(currentItem);
+          if (suggestedLocation) {
+            const segments = suggestedLocation.split('-');
+            // Ensure we have exactly 4 segments, pad with empty strings if needed
+            const paddedSegments = [...segments, "", "", "", ""].slice(0, 4);
+            setCurrentSegments(paddedSegments);
+          }
         }
       }}>
         <SheetContent side="bottom" className="h-auto max-h-[85vh] overflow-y-auto">
