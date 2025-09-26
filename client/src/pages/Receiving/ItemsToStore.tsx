@@ -1037,6 +1037,35 @@ export default function ItemsToStore() {
     saveStorageMutation.mutate();
   };
 
+  // Auto-save when all items for current receipt are completed
+  useEffect(() => {
+    if (selectedReceipt && items.length > 0) {
+      const receiptItems = items.filter(item => item.receiptId === selectedReceipt);
+      const completedReceiptItems = receiptItems.filter(item => 
+        item.newLocations.length > 0 || item.existingLocations.length > 0
+      );
+      
+      // Check if all items for this receipt are completed and have not been saved yet
+      if (receiptItems.length > 0 && 
+          completedReceiptItems.length === receiptItems.length && 
+          !saveStorageMutation.isPending && 
+          !saveStorageMutation.isSuccess) {
+        // Auto-save after a short delay to ensure user has finished
+        const timer = setTimeout(() => {
+          console.log('Auto-saving: All items completed for receipt', selectedReceipt);
+          toast({
+            title: "Auto-saving",
+            description: "All items completed. Saving storage locations...",
+            duration: 3000,
+          });
+          saveStorageMutation.mutate();
+        }, 1500);
+        
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [items, selectedReceipt]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
@@ -1080,11 +1109,13 @@ export default function ItemsToStore() {
           <h1 className="text-lg font-semibold">Items to Store</h1>
           <button 
             onClick={handleSave}
-            disabled={items.filter(item => item.newLocations.length > 0).length === 0 || saveStorageMutation.isPending}
+            disabled={items.filter(item => item.newLocations.length > 0).length === 0 || saveStorageMutation.isPending || saveStorageMutation.isSuccess}
             className="p-2 -mr-2"
           >
             {saveStorageMutation.isPending ? (
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            ) : saveStorageMutation.isSuccess ? (
+              <Check className="h-6 w-6 text-green-500" />
             ) : (
               <Save className={`h-6 w-6 ${items.filter(item => item.newLocations.length > 0).length === 0 ? 'text-gray-300' : 'text-primary'}`} />
             )}
