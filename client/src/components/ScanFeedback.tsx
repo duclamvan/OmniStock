@@ -53,7 +53,7 @@ export function ScanFeedback({ type, message }: ScanFeedbackProps) {
           {currentType === 'complete' && <CheckCircle2 className="h-6 w-6 animate-pulse" />}
           {currentType === 'error' && <XCircle className="h-6 w-6 animate-in zoom-in duration-300" />}
           {currentType === 'duplicate' && <AlertCircle className="h-6 w-6 animate-in zoom-in duration-300" />}
-          <span className="font-semibold text-lg">{currentMessage}</span>
+          <span className="font-semibold text-lg whitespace-nowrap">{currentMessage}</span>
         </div>
       </div>
     </div>
