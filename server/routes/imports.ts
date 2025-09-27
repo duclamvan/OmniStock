@@ -3734,6 +3734,59 @@ router.post("/receipts/auto-save", async (req, res) => {
       }).returning();
       
       receipt = newReceipt;
+      
+      // Create receipt items for new receipts if not already provided
+      if (!existingReceipt && (!items || items.length === 0)) {
+        // Get consolidation items for this shipment
+        let itemsToReceive = [];
+        if (consolidationId) {
+          const consolidationItemList = await db
+            .select()
+            .from(consolidationItems)
+            .where(eq(consolidationItems.consolidationId, consolidationId));
+
+          // Fetch actual items based on type
+          for (const ci of consolidationItemList) {
+            if (ci.itemType === 'purchase') {
+              const [item] = await db
+                .select()
+                .from(purchaseItems)
+                .where(eq(purchaseItems.id, ci.itemId));
+              if (item) {
+                itemsToReceive.push({ ...item, itemType: 'purchase' });
+              }
+            } else if (ci.itemType === 'custom') {
+              const [item] = await db
+                .select()
+                .from(customItems)
+                .where(eq(customItems.id, ci.itemId));
+              if (item) {
+                itemsToReceive.push({ ...item, itemType: 'custom' });
+              }
+            }
+          }
+        }
+
+        // Create receipt items for the new receipt
+        const receiptItemsData = itemsToReceive.map(item => ({
+          receiptId: receipt.id,
+          itemId: item.id,
+          itemType: item.itemType,
+          expectedQuantity: item.quantity || 1,
+          receivedQuantity: 0, // Will be updated during verification
+          damagedQuantity: 0,
+          missingQuantity: 0,
+          warehouseLocation: item.itemType === 'purchase' ? (item as any).warehouseLocation : null,
+          condition: 'pending',
+          status: 'pending',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }));
+
+        if (receiptItemsData.length > 0) {
+          await db.insert(receiptItems).values(receiptItemsData);
+        }
+      }
     }
     
     // Update shipment receiving status to 'receiving'
@@ -3745,7 +3798,7 @@ router.post("/receipts/auto-save", async (req, res) => {
       })
       .where(eq(shipments.id, shipmentId));
 
-    // Update or create receipt items if provided
+    // Update or create receipt items if explicitly provided
     if (items && items.length > 0) {
       // Delete existing receipt items for this receipt
       await db
