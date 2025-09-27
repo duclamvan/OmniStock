@@ -352,9 +352,9 @@ export default function ContinueReceiving() {
           ).map((num: string) => num.trim())
         : [];
       
-      // ALWAYS use the actual count of tracking numbers, ignore saved scannedParcels
-      // This ensures they are always in sync
-      const validScannedParcels = savedTrackingNumbers.length;
+      // Use saved scannedParcels if available, otherwise fall back to tracking numbers count
+      // This preserves manual user input while maintaining sync for new receipts
+      const validScannedParcels = trackingData.scannedParcels ?? savedTrackingNumbers.length;
       
       setScannedParcels(validScannedParcels);
       setScannedTrackingNumbers(savedTrackingNumbers);
