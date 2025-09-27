@@ -171,6 +171,7 @@ export default function StartReceiving() {
     queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts'] });
     queryClient.invalidateQueries({ queryKey: [`/api/imports/receipts/by-shipment/${id}`] });
     queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/receiving'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/receivable'] }); // Refresh To Receive tab
     navigate('/receiving');
   }, [id, navigate]);
   
@@ -1241,7 +1242,13 @@ export default function StartReceiving() {
       return await apiRequest('/api/imports/receipts/auto-save', 'POST', data);
     },
     onSuccess: (response) => {
-      // Don't invalidate cache during active editing to prevent jumping values
+      // Invalidate receivable query only if this is the first receipt creation
+      // This ensures the shipment disappears from "To Receive" tab when moved to "Receiving"
+      if (!receipt && response?.receipt?.id) {
+        queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/receivable'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/receiving'] });
+      }
+      // Don't invalidate other caches during active editing to prevent jumping values
       // Data will be fresh when component remounts
     },
     onError: (error: any) => {
