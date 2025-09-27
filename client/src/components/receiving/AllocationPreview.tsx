@@ -353,8 +353,9 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
               </TableHeader>
               <TableBody>
                 {preview.items.map((item) => (
-                  <React.Fragment key={item.purchaseItemId}>
-                    <TableRow 
+                  <>
+                    <TableRow
+                      key={item.purchaseItemId} 
                       className={item.warnings.length > 0 ? 'bg-yellow-50 dark:bg-yellow-950/20' : ''}
                     >
                       <TableCell className="font-medium">
@@ -487,7 +488,7 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                         </TableCell>
                       </TableRow>
                     )}
-                  </React.Fragment>
+                  </>
                 ))}
               </TableBody>
               <TableFooter>
