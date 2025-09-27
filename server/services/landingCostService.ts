@@ -228,6 +228,178 @@ export class LandingCostService {
   }
 
   /**
+   * Allocation algorithm: Per-unit allocation (equal distribution per item)
+   * This differs from allocateByUnits as it distributes equally per item regardless of quantity
+   */
+  allocatePerUnit(
+    items: ItemAllocation[],
+    totalCost: Decimal
+  ): AllocationResult[] {
+    const totalItems = items.length;
+
+    if (totalItems === 0) {
+      console.warn('No items to allocate to');
+      return [];
+    }
+
+    const costPerItem = totalCost.div(totalItems);
+    const allocations: AllocationResult[] = items.map(item => ({
+      purchaseItemId: item.purchaseItemId,
+      amount: costPerItem
+    }));
+
+    return this.reconcileRounding(allocations, totalCost);
+  }
+
+  /**
+   * Allocation algorithm: Hybrid allocation (combination of weight + value)
+   * @param items - Items to allocate to
+   * @param totalCost - Total cost to allocate
+   * @param weightRatio - Weight component ratio (0-1), remainder is value ratio
+   */
+  allocateByHybrid(
+    items: ItemAllocation[],
+    totalCost: Decimal,
+    weightRatio: number = 0.6
+  ): AllocationResult[] {
+    if (weightRatio < 0 || weightRatio > 1) {
+      console.warn('Invalid weight ratio, using default 0.6');
+      weightRatio = 0.6;
+    }
+
+    const valueRatio = 1 - weightRatio;
+
+    // Calculate total metrics
+    const totalChargeableWeight = items.reduce(
+      (sum, item) => sum + item.chargeableWeight * item.quantity,
+      0
+    );
+    const totalValue = items.reduce(
+      (sum, item) => sum.add(new Decimal(item.totalValue)),
+      new Decimal(0)
+    );
+
+    // Handle edge cases
+    if (totalChargeableWeight === 0 && totalValue.eq(0)) {
+      console.warn('Both weight and value are zero, falling back to unit allocation');
+      return this.allocateByUnits(items, totalCost);
+    }
+
+    if (totalChargeableWeight === 0) {
+      console.warn('Weight is zero, using value-only allocation');
+      return this.allocateByValue(items, totalCost);
+    }
+
+    if (totalValue.eq(0)) {
+      console.warn('Value is zero, using weight-only allocation');
+      return this.allocateByChargeableWeight(items, totalCost);
+    }
+
+    // Calculate hybrid allocations
+    const allocations: AllocationResult[] = items.map(item => {
+      // Weight component
+      const weightComponent = totalCost
+        .mul(weightRatio)
+        .mul(item.chargeableWeight * item.quantity)
+        .div(totalChargeableWeight);
+
+      // Value component
+      const valueComponent = totalCost
+        .mul(valueRatio)
+        .mul(item.totalValue)
+        .div(totalValue);
+
+      return {
+        purchaseItemId: item.purchaseItemId,
+        amount: weightComponent.add(valueComponent)
+      };
+    });
+
+    return this.reconcileRounding(allocations, totalCost);
+  }
+
+  /**
+   * Allocation algorithm: Volume-based allocation (for containers)
+   */
+  allocateByVolume(
+    items: ItemAllocation[],
+    totalCost: Decimal
+  ): AllocationResult[] {
+    // Calculate volume for each item
+    const itemsWithVolume = items.map(item => {
+      // We need to get volume from dimensions
+      // For now, we'll use a volume estimation based on volumetric weight
+      // In a full implementation, we'd need actual dimensions
+      const estimatedVolume = item.volumetricWeight / 166.67; // Reverse of 6000 divisor
+      return {
+        ...item,
+        volume: estimatedVolume * item.quantity
+      };
+    });
+
+    const totalVolume = itemsWithVolume.reduce((sum, item) => sum + item.volume, 0);
+
+    if (totalVolume === 0) {
+      console.warn('Total volume is zero, falling back to unit allocation');
+      return this.allocateByUnits(items, totalCost);
+    }
+
+    const allocations: AllocationResult[] = itemsWithVolume.map(item => ({
+      purchaseItemId: item.purchaseItemId,
+      amount: totalCost.mul(item.volume).div(totalVolume)
+    }));
+
+    return this.reconcileRounding(allocations, totalCost);
+  }
+
+  /**
+   * Allocation algorithm: Mixed allocation strategies
+   * Applies different allocation methods based on cost type
+   */
+  allocateByMixed(
+    items: ItemAllocation[],
+    totalCost: Decimal,
+    costType: string,
+    shipmentCharacteristics: {
+      unitType?: string;
+      totalWeight?: number;
+      totalValue?: Decimal;
+      itemCount?: number;
+    }
+  ): AllocationResult[] {
+    // Apply different strategies based on cost type and shipment characteristics
+    switch (costType) {
+      case 'FREIGHT':
+        // For freight, consider unit type and weight distribution
+        if (shipmentCharacteristics.unitType === 'containers') {
+          return this.allocateByVolume(items, totalCost);
+        } else if (shipmentCharacteristics.unitType === 'pallets') {
+          return this.allocateByUnits(items, totalCost);
+        } else {
+          // Default to hybrid for mixed shipments
+          return this.allocateByHybrid(items, totalCost, 0.7); // Higher weight ratio for freight
+        }
+
+      case 'INSURANCE':
+        // Insurance should always be value-based
+        return this.allocateByValue(items, totalCost);
+
+      case 'DUTY':
+        // Duty typically based on value
+        return this.allocateByValue(items, totalCost);
+
+      case 'BROKERAGE':
+      case 'PACKAGING':
+        // Administrative costs - equal per item
+        return this.allocatePerUnit(items, totalCost);
+
+      default:
+        // For unknown cost types, use hybrid allocation
+        return this.allocateByHybrid(items, totalCost);
+    }
+  }
+
+  /**
    * Reconcile rounding differences to ensure allocations sum to total
    */
   reconcileRounding(
@@ -258,6 +430,150 @@ export class LandingCostService {
     }
 
     return roundedAllocations;
+  }
+
+  /**
+   * Auto-select allocation method based on shipment characteristics
+   * - Boxes/parcels: Weight-based allocation
+   * - Pallets: Unit-based allocation  
+   * - Containers: Value-based allocation
+   * - Mixed shipments: Hybrid allocation
+   */
+  getAllocationMethod(
+    shipment: {
+      unitType?: string;
+      totalWeight?: number;
+      totalValue?: Decimal;
+      itemCount?: number;
+    },
+    costType: string,
+    items: ItemAllocation[]
+  ): {
+    method: string;
+    allocate: (items: ItemAllocation[], totalCost: Decimal) => AllocationResult[];
+  } {
+    const unitType = shipment.unitType?.toLowerCase() || 'items';
+    
+    // For specific cost types, apply cost-specific logic first
+    switch (costType) {
+      case 'INSURANCE':
+        return {
+          method: 'VALUE',
+          allocate: (items, totalCost) => this.allocateByValue(items, totalCost)
+        };
+      
+      case 'DUTY':
+        return {
+          method: 'VALUE',
+          allocate: (items, totalCost) => this.allocateByValue(items, totalCost)
+        };
+        
+      case 'BROKERAGE':
+      case 'PACKAGING':
+        return {
+          method: 'PER_UNIT',
+          allocate: (items, totalCost) => this.allocatePerUnit(items, totalCost)
+        };
+    }
+
+    // For other cost types, use shipment-based logic
+    switch (unitType) {
+      case 'containers':
+      case 'container':
+        return {
+          method: 'VALUE',
+          allocate: (items, totalCost) => this.allocateByValue(items, totalCost)
+        };
+        
+      case 'pallets':
+      case 'pallet':
+        return {
+          method: 'UNITS',
+          allocate: (items, totalCost) => this.allocateByUnits(items, totalCost)
+        };
+        
+      case 'boxes':
+      case 'box':
+      case 'parcels':
+      case 'parcel':
+      case 'packages':
+      case 'package':
+        return {
+          method: 'CHARGEABLE_WEIGHT',
+          allocate: (items, totalCost) => this.allocateByChargeableWeight(items, totalCost)
+        };
+        
+      case 'mixed':
+      default:
+        // For mixed shipments or unknown types, use hybrid allocation
+        return {
+          method: 'HYBRID',
+          allocate: (items, totalCost) => this.allocateByHybrid(items, totalCost)
+        };
+    }
+  }
+
+  /**
+   * Enhanced allocation with automatic method selection
+   * Uses getAllocationMethod to determine the best allocation strategy
+   */
+  allocateWithAutoSelection(
+    items: ItemAllocation[],
+    totalCost: Decimal,
+    costType: string,
+    shipmentCharacteristics: {
+      unitType?: string;
+      totalWeight?: number;
+      totalValue?: Decimal;
+      itemCount?: number;
+    }
+  ): {
+    allocations: AllocationResult[];
+    method: string;
+    reasoning: string;
+  } {
+    const { method, allocate } = this.getAllocationMethod(
+      shipmentCharacteristics,
+      costType,
+      items
+    );
+
+    const allocations = allocate(items, totalCost);
+    
+    // Generate reasoning for the allocation choice
+    let reasoning = `Selected ${method} allocation for ${costType} cost`;
+    
+    if (costType === 'INSURANCE' || costType === 'DUTY') {
+      reasoning += ` (${costType.toLowerCase()} is always value-based)`;
+    } else if (costType === 'BROKERAGE' || costType === 'PACKAGING') {
+      reasoning += ` (administrative costs distributed equally per item)`;
+    } else {
+      const unitType = shipmentCharacteristics.unitType?.toLowerCase() || 'items';
+      switch (unitType) {
+        case 'containers':
+        case 'container':
+          reasoning += ` (containers typically use value-based allocation)`;
+          break;
+        case 'pallets':
+        case 'pallet':
+          reasoning += ` (pallets typically use unit-based allocation)`;
+          break;
+        case 'boxes':
+        case 'box':
+        case 'parcels':
+        case 'parcel':
+          reasoning += ` (boxes/parcels typically use weight-based allocation)`;
+          break;
+        default:
+          reasoning += ` (mixed/unknown shipment type uses hybrid allocation)`;
+      }
+    }
+
+    return {
+      allocations,
+      method,
+      reasoning
+    };
   }
 
   /**
@@ -654,35 +970,26 @@ export class LandingCostService {
 
           costSummary[cost.type] = costSummary[cost.type].add(costInBase);
 
-          // Determine allocation basis
-          let allocations: AllocationResult[];
-          let basis: string;
+          // Use automatic allocation method selection
+          const shipmentCharacteristics = {
+            unitType: shipment.unitType || undefined,
+            totalWeight: shipment.totalWeight ? Number(shipment.totalWeight) : undefined,
+            totalValue: await this.getShipmentMetrics(shipmentId).then(metrics => metrics.totalValue),
+            itemCount: itemAllocations.length
+          };
 
-          switch (cost.type) {
-            case 'FREIGHT':
-              // For pallets, use quantity-based allocation instead of weight
-              if (shipment.unitType === 'pallets') {
-                allocations = this.allocateByUnits(itemAllocations, costInBase);
-                basis = 'UNITS';
-              } else {
-                allocations = this.allocateByChargeableWeight(itemAllocations, costInBase);
-                basis = 'CHARGEABLE_WEIGHT';
-              }
-              break;
-            case 'INSURANCE':
-              allocations = this.allocateByValue(itemAllocations, costInBase);
-              basis = 'VALUE';
-              break;
-            case 'BROKERAGE':
-            case 'PACKAGING':
-            case 'OTHER':
-              allocations = this.allocateByUnits(itemAllocations, costInBase);
-              basis = 'UNITS';
-              break;
-            default:
-              allocations = this.allocateByUnits(itemAllocations, costInBase);
-              basis = 'UNITS';
-          }
+          const allocationResult = this.allocateWithAutoSelection(
+            itemAllocations,
+            costInBase,
+            cost.type,
+            shipmentCharacteristics
+          );
+
+          const allocations = allocationResult.allocations;
+          const basis = allocationResult.method;
+          
+          // Add allocation reasoning to warnings for transparency
+          warnings.push(`${cost.type}: ${allocationResult.reasoning}`);
 
           // Create allocation records
           for (const allocation of allocations) {
