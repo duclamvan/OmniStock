@@ -5795,6 +5795,8 @@ router.get("/shipments/:id/landing-cost-preview", async (req, res) => {
 // Helper function to get detailed allocation breakdown per item
 async function getItemAllocationBreakdown(shipmentId: number, costsByType: Record<string, number>): Promise<any[]> {
   try {
+    console.log('getItemAllocationBreakdown - shipmentId:', shipmentId, 'costsByType:', costsByType);
+    
     // Get consolidation ID
     const [shipment] = await db
       .select()
@@ -5803,35 +5805,53 @@ async function getItemAllocationBreakdown(shipmentId: number, costsByType: Recor
       .limit(1);
 
     if (!shipment?.consolidationId) {
+      console.log('No shipment or consolidationId found for shipmentId:', shipmentId);
       return [];
     }
 
-    // Get purchase items with carton data
+    console.log('Found shipment with consolidationId:', shipment.consolidationId);
+
+    // Get shipment items through consolidation items (correct relationship)
     const itemsWithCartons = await db
       .select({
-        item: purchaseItems,
+        item: customItems,
         carton: shipmentCartons
       })
-      .from(purchaseItems)
+      .from(consolidationItems)
+      .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
       .leftJoin(shipmentCartons, and(
-        eq(shipmentCartons.purchaseItemId, purchaseItems.id),
+        eq(shipmentCartons.purchaseItemId, customItems.id),
         eq(shipmentCartons.shipmentId, shipmentId)
       ))
-      .where(eq(purchaseItems.consolidationId, shipment.consolidationId));
+      .where(eq(consolidationItems.consolidationId, shipment.consolidationId));
+
+    console.log('Found consolidation items:', itemsWithCartons.length);
 
     const items: any[] = [];
     
     // Calculate total chargeable weight for allocation
     const totalChargeableWeight = itemsWithCartons.reduce((sum, row) => {
       const carton = row.carton;
-      if (!carton) return sum;
+      const item = row.item;
       
-      const actualWeight = parseFloat(carton.grossWeightKg || '0');
-      const volumetricWeight = landingCostService.calculateVolumetricWeight(
-        parseFloat(carton.lengthCm || '0'),
-        parseFloat(carton.widthCm || '0'),
-        parseFloat(carton.heightCm || '0')
-      );
+      let actualWeight: number;
+      let volumetricWeight: number;
+      
+      if (carton) {
+        // Use carton data if available
+        actualWeight = parseFloat(carton.grossWeightKg || '0');
+        volumetricWeight = landingCostService.calculateVolumetricWeight(
+          parseFloat(carton.lengthCm || '0'),
+          parseFloat(carton.widthCm || '0'),
+          parseFloat(carton.heightCm || '0')
+        );
+      } else {
+        // Fallback to item weight data
+        actualWeight = parseFloat(item.weight || '0') * item.quantity;
+        // Estimate volumetric weight - assume standard ratios for common products
+        volumetricWeight = actualWeight * 0.8; // Conservative estimate
+      }
+      
       const chargeableWeight = landingCostService.calculateChargeableWeight(actualWeight, volumetricWeight);
       return sum + chargeableWeight;
     }, 0);
@@ -5840,13 +5860,25 @@ async function getItemAllocationBreakdown(shipmentId: number, costsByType: Recor
       const item = row.item;
       const carton = row.carton;
 
-      // Calculate weights
-      const actualWeight = carton ? parseFloat(carton.grossWeightKg || '0') : 0;
-      const volumetricWeight = carton ? landingCostService.calculateVolumetricWeight(
-        parseFloat(carton.lengthCm || '0'),
-        parseFloat(carton.widthCm || '0'),
-        parseFloat(carton.heightCm || '0')
-      ) : 0;
+      // Calculate weights with fallback to item data
+      let actualWeight: number;
+      let volumetricWeight: number;
+      
+      if (carton) {
+        // Use carton data if available
+        actualWeight = parseFloat(carton.grossWeightKg || '0');
+        volumetricWeight = landingCostService.calculateVolumetricWeight(
+          parseFloat(carton.lengthCm || '0'),
+          parseFloat(carton.widthCm || '0'),
+          parseFloat(carton.heightCm || '0')
+        );
+      } else {
+        // Fallback to item weight data
+        actualWeight = parseFloat(item.weight || '0') * item.quantity;
+        // Estimate volumetric weight - assume standard ratios for common products
+        volumetricWeight = actualWeight * 0.8; // Conservative estimate
+      }
+      
       const chargeableWeight = landingCostService.calculateChargeableWeight(actualWeight, volumetricWeight);
 
       // Allocate costs (weight-based allocation)
