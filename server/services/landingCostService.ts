@@ -657,8 +657,14 @@ export class LandingCostService {
 
           switch (cost.type) {
             case 'FREIGHT':
-              allocations = this.allocateByChargeableWeight(itemAllocations, costInBase);
-              basis = 'CHARGEABLE_WEIGHT';
+              // For pallets, use quantity-based allocation instead of weight
+              if (shipment.unitType === 'pallets') {
+                allocations = this.allocateByUnits(itemAllocations, costInBase);
+                basis = 'UNITS';
+              } else {
+                allocations = this.allocateByChargeableWeight(itemAllocations, costInBase);
+                basis = 'CHARGEABLE_WEIGHT';
+              }
               break;
             case 'INSURANCE':
               allocations = this.allocateByValue(itemAllocations, costInBase);
