@@ -37,7 +37,8 @@ import {
   Download,
   ZoomIn,
   ClipboardCheck,
-  Info
+  Info,
+  Undo2
 } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
@@ -267,6 +268,30 @@ export default function ReceiptDetails() {
     toast({
       title: "Bulk Verification Started",
       description: `Verifying ${unverifiedItems.length} items with default values...`
+    });
+  };
+
+  // Undo verification for a single item
+  const handleUndoVerification = (item: ReceiptItem) => {
+    updateItemMutation.mutate({
+      itemId: item.itemId,
+      data: {
+        receivedQuantity: item.receivedQuantity,
+        damagedQuantity: item.damagedQuantity,
+        missingQuantity: item.missingQuantity,
+        barcode: item.barcode,
+        warehouseLocation: item.warehouseLocation,
+        additionalLocation: item.additionalLocation,
+        storageInstructions: item.storageInstructions,
+        condition: item.condition,
+        notes: item.notes,
+        verifiedAt: null // Clear verification status
+      }
+    });
+
+    toast({
+      title: "Verification Undone",
+      description: "Item verification has been removed"
     });
   };
 
@@ -690,6 +715,18 @@ export default function ReceiptDetails() {
                   >
                     {item.verifiedAt ? 'Edit Verification' : 'Verify Item'}
                   </Button>
+                  {item.verifiedAt && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleUndoVerification(item)}
+                      data-testid={`button-undo-verify-${item.id}`}
+                      className="text-muted-foreground hover:text-foreground text-xs px-2"
+                    >
+                      <Undo2 className="h-3 w-3 mr-1" />
+                      Undo
+                    </Button>
+                  )}
                 </div>
                 </div>
               </div>
