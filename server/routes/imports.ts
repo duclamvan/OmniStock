@@ -5795,8 +5795,6 @@ router.get("/shipments/:id/landing-cost-preview", async (req, res) => {
 // Helper function to get detailed allocation breakdown per item
 async function getItemAllocationBreakdown(shipmentId: number, costsByType: Record<string, number>): Promise<any[]> {
   try {
-    console.log('getItemAllocationBreakdown - shipmentId:', shipmentId, 'costsByType:', costsByType);
-    
     // Get consolidation ID
     const [shipment] = await db
       .select()
@@ -5805,11 +5803,8 @@ async function getItemAllocationBreakdown(shipmentId: number, costsByType: Recor
       .limit(1);
 
     if (!shipment?.consolidationId) {
-      console.log('No shipment or consolidationId found for shipmentId:', shipmentId);
       return [];
     }
-
-    console.log('Found shipment with consolidationId:', shipment.consolidationId);
 
     // Get shipment items through consolidation items (correct relationship)
     const itemsWithCartons = await db
@@ -5824,8 +5819,6 @@ async function getItemAllocationBreakdown(shipmentId: number, costsByType: Recor
         eq(shipmentCartons.shipmentId, shipmentId)
       ))
       .where(eq(consolidationItems.consolidationId, shipment.consolidationId));
-
-    console.log('Found consolidation items:', itemsWithCartons.length);
 
     const items: any[] = [];
     

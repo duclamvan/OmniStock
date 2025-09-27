@@ -11,6 +11,7 @@ import {
   receipts,
   receiptItems,
   customItems,
+  consolidationItems,
   type Shipment,
   type ShipmentCost,
   type ShipmentCarton,
@@ -294,30 +295,29 @@ export class LandingCostService {
       };
     }
 
-    // Get all purchase items for this consolidation with optional carton data
+    // Get all items for this consolidation through consolidationItems (correct relationship)
     const itemsWithCartons = await db
       .select({
-        // Purchase item fields
-        id: purchaseItems.id,
-        quantity: purchaseItems.quantity,
-        unitPrice: purchaseItems.unitPrice,
-        totalPrice: purchaseItems.totalPrice,
-        unitGrossWeightKg: purchaseItems.unitGrossWeightKg,
-        unitLengthCm: purchaseItems.unitLengthCm,
-        unitWidthCm: purchaseItems.unitWidthCm,
-        unitHeightCm: purchaseItems.unitHeightCm,
+        // Custom item fields
+        id: customItems.id,
+        quantity: customItems.quantity,
+        unitPrice: customItems.unitPrice,
+        totalPrice: sql<string>`CAST(${customItems.unitPrice} * ${customItems.quantity} AS text)`,
+        weight: customItems.weight,
+        dimensions: customItems.dimensions,
         // Carton fields (optional)
         cartonGrossWeightKg: shipmentCartons.grossWeightKg,
         cartonLengthCm: shipmentCartons.lengthCm,
         cartonWidthCm: shipmentCartons.widthCm,
         cartonHeightCm: shipmentCartons.heightCm
       })
-      .from(purchaseItems)
+      .from(consolidationItems)
+      .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
       .leftJoin(shipmentCartons, and(
-        eq(shipmentCartons.purchaseItemId, purchaseItems.id),
+        eq(shipmentCartons.purchaseItemId, customItems.id),
         eq(shipmentCartons.shipmentId, shipmentId)
       ))
-      .where(eq(purchaseItems.consolidationId, consolidationId));
+      .where(eq(consolidationItems.consolidationId, consolidationId));
 
     let totalWeight = 0;
     let totalVolumetricWeight = 0;
@@ -334,8 +334,8 @@ export class LandingCostService {
 
       if (item.cartonGrossWeightKg) {
         actualWeight = Number(item.cartonGrossWeightKg);
-      } else if (item.unitGrossWeightKg) {
-        actualWeight = Number(item.unitGrossWeightKg) * quantity;
+      } else if (item.weight) {
+        actualWeight = Number(item.weight) * quantity;
       }
 
       if (item.cartonLengthCm && item.cartonWidthCm && item.cartonHeightCm) {
@@ -344,12 +344,9 @@ export class LandingCostService {
           Number(item.cartonWidthCm),
           Number(item.cartonHeightCm)
         );
-      } else if (item.unitLengthCm && item.unitWidthCm && item.unitHeightCm) {
-        volumetricWeight = this.calculateVolumetricWeight(
-          Number(item.unitLengthCm),
-          Number(item.unitWidthCm),
-          Number(item.unitHeightCm)
-        ) * quantity;
+      } else {
+        // Estimate volumetric weight for custom items without dimensions
+        volumetricWeight = actualWeight * 0.8; // Conservative estimate
       }
 
       const chargeableWeight = this.calculateChargeableWeight(actualWeight, volumetricWeight);
@@ -539,15 +536,21 @@ export class LandingCostService {
             .from(purchaseItems)
             .where(inArray(purchaseItems.id, itemIds));
         } else {
-          // Fallback: Get purchase items from consolidation when no cartons exist
+          // Fallback: Get items from consolidation using the correct relationship
           if (!shipment.consolidationId) {
             throw new Error(`No consolidation found for shipment ${shipmentId}`);
           }
           
-          items = await tx
-            .select()
-            .from(purchaseItems)
-            .where(eq(purchaseItems.consolidationId, shipment.consolidationId));
+          // Use consolidationItems to get custom items (correct relationship)
+          const consolidationItemsList = await tx
+            .select({
+              item: customItems
+            })
+            .from(consolidationItems)
+            .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
+            .where(eq(consolidationItems.consolidationId, shipment.consolidationId));
+          
+          items = consolidationItemsList.map(row => row.item);
           
           if (items.length === 0) {
             throw new Error(`No items found for shipment ${shipmentId}`);
