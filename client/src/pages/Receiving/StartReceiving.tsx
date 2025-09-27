@@ -639,8 +639,29 @@ export default function StartReceiving() {
   // Mutation for updating item quantities atomically - no optimistic revert on error
   const updateItemQuantityMutation = useMutation({
     mutationFn: async ({ itemId, delta }: { itemId: string; delta: number }) => {
-      const receiptId = receipt?.receipt?.id || receipt?.id;
-      if (!receiptId) return;
+      let receiptId = receipt?.receipt?.id || receipt?.id;
+      
+      // If no receipt exists, create one first using auto-save
+      if (!receiptId) {
+        console.log('No receipt ID found, creating receipt first before quantity update');
+        const autoSaveData = {
+          shipmentId: shipment?.id,
+          receivedBy: receivedBy || "Employee #1",
+          carrier: carrier || shipment?.carrier || "",
+          parcelCount: parcelCount || shipment?.totalUnits || 1,
+          scannedParcels: scannedParcels || 0,
+          trackingNumbers: scannedTrackingNumbers || [],
+          notes: notes || "",
+          photos: uploadedPhotos || []
+        };
+        
+        const autoSaveResponse = await apiRequest('/api/imports/receipts/auto-save', 'POST', autoSaveData);
+        receiptId = autoSaveResponse?.receipt?.id;
+        
+        if (!receiptId) {
+          throw new Error('Failed to create receipt for quantity update');
+        }
+      }
       
       const response = await fetch(`/api/imports/receipts/${receiptId}/items/${itemId}/increment`, {
         method: 'PATCH',
