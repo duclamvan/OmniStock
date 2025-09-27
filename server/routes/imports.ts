@@ -2340,7 +2340,9 @@ router.get("/shipments/receivable", async (req, res) => {
       })
     );
 
-    // Add mock data if no real shipments found to populate receiving sections
+    // Don't add mock data - only return real shipments
+    // Removed mock data to fix data inconsistency issue
+    /* 
     if (formattedShipments.length === 0) {
       const mockReceivableShipments = [
         {
@@ -2607,6 +2609,7 @@ router.get("/shipments/receivable", async (req, res) => {
       
       formattedShipments = mockReceivableShipments as any;
     }
+    */
 
     res.json(formattedShipments);
   } catch (error) {
