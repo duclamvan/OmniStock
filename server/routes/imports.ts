@@ -4543,7 +4543,10 @@ router.post('/receipts/:id/store-items', async (req, res) => {
           )
         );
       
-      if (unstored[0]?.count === 0) {
+      // Convert to number to ensure proper comparison (SQL COUNT returns string)
+      const unstoredCount = Number(unstored[0]?.count || 0);
+      
+      if (unstoredCount === 0) {
         // Mark receipt as stored
         await tx
           .update(receipts)
