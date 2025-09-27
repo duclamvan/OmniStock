@@ -539,31 +539,21 @@ export class LandingCostService {
             .from(purchaseItems)
             .where(inArray(purchaseItems.id, itemIds));
         } else {
-          // Fallback: Use receipt items for custom items when no cartons exist
-          const receiptItemsQuery = await tx
-            .select({
-              id: receiptItems.itemId,
-              name: customItems.name,
-              quantity: receiptItems.receivedQuantity,
-              unitPrice: customItems.unitPrice,
-              weight: customItems.weight,
-              dimensions: customItems.dimensions,
-              itemType: receiptItems.itemType
-            })
-            .from(receiptItems)
-            .leftJoin(receipts, eq(receiptItems.receiptId, receipts.id))
-            .leftJoin(customItems, eq(receiptItems.itemId, customItems.id))
-            .where(and(
-              eq(receipts.shipmentId, shipmentId),
-              eq(receiptItems.itemType, 'custom')
-            ));
+          // Fallback: Get purchase items from consolidation when no cartons exist
+          if (!shipment.consolidationId) {
+            throw new Error(`No consolidation found for shipment ${shipmentId}`);
+          }
           
-          if (receiptItemsQuery.length === 0) {
+          items = await tx
+            .select()
+            .from(purchaseItems)
+            .where(eq(purchaseItems.consolidationId, shipment.consolidationId));
+          
+          if (items.length === 0) {
             throw new Error(`No items found for shipment ${shipmentId}`);
           }
           
-          items = receiptItemsQuery;
-          itemIds = receiptItemsQuery.map(item => item.id);
+          itemIds = items.map(item => item.id);
         }
 
         // Map cartons to items

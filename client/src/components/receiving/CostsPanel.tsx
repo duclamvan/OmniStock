@@ -178,9 +178,7 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
   // Delete cost mutation
   const deleteCostMutation = useMutation({
     mutationFn: async (costId: number) => {
-      return apiRequest(`/api/imports/shipments/${shipmentId}/costs/${costId}`, {
-        method: 'DELETE'
-      });
+      return apiRequest(`/api/imports/shipments/${shipmentId}/costs/${costId}`, 'DELETE');
     },
     onSuccess: () => {
       toast({
@@ -204,9 +202,7 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
   // Calculate landing costs mutation
   const calculateCostsMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest(`/api/imports/shipments/${shipmentId}/calculate-landing-costs`, {
-        method: 'POST'
-      });
+      return apiRequest(`/api/imports/shipments/${shipmentId}/calculate-landing-costs`, 'POST');
     },
     onSuccess: () => {
       toast({
