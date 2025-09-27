@@ -96,7 +96,9 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
   // Fetch costs
   const { data: costsData, isLoading: loadingCosts } = useQuery({
     queryKey: [`/api/imports/shipments/${shipmentId}/costs`],
-    enabled: !!shipmentId
+    enabled: !!shipmentId,
+    staleTime: 0,  // Always fetch fresh data
+    gcTime: 30 * 1000  // Short cache time
   });
 
   // Extract costs array from response
@@ -209,6 +211,7 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
         title: "Landing Costs Calculated",
         description: "Costs have been allocated to items"
       });
+      queryClient.invalidateQueries({ queryKey: [`/api/imports/shipments/${shipmentId}/costs`] });
       queryClient.invalidateQueries({ queryKey: [`/api/imports/shipments/${shipmentId}/landing-cost-summary`] });
       queryClient.invalidateQueries({ queryKey: [`/api/imports/shipments/${shipmentId}/landing-cost-preview`] });
       onUpdate?.();

@@ -5273,18 +5273,52 @@ router.get("/shipments/:id/landing-cost-summary", async (req, res) => {
       return res.status(404).json({ message: "Shipment not found" });
     }
     
-    // For now, return a simple response indicating no allocations yet
-    // The landing cost calculation needs to be triggered first
-    res.json({
-      shipmentId,
-      items: [],
-      totals: {},
-      grandTotal: 0,
-      baseCurrency: 'EUR',
-      hasAllocations: false,
-      lastCalculated: null,
-      message: "No landing costs calculated yet. Add costs and calculate to see allocations."
-    });
+    // Get cost allocations to check if calculations exist
+    const allocations = await db
+      .select()
+      .from(costAllocations)
+      .where(eq(costAllocations.shipmentId, shipmentId));
+    
+    if (allocations.length === 0) {
+      return res.json({
+        shipmentId,
+        items: [],
+        totals: {},
+        grandTotal: 0,
+        baseCurrency: 'EUR',
+        hasAllocations: false,
+        lastCalculated: null,
+        message: "No landing costs calculated yet. Add costs and calculate to see allocations."
+      });
+    }
+    
+    // Get the actual calculated data using the landing cost service
+    try {
+      const preview = await landingCostService.getLandingCostPreview(shipmentId);
+      
+      res.json({
+        shipmentId,
+        items: preview.items || [],
+        totals: preview.totalCosts || {},
+        grandTotal: preview.totalCosts?.total || 0,
+        baseCurrency: preview.baseCurrency || 'EUR',
+        hasAllocations: true,
+        lastCalculated: allocations[0]?.createdAt || new Date(),
+        status: 'calculated'
+      });
+    } catch (previewError) {
+      console.error("Error getting landing cost preview:", previewError);
+      res.json({
+        shipmentId,
+        items: [],
+        totals: {},
+        grandTotal: 0,
+        baseCurrency: 'EUR',
+        hasAllocations: false,
+        lastCalculated: null,
+        message: "Landing costs calculation in progress or failed. Please recalculate."
+      });
+    }
   } catch (error) {
     console.error("Error fetching landing cost summary:", error);
     res.status(500).json({ message: "Failed to fetch landing cost summary" });
