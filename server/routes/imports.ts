@@ -2796,7 +2796,15 @@ router.post("/receipts", async (req, res) => {
       .where(eq(receipts.shipmentId, shipmentId));
 
     if (existingReceipt) {
-      // If receipt exists (from preserved data), return it instead of creating new one
+      // If receipt exists (from preserved data), ensure shipment is in receiving status
+      await db
+        .update(shipments)
+        .set({ 
+          receivingStatus: 'receiving',
+          updatedAt: new Date()
+        })
+        .where(eq(shipments.id, shipmentId));
+      
       return res.json({ 
         receipt: existingReceipt,
         message: "Using existing receipt (preserved data)"
@@ -2817,6 +2825,15 @@ router.post("/receipts", async (req, res) => {
       createdAt: new Date(),
       updatedAt: new Date()
     }).returning();
+
+    // Update shipment receiving status to 'receiving'
+    await db
+      .update(shipments)
+      .set({ 
+        receivingStatus: 'receiving',
+        updatedAt: new Date()
+      })
+      .where(eq(shipments.id, shipmentId));
 
     // Get consolidation items for this shipment
     let itemsToReceive = [];
