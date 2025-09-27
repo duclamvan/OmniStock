@@ -643,7 +643,6 @@ export default function StartReceiving() {
       
       // If no receipt exists, create one first using auto-save
       if (!receiptId) {
-        console.log('No receipt ID found, creating receipt first before quantity update');
         const autoSaveData = {
           shipmentId: shipment?.id,
           receivedBy: receivedBy || "Employee #1",
@@ -656,15 +655,13 @@ export default function StartReceiving() {
         };
         
         try {
-          const autoSaveResponse = await apiRequest('/api/imports/receipts/auto-save', 'POST', autoSaveData);
-          console.log('Auto-save response:', autoSaveResponse);
+          const response = await apiRequest('/api/imports/receipts/auto-save', 'POST', autoSaveData);
+          const autoSaveResponse = await response.json();
           receiptId = autoSaveResponse?.receipt?.id;
           
           if (!receiptId) {
-            console.error('No receipt ID in auto-save response:', autoSaveResponse);
             throw new Error('Failed to create receipt for quantity update');
           }
-          console.log('Created receipt with ID:', receiptId);
         } catch (autoSaveError) {
           console.error('Auto-save failed:', autoSaveError);
           throw new Error('Failed to create receipt: ' + autoSaveError.message);
