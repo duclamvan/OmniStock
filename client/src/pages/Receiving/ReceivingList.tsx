@@ -2101,45 +2101,50 @@ export default function ReceivingList() {
                         </Link>
                       </div>
 
-                      {/* Additional Info Bar */}
-                      <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-xs sm:text-sm mb-3 sm:pl-11">
-                        {shipment.receivingWarehouse && (
-                          <div className="flex items-center gap-1">
-                            <Warehouse className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-muted-foreground">
-                              Warehouse: {shipment.receivingWarehouse}
-                            </span>
-                          </div>
-                        )}
+                      {/* Additional Info Bar - Always visible with database info */}
+                      <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-xs sm:text-sm mb-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                        <div className="flex items-center gap-1">
+                          <Warehouse className="h-3 w-3 text-primary" />
+                          <span className="text-foreground">
+                            <span className="text-muted-foreground">Warehouse:</span> 
+                            <span className="ml-1 font-medium">{shipment.receivingWarehouse || 'Not specified'}</span>
+                          </span>
+                        </div>
+                        
                         {shipment.warehouseLocation && (
                           <div className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-muted-foreground">
-                              Location: {shipment.warehouseLocation}
+                            <MapPin className="h-3 w-3 text-primary" />
+                            <span className="text-foreground">
+                              <span className="text-muted-foreground">Location:</span> 
+                              <span className="ml-1 font-medium">{shipment.warehouseLocation}</span>
                             </span>
                           </div>
                         )}
-                        {shipment.consolidationName && (
-                          <div className="flex items-center gap-1">
-                            <Package className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-muted-foreground">
-                              Consolidation: {shipment.consolidationName}
-                            </span>
-                          </div>
-                        )}
+                        
+                        <div className="flex items-center gap-1">
+                          <Package className="h-3 w-3 text-primary" />
+                          <span className="text-foreground">
+                            <span className="text-muted-foreground">Consolidation:</span> 
+                            <span className="ml-1 font-medium">{shipment.consolidationName || 'No consolidation'}</span>
+                          </span>
+                        </div>
+                        
                         {shipment.deliveredAt && (
                           <div className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-muted-foreground">
-                              Received: {format(new Date(shipment.deliveredAt), 'MMM dd, HH:mm')}
+                            <Calendar className="h-3 w-3 text-primary" />
+                            <span className="text-foreground">
+                              <span className="text-muted-foreground">Received:</span> 
+                              <span className="ml-1 font-medium">{format(new Date(shipment.deliveredAt), 'MMM dd, HH:mm')}</span>
                             </span>
                           </div>
                         )}
+                        
                         {shipment.totalWeight && (
                           <div className="flex items-center gap-1">
-                            <Package2 className="h-3 w-3 text-muted-foreground" />
-                            <span className="font-semibold">
-                              Weight: {shipment.totalWeight} kg
+                            <Package2 className="h-3 w-3 text-primary" />
+                            <span className="text-foreground">
+                              <span className="text-muted-foreground">Weight:</span> 
+                              <span className="ml-1 font-medium">{shipment.totalWeight} kg</span>
                             </span>
                           </div>
                         )}
@@ -2372,53 +2377,60 @@ export default function ReceivingList() {
                         )}
                       </div>
 
-                      {/* Additional Info Bar */}
-                      <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-xs sm:text-sm mb-3 sm:pl-11">
-                        {shipment.receivingWarehouse && (
-                          <div className="flex items-center gap-1">
-                            <Warehouse className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-muted-foreground">
-                              Warehouse: {shipment.receivingWarehouse}
-                            </span>
-                          </div>
-                        )}
+                      {/* Additional Info Bar - Always visible with database info */}
+                      <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-xs sm:text-sm mb-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                        <div className="flex items-center gap-1">
+                          <Warehouse className="h-3 w-3 text-primary" />
+                          <span className="text-foreground">
+                            <span className="text-muted-foreground">Warehouse:</span> 
+                            <span className="ml-1 font-medium">{shipment.receivingWarehouse || 'Not specified'}</span>
+                          </span>
+                        </div>
+                        
                         {shipment.warehouseLocation && (
                           <div className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-muted-foreground">
-                              Location: {shipment.warehouseLocation}
+                            <MapPin className="h-3 w-3 text-primary" />
+                            <span className="text-foreground">
+                              <span className="text-muted-foreground">Location:</span> 
+                              <span className="ml-1 font-medium">{shipment.warehouseLocation}</span>
                             </span>
                           </div>
                         )}
-                        {shipment.consolidationName && (
-                          <div className="flex items-center gap-1">
-                            <Package className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-muted-foreground">
-                              Consolidation: {shipment.consolidationName}
-                            </span>
-                          </div>
-                        )}
+                        
+                        <div className="flex items-center gap-1">
+                          <Package className="h-3 w-3 text-primary" />
+                          <span className="text-foreground">
+                            <span className="text-muted-foreground">Consolidation:</span> 
+                            <span className="ml-1 font-medium">{shipment.consolidationName || 'No consolidation'}</span>
+                          </span>
+                        </div>
+                        
                         {shipment.deliveredAt && (
                           <div className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-muted-foreground">
-                              Completed: {format(new Date(shipment.deliveredAt), 'MMM dd, HH:mm')}
+                            <Calendar className="h-3 w-3 text-primary" />
+                            <span className="text-foreground">
+                              <span className="text-muted-foreground">Completed:</span> 
+                              <span className="ml-1 font-medium">{format(new Date(shipment.deliveredAt), 'MMM dd, HH:mm')}</span>
                             </span>
                           </div>
                         )}
+                        
                         {shipment.totalWeight && (
                           <div className="flex items-center gap-1">
-                            <Package2 className="h-3 w-3 text-muted-foreground" />
-                            <span className="font-semibold">
-                              Weight: {shipment.totalWeight} kg
+                            <Package2 className="h-3 w-3 text-primary" />
+                            <span className="text-foreground">
+                              <span className="text-muted-foreground">Weight:</span> 
+                              <span className="ml-1 font-medium">{shipment.totalWeight} kg</span>
                             </span>
                           </div>
                         )}
+                        
                         {receiptData && receiptData.receivedBy && (
                           <div className="flex items-center gap-1">
-                            <User className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-muted-foreground">
-                              Received by: {receiptData.receivedBy}
+                            <User className="h-3 w-3 text-primary" />
+                            <span className="text-foreground">
+                              <span className="text-muted-foreground">Received by:</span> 
+                              <span className="ml-1 font-medium">{receiptData.receivedBy}</span>
                             </span>
                           </div>
                         )}
