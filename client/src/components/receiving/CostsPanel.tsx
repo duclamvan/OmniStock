@@ -135,12 +135,35 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
         }).then(async (res) => {
           if (!res.ok) throw new Error('Failed to create freight cost');
           setHasAutoCreatedFreight(true);
+          
+          // Auto-trigger landing cost calculation after creating freight cost
+          try {
+            const calcResponse = await fetch(`/api/imports/shipments/${shipmentId}/calculate-landing-costs`, {
+              method: 'POST',
+              credentials: 'include'
+            });
+            
+            if (calcResponse.ok) {
+              toast({
+                title: "Landing Costs Calculated",
+                description: `Freight cost of ${formatCurrency(freightCost.amountOriginal, freightCost.currency)} added and allocated to items`
+              });
+            } else {
+              throw new Error('Calculation failed');
+            }
+          } catch (calcError) {
+            console.error('Failed to auto-calculate landing costs:', calcError);
+            toast({
+              title: "Freight Cost Added",
+              description: `Shipping cost of ${formatCurrency(freightCost.amountOriginal, freightCost.currency)} added. Click Recalculate to allocate costs to items.`
+            });
+          }
+          
+          // Refresh all data
           queryClient.invalidateQueries({ queryKey: [`/api/imports/shipments/${shipmentId}/costs`] });
           queryClient.invalidateQueries({ queryKey: [`/api/imports/shipments/${shipmentId}/landing-cost-summary`] });
-          toast({
-            title: "Freight Cost Added",
-            description: `Shipping cost of ${formatCurrency(freightCost.amountOriginal, freightCost.currency)} has been automatically added from shipment data`
-          });
+          queryClient.invalidateQueries({ queryKey: [`/api/imports/shipments/${shipmentId}/landing-cost-preview`] });
+          onUpdate?.();
         }).catch((error) => {
           console.error('Failed to auto-create freight cost:', error);
         });

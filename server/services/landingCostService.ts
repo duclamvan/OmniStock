@@ -8,6 +8,9 @@ import {
   costAllocations,
   productCostHistory,
   products,
+  receipts,
+  receiptItems,
+  customItems,
   type Shipment,
   type ShipmentCost,
   type ShipmentCarton,
@@ -497,15 +500,43 @@ export class LandingCostService {
           .from(shipmentCartons)
           .where(eq(shipmentCartons.shipmentId, shipmentId));
 
-        const itemIds = cartons.map(c => c.purchaseItemId);
-        if (itemIds.length === 0) {
-          throw new Error(`No items found for shipment ${shipmentId}`);
+        let items: any[] = [];
+        let itemIds: number[] = [];
+        
+        if (cartons.length > 0) {
+          // Use cartons for purchase items
+          itemIds = cartons.map(c => c.purchaseItemId);
+          items = await tx
+            .select()
+            .from(purchaseItems)
+            .where(inArray(purchaseItems.id, itemIds));
+        } else {
+          // Fallback: Use receipt items for custom items when no cartons exist
+          const receiptItemsQuery = await tx
+            .select({
+              id: receiptItems.itemId,
+              name: customItems.name,
+              quantity: receiptItems.receivedQuantity,
+              unitPrice: customItems.unitPrice,
+              weight: customItems.weight,
+              dimensions: customItems.dimensions,
+              itemType: receiptItems.itemType
+            })
+            .from(receiptItems)
+            .leftJoin(receipts, eq(receiptItems.receiptId, receipts.id))
+            .leftJoin(customItems, eq(receiptItems.itemId, customItems.id))
+            .where(and(
+              eq(receipts.shipmentId, shipmentId),
+              eq(receiptItems.itemType, 'custom')
+            ));
+          
+          if (receiptItemsQuery.length === 0) {
+            throw new Error(`No items found for shipment ${shipmentId}`);
+          }
+          
+          items = receiptItemsQuery;
+          itemIds = receiptItemsQuery.map(item => item.id);
         }
-
-        const items = await tx
-          .select()
-          .from(purchaseItems)
-          .where(inArray(purchaseItems.id, itemIds));
 
         // Map cartons to items
         const cartonMap = new Map<number, ShipmentCarton>();
