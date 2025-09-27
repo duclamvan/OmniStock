@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { 
@@ -38,7 +39,8 @@ import {
   ZoomIn,
   ClipboardCheck,
   Info,
-  Undo2
+  Undo2,
+  MoreVertical
 } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
@@ -332,6 +334,45 @@ export default function ReceiptDetails() {
   const handleUndoApproval = () => {
     undoApprovalMutation.mutate({
       reason: "Manual undo by user"
+    });
+  };
+
+  // Bulk undo verification for all verified items
+  const handleBulkUndoVerification = () => {
+    if (!receipt?.items) return;
+
+    const verifiedItems = receipt.items.filter((item: ReceiptItem) => item.verifiedAt);
+    
+    if (verifiedItems.length === 0) {
+      toast({
+        title: "No Verified Items",
+        description: "No items have been verified yet"
+      });
+      return;
+    }
+
+    // Undo verification for each verified item
+    verifiedItems.forEach((item: ReceiptItem) => {
+      updateItemMutation.mutate({
+        itemId: item.itemId,
+        data: {
+          receivedQuantity: item.receivedQuantity,
+          damagedQuantity: item.damagedQuantity,
+          missingQuantity: item.missingQuantity,
+          barcode: item.barcode,
+          warehouseLocation: item.warehouseLocation,
+          additionalLocation: item.additionalLocation,
+          storageInstructions: item.storageInstructions,
+          condition: item.condition,
+          notes: item.notes,
+          verifiedAt: null // Clear verification status
+        }
+      });
+    });
+
+    toast({
+      title: "Bulk Undo Started",
+      description: `Removing verification from ${verifiedItems.length} items...`
     });
   };
 
@@ -650,6 +691,34 @@ export default function ReceiptDetails() {
                       Quickly Verify All Items
                     </Button>
                   )}
+                  
+                  {/* Three-dot menu for additional actions */}
+                  {receipt?.items && receipt.items.some((item: ReceiptItem) => item.verifiedAt) && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          data-testid="button-verification-menu"
+                          className="h-8 w-8 p-0"
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={handleBulkUndoVerification}
+                          disabled={updateItemMutation.isPending}
+                          data-testid="menu-item-undo-all-verification"
+                          className="text-muted-foreground"
+                        >
+                          <Undo2 className="h-4 w-4 mr-2" />
+                          Undo All Verification
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                  
                   {hasDamagedItems && (
                     <Badge variant="destructive">
                       <AlertTriangle className="h-3 w-3 mr-1" />
