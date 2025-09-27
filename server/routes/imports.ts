@@ -3901,13 +3901,33 @@ router.patch("/receipts/:id/items/:itemId", async (req, res) => {
   try {
     const receiptId = parseInt(req.params.id);
     const shipmentItemId = parseInt(req.params.itemId); // This is the shipment/purchase item ID
-    const { receivedQuantity, status, notes } = req.body;
+    const { 
+      receivedQuantity, 
+      damagedQuantity, 
+      missingQuantity, 
+      status, 
+      condition,
+      barcode,
+      warehouseLocation,
+      additionalLocation,
+      storageInstructions,
+      notes,
+      verifiedAt
+    } = req.body;
     
     // Build update object with only provided fields
     const updateData: any = { updatedAt: new Date() };
     if (receivedQuantity !== undefined) updateData.receivedQuantity = receivedQuantity;
+    if (damagedQuantity !== undefined) updateData.damagedQuantity = damagedQuantity;
+    if (missingQuantity !== undefined) updateData.missingQuantity = missingQuantity;
     if (status !== undefined) updateData.status = status;
+    if (condition !== undefined) updateData.condition = condition;
+    if (barcode !== undefined) updateData.barcode = barcode;
+    if (warehouseLocation !== undefined) updateData.warehouseLocation = warehouseLocation;
+    if (additionalLocation !== undefined) updateData.additionalLocation = additionalLocation;
+    if (storageInstructions !== undefined) updateData.storageInstructions = storageInstructions;
     if (notes !== undefined) updateData.notes = notes;
+    if (verifiedAt !== undefined) updateData.verifiedAt = verifiedAt ? new Date(verifiedAt) : null;
     
     // Single efficient update query - look for receipt item by its item_id field
     const [updated] = await db
@@ -3920,7 +3940,15 @@ router.patch("/receipts/:id/items/:itemId", async (req, res) => {
       .returning({ 
         id: receiptItems.id,
         receivedQuantity: receiptItems.receivedQuantity,
-        notes: receiptItems.notes
+        damagedQuantity: receiptItems.damagedQuantity,
+        missingQuantity: receiptItems.missingQuantity,
+        condition: receiptItems.condition,
+        barcode: receiptItems.barcode,
+        warehouseLocation: receiptItems.warehouseLocation,
+        additionalLocation: receiptItems.additionalLocation,
+        storageInstructions: receiptItems.storageInstructions,
+        notes: receiptItems.notes,
+        verifiedAt: receiptItems.verifiedAt
       });
     
     if (!updated) {

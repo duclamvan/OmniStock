@@ -177,18 +177,22 @@ export default function ReceiptDetails() {
   const saveItemVerification = () => {
     if (!selectedItem) return;
 
+    // Calculate missing quantity automatically
+    const calculatedMissingQuantity = Math.max(0, selectedItem.expectedQuantity - selectedItem.receivedQuantity - selectedItem.damagedQuantity);
+
     updateItemMutation.mutate({
-      itemId: selectedItem.id,
+      itemId: selectedItem.itemId, // Use the shipment item ID, not the receipt item ID
       data: {
         receivedQuantity: selectedItem.receivedQuantity,
         damagedQuantity: selectedItem.damagedQuantity,
-        missingQuantity: selectedItem.missingQuantity,
+        missingQuantity: calculatedMissingQuantity,
         barcode: selectedItem.barcode,
         warehouseLocation: selectedItem.warehouseLocation,
         additionalLocation: selectedItem.additionalLocation,
         storageInstructions: selectedItem.storageInstructions,
         condition: selectedItem.condition,
-        notes: selectedItem.notes
+        notes: selectedItem.notes,
+        verifiedAt: new Date().toISOString() // Mark as verified when saved
       }
     });
   };
