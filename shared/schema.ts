@@ -473,7 +473,7 @@ export const shipmentCosts = pgTable('shipment_costs', {
 export const shipmentCartons = pgTable('shipment_cartons', {
   id: serial('id').primaryKey(),
   shipmentId: integer('shipment_id').notNull().references(() => shipments.id, { onDelete: 'cascade' }),
-  purchaseItemId: integer('purchase_item_id').notNull().references(() => purchaseItems.id, { onDelete: 'cascade' }),
+  customItemId: integer('custom_item_id').notNull().references(() => customItems.id, { onDelete: 'cascade' }),
   qtyInCarton: integer('qty_in_carton').notNull(),
   lengthCm: decimal('length_cm', { precision: 10, scale: 2 }),
   widthCm: decimal('width_cm', { precision: 10, scale: 2 }),
@@ -487,7 +487,7 @@ export const shipmentCartons = pgTable('shipment_cartons', {
 export const costAllocations = pgTable('cost_allocations', {
   id: serial('id').primaryKey(),
   shipmentId: integer('shipment_id').notNull().references(() => shipments.id, { onDelete: 'cascade' }),
-  purchaseItemId: integer('purchase_item_id').notNull().references(() => purchaseItems.id, { onDelete: 'cascade' }),
+  customItemId: integer('custom_item_id').notNull().references(() => customItems.id, { onDelete: 'cascade' }),
   costType: text('cost_type').notNull(), // FREIGHT, BROKERAGE, INSURANCE, PACKAGING, OTHER, DUTY
   basis: text('basis').notNull(), // CHARGEABLE_WEIGHT, UNITS, VALUE
   amountAllocatedBase: decimal('amount_allocated_base', { precision: 12, scale: 4 }).notNull(),
@@ -499,7 +499,7 @@ export const costAllocations = pgTable('cost_allocations', {
 export const productCostHistory = pgTable('product_cost_history', {
   id: serial('id').primaryKey(),
   productId: varchar('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
-  purchaseItemId: integer('purchase_item_id').references(() => purchaseItems.id),
+  customItemId: integer('custom_item_id').references(() => customItems.id),
   landingCostUnitBase: decimal('landing_cost_unit_base', { precision: 12, scale: 4 }).notNull(),
   method: text('method').notNull(), // e.g., "weighted_average", "fifo"
   computedAt: timestamp('computed_at').notNull(),
@@ -659,9 +659,9 @@ export const shipmentCartonsRelations = relations(shipmentCartons, ({ one }) => 
     fields: [shipmentCartons.shipmentId],
     references: [shipments.id]
   }),
-  purchaseItem: one(purchaseItems, {
-    fields: [shipmentCartons.purchaseItemId],
-    references: [purchaseItems.id]
+  customItem: one(customItems, {
+    fields: [shipmentCartons.customItemId],
+    references: [customItems.id]
   })
 }));
 
@@ -670,9 +670,9 @@ export const costAllocationsRelations = relations(costAllocations, ({ one }) => 
     fields: [costAllocations.shipmentId],
     references: [shipments.id]
   }),
-  purchaseItem: one(purchaseItems, {
-    fields: [costAllocations.purchaseItemId],
-    references: [purchaseItems.id]
+  customItem: one(customItems, {
+    fields: [costAllocations.customItemId],
+    references: [customItems.id]
   })
 }));
 
@@ -681,9 +681,9 @@ export const productCostHistoryRelations = relations(productCostHistory, ({ one 
     fields: [productCostHistory.productId],
     references: [products.id]
   }),
-  purchaseItem: one(purchaseItems, {
-    fields: [productCostHistory.purchaseItemId],
-    references: [purchaseItems.id]
+  customItem: one(customItems, {
+    fields: [productCostHistory.customItemId],
+    references: [customItems.id]
   })
 }));
 

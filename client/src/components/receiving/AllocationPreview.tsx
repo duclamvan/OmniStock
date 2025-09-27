@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, Fragment } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -656,9 +656,8 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
               </TableHeader>
               <TableBody>
                 {preview.items.map((item) => (
-                  <>
+                  <Fragment key={item.purchaseItemId}>
                     <TableRow
-                      key={item.purchaseItemId} 
                       className={`${item.warnings.length > 0 ? 'bg-yellow-50 dark:bg-yellow-950/20' : ''} ${currentMethod ? 'border-l-2 border-l-blue-200 dark:border-l-blue-800' : ''}`}
                     >
                       <TableCell className="font-medium">
@@ -822,7 +821,7 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
                         </TableCell>
                       </TableRow>
                     )}
-                  </>
+                  </Fragment>
                 ))}
               </TableBody>
               <TableFooter>

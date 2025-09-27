@@ -41,3 +41,11 @@ integrations = ["javascript_database:1.0.0", "javascript_openai:1.0.0", "javascr
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[[ports]]
+localPort = 40359
+externalPort = 3000
+
+[[ports]]
+localPort = 45645
+externalPort = 3001

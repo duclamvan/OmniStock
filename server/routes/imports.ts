@@ -5237,7 +5237,7 @@ const updateCostSchema = z.object({
 });
 
 const cartonSchema = z.object({
-  purchaseItemId: z.number().positive(),
+  customItemId: z.number().positive(),
   qtyInCarton: z.number().positive().int(),
   lengthCm: z.number().positive(),
   widthCm: z.number().positive(),
@@ -5582,7 +5582,7 @@ router.post("/shipments/:id/cartons", async (req, res) => {
       for (const carton of cartons) {
         const [inserted] = await tx.insert(shipmentCartons).values({
           shipmentId,
-          purchaseItemId: carton.purchaseItemId,
+          customItemId: carton.customItemId,
           qtyInCarton: carton.qtyInCarton,
           lengthCm: carton.lengthCm.toString(),
           widthCm: carton.widthCm.toString(),
@@ -5630,14 +5630,14 @@ router.get("/shipments/:id/cartons", async (req, res) => {
       .where(eq(shipmentCartons.shipmentId, shipmentId));
     
     // Fetch item details separately if needed
-    const itemIds = [...new Set(cartonsList.map(c => c.purchaseItemId).filter(id => id !== null))];
+    const itemIds = [...new Set(cartonsList.map(c => c.customItemId).filter(id => id !== null))];
     let itemMap: Record<number, any> = {};
     
     if (itemIds.length > 0) {
       const items = await db
         .select()
-        .from(purchaseItems)
-        .where(inArray(purchaseItems.id, itemIds));
+        .from(customItems)
+        .where(inArray(customItems.id, itemIds));
       
       itemMap = items.reduce((acc, item) => {
         acc[item.id] = item;
@@ -5649,14 +5649,14 @@ router.get("/shipments/:id/cartons", async (req, res) => {
     const cartons = cartonsList.map(carton => ({
       id: carton.id,
       shipmentId: carton.shipmentId,
-      purchaseItemId: carton.purchaseItemId,
+      customItemId: carton.customItemId,
       qtyInCarton: carton.qtyInCarton,
       lengthCm: carton.lengthCm,
       widthCm: carton.widthCm,
       heightCm: carton.heightCm,
       grossWeightKg: carton.grossWeightKg,
       notes: carton.notes,
-      item: carton.purchaseItemId ? itemMap[carton.purchaseItemId] : null
+      item: carton.customItemId ? itemMap[carton.customItemId] : null
     }));
     
     // Calculate volumetric weights
@@ -5792,6 +5792,85 @@ router.get("/shipments/:id/landing-cost-preview", async (req, res) => {
   }
 });
 
+// Method-specific landing cost preview route
+router.get("/shipments/:id/landing-cost-preview/:method", async (req, res) => {
+  try {
+    const shipmentId = parseInt(req.params.id);
+    const method = req.params.method.toUpperCase();
+    
+    // Validate allocation method
+    const validMethods = ['WEIGHT', 'VALUE', 'UNITS', 'HYBRID', 'VOLUME', 'PER_UNIT'];
+    if (!validMethods.includes(method)) {
+      return res.status(400).json({ 
+        message: `Invalid allocation method. Must be one of: ${validMethods.join(', ')}` 
+      });
+    }
+    
+    // Verify shipment exists
+    const [shipment] = await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.id, shipmentId));
+    
+    if (!shipment) {
+      return res.status(404).json({ message: "Shipment not found" });
+    }
+    
+    // Get shipment metrics for preview
+    const metrics = await landingCostService.getShipmentMetrics(shipmentId);
+    
+    // Fetch costs for preview
+    const costs = await db
+      .select()
+      .from(shipmentCosts)
+      .where(eq(shipmentCosts.shipmentId, shipmentId));
+    
+    // Calculate total costs by type
+    const costsByType = costs.reduce((acc, cost) => {
+      if (!acc[cost.type]) {
+        acc[cost.type] = 0;
+      }
+      acc[cost.type] += Number(cost.amountBase || 0);
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Get item allocation breakdown using specified method
+    const items = await getItemAllocationBreakdownWithMethod(shipmentId, costsByType, method);
+    
+    res.json({
+      shipmentId,
+      metrics,
+      costsByType,
+      totalCost: Object.values(costsByType).reduce((sum, val) => sum + val, 0),
+      baseCurrency: 'EUR',
+      allocationMethod: method,
+      // Structure expected by AllocationPreview component
+      items,
+      totalItems: metrics.itemCount,
+      totalUnits: metrics.totalUnits,
+      totalActualWeight: metrics.totalWeight,
+      totalVolumetricWeight: metrics.totalVolumetricWeight,
+      totalChargeableWeight: metrics.totalChargeableWeight,
+      totalCosts: {
+        freight: costsByType['FREIGHT'] || 0,
+        duty: costsByType['DUTY'] || 0,
+        brokerage: costsByType['BROKERAGE'] || 0,
+        insurance: costsByType['INSURANCE'] || 0,
+        packaging: costsByType['PACKAGING'] || 0,
+        other: costsByType['OTHER'] || 0,
+        total: Object.values(costsByType).reduce((sum, val) => sum + val, 0)
+      },
+      message: `Preview using ${method} allocation method. Use /calculate-landing-costs to save allocations.`
+    });
+  } catch (error) {
+    console.error("Error generating method-specific landing cost preview:", error);
+    res.status(500).json({ 
+      message: "Failed to generate landing cost preview",
+      error: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+});
+
 // Helper function to get detailed allocation breakdown per item
 async function getItemAllocationBreakdown(shipmentId: number, costsByType: Record<string, number>): Promise<any[]> {
   try {
@@ -5815,7 +5894,7 @@ async function getItemAllocationBreakdown(shipmentId: number, costsByType: Recor
       .from(consolidationItems)
       .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
       .leftJoin(shipmentCartons, and(
-        eq(shipmentCartons.purchaseItemId, customItems.id),
+        eq(shipmentCartons.customItemId, customItems.id),
         eq(shipmentCartons.shipmentId, shipmentId)
       ))
       .where(eq(consolidationItems.consolidationId, shipment.consolidationId));
@@ -5888,7 +5967,7 @@ async function getItemAllocationBreakdown(shipmentId: number, costsByType: Recor
       const landingCostPerUnit = item.quantity > 0 ? totalAllocated / item.quantity : 0;
 
       items.push({
-        purchaseItemId: item.id,
+        customItemId: item.id,
         sku: item.sku,
         name: item.name,
         quantity: item.quantity,
@@ -5910,6 +5989,187 @@ async function getItemAllocationBreakdown(shipmentId: number, costsByType: Recor
     return items;
   } catch (error) {
     console.error('Error getting item allocation breakdown:', error);
+    return [];
+  }
+}
+
+// Enhanced helper function that uses specific allocation methods from LandingCostService
+async function getItemAllocationBreakdownWithMethod(
+  shipmentId: number, 
+  costsByType: Record<string, number>, 
+  method: string
+): Promise<any[]> {
+  try {
+    // Get consolidation ID
+    const [shipment] = await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.id, shipmentId))
+      .limit(1);
+
+    if (!shipment?.consolidationId) {
+      return [];
+    }
+
+    // Get shipment items through consolidation items (same as original)
+    const itemsWithCartons = await db
+      .select({
+        item: customItems,
+        carton: shipmentCartons
+      })
+      .from(consolidationItems)
+      .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
+      .leftJoin(shipmentCartons, and(
+        eq(shipmentCartons.customItemId, customItems.id),
+        eq(shipmentCartons.shipmentId, shipmentId)
+      ))
+      .where(eq(consolidationItems.consolidationId, shipment.consolidationId));
+
+    if (itemsWithCartons.length === 0) {
+      return [];
+    }
+
+    // Prepare items in the format expected by LandingCostService
+    const itemAllocations: any[] = itemsWithCartons.map(row => {
+      const item = row.item;
+      const carton = row.carton;
+
+      // Calculate weights (same logic as original)
+      let actualWeight: number;
+      let volumetricWeight: number;
+
+      if (carton) {
+        actualWeight = parseFloat(carton.grossWeightKg || '0');
+        volumetricWeight = landingCostService.calculateVolumetricWeight(
+          parseFloat(carton.lengthCm || '0'),
+          parseFloat(carton.widthCm || '0'),
+          parseFloat(carton.heightCm || '0')
+        );
+      } else {
+        actualWeight = parseFloat(item.weight || '0') * item.quantity;
+        volumetricWeight = actualWeight * 0.8; // Conservative estimate
+      }
+
+      const chargeableWeight = landingCostService.calculateChargeableWeight(actualWeight, volumetricWeight);
+      const unitPrice = parseFloat(item.unitPrice || '0');
+      const totalValue = unitPrice * item.quantity;
+
+      return {
+        customItemId: item.id,
+        chargeableWeight,
+        actualWeight,
+        volumetricWeight,
+        unitPrice,
+        quantity: item.quantity,
+        totalValue,
+        item,
+        carton
+      };
+    });
+
+    // Map allocation method to LandingCostService function
+    const { Decimal } = await import('decimal.js');
+
+    const getAllocationFunction = (method: string) => {
+      switch (method) {
+        case 'WEIGHT':
+          return (items: any[], totalCost: any) => landingCostService.allocateByChargeableWeight(items, totalCost);
+        case 'VALUE':
+          return (items: any[], totalCost: any) => landingCostService.allocateByValue(items, totalCost);
+        case 'UNITS':
+          return (items: any[], totalCost: any) => landingCostService.allocateByUnits(items, totalCost);
+        case 'PER_UNIT':
+          return (items: any[], totalCost: any) => landingCostService.allocatePerUnit(items, totalCost);
+        case 'HYBRID':
+          return (items: any[], totalCost: any) => landingCostService.allocateByHybrid(items, totalCost);
+        case 'VOLUME':
+          return (items: any[], totalCost: any) => landingCostService.allocateByVolume(items, totalCost);
+        default:
+          throw new Error(`Unsupported allocation method: ${method}`);
+      }
+    };
+
+    const allocateFunction = getAllocationFunction(method);
+
+    // Calculate allocations for each cost type using the specified method
+    const results: any[] = [];
+
+    for (const itemAllocation of itemAllocations) {
+      const item = itemAllocation.item;
+      
+      // Calculate allocations for each cost type
+      let freightAllocated = 0;
+      let dutyAllocated = 0;
+      let brokerageAllocated = 0;
+      let insuranceAllocated = 0;
+      let packagingAllocated = 0;
+      let otherAllocated = 0;
+
+      // Apply allocation method to each cost type
+      const costTypes = ['FREIGHT', 'DUTY', 'BROKERAGE', 'INSURANCE', 'PACKAGING', 'OTHER'];
+      
+      for (const costType of costTypes) {
+        const costAmount = costsByType[costType] || 0;
+        if (costAmount > 0) {
+          const totalCostDecimal = new Decimal(costAmount);
+          const allocations = allocateFunction(itemAllocations, totalCostDecimal);
+          
+          // Find allocation for this specific item
+          const itemAllocationResult = allocations.find(alloc => alloc.customItemId === item.id);
+          const allocatedAmount = itemAllocationResult ? parseFloat(itemAllocationResult.amount.toString()) : 0;
+          
+          switch (costType) {
+            case 'FREIGHT':
+              freightAllocated = allocatedAmount;
+              break;
+            case 'DUTY':
+              dutyAllocated = allocatedAmount;
+              break;
+            case 'BROKERAGE':
+              brokerageAllocated = allocatedAmount;
+              break;
+            case 'INSURANCE':
+              insuranceAllocated = allocatedAmount;
+              break;
+            case 'PACKAGING':
+              packagingAllocated = allocatedAmount;
+              break;
+            case 'OTHER':
+              otherAllocated = allocatedAmount;
+              break;
+          }
+        }
+      }
+
+      const totalAllocated = freightAllocated + dutyAllocated + brokerageAllocated + insuranceAllocated + packagingAllocated + otherAllocated;
+      const landingCostPerUnit = item.quantity > 0 ? totalAllocated / item.quantity : 0;
+
+      results.push({
+        customItemId: item.id,
+        sku: item.sku,
+        name: item.name,
+        quantity: item.quantity,
+        actualWeightKg: itemAllocation.actualWeight,
+        volumetricWeightKg: itemAllocation.volumetricWeight,
+        chargeableWeightKg: itemAllocation.chargeableWeight,
+        unitValue: itemAllocation.unitPrice,
+        totalValue: itemAllocation.totalValue,
+        freightAllocated,
+        dutyAllocated,
+        brokerageAllocated,
+        insuranceAllocated,
+        packagingAllocated,
+        otherAllocated,
+        totalAllocated,
+        landingCostPerUnit,
+        allocationMethod: method,
+        warnings: []
+      });
+    }
+
+    return results;
+  } catch (error) {
+    console.error(`Error getting item allocation breakdown with method ${method}:`, error);
     return [];
   }
 }

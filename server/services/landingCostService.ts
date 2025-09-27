@@ -4,18 +4,17 @@ import {
   shipments,
   shipmentCosts,
   shipmentCartons,
-  purchaseItems,
+  customItems,
+  consolidationItems,
   costAllocations,
   productCostHistory,
   products,
   receipts,
   receiptItems,
-  customItems,
-  consolidationItems,
   type Shipment,
   type ShipmentCost,
   type ShipmentCarton,
-  type PurchaseItem,
+  type CustomItem,
   type InsertCostAllocation,
   type InsertProductCostHistory
 } from '@shared/schema';
@@ -36,12 +35,12 @@ const VOLUMETRIC_DIVISORS = {
 };
 
 // Types for internal use
-interface ItemWithCarton extends PurchaseItem {
+interface ItemWithCarton extends CustomItem {
   carton?: ShipmentCarton;
 }
 
 interface ItemAllocation {
-  purchaseItemId: number;
+  customItemId: number;
   chargeableWeight: number;
   actualWeight: number;
   volumetricWeight: number;
@@ -51,7 +50,7 @@ interface ItemAllocation {
 }
 
 interface AllocationResult {
-  purchaseItemId: number;
+  customItemId: number;
   amount: Decimal;
 }
 
@@ -67,7 +66,7 @@ interface LandingCostBreakdown {
     total: Decimal;
   };
   itemBreakdowns: Array<{
-    purchaseItemId: number;
+    customItemId: number;
     sku: string | null;
     name: string;
     quantity: number;
@@ -169,7 +168,7 @@ export class LandingCostService {
     }
 
     const allocations: AllocationResult[] = items.map(item => ({
-      purchaseItemId: item.purchaseItemId,
+      customItemId: item.customItemId,
       amount: totalCost
         .mul(item.chargeableWeight * item.quantity)
         .div(totalChargeableWeight)
@@ -196,7 +195,7 @@ export class LandingCostService {
     }
 
     const allocations: AllocationResult[] = items.map(item => ({
-      purchaseItemId: item.purchaseItemId,
+      customItemId: item.customItemId,
       amount: totalCost
         .mul(item.totalValue)
         .div(totalValue)
@@ -220,7 +219,7 @@ export class LandingCostService {
     }
 
     const allocations: AllocationResult[] = items.map(item => ({
-      purchaseItemId: item.purchaseItemId,
+      customItemId: item.customItemId,
       amount: totalCost.mul(item.quantity).div(totalUnits)
     }));
 
@@ -244,7 +243,7 @@ export class LandingCostService {
 
     const costPerItem = totalCost.div(totalItems);
     const allocations: AllocationResult[] = items.map(item => ({
-      purchaseItemId: item.purchaseItemId,
+      customItemId: item.customItemId,
       amount: costPerItem
     }));
 
@@ -310,7 +309,7 @@ export class LandingCostService {
         .div(totalValue);
 
       return {
-        purchaseItemId: item.purchaseItemId,
+        customItemId: item.customItemId,
         amount: weightComponent.add(valueComponent)
       };
     });
@@ -345,7 +344,7 @@ export class LandingCostService {
     }
 
     const allocations: AllocationResult[] = itemsWithVolume.map(item => ({
-      purchaseItemId: item.purchaseItemId,
+      customItemId: item.customItemId,
       amount: totalCost.mul(item.volume).div(totalVolume)
     }));
 
@@ -630,7 +629,7 @@ export class LandingCostService {
       .from(consolidationItems)
       .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
       .leftJoin(shipmentCartons, and(
-        eq(shipmentCartons.purchaseItemId, customItems.id),
+        eq(shipmentCartons.customItemId, customItems.id),
         eq(shipmentCartons.shipmentId, shipmentId)
       ))
       .where(eq(consolidationItems.consolidationId, consolidationId));
@@ -698,17 +697,31 @@ export class LandingCostService {
   /**
    * Helper function: Get fallback dimensions for items with missing data
    */
-  getFallbackDimensions(item: PurchaseItem): {
+  getFallbackDimensions(item: CustomItem): {
     length: number;
     width: number;
     height: number;
     weight: number;
   } {
-    // Try to get dimensions from item first
-    let length = item.unitLengthCm ? Number(item.unitLengthCm) : 0;
-    let width = item.unitWidthCm ? Number(item.unitWidthCm) : 0;
-    let height = item.unitHeightCm ? Number(item.unitHeightCm) : 0;
-    let weight = item.unitGrossWeightKg ? Number(item.unitGrossWeightKg) : 0;
+    // Parse dimensions from the dimensions string field
+    let length = 0;
+    let width = 0;
+    let height = 0;
+    let weight = item.weight ? Number(item.weight) : 0;
+
+    // Try to parse dimensions if available
+    if (item.dimensions) {
+      try {
+        const dimMatch = item.dimensions.match(/(\d+(\.\d+)?)\s*[x×]\s*(\d+(\.\d+)?)\s*[x×]\s*(\d+(\.\d+)?)/i);
+        if (dimMatch) {
+          length = parseFloat(dimMatch[1]);
+          width = parseFloat(dimMatch[3]);
+          height = parseFloat(dimMatch[5]);
+        }
+      } catch (e) {
+        console.warn('Failed to parse dimensions', { dimensions: item.dimensions });
+      }
+    }
 
     // Apply fallback defaults if any dimension is missing
     if (length <= 0 || width <= 0 || height <= 0) {
@@ -719,7 +732,6 @@ export class LandingCostService {
       
       console.warn(`Using fallback dimensions for item ${item.id}`, {
         itemId: item.id,
-        sku: item.sku,
         fallbackDimensions: { length, width, height }
       });
     }
@@ -731,7 +743,6 @@ export class LandingCostService {
       
       console.warn(`Using estimated weight for item ${item.id}`, {
         itemId: item.id,
-        sku: item.sku,
         estimatedWeight: weight
       });
     }
@@ -841,44 +852,32 @@ export class LandingCostService {
           .from(shipmentCartons)
           .where(eq(shipmentCartons.shipmentId, shipmentId));
 
-        let items: any[] = [];
-        let itemIds: number[] = [];
-        
-        if (cartons.length > 0) {
-          // Use cartons for purchase items
-          itemIds = cartons.map(c => c.purchaseItemId);
-          items = await tx
-            .select()
-            .from(purchaseItems)
-            .where(inArray(purchaseItems.id, itemIds));
-        } else {
-          // Fallback: Get items from consolidation using the correct relationship
-          if (!shipment.consolidationId) {
-            throw new Error(`No consolidation found for shipment ${shipmentId}`);
-          }
-          
-          // Use consolidationItems to get custom items (correct relationship)
-          const consolidationItemsList = await tx
-            .select({
-              item: customItems
-            })
-            .from(consolidationItems)
-            .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
-            .where(eq(consolidationItems.consolidationId, shipment.consolidationId));
-          
-          items = consolidationItemsList.map(row => row.item);
-          
-          if (items.length === 0) {
-            throw new Error(`No items found for shipment ${shipmentId}`);
-          }
-          
-          itemIds = items.map(item => item.id);
+        // Always get items from consolidation using the correct relationship
+        if (!shipment.consolidationId) {
+          throw new Error(`No consolidation found for shipment ${shipmentId}`);
         }
+        
+        // Use consolidationItems to get custom items (correct relationship)
+        const consolidationItemsList = await tx
+          .select({
+            item: customItems
+          })
+          .from(consolidationItems)
+          .innerJoin(customItems, eq(consolidationItems.itemId, customItems.id))
+          .where(eq(consolidationItems.consolidationId, shipment.consolidationId));
+        
+        const items = consolidationItemsList.map(row => row.item);
+        
+        if (items.length === 0) {
+          throw new Error(`No items found for shipment ${shipmentId}`);
+        }
+        
+        const itemIds = items.map(item => item.id);
 
         // Map cartons to items
         const cartonMap = new Map<number, ShipmentCarton>();
         cartons.forEach(carton => {
-          cartonMap.set(carton.purchaseItemId, carton);
+          cartonMap.set(carton.customItemId, carton);
         });
 
         // 4. Prepare item allocations with chargeable weights
@@ -928,7 +927,7 @@ export class LandingCostService {
           }
 
           return {
-            purchaseItemId: item.id,
+            customItemId: item.id,
             chargeableWeight,
             actualWeight,
             volumetricWeight,
@@ -995,7 +994,7 @@ export class LandingCostService {
           for (const allocation of allocations) {
             costAllocationsToInsert.push({
               shipmentId,
-              purchaseItemId: allocation.purchaseItemId,
+              customItemId: allocation.customItemId,
               costType: cost.type,
               basis,
               amountAllocatedBase: allocation.amount.toString(),
@@ -1025,12 +1024,12 @@ export class LandingCostService {
         const productCostHistoryToInsert: InsertProductCostHistory[] = [];
 
         for (const item of items) {
-          const itemAllocation = itemAllocations.find(a => a.purchaseItemId === item.id);
+          const itemAllocation = itemAllocations.find(a => a.customItemId === item.id);
           if (!itemAllocation) continue;
 
           // Get all allocations for this item
           const itemCostAllocations = costAllocationsToInsert.filter(
-            a => a.purchaseItemId === item.id
+            a => a.customItemId === item.id
           );
 
           // Sum up costs by type
@@ -1092,7 +1091,7 @@ export class LandingCostService {
           if (unitCosts.duty.gt(0)) {
             costAllocationsToInsert.push({
               shipmentId,
-              purchaseItemId: item.id,
+              customItemId: item.id,
               costType: 'DUTY',
               basis: 'VALUE',
               amountAllocatedBase: unitCosts.duty.mul(item.quantity).toString(),
@@ -1117,7 +1116,7 @@ export class LandingCostService {
           }
 
           itemBreakdowns.push({
-            purchaseItemId: item.id,
+            customItemId: item.id,
             sku: item.sku,
             name: item.name,
             quantity: item.quantity,
@@ -1148,7 +1147,7 @@ export class LandingCostService {
             if (product) {
               productCostHistoryToInsert.push({
                 productId: product.id,
-                purchaseItemId: item.id,
+                customItemId: item.id,
                 landingCostUnitBase: unitCosts.total.toString(),
                 method: 'landing_cost_calculation',
                 computedAt: new Date()
@@ -1168,15 +1167,9 @@ export class LandingCostService {
           await tx.insert(costAllocations).values(costAllocationsToInsert);
         }
 
-        // 8. Update purchase_items.landing_cost_unit_base
-        for (const breakdown of itemBreakdowns) {
-          await tx
-            .update(purchaseItems)
-            .set({
-              landingCostUnitBase: breakdown.unitCosts.total.toString()
-            })
-            .where(eq(purchaseItems.id, breakdown.purchaseItemId));
-        }
+        // 8. Update custom_items.landing_cost_unit_base (if such field exists, otherwise skip)
+        // Note: customItems table doesn't have landing_cost_unit_base field, 
+        // so we'll skip this step as costs are tracked in product_cost_history
 
         // 9. Add to product_cost_history
         if (productCostHistoryToInsert.length > 0) {
@@ -1268,7 +1261,7 @@ export class LandingCostService {
       new Decimal(0)
     );
 
-    const uniqueItems = new Set(allocations.map(a => a.purchaseItemId));
+    const uniqueItems = new Set(allocations.map(a => a.customItemId));
 
     return {
       shipmentId,
