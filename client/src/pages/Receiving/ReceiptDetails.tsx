@@ -36,7 +36,9 @@ import {
   Check,
   X,
   Download,
-  ZoomIn
+  ZoomIn,
+  ClipboardCheck,
+  Info
 } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
@@ -641,30 +643,166 @@ export default function ReceiptDetails() {
     </TabsContent>
   </Tabs>
 
-      {/* Actions */}
+      {/* Task Checklist */}
       <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-wrap gap-4">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ClipboardCheck className="h-5 w-5" />
+            Receipt Tasks
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Task List */}
+          <div className="space-y-3">
+            {/* Item Verification Task */}
+            <div className="flex items-start gap-3 p-3 rounded-lg border">
+              <div className="mt-1">
+                {allItemsVerified ? (
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                ) : (
+                  <AlertCircle className="h-5 w-5 text-orange-500" />
+                )}
+              </div>
+              <div className="flex-1">
+                <p className="font-medium">
+                  {allItemsVerified ? 'All Items Verified' : 'Verify All Items'}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {allItemsVerified 
+                    ? `${receipt.items?.length || 0} items have been verified with quantities and conditions`
+                    : `${receipt.items?.filter((item: any) => item.verifiedAt).length || 0}/${receipt.items?.length || 0} items verified`
+                  }
+                </p>
+              </div>
+              {!allItemsVerified && (
+                <Badge variant="outline" className="text-orange-600 border-orange-600">
+                  Required
+                </Badge>
+              )}
+            </div>
+
+            {/* Complete Verification Task */}
+            <div className="flex items-start gap-3 p-3 rounded-lg border">
+              <div className="mt-1">
+                {receipt.status !== 'pending_verification' ? (
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                ) : (
+                  <Clock className="h-5 w-5 text-gray-400" />
+                )}
+              </div>
+              <div className="flex-1">
+                <p className="font-medium">
+                  {receipt.status !== 'pending_verification' ? 'Verification Completed' : 'Complete Verification'}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {receipt.status !== 'pending_verification'
+                    ? `Verified by ${receipt.verifiedBy || 'Unknown'}`
+                    : 'Submit verification to send for approval'
+                  }
+                </p>
+              </div>
+              {receipt.status === 'pending_verification' && (
+                <Badge variant="outline" className="text-blue-600 border-blue-600">
+                  Next Step
+                </Badge>
+              )}
+            </div>
+
+            {/* Approval Task */}
+            <div className="flex items-start gap-3 p-3 rounded-lg border">
+              <div className="mt-1">
+                {receipt.status === 'approved' ? (
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                ) : receipt.status === 'pending_approval' ? (
+                  <AlertCircle className="h-5 w-5 text-orange-500" />
+                ) : (
+                  <Clock className="h-5 w-5 text-gray-400" />
+                )}
+              </div>
+              <div className="flex-1">
+                <p className="font-medium">
+                  {receipt.status === 'approved' ? 'Receipt Approved' : 
+                   receipt.status === 'pending_approval' ? 'Pending Approval' : 
+                   'Awaiting Approval'}
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {receipt.status === 'approved'
+                    ? `Approved by ${receipt.approvedBy || 'Unknown'} - Items added to inventory`
+                    : receipt.status === 'pending_approval'
+                    ? 'Receipt is ready for founder approval'
+                    : 'Complete verification first'
+                  }
+                </p>
+              </div>
+              {receipt.status === 'pending_approval' && (
+                <Badge variant="outline" className="text-orange-600 border-orange-600">
+                  Action Needed
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span>Overall Progress</span>
+              <span>
+                {receipt.status === 'approved' ? '100%' : 
+                 receipt.status === 'pending_approval' ? '75%' : 
+                 allItemsVerified ? '50%' : '25%'}
+              </span>
+            </div>
+            <Progress 
+              value={
+                receipt.status === 'approved' ? 100 : 
+                receipt.status === 'pending_approval' ? 75 : 
+                allItemsVerified ? 50 : 25
+              } 
+              className="h-2"
+            />
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-wrap gap-4 pt-4 border-t">
             {receipt.status === 'pending_verification' && (
               <>
                 <Button
                   onClick={() => setShowVerifyDialog(true)}
                   disabled={!allItemsVerified}
                   data-testid="button-complete-verification"
+                  className={allItemsVerified ? 'bg-green-600 hover:bg-green-700' : ''}
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
-                  Complete Verification
+                  {allItemsVerified ? 'Complete Verification' : 'Complete Verification (Verify Items First)'}
                 </Button>
+                {!allItemsVerified && (
+                  <p className="text-sm text-muted-foreground self-center">
+                    Please verify all items before completing verification
+                  </p>
+                )}
               </>
             )}
             {receipt.status === 'pending_approval' && (
-              <Button
-                onClick={() => setShowApprovalDialog(true)}
-                data-testid="button-approve-receipt"
-              >
-                <Check className="h-4 w-4 mr-2" />
-                Approve Receipt
-              </Button>
+              <>
+                <Button
+                  onClick={() => setShowApprovalDialog(true)}
+                  data-testid="button-approve-receipt"
+                  className="bg-orange-600 hover:bg-orange-700"
+                >
+                  <Check className="h-4 w-4 mr-2" />
+                  Approve & Add to Inventory
+                </Button>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Info className="h-4 w-4" />
+                  <span>This will add all verified items to inventory</span>
+                </div>
+              </>
+            )}
+            {receipt.status === 'approved' && (
+              <div className="flex items-center gap-2 text-green-600">
+                <CheckCircle className="h-5 w-5" />
+                <span className="font-medium">All tasks completed - Items are now in inventory</span>
+              </div>
             )}
           </div>
         </CardContent>
