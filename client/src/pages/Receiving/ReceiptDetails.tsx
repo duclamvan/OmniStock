@@ -106,9 +106,6 @@ export default function ReceiptDetails() {
           initialPrices[item.itemId] = {
             priceCzk: product.priceCzk || '',
             priceEur: product.priceEur || '',
-            priceUsd: product.priceUsd || '',
-            priceVnd: product.priceVnd || '',
-            priceCny: product.priceCny || '',
             landingCost: parseFloat(product.latestLandingCost || '0')
           };
         }
@@ -332,10 +329,7 @@ export default function ReceiptDetails() {
     // Apply markup with appropriate exchange rates (example rates)
     const exchangeRates = {
       czk: 22,
-      eur: 0.92,
-      usd: 1,
-      vnd: 24000,
-      cny: 7.2
+      eur: 0.92
     };
     
     setItemPrices(prev => ({
@@ -343,10 +337,7 @@ export default function ReceiptDetails() {
       [itemId]: {
         ...prev[itemId],
         priceCzk: (markedUpPrice * exchangeRates.czk).toFixed(2),
-        priceEur: (markedUpPrice * exchangeRates.eur).toFixed(2),
-        priceUsd: markedUpPrice.toFixed(2),
-        priceVnd: Math.round(markedUpPrice * exchangeRates.vnd),
-        priceCny: (markedUpPrice * exchangeRates.cny).toFixed(2)
+        priceEur: (markedUpPrice * exchangeRates.eur).toFixed(2)
       }
     }));
     
@@ -807,7 +798,7 @@ export default function ReceiptDetails() {
                   </div>
                   
                   {/* Currency Prices Grid */}
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                  <div className="grid grid-cols-2 gap-4">
                     {/* CZK */}
                     <div className="space-y-1">
                       <Label className="text-xs flex items-center gap-1">
@@ -852,78 +843,6 @@ export default function ReceiptDetails() {
                       {itemPrices[item.itemId]?.priceEur && itemPrices[item.itemId]?.landingCost && (
                         <p className="text-xs text-green-600">
                           {calculateMargin(itemPrices[item.itemId]?.priceEur, itemPrices[item.itemId]?.landingCost * 0.92)}% margin
-                        </p>
-                      )}
-                    </div>
-                    
-                    {/* USD */}
-                    <div className="space-y-1">
-                      <Label className="text-xs flex items-center gap-1">
-                        <span>🇺🇸</span> USD ($)
-                      </Label>
-                      <div className="relative">
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={itemPrices[item.itemId]?.priceUsd || ''}
-                          onChange={(e) => handlePriceChange(item.itemId.toString(), 'priceUsd', e.target.value)}
-                          onBlur={() => savePricesForItem(item.itemId.toString())}
-                          className="pr-8 h-9 text-sm"
-                          placeholder="0.00"
-                        />
-                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
-                      </div>
-                      {itemPrices[item.itemId]?.priceUsd && itemPrices[item.itemId]?.landingCost && (
-                        <p className="text-xs text-green-600">
-                          {calculateMargin(itemPrices[item.itemId]?.priceUsd, itemPrices[item.itemId]?.landingCost)}% margin
-                        </p>
-                      )}
-                    </div>
-                    
-                    {/* VND */}
-                    <div className="space-y-1">
-                      <Label className="text-xs flex items-center gap-1">
-                        <span>🇻🇳</span> VND (₫)
-                      </Label>
-                      <div className="relative">
-                        <Input
-                          type="number"
-                          step="1"
-                          value={itemPrices[item.itemId]?.priceVnd || ''}
-                          onChange={(e) => handlePriceChange(item.itemId.toString(), 'priceVnd', e.target.value)}
-                          onBlur={() => savePricesForItem(item.itemId.toString())}
-                          className="pr-8 h-9 text-sm"
-                          placeholder="0"
-                        />
-                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">₫</span>
-                      </div>
-                      {itemPrices[item.itemId]?.priceVnd && itemPrices[item.itemId]?.landingCost && (
-                        <p className="text-xs text-green-600">
-                          {calculateMargin(itemPrices[item.itemId]?.priceVnd, itemPrices[item.itemId]?.landingCost * 24000)}% margin
-                        </p>
-                      )}
-                    </div>
-                    
-                    {/* CNY */}
-                    <div className="space-y-1">
-                      <Label className="text-xs flex items-center gap-1">
-                        <span>🇨🇳</span> CNY (¥)
-                      </Label>
-                      <div className="relative">
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={itemPrices[item.itemId]?.priceCny || ''}
-                          onChange={(e) => handlePriceChange(item.itemId.toString(), 'priceCny', e.target.value)}
-                          onBlur={() => savePricesForItem(item.itemId.toString())}
-                          className="pr-8 h-9 text-sm"
-                          placeholder="0.00"
-                        />
-                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">¥</span>
-                      </div>
-                      {itemPrices[item.itemId]?.priceCny && itemPrices[item.itemId]?.landingCost && (
-                        <p className="text-xs text-green-600">
-                          {calculateMargin(itemPrices[item.itemId]?.priceCny, itemPrices[item.itemId]?.landingCost * 7.2)}% margin
                         </p>
                       )}
                     </div>
