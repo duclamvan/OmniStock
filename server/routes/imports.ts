@@ -19,7 +19,8 @@ import {
   shipmentCosts,
   shipmentCartons,
   costAllocations,
-  productCostHistory
+  productCostHistory,
+  suppliers
 } from "@shared/schema";
 import { eq, desc, sql, and, like, or, isNull, inArray, ne, gte } from "drizzle-orm";
 import { addDays, differenceInDays } from "date-fns";
@@ -3366,16 +3367,244 @@ router.post("/receipts/approve/:id", async (req, res) => {
         .where(eq(shipments.id, receipt.shipmentId));
     }
 
-    // TODO: Integrate with inventory system here
-    // This would involve:
-    // 1. Creating/updating product records
-    // 2. Adding quantities to inventory
-    // 3. Calculating average costs
-    // 4. Updating stock levels
+    // Integrate with inventory system - use transaction for atomicity
+    const inventoryItems = await db.transaction(async (tx) => {
+      // Fetch all receipt items
+      const items = await tx
+        .select()
+        .from(receiptItems)
+        .where(eq(receiptItems.receiptId, receiptId));
+      
+      const updatedInventory = [];
+      
+      for (const item of items) {
+        let originalItem: any = null;
+        let unitCost = 0;
+        let landingCostPerUnit = 0;
+        
+        // Get the original item details based on itemType
+        if (item.itemType === 'purchase') {
+          [originalItem] = await tx
+            .select()
+            .from(purchaseItems)
+            .where(eq(purchaseItems.id, item.itemId));
+          
+          if (originalItem) {
+            unitCost = parseFloat(originalItem.unitPrice || '0');
+            landingCostPerUnit = parseFloat(originalItem.landingCostUnitBase || '0');
+          }
+        } else if (item.itemType === 'custom') {
+          [originalItem] = await tx
+            .select()
+            .from(customItems)
+            .where(eq(customItems.id, item.itemId));
+          
+          if (originalItem) {
+            unitCost = parseFloat(originalItem.unitPrice || '0');
+            // Custom items may not have landing cost calculated
+            landingCostPerUnit = unitCost * 1.15; // Default 15% markup for customs/shipping
+          }
+        }
+        
+        if (!originalItem) {
+          console.error(`Original item not found for receipt item ${item.id}`);
+          continue;
+        }
+        
+        // Check if product exists by SKU
+        const sku = item.sku || originalItem.sku || `SKU-${item.itemId}`;
+        const [existingProduct] = await tx
+          .select()
+          .from(products)
+          .where(eq(products.sku, sku));
+        
+        if (existingProduct) {
+          // Product exists - update quantity and calculate weighted average costs
+          const oldQuantity = existingProduct.quantity || 0;
+          const newQuantity = item.receivedQuantity;
+          const totalQuantity = oldQuantity + newQuantity;
+          
+          // Calculate weighted average for each currency
+          // Default to USD if no currency is specified
+          const oldCostUsd = parseFloat(existingProduct.importCostUsd || '0');
+          const oldCostCzk = parseFloat(existingProduct.importCostCzk || '0');
+          const oldCostEur = parseFloat(existingProduct.importCostEur || '0');
+          
+          // Determine currency from purchase order if available
+          let newCostUsd = unitCost;
+          let newCostCzk = 0;
+          let newCostEur = 0;
+          
+          // Get purchase order for currency info
+          if (item.itemType === 'purchase' && originalItem.purchaseId) {
+            const [purchase] = await tx
+              .select()
+              .from(importPurchases)
+              .where(eq(importPurchases.id, originalItem.purchaseId));
+            
+            if (purchase) {
+              const currency = purchase.paymentCurrency || purchase.purchaseCurrency || 'USD';
+              const exchangeRate = parseFloat(purchase.exchangeRate || '1');
+              
+              // Convert to USD base for calculations
+              if (currency === 'CZK') {
+                newCostCzk = unitCost;
+                newCostUsd = unitCost / 23; // Approximate CZK to USD rate
+              } else if (currency === 'EUR') {
+                newCostEur = unitCost;
+                newCostUsd = unitCost * 1.1; // Approximate EUR to USD rate
+              } else {
+                // Default to USD
+                newCostUsd = unitCost;
+              }
+            }
+          }
+          
+          // Calculate weighted averages
+          const avgCostUsd = totalQuantity > 0 
+            ? ((oldQuantity * oldCostUsd) + (newQuantity * newCostUsd)) / totalQuantity 
+            : newCostUsd;
+          
+          const avgCostCzk = (oldCostCzk > 0 || newCostCzk > 0) && totalQuantity > 0
+            ? ((oldQuantity * oldCostCzk) + (newQuantity * newCostCzk)) / totalQuantity
+            : newCostCzk || oldCostCzk;
+          
+          const avgCostEur = (oldCostEur > 0 || newCostEur > 0) && totalQuantity > 0
+            ? ((oldQuantity * oldCostEur) + (newQuantity * newCostEur)) / totalQuantity
+            : newCostEur || oldCostEur;
+          
+          // Update product with new quantities and costs
+          const [updatedProduct] = await tx
+            .update(products)
+            .set({
+              quantity: totalQuantity,
+              importCostUsd: avgCostUsd.toFixed(2),
+              importCostCzk: avgCostCzk > 0 ? avgCostCzk.toFixed(2) : null,
+              importCostEur: avgCostEur > 0 ? avgCostEur.toFixed(2) : null,
+              latestLandingCost: landingCostPerUnit > 0 ? landingCostPerUnit.toFixed(4) : null,
+              warehouseLocation: item.warehouseLocation || existingProduct.warehouseLocation,
+              updatedAt: new Date()
+            })
+            .where(eq(products.sku, sku))
+            .returning();
+          
+          updatedInventory.push({
+            action: 'updated',
+            product: updatedProduct,
+            oldQuantity,
+            addedQuantity: newQuantity,
+            newQuantity: totalQuantity
+          });
+          
+          // Record cost history
+          await tx.insert(productCostHistory).values({
+            productId: updatedProduct.id,
+            purchaseItemId: item.itemType === 'purchase' ? item.itemId : null,
+            landingCostUnitBase: (landingCostPerUnit > 0 ? landingCostPerUnit : avgCostUsd).toFixed(4),
+            method: 'weighted_average',
+            computedAt: new Date()
+          });
+          
+        } else {
+          // Product doesn't exist - create new
+          const newProduct: any = {
+            id: crypto.randomUUID(),
+            sku: sku,
+            name: originalItem.name,
+            englishName: originalItem.name,
+            quantity: item.receivedQuantity,
+            warehouseLocation: item.warehouseLocation,
+            barcode: item.barcode,
+            weight: originalItem.weight,
+            importCostUsd: unitCost.toFixed(2),
+            importCostCzk: null,
+            importCostEur: null,
+            latestLandingCost: landingCostPerUnit > 0 ? landingCostPerUnit.toFixed(4) : null,
+            isActive: true,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            // These will be set conditionally below
+            supplierId: null,
+            length: null,
+            width: null,
+            height: null
+          };
+          
+          // Set currency-specific costs based on purchase currency
+          if (item.itemType === 'purchase' && originalItem.purchaseId) {
+            const [purchase] = await tx
+              .select()
+              .from(importPurchases)
+              .where(eq(importPurchases.id, originalItem.purchaseId));
+            
+            if (purchase) {
+              const currency = purchase.paymentCurrency || purchase.purchaseCurrency || 'USD';
+              
+              if (currency === 'CZK') {
+                newProduct.importCostCzk = unitCost.toFixed(2);
+                newProduct.importCostUsd = (unitCost / 23).toFixed(2); // Approximate conversion
+              } else if (currency === 'EUR') {
+                newProduct.importCostEur = unitCost.toFixed(2);
+                newProduct.importCostUsd = (unitCost * 1.1).toFixed(2); // Approximate conversion
+              }
+              
+              // Set supplier if available
+              if (purchase.supplier) {
+                // Try to find supplier by name
+                const [supplier] = await tx
+                  .select()
+                  .from(suppliers)
+                  .where(eq(suppliers.name, purchase.supplier));
+                
+                if (supplier) {
+                  newProduct.supplierId = supplier.id;
+                }
+              }
+            }
+          }
+          
+          // Handle dimensions if available
+          if (originalItem.dimensions) {
+            const dims = typeof originalItem.dimensions === 'string' 
+              ? JSON.parse(originalItem.dimensions) 
+              : originalItem.dimensions;
+            
+            newProduct.length = dims.length ? parseFloat(dims.length).toFixed(2) : null;
+            newProduct.width = dims.width ? parseFloat(dims.width).toFixed(2) : null;
+            newProduct.height = dims.height ? parseFloat(dims.height).toFixed(2) : null;
+          }
+          
+          const [createdProduct] = await tx
+            .insert(products)
+            .values(newProduct)
+            .returning();
+          
+          updatedInventory.push({
+            action: 'created',
+            product: createdProduct,
+            oldQuantity: 0,
+            addedQuantity: item.receivedQuantity,
+            newQuantity: item.receivedQuantity
+          });
+          
+          // Record initial cost history
+          await tx.insert(productCostHistory).values({
+            productId: createdProduct.id,
+            purchaseItemId: item.itemType === 'purchase' ? item.itemId : null,
+            landingCostUnitBase: (landingCostPerUnit > 0 ? landingCostPerUnit : parseFloat(newProduct.importCostUsd)).toFixed(4),
+            method: 'initial_import',
+            computedAt: new Date()
+          });
+        }
+      }
+      
+      return updatedInventory;
+    });
 
     res.json({ 
       receipt,
-      message: "Receipt approved and items added to inventory" 
+      inventoryItems,
+      message: `Receipt approved and ${inventoryItems.length} inventory items updated` 
     });
   } catch (error) {
     console.error("Error approving receipt:", error);

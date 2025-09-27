@@ -152,18 +152,21 @@ export default function ReceiptDetails() {
   // Approve receipt
   const approveReceiptMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await fetch(`/api/imports/receipts/${id}/approve`, {
+      const response = await fetch(`/api/imports/receipts/approve/${id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
-      if (!response.ok) throw new Error('Failed to approve receipt');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to approve receipt');
+      }
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "Receipt Approved",
-        description: "Items have been added to inventory"
+        description: `Successfully added ${data.inventoryUpdates?.length || 0} items to inventory with average cost calculations`
       });
       refetch();
       setShowApprovalDialog(false);
