@@ -27,9 +27,7 @@ import {
   Plus,
   Minus,
   AlertCircle,
-  TrendingUp,
   DollarSign,
-  Calculator,
   Hash,
   Truck,
   Calendar,
@@ -44,6 +42,7 @@ import {
 import { Link } from "wouter";
 import { format } from "date-fns";
 import CostsPanel from "@/components/receiving/CostsPanel";
+import PriceSettingModal from "@/components/receiving/PriceSettingModal";
 import { apiRequest } from "@/lib/queryClient";
 
 interface ReceiptItem {
@@ -73,6 +72,7 @@ export default function ReceiptDetails() {
   const [selectedItem, setSelectedItem] = useState<ReceiptItem | null>(null);
   const [showVerifyDialog, setShowVerifyDialog] = useState(false);
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
+  const [showPriceSettingModal, setShowPriceSettingModal] = useState(false);
   const [showImagePreview, setShowImagePreview] = useState(false);
   const [previewImage, setPreviewImage] = useState<string>("");
   
@@ -82,13 +82,6 @@ export default function ReceiptDetails() {
   
   // Approval form state
   const [approvedBy, setApprovedBy] = useState("");
-  
-  // Pricing state
-  const [itemPrices, setItemPrices] = useState<Record<string, any>>({});
-  const [savingPrices, setSavingPrices] = useState<Record<string, boolean>>({});
-  const [savedPrices, setSavedPrices] = useState<Record<string, boolean>>({});
-  const [priceTimers, setPriceTimers] = useState<Record<string, NodeJS.Timeout>>({});
-  const [markupPercentage, setMarkupPercentage] = useState(30); // Default 30% markup
 
   // Fetch receipt details
   const { data: receipt, isLoading, refetch } = useQuery({
@@ -96,23 +89,7 @@ export default function ReceiptDetails() {
     queryFn: async () => {
       const response = await fetch(`/api/imports/receipts/${id}`);
       if (!response.ok) throw new Error('Failed to fetch receipt');
-      const data = await response.json();
-      
-      // Initialize prices for each item
-      const initialPrices: Record<string, any> = {};
-      data.items?.forEach((item: any) => {
-        const product = item.details;
-        if (product) {
-          initialPrices[item.itemId] = {
-            priceCzk: product.priceCzk || '',
-            priceEur: product.priceEur || '',
-            landingCost: parseFloat(product.latestLandingCost || '0')
-          };
-        }
-      });
-      setItemPrices(initialPrices);
-      
-      return data;
+      return response.json();
     },
     enabled: !!id
   });
@@ -242,116 +219,16 @@ export default function ReceiptDetails() {
     });
   };
 
-  const handleApproval = () => {
+  const handleApproval = (approverName?: string) => {
     approveReceiptMutation.mutate({
-      approvedBy
+      approvedBy: approverName || approvedBy
     });
   };
 
-  // Auto-save prices after 2 seconds of inactivity
-  const handlePriceChange = (itemId: string, currency: string, value: string) => {
-    // Clear existing timer for this item
-    if (priceTimers[itemId]) {
-      clearTimeout(priceTimers[itemId]);
-    }
-    
-    // Update local state
-    setItemPrices(prev => ({
-      ...prev,
-      [itemId]: {
-        ...prev[itemId],
-        [currency]: value
-      }
-    }));
-    
-    // Reset saved state
-    setSavedPrices(prev => ({
-      ...prev,
-      [itemId]: false
-    }));
-    
-    // Set new timer for auto-save
-    const timer = setTimeout(() => {
-      savePricesForItem(itemId);
-    }, 2000);
-    
-    setPriceTimers(prev => ({
-      ...prev,
-      [itemId]: timer
-    }));
+  const handleOpenPriceModal = () => {
+    setShowPriceSettingModal(true);
   };
-  
-  // Save prices for a specific item
-  const savePricesForItem = async (itemId: string) => {
-    const item = receipt?.items?.find((i: any) => i.itemId.toString() === itemId);
-    if (!item || !itemPrices[itemId]) return;
-    
-    setSavingPrices(prev => ({ ...prev, [itemId]: true }));
-    
-    try {
-      const response = await apiRequest(`/api/imports/receipts/${id}/set-prices`, {
-        method: 'POST',
-        body: JSON.stringify({
-          items: [{
-            sku: item.details?.sku,
-            productId: item.details?.id,
-            ...itemPrices[itemId]
-          }]
-        })
-      });
-      
-      if (response.success) {
-        setSavedPrices(prev => ({ ...prev, [itemId]: true }));
-        setTimeout(() => {
-          setSavedPrices(prev => ({ ...prev, [itemId]: false }));
-        }, 3000);
-      }
-    } catch (error) {
-      console.error('Failed to save prices:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save prices",
-        variant: "destructive"
-      });
-    } finally {
-      setSavingPrices(prev => ({ ...prev, [itemId]: false }));
-    }
-  };
-  
-  // Apply markup to all items
-  const applyMarkupToItem = (itemId: string) => {
-    const prices = itemPrices[itemId];
-    if (!prices || !prices.landingCost) return;
-    
-    const landingCost = parseFloat(prices.landingCost);
-    const markedUpPrice = landingCost * (1 + markupPercentage / 100);
-    
-    // Apply markup with appropriate exchange rates (example rates)
-    const exchangeRates = {
-      czk: 22,
-      eur: 0.92
-    };
-    
-    setItemPrices(prev => ({
-      ...prev,
-      [itemId]: {
-        ...prev[itemId],
-        priceCzk: (markedUpPrice * exchangeRates.czk).toFixed(2),
-        priceEur: (markedUpPrice * exchangeRates.eur).toFixed(2)
-      }
-    }));
-    
-    // Auto-save after applying markup
-    setTimeout(() => savePricesForItem(itemId), 500);
-  };
-  
-  // Calculate profit margin
-  const calculateMargin = (sellingPrice: string, cost: number) => {
-    if (!sellingPrice || !cost) return 0;
-    const selling = parseFloat(sellingPrice);
-    if (!selling) return 0;
-    return ((selling - cost) / selling * 100).toFixed(1);
-  };
+
 
   // Helper function to download all photos
   const downloadAllPhotos = async () => {
@@ -747,107 +624,6 @@ export default function ReceiptDetails() {
                     {item.notes}
                   </div>
                 )}
-                
-                {/* Pricing Section */}
-                <div className="border-t pt-4 mt-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h5 className="font-semibold flex items-center gap-2">
-                      <DollarSign className="h-4 w-4" />
-                      Set Selling Prices
-                    </h5>
-                    <div className="flex items-center gap-2">
-                      {savingPrices[item.itemId] && (
-                        <Badge variant="outline" className="text-blue-600 border-blue-600">
-                          <Clock className="h-3 w-3 mr-1 animate-spin" />
-                          Saving...
-                        </Badge>
-                      )}
-                      {savedPrices[item.itemId] && !savingPrices[item.itemId] && (
-                        <Badge variant="outline" className="text-green-600 border-green-600 animate-fade-in">
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          Saved
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {/* Quick Actions */}
-                  <div className="flex items-center gap-2 mb-3">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => applyMarkupToItem(item.itemId.toString())}
-                      className="text-xs"
-                      disabled={!itemPrices[item.itemId]?.landingCost}
-                    >
-                      <TrendingUp className="h-3 w-3 mr-1" />
-                      Apply {markupPercentage}% Markup
-                    </Button>
-                    <Input
-                      type="number"
-                      value={markupPercentage}
-                      onChange={(e) => setMarkupPercentage(parseInt(e.target.value) || 0)}
-                      className="w-20 h-8 text-xs"
-                      placeholder="%"
-                    />
-                    {itemPrices[item.itemId]?.landingCost && (
-                      <div className="text-xs text-muted-foreground ml-2">
-                        Cost: ${itemPrices[item.itemId]?.landingCost}
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Currency Prices Grid */}
-                  <div className="grid grid-cols-2 gap-4">
-                    {/* CZK */}
-                    <div className="space-y-1">
-                      <Label className="text-xs flex items-center gap-1">
-                        <span>🇨🇿</span> CZK (Kč)
-                      </Label>
-                      <div className="relative">
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={itemPrices[item.itemId]?.priceCzk || ''}
-                          onChange={(e) => handlePriceChange(item.itemId.toString(), 'priceCzk', e.target.value)}
-                          onBlur={() => savePricesForItem(item.itemId.toString())}
-                          className="pr-8 h-9 text-sm"
-                          placeholder="0.00"
-                        />
-                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">Kč</span>
-                      </div>
-                      {itemPrices[item.itemId]?.priceCzk && itemPrices[item.itemId]?.landingCost && (
-                        <p className="text-xs text-green-600">
-                          {calculateMargin(itemPrices[item.itemId]?.priceCzk, itemPrices[item.itemId]?.landingCost * 22)}% margin
-                        </p>
-                      )}
-                    </div>
-                    
-                    {/* EUR */}
-                    <div className="space-y-1">
-                      <Label className="text-xs flex items-center gap-1">
-                        <span>🇪🇺</span> EUR (€)
-                      </Label>
-                      <div className="relative">
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={itemPrices[item.itemId]?.priceEur || ''}
-                          onChange={(e) => handlePriceChange(item.itemId.toString(), 'priceEur', e.target.value)}
-                          onBlur={() => savePricesForItem(item.itemId.toString())}
-                          className="pr-8 h-9 text-sm"
-                          placeholder="0.00"
-                        />
-                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">€</span>
-                      </div>
-                      {itemPrices[item.itemId]?.priceEur && itemPrices[item.itemId]?.landingCost && (
-                        <p className="text-xs text-green-600">
-                          {calculateMargin(itemPrices[item.itemId]?.priceEur, itemPrices[item.itemId]?.landingCost * 0.92)}% margin
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
 
                 <div className="flex gap-2 mt-4">
                   <Button
@@ -1030,7 +806,7 @@ export default function ReceiptDetails() {
             {receipt.status === 'pending_approval' && (
               <>
                 <Button
-                  onClick={() => setShowApprovalDialog(true)}
+                  onClick={handleOpenPriceModal}
                   data-testid="button-approve-receipt"
                   className="bg-orange-600 hover:bg-orange-700"
                 >
@@ -1039,7 +815,7 @@ export default function ReceiptDetails() {
                 </Button>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Info className="h-4 w-4" />
-                  <span>This will add all verified items to inventory</span>
+                  <span>Set prices and add all verified items to inventory</span>
                 </div>
               </>
             )}
@@ -1276,7 +1052,7 @@ export default function ReceiptDetails() {
             <Button variant="outline" onClick={() => setShowApprovalDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleApproval}>
+            <Button onClick={() => handleApproval()}>
               Approve & Add to Inventory
             </Button>
           </DialogFooter>
@@ -1330,6 +1106,16 @@ export default function ReceiptDetails() {
         </DialogContent>
       </Dialog>
 
+      {/* Price Setting Modal */}
+      {receipt && (
+        <PriceSettingModal
+          open={showPriceSettingModal}
+          onClose={() => setShowPriceSettingModal(false)}
+          receiptId={id || ''}
+          items={receipt.items || []}
+          onApprove={handleApproval}
+        />
+      )}
     </div>
   );
 }
