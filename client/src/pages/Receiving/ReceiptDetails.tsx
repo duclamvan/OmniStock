@@ -660,11 +660,25 @@ export default function ReceiptDetails() {
         </Card>
       )}
 
-      {/* Tabs for Items and Landing Costs */}
+      {/* Main Navigation Tabs for Items and Landing Costs */}
       <Tabs defaultValue="items" className="mb-6">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="items" data-testid="tab-items">Items Verification</TabsTrigger>
-          <TabsTrigger value="costs" data-testid="tab-landing-costs">Landing Costs</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 h-14 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+          <TabsTrigger 
+            value="items" 
+            data-testid="tab-items"
+            className="flex items-center gap-3 px-6 py-3 text-sm font-semibold transition-all duration-200 rounded-lg data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-blue-200 dark:data-[state=active]:bg-gray-900 dark:data-[state=active]:text-blue-300 dark:data-[state=active]:border-blue-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+          >
+            <Package className="h-5 w-5" />
+            Items Verification
+          </TabsTrigger>
+          <TabsTrigger 
+            value="costs" 
+            data-testid="tab-landing-costs"
+            className="flex items-center gap-3 px-6 py-3 text-sm font-semibold transition-all duration-200 rounded-lg data-[state=active]:bg-white data-[state=active]:text-orange-700 data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-orange-200 dark:data-[state=active]:bg-gray-900 dark:data-[state=active]:text-orange-300 dark:data-[state=active]:border-orange-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+          >
+            <DollarSign className="h-5 w-5" />
+            Landing Costs
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="items">
