@@ -2844,36 +2844,125 @@ export default function ReceivingList() {
 
                       {/* Expanded Items List */}
                       {isExpanded && (
-                        <div className="mt-3 sm:pl-11">
-                          <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
-                            <Package className="h-4 w-4" />
-                            Items ({receiptItems.length})
-                          </h4>
-                          {receiptItems.length === 0 ? (
-                            <p className="text-muted-foreground text-sm">No items found</p>
+                        <div className="mt-4 sm:pl-11">
+                          {(!shipment.items || shipment.items.length === 0) ? (
+                            <div className="text-center py-6 bg-muted/30 rounded-lg">
+                              <p className="text-muted-foreground text-sm">No items details available</p>
+                            </div>
                           ) : (
-                            <div className="bg-muted/30 rounded-lg p-3 max-h-80 overflow-y-auto">
-                              <table className="w-full text-xs">
-                                <thead>
-                                  <tr className="border-b border-muted-foreground/20">
-                                    <th className="text-left py-1 px-2 font-medium">Item</th>
-                                    <th className="text-center py-1 px-2 font-medium">Received</th>
-                                    <th className="text-center py-1 px-2 font-medium">Status</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {receiptItems.map((item: any, index: number) => {
-                                    return (
-                                      <ReceiptItemRow 
-                                        key={`${item.id}-${index}`}
-                                        item={item}
-                                        receiptItem={item}
-                                        index={index}
-                                      />
-                                    );
-                                  })}
-                                </tbody>
-                              </table>
+                            <div className="rounded-lg border bg-card overflow-hidden">
+                              <div className="p-2 border-b bg-gray-50 dark:bg-gray-800">
+                                <h4 className="text-xs font-semibold text-muted-foreground">ARCHIVED ITEMS ({shipment.items.length})</h4>
+                              </div>
+                              {/* Use virtualization for lists with more than 20 items */}
+                              {shipment.items.length > 20 ? (
+                                <div>
+                                  {/* Table header */}
+                                  <div className="border-b bg-muted/20">
+                                    <div className="grid grid-cols-[1fr,100px,120px,100px] text-xs text-muted-foreground">
+                                      <div className="text-left px-2 py-1.5 font-medium">Item</div>
+                                      <div className="text-center px-2 py-1.5 font-medium">Qty</div>
+                                      <div className="text-center px-2 py-1.5 font-medium">Location</div>
+                                      <div className="text-center px-2 py-1.5 font-medium">Status</div>
+                                    </div>
+                                  </div>
+                                  {/* Virtualized list for performance */}
+                                  <List
+                                    height={400}
+                                    itemCount={shipment.items.length}
+                                    itemSize={40}
+                                    width="100%"
+                                  >
+                                    {({ index, style }) => {
+                                      const item = shipment.items[index];
+                                      const receiptItem = receiptItemsMap.get(String(item.id));
+
+                                      return (
+                                        <div style={style}>
+                                          <div className="grid grid-cols-[1fr,100px,120px,100px] text-sm items-center border-b hover:bg-muted/30">
+                                            <div className="px-2 py-2 truncate">
+                                              <span className="font-medium">{item.name}</span>
+                                              {item.sku && (
+                                                <span className="text-xs text-muted-foreground ml-2">({item.sku})</span>
+                                              )}
+                                            </div>
+                                            <div className="px-2 py-2 text-center font-mono text-xs">
+                                              {receiptItem?.receivedQuantity || item.quantity || 0}
+                                            </div>
+                                            <div className="px-2 py-2 text-center">
+                                              {receiptItem?.locationCode ? (
+                                                <Badge variant="outline" className="text-xs font-mono">
+                                                  {receiptItem.locationCode}
+                                                </Badge>
+                                              ) : (
+                                                <Badge variant="secondary" className="text-xs">
+                                                  Stored
+                                                </Badge>
+                                              )}
+                                            </div>
+                                            <div className="px-2 py-2 text-center">
+                                              <Badge className="bg-gray-100 text-gray-800 text-xs">
+                                                <Archive className="h-3 w-3 mr-1" />
+                                                Archived
+                                              </Badge>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      );
+                                    }}
+                                  </List>
+                                </div>
+                              ) : (
+                                /* Regular table for small lists */
+                                <div className="overflow-x-auto">
+                                  <table className="w-full text-sm">
+                                    <thead className="border-b bg-muted/20">
+                                      <tr className="text-xs text-muted-foreground">
+                                        <th className="text-left px-2 py-1.5 font-medium">Item</th>
+                                        <th className="text-center px-2 py-1.5 font-medium min-w-[100px]">Qty</th>
+                                        <th className="text-center px-2 py-1.5 font-medium min-w-[120px]">Location</th>
+                                        <th className="text-center px-2 py-1.5 font-medium">Status</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {shipment.items.map((item: any, index: number) => {
+                                        const receiptItem = receiptItemsMap.get(String(item.id));
+
+                                        return (
+                                          <tr key={item.id || index} className="hover:bg-muted/30 border-b">
+                                            <td className="px-2 py-2">
+                                              <span className="font-medium">{item.name}</span>
+                                              {item.sku && (
+                                                <span className="text-xs text-muted-foreground ml-2">({item.sku})</span>
+                                              )}
+                                            </td>
+                                            <td className="px-2 py-2 text-center font-mono text-xs">
+                                              {receiptItem?.receivedQuantity || item.quantity || 0}
+                                            </td>
+                                            <td className="px-2 py-2 text-center">
+                                              {receiptItem?.locationCode ? (
+                                                <Badge variant="outline" className="text-xs font-mono">
+                                                  {receiptItem.locationCode}
+                                                </Badge>
+                                              ) : (
+                                                <Badge variant="secondary" className="text-xs">
+                                                  Stored
+                                                </Badge>
+                                              )}
+                                            </td>
+                                            <td className="px-2 py-2 text-center">
+                                              <Badge className="bg-gray-100 text-gray-800 text-xs">
+                                                <Archive className="h-3 w-3 mr-1 inline" />
+                                                Archived
+                                              </Badge>
+                                            </td>
+                                          </tr>
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>

@@ -86,13 +86,57 @@ export default function ReceiptDetails() {
   // Approval form state
   const [approvedBy, setApprovedBy] = useState("");
 
-  // Fetch receipt details
+  // Fetch receipt details - try receipt first, then shipment for archived items
   const { data: receipt, isLoading, refetch } = useQuery({
     queryKey: [`/api/imports/receipts/${id}`],
     queryFn: async () => {
-      const response = await fetch(`/api/imports/receipts/${id}`);
-      if (!response.ok) throw new Error('Failed to fetch receipt');
-      return response.json();
+      // First try to fetch as a receipt
+      const receiptResponse = await fetch(`/api/imports/receipts/${id}`);
+      if (receiptResponse.ok) {
+        return receiptResponse.json();
+      }
+      
+      // If receipt not found (404), try to fetch as shipment (for archived items)
+      if (receiptResponse.status === 404) {
+        const shipmentResponse = await fetch(`/api/imports/shipments/${id}`);
+        if (shipmentResponse.ok) {
+          const shipment = await shipmentResponse.json();
+          
+          // Create a pseudo-receipt object from shipment data for archived items
+          if (shipment.receivingStatus === 'archived') {
+            return {
+              id: shipment.id,
+              shipmentId: shipment.id,
+              consolidationId: shipment.consolidationId,
+              status: 'archived',
+              receivedBy: 'System', // Could be retrieved from actual receipt data if needed
+              receivedAt: shipment.deliveredAt || shipment.updatedAt,
+              parcelCount: shipment.totalUnits || 0,
+              warehouseLocation: shipment.warehouseLocation,
+              notes: shipment.notes,
+              items: shipment.items?.map((item: any, index: number) => ({
+                id: index + 1,
+                itemId: item.id,
+                itemType: 'purchase',
+                expectedQuantity: item.quantity || 0,
+                receivedQuantity: item.quantity || 0,
+                damagedQuantity: 0,
+                missingQuantity: 0,
+                condition: 'good',
+                notes: '',
+                photos: [],
+                details: item,
+                warehouseLocation: 'Stored',
+                verifiedAt: shipment.deliveredAt
+              })) || [],
+              shipment: shipment,
+              isArchivedView: true // Flag to indicate this is an archived view
+            };
+          }
+        }
+      }
+      
+      throw new Error('Failed to fetch receipt or shipment');
     },
     enabled: !!id
   });
@@ -424,6 +468,8 @@ export default function ReceiptDetails() {
         return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
       case 'approved':
         return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case 'archived':
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
     }
@@ -457,9 +503,11 @@ export default function ReceiptDetails() {
         </Link>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Receipt #{receipt.id}</h1>
+            <h1 className="text-3xl font-bold mb-2">
+              {receipt.isArchivedView ? `Archived Shipment #${receipt.id}` : `Receipt #${receipt.id}`}
+            </h1>
             <p className="text-muted-foreground">
-              Verify and process received items
+              {receipt.isArchivedView ? 'View archived shipment details' : 'Verify and process received items'}
             </p>
           </div>
           <Badge className={`${getStatusColor(receipt.status)} text-lg px-3 py-1`}>
@@ -1017,7 +1065,7 @@ export default function ReceiptDetails() {
 
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-4 pt-4 border-t">
-            {receipt.status === 'pending_verification' && (
+            {receipt.status === 'pending_verification' && !receipt.isArchivedView && (
               <>
                 <Button
                   onClick={() => setShowVerifyDialog(true)}
@@ -1035,7 +1083,7 @@ export default function ReceiptDetails() {
                 )}
               </>
             )}
-            {receipt.status === 'pending_approval' && (
+            {receipt.status === 'pending_approval' && !receipt.isArchivedView && (
               <>
                 <Button
                   onClick={handleOpenPriceModal}
@@ -1051,7 +1099,7 @@ export default function ReceiptDetails() {
                 </div>
               </>
             )}
-            {receipt.status === 'approved' && (
+            {receipt.status === 'approved' && !receipt.isArchivedView && (
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-green-600">
                   <CheckCircle className="h-5 w-5" />
