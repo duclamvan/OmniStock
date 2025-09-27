@@ -3308,6 +3308,97 @@ router.post("/receipts/:id/landed-costs", async (req, res) => {
   }
 });
 
+// Set selling prices for items in a receipt
+router.post("/receipts/:receiptId/set-prices", async (req, res) => {
+  try {
+    const { receiptId } = req.params;
+    const { items } = req.body;
+    
+    if (!items || !Array.isArray(items)) {
+      return res.status(400).json({ message: "Items array is required" });
+    }
+    
+    // Validate each item has required fields
+    for (const item of items) {
+      if (!item.sku && !item.productId) {
+        return res.status(400).json({ message: "Each item must have either SKU or productId" });
+      }
+    }
+    
+    const updatedItems = [];
+    const errors = [];
+    
+    for (const item of items) {
+      try {
+        // Find the product by SKU or productId
+        let product;
+        if (item.productId) {
+          [product] = await db
+            .select()
+            .from(products)
+            .where(eq(products.id, item.productId));
+        } else if (item.sku) {
+          [product] = await db
+            .select()
+            .from(products)
+            .where(eq(products.sku, item.sku));
+        }
+        
+        if (!product) {
+          errors.push({
+            item: item.sku || item.productId,
+            error: "Product not found"
+          });
+          continue;
+        }
+        
+        // Update the product with new prices
+        const updateData: any = {};
+        if (item.priceCzk !== undefined) updateData.priceCzk = item.priceCzk;
+        if (item.priceEur !== undefined) updateData.priceEur = item.priceEur;
+        if (item.priceUsd !== undefined) updateData.priceUsd = item.priceUsd;
+        if (item.priceVnd !== undefined) updateData.priceVnd = item.priceVnd;
+        if (item.priceCny !== undefined) updateData.priceCny = item.priceCny;
+        updateData.updatedAt = new Date();
+        
+        await db
+          .update(products)
+          .set(updateData)
+          .where(eq(products.id, product.id));
+        
+        updatedItems.push({
+          productId: product.id,
+          sku: product.sku,
+          name: product.name,
+          prices: {
+            czk: item.priceCzk,
+            eur: item.priceEur,
+            usd: item.priceUsd,
+            vnd: item.priceVnd,
+            cny: item.priceCny
+          }
+        });
+      } catch (error) {
+        console.error(`Error updating product ${item.sku || item.productId}:`, error);
+        errors.push({
+          item: item.sku || item.productId,
+          error: "Failed to update prices"
+        });
+      }
+    }
+    
+    res.json({
+      success: true,
+      updatedCount: updatedItems.length,
+      updated: updatedItems,
+      errors: errors.length > 0 ? errors : undefined
+    });
+  } catch (error) {
+    console.error("Error setting prices:", error);
+    res.status(500).json({ message: "Failed to set prices" });
+  }
+});
+
 // Approve receipt and integrate with inventory
 router.post("/receipts/approve/:id", async (req, res) => {
   try {

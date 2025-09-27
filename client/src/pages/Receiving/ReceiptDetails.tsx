@@ -44,6 +44,7 @@ import {
 import { Link } from "wouter";
 import { format } from "date-fns";
 import CostsPanel from "@/components/receiving/CostsPanel";
+import { apiRequest } from "@/lib/queryClient";
 
 interface ReceiptItem {
   id: number;
@@ -81,6 +82,13 @@ export default function ReceiptDetails() {
   
   // Approval form state
   const [approvedBy, setApprovedBy] = useState("");
+  
+  // Pricing state
+  const [itemPrices, setItemPrices] = useState<Record<string, any>>({});
+  const [savingPrices, setSavingPrices] = useState<Record<string, boolean>>({});
+  const [savedPrices, setSavedPrices] = useState<Record<string, boolean>>({});
+  const [priceTimers, setPriceTimers] = useState<Record<string, NodeJS.Timeout>>({});
+  const [markupPercentage, setMarkupPercentage] = useState(30); // Default 30% markup
 
   // Fetch receipt details
   const { data: receipt, isLoading, refetch } = useQuery({
@@ -88,7 +96,26 @@ export default function ReceiptDetails() {
     queryFn: async () => {
       const response = await fetch(`/api/imports/receipts/${id}`);
       if (!response.ok) throw new Error('Failed to fetch receipt');
-      return response.json();
+      const data = await response.json();
+      
+      // Initialize prices for each item
+      const initialPrices: Record<string, any> = {};
+      data.items?.forEach((item: any) => {
+        const product = item.details;
+        if (product) {
+          initialPrices[item.itemId] = {
+            priceCzk: product.priceCzk || '',
+            priceEur: product.priceEur || '',
+            priceUsd: product.priceUsd || '',
+            priceVnd: product.priceVnd || '',
+            priceCny: product.priceCny || '',
+            landingCost: parseFloat(product.latestLandingCost || '0')
+          };
+        }
+      });
+      setItemPrices(initialPrices);
+      
+      return data;
     },
     enabled: !!id
   });
@@ -222,6 +249,117 @@ export default function ReceiptDetails() {
     approveReceiptMutation.mutate({
       approvedBy
     });
+  };
+
+  // Auto-save prices after 2 seconds of inactivity
+  const handlePriceChange = (itemId: string, currency: string, value: string) => {
+    // Clear existing timer for this item
+    if (priceTimers[itemId]) {
+      clearTimeout(priceTimers[itemId]);
+    }
+    
+    // Update local state
+    setItemPrices(prev => ({
+      ...prev,
+      [itemId]: {
+        ...prev[itemId],
+        [currency]: value
+      }
+    }));
+    
+    // Reset saved state
+    setSavedPrices(prev => ({
+      ...prev,
+      [itemId]: false
+    }));
+    
+    // Set new timer for auto-save
+    const timer = setTimeout(() => {
+      savePricesForItem(itemId);
+    }, 2000);
+    
+    setPriceTimers(prev => ({
+      ...prev,
+      [itemId]: timer
+    }));
+  };
+  
+  // Save prices for a specific item
+  const savePricesForItem = async (itemId: string) => {
+    const item = receipt?.items?.find((i: any) => i.itemId.toString() === itemId);
+    if (!item || !itemPrices[itemId]) return;
+    
+    setSavingPrices(prev => ({ ...prev, [itemId]: true }));
+    
+    try {
+      const response = await apiRequest(`/api/imports/receipts/${id}/set-prices`, {
+        method: 'POST',
+        body: JSON.stringify({
+          items: [{
+            sku: item.details?.sku,
+            productId: item.details?.id,
+            ...itemPrices[itemId]
+          }]
+        })
+      });
+      
+      if (response.success) {
+        setSavedPrices(prev => ({ ...prev, [itemId]: true }));
+        setTimeout(() => {
+          setSavedPrices(prev => ({ ...prev, [itemId]: false }));
+        }, 3000);
+      }
+    } catch (error) {
+      console.error('Failed to save prices:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save prices",
+        variant: "destructive"
+      });
+    } finally {
+      setSavingPrices(prev => ({ ...prev, [itemId]: false }));
+    }
+  };
+  
+  // Apply markup to all items
+  const applyMarkupToItem = (itemId: string) => {
+    const prices = itemPrices[itemId];
+    if (!prices || !prices.landingCost) return;
+    
+    const landingCost = parseFloat(prices.landingCost);
+    const markedUpPrice = landingCost * (1 + markupPercentage / 100);
+    
+    // Apply markup with appropriate exchange rates (example rates)
+    const exchangeRates = {
+      czk: 22,
+      eur: 0.92,
+      usd: 1,
+      vnd: 24000,
+      cny: 7.2
+    };
+    
+    setItemPrices(prev => ({
+      ...prev,
+      [itemId]: {
+        ...prev[itemId],
+        priceCzk: (markedUpPrice * exchangeRates.czk).toFixed(2),
+        priceEur: (markedUpPrice * exchangeRates.eur).toFixed(2),
+        priceUsd: markedUpPrice.toFixed(2),
+        priceVnd: Math.round(markedUpPrice * exchangeRates.vnd),
+        priceCny: (markedUpPrice * exchangeRates.cny).toFixed(2)
+      }
+    }));
+    
+    // Auto-save after applying markup
+    setTimeout(() => savePricesForItem(itemId), 500);
+  };
+  
+  // Calculate profit margin
+  const calculateMargin = (sellingPrice: string, cost: number) => {
+    if (!sellingPrice || !cost) return 0;
+    const selling = parseFloat(sellingPrice);
+    if (!selling) return 0;
+    return ((selling - cost) / selling * 100).toFixed(1);
   };
 
   // Helper function to download all photos
@@ -539,37 +677,41 @@ export default function ReceiptDetails() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {receipt.items?.map((item: ReceiptItem) => (
-              <div key={item.id} className="border rounded-lg p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h4 className="font-medium">{item.details?.name || `Item #${item.itemId}`}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {item.details?.sku && `SKU: ${item.details.sku}`}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {item.verifiedAt ? (
-                      <Badge variant="outline" className="bg-green-50 border-green-300">
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        Verified
+              <div key={item.id} className="border rounded-xl overflow-hidden bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-950">
+                <div className="p-4 border-b bg-white/50 dark:bg-gray-900/50">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h4 className="font-semibold text-lg">{item.details?.name || `Item #${item.itemId}`}</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {item.details?.sku && `SKU: ${item.details.sku}`}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {item.verifiedAt ? (
+                        <Badge variant="outline" className="bg-green-50 border-green-300 dark:bg-green-900/20">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Verified
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline">
+                          <Clock className="h-3 w-3 mr-1" />
+                          Pending
+                        </Badge>
+                      )}
+                      <Badge className={getConditionColor(item.condition)}>
+                        {item.condition}
                       </Badge>
-                    ) : (
-                      <Badge variant="outline">
-                        <Clock className="h-3 w-3 mr-1" />
-                        Pending
-                      </Badge>
-                    )}
-                    <Badge className={getConditionColor(item.condition)}>
-                      {item.condition}
-                    </Badge>
+                    </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Expected</p>
+                <div className="p-4 space-y-4">
+                  {/* Quantity and Status Info */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Expected</p>
                     <p className="font-medium">{item.expectedQuantity}</p>
                   </div>
                   <div>
@@ -614,15 +756,191 @@ export default function ReceiptDetails() {
                     {item.notes}
                   </div>
                 )}
+                
+                {/* Pricing Section */}
+                <div className="border-t pt-4 mt-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h5 className="font-semibold flex items-center gap-2">
+                      <DollarSign className="h-4 w-4" />
+                      Set Selling Prices
+                    </h5>
+                    <div className="flex items-center gap-2">
+                      {savingPrices[item.itemId] && (
+                        <Badge variant="outline" className="text-blue-600 border-blue-600">
+                          <Clock className="h-3 w-3 mr-1 animate-spin" />
+                          Saving...
+                        </Badge>
+                      )}
+                      {savedPrices[item.itemId] && !savingPrices[item.itemId] && (
+                        <Badge variant="outline" className="text-green-600 border-green-600 animate-fade-in">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Saved
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Quick Actions */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => applyMarkupToItem(item.itemId.toString())}
+                      className="text-xs"
+                      disabled={!itemPrices[item.itemId]?.landingCost}
+                    >
+                      <TrendingUp className="h-3 w-3 mr-1" />
+                      Apply {markupPercentage}% Markup
+                    </Button>
+                    <Input
+                      type="number"
+                      value={markupPercentage}
+                      onChange={(e) => setMarkupPercentage(parseInt(e.target.value) || 0)}
+                      className="w-20 h-8 text-xs"
+                      placeholder="%"
+                    />
+                    {itemPrices[item.itemId]?.landingCost && (
+                      <div className="text-xs text-muted-foreground ml-2">
+                        Cost: ${itemPrices[item.itemId]?.landingCost}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Currency Prices Grid */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                    {/* CZK */}
+                    <div className="space-y-1">
+                      <Label className="text-xs flex items-center gap-1">
+                        <span>🇨🇿</span> CZK (Kč)
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={itemPrices[item.itemId]?.priceCzk || ''}
+                          onChange={(e) => handlePriceChange(item.itemId.toString(), 'priceCzk', e.target.value)}
+                          onBlur={() => savePricesForItem(item.itemId.toString())}
+                          className="pr-8 h-9 text-sm"
+                          placeholder="0.00"
+                        />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">Kč</span>
+                      </div>
+                      {itemPrices[item.itemId]?.priceCzk && itemPrices[item.itemId]?.landingCost && (
+                        <p className="text-xs text-green-600">
+                          {calculateMargin(itemPrices[item.itemId]?.priceCzk, itemPrices[item.itemId]?.landingCost * 22)}% margin
+                        </p>
+                      )}
+                    </div>
+                    
+                    {/* EUR */}
+                    <div className="space-y-1">
+                      <Label className="text-xs flex items-center gap-1">
+                        <span>🇪🇺</span> EUR (€)
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={itemPrices[item.itemId]?.priceEur || ''}
+                          onChange={(e) => handlePriceChange(item.itemId.toString(), 'priceEur', e.target.value)}
+                          onBlur={() => savePricesForItem(item.itemId.toString())}
+                          className="pr-8 h-9 text-sm"
+                          placeholder="0.00"
+                        />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">€</span>
+                      </div>
+                      {itemPrices[item.itemId]?.priceEur && itemPrices[item.itemId]?.landingCost && (
+                        <p className="text-xs text-green-600">
+                          {calculateMargin(itemPrices[item.itemId]?.priceEur, itemPrices[item.itemId]?.landingCost * 0.92)}% margin
+                        </p>
+                      )}
+                    </div>
+                    
+                    {/* USD */}
+                    <div className="space-y-1">
+                      <Label className="text-xs flex items-center gap-1">
+                        <span>🇺🇸</span> USD ($)
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={itemPrices[item.itemId]?.priceUsd || ''}
+                          onChange={(e) => handlePriceChange(item.itemId.toString(), 'priceUsd', e.target.value)}
+                          onBlur={() => savePricesForItem(item.itemId.toString())}
+                          className="pr-8 h-9 text-sm"
+                          placeholder="0.00"
+                        />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">$</span>
+                      </div>
+                      {itemPrices[item.itemId]?.priceUsd && itemPrices[item.itemId]?.landingCost && (
+                        <p className="text-xs text-green-600">
+                          {calculateMargin(itemPrices[item.itemId]?.priceUsd, itemPrices[item.itemId]?.landingCost)}% margin
+                        </p>
+                      )}
+                    </div>
+                    
+                    {/* VND */}
+                    <div className="space-y-1">
+                      <Label className="text-xs flex items-center gap-1">
+                        <span>🇻🇳</span> VND (₫)
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          step="1"
+                          value={itemPrices[item.itemId]?.priceVnd || ''}
+                          onChange={(e) => handlePriceChange(item.itemId.toString(), 'priceVnd', e.target.value)}
+                          onBlur={() => savePricesForItem(item.itemId.toString())}
+                          className="pr-8 h-9 text-sm"
+                          placeholder="0"
+                        />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">₫</span>
+                      </div>
+                      {itemPrices[item.itemId]?.priceVnd && itemPrices[item.itemId]?.landingCost && (
+                        <p className="text-xs text-green-600">
+                          {calculateMargin(itemPrices[item.itemId]?.priceVnd, itemPrices[item.itemId]?.landingCost * 24000)}% margin
+                        </p>
+                      )}
+                    </div>
+                    
+                    {/* CNY */}
+                    <div className="space-y-1">
+                      <Label className="text-xs flex items-center gap-1">
+                        <span>🇨🇳</span> CNY (¥)
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={itemPrices[item.itemId]?.priceCny || ''}
+                          onChange={(e) => handlePriceChange(item.itemId.toString(), 'priceCny', e.target.value)}
+                          onBlur={() => savePricesForItem(item.itemId.toString())}
+                          className="pr-8 h-9 text-sm"
+                          placeholder="0.00"
+                        />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">¥</span>
+                      </div>
+                      {itemPrices[item.itemId]?.priceCny && itemPrices[item.itemId]?.landingCost && (
+                        <p className="text-xs text-green-600">
+                          {calculateMargin(itemPrices[item.itemId]?.priceCny, itemPrices[item.itemId]?.landingCost * 7.2)}% margin
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
 
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleItemVerification(item)}
-                  data-testid={`button-verify-item-${item.id}`}
-                >
-                  {item.verifiedAt ? 'Edit Verification' : 'Verify Item'}
-                </Button>
+                <div className="flex gap-2 mt-4">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleItemVerification(item)}
+                    data-testid={`button-verify-item-${item.id}`}
+                  >
+                    {item.verifiedAt ? 'Edit Verification' : 'Verify Item'}
+                  </Button>
+                </div>
+                </div>
               </div>
             ))}
           </div>
