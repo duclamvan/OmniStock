@@ -359,6 +359,43 @@ export default function ReceiptDetails() {
         </CardContent>
       </Card>
 
+      {/* Photos Section */}
+      {receipt.photos && receipt.photos.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Camera className="h-5 w-5" />
+              Photos ({receipt.photos.length})
+            </CardTitle>
+            <CardDescription>
+              Photos uploaded during receiving process
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {receipt.photos.map((photo: any, index: number) => (
+                <div key={index} className="relative group">
+                  <div className="aspect-square overflow-hidden rounded-lg border bg-muted">
+                    <img
+                      src={photo.url || photo.dataUrl}
+                      alt={`Receipt photo ${index + 1}`}
+                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                      loading="lazy"
+                      data-testid={`photo-${index}`}
+                    />
+                  </div>
+                  {photo.timestamp && (
+                    <p className="text-xs text-muted-foreground mt-1 text-center">
+                      {format(new Date(photo.timestamp), 'MMM dd, HH:mm')}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Shipment Info */}
       {receipt.shipment && (
         <Card className="mb-6">

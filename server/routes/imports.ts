@@ -3134,7 +3134,8 @@ router.get("/receipts/:id", async (req, res) => {
       items: itemsWithDetails,
       shipment,
       consolidation,
-      landedCost
+      landedCost,
+      photos: receipt.photos || [] // Ensure photos are included in response
     });
   } catch (error) {
     console.error("Error fetching receipt:", error);
