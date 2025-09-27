@@ -5243,6 +5243,9 @@ router.get("/shipments/:id/landing-cost-preview", async (req, res) => {
       acc[cost.type] += Number(cost.amountBase || 0);
       return acc;
     }, {} as Record<string, number>);
+
+    // Get item allocation breakdown
+    const items = await getItemAllocationBreakdown(shipmentId, costsByType);
     
     res.json({
       shipmentId,
@@ -5250,6 +5253,22 @@ router.get("/shipments/:id/landing-cost-preview", async (req, res) => {
       costsByType,
       totalCost: Object.values(costsByType).reduce((sum, val) => sum + val, 0),
       baseCurrency: 'EUR',
+      // Structure expected by AllocationPreview component
+      items,
+      totalItems: metrics.itemCount,
+      totalUnits: metrics.totalUnits,
+      totalActualWeight: metrics.totalWeight,
+      totalVolumetricWeight: metrics.totalVolumetricWeight,
+      totalChargeableWeight: metrics.totalChargeableWeight,
+      totalCosts: {
+        freight: costsByType['FREIGHT'] || 0,
+        duty: costsByType['DUTY'] || 0,
+        brokerage: costsByType['BROKERAGE'] || 0,
+        insurance: costsByType['INSURANCE'] || 0,
+        packaging: costsByType['PACKAGING'] || 0,
+        other: costsByType['OTHER'] || 0,
+        total: Object.values(costsByType).reduce((sum, val) => sum + val, 0)
+      },
       message: "This is a preview. Use /calculate-landing-costs to save allocations."
     });
   } catch (error) {
@@ -5257,6 +5276,103 @@ router.get("/shipments/:id/landing-cost-preview", async (req, res) => {
     res.status(500).json({ message: "Failed to generate landing cost preview" });
   }
 });
+
+// Helper function to get detailed allocation breakdown per item
+async function getItemAllocationBreakdown(shipmentId: number, costsByType: Record<string, number>): Promise<any[]> {
+  try {
+    // Get consolidation ID
+    const [shipment] = await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.id, shipmentId))
+      .limit(1);
+
+    if (!shipment?.consolidationId) {
+      return [];
+    }
+
+    // Get purchase items with carton data
+    const itemsWithCartons = await db
+      .select({
+        item: purchaseItems,
+        carton: shipmentCartons
+      })
+      .from(purchaseItems)
+      .leftJoin(shipmentCartons, and(
+        eq(shipmentCartons.purchaseItemId, purchaseItems.id),
+        eq(shipmentCartons.shipmentId, shipmentId)
+      ))
+      .where(eq(purchaseItems.consolidationId, shipment.consolidationId));
+
+    const items: any[] = [];
+    
+    // Calculate total chargeable weight for allocation
+    const totalChargeableWeight = itemsWithCartons.reduce((sum, row) => {
+      const carton = row.carton;
+      if (!carton) return sum;
+      
+      const actualWeight = parseFloat(carton.grossWeightKg || '0');
+      const volumetricWeight = landingCostService.calculateVolumetricWeight(
+        parseFloat(carton.lengthCm || '0'),
+        parseFloat(carton.widthCm || '0'),
+        parseFloat(carton.heightCm || '0')
+      );
+      const chargeableWeight = landingCostService.calculateChargeableWeight(actualWeight, volumetricWeight);
+      return sum + chargeableWeight;
+    }, 0);
+    
+    for (const row of itemsWithCartons) {
+      const item = row.item;
+      const carton = row.carton;
+
+      // Calculate weights
+      const actualWeight = carton ? parseFloat(carton.grossWeightKg || '0') : 0;
+      const volumetricWeight = carton ? landingCostService.calculateVolumetricWeight(
+        parseFloat(carton.lengthCm || '0'),
+        parseFloat(carton.widthCm || '0'),
+        parseFloat(carton.heightCm || '0')
+      ) : 0;
+      const chargeableWeight = landingCostService.calculateChargeableWeight(actualWeight, volumetricWeight);
+
+      // Allocate costs (weight-based allocation)
+      const weightRatio = totalChargeableWeight > 0 ? chargeableWeight / totalChargeableWeight : 0;
+
+      const freightAllocated = (costsByType['FREIGHT'] || 0) * weightRatio;
+      const dutyAllocated = (costsByType['DUTY'] || 0) * weightRatio;
+      const brokerageAllocated = (costsByType['BROKERAGE'] || 0) * weightRatio;
+      const insuranceAllocated = (costsByType['INSURANCE'] || 0) * weightRatio;
+      const packagingAllocated = (costsByType['PACKAGING'] || 0) * weightRatio;
+      const otherAllocated = (costsByType['OTHER'] || 0) * weightRatio;
+
+      const totalAllocated = freightAllocated + dutyAllocated + brokerageAllocated + insuranceAllocated + packagingAllocated + otherAllocated;
+      const landingCostPerUnit = item.quantity > 0 ? totalAllocated / item.quantity : 0;
+
+      items.push({
+        purchaseItemId: item.id,
+        sku: item.sku,
+        name: item.name,
+        quantity: item.quantity,
+        actualWeightKg: actualWeight,
+        volumetricWeightKg: volumetricWeight,
+        chargeableWeightKg: chargeableWeight,
+        freightAllocated,
+        dutyAllocated,
+        brokerageAllocated,
+        insuranceAllocated,
+        packagingAllocated,
+        otherAllocated,
+        totalAllocated,
+        landingCostPerUnit,
+        warnings: []
+      });
+    }
+
+    return items;
+  } catch (error) {
+    console.error('Error getting item allocation breakdown:', error);
+    return [];
+  }
+}
 
 // 9. GET /api/imports/shipments/:id/landing-cost-summary - Get summary
 router.get("/shipments/:id/landing-cost-summary", async (req, res) => {
