@@ -2933,8 +2933,8 @@ router.get("/receipts/items-to-store", async (req, res) => {
     
     // Filter in memory to show only items ready for storage
     const filteredReceiptItems = allReceiptItems.filter(item => {
-      // Check if status is ok or not set
-      const statusOk = !item.status || item.status === 'ok' || item.condition === 'good';
+      // Check if status is ok, complete, or not set
+      const statusOk = !item.status || item.status === 'ok' || item.status === 'complete' || item.condition === 'good';
       // Check if fully received
       const fullyReceived = item.receivedQuantity >= item.expectedQuantity;
       return statusOk && fullyReceived;
