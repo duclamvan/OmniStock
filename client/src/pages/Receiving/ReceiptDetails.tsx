@@ -229,6 +229,47 @@ export default function ReceiptDetails() {
     setShowPriceSettingModal(true);
   };
 
+  // Bulk verify all unverified items with default values
+  const handleBulkVerifyItems = () => {
+    if (!receipt?.items) return;
+
+    const unverifiedItems = receipt.items.filter((item: ReceiptItem) => !item.verifiedAt);
+    
+    if (unverifiedItems.length === 0) {
+      toast({
+        title: "All Items Verified",
+        description: "All items have already been verified"
+      });
+      return;
+    }
+
+    // Verify each unverified item with sensible defaults
+    unverifiedItems.forEach((item: ReceiptItem) => {
+      const verificationData = {
+        receivedQuantity: item.expectedQuantity, // Assume all expected items were received
+        damagedQuantity: 0, // Assume no damage
+        missingQuantity: 0, // Calculated as 0 since received = expected
+        barcode: item.barcode || "",
+        warehouseLocation: item.warehouseLocation || "",
+        additionalLocation: item.additionalLocation || "",
+        storageInstructions: item.storageInstructions || "",
+        condition: "good", // Default to good condition
+        notes: item.notes || "",
+        verifiedAt: new Date().toISOString()
+      };
+
+      updateItemMutation.mutate({
+        itemId: item.itemId,
+        data: verificationData
+      });
+    });
+
+    toast({
+      title: "Bulk Verification Started",
+      description: `Verifying ${unverifiedItems.length} items with default values...`
+    });
+  };
+
 
   // Helper function to download all photos
   const downloadAllPhotos = async () => {
@@ -530,18 +571,33 @@ export default function ReceiptDetails() {
                     Verify each item's quantity, condition, and location
                   </CardDescription>
                 </div>
-                {hasDamagedItems && (
-                  <Badge variant="destructive">
-                    <AlertTriangle className="h-3 w-3 mr-1" />
-                    Has Damaged Items
-                  </Badge>
-                )}
-                {hasMissingItems && (
-                  <Badge variant="destructive">
-                    <AlertCircle className="h-3 w-3 mr-1" />
-                    Has Missing Items
-                  </Badge>
-                )}
+                <div className="flex items-center gap-2">
+                  {receipt?.items && receipt.items.some((item: ReceiptItem) => !item.verifiedAt) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleBulkVerifyItems}
+                      disabled={updateItemMutation.isPending}
+                      data-testid="button-bulk-verify-items"
+                      className="bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Quickly Verify All Items
+                    </Button>
+                  )}
+                  {hasDamagedItems && (
+                    <Badge variant="destructive">
+                      <AlertTriangle className="h-3 w-3 mr-1" />
+                      Has Damaged Items
+                    </Badge>
+                  )}
+                  {hasMissingItems && (
+                    <Badge variant="destructive">
+                      <AlertCircle className="h-3 w-3 mr-1" />
+                      Has Missing Items
+                    </Badge>
+                  )}
+                </div>
               </div>
             </CardHeader>
             <CardContent>
