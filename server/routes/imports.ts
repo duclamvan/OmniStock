@@ -5294,20 +5294,21 @@ router.get("/shipments/:id/landing-cost-summary", async (req, res) => {
     
     // Get the actual calculated data using the landing cost service
     try {
-      const preview = await landingCostService.getLandingCostPreview(shipmentId);
+      const summary = await landingCostService.getLandingCostSummary(shipmentId);
       
       res.json({
         shipmentId,
-        items: preview.items || [],
-        totals: preview.totalCosts || {},
-        grandTotal: preview.totalCosts?.total || 0,
-        baseCurrency: preview.baseCurrency || 'EUR',
+        items: summary.items || [],
+        totals: summary.totals || {},
+        grandTotal: summary.grandTotal || 0,
+        baseCurrency: summary.baseCurrency || 'EUR',
         hasAllocations: true,
         lastCalculated: allocations[0]?.createdAt || new Date(),
-        status: 'calculated'
+        status: 'calculated',
+        itemCount: summary.items?.length || 0
       });
-    } catch (previewError) {
-      console.error("Error getting landing cost preview:", previewError);
+    } catch (summaryError) {
+      console.error("Error getting landing cost summary:", summaryError);
       res.json({
         shipmentId,
         items: [],

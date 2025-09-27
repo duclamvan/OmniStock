@@ -103,7 +103,9 @@ const CostsPanel = ({ shipmentId, receiptId, onUpdate }: CostsPanelProps) => {
 
   // Extract costs array from response
   const costs = Array.isArray(costsData) ? costsData : 
-    (costsData?.costs ? Object.values(costsData.costs).flat() : []);
+    (costsData?.costs ? Object.entries(costsData.costs).flatMap(([type, typeCosts]: [string, any[]]) => 
+      typeCosts.map(cost => ({ ...cost, type }))
+    ) : []);
 
   // Fetch landing cost summary
   const { data: summary, isLoading: loadingSummary } = useQuery({
