@@ -679,11 +679,19 @@ export default function ContinueReceiving() {
           photos: uploadedPhotos || []
         };
         
-        const autoSaveResponse = await apiRequest('/api/imports/receipts/auto-save', 'POST', autoSaveData);
-        receiptId = autoSaveResponse?.receipt?.id;
-        
-        if (!receiptId) {
-          throw new Error('Failed to create receipt for quantity update');
+        try {
+          const autoSaveResponse = await apiRequest('/api/imports/receipts/auto-save', 'POST', autoSaveData);
+          console.log('Auto-save response:', autoSaveResponse);
+          receiptId = autoSaveResponse?.receipt?.id;
+          
+          if (!receiptId) {
+            console.error('No receipt ID in auto-save response:', autoSaveResponse);
+            throw new Error('Failed to create receipt for quantity update');
+          }
+          console.log('Created receipt with ID:', receiptId);
+        } catch (autoSaveError) {
+          console.error('Auto-save failed:', autoSaveError);
+          throw new Error('Failed to create receipt: ' + autoSaveError.message);
         }
       }
       
