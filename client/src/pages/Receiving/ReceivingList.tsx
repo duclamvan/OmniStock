@@ -981,6 +981,22 @@ export default function ReceivingList() {
     }
   }, [activeTab, sortedShipments]);
 
+  // Auto-expand all items in "completed" tab
+  useEffect(() => {
+    if (activeTab === "completed" && completedShipments && completedShipments.length > 0) {
+      const allCompletedIds = new Set<number>(completedShipments.map((s: any) => s.id));
+      setExpandedShipments(prev => new Set<number>([...Array.from(prev), ...Array.from(allCompletedIds)]));
+    }
+  }, [activeTab, completedShipments]);
+
+  // Auto-expand all items in "storage" tab
+  useEffect(() => {
+    if (activeTab === "storage" && storageShipments && storageShipments.length > 0) {
+      const allStorageIds = new Set<number>(storageShipments.map((s: any) => s.id));
+      setExpandedShipments(prev => new Set<number>([...Array.from(prev), ...Array.from(allStorageIds)]));
+    }
+  }, [activeTab, storageShipments]);
+
   // Toggle shipment selection
   const toggleShipmentSelection = (id: number) => {
     const newSelection = new Set(selectedShipments);
