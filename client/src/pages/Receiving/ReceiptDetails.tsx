@@ -164,9 +164,13 @@ export default function ReceiptDetails() {
       return response.json();
     },
     onSuccess: (data) => {
+      const itemCount = data.inventoryItems?.length || 0;
+      const updatedCount = data.inventoryItems?.filter((i: any) => i.action === 'updated').length || 0;
+      const createdCount = data.inventoryItems?.filter((i: any) => i.action === 'created').length || 0;
+      
       toast({
-        title: "Receipt Approved",
-        description: `Successfully added ${data.inventoryUpdates?.length || 0} items to inventory with average cost calculations`
+        title: "Receipt Approved ✅",
+        description: `Successfully processed ${itemCount} items: ${createdCount} new products created, ${updatedCount} existing products updated with weighted average cost calculations`
       });
       refetch();
       setShowApprovalDialog(false);
