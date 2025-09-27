@@ -104,7 +104,7 @@ export const shipments = pgTable('shipments', {
   origin: text('origin').notNull(),
   destination: text('destination').notNull(),
   status: text('status').notNull().default('pending'), // pending, in transit, delivered
-  receivingStatus: text('receiving_status'), // null, receiving, pending_approval, completed
+  receivingStatus: text('receiving_status'), // null, receiving, pending_approval, completed, archived
   shippingCost: decimal('shipping_cost', { precision: 10, scale: 2 }).default('0'),
   shippingCostCurrency: text('shipping_cost_currency').default('USD'),
   insuranceValue: decimal('insurance_value', { precision: 10, scale: 2 }).default('0'),

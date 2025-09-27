@@ -6321,4 +6321,43 @@ router.get("/exchange-rates", async (req, res) => {
   }
 });
 
+// Archive shipment (move from completed to archived status)
+router.patch("/shipments/:id/archive", async (req, res) => {
+  try {
+    const shipmentId = parseInt(req.params.id);
+    
+    // Check if shipment exists and is completed
+    const [shipment] = await db
+      .select()
+      .from(shipments)
+      .where(eq(shipments.id, shipmentId));
+    
+    if (!shipment) {
+      return res.status(404).json({ message: "Shipment not found" });
+    }
+    
+    if (shipment.receivingStatus !== 'completed') {
+      return res.status(400).json({ message: "Only completed shipments can be archived" });
+    }
+    
+    // Update shipment receiving status to archived
+    const [updatedShipment] = await db
+      .update(shipments)
+      .set({ 
+        receivingStatus: 'archived',
+        updatedAt: new Date()
+      })
+      .where(eq(shipments.id, shipmentId))
+      .returning();
+    
+    res.json({ 
+      message: "Shipment archived successfully",
+      shipment: updatedShipment
+    });
+  } catch (error) {
+    console.error("Error archiving shipment:", error);
+    res.status(500).json({ message: "Failed to archive shipment" });
+  }
+});
+
 export default router;

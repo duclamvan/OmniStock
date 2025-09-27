@@ -76,7 +76,8 @@ import {
   Loader2,
   Trash2,
   Eye,
-  User
+  User,
+  Archive
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { format, differenceInHours, differenceInDays, isToday, isYesterday, isThisWeek, isThisMonth } from "date-fns";
@@ -622,6 +623,52 @@ export default function ReceivingList() {
     refetchOnMount: true
   });
 
+  // Fetch archived shipments with longer caching (they don't change)
+  const { data: archivedShipments = [], isLoading: isLoadingArchived } = useQuery({
+    queryKey: ['/api/imports/shipments/by-status/archived'],
+    queryFn: async () => {
+      const response = await fetch('/api/imports/shipments/by-status/archived');
+      if (!response.ok) throw new Error('Failed to fetch archived shipments');
+      return response.json();
+    },
+    staleTime: 120 * 1000, // 120 seconds - archived shipments rarely change
+    gcTime: 15 * 60 * 1000, // Keep in cache for 15 minutes
+    refetchOnWindowFocus: false,
+    refetchOnMount: true
+  });
+
+  // Archive shipment mutation
+  const archiveShipmentMutation = useMutation({
+    mutationFn: async (shipmentId: number) => {
+      const response = await fetch(`/api/imports/shipments/${shipmentId}/archive`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Failed to archive shipment');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Shipment Archived",
+        description: "The shipment has been moved to the archive successfully.",
+      });
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/completed'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/archived'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Archive Failed", 
+        description: error.message || "Failed to archive shipment",
+        variant: "destructive",
+      });
+    }
+  });
+
   // Expand/Collapse All functions
   const expandAllShipments = () => {
     const allIds = new Set(sortedShipments.map((s: any) => s.id));
@@ -662,10 +709,12 @@ export default function ReceivingList() {
         return storageShipments || [];
       case 'completed':
         return completedShipments || [];
+      case 'archived':
+        return archivedShipments || [];
       default:
         return toReceiveShipments || [];
     }
-  }, [activeTab, toReceiveShipments, receivingShipments, storageShipments, completedShipments]);
+  }, [activeTab, toReceiveShipments, receivingShipments, storageShipments, completedShipments, archivedShipments]);
 
   // Get unique carriers from shipments - wrapped in useMemo for consistent hook ordering
   const uniqueCarriers = useMemo<string[]>(() => {
@@ -718,6 +767,9 @@ export default function ReceivingList() {
         break;
       case 'completed':
         shipmentsData = completedShipments;
+        break;
+      case 'archived':
+        shipmentsData = archivedShipments;
         break;
       default:
         shipmentsData = toReceiveShipments;
@@ -775,6 +827,7 @@ export default function ReceivingList() {
     receivingShipments, 
     storageShipments, 
     completedShipments, 
+    archivedShipments,
     searchQuery, 
     priorityFilter, 
     carrierFilter, 
@@ -988,6 +1041,14 @@ export default function ReceivingList() {
       setExpandedShipments(prev => new Set<number>([...Array.from(prev), ...Array.from(allCompletedIds)]));
     }
   }, [activeTab, completedShipments]);
+
+  // Auto-expand all items in "archived" tab
+  useEffect(() => {
+    if (activeTab === "archived" && archivedShipments && archivedShipments.length > 0) {
+      const allArchivedIds = new Set<number>(archivedShipments.map((s: any) => s.id));
+      setExpandedShipments(prev => new Set<number>([...Array.from(prev), ...Array.from(allArchivedIds)]));
+    }
+  }, [activeTab, archivedShipments]);
 
   // Auto-expand all items in "storage" tab
   useEffect(() => {
@@ -1659,6 +1720,24 @@ export default function ReceivingList() {
             <span>Completed</span>
             <span className={`${activeTab === 'completed' ? 'text-white/90' : 'text-gray-500'}`}>
               ({completedShipments.length})
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('archived')}
+            className={`
+              flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all
+              ${activeTab === 'archived' 
+                ? 'bg-gray-600 text-white shadow-lg shadow-gray-600/20' 
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+              }
+            `}
+            data-testid="tab-archived"
+          >
+            <Archive className="h-4 w-4" />
+            <span>Archive</span>
+            <span className={`${activeTab === 'archived' ? 'text-white/90' : 'text-gray-500'}`}>
+              ({archivedShipments.length})
             </span>
           </button>
         </div>
@@ -2387,18 +2466,37 @@ export default function ReceivingList() {
                             </div>
                           </div>
                         </div>
-                        {shipment.receiptId ? (
-                          <Link href={`/receiving/details/${shipment.receiptId}`}>
-                            <Button size="sm" variant="outline" className="shadow-sm" data-testid={`button-view-details-${shipment.id}`}>
-                              <Eye className="h-4 w-4 mr-1" />
-                              View Receipt
+                        <div className="flex gap-2">
+                          {shipment.receiptId ? (
+                            <Link href={`/receiving/details/${shipment.receiptId}`}>
+                              <Button size="sm" variant="outline" className="shadow-sm" data-testid={`button-view-details-${shipment.id}`}>
+                                <Eye className="h-4 w-4 mr-1" />
+                                View Receipt
+                              </Button>
+                            </Link>
+                          ) : (
+                            <Button size="sm" variant="outline" disabled data-testid={`button-no-receipt-${shipment.id}`}>
+                              No Receipt
                             </Button>
-                          </Link>
-                        ) : (
-                          <Button size="sm" variant="outline" disabled data-testid={`button-no-receipt-${shipment.id}`}>
-                            No Receipt
-                          </Button>
-                        )}
+                          )}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem 
+                                onClick={() => archiveShipmentMutation.mutate(shipment.id)}
+                                disabled={archiveShipmentMutation.isPending}
+                                className="text-gray-600 hover:text-gray-700"
+                              >
+                                <Archive className="h-4 w-4 mr-2" />
+                                Move to Archive
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
 
                       {/* Additional Info Bar - Always visible with database info */}
@@ -2581,6 +2679,207 @@ export default function ReceivingList() {
                                   </table>
                                 </div>
                               )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Notes */}
+                      {shipment.notes && isExpanded && (
+                        <div className="mt-3 sm:pl-11">
+                          <div className="p-3 bg-muted/50 rounded-lg">
+                            <p className="text-xs text-muted-foreground mb-1">Notes:</p>
+                            <p className="text-sm">{shipment.notes}</p>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="archived" className="mt-6">
+          {isLoadingArchived ? (
+            <div className="text-center py-8">
+              <Archive className="h-12 w-12 text-muted-foreground mx-auto mb-2 animate-pulse" />
+              <p className="text-muted-foreground">Loading archived shipments...</p>
+            </div>
+          ) : archivedShipments.length === 0 ? (
+            <div className="text-center py-8">
+              <Archive className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+              <p className="text-muted-foreground">No archived shipments</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {archivedShipments.map((shipment: any) => {
+                const isExpanded = expandedShipments.has(shipment.id);
+                const receiptData = receiptDataMap.get(shipment.id);
+                const receiptItems = receiptData?.items || [];
+
+                // Create O(1) lookup map for receipt items by itemId
+                const receiptItemsMap = new Map();
+                receiptItems.forEach((item: any) => {
+                  receiptItemsMap.set(String(item.itemId), item);
+                });
+
+                return (
+                  <Card key={shipment.id} className="border hover:shadow-md transition-shadow border-gray-300">
+                    <CardContent className="p-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+                        <div className="flex items-center gap-2 sm:gap-3 flex-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="p-1"
+                            onClick={() => {
+                              const newExpanded = new Set(expandedShipments);
+                              if (isExpanded) {
+                                newExpanded.delete(shipment.id);
+                              } else {
+                                newExpanded.add(shipment.id);
+                              }
+                              setExpandedShipments(newExpanded);
+                            }}
+                            data-testid={`button-toggle-archived-${shipment.id}`}
+                          >
+                            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          </Button>
+                          <div className="flex-1">
+                            {/* First Row: Title and Status */}
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h3 className="font-semibold text-sm sm:text-base">
+                                {shipment.shipmentName || `Shipment #${shipment.id}`}
+                              </h3>
+                              <Badge className="bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100">
+                                Archived
+                              </Badge>
+                            </div>
+
+                            {/* Second Row: Shipment Type, Carrier, Units */}
+                            <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground mt-2">
+                              {(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod) && (
+                                <>
+                                  <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                                    {getShipmentTypeIcon(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod || '')}
+                                    {formatShipmentType(shipment.shipmentType || shipment.shippingMethod || shipment.consolidation?.shippingMethod || '')}
+                                  </Badge>
+                                  <span className="text-muted-foreground">•</span>
+                                </>
+                              )}
+                              <span className="font-semibold">
+                                {shipment.endCarrier || shipment.carrier}
+                              </span>
+                              <span className="text-muted-foreground">•</span>
+                              <span className="flex items-center gap-1">
+                                {getUnitTypeIcon(shipment.unitType || 'items')}
+                                {shipment.totalUnits} {shipment.unitType || 'items'}
+                              </span>
+                            </div>
+
+                            {/* Third Row: Tracking */}
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-1">
+                              <span className="font-mono">Tracking: {shipment.trackingNumber}</span>
+                            </div>
+                          </div>
+                        </div>
+                        {shipment.receiptId ? (
+                          <Link href={`/receiving/details/${shipment.receiptId}`}>
+                            <Button size="sm" variant="outline" className="shadow-sm" data-testid={`button-view-details-${shipment.id}`}>
+                              <Eye className="h-4 w-4 mr-1" />
+                              View Receipt
+                            </Button>
+                          </Link>
+                        ) : (
+                          <Button size="sm" variant="outline" disabled data-testid={`button-no-receipt-${shipment.id}`}>
+                            No Receipt
+                          </Button>
+                        )}
+                      </div>
+
+                      {/* Additional Info Bar - Always visible with database info */}
+                      <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-xs sm:text-sm mb-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                        <div className="flex items-center gap-1">
+                          <Warehouse className="h-3 w-3 text-primary" />
+                          <span className="text-foreground">
+                            <span className="text-muted-foreground">Warehouse:</span> 
+                            <span className="ml-1 font-medium">{shipment.receivingWarehouse || 'Not specified'}</span>
+                          </span>
+                        </div>
+                        
+                        {shipment.warehouseLocation && (
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3 text-primary" />
+                            <span className="text-foreground">
+                              <span className="text-muted-foreground">Location:</span> 
+                              <span className="ml-1 font-medium">{shipment.warehouseLocation}</span>
+                            </span>
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center gap-1">
+                          <Package className="h-3 w-3 text-primary" />
+                          <span className="text-foreground">
+                            <span className="text-muted-foreground">Consolidation:</span> 
+                            <span className="ml-1 font-medium">{shipment.consolidationName || 'No consolidation'}</span>
+                          </span>
+                        </div>
+                        
+                        {shipment.deliveredAt && (
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3 text-primary" />
+                            <span className="text-foreground">
+                              <span className="text-muted-foreground">Archived:</span> 
+                              <span className="ml-1 font-medium">{format(new Date(shipment.deliveredAt), 'MMM dd, HH:mm')}</span>
+                            </span>
+                          </div>
+                        )}
+                        
+                        {shipment.totalWeight && (
+                          <div className="flex items-center gap-1">
+                            <Package2 className="h-3 w-3 text-primary" />
+                            <span className="text-foreground">
+                              <span className="text-muted-foreground">Weight:</span> 
+                              <span className="ml-1 font-medium">{parseFloat(shipment.totalWeight).toFixed(2)} kg</span>
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Expanded Items List */}
+                      {isExpanded && (
+                        <div className="mt-3 sm:pl-11">
+                          <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                            <Package className="h-4 w-4" />
+                            Items ({receiptItems.length})
+                          </h4>
+                          {receiptItems.length === 0 ? (
+                            <p className="text-muted-foreground text-sm">No items found</p>
+                          ) : (
+                            <div className="bg-muted/30 rounded-lg p-3 max-h-80 overflow-y-auto">
+                              <table className="w-full text-xs">
+                                <thead>
+                                  <tr className="border-b border-muted-foreground/20">
+                                    <th className="text-left py-1 px-2 font-medium">Item</th>
+                                    <th className="text-center py-1 px-2 font-medium">Received</th>
+                                    <th className="text-center py-1 px-2 font-medium">Status</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {receiptItems.map((item: any, index: number) => {
+                                    return (
+                                      <ReceiptItemRow 
+                                        key={`${item.id}-${index}`}
+                                        item={item}
+                                        receiptItem={item}
+                                        index={index}
+                                      />
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
                             </div>
                           )}
                         </div>
