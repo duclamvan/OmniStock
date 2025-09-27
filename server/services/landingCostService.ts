@@ -270,28 +270,54 @@ export class LandingCostService {
     totalUnits: number;
     itemCount: number;
   }> {
-    // Get all items and cartons for this shipment
-    const items = await db
-      .select()
+    // Get shipment to find consolidationId
+    const shipment = await db
+      .select({ consolidationId: shipments.consolidationId })
+      .from(shipments)
+      .where(eq(shipments.id, shipmentId))
+      .limit(1);
+
+    if (!shipment.length) {
+      throw new Error(`Shipment ${shipmentId} not found`);
+    }
+
+    const consolidationId = shipment[0].consolidationId;
+    
+    if (!consolidationId) {
+      return {
+        totalWeight: 0,
+        totalVolumetricWeight: 0,
+        totalChargeableWeight: 0,
+        totalValue: new Decimal(0),
+        totalUnits: 0,
+        itemCount: 0
+      };
+    }
+
+    // Get all purchase items for this consolidation with optional carton data
+    const itemsWithCartons = await db
+      .select({
+        // Purchase item fields
+        id: purchaseItems.id,
+        quantity: purchaseItems.quantity,
+        unitPrice: purchaseItems.unitPrice,
+        totalPrice: purchaseItems.totalPrice,
+        unitGrossWeightKg: purchaseItems.unitGrossWeightKg,
+        unitLengthCm: purchaseItems.unitLengthCm,
+        unitWidthCm: purchaseItems.unitWidthCm,
+        unitHeightCm: purchaseItems.unitHeightCm,
+        // Carton fields (optional)
+        cartonGrossWeightKg: shipmentCartons.grossWeightKg,
+        cartonLengthCm: shipmentCartons.lengthCm,
+        cartonWidthCm: shipmentCartons.widthCm,
+        cartonHeightCm: shipmentCartons.heightCm
+      })
       .from(purchaseItems)
-      .where(
-        sql`${purchaseItems.id} IN (
-          SELECT DISTINCT ${shipmentCartons.purchaseItemId}
-          FROM ${shipmentCartons}
-          WHERE ${shipmentCartons.shipmentId} = ${shipmentId}
-        )`
-      );
-
-    const cartons = await db
-      .select()
-      .from(shipmentCartons)
-      .where(eq(shipmentCartons.shipmentId, shipmentId));
-
-    // Create a map of items to cartons
-    const cartonMap = new Map<number, ShipmentCarton>();
-    cartons.forEach(carton => {
-      cartonMap.set(carton.purchaseItemId, carton);
-    });
+      .leftJoin(shipmentCartons, and(
+        eq(shipmentCartons.purchaseItemId, purchaseItems.id),
+        eq(shipmentCartons.shipmentId, shipmentId)
+      ))
+      .where(eq(purchaseItems.consolidationId, consolidationId));
 
     let totalWeight = 0;
     let totalVolumetricWeight = 0;
@@ -299,25 +325,24 @@ export class LandingCostService {
     let totalValue = new Decimal(0);
     let totalUnits = 0;
 
-    for (const item of items) {
-      const carton = cartonMap.get(item.id);
+    for (const item of itemsWithCartons) {
       const quantity = item.quantity;
 
-      // Calculate weights
+      // Calculate weights using carton data if available, otherwise use item data
       let actualWeight = 0;
       let volumetricWeight = 0;
 
-      if (carton && carton.grossWeightKg) {
-        actualWeight = Number(carton.grossWeightKg);
+      if (item.cartonGrossWeightKg) {
+        actualWeight = Number(item.cartonGrossWeightKg);
       } else if (item.unitGrossWeightKg) {
         actualWeight = Number(item.unitGrossWeightKg) * quantity;
       }
 
-      if (carton && carton.lengthCm && carton.widthCm && carton.heightCm) {
+      if (item.cartonLengthCm && item.cartonWidthCm && item.cartonHeightCm) {
         volumetricWeight = this.calculateVolumetricWeight(
-          Number(carton.lengthCm),
-          Number(carton.widthCm),
-          Number(carton.heightCm)
+          Number(item.cartonLengthCm),
+          Number(item.cartonWidthCm),
+          Number(item.cartonHeightCm)
         );
       } else if (item.unitLengthCm && item.unitWidthCm && item.unitHeightCm) {
         volumetricWeight = this.calculateVolumetricWeight(
@@ -334,13 +359,16 @@ export class LandingCostService {
       totalChargeableWeight += chargeableWeight;
       totalUnits += quantity;
 
-      // Calculate value
+      // Calculate value - use fallback values if prices are missing
       if (item.totalPrice) {
         totalValue = totalValue.add(new Decimal(item.totalPrice.toString()));
       } else if (item.unitPrice) {
         totalValue = totalValue.add(
           new Decimal(item.unitPrice.toString()).mul(quantity)
         );
+      } else {
+        // Use a small fallback value so allocation still works
+        totalValue = totalValue.add(new Decimal(1).mul(quantity));
       }
     }
 
@@ -350,7 +378,7 @@ export class LandingCostService {
       totalChargeableWeight,
       totalValue,
       totalUnits,
-      itemCount: items.length
+      itemCount: itemsWithCartons.length
     };
   }
 
