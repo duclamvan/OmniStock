@@ -34,7 +34,9 @@ import {
   Calendar,
   Package2,
   Check,
-  X
+  X,
+  Download,
+  ZoomIn
 } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
@@ -67,6 +69,8 @@ export default function ReceiptDetails() {
   const [selectedItem, setSelectedItem] = useState<ReceiptItem | null>(null);
   const [showVerifyDialog, setShowVerifyDialog] = useState(false);
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
+  const [showImagePreview, setShowImagePreview] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string>("");
   
   // Verification form state
   const [verifiedBy, setVerifiedBy] = useState("");
@@ -208,6 +212,34 @@ export default function ReceiptDetails() {
     approveReceiptMutation.mutate({
       approvedBy
     });
+  };
+
+  // Helper function to download all photos
+  const downloadAllPhotos = async () => {
+    if (!receipt?.photos || receipt.photos.length === 0) return;
+
+    receipt.photos.forEach((photo: any, index: number) => {
+      const photoSrc = typeof photo === 'string' ? photo : (photo.url || photo.dataUrl || photo.compressed);
+      if (photoSrc) {
+        const link = document.createElement('a');
+        link.href = photoSrc;
+        link.download = `receipt-${receipt.id}-photo-${index + 1}.jpg`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    });
+
+    toast({
+      title: "Download Started",
+      description: `Downloading ${receipt.photos.length} photos...`
+    });
+  };
+
+  // Helper function to open image preview
+  const openImagePreview = (photoSrc: string) => {
+    setPreviewImage(photoSrc);
+    setShowImagePreview(true);
   };
 
   if (isLoading || !receipt) {
@@ -367,16 +399,30 @@ export default function ReceiptDetails() {
       {receipt.photos && receipt.photos.length > 0 && (
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Camera className="h-5 w-5" />
-              Photos ({receipt.photos.length})
-            </CardTitle>
-            <CardDescription>
-              Photos uploaded during receiving process
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Camera className="h-5 w-5" />
+                  Photos ({receipt.photos.length})
+                </CardTitle>
+                <CardDescription>
+                  Photos uploaded during receiving process
+                </CardDescription>
+              </div>
+              <Button 
+                onClick={downloadAllPhotos}
+                variant="outline" 
+                size="sm"
+                className="flex items-center gap-2"
+                data-testid="button-download-all-photos"
+              >
+                <Download className="h-4 w-4" />
+                Download All
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 md:gap-4">
               {receipt.photos.map((photo: any, index: number) => {
                 // Handle both string format (base64 data URL) and object format
                 const photoSrc = typeof photo === 'string' ? photo : (photo.url || photo.dataUrl || photo.compressed);
@@ -384,18 +430,25 @@ export default function ReceiptDetails() {
                 
                 return (
                   <div key={index} className="relative group">
-                    <div className="aspect-square overflow-hidden rounded-lg border bg-muted">
+                    <div 
+                      className="aspect-square overflow-hidden rounded-lg border bg-muted cursor-pointer transition-all hover:shadow-lg hover:ring-2 hover:ring-primary"
+                      onClick={() => openImagePreview(photoSrc)}
+                      data-testid={`photo-${index}`}
+                    >
                       <img
                         src={photoSrc}
                         alt={`Receipt photo ${index + 1}`}
-                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                        className="w-full h-full object-cover transition-transform group-hover:scale-110"
                         loading="lazy"
-                        data-testid={`photo-${index}`}
                         onError={(e) => {
                           console.error('Photo failed to load:', photoSrc?.substring(0, 50) + '...');
                           e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjZjNmNGY2Ii8+CjxwYXRoIGQ9Ik0xMiA5VjEzTTEyIDE3SDE2TTEyIDdIOCIgc3Ryb2tlPSIjNjM2YzgzIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4K';
                         }}
                       />
+                      {/* Hover overlay with zoom icon */}
+                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
+                        <ZoomIn className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                      </div>
                     </div>
                     {photoTimestamp && (
                       <p className="text-xs text-muted-foreground mt-1 text-center">
@@ -842,6 +895,53 @@ export default function ReceiptDetails() {
             </Button>
             <Button onClick={handleApproval}>
               Approve & Add to Inventory
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Image Preview Dialog */}
+      <Dialog open={showImagePreview} onOpenChange={setShowImagePreview}>
+        <DialogContent className="max-w-4xl max-h-[90vh] p-2">
+          <DialogHeader className="px-4 py-2">
+            <DialogTitle>Photo Preview</DialogTitle>
+          </DialogHeader>
+          <div className="relative flex items-center justify-center bg-black rounded-lg overflow-hidden">
+            <img
+              src={previewImage}
+              alt="Preview"
+              className="max-w-full max-h-[70vh] object-contain"
+              data-testid="preview-image"
+            />
+            <Button
+              onClick={() => setShowImagePreview(false)}
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white"
+              data-testid="button-close-preview"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          <DialogFooter className="px-4 py-2">
+            <Button
+              onClick={() => {
+                const link = document.createElement('a');
+                link.href = previewImage;
+                link.download = `receipt-${receipt.id}-photo.jpg`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+              }}
+              variant="outline"
+              className="flex items-center gap-2"
+              data-testid="button-download-single-photo"
+            >
+              <Download className="h-4 w-4" />
+              Download
+            </Button>
+            <Button onClick={() => setShowImagePreview(false)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
