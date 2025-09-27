@@ -3735,6 +3735,15 @@ router.post("/receipts/auto-save", async (req, res) => {
       
       receipt = newReceipt;
     }
+    
+    // Update shipment receiving status to 'receiving'
+    await db
+      .update(shipments)
+      .set({ 
+        receivingStatus: 'receiving',
+        updatedAt: new Date()
+      })
+      .where(eq(shipments.id, shipmentId));
 
     // Update or create receipt items if provided
     if (items && items.length > 0) {
