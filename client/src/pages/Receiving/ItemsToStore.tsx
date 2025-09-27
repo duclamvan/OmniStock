@@ -1017,9 +1017,12 @@ export default function ItemsToStore() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts'] });
       queryClient.invalidateQueries({ queryKey: ['/api/imports/receipts/items-to-store'] });
+      // Also invalidate the shipment status queries to reflect the status change
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/pending_approval'] }); // Storage tab
+      queryClient.invalidateQueries({ queryKey: ['/api/imports/shipments/by-status/completed'] }); // Completed tab
       toast({
         title: "Success",
-        description: "Items have been stored in warehouse locations",
+        description: "Items have been stored and shipment moved to completed",
       });
       navigate('/receiving');
     },
