@@ -295,6 +295,46 @@ export default function ReceiptDetails() {
     });
   };
 
+  // Undo approval mutation
+  const undoApprovalMutation = useMutation({
+    mutationFn: async (data: { reason?: string }) => {
+      const response = await fetch(`/api/imports/receipts/undo-approve/${id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to undo approval');
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      const itemCount = data.revertedItems?.length || 0;
+      const deletedCount = data.revertedItems?.filter((i: any) => i.action === 'deleted').length || 0;
+      const updatedCount = data.revertedItems?.filter((i: any) => i.action === 'updated').length || 0;
+      
+      toast({
+        title: "Approval Undone ✅",
+        description: `Successfully reverted ${itemCount} items: ${deletedCount} products deleted, ${updatedCount} products updated with reduced quantities`
+      });
+      refetch();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to undo approval",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleUndoApproval = () => {
+    undoApprovalMutation.mutate({
+      reason: "Manual undo by user"
+    });
+  };
+
 
   // Helper function to download all photos
   const downloadAllPhotos = async () => {
@@ -929,9 +969,22 @@ export default function ReceiptDetails() {
               </>
             )}
             {receipt.status === 'approved' && (
-              <div className="flex items-center gap-2 text-green-600">
-                <CheckCircle className="h-5 w-5" />
-                <span className="font-medium">All tasks completed - Items are now in inventory</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-green-600">
+                  <CheckCircle className="h-5 w-5" />
+                  <span className="font-medium">All tasks completed - Items are now in inventory</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleUndoApproval}
+                  disabled={undoApprovalMutation.isPending}
+                  data-testid="button-undo-approve"
+                  className="text-muted-foreground hover:text-destructive text-xs px-2 ml-4"
+                >
+                  <Undo2 className="h-3 w-3 mr-1" />
+                  Undo Approval
+                </Button>
               </div>
             )}
           </div>

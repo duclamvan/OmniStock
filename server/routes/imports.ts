@@ -3777,6 +3777,201 @@ router.post("/receipts/reject/:id", async (req, res) => {
   }
 });
 
+// Undo approval - revert inventory changes and set receipt back to pending_approval
+router.post("/receipts/undo-approve/:id", async (req, res) => {
+  try {
+    const receiptId = parseInt(req.params.id);
+    const { reason } = req.body;
+
+    // Validate receipt ID
+    if (isNaN(receiptId)) {
+      return res.status(400).json({ message: "Invalid receipt ID" });
+    }
+
+    // First, check if receipt exists and is approved
+    const [existingReceipt] = await db
+      .select()
+      .from(receipts)
+      .where(eq(receipts.id, receiptId));
+
+    if (!existingReceipt) {
+      return res.status(404).json({ message: "Receipt not found" });
+    }
+
+    if (existingReceipt.status !== 'approved') {
+      return res.status(400).json({ message: "Receipt must be approved to undo approval" });
+    }
+
+    // Revert inventory changes in transaction
+    const revertedItems = await db.transaction(async (tx) => {
+      // Fetch all receipt items
+      const items = await tx
+        .select()
+        .from(receiptItems)
+        .where(eq(receiptItems.receiptId, receiptId));
+      
+      const revertedInventory = [];
+      
+      for (const item of items) {
+        let originalItem: any = null;
+        
+        // Get the original item details based on itemType
+        if (item.itemType === 'purchase') {
+          [originalItem] = await tx
+            .select()
+            .from(purchaseItems)
+            .where(eq(purchaseItems.id, item.itemId));
+        } else if (item.itemType === 'custom') {
+          [originalItem] = await tx
+            .select()
+            .from(customItems)
+            .where(eq(customItems.id, item.itemId));
+        }
+        
+        if (!originalItem) {
+          console.error(`Original item not found for receipt item ${item.id}`);
+          continue;
+        }
+        
+        // Find the product by SKU
+        const sku = item.sku || originalItem.sku || `SKU-${item.itemId}`;
+        const [existingProduct] = await tx
+          .select()
+          .from(products)
+          .where(eq(products.sku, sku));
+        
+        if (existingProduct) {
+          const oldQuantity = existingProduct.quantity || 0;
+          const quantityToRemove = item.receivedQuantity;
+          const newQuantity = Math.max(0, oldQuantity - quantityToRemove);
+          
+          if (newQuantity === 0) {
+            // If quantity becomes 0, delete the product if it was created for this receipt
+            // Check if this product has any cost history entries for this receipt
+            const costHistoryEntries = await tx
+              .select()
+              .from(productCostHistory)
+              .where(and(
+                eq(productCostHistory.productId, existingProduct.id),
+                eq(productCostHistory.method, 'initial_import')
+              ));
+            
+            if (costHistoryEntries.length === 1) {
+              // This product was likely created for this receipt, safe to delete
+              await tx
+                .delete(productCostHistory)
+                .where(eq(productCostHistory.productId, existingProduct.id));
+              
+              await tx
+                .delete(products)
+                .where(eq(products.id, existingProduct.id));
+              
+              revertedInventory.push({
+                action: 'deleted',
+                product: existingProduct,
+                oldQuantity,
+                removedQuantity: quantityToRemove,
+                newQuantity: 0
+              });
+            } else {
+              // Product has other history, just set quantity to 0
+              const [updatedProduct] = await tx
+                .update(products)
+                .set({
+                  quantity: 0,
+                  updatedAt: new Date()
+                })
+                .where(eq(products.sku, sku))
+                .returning();
+              
+              revertedInventory.push({
+                action: 'zeroed',
+                product: updatedProduct,
+                oldQuantity,
+                removedQuantity: quantityToRemove,
+                newQuantity: 0
+              });
+            }
+          } else {
+            // Product still has quantity, need to recalculate weighted average cost
+            // For simplicity, we'll just subtract the quantity for now
+            // In a more sophisticated system, we'd recalculate the weighted average
+            const [updatedProduct] = await tx
+              .update(products)
+              .set({
+                quantity: newQuantity,
+                updatedAt: new Date()
+              })
+              .where(eq(products.sku, sku))
+              .returning();
+            
+            revertedInventory.push({
+              action: 'updated',
+              product: updatedProduct,
+              oldQuantity,
+              removedQuantity: quantityToRemove,
+              newQuantity
+            });
+          }
+          
+          // Remove cost history entries for this receipt
+          await tx
+            .delete(productCostHistory)
+            .where(and(
+              eq(productCostHistory.productId, existingProduct.id),
+              or(
+                eq(productCostHistory.method, 'initial_import'),
+                eq(productCostHistory.method, 'weighted_average')
+              )
+            ));
+        }
+      }
+      
+      return revertedInventory;
+    });
+
+    // Update receipt status back to pending_approval
+    const existingNotes = existingReceipt.notes || '';
+    const undoReason = reason || 'Approval undone';
+    const updatedNotes = existingNotes 
+      ? `${existingNotes}\n\nUNDO APPROVAL: ${undoReason}` 
+      : `UNDO APPROVAL: ${undoReason}`;
+
+    const [receipt] = await db
+      .update(receipts)
+      .set({
+        status: 'pending_approval',
+        approvedBy: null,
+        approvedAt: null,
+        notes: updatedNotes,
+        updatedAt: new Date()
+      })
+      .where(eq(receipts.id, receiptId))
+      .returning();
+
+    // Update shipment status back to receiving
+    if (receipt.shipmentId) {
+      await db
+        .update(shipments)
+        .set({
+          status: 'receiving',
+          receivingStatus: 'pending_approval',
+          updatedAt: new Date()
+        })
+        .where(eq(shipments.id, receipt.shipmentId));
+    }
+
+    res.json({ 
+      receipt,
+      revertedItems,
+      message: `Receipt approval undone and ${revertedItems.length} inventory items reverted` 
+    });
+  } catch (error) {
+    console.error("Error undoing receipt approval:", error);
+    res.status(500).json({ message: "Failed to undo receipt approval" });
+  }
+});
+
 // Get all receipts
 router.get("/receipts", async (req, res) => {
   try {
