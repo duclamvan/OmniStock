@@ -695,6 +695,22 @@ export default function ReceiptDetails() {
               </div>
             ))}
           </div>
+          
+          {/* Bottom Bulk Verify Button for Better UX after scrolling */}
+          {receipt?.items && receipt.items.some((item: ReceiptItem) => !item.verifiedAt) && (
+            <div className="flex justify-center pt-6 border-t">
+              <Button
+                variant="outline"
+                onClick={handleBulkVerifyItems}
+                disabled={updateItemMutation.isPending}
+                data-testid="button-bulk-verify-items-bottom"
+                className="bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 dark:border-blue-800 dark:text-blue-300"
+              >
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Quickly Verify All Items
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </TabsContent>
