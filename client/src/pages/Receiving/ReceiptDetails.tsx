@@ -377,24 +377,34 @@ export default function ReceiptDetails() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {receipt.photos.map((photo: any, index: number) => (
-                <div key={index} className="relative group">
-                  <div className="aspect-square overflow-hidden rounded-lg border bg-muted">
-                    <img
-                      src={photo.url || photo.dataUrl}
-                      alt={`Receipt photo ${index + 1}`}
-                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                      loading="lazy"
-                      data-testid={`photo-${index}`}
-                    />
+              {receipt.photos.map((photo: any, index: number) => {
+                // Handle both string format (base64 data URL) and object format
+                const photoSrc = typeof photo === 'string' ? photo : (photo.url || photo.dataUrl || photo.compressed);
+                const photoTimestamp = typeof photo === 'object' ? photo.timestamp : null;
+                
+                return (
+                  <div key={index} className="relative group">
+                    <div className="aspect-square overflow-hidden rounded-lg border bg-muted">
+                      <img
+                        src={photoSrc}
+                        alt={`Receipt photo ${index + 1}`}
+                        className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                        loading="lazy"
+                        data-testid={`photo-${index}`}
+                        onError={(e) => {
+                          console.error('Photo failed to load:', photoSrc?.substring(0, 50) + '...');
+                          e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSIjZjNmNGY2Ii8+CjxwYXRoIGQ9Ik0xMiA5VjEzTTEyIDE3SDE2TTEyIDdIOCIgc3Ryb2tlPSIjNjM2YzgzIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4K';
+                        }}
+                      />
+                    </div>
+                    {photoTimestamp && (
+                      <p className="text-xs text-muted-foreground mt-1 text-center">
+                        {format(new Date(photoTimestamp), 'MMM dd, HH:mm')}
+                      </p>
+                    )}
                   </div>
-                  {photo.timestamp && (
-                    <p className="text-xs text-muted-foreground mt-1 text-center">
-                      {format(new Date(photo.timestamp), 'MMM dd, HH:mm')}
-                    </p>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>
