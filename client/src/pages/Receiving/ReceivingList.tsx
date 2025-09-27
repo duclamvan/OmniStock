@@ -2785,18 +2785,12 @@ export default function ReceivingList() {
                             </div>
                           </div>
                         </div>
-                        {shipment.receiptId ? (
-                          <Link href={`/receiving/details/${shipment.receiptId}`}>
-                            <Button size="sm" variant="outline" className="shadow-sm" data-testid={`button-view-details-${shipment.id}`}>
-                              <Eye className="h-4 w-4 mr-1" />
-                              View Receipt
-                            </Button>
-                          </Link>
-                        ) : (
-                          <Button size="sm" variant="outline" disabled data-testid={`button-no-receipt-${shipment.id}`}>
-                            No Receipt
+                        <Link href={`/receiving/details/${shipment.receiptId || shipment.id}`}>
+                          <Button size="sm" variant="outline" className="shadow-sm" data-testid={`button-view-details-${shipment.id}`}>
+                            <Eye className="h-4 w-4 mr-1" />
+                            View Receipt
                           </Button>
-                        )}
+                        </Link>
                       </div>
 
                       {/* Additional Info Bar - Always visible with database info */}
