@@ -1664,6 +1664,11 @@ export default function ReceivingList() {
               {sortedShipments
                 .map((shipment: any) => {
                   const isExpanded = expandedShipments.has(shipment.id);
+                  
+                  // Debug: Log shipment data to verify IDs are correct
+                  if (!shipment || !shipment.id) {
+                    console.error('Invalid shipment in sortedShipments:', shipment);
+                  }
 
                   return (
                     <Card key={shipment.id} id={`shipment-${shipment.id}`} className="border hover:shadow-md transition-shadow">
@@ -1737,15 +1742,18 @@ export default function ReceivingList() {
                             </div>
                           </div>
                           <div className="flex items-center gap-2 flex-wrap justify-end">
-                            <Link href={`/receiving/start/${shipment.id}`}>
-                              <Button 
-                                size="sm" 
-                                className="bg-sky-600 hover:bg-sky-700 text-white shadow-sm hover:shadow-md transition-all"
-                              >
-                                <Plus className="h-4 w-4 mr-1" />
-                                Start Receiving
-                              </Button>
-                            </Link>
+                            <Button 
+                              size="sm" 
+                              className="bg-sky-600 hover:bg-sky-700 text-white shadow-sm hover:shadow-md transition-all"
+                              data-testid={`button-start-receiving-${shipment.id}`}
+                              onClick={() => {
+                                console.log(`Starting receiving for shipment ${shipment.id}: ${shipment.shipmentName}`);
+                                navigate(`/receiving/start/${shipment.id}`);
+                              }}
+                            >
+                              <Plus className="h-4 w-4 mr-1" />
+                              Start Receiving
+                            </Button>
                           </div>
                         </div>
 
