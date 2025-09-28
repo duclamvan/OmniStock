@@ -56,7 +56,12 @@ import {
   Volume2,
   VolumeX,
   Wifi,
-  WifiOff
+  WifiOff,
+  Menu,
+  X as CloseIcon,
+  ChevronUp,
+  ChevronDown,
+  GripHorizontal
 } from 'lucide-react';
 import MarginPill from '@/components/orders/MarginPill';
 import { format } from 'date-fns';
@@ -64,6 +69,7 @@ import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useBarcodeScanner } from '@/hooks/useBarcodeScanner';
 import { ProductCard } from '@/components/ProductCard';
 import { soundEffects } from '@/utils/soundEffects';
@@ -77,6 +83,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from '@/lib/utils';
 
 interface CartItem {
@@ -199,6 +206,13 @@ export default function POS() {
   const [enableSounds, setEnableSounds] = useState(true);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [favoriteProductIds, setFavoriteProductIds] = useState<string[]>([]);
+  
+  // Mobile responsiveness state
+  const isMobile = useIsMobile();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [screenOrientation, setScreenOrientation] = useState<'portrait' | 'landscape'>('landscape');
+  const [deviceType, setDeviceType] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
 
   // Refs for optimization
   const receiptRef = useRef<HTMLDivElement>(null);
@@ -211,6 +225,69 @@ export default function POS() {
 
   // Get today's date
   const today = format(new Date(), 'yyyy-MM-dd');
+  
+  // Device detection and responsive handling
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      
+      // Determine device type based on screen dimensions
+      if (width < 768) {
+        setDeviceType('mobile');
+      } else if (width < 1024) {
+        setDeviceType('tablet');
+      } else {
+        setDeviceType('desktop');
+      }
+      
+      // Determine orientation
+      setScreenOrientation(width > height ? 'landscape' : 'portrait');
+    };
+    
+    // Extract orientation change handler to match add/remove
+    const handleOrientationChange = () => {
+      // Delay orientation detection to account for browser behavior
+      setTimeout(handleResize, 100);
+    };
+    
+    // Initial detection
+    handleResize();
+    
+    // Listen for resize events
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleOrientationChange);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleOrientationChange);
+    };
+  }, []);
+  
+  // Auto-close mobile panels when switching to desktop
+  useEffect(() => {
+    if (deviceType === 'desktop') {
+      setIsSidebarOpen(false);
+      setIsCartOpen(false);
+    }
+  }, [deviceType]);
+  
+  // Handle escape key to close mobile panels
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsSidebarOpen(false);
+        setIsCartOpen(false);
+      }
+    };
+    
+    if (isSidebarOpen || isCartOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isSidebarOpen, isCartOpen]);
+  
+  // Mobile helper functions (quickSetPaymentMethod moved to later in the file as useCallback)
 
   // Fetch products with landing costs
   const { data: products = [] } = useQuery<Product[]>({
@@ -855,34 +932,104 @@ export default function POS() {
   }, [handleKeyPress]);
 
   return (
-    <div className="h-screen pos-premium-bg">
-      {/* Premium Professional Header */}
+    <div className={cn(
+      "h-screen pos-premium-bg",
+      // Mobile layout: flex column
+      "flex flex-col md:grid",
+      // Tablet portrait: grid with rows  
+      "md:tablet-12-portrait:grid-rows-[auto_1fr] md:tablet-13-portrait:grid-rows-[auto_1fr]",
+      // Tablet landscape: grid with 3 columns
+      "md:tablet-12-landscape:grid-cols-[320px_1fr_380px] md:tablet-13-landscape:grid-cols-[320px_1fr_380px]",
+      // Desktop: grid with 3 columns (narrower sidebar)
+      "lg:grid-cols-[280px_1fr_400px]"
+    )}>
+      {/* Responsive Professional Header */}
       <div className="sticky top-0 z-50 pos-header-gradient backdrop-blur-xl border-b-2 border-white/20 pos-shadow-large">
-        <div className="flex items-center justify-between px-8 py-5">
+        <div className={cn(
+          "flex items-center justify-between",
+          "px-4 py-3 md:px-8 md:py-5"
+        )}>
+          {/* Mobile Menu Button */}
+          {deviceType === 'mobile' && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-white hover:bg-white/10 touch-target-medium"
+              onClick={() => setIsSidebarOpen(true)}
+              data-testid="mobile-menu-button"
+            >
+              <Menu className="h-6 w-6" />
+            </Button>
+          )}
+          
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-4">
-              {/* Premium Logo Badge */}
-              <div className="relative h-12 w-12 rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center pos-shadow-medium ring-2 ring-white/20">
-                <Receipt className="h-6 w-6 text-white drop-shadow-sm" />
-                <div className="absolute -top-1 -right-1 h-4 w-4 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
-                  <Zap className="h-2 w-2 text-white" />
+              {/* Premium Logo Badge - Responsive */}
+              <div className={cn(
+                "relative rounded-xl bg-white/15 backdrop-blur-sm flex items-center justify-center pos-shadow-medium ring-2 ring-white/20",
+                "h-8 w-8 md:h-12 md:w-12"
+              )}>
+                <Receipt className={cn(
+                  "text-white drop-shadow-sm",
+                  "h-4 w-4 md:h-6 md:w-6"
+                )} />
+                <div className={cn(
+                  "absolute bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center",
+                  "-top-0.5 -right-0.5 h-3 w-3 md:-top-1 md:-right-1 md:h-4 md:w-4"
+                )}>
+                  <Zap className={cn(
+                    "text-white",
+                    "h-1.5 w-1.5 md:h-2 md:w-2"
+                  )} />
                 </div>
               </div>
               
-              {/* Enhanced Branding */}
-              <div className="text-white">
-                <h1 className="text-2xl font-bold tracking-tight drop-shadow-sm">RETAIL PRO</h1>
-                <p className="text-sm text-white/90 font-medium tracking-wide">Premium Point of Sale</p>
-              </div>
+              {/* Enhanced Branding - Hide on small mobile */}
+              {(deviceType !== 'mobile' || screenOrientation === 'landscape') && (
+                <div className="text-white">
+                  <h1 className={cn(
+                    "font-bold tracking-tight drop-shadow-sm",
+                    deviceType === 'mobile' ? 'text-lg' : 'text-2xl'
+                  )}>RETAIL PRO</h1>
+                  <p className={cn(
+                    "text-white/90 font-medium tracking-wide",
+                    deviceType === 'mobile' ? 'text-xs' : 'text-sm'
+                  )}>Premium Point of Sale</p>
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="flex items-center gap-6">
-            {/* Enhanced Currency Selector */}
-            <div className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-lg px-3 py-2 border border-white/20">
+          <div className="flex items-center gap-3">
+            {/* Mobile Cart Button */}
+            {deviceType === 'mobile' && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="relative text-white hover:bg-white/10 touch-target-medium"
+                onClick={() => setIsCartOpen(true)}
+                data-testid="mobile-cart-button"
+              >
+                <ShoppingCart className="h-6 w-6" />
+                {cart.length > 0 && (
+                  <div className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs font-bold">{cart.length}</span>
+                  </div>
+                )}
+              </Button>
+            )}
+            
+            {/* Enhanced Currency Selector - Responsive */}
+            <div className={cn(
+              "flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20",
+              deviceType === 'mobile' ? 'px-2 py-1.5' : 'px-3 py-2'
+            )}>
               <Euro className="h-4 w-4 text-white/90" />
               <Select value={currency} onValueChange={(v) => setCurrency(v as 'EUR' | 'CZK')}>
-                <SelectTrigger className="w-20 h-8 bg-transparent border-white/20 text-white focus:border-white/40" data-testid="select-currency">
+                <SelectTrigger className={cn(
+                  "bg-transparent border-white/20 text-white focus:border-white/40",
+                  deviceType === 'mobile' ? 'w-16 h-6 text-sm' : 'w-20 h-8'
+                )} data-testid="select-currency">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-white/95 backdrop-blur-sm">
@@ -892,18 +1039,26 @@ export default function POS() {
               </Select>
             </div>
 
-            {/* Professional Date & Time Display */}
-            <div className="flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2 border border-white/20">
-              <div className="flex items-center gap-2 text-sm text-white/90">
-                <Calendar className="h-4 w-4" />
-                <span className="font-medium">{format(new Date(), 'MMM dd, yyyy')}</span>
+            {/* Professional Date & Time Display - Hide on small mobile */}
+            {(deviceType !== 'mobile' || screenOrientation === 'landscape') && (
+              <div className={cn(
+                "flex items-center gap-4 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20",
+                deviceType === 'mobile' ? 'px-2 py-1.5' : 'px-4 py-2'
+              )}>
+                <div className={cn(
+                  "flex items-center gap-2 text-white/90",
+                  deviceType === 'mobile' ? 'text-xs' : 'text-sm'
+                )}>
+                  <Calendar className="h-4 w-4" />
+                  <span className="font-medium">{format(new Date(), deviceType === 'mobile' ? 'MMM dd' : 'MMM dd, yyyy')}</span>
+                </div>
+                <div className="w-px h-4 bg-white/30"></div>
+                <div className="flex items-center gap-2 text-sm text-white/90">
+                  <Clock className="h-4 w-4" />
+                  <span className="font-medium font-mono">{format(new Date(), 'HH:mm')}</span>
+                </div>
               </div>
-              <div className="w-px h-4 bg-white/30"></div>
-              <div className="flex items-center gap-2 text-sm text-white/90">
-                <Clock className="h-4 w-4" />
-                <span className="font-medium font-mono">{format(new Date(), 'HH:mm')}</span>
-              </div>
-            </div>
+            )}
 
             {/* Enhanced Quick Actions */}
             <div className="flex items-center gap-3">
@@ -1010,6 +1165,218 @@ export default function POS() {
           </div>
         </div>
       </div>
+
+      {/* Mobile Sidebar Drawer */}
+      <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
+        <SheetContent side="left" className="w-80 p-0 bg-white">
+          <SheetHeader className="p-6 border-b">
+            <SheetTitle className="text-lg font-bold text-slate-900">Quick Controls</SheetTitle>
+          </SheetHeader>
+          <div className="p-6 space-y-6">
+            {/* Mobile Quick Access Buttons */}
+            <div>
+              <h4 className="text-sm font-semibold text-slate-700 mb-3 tracking-wide uppercase">Quick Access</h4>
+              <div className="grid grid-cols-2 gap-3">
+                <Button 
+                  className={cn(
+                    "justify-start h-12 transition-all duration-200 touch-target-large",
+                    selectedTab === 'favorites' ? 'pos-button-primary' : 'pos-button-secondary'
+                  )}
+                  onClick={() => {
+                    setSelectedTab('favorites');
+                    setIsSidebarOpen(false);
+                  }}
+                  data-testid="mobile-favorites"
+                >
+                  <Star className="h-4 w-4 mr-2" />
+                  Favorites
+                </Button>
+                <Button 
+                  className={cn(
+                    "justify-start h-12 transition-all duration-200 touch-target-large",
+                    selectedTab === 'categories' ? 'pos-button-primary' : 'pos-button-secondary'
+                  )}
+                  onClick={() => {
+                    setSelectedTab('categories');
+                    setIsSidebarOpen(false);
+                  }}
+                  data-testid="mobile-categories"
+                >
+                  <Grid3X3 className="h-4 w-4 mr-2" />
+                  Products
+                </Button>
+                <Button 
+                  className={cn(
+                    "justify-start h-12 transition-all duration-200 touch-target-large",
+                    selectedTab === 'bundles' ? 'pos-button-primary' : 'pos-button-secondary'
+                  )}
+                  onClick={() => {
+                    setSelectedTab('bundles');
+                    setIsSidebarOpen(false);
+                  }}
+                  data-testid="mobile-bundles"
+                >
+                  <Package className="h-4 w-4 mr-2" />
+                  Bundles
+                </Button>
+                <Button 
+                  className="pos-button-secondary justify-start h-12 transition-all duration-200 touch-target-large"
+                  onClick={() => {
+                    resetScan();
+                    setIsSidebarOpen(false);
+                  }}
+                  data-testid="mobile-scan"
+                >
+                  <Scan className="h-4 w-4 mr-2" />
+                  Scan
+                </Button>
+              </div>
+            </div>
+            
+            {/* Mobile Quick Quantity */}
+            <div>
+              <h4 className="text-sm font-semibold text-slate-700 mb-3 tracking-wide uppercase">Quick Quantity</h4>
+              <div className="grid grid-cols-2 gap-3">
+                {[1, 2, 5, 10].map(qty => (
+                  <Button
+                    key={qty}
+                    variant="outline"
+                    className="h-14 font-bold text-lg pos-button-secondary hover:pos-button-primary transition-all duration-200 touch-target-large"
+                    onClick={() => {
+                      quickAddQuantity(qty);
+                      setIsSidebarOpen(false);
+                    }}
+                    disabled={cart.length === 0}
+                    data-testid={`mobile-quick-quantity-${qty}`}
+                  >
+                    +{qty}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            
+            {/* Mobile Payment Shortcuts */}
+            <div>
+              <h4 className="text-sm font-semibold text-slate-700 mb-3 tracking-wide uppercase">Payment Method</h4>
+              <div className="space-y-3">
+                <Button
+                  variant={paymentMethod === 'cash' ? 'default' : 'outline'}
+                  className="w-full justify-start h-14 font-medium transition-all duration-200 touch-target-large"
+                  onClick={() => quickSetPaymentMethod('cash')}
+                  data-testid="mobile-payment-cash"
+                >
+                  <Banknote className="h-5 w-5 mr-3" />
+                  Cash Payment
+                </Button>
+                <Button
+                  variant={paymentMethod === 'pay_later' ? 'default' : 'outline'}
+                  className="w-full justify-start h-14 font-medium transition-all duration-200 touch-target-large"
+                  onClick={() => quickSetPaymentMethod('pay_later')}
+                  data-testid="mobile-payment-later"
+                >
+                  <CreditCard className="h-5 w-5 mr-3" />
+                  Pay Later
+                </Button>
+                <Button
+                  variant={paymentMethod === 'bank_transfer' ? 'default' : 'outline'}
+                  className="w-full justify-start h-14 font-medium transition-all duration-200 touch-target-large"
+                  onClick={() => quickSetPaymentMethod('bank_transfer')}
+                  data-testid="mobile-payment-bank"
+                >
+                  <Building className="h-5 w-5 mr-3" />
+                  Bank Transfer
+                </Button>
+              </div>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+      
+      {/* Mobile Cart Drawer */}
+      <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
+        <SheetContent side="right" className="w-full sm:w-96 p-0 bg-white">
+          <SheetHeader className="p-4 border-b">
+            <div className="flex items-center justify-between">
+              <SheetTitle className="text-lg font-bold text-slate-900">Shopping Cart</SheetTitle>
+              <Badge className="pos-badge-info">{cart.length} items</Badge>
+            </div>
+          </SheetHeader>
+          
+          <div className="flex flex-col h-full">
+            {/* Mobile Cart Items */}
+            <ScrollArea className="flex-1 p-4">
+              {cart.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <ShoppingCart className="h-16 w-16 text-slate-300 mb-4" />
+                  <h3 className="text-lg font-medium text-slate-500 mb-2">Cart is Empty</h3>
+                  <p className="text-sm text-slate-400">Add products to start building your order</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {cart.map((item) => (
+                    <CartItemComponent
+                      key={item.id}
+                      item={item}
+                      currency={currency}
+                      onUpdateQuantity={updateQuantity}
+                      onRemove={removeFromCart}
+                    />
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+            
+            {/* Mobile Cart Footer */}
+            {cart.length > 0 && (
+              <div className="border-t bg-white p-4 space-y-4">
+                {/* Mobile Totals */}
+                <div className="bg-slate-50 rounded-lg p-4 space-y-2">
+                  <div className="flex justify-between text-sm text-slate-600">
+                    <span>Subtotal:</span>
+                    <span className="font-medium">{currency} {subtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-slate-600">
+                    <span>VAT (21%):</span>
+                    <span className="font-medium">{currency} {tax.toFixed(2)}</span>
+                  </div>
+                  <div className="border-t border-slate-200 pt-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg font-bold text-slate-900">Total:</span>
+                      <span className="text-xl font-bold text-green-600" data-testid="mobile-cart-total">
+                        {currency} {total.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Mobile Action Buttons */}
+                <div className="flex gap-3">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1 h-12 text-sm font-bold border-2 border-red-200 text-red-600 hover:bg-red-50 transition-all duration-200 touch-target-large"
+                    onClick={() => setCart([])}
+                    data-testid="mobile-clear-cart"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Clear
+                  </Button>
+                  <Button 
+                    className="flex-1 h-12 text-sm font-bold pos-button-primary transition-all duration-200 touch-target-large"
+                    onClick={() => {
+                      handleCheckout();
+                      setIsCartOpen(false);
+                    }}
+                    data-testid="mobile-checkout"
+                  >
+                    <Receipt className="mr-2 h-4 w-4" />
+                    Checkout
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* 3-Panel Professional Layout */}
       <div className="flex h-[calc(100vh-156px)]">
@@ -1246,8 +1613,11 @@ export default function POS() {
 
         {/* Center Panel - Product Selection */}
         <div className="flex-1 flex flex-col bg-slate-50 dark:bg-slate-800/50">
-          {/* Product View Tabs */}
-          <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 px-6 py-4">
+          {/* Product View Tabs - Responsive */}
+          <div className={cn(
+            "bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700",
+            deviceType === 'mobile' ? 'px-4 py-3' : 'px-6 py-4'
+          )}>
             <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
               <TabsList className="grid w-full max-w-md grid-cols-3 bg-slate-100 dark:bg-slate-800">
                 <TabsTrigger value="favorites" className="flex items-center gap-2" data-testid="tab-favorites">
@@ -1264,9 +1634,19 @@ export default function POS() {
                 </TabsTrigger>
               </TabsList>
 
-              <ScrollArea className="flex-1 mt-6">
-                <TabsContent value="favorites" className="mt-0 px-6 pb-6">
-                  <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <ScrollArea className={cn(
+                "flex-1",
+                deviceType === 'mobile' ? 'mt-4' : 'mt-6'
+              )}>
+                <TabsContent value="favorites" className={cn(
+                  "mt-0",
+                  deviceType === 'mobile' ? 'px-4 pb-4' : 'px-6 pb-6'
+                )}>
+                  <div className={cn(
+                    "grid gap-4",
+                    // Mobile: 2 columns, tablet: 3-4 columns, desktop: 4-5 columns
+                    "grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 p-4 md:p-6"
+                  )}>
                     {favoriteProducts.map(product => {
                       const price = currency === 'EUR' 
                         ? parseFloat(product.priceEur || '0')
@@ -1461,8 +1841,11 @@ export default function POS() {
           </div>
         </div>
 
-        {/* Professional Premium Cart Panel */}
-        <div className="w-full lg:w-96 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-700 flex flex-col pos-shadow-xl order-2 lg:order-3">
+        {/* Professional Premium Cart Panel - Hide on mobile */}
+        <div className={cn(
+          "bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-700 flex flex-col pos-shadow-xl order-2 lg:order-3",
+          deviceType === 'mobile' ? 'hidden' : 'w-full lg:w-96'
+        )}>
           {/* Premium Cart Header */}
           <div className="sticky top-0 z-10 bg-gradient-to-r from-slate-50 to-white dark:from-slate-800 dark:to-slate-900 border-b-2 border-slate-200 dark:border-slate-700 px-6 py-5 pos-shadow-soft">
             <div className="flex items-center justify-between">

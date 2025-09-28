@@ -5,6 +5,15 @@ export default {
   content: ["./client/index.html", "./client/src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {
+      screens: {
+        // Custom POS tablet breakpoints with orientation
+        'tablet-10-portrait': {'raw': '(min-width: 640px) and (max-width: 768px) and (orientation: portrait)'},
+        'tablet-10-landscape': {'raw': '(min-width: 768px) and (max-width: 1024px) and (orientation: landscape)'},
+        'tablet-12-portrait': {'raw': '(min-width: 768px) and (max-width: 820px) and (orientation: portrait)'},
+        'tablet-12-landscape': {'raw': '(min-width: 820px) and (max-width: 1180px) and (orientation: landscape)'},
+        'tablet-13-portrait': {'raw': '(min-width: 820px) and (max-width: 1024px) and (orientation: portrait)'},
+        'tablet-13-landscape': {'raw': '(min-width: 1024px) and (max-width: 1366px) and (orientation: landscape)'},
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
