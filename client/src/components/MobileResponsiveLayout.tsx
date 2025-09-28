@@ -355,8 +355,8 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                   )} />
                 </Button>
               </CollapsibleTrigger>
-              <CollapsibleContent className="mt-1">
-                <div className="ml-12 space-y-1 border-l border-gray-200 dark:border-gray-700 pl-4">
+              <CollapsibleContent className="mt-2">
+                <div className="ml-6 space-y-1">
                   {item.children.map((child) => {
                     const isChildActive = location === child.href;
                     return (
@@ -373,14 +373,14 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                             variant="ghost"
                             size="sm"
                             className={cn(
-                              "w-full justify-start text-gray-600 dark:text-gray-300 px-3 py-2 rounded-md touch-target transition-colors text-sm",
-                              "hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white",
-                              isChildActive && "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-medium"
+                              "w-full justify-start text-gray-600 dark:text-gray-300 px-4 py-2.5 rounded-lg touch-target transition-all duration-200 text-sm relative",
+                              "hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white",
+                              "before:content-[''] before:absolute before:left-2 before:top-1/2 before:-translate-y-1/2 before:w-1 before:h-1 before:bg-gray-400 before:rounded-full before:transition-colors",
+                              isChildActive && "bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white font-medium before:bg-current"
                             )}
                             onClick={() => setIsMobileMenuOpen(false)}
                           >
-                            <div className="w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600 mr-3 flex-shrink-0"></div>
-                            {child.name}
+                            <span className="ml-3">{child.name}</span>
                           </Button>
                         </Link>
                       </div>
