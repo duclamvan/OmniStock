@@ -76,16 +76,22 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Security middleware
+  // Security middleware with development-friendly CSP
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  
   app.use(helmet({
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
-        scriptSrc: ["'self'"],
+        scriptSrc: isDevelopment 
+          ? ["'self'", "'unsafe-inline'", "'unsafe-eval'", "blob:", "data:"]
+          : ["'self'"],
         imgSrc: ["'self'", "data:", "blob:"],
-        connectSrc: ["'self'"],
-        fontSrc: ["'self'"],
+        connectSrc: isDevelopment 
+          ? ["'self'", "ws:", "wss:", "http:", "https:"]
+          : ["'self'"],
+        fontSrc: ["'self'", "data:"],
         objectSrc: ["'none'"],
         mediaSrc: ["'self'"],
         frameSrc: ["'none'"],
