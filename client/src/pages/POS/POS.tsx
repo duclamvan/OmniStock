@@ -29,7 +29,7 @@ import { format } from 'date-fns';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { Product, ProductVariant, ProductBundle } from '@shared/schema';
+import type { Product } from '@shared/schema';
 import {
   Dialog,
   DialogContent,
@@ -77,18 +77,18 @@ export default function POS() {
   });
 
   // Fetch bundles
-  const { data: bundles = [] } = useQuery<ProductBundle[]>({
+  const { data: bundles = [] } = useQuery<Product[]>({
     queryKey: ['/api/bundles']
   });
 
   // Get unique categories from products
-  const categories = ['all', ...Array.from(new Set(products.map(p => p.category).filter(Boolean)))];
+  const categories = ['all', ...Array.from(new Set(products.map(p => p.categoryId).filter(Boolean)))]; 
 
   // Filter products based on search and category
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           product.sku?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
+    const matchesCategory = selectedCategory === 'all' || product.categoryId === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
@@ -177,10 +177,10 @@ export default function POS() {
       
       return await apiRequest('POST', '/api/orders', orderData);
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast({
         title: 'Order Created',
-        description: `Order #${data.orderId} has been created successfully`
+        description: `Order #${data.orderId || data.id} has been created successfully`
       });
       printReceipt();
       setCart([]);
@@ -472,9 +472,9 @@ export default function POS() {
                       key={category}
                       size="sm"
                       variant={selectedCategory === category ? 'default' : 'outline'}
-                      onClick={() => setSelectedCategory(category)}
+                      onClick={() => setSelectedCategory(category || 'all')}
                     >
-                      {category === 'all' ? 'All Products' : category}
+                      {category === 'all' ? 'All Products' : category || 'Uncategorized'}
                     </Button>
                   ))}
                 </div>
@@ -503,9 +503,9 @@ export default function POS() {
                             ? parseFloat(product.priceEur || '0').toFixed(2)
                             : parseFloat(product.priceCzk || '0').toFixed(2)}
                         </p>
-                        {product.category && (
+                        {product.categoryId && (
                           <Badge variant="secondary" className="mt-2 text-xs">
-                            {product.category}
+                            {product.categoryId}
                           </Badge>
                         )}
                       </CardContent>
@@ -533,17 +533,15 @@ export default function POS() {
                   >
                     <CardContent className="p-4">
                       <h3 className="font-semibold text-sm line-clamp-1">{bundle.name}</h3>
-                      <p className="text-xs text-muted-foreground mt-1">{bundle.bundleId}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{bundle.sku}</p>
                       <p className="text-lg font-bold mt-2">
                         {currency} {currency === 'EUR' 
                           ? parseFloat(bundle.priceEur || '0').toFixed(2)
                           : parseFloat(bundle.priceCzk || '0').toFixed(2)}
                       </p>
-                      {bundle.discountPercentage && parseFloat(bundle.discountPercentage) > 0 && (
-                        <Badge variant="default" className="mt-2 text-xs">
-                          {parseFloat(bundle.discountPercentage).toFixed(0)}% OFF
-                        </Badge>
-                      )}
+                      <Badge variant="default" className="mt-2 text-xs">
+                        Bundle
+                      </Badge>
                     </CardContent>
                   </Card>
                 ))}
@@ -604,7 +602,9 @@ export default function POS() {
                               />
                             )}
                             {item.landingCost && item.price < item.landingCost && (
-                              <AlertTriangle className="h-3 w-3 text-red-500" title="Selling below cost!" />
+                              <div className="flex items-center" title="Selling below cost!">
+                                <AlertTriangle className="h-3 w-3 text-red-500" />
+                              </div>
                             )}
                           </div>
                         </div>
