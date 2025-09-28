@@ -854,3 +854,266 @@ body > div[style*="z-index: 999999"] {
 .toast-3d {
   contain: layout style paint !important;
 }
+
+/* POS System Advanced Touch Optimizations */
+@layer components {
+  /* Enhanced touch targets for mobile/tablet POS usage */
+  .touch-target-small {
+    @apply min-h-[32px] min-w-[32px] touch-manipulation;
+  }
+  
+  .touch-target-medium {
+    @apply min-h-[44px] min-w-[44px] touch-manipulation;
+  }
+  
+  .touch-target-large {
+    @apply min-h-[48px] min-w-[48px] touch-manipulation;
+  }
+
+  /* Barcode scanning visual feedback */
+  .scanning-active {
+    @apply ring-2 ring-blue-500 ring-opacity-50;
+    animation: scanningPulse 1.5s ease-in-out infinite;
+  }
+
+  .scan-success {
+    @apply ring-2 ring-green-500 ring-opacity-75;
+    animation: scanSuccess 0.6s ease-out;
+  }
+
+  .scan-error {
+    @apply ring-2 ring-red-500 ring-opacity-75;
+    animation: scanError 0.6s ease-out;
+  }
+
+  /* Quick access highlights for keyboard shortcuts */
+  .quick-access-highlight {
+    @apply ring-2 ring-yellow-400 ring-opacity-60 bg-yellow-50 dark:bg-yellow-900/20;
+    animation: quickAccessGlow 0.8s ease-out;
+  }
+
+  /* Keyboard navigation highlights */
+  .keyboard-selected {
+    @apply ring-2 ring-blue-500 ring-opacity-75 scale-[1.02];
+    animation: keyboardSelect 0.2s ease-out;
+  }
+
+  /* Performance optimizations for large product catalogs */
+  .pos-virtualized-container {
+    contain: strict;
+    will-change: transform;
+    transform: translateZ(0);
+  }
+
+  .pos-product-card-optimized {
+    contain: layout style paint;
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+
+  /* Touch-friendly swipe gestures */
+  .pos-swipe-area {
+    touch-action: pan-x pan-y;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Enhanced button states for touch */
+  .pos-touch-button {
+    @apply transition-all duration-150 ease-out;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  .pos-touch-button:active {
+    transform: scale(0.98);
+    transition-duration: 0.1s;
+  }
+
+  /* Mobile quantity controls */
+  .pos-quantity-control {
+    @apply min-h-[56px] min-w-[56px] text-lg font-bold;
+    touch-action: manipulation;
+  }
+
+  @media (max-width: 768px) {
+    .touch-target-small {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    
+    .touch-target-medium {
+      min-height: 48px;
+      min-width: 48px;
+    }
+    
+    .touch-target-large {
+      min-height: 56px;
+      min-width: 56px;
+    }
+
+    .pos-quantity-control {
+      @apply min-h-[64px] min-w-[64px] text-xl;
+    }
+  }
+}
+
+/* POS-specific animations for speed and feedback */
+@keyframes scanningPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes scanSuccess {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  30% {
+    transform: scale(1.1);
+    opacity: 0.9;
+  }
+  60% {
+    transform: scale(1.05);
+    opacity: 0.95;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes scanError {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-3px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(3px);
+  }
+}
+
+@keyframes quickAccessGlow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(251, 191, 36, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(251, 191, 36, 0);
+  }
+}
+
+@keyframes keyboardSelect {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1.02);
+  }
+}
+
+/* Performance optimizations for POS */
+@layer utilities {
+  .gpu-accelerated {
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    will-change: transform;
+  }
+
+  .disable-text-selection {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+
+  .enable-touch-manipulation {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .pos-smooth-scrolling {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Accessibility enhancements for POS */
+@media (prefers-reduced-motion: reduce) {
+  .scanning-active,
+  .scan-success,
+  .scan-error,
+  .quick-access-highlight,
+  .keyboard-selected {
+    animation: none;
+  }
+  
+  .pos-card-interactive:hover {
+    transform: none;
+  }
+  
+  .pos-touch-button:active {
+    transform: none;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .pos-card-interactive {
+    border-width: 3px;
+  }
+  
+  .keyboard-selected {
+    outline: 3px solid currentColor;
+    outline-offset: 2px;
+  }
+}
+
+/* Custom scrollbar for POS interface */
+.pos-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.pos-scrollbar::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+  border-radius: 4px;
+}
+
+.pos-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.pos-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Dark mode scrollbar */
+.dark .pos-scrollbar::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+}
+
+.dark .pos-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.4);
+}
+
+.dark .pos-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.6);
+}

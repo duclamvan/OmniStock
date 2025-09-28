@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -38,13 +38,36 @@ import {
   CheckCircle2,
   ArrowRight,
   Euro,
-  DollarSign
+  DollarSign,
+  ArrowUp,
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight as ArrowRightIcon,
+  KeyRound,
+  Keyboard,
+  TouchScreen,
+  Gauge,
+  RotateCcw,
+  FastForward,
+  Target,
+  Lightbulb,
+  Mic,
+  MicOff,
+  Volume2,
+  VolumeX,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 import MarginPill from '@/components/orders/MarginPill';
 import { format } from 'date-fns';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useDebounce } from '@/hooks/useDebounce';
+import { useBarcodeScanner } from '@/hooks/useBarcodeScanner';
+import { ProductCard } from '@/components/ProductCard';
+import { soundEffects } from '@/utils/soundEffects';
+import { normalizeVietnamese } from '@/lib/searchUtils';
 import type { Product } from '@shared/schema';
 import {
   Dialog,
@@ -69,8 +92,100 @@ interface CartItem {
   landingCost?: number | null;
 }
 
+// Memoized Cart Item Component for performance
+const CartItemComponent = memo(function CartItemComponent({
+  item,
+  currency,
+  onUpdateQuantity,
+  onRemove
+}: {
+  item: CartItem;
+  currency: 'EUR' | 'CZK';
+  onUpdateQuantity: (id: string, quantity: number) => void;
+  onRemove: (id: string) => void;
+}) {
+  return (
+    <div className="pos-card-premium p-4 rounded-lg border border-slate-200 dark:border-slate-700">
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex-1 min-w-0">
+          <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm truncate">{item.name}</h4>
+          {item.sku && (
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-1">SKU: {item.sku}</p>
+          )}
+          <div className="flex items-center gap-2 mt-2">
+            <Badge className="pos-badge-info text-xs px-2 py-1">
+              {currency} {item.price.toFixed(2)} each
+            </Badge>
+            {item.landingCost && (
+              <Badge variant="outline" className="text-xs px-2 py-1">
+                Cost: {currency} {item.landingCost.toFixed(2)}
+              </Badge>
+            )}
+            {item.landingCost && item.price < item.landingCost && (
+              <div className="flex items-center" title="Selling below cost!">
+                <AlertTriangle className="h-3 w-3 text-red-500" />
+              </div>
+            )}
+          </div>
+        </div>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-8 w-8 p-0 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 touch-target-medium"
+          onClick={() => onRemove(item.id)}
+          data-testid={`remove-item-${item.id}`}
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+      
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-10 w-10 p-0 pos-button-secondary hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all duration-200 touch-target-medium"
+            onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
+            data-testid={`decrease-quantity-${item.id}`}
+          >
+            <Minus className="h-4 w-4" />
+          </Button>
+          <div className="w-16 text-center">
+            <Input
+              type="number"
+              value={item.quantity}
+              onChange={(e) => onUpdateQuantity(item.id, parseInt(e.target.value) || 0)}
+              className="pos-input-premium h-10 text-center font-bold text-lg touch-target-medium"
+              data-testid={`quantity-input-${item.id}`}
+            />
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-10 w-10 p-0 pos-button-secondary hover:bg-green-50 hover:text-green-600 hover:border-green-200 transition-all duration-200 touch-target-medium"
+            onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
+            data-testid={`increase-quantity-${item.id}`}
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="text-right">
+          <p className="text-lg font-bold text-slate-900 dark:text-slate-100">
+            {currency} {(item.price * item.quantity).toFixed(2)}
+          </p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            {item.quantity} × {currency} {item.price.toFixed(2)}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+});
+
 export default function POS() {
   const { toast } = useToast();
+  
+  // Enhanced state management
   const [currency, setCurrency] = useState<'EUR' | 'CZK'>('EUR');
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'pay_later' | 'bank_transfer'>('cash');
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -80,8 +195,19 @@ export default function POS() {
   const [amountReceived, setAmountReceived] = useState('');
   const [selectedTab, setSelectedTab] = useState('favorites');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedProductIndex, setSelectedProductIndex] = useState(-1);
+  const [enableSounds, setEnableSounds] = useState(true);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [favoriteProductIds, setFavoriteProductIds] = useState<string[]>([]);
+
+  // Refs for optimization
   const receiptRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const productGridRef = useRef<HTMLDivElement>(null);
+  const lastFocusRef = useRef<HTMLElement | null>(null);
+
+  // Debounced search for performance
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   // Get today's date
   const today = format(new Date(), 'yyyy-MM-dd');
@@ -101,19 +227,113 @@ export default function POS() {
     queryKey: ['/api/bundles']
   });
 
-  // Get unique categories from products
-  const categories = ['all', ...Array.from(new Set(products.map(p => p.categoryId).filter(Boolean)))]; 
+  // Memoized calculations for performance
+  const categories = useMemo(() => 
+    ['all', ...Array.from(new Set(products.map(p => p.categoryId).filter(Boolean)))], 
+    [products]
+  );
 
-  // Filter products based on search and category
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          product.sku?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || product.categoryId === selectedCategory;
-    return matchesSearch && matchesCategory;
+  // Optimized search with debouncing and Vietnamese support
+  const filteredProducts = useMemo(() => {
+    if (!debouncedSearchQuery && selectedCategory === 'all') {
+      return products;
+    }
+    
+    return products.filter(product => {
+      const searchTerm = debouncedSearchQuery.toLowerCase();
+      const normalizedSearchTerm = normalizeVietnamese(searchTerm);
+      
+      const matchesSearch = !debouncedSearchQuery || 
+        product.name.toLowerCase().includes(searchTerm) ||
+        normalizeVietnamese(product.name.toLowerCase()).includes(normalizedSearchTerm) ||
+        product.sku?.toLowerCase().includes(searchTerm);
+        
+      const matchesCategory = selectedCategory === 'all' || product.categoryId === selectedCategory;
+      
+      return matchesSearch && matchesCategory;
+    });
+  }, [products, debouncedSearchQuery, selectedCategory]);
+
+  // Get favorite products (for demo, using first 12 products for F1-F12)
+  const favoriteProducts = useMemo(() => products.slice(0, 12), [products]);
+
+  // Initialize barcode scanner
+  const handleBarcodeScan = useCallback(async (barcode: string) => {
+    try {
+      // Find product by barcode or SKU
+      const product = products.find(p => 
+        p.barcode === barcode || 
+        p.sku === barcode ||
+        p.sku?.toLowerCase() === barcode.toLowerCase()
+      );
+
+      if (product) {
+        const price = currency === 'EUR' 
+          ? parseFloat(product.priceEur || '0')
+          : parseFloat(product.priceCzk || '0');
+
+        addToCart({
+          id: product.id,
+          name: product.name,
+          price: price,
+          type: 'product',
+          sku: product.sku,
+          landingCost: product.latestLandingCost
+        });
+
+        if (enableSounds) {
+          await soundEffects.playSuccessBeep();
+        }
+        
+        toast({
+          title: 'Product Added',
+          description: `${product.name} added to cart`,
+          duration: 2000
+        });
+
+        // Auto-focus search after successful scan
+        setTimeout(() => {
+          searchInputRef.current?.focus();
+        }, 100);
+
+        return true;
+      } else {
+        if (enableSounds) {
+          await soundEffects.playErrorBeep();
+        }
+        
+        toast({
+          title: 'Product Not Found',
+          description: `No product found with barcode: ${barcode}`,
+          variant: 'destructive',
+          duration: 3000
+        });
+        
+        return false;
+      }
+    } catch (error) {
+      console.error('Barcode scan error:', error);
+      if (enableSounds) {
+        await soundEffects.playErrorBeep();
+      }
+      
+      toast({
+        title: 'Scan Error',
+        description: 'Error processing barcode scan',
+        variant: 'destructive'
+      });
+      
+      return false;
+    }
+  }, [products, currency, enableSounds, toast, searchInputRef]);
+
+  const { isScanning, scanStatus, resetScan } = useBarcodeScanner(handleBarcodeScan, {
+    minLength: 6,
+    maxLength: 50,
+    timeout: 100,
+    enableSound: enableSounds,
+    enableVisualFeedback: true
   });
-
-  // Get favorite products (for demo, using first 6 products)
-  const favoriteProducts = products.slice(0, 6);
 
   // Add item to cart - Memoized for performance
   const addToCart = useCallback((item: { 
@@ -135,12 +355,18 @@ export default function POS() {
       );
 
       if (existingItem) {
+        if (enableSounds) {
+          soundEffects.playDuplicateBeep();
+        }
         return prevCart.map(cartItem => 
           cartItem.id === existingItem.id 
             ? { ...cartItem, quantity: cartItem.quantity + 1 }
             : cartItem
         );
       } else {
+        if (enableSounds) {
+          soundEffects.playSuccessBeep();
+        }
         return [...prevCart, {
           id: item.id,
           productId: item.id,
@@ -153,7 +379,12 @@ export default function POS() {
         }];
       }
     });
-  }, [currency]);
+
+    // Auto-focus search after adding product for fast workflow
+    setTimeout(() => {
+      searchInputRef.current?.focus();
+    }, 100);
+  }, [currency, enableSounds, searchInputRef]);
 
   // Update quantity - Memoized for performance
   const updateQuantity = useCallback((id: string, quantity: number) => {
@@ -416,24 +647,207 @@ export default function POS() {
     createOrderMutation.mutate();
   }, [paymentMethod, amountReceived, total, toast, createOrderMutation]);
 
-  // Keyboard navigation - Optimized for performance
+  // Quick quantity adjustment functions
+  const quickAddQuantity = useCallback((amount: number) => {
+    if (cart.length > 0) {
+      const lastItem = cart[cart.length - 1];
+      updateQuantity(lastItem.id, lastItem.quantity + amount);
+      if (enableSounds) {
+        soundEffects.playSuccessBeep();
+      }
+    }
+  }, [cart, updateQuantity, enableSounds]);
+
+  // Quick payment method shortcuts
+  const quickSetPaymentMethod = useCallback((method: 'cash' | 'pay_later' | 'bank_transfer') => {
+    setPaymentMethod(method);
+    if (enableSounds) {
+      soundEffects.playNotificationSound();
+    }
+    toast({
+      title: 'Payment Method Changed',
+      description: `Set to ${method === 'pay_later' ? 'Pay Later' : method === 'bank_transfer' ? 'Bank Transfer' : 'Cash'}`,
+      duration: 1500
+    });
+  }, [setPaymentMethod, enableSounds, toast]);
+
+  // Enhanced keyboard navigation with all shortcuts
   const handleKeyPress = useCallback((e: KeyboardEvent) => {
+    // Prevent shortcuts when typing in input fields (except search)
+    const target = e.target as HTMLElement;
+    const isInputField = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
+    const isSearchInput = target.getAttribute('data-testid') === 'input-search';
+    
+    if (isInputField && !isSearchInput) return;
+
+    // F1-F12 for favorite products (first 12 products)
+    if (e.key.startsWith('F') && e.key.length <= 3) {
+      const fKeyNumber = parseInt(e.key.substring(1));
+      if (fKeyNumber >= 1 && fKeyNumber <= 12) {
+        e.preventDefault();
+        const product = favoriteProducts[fKeyNumber - 1];
+        if (product) {
+          const price = currency === 'EUR' 
+            ? parseFloat(product.priceEur || '0')
+            : parseFloat(product.priceCzk || '0');
+          
+          addToCart({
+            id: product.id,
+            name: product.name,
+            price: price,
+            type: 'product',
+            sku: product.sku,
+            landingCost: product.latestLandingCost
+          });
+
+          toast({
+            title: 'Quick Add',
+            description: `${product.name} added via ${e.key}`,
+            duration: 1500
+          });
+        }
+        return;
+      }
+    }
+
+    // Number pad shortcuts for quantities (1-9)
+    if (/^[1-9]$/.test(e.key) && e.shiftKey) {
+      e.preventDefault();
+      quickAddQuantity(parseInt(e.key));
+      return;
+    }
+
+    // Quick quantity presets with Ctrl + number
+    if (e.ctrlKey && /^[1-9]$/.test(e.key)) {
+      e.preventDefault();
+      const quantities = [1, 2, 5, 10, 20, 50, 100];
+      const amount = quantities[parseInt(e.key) - 1] || parseInt(e.key);
+      quickAddQuantity(amount);
+      return;
+    }
+
+    // Arrow key navigation for products
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      const maxIndex = filteredProducts.length - 1;
+      if (e.key === 'ArrowUp') {
+        setSelectedProductIndex(prev => prev <= 0 ? maxIndex : prev - 1);
+      } else {
+        setSelectedProductIndex(prev => prev >= maxIndex ? 0 : prev + 1);
+      }
+      return;
+    }
+
+    // Enter to add selected product
+    if (e.key === 'Enter' && selectedProductIndex >= 0 && !isInputField) {
+      e.preventDefault();
+      const product = filteredProducts[selectedProductIndex];
+      if (product) {
+        const price = currency === 'EUR' 
+          ? parseFloat(product.priceEur || '0')
+          : parseFloat(product.priceCzk || '0');
+        
+        addToCart({
+          id: product.id,
+          name: product.name,
+          price: price,
+          type: 'product',
+          sku: product.sku,
+          landingCost: product.latestLandingCost
+        });
+      }
+      return;
+    }
+
+    // Payment method shortcuts
+    if (e.ctrlKey && e.key === '1') {
+      e.preventDefault();
+      quickSetPaymentMethod('cash');
+      return;
+    }
+    if (e.ctrlKey && e.key === '2') {
+      e.preventDefault();
+      quickSetPaymentMethod('pay_later');
+      return;
+    }
+    if (e.ctrlKey && e.key === '3') {
+      e.preventDefault();
+      quickSetPaymentMethod('bank_transfer');
+      return;
+    }
+
     // Focus search on Ctrl+K or F3
     if ((e.ctrlKey && e.key === 'k') || e.key === 'F3') {
       e.preventDefault();
       searchInputRef.current?.focus();
+      searchInputRef.current?.select();
+      return;
     }
-    // Quick clear cart on Ctrl+Delete
-    if (e.ctrlKey && e.key === 'Delete') {
+
+    // Quick clear cart on Escape or Ctrl+Delete
+    if (e.key === 'Escape' || (e.ctrlKey && e.key === 'Delete')) {
       e.preventDefault();
-      setCart([]);
+      if (cart.length > 0) {
+        setCart([]);
+        if (enableSounds) {
+          soundEffects.playNotificationSound();
+        }
+        toast({
+          title: 'Cart Cleared',
+          description: 'All items removed from cart',
+          duration: 1500
+        });
+      }
+      return;
     }
-    // Quick checkout on F12
-    if (e.key === 'F12') {
+
+    // Quick checkout on Enter (when not in input) or F12
+    if ((e.key === 'Enter' && !isInputField && cart.length > 0) || e.key === 'F12') {
       e.preventDefault();
       if (cart.length > 0) handleCheckout();
+      return;
     }
-  }, [cart.length, handleCheckout]);
+
+    // Delete/Backspace to remove last item from cart
+    if ((e.key === 'Delete' || e.key === 'Backspace') && !isInputField && cart.length > 0) {
+      e.preventDefault();
+      const lastItem = cart[cart.length - 1];
+      removeFromCart(lastItem.id);
+      if (enableSounds) {
+        soundEffects.playNotificationSound();
+      }
+      toast({
+        title: 'Item Removed',
+        description: `${lastItem.name} removed from cart`,
+        duration: 1500
+      });
+      return;
+    }
+
+    // Tab navigation enhancement
+    if (e.key === 'Tab') {
+      // Let normal tab behavior work, but focus search if nothing focused
+      setTimeout(() => {
+        if (!document.activeElement || document.activeElement === document.body) {
+          searchInputRef.current?.focus();
+        }
+      }, 10);
+    }
+  }, [
+    favoriteProducts, 
+    filteredProducts, 
+    selectedProductIndex, 
+    currency, 
+    cart, 
+    addToCart, 
+    quickAddQuantity, 
+    quickSetPaymentMethod, 
+    handleCheckout, 
+    removeFromCart, 
+    enableSounds, 
+    toast,
+    searchInputRef
+  ]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyPress);
@@ -517,34 +931,81 @@ export default function POS() {
           </div>
         </div>
         
-        {/* Professional Status Bar */}
+        {/* Professional Status Bar with Advanced Features */}
         <div className="bg-white/5 backdrop-blur-sm border-t border-white/10 px-8 py-2">
           <div className="flex items-center justify-between text-sm text-white/80">
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
-                <div className="h-2 w-2 bg-green-400 rounded-full animate-pulse"></div>
-                <span>System Online</span>
+                <div className={cn(
+                  "h-2 w-2 rounded-full transition-all duration-200",
+                  isOnline ? "bg-green-400 animate-pulse" : "bg-red-400"
+                )}>
+                </div>
+                <span>{isOnline ? 'System Online' : 'Offline Mode'}</span>
               </div>
+              
+              {/* Barcode Scanner Status */}
               <div className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                <span>Walk-in Customer</span>
+                <div className={cn(
+                  "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium transition-all duration-200",
+                  isScanning ? "bg-blue-500/20 text-blue-300" : 
+                  scanStatus === 'success' ? "bg-green-500/20 text-green-300" :
+                  scanStatus === 'error' ? "bg-red-500/20 text-red-300" : 
+                  "bg-white/10 text-white/60"
+                )}>
+                  <Scan className="h-3 w-3" />
+                  <span>
+                    {isScanning ? 'Scanning...' : 
+                     scanStatus === 'success' ? 'Scan Success' :
+                     scanStatus === 'error' ? 'Scan Failed' : 
+                     'Scanner Ready'}
+                  </span>
+                </div>
               </div>
+
+              {/* Sound Status */}
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 w-6 p-0 text-white/60 hover:text-white hover:bg-white/10"
+                  onClick={() => setEnableSounds(!enableSounds)}
+                  data-testid="toggle-sounds"
+                >
+                  {enableSounds ? <Volume2 className="h-3 w-3" /> : <VolumeX className="h-3 w-3" />}
+                </Button>
+                <span className="text-xs">{enableSounds ? 'Audio On' : 'Muted'}</span>
+              </div>
+
               <div className="flex items-center gap-2">
                 <Package className="h-4 w-4" />
                 <span>{products.length} Products Available</span>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <ShoppingCart className="h-4 w-4" />
-                <span>{cart.length} Items in Cart</span>
+            
+            <div className="flex items-center gap-6">
+              {/* Quick Shortcuts Indicator */}
+              <div className="flex items-center gap-2 text-xs">
+                <Keyboard className="h-3 w-3" />
+                <span>F1-F12: Quick Add</span>
+                <span>•</span>
+                <span>Ctrl+K: Search</span>
+                <span>•</span>
+                <span>F12: Checkout</span>
               </div>
-              {cart.length > 0 && (
-                <div className="flex items-center gap-2 font-medium">
-                  <DollarSign className="h-4 w-4" />
-                  <span>{currency} {total.toFixed(2)} Total</span>
+              
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <ShoppingCart className="h-4 w-4" />
+                  <span>{cart.length} Items in Cart</span>
                 </div>
-              )}
+                {cart.length > 0 && (
+                  <div className="flex items-center gap-2 font-medium">
+                    <DollarSign className="h-4 w-4" />
+                    <span data-testid="status-bar-total">{currency} {total.toFixed(2)} Total</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -586,7 +1047,7 @@ export default function POS() {
             <div className="grid grid-cols-2 gap-3 mb-6">
               <Button 
                 size="sm" 
-                className={`pos-button-secondary justify-start h-11 transition-all duration-200 ${
+                className={`pos-button-secondary justify-start h-11 transition-all duration-200 touch-target-large ${
                   selectedTab === 'favorites' ? 'pos-button-primary' : ''
                 }`}
                 onClick={() => setSelectedTab('favorites')}
@@ -597,7 +1058,7 @@ export default function POS() {
               </Button>
               <Button 
                 size="sm" 
-                className={`pos-button-secondary justify-start h-11 transition-all duration-200 ${
+                className={`pos-button-secondary justify-start h-11 transition-all duration-200 touch-target-large ${
                   selectedTab === 'categories' ? 'pos-button-primary' : ''
                 }`}
                 onClick={() => setSelectedTab('categories')}
@@ -608,7 +1069,7 @@ export default function POS() {
               </Button>
               <Button 
                 size="sm" 
-                className={`pos-button-secondary justify-start h-11 transition-all duration-200 ${
+                className={`pos-button-secondary justify-start h-11 transition-all duration-200 touch-target-large ${
                   selectedTab === 'bundles' ? 'pos-button-primary' : ''
                 }`}
                 onClick={() => setSelectedTab('bundles')}
@@ -619,11 +1080,113 @@ export default function POS() {
               </Button>
               <Button 
                 size="sm" 
-                className="pos-button-secondary justify-start h-11 transition-all duration-200"
+                className="pos-button-secondary justify-start h-11 transition-all duration-200 touch-target-large"
+                onClick={() => resetScan()}
                 data-testid="quick-scan"
               >
                 <Scan className="h-4 w-4 mr-2" />
-                Scan
+                Scan Mode
+              </Button>
+            </div>
+
+            {/* Quick Quantity Controls */}
+            <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 tracking-wide uppercase">Quick Quantity</h4>
+            <div className="grid grid-cols-4 gap-2 mb-6">
+              {[1, 2, 5, 10].map(qty => (
+                <Button
+                  key={qty}
+                  size="sm"
+                  variant="outline"
+                  className="h-12 font-bold text-lg pos-button-secondary hover:pos-button-primary transition-all duration-200 touch-target-large"
+                  onClick={() => quickAddQuantity(qty)}
+                  disabled={cart.length === 0}
+                  data-testid={`quick-quantity-${qty}`}
+                >
+                  +{qty}
+                </Button>
+              ))}
+            </div>
+
+            {/* Quick Payment Methods */}
+            <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 tracking-wide uppercase">Payment Shortcuts</h4>
+            <div className="space-y-2 mb-6">
+              <Button
+                size="sm"
+                variant={paymentMethod === 'cash' ? 'default' : 'outline'}
+                className="w-full justify-start h-12 font-medium transition-all duration-200 touch-target-large"
+                onClick={() => quickSetPaymentMethod('cash')}
+                data-testid="quick-payment-cash"
+              >
+                <Banknote className="h-4 w-4 mr-3" />
+                Cash Payment
+                <Badge className="ml-auto bg-green-100 text-green-800 text-xs">Ctrl+1</Badge>
+              </Button>
+              <Button
+                size="sm"
+                variant={paymentMethod === 'pay_later' ? 'default' : 'outline'}
+                className="w-full justify-start h-12 font-medium transition-all duration-200 touch-target-large"
+                onClick={() => quickSetPaymentMethod('pay_later')}
+                data-testid="quick-payment-later"
+              >
+                <CreditCard className="h-4 w-4 mr-3" />
+                Pay Later
+                <Badge className="ml-auto bg-blue-100 text-blue-800 text-xs">Ctrl+2</Badge>
+              </Button>
+              <Button
+                size="sm"
+                variant={paymentMethod === 'bank_transfer' ? 'default' : 'outline'}
+                className="w-full justify-start h-12 font-medium transition-all duration-200 touch-target-large"
+                onClick={() => quickSetPaymentMethod('bank_transfer')}
+                data-testid="quick-payment-bank"
+              >
+                <Building className="h-4 w-4 mr-3" />
+                Bank Transfer
+                <Badge className="ml-auto bg-purple-100 text-purple-800 text-xs">Ctrl+3</Badge>
+              </Button>
+            </div>
+
+            {/* Speed Actions */}
+            <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 tracking-wide uppercase">Speed Actions</h4>
+            <div className="space-y-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full justify-start h-12 font-medium transition-all duration-200 touch-target-large"
+                onClick={() => searchInputRef.current?.focus()}
+                data-testid="quick-search-focus"
+              >
+                <Search className="h-4 w-4 mr-3" />
+                Focus Search
+                <Badge className="ml-auto bg-gray-100 text-gray-800 text-xs">Ctrl+K</Badge>
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full justify-start h-12 font-medium transition-all duration-200 touch-target-large"
+                onClick={() => {
+                  if (cart.length > 0) {
+                    setCart([]);
+                    if (enableSounds) soundEffects.playNotificationSound();
+                  }
+                }}
+                disabled={cart.length === 0}
+                data-testid="quick-clear-cart"
+              >
+                <RotateCcw className="h-4 w-4 mr-3" />
+                Clear Cart
+                <Badge className="ml-auto bg-red-100 text-red-800 text-xs">Esc</Badge>
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full justify-start h-12 font-medium pos-button-primary transition-all duration-200 touch-target-large"
+                onClick={handleCheckout}
+                disabled={cart.length === 0}
+                data-testid="quick-checkout"
+              >
+                <FastForward className="h-4 w-4 mr-3" />
+                Quick Checkout
+                <Badge className="ml-auto bg-yellow-100 text-yellow-800 text-xs">F12</Badge>
               </Button>
             </div>
           </div>
