@@ -15,20 +15,6 @@ import {
   orders,
   orderItems,
   warehouses,
-  expenses,
-  customerLoyaltyPoints,
-  employees,
-  cashDrawers,
-  cashDrawerTransactions,
-  posTransactions,
-  coupons,
-  couponUsage,
-  orderPayments,
-  taxRates,
-  heldOrders,
-  managerOverrides,
-  posSessions,
-  discounts,
   type User,
   type InsertUser,
   type Category,
@@ -60,135 +46,27 @@ import {
   type OrderItem,
   type InsertOrderItem,
   type Warehouse,
-  type InsertWarehouse,
-  type Discount,
-  type InsertDiscount,
-  type Expense,
-  type InsertExpense,
-  type UserActivity,
-  type InsertUserActivity,
-  // POS types
-  type CustomerLoyaltyPoints,
-  type InsertCustomerLoyaltyPoints,
-  type Employee,
-  type InsertEmployee,
-  type CashDrawer,
-  type InsertCashDrawer,
-  type CashDrawerTransaction,
-  type InsertCashDrawerTransaction,
-  type PosTransaction,
-  type InsertPosTransaction,
-  type Coupon,
-  type InsertCoupon,
-  type CouponUsage,
-  type InsertCouponUsage,
-  type OrderPayment,
-  type InsertOrderPayment,
-  type TaxRate,
-  type InsertTaxRate,
-  type HeldOrder,
-  type InsertHeldOrder,
-  type ManagerOverride,
-  type InsertManagerOverride,
-  type PosSession,
-  type InsertPosSession
+  type InsertWarehouse
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, like, sql, gte, lte, inArray, ne, asc, isNull, notInArray } from "drizzle-orm";
 
-// Define types for missing entities that don't have schema tables yet
-export interface ProductVariant {
-  id: string;
-  productId: string;
-  name: string;
-  sku?: string;
-  price?: string;
-  attributes?: Record<string, any>;
-}
-
-export interface Return {
-  id: string;
-  orderId: string;
-  customerId?: number;
-  reason: string;
-  status: 'pending' | 'approved' | 'completed' | 'rejected';
-  totalAmount: number;
-  createdAt: Date;
-}
-
-export interface ReturnItem {
-  id: string;
-  returnId: string;
-  productId: string;
-  quantity: number;
-  unitPrice: number;
-  reason?: string;
-}
-
-export interface Purchase {
-  id: string;
-  supplierId: string;
-  status: 'pending' | 'ordered' | 'received' | 'cancelled';
-  totalAmount: number;
-  currency: string;
-  createdAt: Date;
-}
-
-export interface Sale {
-  id: string;
-  customerId?: number;
-  employeeId: string;
-  totalAmount: number;
-  currency: string;
-  status: 'pending' | 'completed' | 'refunded';
-  createdAt: Date;
-}
-
-export interface Bundle {
-  id: string;
-  name: string;
-  description?: string;
-  price: number;
-  active: boolean;
-}
-
-export interface BundleItem {
-  id: string;
-  bundleId: string;
-  productId: string;
-  quantity: number;
-}
-
-export interface CustomerPrice {
-  customerId: string;
-  productId: string;
-  price: string;
-  currency: string;
-  effectiveDate?: Date;
-}
-
-export interface PackingMaterial {
-  id: string;
-  name: string;
-  type: 'box' | 'bag' | 'wrapper' | 'padding';
-  cost: number;
-  dimensions?: Record<string, number>;
-}
-
-export interface PackingMaterialUsage {
-  id: string;
-  orderId: string;
-  materialId: string;
-  quantity: number;
-}
-
-export interface FileType {
-  id: string;
-  name: string;
-  mimeType: string;
-  extension: string;
-  maxSize?: number;
-}
+// Define types for missing entities (these should match what the app expects)
+export type ProductVariant = any;
+export type Discount = any;
+export type Return = any;
+export type ReturnItem = any;
+export type Expense = any;
+export type Purchase = any;
+export type Sale = any;
+export type UserActivity = any;
+export type Category = any;
+export type Bundle = any;
+export type BundleItem = any;
+export type CustomerPrice = any;
+export type PackingMaterial = any;
+export type PackingMaterialUsage = any;
+export type FileType = any;
 
 export interface IStorage {
   // Users
@@ -199,11 +77,11 @@ export interface IStorage {
   // Import Purchases
   getImportPurchases(): Promise<ImportPurchase[]>;
   getImportPurchase(id: number): Promise<ImportPurchase | undefined>;
-  getImportPurchasesAtWarehouse(): Promise<ImportPurchase[]>;
+  getImportPurchasesAtWarehouse(): Promise<any[]>;
   createImportPurchase(purchase: InsertImportPurchase): Promise<ImportPurchase>;
   updateImportPurchase(id: number, purchase: Partial<InsertImportPurchase>): Promise<ImportPurchase | undefined>;
   deleteImportPurchase(id: number): Promise<boolean>;
-  unpackPurchaseOrder(purchaseId: number): Promise<ImportPurchase>;
+  unpackPurchaseOrder(purchaseId: number): Promise<any>;
   
   // Purchase Items
   getPurchaseItems(purchaseId: number): Promise<PurchaseItem[]>;
@@ -236,37 +114,37 @@ export interface IStorage {
   getOrdersByStatus(status: string): Promise<Order[]>;
   getOrder(id: string): Promise<Order | undefined>;
   getOrderById(id: string): Promise<Order | undefined>;
-  createOrder(order: InsertOrder): Promise<Order>;
-  updateOrder(id: string, order: Partial<InsertOrder>): Promise<Order | undefined>;
+  createOrder(order: any): Promise<Order>;
+  updateOrder(id: string, order: any): Promise<Order | undefined>;
   deleteOrder(id: string): Promise<boolean>;
   getPickPackOrders(status?: string): Promise<Order[]>;
   startPickingOrder(id: string, employeeId: string): Promise<Order | undefined>;
   completePickingOrder(id: string): Promise<Order | undefined>;
   startPackingOrder(id: string, employeeId: string): Promise<Order | undefined>;
-  completePackingOrder(id: string, items: OrderItem[]): Promise<Order | undefined>;
+  completePackingOrder(id: string, items: any[]): Promise<Order | undefined>;
   getOrdersByCustomerId(customerId: number): Promise<Order[]>;
   getUnpaidOrders(): Promise<Order[]>;
   getDashboardMetrics(): Promise<any>;
   
   // Order Items
   getOrderItems(orderId: string): Promise<OrderItem[]>;
-  createOrderItem(item: InsertOrderItem): Promise<OrderItem>;
-  updateOrderItem(id: string, item: Partial<InsertOrderItem>): Promise<OrderItem | undefined>;
+  createOrderItem(item: any): Promise<OrderItem>;
+  updateOrderItem(id: string, item: any): Promise<OrderItem | undefined>;
   deleteOrderItem(id: string): Promise<boolean>;
   
   // Products
   getProducts(): Promise<Product[]>;
   getProduct(id: string): Promise<Product | undefined>;
   getProductById(id: string): Promise<Product | undefined>;
-  createProduct(product: InsertProduct): Promise<Product>;
-  updateProduct(id: string, product: Partial<InsertProduct>): Promise<Product | undefined>;
+  createProduct(product: any): Promise<Product>;
+  updateProduct(id: string, product: any): Promise<Product | undefined>;
   deleteProduct(id: string): Promise<boolean>;
   getLowStockProducts(): Promise<Product[]>;
   
   // Product Variants
   getProductVariants(productId: string): Promise<ProductVariant[]>;
-  createProductVariant(variant: Partial<ProductVariant>): Promise<ProductVariant>;
-  updateProductVariant(id: string, variant: Partial<ProductVariant>): Promise<ProductVariant | undefined>;
+  createProductVariant(variant: any): Promise<ProductVariant>;
+  updateProductVariant(id: string, variant: any): Promise<ProductVariant | undefined>;
   deleteProductVariant(id: string): Promise<boolean>;
   
   // Product Locations
@@ -286,54 +164,54 @@ export interface IStorage {
   getCustomers(): Promise<Customer[]>;
   getCustomer(id: number): Promise<Customer | undefined>;
   getCustomerById(id: number): Promise<Customer | undefined>;
-  createCustomer(customer: InsertCustomer): Promise<Customer>;
-  updateCustomer(id: number, customer: Partial<InsertCustomer>): Promise<Customer | undefined>;
+  createCustomer(customer: any): Promise<Customer>;
+  updateCustomer(id: number, customer: any): Promise<Customer | undefined>;
   deleteCustomer(id: number): Promise<boolean>;
   
   // Discounts
   getDiscounts(): Promise<Discount[]>;
   getDiscount(id: string): Promise<Discount | undefined>;
-  createDiscount(discount: InsertDiscount): Promise<Discount>;
-  updateDiscount(id: string, discount: Partial<InsertDiscount>): Promise<Discount | undefined>;
+  createDiscount(discount: any): Promise<Discount>;
+  updateDiscount(id: string, discount: any): Promise<Discount | undefined>;
   deleteDiscount(id: string): Promise<boolean>;
   
   // Warehouses
   getWarehouses(): Promise<Warehouse[]>;
   getWarehouse(id: string): Promise<Warehouse | undefined>;
-  createWarehouse(warehouse: InsertWarehouse): Promise<Warehouse>;
-  updateWarehouse(id: string, warehouse: Partial<InsertWarehouse>): Promise<Warehouse | undefined>;
+  createWarehouse(warehouse: any): Promise<Warehouse>;
+  updateWarehouse(id: string, warehouse: any): Promise<Warehouse | undefined>;
   deleteWarehouse(id: string): Promise<boolean>;
   
   // Suppliers
   getSuppliers(): Promise<Supplier[]>;
   getSupplier(id: string): Promise<Supplier | undefined>;
-  createSupplier(supplier: InsertSupplier): Promise<Supplier>;
-  updateSupplier(id: string, supplier: Partial<InsertSupplier>): Promise<Supplier | undefined>;
+  createSupplier(supplier: any): Promise<Supplier>;
+  updateSupplier(id: string, supplier: any): Promise<Supplier | undefined>;
   deleteSupplier(id: string): Promise<boolean>;
   
   // Returns
   getReturns(): Promise<Return[]>;
   getReturn(id: string): Promise<Return | undefined>;
-  createReturn(returnData: Partial<Return>): Promise<Return>;
-  updateReturn(id: string, returnData: Partial<Return>): Promise<Return | undefined>;
+  createReturn(returnData: any): Promise<Return>;
+  updateReturn(id: string, returnData: any): Promise<Return | undefined>;
   deleteReturn(id: string): Promise<boolean>;
   
   // Return Items
   getReturnItems(returnId: string): Promise<ReturnItem[]>;
-  createReturnItem(item: Partial<ReturnItem>): Promise<ReturnItem>;
+  createReturnItem(item: any): Promise<ReturnItem>;
   
   // Expenses
   getExpenses(): Promise<Expense[]>;
   getExpenseById(id: string): Promise<Expense | undefined>;
-  createExpense(expense: InsertExpense): Promise<Expense>;
-  updateExpense(id: string, expense: Partial<InsertExpense>): Promise<Expense | undefined>;
+  createExpense(expense: any): Promise<Expense>;
+  updateExpense(id: string, expense: any): Promise<Expense | undefined>;
   deleteExpense(id: string): Promise<boolean>;
   
   // Purchases
   getPurchases(): Promise<Purchase[]>;
   getPurchase(id: string): Promise<Purchase | undefined>;
-  createPurchase(purchase: Partial<Purchase>): Promise<Purchase>;
-  updatePurchase(id: string, purchase: Partial<Purchase>): Promise<Purchase | undefined>;
+  createPurchase(purchase: any): Promise<Purchase>;
+  updatePurchase(id: string, purchase: any): Promise<Purchase | undefined>;
   deletePurchase(id: string): Promise<boolean>;
   
   // Sales
@@ -342,12 +220,12 @@ export interface IStorage {
   
   // User Activities
   getUserActivities(): Promise<UserActivity[]>;
-  createUserActivity(activity: InsertUserActivity): Promise<UserActivity>;
+  createUserActivity(activity: any): Promise<UserActivity>;
   
   // Categories
   getCategories(): Promise<Category[]>;
   getCategoryById(id: string): Promise<Category | undefined>;
-  createCategory(category: InsertCategory): Promise<Category>;
+  createCategory(category: any): Promise<Category>;
   updateCategory(id: string, category: any): Promise<Category | undefined>;
   deleteCategory(id: string): Promise<boolean>;
   
@@ -388,67 +266,6 @@ export interface IStorage {
   createFile(file: any): Promise<FileType>;
   updateFile(id: string, file: any): Promise<FileType | undefined>;
   deleteFile(id: string): Promise<boolean>;
-
-  // Advanced POS Features
-  // Customer Loyalty Points
-  getCustomerLoyaltyPoints(customerId: number): Promise<CustomerLoyaltyPoints[]>;
-  createLoyaltyPoints(data: InsertCustomerLoyaltyPoints): Promise<CustomerLoyaltyPoints>;
-  updateLoyaltyPoints(id: string, data: Partial<InsertCustomerLoyaltyPoints>): Promise<CustomerLoyaltyPoints | undefined>;
-
-  // Employees & Authentication  
-  getEmployees(): Promise<any[]>;
-  getEmployee(id: string): Promise<any | undefined>;
-  getEmployeeByUserId(userId: string): Promise<any | undefined>;
-  validateManagerPin(pin: string): Promise<{valid: boolean; manager?: Employee} | undefined>;
-  createEmployee(data: InsertEmployee): Promise<Employee>;
-
-  // Cash Drawer Management
-  getCashDrawers(): Promise<any[]>;
-  getCurrentCashDrawer(): Promise<CashDrawer | undefined>;
-  openCashDrawer(data: InsertCashDrawer): Promise<CashDrawer>;
-  closeCashDrawer(id: string, data: Partial<CashDrawer>): Promise<CashDrawer | undefined>;
-  createCashDrawerTransaction(data: InsertCashDrawerTransaction): Promise<CashDrawerTransaction>;
-
-  // POS Transactions & Audit
-  createPosTransaction(data: InsertPosTransaction): Promise<PosTransaction>;
-  getPosTransactions(filters?: Partial<PosTransaction>): Promise<PosTransaction[]>;
-  getManagerOverrides(filters?: Partial<ManagerOverride>): Promise<ManagerOverride[]>;
-  createManagerOverride(data: InsertManagerOverride): Promise<ManagerOverride>;
-
-  // Coupons & Validation
-  getCoupons(): Promise<any[]>;
-  getCoupon(code: string): Promise<Coupon | undefined>;
-  validateCoupon(code: string, customerId?: string, cartData?: any): Promise<{valid: boolean; coupon?: Coupon; discount?: number; message?: string}>;
-  createCouponUsage(data: InsertCouponUsage): Promise<CouponUsage>;
-
-  // Order Payments & Split Payments
-  getOrderPayments(orderId: string): Promise<any[]>;
-  createOrderPayment(data: InsertOrderPayment): Promise<OrderPayment>;
-  deleteOrderPayment(id: string): Promise<boolean>;
-
-  // Tax Rates
-  getTaxRates(): Promise<any[]>;
-  getTaxRate(id: string): Promise<any | undefined>;
-  getActiveTaxRate(location?: string): Promise<any | undefined>;
-
-  // Order Hold/Resume
-  getHeldOrders(): Promise<any[]>;
-  getHeldOrder(holdId: string): Promise<any | undefined>;
-  createHeldOrder(data: InsertHeldOrder): Promise<HeldOrder>;
-  resumeHeldOrder(holdId: string, resumedBy: number): Promise<any>;
-  deleteHeldOrder(holdId: string): Promise<boolean>;
-
-  // POS Sessions
-  createPosSession(data: InsertPosSession): Promise<PosSession>;
-  closePosSession(id: string, data: Partial<PosSession>): Promise<PosSession | undefined>;
-  getCurrentPosSession(): Promise<any | undefined>;
-
-  // Gift Cards
-  validateGiftCard(cardNumber: string): Promise<any>;
-  
-  // Customer Search Enhancement
-  searchCustomers(query: string): Promise<any[]>;
-  getCustomerWithStats(id: number): Promise<any | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -726,7 +543,7 @@ export class DatabaseStorage implements IStorage {
       if (filters.origin) conditions.push(eq(deliveryHistory.origin, filters.origin));
       if (filters.destination) conditions.push(eq(deliveryHistory.destination, filters.destination));
       if (filters.shippingMethod) conditions.push(eq(deliveryHistory.shippingMethod, filters.shippingMethod));
-      if (filters.seasonalFactor !== undefined) conditions.push(eq(deliveryHistory.seasonalFactor, Boolean(filters.seasonalFactor)));
+      if (filters.seasonalFactor !== undefined) conditions.push(eq(deliveryHistory.seasonalFactor, filters.seasonalFactor));
       
       if (conditions.length > 0) {
         // @ts-ignore - Temporary fix for type mismatch
@@ -953,9 +770,10 @@ export class DatabaseStorage implements IStorage {
         .where(eq(productLocations.productId, id))
         .orderBy(desc(productLocations.isPrimary), productLocations.locationCode);
       
-      // Return the product as-is since the interface expects Product type
-      // Locations can be fetched separately using getProductLocations method
-      return product;
+      return {
+        ...product,
+        locations
+      };
     } catch (error) {
       console.error('Error fetching product:', error);
       return undefined;
@@ -1261,7 +1079,7 @@ export class DatabaseStorage implements IStorage {
 
   async getCustomer(id: number): Promise<Customer | undefined> {
     try {
-      const [customer] = await db.select().from(customers).where(eq(customers.id, id.toString()));
+      const [customer] = await db.select().from(customers).where(eq(customers.id, id));
       return customer || undefined;
     } catch (error) {
       console.error('Error fetching customer:', error);
@@ -1291,7 +1109,7 @@ export class DatabaseStorage implements IStorage {
       const [updated] = await db
         .update(customers)
         .set({ ...customerData, updatedAt: new Date() })
-        .where(eq(customers.id, id.toString()))
+        .where(eq(customers.id, id))
         .returning();
       return updated || undefined;
     } catch (error) {
@@ -1304,7 +1122,7 @@ export class DatabaseStorage implements IStorage {
     try {
       const result = await db
         .delete(customers)
-        .where(eq(customers.id, id.toString()));
+        .where(eq(customers.id, id));
       return (result.rowCount ?? 0) > 0;
     } catch (error) {
       console.error('Error deleting customer:', error);
@@ -1604,740 +1422,6 @@ export class DatabaseStorage implements IStorage {
   async createFile(file: any): Promise<FileType> { return { id: Date.now().toString(), ...file }; }
   async updateFile(id: string, file: any): Promise<FileType | undefined> { return { id, ...file }; }
   async deleteFile(id: string): Promise<boolean> { return true; }
-
-  // Advanced POS Features Implementation
-  async getCustomerLoyaltyPoints(customerId: number): Promise<any[]> {
-    try {
-      const points = await db
-        .select()
-        .from(customerLoyaltyPoints)
-        .where(eq(customerLoyaltyPoints.customerId, customerId.toString()))
-        .orderBy(desc(customerLoyaltyPoints.createdAt));
-      return points;
-    } catch (error) {
-      console.error('Error fetching loyalty points:', error);
-      return [];
-    }
-  }
-
-  async createLoyaltyPoints(data: any): Promise<any> {
-    const [points] = await db
-      .insert(customerLoyaltyPoints)
-      .values({
-        customerId: data.customerId,
-        pointsEarned: data.pointsEarned || 0,
-        pointsUsed: data.pointsUsed || 0,
-        pointsBalance: data.pointsBalance || 0,
-        transactionType: data.transactionType,
-        orderId: data.orderId,
-        description: data.description,
-        createdAt: new Date()
-      })
-      .returning();
-    return points;
-  }
-
-  async updateLoyaltyPoints(id: string, data: any): Promise<any> {
-    const [updated] = await db
-      .update(customerLoyaltyPoints)
-      .set({
-        pointsEarned: data.pointsEarned,
-        pointsUsed: data.pointsUsed,
-        pointsBalance: data.pointsBalance,
-        description: data.description,
-        updatedAt: new Date()
-      })
-      .where(eq(customerLoyaltyPoints.id, parseInt(id)))
-      .returning();
-    return updated;
-  }
-
-  async getEmployees(): Promise<any[]> {
-    try {
-      // Query using raw SQL to work with actual database columns
-      const result = await db.execute(sql`
-        SELECT 
-          id,
-          id as "employeeId",
-          first_name as "firstName",
-          last_name as "lastName",
-          email,
-          phone,
-          role,
-          pin as "pinCode",
-          active as "isActive",
-          created_at as "createdAt",
-          updated_at as "updatedAt"
-        FROM employees 
-        WHERE active = true 
-        ORDER BY first_name ASC
-      `);
-      return result.rows || [];
-    } catch (error) {
-      console.error('Error fetching employees:', error);
-      return [];
-    }
-  }
-
-  async getEmployee(id: string): Promise<any | undefined> {
-    const employees = await this.getEmployees();
-    return employees.find(e => e.id.toString() === id);
-  }
-
-  async getEmployeeByUserId(userId: string): Promise<any | undefined> {
-    try {
-      const result = await db.execute(sql`
-        SELECT 
-          id,
-          user_id as "userId",
-          employee_id as "employeeId", 
-          first_name as "firstName",
-          last_name as "lastName",
-          role,
-          permissions,
-          pin_code as "pinCode",
-          is_active as "isActive",
-          hire_date as "hireDate",
-          created_at as "createdAt",
-          updated_at as "updatedAt"
-        FROM employees 
-        WHERE user_id = ${userId}
-        AND is_active = true
-        LIMIT 1
-      `);
-      return result.rows[0] || undefined;
-    } catch (error) {
-      console.error('Error fetching employee by user ID:', error);
-      return undefined;
-    }
-  }
-
-  async validateManagerPin(pin: string): Promise<any | undefined> {
-    try {
-      // Query using raw SQL to work with actual database columns
-      const result = await db.execute(sql`
-        SELECT 
-          id,
-          id as "employeeId",
-          first_name as "firstName",
-          last_name as "lastName",
-          email,
-          phone,
-          role,
-          pin as "pinCode",
-          active as "isActive",
-          created_at as "createdAt",
-          updated_at as "updatedAt"
-        FROM employees 
-        WHERE pin = ${pin}
-          AND active = true 
-          AND (role = 'manager' OR role = 'admin')
-        LIMIT 1
-      `);
-      return result.rows?.[0];
-    } catch (error) {
-      console.error('Error validating manager pin:', error);
-      return undefined;
-    }
-  }
-
-  async createEmployee(data: any): Promise<any> {
-    return { id: Math.random().toString(), ...data, createdAt: new Date() };
-  }
-
-  async getCashDrawers(): Promise<any[]> {
-    try {
-      const result = await db
-        .select()
-        .from(cashDrawers)
-        .orderBy(desc(cashDrawers.openedAt));
-      return result;
-    } catch (error) {
-      console.error('Error fetching cash drawers:', error);
-      return [];
-    }
-  }
-
-  async getCurrentCashDrawer(): Promise<any | undefined> {
-    try {
-      const [drawer] = await db
-        .select()
-        .from(cashDrawers)
-        .where(eq(cashDrawers.status, 'open'))
-        .orderBy(desc(cashDrawers.openedAt))
-        .limit(1);
-      return drawer;
-    } catch (error) {
-      console.error('Error fetching current cash drawer:', error);
-      return undefined;
-    }
-  }
-
-  async openCashDrawer(data: any): Promise<any> {
-    try {
-      const [drawer] = await db
-        .insert(cashDrawers)
-        .values({
-          employeeId: data.employeeId,
-          stationName: data.stationName,
-          startingAmount: data.startingAmount || '0',
-          currentAmount: data.startingAmount || '0',
-          status: 'open',
-          openedAt: new Date(),
-          notes: data.notes
-        })
-        .returning();
-      return drawer;
-    } catch (error) {
-      console.error('Error opening cash drawer:', error);
-      throw error;
-    }
-  }
-
-  async closeCashDrawer(id: string, data: any): Promise<any> {
-    try {
-      const [drawer] = await db
-        .update(cashDrawers)
-        .set({
-          status: 'closed',
-          closedAt: new Date(),
-          finalAmount: data.finalAmount,
-          expectedAmount: data.expectedAmount,
-          variance: data.variance,
-          closingNotes: data.closingNotes
-        })
-        .where(eq(cashDrawers.id, parseInt(id)))
-        .returning();
-      return drawer;
-    } catch (error) {
-      console.error('Error closing cash drawer:', error);
-      throw error;
-    }
-  }
-
-  async createCashDrawerTransaction(data: any): Promise<any> {
-    try {
-      const [transaction] = await db
-        .insert(cashDrawerTransactions)
-        .values({
-          drawerId: data.drawerId,
-          transactionType: data.transactionType,
-          amount: data.amount,
-          orderId: data.orderId,
-          employeeId: data.employeeId,
-          description: data.description
-        })
-        .returning();
-      
-      // Update current drawer amount
-      if (data.drawerId) {
-        await db
-          .update(cashDrawers)
-          .set({
-            currentAmount: sql`${cashDrawers.currentAmount} + ${data.amount}`
-          })
-          .where(eq(cashDrawers.id, data.drawerId));
-      }
-      
-      return transaction;
-    } catch (error) {
-      console.error('Error creating cash drawer transaction:', error);
-      throw error;
-    }
-  }
-
-  async createPosTransaction(data: any): Promise<any> {
-    try {
-      const [transaction] = await db
-        .insert(posTransactions)
-        .values({
-          transactionId: data.transactionId || `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-          orderId: data.orderId,
-          customerId: data.customerId,
-          employeeId: data.employeeId,
-          drawerId: data.drawerId,
-          transactionType: data.transactionType,
-          subtotal: data.subtotal,
-          taxAmount: data.taxAmount || '0',
-          discountAmount: data.discountAmount || '0',
-          tipAmount: data.tipAmount || '0',
-          total: data.total,
-          paymentMethods: data.paymentMethods || [],
-          status: data.status || 'completed',
-          notes: data.notes
-        })
-        .returning();
-      return transaction;
-    } catch (error) {
-      console.error('Error creating POS transaction:', error);
-      throw error;
-    }
-  }
-
-  async getPosTransactions(filters?: any): Promise<any[]> {
-    try {
-      let query = db.select().from(posTransactions);
-      
-      if (filters?.employeeId) {
-        query = query.where(eq(posTransactions.employeeId, filters.employeeId));
-      }
-      if (filters?.drawerId) {
-        query = query.where(eq(posTransactions.drawerId, filters.drawerId));
-      }
-      if (filters?.startDate) {
-        query = query.where(gte(posTransactions.createdAt, new Date(filters.startDate)));
-      }
-      if (filters?.endDate) {
-        query = query.where(lte(posTransactions.createdAt, new Date(filters.endDate)));
-      }
-      
-      const result = await query.orderBy(desc(posTransactions.createdAt));
-      return result;
-    } catch (error) {
-      console.error('Error fetching POS transactions:', error);
-      return [];
-    }
-  }
-
-  async getManagerOverrides(filters?: any): Promise<any[]> {
-    try {
-      let query = db.select().from(managerOverrides);
-      
-      if (filters?.managerId) {
-        query = query.where(eq(managerOverrides.managerId, filters.managerId));
-      }
-      if (filters?.employeeId) {
-        query = query.where(eq(managerOverrides.employeeId, filters.employeeId));
-      }
-      if (filters?.startDate) {
-        query = query.where(gte(managerOverrides.approvedAt, new Date(filters.startDate)));
-      }
-      
-      const result = await query.orderBy(desc(managerOverrides.approvedAt));
-      return result;
-    } catch (error) {
-      console.error('Error fetching manager overrides:', error);
-      return [];
-    }
-  }
-
-  async createManagerOverride(data: any): Promise<any> {
-    try {
-      const [override] = await db
-        .insert(managerOverrides)
-        .values({
-          orderId: data.orderId,
-          employeeId: data.employeeId,
-          managerId: data.managerId,
-          overrideType: data.overrideType,
-          originalValue: data.originalValue,
-          newValue: data.newValue,
-          reason: data.reason,
-          justification: data.justification,
-          currency: data.currency || 'EUR'
-        })
-        .returning();
-      return override;
-    } catch (error) {
-      console.error('Error creating manager override:', error);
-      throw error;
-    }
-  }
-
-  async getCoupons(): Promise<any[]> {
-    try {
-      const result = await db
-        .select()
-        .from(coupons)
-        .where(eq(coupons.isActive, true))
-        .orderBy(asc(coupons.name));
-      return result;
-    } catch (error) {
-      console.error('Error fetching coupons:', error);
-      return [];
-    }
-  }
-
-  async getCoupon(code: string): Promise<any | undefined> {
-    try {
-      const result = await db.execute(sql`
-        SELECT * FROM coupons 
-        WHERE code = ${code} AND is_active = true
-        LIMIT 1
-      `);
-      return result.rows[0];
-    } catch (error) {
-      console.error('Error fetching coupon:', error);
-      return undefined;
-    }
-  }
-
-  async validateCoupon(code: string, customerId?: string, cartData?: any): Promise<any> {
-    const coupon = await this.getCoupon(code);
-    if (!coupon) {
-      throw new Error('Coupon not found');
-    }
-    
-    if (coupon.status !== 'active') {
-      throw new Error('Coupon is not active');
-    }
-    
-    const now = new Date();
-    if (now < new Date(coupon.startDate) || now > new Date(coupon.endDate)) {
-      throw new Error('Coupon has expired or is not yet valid');
-    }
-    
-    if (coupon.usageLimit && coupon.usageCount >= coupon.usageLimit) {
-      throw new Error('Coupon usage limit exceeded');
-    }
-    
-    if (coupon.minimumAmount && cartData?.subtotal < coupon.minimumAmount) {
-      throw new Error(`Minimum order amount of $${coupon.minimumAmount} required`);
-    }
-    
-    // Calculate discount
-    let calculatedDiscount = 0;
-    if (coupon.discountType === 'percentage') {
-      calculatedDiscount = (cartData?.subtotal || 0) * (coupon.discountValue / 100);
-      if (coupon.maxDiscountAmount) {
-        calculatedDiscount = Math.min(calculatedDiscount, coupon.maxDiscountAmount);
-      }
-    } else if (coupon.discountType === 'fixed_amount') {
-      calculatedDiscount = Math.min(coupon.discountValue, cartData?.subtotal || 0);
-    }
-    
-    return {
-      ...coupon,
-      calculatedDiscount
-    };
-  }
-
-  async createCouponUsage(data: any): Promise<any> {
-    try {
-      const [usage] = await db
-        .insert(couponUsage)
-        .values({
-          couponId: data.couponId,
-          customerId: data.customerId,
-          orderId: data.orderId,
-          discountAmount: data.discountAmount
-        })
-        .returning();
-
-      // Update coupon usage count
-      await db
-        .update(coupons)
-        .set({
-          usageCount: sql`${coupons.usageCount} + 1`
-        })
-        .where(eq(coupons.id, data.couponId));
-
-      return usage;
-    } catch (error) {
-      console.error('Error creating coupon usage:', error);
-      throw error;
-    }
-  }
-
-  async getOrderPayments(orderId: string): Promise<any[]> {
-    try {
-      const result = await db
-        .select()
-        .from(orderPayments)
-        .where(eq(orderPayments.orderId, orderId))
-        .orderBy(desc(orderPayments.createdAt));
-      return result;
-    } catch (error) {
-      console.error('Error fetching order payments:', error);
-      return [];
-    }
-  }
-
-  async createOrderPayment(data: any): Promise<any> {
-    try {
-      const [payment] = await db
-        .insert(orderPayments)
-        .values({
-          orderId: data.orderId,
-          paymentMethod: data.paymentMethod,
-          amount: data.amount,
-          currency: data.currency || 'EUR',
-          transactionId: data.transactionId,
-          cardLastFour: data.cardLastFour,
-          approvalCode: data.approvalCode,
-          processedBy: data.processedBy,
-          status: data.status || 'completed'
-        })
-        .returning();
-      return payment;
-    } catch (error) {
-      console.error('Error creating order payment:', error);
-      throw error;
-    }
-  }
-
-  async deleteOrderPayment(id: string): Promise<boolean> {
-    try {
-      const result = await db
-        .delete(orderPayments)
-        .where(eq(orderPayments.id, parseInt(id)));
-      return (result.rowCount ?? 0) > 0;
-    } catch (error) {
-      console.error('Error deleting order payment:', error);
-      return false;
-    }
-  }
-
-  async getTaxRates(): Promise<any[]> {
-    try {
-      const result = await db
-        .select()
-        .from(taxRates)
-        .where(eq(taxRates.isActive, true))
-        .orderBy(taxRates.name);
-      return result;
-    } catch (error) {
-      console.error('Error fetching tax rates:', error);
-      return [];
-    }
-  }
-
-  async getTaxRate(id: string): Promise<any | undefined> {
-    try {
-      const [rate] = await db
-        .select()
-        .from(taxRates)
-        .where(eq(taxRates.id, parseInt(id)))
-        .limit(1);
-      return rate;
-    } catch (error) {
-      console.error('Error fetching tax rate:', error);
-      return undefined;
-    }
-  }
-
-  async getActiveTaxRate(location?: string): Promise<any | undefined> {
-    try {
-      let query = db.select().from(taxRates).where(eq(taxRates.isActive, true));
-      
-      if (location) {
-        query = query.where(eq(taxRates.country, location));
-      }
-      
-      const [defaultRate] = await query.where(eq(taxRates.isDefault, true)).limit(1);
-      if (defaultRate) return defaultRate;
-      
-      const [firstRate] = await query.limit(1);
-      return firstRate;
-    } catch (error) {
-      console.error('Error fetching active tax rate:', error);
-      return undefined;
-    }
-  }
-
-  async getHeldOrders(): Promise<any[]> {
-    try {
-      const result = await db
-        .select()
-        .from(heldOrders)
-        .where(eq(heldOrders.status, 'held'))
-        .orderBy(desc(heldOrders.heldAt));
-      return result;
-    } catch (error) {
-      console.error('Error fetching held orders:', error);
-      return [];
-    }
-  }
-
-  async getHeldOrder(holdId: string): Promise<any | undefined> {
-    try {
-      const [order] = await db
-        .select()
-        .from(heldOrders)
-        .where(eq(heldOrders.holdId, holdId))
-        .limit(1);
-      return order;
-    } catch (error) {
-      console.error('Error fetching held order:', error);
-      return undefined;
-    }
-  }
-
-  async createHeldOrder(data: any): Promise<any> {
-    try {
-      const holdId = `HOLD-${Date.now()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
-      const [order] = await db
-        .insert(heldOrders)
-        .values({
-          holdId,
-          customerId: data.customerId,
-          employeeId: data.employeeId,
-          items: data.items,
-          subtotal: data.subtotal,
-          taxAmount: data.taxAmount || '0',
-          discountAmount: data.discountAmount || '0',
-          total: data.total,
-          currency: data.currency || 'EUR',
-          reason: data.reason,
-          notes: data.notes,
-          status: 'held'
-        })
-        .returning();
-      return order;
-    } catch (error) {
-      console.error('Error creating held order:', error);
-      throw error;
-    }
-  }
-
-  async resumeHeldOrder(holdId: string, resumedBy: number): Promise<any> {
-    try {
-      const [order] = await db
-        .update(heldOrders)
-        .set({
-          status: 'resumed',
-          resumedAt: new Date(),
-          resumedBy
-        })
-        .where(eq(heldOrders.holdId, holdId))
-        .returning();
-      
-      if (!order) {
-        throw new Error('Held order not found');
-      }
-      return order;
-    } catch (error) {
-      console.error('Error resuming held order:', error);
-      throw error;
-    }
-  }
-
-  async deleteHeldOrder(holdId: string): Promise<boolean> {
-    try {
-      const result = await db
-        .delete(heldOrders)
-        .where(eq(heldOrders.holdId, holdId));
-      return (result.rowCount ?? 0) > 0;
-    } catch (error) {
-      console.error('Error deleting held order:', error);
-      return false;
-    }
-  }
-
-  async createPosSession(data: any): Promise<any> {
-    try {
-      const sessionId = `SES-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-      const [session] = await db
-        .insert(posSessions)
-        .values({
-          sessionId,
-          employeeId: data.employeeId,
-          drawerId: data.drawerId,
-          stationName: data.stationName,
-          status: 'active'
-        })
-        .returning();
-      return session;
-    } catch (error) {
-      console.error('Error creating POS session:', error);
-      throw error;
-    }
-  }
-
-  async closePosSession(id: string, data: any): Promise<any> {
-    try {
-      const [session] = await db
-        .update(posSessions)
-        .set({
-          status: 'ended',
-          logoutAt: new Date(),
-          totalSales: data.totalSales,
-          totalTransactions: data.totalTransactions,
-          totalRefunds: data.totalRefunds
-        })
-        .where(eq(posSessions.id, parseInt(id)))
-        .returning();
-      return session;
-    } catch (error) {
-      console.error('Error closing POS session:', error);
-      throw error;
-    }
-  }
-
-  async getCurrentPosSession(): Promise<any | undefined> {
-    try {
-      const [session] = await db
-        .select()
-        .from(posSessions)
-        .where(eq(posSessions.status, 'active'))
-        .orderBy(desc(posSessions.loginAt))
-        .limit(1);
-      return session;
-    } catch (error) {
-      console.error('Error fetching current POS session:', error);
-      return undefined;
-    }
-  }
-
-  async validateGiftCard(cardNumber: string): Promise<any> {
-    const mockCards = {
-      'GIFT123456': { balance: 50.00, status: 'active' },
-      'GIFT789012': { balance: 25.50, status: 'active' },
-      'GIFT999999': { balance: 0.00, status: 'expired' }
-    };
-    
-    const card = mockCards[cardNumber as keyof typeof mockCards];
-    if (!card) {
-      throw new Error('Gift card not found');
-    }
-    
-    if (card.status !== 'active') {
-      throw new Error('Gift card is not active');
-    }
-    
-    if (card.balance <= 0) {
-      throw new Error('Gift card has no remaining balance');
-    }
-    
-    return { cardNumber, ...card };
-  }
-
-  async searchCustomers(query: string): Promise<any[]> {
-    const customers = await this.getCustomers();
-    const searchTerm = query.toLowerCase();
-    
-    return customers
-      .filter(customer => 
-        customer.name?.toLowerCase().includes(searchTerm) ||
-        customer.email?.toLowerCase().includes(searchTerm) ||
-        customer.phone?.includes(searchTerm)
-      )
-      .map(customer => ({
-        ...customer,
-        totalOrders: Math.floor(Math.random() * 20) + 1,
-        totalSpent: (Math.random() * 5000 + 100).toFixed(2),
-        averageOrderValue: (Math.random() * 200 + 50).toFixed(2),
-        lastOrderDate: new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000),
-        hasPayLaterBadge: Math.random() > 0.7,
-        payLaterPercentage: Math.floor(Math.random() * 30) + 10
-      }));
-  }
-
-  async getCustomerWithStats(id: number): Promise<any | undefined> {
-    const customer = await this.getCustomer(id);
-    if (!customer) return undefined;
-    
-    const orders = await this.getOrdersByCustomerId(id);
-    const loyaltyPoints = await this.getCustomerLoyaltyPoints(id);
-    
-    return {
-      ...customer,
-      orderCount: orders.length,
-      totalSpent: orders.reduce((sum, order) => sum + parseFloat(order.grandTotal || '0'), 0),
-      loyaltyPoints: loyaltyPoints.reduce((sum, lp) => sum + (lp.pointsBalance || 0), 0),
-      lastOrderDate: orders.length > 0 ? orders[0].createdAt : null
-    };
-  }
 }
 
 export const storage = new DatabaseStorage();

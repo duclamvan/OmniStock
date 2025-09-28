@@ -1012,7 +1012,7 @@ export default function ReceiptDetails() {
             {/* Approval Task */}
             <div className="flex items-start gap-3 p-3 rounded-lg border">
               <div className="mt-1">
-                {receipt.status === 'approved' || receipt.status === 'archived' ? (
+                {receipt.status === 'approved' ? (
                   <CheckCircle className="h-5 w-5 text-green-600" />
                 ) : receipt.status === 'pending_approval' ? (
                   <AlertCircle className="h-5 w-5 text-orange-500" />
@@ -1022,15 +1022,13 @@ export default function ReceiptDetails() {
               </div>
               <div className="flex-1">
                 <p className="font-medium">
-                  {receipt.status === 'approved' || receipt.status === 'archived' ? 'Receipt Approved' : 
+                  {receipt.status === 'approved' ? 'Receipt Approved' : 
                    receipt.status === 'pending_approval' ? 'Pending Approval' : 
                    'Awaiting Approval'}
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
                   {receipt.status === 'approved'
                     ? `Approved by ${receipt.approvedBy || 'Unknown'} - Items added to inventory`
-                    : receipt.status === 'archived'
-                    ? 'Completed and archived - Items added to inventory'
                     : receipt.status === 'pending_approval'
                     ? 'Receipt is ready for founder approval'
                     : 'Complete verification first'
@@ -1050,14 +1048,14 @@ export default function ReceiptDetails() {
             <div className="flex justify-between text-sm">
               <span>Overall Progress</span>
               <span>
-                {receipt.status === 'approved' || receipt.status === 'archived' ? '100%' : 
+                {receipt.status === 'approved' ? '100%' : 
                  receipt.status === 'pending_approval' ? '75%' : 
                  allItemsVerified ? '50%' : '25%'}
               </span>
             </div>
             <Progress 
               value={
-                receipt.status === 'approved' || receipt.status === 'archived' ? 100 : 
+                receipt.status === 'approved' ? 100 : 
                 receipt.status === 'pending_approval' ? 75 : 
                 allItemsVerified ? 50 : 25
               } 

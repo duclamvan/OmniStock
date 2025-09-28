@@ -226,7 +226,7 @@ export const landedCosts = pgTable('landed_costs', {
 
 // Core business entities
 export const customers = pgTable('customers', {
-  id: serial('id').primaryKey(),
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
   name: varchar('name').notNull(),
   facebookName: varchar('facebook_name'),
   facebookId: varchar('facebook_id'),
@@ -296,9 +296,9 @@ export const products = pgTable('products', {
   name: varchar('name').notNull(),
   englishName: varchar('english_name'),
   sku: varchar('sku').notNull(),
-  categoryId: integer('category_id').references(() => categories.id),
-  warehouseId: text('warehouse_id').references(() => warehouses.id),
-  supplierId: varchar('supplier_id').references(() => suppliers.id),
+  categoryId: varchar('category_id'),
+  warehouseId: varchar('warehouse_id'),
+  supplierId: varchar('supplier_id'),
   description: text('description'),
   quantity: integer('quantity').default(0),
   lowStockAlert: integer('low_stock_alert').default(5),
@@ -333,8 +333,8 @@ export const products = pgTable('products', {
 export const orders = pgTable('orders', {
   id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
   orderId: varchar('order_id').notNull(),
-  customerId: integer('customer_id').references(() => customers.id),
-  billerId: integer('biller_id').references(() => employees.id),
+  customerId: varchar('customer_id'),
+  billerId: varchar('biller_id'),
   currency: varchar('currency').default('CZK'),
   orderStatus: varchar('order_status').default('pending'),
   paymentStatus: varchar('payment_status').default('pending'),
@@ -520,205 +520,6 @@ export const shipmentItems = pgTable('shipment_items', {
   shipmentId: integer('shipment_id').notNull().references(() => shipments.id, { onDelete: 'cascade' }),
   consolidationId: integer('consolidation_id').notNull().references(() => consolidations.id),
   createdAt: timestamp('created_at').notNull().defaultNow()
-});
-
-// Advanced POS Features Tables
-
-// Customer loyalty points
-export const customerLoyaltyPoints = pgTable('customer_loyalty_points', {
-  id: serial('id').primaryKey(),
-  customerId: varchar('customer_id').notNull().references(() => customers.id, { onDelete: 'cascade' }),
-  pointsEarned: integer('points_earned').notNull().default(0),
-  pointsUsed: integer('points_used').notNull().default(0),
-  pointsBalance: integer('points_balance').notNull().default(0),
-  transactionType: text('transaction_type').notNull(), // earned, used, expired, adjusted
-  orderId: varchar('order_id').references(() => orders.id),
-  description: text('description'),
-  expiresAt: timestamp('expires_at'),
-  createdAt: timestamp('created_at').notNull().defaultNow()
-});
-
-// Employee roles and permissions
-export const employees = pgTable('employees', {
-  id: serial('id').primaryKey(),
-  userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  employeeId: varchar('employee_id').notNull().unique(),
-  firstName: varchar('first_name').notNull(),
-  lastName: varchar('last_name').notNull(),
-  role: text('role').notNull().default('cashier'), // cashier, supervisor, manager, admin
-  permissions: jsonb('permissions').notNull().default('{}'), // JSON object with permission flags
-  pinCode: varchar('pin_code'), // Optional PIN for quick login
-  isActive: boolean('is_active').notNull().default(true),
-  hireDate: date('hire_date'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow()
-});
-
-// Cash drawer management
-export const cashDrawers = pgTable('cash_drawers', {
-  id: serial('id').primaryKey(),
-  drawerId: varchar('drawer_id').notNull().unique(),
-  stationName: varchar('station_name').notNull(),
-  openedBy: integer('opened_by').notNull().references(() => employees.id),
-  openingAmount: decimal('opening_amount', { precision: 10, scale: 2 }).notNull().default('0'),
-  currentAmount: decimal('current_amount', { precision: 10, scale: 2 }).notNull().default('0'),
-  expectedAmount: decimal('expected_amount', { precision: 10, scale: 2 }).notNull().default('0'),
-  status: text('status').notNull().default('closed'), // closed, open, balanced
-  openedAt: timestamp('opened_at').notNull().defaultNow(),
-  closedAt: timestamp('closed_at'),
-  closedBy: integer('closed_by').references(() => employees.id),
-  discrepancy: decimal('discrepancy', { precision: 10, scale: 2 }).default('0'),
-  notes: text('notes')
-});
-
-// Cash drawer transactions
-export const cashDrawerTransactions = pgTable('cash_drawer_transactions', {
-  id: serial('id').primaryKey(),
-  drawerId: integer('drawer_id').notNull().references(() => cashDrawers.id, { onDelete: 'cascade' }),
-  transactionType: text('transaction_type').notNull(), // sale, refund, payout, deposit, opening, closing
-  amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
-  orderId: varchar('order_id').references(() => orders.id),
-  employeeId: integer('employee_id').notNull().references(() => employees.id),
-  description: text('description'),
-  createdAt: timestamp('created_at').notNull().defaultNow()
-});
-
-// POS transaction logging (separate from general user activities)
-export const posTransactions = pgTable('pos_transactions', {
-  id: serial('id').primaryKey(),
-  transactionId: varchar('transaction_id').notNull().unique(),
-  orderId: varchar('order_id').references(() => orders.id),
-  customerId: integer('customer_id').references(() => customers.id),
-  employeeId: integer('employee_id').notNull().references(() => employees.id),
-  drawerId: integer('drawer_id').references(() => cashDrawers.id),
-  transactionType: text('transaction_type').notNull(), // sale, return, void, refund, hold, resume
-  subtotal: decimal('subtotal', { precision: 10, scale: 2 }).notNull(),
-  taxAmount: decimal('tax_amount', { precision: 10, scale: 2 }).notNull().default('0'),
-  discountAmount: decimal('discount_amount', { precision: 10, scale: 2 }).notNull().default('0'),
-  tipAmount: decimal('tip_amount', { precision: 10, scale: 2 }).notNull().default('0'),
-  total: decimal('total', { precision: 10, scale: 2 }).notNull(),
-  paymentMethods: jsonb('payment_methods').notNull().default('[]'), // Array of payment method objects
-  status: text('status').notNull().default('completed'), // pending, completed, void, refunded
-  notes: text('notes'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  voidedAt: timestamp('voided_at'),
-  voidedBy: integer('voided_by').references(() => employees.id),
-  voidReason: text('void_reason')
-});
-
-// Coupon/promotional codes
-export const coupons = pgTable('coupons', {
-  id: serial('id').primaryKey(),
-  code: varchar('code').notNull().unique(),
-  name: varchar('name').notNull(),
-  description: text('description'),
-  discountType: text('discount_type').notNull(), // percentage, fixed_amount, free_shipping
-  discountValue: decimal('discount_value', { precision: 10, scale: 2 }).notNull(),
-  minOrderAmount: decimal('min_order_amount', { precision: 10, scale: 2 }).default('0'),
-  maxDiscountAmount: decimal('max_discount_amount', { precision: 10, scale: 2 }),
-  usageLimit: integer('usage_limit'),
-  usageCount: integer('usage_count').notNull().default(0),
-  customerUsageLimit: integer('customer_usage_limit').default(1),
-  isActive: boolean('is_active').notNull().default(true),
-  startDate: timestamp('start_date').notNull(),
-  endDate: timestamp('end_date').notNull(),
-  applicableProducts: jsonb('applicable_products').default('[]'),
-  applicableCategories: jsonb('applicable_categories').default('[]'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow()
-});
-
-// Coupon usage tracking
-export const couponUsage = pgTable('coupon_usage', {
-  id: serial('id').primaryKey(),
-  couponId: integer('coupon_id').notNull().references(() => coupons.id, { onDelete: 'cascade' }),
-  customerId: varchar('customer_id').references(() => customers.id),
-  orderId: varchar('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
-  discountAmount: decimal('discount_amount', { precision: 10, scale: 2 }).notNull(),
-  usedAt: timestamp('used_at').notNull().defaultNow()
-});
-
-// Split payments tracking
-export const orderPayments = pgTable('order_payments', {
-  id: serial('id').primaryKey(),
-  orderId: varchar('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
-  paymentMethod: text('payment_method').notNull(), // cash, card, bank_transfer, gift_card, store_credit
-  amount: decimal('amount', { precision: 10, scale: 2 }).notNull(),
-  currency: varchar('currency').notNull().default('EUR'),
-  transactionId: varchar('transaction_id'),
-  cardLastFour: varchar('card_last_four'),
-  approvalCode: varchar('approval_code'),
-  processedBy: integer('processed_by').notNull().references(() => employees.id),
-  status: text('status').notNull().default('completed'), // pending, completed, failed, refunded
-  refundedAmount: decimal('refunded_amount', { precision: 10, scale: 2 }).default('0'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  refundedAt: timestamp('refunded_at')
-});
-
-// Tax rates configuration
-export const taxRates = pgTable('tax_rates', {
-  id: serial('id').primaryKey(),
-  name: varchar('name').notNull(),
-  rate: decimal('rate', { precision: 5, scale: 4 }).notNull(), // 0.21 for 21%
-  country: varchar('country').notNull(),
-  region: varchar('region'),
-  productCategories: jsonb('product_categories').default('[]'), // Array of category IDs
-  isDefault: boolean('is_default').notNull().default(false),
-  isActive: boolean('is_active').notNull().default(true),
-  effectiveDate: date('effective_date').notNull(),
-  expiryDate: date('expiry_date'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow()
-});
-
-// Order hold/resume functionality
-export const heldOrders = pgTable('held_orders', {
-  id: serial('id').primaryKey(),
-  holdId: varchar('hold_id').notNull().unique(),
-  customerId: varchar('customer_id').references(() => customers.id),
-  employeeId: integer('employee_id').notNull().references(() => employees.id),
-  items: jsonb('items').notNull(), // Array of cart items
-  subtotal: decimal('subtotal', { precision: 10, scale: 2 }).notNull(),
-  taxAmount: decimal('tax_amount', { precision: 10, scale: 2 }).notNull().default('0'),
-  discountAmount: decimal('discount_amount', { precision: 10, scale: 2 }).notNull().default('0'),
-  total: decimal('total', { precision: 10, scale: 2 }).notNull(),
-  currency: varchar('currency').notNull().default('EUR'),
-  reason: text('reason'),
-  notes: text('notes'),
-  heldAt: timestamp('held_at').notNull().defaultNow(),
-  resumedAt: timestamp('resumed_at'),
-  resumedBy: integer('resumed_by').references(() => employees.id),
-  status: text('status').notNull().default('held') // held, resumed, cancelled, expired
-});
-
-// Manager overrides tracking
-export const managerOverrides = pgTable('manager_overrides', {
-  id: serial('id').primaryKey(),
-  orderId: varchar('order_id').references(() => orders.id),
-  employeeId: integer('employee_id').notNull().references(() => employees.id), // Employee requesting override
-  managerId: integer('manager_id').notNull().references(() => employees.id), // Manager granting override
-  overrideType: text('override_type').notNull(), // discount, price_change, void, refund, return_past_policy
-  originalValue: decimal('original_value', { precision: 10, scale: 2 }),
-  newValue: decimal('new_value', { precision: 10, scale: 2 }),
-  reason: text('reason').notNull(),
-  justification: text('justification'),
-  approvedAt: timestamp('approved_at').notNull().defaultNow(),
-  currency: varchar('currency').default('EUR')
-});
-
-// POS sessions for employee shift tracking
-export const posSessions = pgTable('pos_sessions', {
-  id: serial('id').primaryKey(),
-  sessionId: varchar('session_id').notNull().unique(),
-  employeeId: integer('employee_id').notNull().references(() => employees.id),
-  drawerId: integer('drawer_id').references(() => cashDrawers.id),
-  stationName: varchar('station_name'),
-  loginAt: timestamp('login_at').notNull().defaultNow(),
-  logoutAt: timestamp('logout_at'),
-  totalSales: decimal('total_sales', { precision: 10, scale: 2 }).default('0'),
-  totalTransactions: integer('total_transactions').default(0),
-  totalRefunds: decimal('total_refunds', { precision: 10, scale: 2 }).default('0'),
-  status: text('status').notNull().default('active') // active, ended, force_ended
 });
 
 // Relations
@@ -926,116 +727,6 @@ export const insertShipmentCartonSchema = createInsertSchema(shipmentCartons).om
 export const insertCostAllocationSchema = createInsertSchema(costAllocations).omit({ id: true, createdAt: true });
 export const insertProductCostHistorySchema = createInsertSchema(productCostHistory).omit({ id: true, createdAt: true });
 
-// Advanced POS Features Insert Schemas
-export const insertCustomerLoyaltyPointsSchema = createInsertSchema(customerLoyaltyPoints).omit({ id: true, createdAt: true });
-export const insertEmployeeSchema = createInsertSchema(employees).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertCashDrawerSchema = createInsertSchema(cashDrawers).omit({ id: true, openedAt: true });
-export const insertCashDrawerTransactionSchema = createInsertSchema(cashDrawerTransactions).omit({ id: true, createdAt: true });
-export const insertPosTransactionSchema = createInsertSchema(posTransactions).omit({ id: true, createdAt: true });
-export const insertCouponSchema = createInsertSchema(coupons).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertCouponUsageSchema = createInsertSchema(couponUsage).omit({ id: true, usedAt: true });
-export const insertOrderPaymentSchema = createInsertSchema(orderPayments).omit({ id: true, createdAt: true });
-export const insertTaxRateSchema = createInsertSchema(taxRates).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertHeldOrderSchema = createInsertSchema(heldOrders).omit({ id: true, heldAt: true });
-export const insertManagerOverrideSchema = createInsertSchema(managerOverrides).omit({ id: true, approvedAt: true });
-export const insertPosSessionSchema = createInsertSchema(posSessions).omit({ id: true, loginAt: true });
-
-// Placeholder schemas for missing tables - these would need to be implemented when the actual tables are created
-export const insertProductVariantSchema = z.object({
-  productId: z.string(),
-  name: z.string(),
-  sku: z.string().optional(),
-  price: z.string().optional(),
-  attributes: z.record(z.any()).optional()
-});
-
-export const insertCustomerPriceSchema = z.object({
-  customerId: z.string(),
-  productId: z.string(),
-  price: z.string(),
-  currency: z.string().optional().default('CZK'),
-  effectiveDate: z.date().optional()
-});
-
-// Advanced POS Operation Schemas
-export const cartItemSchema = z.object({
-  id: z.string(),
-  productId: z.string(),
-  variantId: z.string().optional(),
-  bundleId: z.string().optional(),
-  name: z.string().min(1, 'Product name is required'),
-  price: z.number().min(0, 'Price must be non-negative'),
-  quantity: z.number().int().min(1, 'Quantity must be at least 1'),
-  type: z.enum(['product', 'variant', 'bundle']),
-  sku: z.string().optional(),
-  landingCost: z.number().optional()
-});
-
-export const validateCouponSchema = z.object({
-  code: z.string().min(1, 'Coupon code is required').max(50, 'Coupon code too long'),
-  customerId: z.number().int().positive().optional(),
-  cartData: z.object({
-    items: z.array(cartItemSchema).min(1, 'Cart must contain at least one item'),
-    subtotal: z.number().min(0, 'Subtotal must be non-negative'),
-    total: z.number().min(0, 'Total must be non-negative')
-  }).optional()
-});
-
-export const validateManagerPinSchema = z.object({
-  pin: z.string().min(4, 'PIN must be at least 4 characters').max(10, 'PIN too long')
-});
-
-export const validateGiftCardSchema = z.object({
-  cardNumber: z.string().min(1, 'Gift card number is required').max(50, 'Gift card number too long')
-});
-
-export const holdOrderSchema = z.object({
-  cartItems: z.array(cartItemSchema).min(1, 'Cart must contain at least one item'),
-  subtotal: z.number().min(0, 'Subtotal must be non-negative'),
-  taxAmount: z.number().min(0, 'Tax amount must be non-negative').optional(),
-  discountAmount: z.number().min(0, 'Discount amount must be non-negative').optional(),
-  total: z.number().min(0, 'Total must be non-negative'),
-  currency: z.enum(['EUR', 'CZK', 'USD', 'VND', 'CNY']).default('EUR'),
-  customerId: z.number().int().positive().optional(),
-  employeeId: z.string().min(1, 'Employee ID is required'),
-  reason: z.string().min(1, 'Reason for holding order is required').max(200, 'Reason too long'),
-  notes: z.string().max(500, 'Notes too long').optional()
-});
-
-export const resumeHeldOrderSchema = z.object({
-  resumedBy: z.string().min(1, 'Employee ID is required')
-});
-
-export const createPaymentSchema = z.object({
-  paymentType: z.enum(['cash', 'card', 'gift_card', 'loyalty_points', 'bank_transfer', 'other']),
-  amount: z.number().min(0.01, 'Payment amount must be greater than 0'),
-  reference: z.string().max(100, 'Reference too long').optional(),
-  processedBy: z.string().min(1, 'Employee ID is required')
-});
-
-export const createManagerOverrideSchema = z.object({
-  orderId: z.string().optional(),
-  employeeId: z.string().min(1, 'Employee ID is required'),
-  managerId: z.string().min(1, 'Manager ID is required'),
-  overrideType: z.enum(['discount', 'void_item', 'return_without_receipt', 'price_change', 'tax_exempt', 'other']),
-  originalValue: z.string().max(100, 'Original value too long').optional(),
-  newValue: z.string().max(100, 'New value too long').optional(),
-  reason: z.string().min(1, 'Reason is required').max(200, 'Reason too long')
-});
-
-export const customerSearchSchema = z.object({
-  q: z.string().min(2, 'Search query must be at least 2 characters').max(100, 'Search query too long')
-});
-
-export const loyaltyPointsSchema = z.object({
-  customerId: z.number().int().positive('Customer ID must be positive'),
-  points: z.number().int(),
-  type: z.enum(['earned', 'redeemed', 'expired', 'adjustment']),
-  description: z.string().max(200, 'Description too long').optional(),
-  orderId: z.string().optional(),
-  employeeId: z.string().optional()
-});
-
 // Export types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -1093,29 +784,3 @@ export type CostAllocation = typeof costAllocations.$inferSelect;
 export type InsertCostAllocation = z.infer<typeof insertCostAllocationSchema>;
 export type ProductCostHistory = typeof productCostHistory.$inferSelect;
 export type InsertProductCostHistory = z.infer<typeof insertProductCostHistorySchema>;
-
-// Advanced POS Features Types
-export type CustomerLoyaltyPoints = typeof customerLoyaltyPoints.$inferSelect;
-export type InsertCustomerLoyaltyPoints = z.infer<typeof insertCustomerLoyaltyPointsSchema>;
-export type Employee = typeof employees.$inferSelect;
-export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
-export type CashDrawer = typeof cashDrawers.$inferSelect;
-export type InsertCashDrawer = z.infer<typeof insertCashDrawerSchema>;
-export type CashDrawerTransaction = typeof cashDrawerTransactions.$inferSelect;
-export type InsertCashDrawerTransaction = z.infer<typeof insertCashDrawerTransactionSchema>;
-export type PosTransaction = typeof posTransactions.$inferSelect;
-export type InsertPosTransaction = z.infer<typeof insertPosTransactionSchema>;
-export type Coupon = typeof coupons.$inferSelect;
-export type InsertCoupon = z.infer<typeof insertCouponSchema>;
-export type CouponUsage = typeof couponUsage.$inferSelect;
-export type InsertCouponUsage = z.infer<typeof insertCouponUsageSchema>;
-export type OrderPayment = typeof orderPayments.$inferSelect;
-export type InsertOrderPayment = z.infer<typeof insertOrderPaymentSchema>;
-export type TaxRate = typeof taxRates.$inferSelect;
-export type InsertTaxRate = z.infer<typeof insertTaxRateSchema>;
-export type HeldOrder = typeof heldOrders.$inferSelect;
-export type InsertHeldOrder = z.infer<typeof insertHeldOrderSchema>;
-export type ManagerOverride = typeof managerOverrides.$inferSelect;
-export type InsertManagerOverride = z.infer<typeof insertManagerOverrideSchema>;
-export type PosSession = typeof posSessions.$inferSelect;
-export type InsertPosSession = z.infer<typeof insertPosSessionSchema>;

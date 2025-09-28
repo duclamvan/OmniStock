@@ -6,7 +6,12 @@ interface LayoutProps {
 }
 
 export function Layout({ children }: LayoutProps) {
-  // Allow access to all pages without authentication for POS system
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading || !isAuthenticated) {
+    return null;
+  }
+
   return (
     <MobileResponsiveLayout>
       {children}

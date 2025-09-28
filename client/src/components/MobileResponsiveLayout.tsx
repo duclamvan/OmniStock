@@ -28,19 +28,7 @@ import {
   DollarSign,
   Store,
   Globe,
-  PackageCheck,
-  Building2,
-  Percent,
-  UserCheck,
-  Building,
-  RefreshCw,
-  Calculator,
-  ShoppingBag,
-  Import,
-  ClipboardCheck,
-  Boxes,
-  Send,
-  FileText
+  PackageCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -95,14 +83,10 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
       name: "Dashboard",
       href: "/",
       icon: LayoutDashboard,
-      color: "text-blue-600",
-      description: "Overview & Analytics"
     },
     {
       name: "Orders",
       icon: ShoppingCart,
-      color: "text-emerald-600",
-      description: "Order Management",
       children: [
         { name: "All Orders", href: "/orders" },
         { name: "Add Order", href: "/orders/add" },
@@ -114,9 +98,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
     },
     {
       name: "Inventory",
-      icon: Boxes,
-      color: "text-purple-600",
-      description: "Product Management",
+      icon: Package,
       children: [
         { name: "All Products", href: "/inventory" },
         { name: "Categories", href: "/inventory/categories" },
@@ -127,9 +109,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
     },
     {
       name: "Warehouses",
-      icon: Building2,
-      color: "text-orange-600",
-      description: "Storage Facilities",
+      icon: Warehouse,
       children: [
         { name: "All Warehouses", href: "/warehouses" },
         { name: "Warehouse Map", href: "/warehouses/map" },
@@ -139,50 +119,36 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
     {
       name: "Discounts",
       href: "/discounts",
-      icon: Percent,
-      color: "text-red-600",
-      description: "Pricing & Offers"
+      icon: Tag,
     },
     {
       name: "Customers",
       href: "/customers",
-      icon: UserCheck,
-      color: "text-indigo-600",
-      description: "Client Management"
+      icon: Users,
     },
     {
       name: "Suppliers",
       href: "/suppliers",
-      icon: Building,
-      color: "text-teal-600",
-      description: "Vendor Network"
+      icon: Truck,
     },
     {
       name: "Returns",
       href: "/returns",
-      icon: RefreshCw,
-      color: "text-yellow-600",
-      description: "Return Processing"
+      icon: RotateCcw,
     },
     {
       name: "Expenses",
       href: "/expenses",
-      icon: Calculator,
-      color: "text-pink-600",
-      description: "Cost Tracking"
+      icon: DollarSign,
     },
     {
       name: "POS",
       href: "/pos",
       icon: Store,
-      color: "text-green-600",
-      description: "Point of Sale"
     },
     {
       name: "Imports",
-      icon: Import,
-      color: "text-cyan-600",
-      description: "International Orders",
+      icon: Globe,
       children: [
         { name: "Kanban Dashboard", href: "/imports/kanban" },
         { name: "Supplier Processing", href: "/imports/supplier-processing" },
@@ -193,30 +159,22 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
     {
       name: "Receiving",
       href: "/receiving",
-      icon: ClipboardCheck,
-      color: "text-violet-600",
-      description: "Incoming Shipments"
+      icon: Package,
     },
     {
       name: "Items To Store",
       href: "/receiving/items-to-store",
       icon: PackageCheck,
-      color: "text-lime-600",
-      description: "Storage Queue"
     },
     {
       name: "Shipping",
       href: "/shipping",
-      icon: Send,
-      color: "text-blue-500",
-      description: "Outbound Logistics"
+      icon: Truck,
     },
     {
       name: "Reports",
       href: "/reports",
-      icon: FileText,
-      color: "text-gray-600",
-      description: "Analytics & Reports"
+      icon: BarChart3,
     },
   ];
 
@@ -281,36 +239,22 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                   <Button
                     variant="ghost"
                     className={cn(
-                      "w-full justify-center p-3 rounded-lg transition-all duration-200 group relative",
-                      "hover:bg-gray-100 dark:hover:bg-gray-800",
-                      isActive && "bg-white shadow-sm border border-gray-200"
+                      "w-full justify-center p-2 rounded-md",
+                      isActive && "bg-emerald-50 text-primary"
                     )}
                   >
-                    <item.icon className={cn("h-5 w-5 transition-colors", item.color)} />
-                    <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 whitespace-nowrap z-50 shadow-lg">
-                      <div className="flex flex-col">
-                        <span className="font-medium">{item.name}</span>
-                        <span className="text-xs text-gray-300">{item.description}</span>
-                      </div>
-                    </div>
+                    <item.icon className="h-5 w-5" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent side="right" align="start" className="w-56 p-2">
-                  <div className="px-2 py-1.5 mb-1">
-                    <div className="flex items-center gap-2">
-                      <item.icon className={cn("h-4 w-4", item.color)} />
-                      <span className="font-medium text-sm">{item.name}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
-                  </div>
+                <DropdownMenuContent side="right" align="start" className="w-48">
+                  <DropdownMenuLabel>{item.name}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   {item.children.map((child) => (
                     <Link key={child.href} href={child.href}>
                       <DropdownMenuItem className={cn(
-                        "rounded-md px-3 py-2 cursor-pointer transition-colors",
-                        location === child.href && "bg-gray-100 dark:bg-gray-800"
+                        location === child.href && "bg-slate-100"
                       )}>
-                        <span className="text-sm">{child.name}</span>
+                        {child.name}
                       </DropdownMenuItem>
                     </Link>
                   ))}
@@ -327,7 +271,6 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                   itemRefs.current[item.name] = el;
                 }
               }}
-              className="mb-1"
             >
               <Collapsible
                 open={isOpen}
@@ -337,23 +280,22 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                   <Button
                     variant="ghost"
                     className={cn(
-                      "w-full justify-between text-left font-medium px-4 py-2.5 rounded-lg touch-target transition-all duration-200 min-h-[44px]",
-                      "hover:bg-gray-50 dark:hover:bg-gray-800",
-                      isActive && "bg-white shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700"
+                      "w-full justify-between text-left font-medium px-3 py-2 rounded-md touch-target",
+                      isActive && "bg-emerald-50 text-primary"
                     )}
                   >
-                  <div className="flex items-center gap-3">
-                    <item.icon className={cn("h-5 w-5 transition-colors flex-shrink-0", item.color)} />
-                    <span className="text-sm font-medium text-gray-900 dark:text-white truncate">{item.name}</span>
+                  <div className="flex items-center">
+                    <item.icon className="mr-3 h-5 w-5" />
+                    <span className="truncate">{item.name}</span>
                   </div>
                   <ChevronDown className={cn(
-                    "h-4 w-4 transition-transform duration-200 text-gray-400 flex-shrink-0",
+                    "h-4 w-4 transition-transform shrink-0",
                     isOpen && "rotate-180"
                   )} />
                 </Button>
               </CollapsibleTrigger>
-              <CollapsibleContent className="mt-1">
-                <div className="ml-6 space-y-0.5">
+              <CollapsibleContent className="space-y-1">
+                <div className="pl-8 space-y-1">
                   {item.children.map((child) => {
                     const isChildActive = location === child.href;
                     return (
@@ -370,16 +312,12 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                             variant="ghost"
                             size="sm"
                             className={cn(
-                              "w-full justify-start text-gray-600 dark:text-gray-300 px-3 py-2 rounded-md touch-target transition-all duration-200 text-sm min-h-[36px]",
-                              "hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white",
-                              isChildActive && "bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white font-medium"
+                              "w-full justify-start text-slate-600 px-3 py-2 rounded-md touch-target",
+                              isChildActive && "bg-slate-100 text-slate-900"
                             )}
                             onClick={() => setIsMobileMenuOpen(false)}
                           >
-                            <div className="flex items-center gap-2">
-                              <div className="w-1 h-1 rounded-full bg-gray-400 flex-shrink-0"></div>
-                              <span className="truncate">{child.name}</span>
-                            </div>
+                            {child.name}
                           </Button>
                         </Link>
                       </div>
@@ -400,18 +338,14 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
               <Button
                 variant="ghost"
                 className={cn(
-                  "w-full justify-center p-3 rounded-lg relative group transition-all duration-200",
-                  "hover:bg-gray-100 dark:hover:bg-gray-800",
-                  isActive && "bg-white shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700"
+                  "w-full justify-center p-2 rounded-md relative group",
+                  isActive && "bg-emerald-50 text-primary"
                 )}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                <item.icon className={cn("h-5 w-5 transition-colors", item.color)} />
-                <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 whitespace-nowrap z-50 shadow-lg">
-                  <div className="flex flex-col">
-                    <span className="font-medium">{item.name}</span>
-                    <span className="text-xs text-gray-300">{item.description}</span>
-                  </div>
+                <item.icon className="h-5 w-5" />
+                <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
+                  {item.name}
                 </div>
               </Button>
             </Link>
@@ -426,22 +360,18 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                 itemRefs.current[item.name] = el;
               }
             }}
-            className="mb-1"
           >
             <Link href={item.href}>
               <Button
                 variant="ghost"
                 className={cn(
-                  "w-full justify-start font-medium px-4 py-2.5 rounded-lg touch-target transition-all duration-200 min-h-[44px]",
-                  "hover:bg-gray-50 dark:hover:bg-gray-800",
-                  isActive && "bg-white shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700"
+                  "w-full justify-start font-medium px-3 py-2 rounded-md touch-target",
+                  isActive && "bg-emerald-50 text-primary"
                 )}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                <div className="flex items-center gap-3">
-                  <item.icon className={cn("h-5 w-5 transition-colors flex-shrink-0", item.color)} />
-                  <span className="text-sm font-medium text-gray-900 dark:text-white truncate">{item.name}</span>
-                </div>
+                <item.icon className="mr-3 h-5 w-5 shrink-0" />
+                <span className="truncate">{item.name}</span>
               </Button>
             </Link>
           </div>
