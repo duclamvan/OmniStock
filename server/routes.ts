@@ -1,12 +1,14 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth } from "./replitAuth";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 import { seedMockData } from "./mockData";
 import { cacheMiddleware, invalidateCache } from "./cache";
 import multer from "multer";
 import path from "path";
 import { promises as fs } from "fs";
+import rateLimit from "express-rate-limit";
+import helmet from "helmet";
 import {
   insertCategorySchema,
   insertCustomerSchema,
@@ -24,6 +26,20 @@ import {
   purchaseItems,
   receipts,
   receiptItems,
+  // POS validation schemas
+  insertCustomerLoyaltyPointsSchema,
+  insertCouponUsageSchema,
+  insertOrderPaymentSchema,
+  insertManagerOverrideSchema,
+  validateCouponSchema,
+  validateManagerPinSchema,
+  validateGiftCardSchema,
+  holdOrderSchema,
+  resumeHeldOrderSchema,
+  createPaymentSchema,
+  createManagerOverrideSchema,
+  customerSearchSchema,
+  loyaltyPointsSchema,
 } from "@shared/schema";
 import { z } from "zod";
 import { nanoid } from "nanoid";
@@ -60,18 +76,470 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware (disabled for testing)
-  // await setupAuth(app);
+  // Security middleware
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'"],
+        imgSrc: ["'self'", "data:", "blob:"],
+        connectSrc: ["'self'"],
+        fontSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        mediaSrc: ["'self'"],
+        frameSrc: ["'none'"],
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+  }));
+
+  // Rate limiting middleware
+  const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+    message: 'Too many requests from this IP, please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // limit each IP to 5 requests per windowMs
+    message: 'Too many authentication attempts, please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+  const posLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minute
+    max: 50, // limit each IP to 50 POS requests per minute
+    message: 'Too many POS requests, please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+  // Apply rate limiting to all API routes
+  app.use('/api', apiLimiter);
+  app.use('/api/auth', authLimiter);
+  app.use('/api/pos', posLimiter);
+
+  // Re-enable authentication middleware
+  await setupAuth(app);
+
+  // Role-based access control middleware
+  const requireRole = (requiredRoles: string[]) => {
+    return async (req: any, res: any, next: any) => {
+      try {
+        const user = req.user;
+        if (!user || !user.claims) {
+          return res.status(401).json({ message: 'Authentication required' });
+        }
+
+        // For POS operations, check employee role
+        const employee = await storage.getEmployeeByUserId(user.claims.sub);
+        if (!employee) {
+          return res.status(403).json({ message: 'Employee access required for POS operations' });
+        }
+
+        if (!employee.isActive) {
+          return res.status(403).json({ message: 'Employee account is inactive' });
+        }
+
+        if (!requiredRoles.includes(employee.role)) {
+          return res.status(403).json({ 
+            message: `Insufficient permissions. Required: ${requiredRoles.join(' or ')}, Current: ${employee.role}` 
+          });
+        }
+
+        // Attach employee info to request for use in route handlers
+        req.employee = employee;
+        next();
+      } catch (error) {
+        console.error('Error in role check:', error);
+        res.status(500).json({ message: 'Authorization check failed' });
+      }
+    };
+  };
+
+  // Permission-based access control for specific operations
+  const requirePermission = (permission: string) => {
+    return async (req: any, res: any, next: any) => {
+      try {
+        const employee = req.employee;
+        if (!employee) {
+          return res.status(403).json({ message: 'Employee context required' });
+        }
+
+        const permissions = employee.permissions || {};
+        if (!permissions[permission]) {
+          return res.status(403).json({ 
+            message: `Insufficient permissions. Required permission: ${permission}` 
+          });
+        }
+
+        next();
+      } catch (error) {
+        console.error('Error in permission check:', error);
+        res.status(500).json({ message: 'Permission check failed' });
+      }
+    };
+  };
 
   // Auth routes
-  app.get('/api/auth/user', async (req: any, res) => {
-    // Return mock user for testing without auth
-    res.json({
-      id: "test-user",
-      email: "test@example.com",
-      firstName: "Test",
-      lastName: "User"
-    });
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = req.user;
+      if (!user || !user.claims) {
+        return res.status(401).json({ message: 'User not authenticated' });
+      }
+      
+      // Return authenticated user data
+      res.json({
+        id: user.claims.sub,
+        email: user.claims.email,
+        firstName: user.claims.first_name,
+        lastName: user.claims.last_name,
+        profileImageUrl: user.claims.profile_image_url
+      });
+    } catch (error) {
+      console.error('Error fetching authenticated user:', error);
+      res.status(500).json({ message: 'Failed to fetch user data' });
+    }
+  });
+
+  // Advanced POS API Routes
+  
+  // Customer Search & Lookup (Cashier level access)
+  app.get('/api/pos/customers/search', requireRole(['cashier', 'supervisor', 'manager', 'admin']), async (req, res) => {
+    try {
+      const searchData = customerSearchSchema.parse(req.query);
+      const { q } = searchData;
+      const customers = await storage.searchCustomers(q);
+      res.json(customers);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Invalid search parameters', details: error.errors });
+      }
+      console.error('Error searching customers:', error);
+      res.status(500).json({ message: 'Failed to search customers' });
+    }
+  });
+
+  app.get('/api/pos/customers/:id/stats', requireRole(['cashier', 'supervisor', 'manager', 'admin']), async (req, res) => {
+    try {
+      const customerId = parseInt(req.params.id);
+      const customer = await storage.getCustomerWithStats(customerId);
+      if (!customer) {
+        return res.status(404).json({ message: 'Customer not found' });
+      }
+      res.json(customer);
+    } catch (error) {
+      console.error('Error fetching customer stats:', error);
+      res.status(500).json({ message: 'Failed to fetch customer stats' });
+    }
+  });
+
+  // Loyalty Points Management (Read: Cashier level, Write: Supervisor level)
+  app.get('/api/pos/customers/:id/loyalty', requireRole(['cashier', 'supervisor', 'manager', 'admin']), async (req, res) => {
+    try {
+      const customerId = parseInt(req.params.id);
+      const points = await storage.getCustomerLoyaltyPoints(customerId);
+      res.json(points);
+    } catch (error) {
+      console.error('Error fetching loyalty points:', error);
+      res.status(500).json({ message: 'Failed to fetch loyalty points' });
+    }
+  });
+
+  app.post('/api/pos/loyalty/points', requireRole(['supervisor', 'manager', 'admin']), async (req, res) => {
+    try {
+      const validatedData = loyaltyPointsSchema.parse(req.body);
+      const points = await storage.createLoyaltyPoints(validatedData);
+      res.status(201).json(points);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Invalid loyalty points data', details: error.errors });
+      }
+      console.error('Error creating loyalty points:', error);
+      res.status(500).json({ message: 'Failed to create loyalty points' });
+    }
+  });
+
+  // Employee & Manager Validation (Admin level for employee list)
+  app.get('/api/pos/employees', requireRole(['admin']), async (req, res) => {
+    try {
+      const employees = await storage.getEmployees();
+      res.json(employees);
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+      res.status(500).json({ message: 'Failed to fetch employees' });
+    }
+  });
+
+  app.post('/api/pos/validate-manager', requireRole(['cashier', 'supervisor', 'manager', 'admin']), async (req, res) => {
+    try {
+      const { pin } = validateManagerPinSchema.parse(req.body);
+      const manager = await storage.validateManagerPin(pin);
+      if (!manager) {
+        return res.status(401).json({ message: 'Invalid manager PIN' });
+      }
+      res.json({ 
+        valid: true, 
+        manager: {
+          id: manager.id,
+          firstName: manager.firstName,
+          lastName: manager.lastName,
+          role: manager.role
+        }
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Invalid PIN format', details: error.errors });
+      }
+      console.error('Error validating manager PIN:', error);
+      res.status(500).json({ message: 'Failed to validate manager PIN' });
+    }
+  });
+
+  // Coupon & Discount Validation (Cashier level access)
+  app.get('/api/pos/coupons', requireRole(['cashier', 'supervisor', 'manager', 'admin']), async (req, res) => {
+    try {
+      const coupons = await storage.getCoupons();
+      res.json(coupons);
+    } catch (error) {
+      console.error('Error fetching coupons:', error);
+      res.status(500).json({ message: 'Failed to fetch coupons' });
+    }
+  });
+
+  app.post('/api/pos/validate-coupon', requireRole(['cashier', 'supervisor', 'manager', 'admin']), async (req, res) => {
+    try {
+      const { code, customerId, cartData } = validateCouponSchema.parse(req.body);
+      const result = await storage.validateCoupon(code, customerId, cartData);
+      res.json(result);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Invalid coupon validation data', details: error.errors });
+      }
+      if (error instanceof Error) {
+        res.status(400).json({ message: error.message });
+      } else {
+        console.error('Error validating coupon:', error);
+        res.status(500).json({ message: 'Failed to validate coupon' });
+      }
+    }
+  });
+
+  app.post('/api/pos/coupon-usage', requireRole(['cashier', 'supervisor', 'manager', 'admin']), async (req, res) => {
+    try {
+      const validatedData = insertCouponUsageSchema.parse(req.body);
+      const usage = await storage.createCouponUsage(validatedData);
+      res.status(201).json(usage);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Invalid coupon usage data', details: error.errors });
+      }
+      console.error('Error creating coupon usage:', error);
+      res.status(500).json({ message: 'Failed to create coupon usage' });
+    }
+  });
+
+  // Order Hold/Resume Functionality (Supervisor level for hold operations)
+  app.get('/api/pos/held-orders', requireRole(['supervisor', 'manager', 'admin']), async (req, res) => {
+    try {
+      const heldOrders = await storage.getHeldOrders();
+      res.json(heldOrders);
+    } catch (error) {
+      console.error('Error fetching held orders:', error);
+      res.status(500).json({ message: 'Failed to fetch held orders' });
+    }
+  });
+
+  app.post('/api/pos/hold-order', requireRole(['supervisor', 'manager', 'admin']), async (req, res) => {
+    try {
+      const validatedData = holdOrderSchema.parse(req.body);
+      const { cartItems, subtotal, taxAmount, discountAmount, total, currency, customerId, employeeId, reason, notes } = validatedData;
+
+      const heldOrder = await storage.createHeldOrder({
+        customerId,
+        employeeId,
+        items: cartItems,
+        subtotal,
+        taxAmount: taxAmount || 0,
+        discountAmount: discountAmount || 0,
+        total,
+        currency,
+        reason,
+        notes
+      });
+
+      res.status(201).json(heldOrder);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Invalid hold order data', details: error.errors });
+      }
+      console.error('Error holding order:', error);
+      res.status(500).json({ message: 'Failed to hold order' });
+    }
+  });
+
+  app.post('/api/pos/resume-order/:holdId', requireRole(['supervisor', 'manager', 'admin']), async (req, res) => {
+    try {
+      const { holdId } = req.params;
+      const { resumedBy } = resumeHeldOrderSchema.parse(req.body);
+
+      const resumedOrder = await storage.resumeHeldOrder(holdId, resumedBy);
+      res.json(resumedOrder);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Invalid resume order data', details: error.errors });
+      }
+      if (error instanceof Error) {
+        res.status(400).json({ message: error.message });
+      } else {
+        console.error('Error resuming order:', error);
+        res.status(500).json({ message: 'Failed to resume order' });
+      }
+    }
+  });
+
+  app.delete('/api/pos/held-order/:holdId', requireRole(['manager', 'admin']), async (req, res) => {
+    try {
+      const { holdId } = req.params;
+      const success = await storage.deleteHeldOrder(holdId);
+      if (!success) {
+        return res.status(404).json({ message: 'Held order not found' });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting held order:', error);
+      res.status(500).json({ message: 'Failed to delete held order' });
+    }
+  });
+
+  // Payment Processing & Split Payments (Cashier level access)
+  app.get('/api/pos/orders/:orderId/payments', requireRole(['cashier', 'supervisor', 'manager', 'admin']), async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const payments = await storage.getOrderPayments(orderId);
+      res.json(payments);
+    } catch (error) {
+      console.error('Error fetching order payments:', error);
+      res.status(500).json({ message: 'Failed to fetch order payments' });
+    }
+  });
+
+  app.post('/api/pos/orders/:orderId/payments', requireRole(['cashier', 'supervisor', 'manager', 'admin']), async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const { paymentType, amount, reference, processedBy } = createPaymentSchema.parse(req.body);
+
+      const payment = await storage.createOrderPayment({
+        orderId,
+        paymentType,
+        amount,
+        reference,
+        processedBy,
+        status: 'completed'
+      });
+
+      res.status(201).json(payment);
+    } catch (error) {
+      console.error('Error creating payment:', error);
+      res.status(500).json({ message: 'Failed to process payment' });
+    }
+  });
+
+  app.delete('/api/pos/payments/:paymentId', requireRole(['manager', 'admin']), async (req, res) => {
+    try {
+      const { paymentId } = req.params;
+      const success = await storage.deleteOrderPayment(paymentId);
+      if (!success) {
+        return res.status(404).json({ message: 'Payment not found' });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting payment:', error);
+      res.status(500).json({ message: 'Failed to delete payment' });
+    }
+  });
+
+  // Manager Overrides
+  app.get('/api/pos/manager-overrides', requireRole(['manager', 'admin']), async (req, res) => {
+    try {
+      const { orderId, employeeId } = req.query;
+      const filters = { 
+        ...(orderId && { orderId }), 
+        ...(employeeId && { employeeId }) 
+      };
+      const overrides = await storage.getManagerOverrides(filters);
+      res.json(overrides);
+    } catch (error) {
+      console.error('Error fetching manager overrides:', error);
+      res.status(500).json({ message: 'Failed to fetch manager overrides' });
+    }
+  });
+
+  app.post('/api/pos/manager-override', requireRole(['manager', 'admin']), async (req, res) => {
+    try {
+      const validatedData = createManagerOverrideSchema.parse(req.body);
+      const { orderId, employeeId, managerId, overrideType, originalValue, newValue, reason } = validatedData;
+
+      const override = await storage.createManagerOverride({
+        orderId,
+        employeeId,
+        managerId,
+        overrideType,
+        originalValue,
+        newValue,
+        reason,
+        approvedAt: new Date()
+      });
+
+      res.status(201).json(override);
+    } catch (error) {
+      console.error('Error creating manager override:', error);
+      res.status(500).json({ message: 'Failed to create manager override' });
+    }
+  });
+
+  // Gift Card Validation
+  app.post('/api/pos/validate-gift-card', requireRole(['cashier', 'supervisor', 'manager', 'admin']), async (req, res) => {
+    try {
+      const { cardNumber } = validateGiftCardSchema.parse(req.body);
+      const card = await storage.validateGiftCard(cardNumber);
+      res.json(card);
+    } catch (error) {
+      if (error instanceof Error) {
+        res.status(400).json({ message: error.message });
+      } else {
+        console.error('Error validating gift card:', error);
+        res.status(500).json({ message: 'Failed to validate gift card' });
+      }
+    }
+  });
+
+  // Tax Rates
+  app.get('/api/pos/tax-rates', requireRole(['cashier', 'supervisor', 'manager', 'admin']), async (req, res) => {
+    try {
+      const taxRates = await storage.getTaxRates();
+      res.json(taxRates);
+    } catch (error) {
+      console.error('Error fetching tax rates:', error);
+      res.status(500).json({ message: 'Failed to fetch tax rates' });
+    }
+  });
+
+  app.get('/api/pos/tax-rates/active', requireRole(['cashier', 'supervisor', 'manager', 'admin']), async (req, res) => {
+    try {
+      const { location } = req.query;
+      const taxRate = await storage.getActiveTaxRate(location as string);
+      res.json(taxRate);
+    } catch (error) {
+      console.error('Error fetching active tax rate:', error);
+      res.status(500).json({ message: 'Failed to fetch active tax rate' });
+    }
   });
 
   // Dashboard endpoints with caching

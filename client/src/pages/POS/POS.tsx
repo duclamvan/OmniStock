@@ -1388,18 +1388,23 @@ export default function POS() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 h-4 w-4" />
               <Input
                 ref={searchInputRef}
-                placeholder="Search products... (Ctrl+K)"
+                placeholder="Search products, SKU, barcode... (Ctrl+K)"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pos-input-premium pl-10 pr-10 h-12 text-sm font-medium"
+                className="pos-input-premium pl-10 pr-10 h-12 text-sm font-medium pos-animate-fade-in-up"
                 data-testid="input-search"
+                autoComplete="off"
+                spellCheck="false"
               />
               {searchQuery && (
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600 rounded-full transition-all duration-200"
-                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600 rounded-full transition-all duration-200 pos-hover-scale pos-click-effect"
+                  onClick={() => {
+                    setSearchQuery('');
+                    searchInputRef.current?.focus();
+                  }}
                   data-testid="button-clear-search"
                 >
                   <X className="h-3 w-3" />
@@ -1464,7 +1469,7 @@ export default function POS() {
                   key={qty}
                   size="sm"
                   variant="outline"
-                  className="h-12 font-bold text-lg pos-button-secondary hover:pos-button-primary transition-all duration-200 touch-target-large"
+                  className="h-12 font-bold text-lg pos-button-secondary hover:pos-button-primary transition-all duration-200 touch-target-large pos-hover-scale pos-click-effect"
                   onClick={() => quickAddQuantity(qty)}
                   disabled={cart.length === 0}
                   data-testid={`quick-quantity-${qty}`}
@@ -1480,7 +1485,7 @@ export default function POS() {
               <Button
                 size="sm"
                 variant={paymentMethod === 'cash' ? 'default' : 'outline'}
-                className="w-full justify-start h-12 font-medium transition-all duration-200 touch-target-large"
+                className="w-full justify-start h-12 font-medium transition-all duration-200 touch-target-large pos-hover-lift pos-click-effect"
                 onClick={() => quickSetPaymentMethod('cash')}
                 data-testid="quick-payment-cash"
               >
@@ -1491,7 +1496,7 @@ export default function POS() {
               <Button
                 size="sm"
                 variant={paymentMethod === 'pay_later' ? 'default' : 'outline'}
-                className="w-full justify-start h-12 font-medium transition-all duration-200 touch-target-large"
+                className="w-full justify-start h-12 font-medium transition-all duration-200 touch-target-large pos-hover-lift pos-click-effect"
                 onClick={() => quickSetPaymentMethod('pay_later')}
                 data-testid="quick-payment-later"
               >
@@ -1655,15 +1660,20 @@ export default function POS() {
                       return (
                         <Card 
                           key={product.id} 
-                          className="group pos-card-interactive cursor-pointer pos-animate-fade-in-up bg-white dark:bg-slate-900"
-                          onClick={() => addToCart({
-                            id: product.id,
-                            name: product.name,
-                            price: price,
-                            type: 'product',
-                            sku: product.sku,
-                            landingCost: product.latestLandingCost
-                          })}
+                          className="group pos-card-interactive cursor-pointer pos-animate-fade-in-up bg-white dark:bg-slate-900 hover:pos-shadow-card-hover transition-all duration-300 pos-hover-scale"
+                          onClick={() => {
+                            addToCart({
+                              id: product.id,
+                              name: product.name,
+                              price: price,
+                              type: 'product',
+                              sku: product.sku,
+                              landingCost: product.latestLandingCost
+                            });
+                            if (enableSounds) {
+                              soundEffects.playSuccessBeep();
+                            }
+                          }}
                           data-testid={`product-card-${product.id}`}
                         >
                           <CardContent className="p-6">
@@ -1675,7 +1685,7 @@ export default function POS() {
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-green-100 hover:text-green-600 rounded-full"
+                                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-green-100 hover:text-green-600 rounded-full pos-hover-scale pos-click-effect"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   addToCart({
@@ -1711,7 +1721,7 @@ export default function POS() {
                             
                             <div className="space-y-3">
                               <div className="text-right">
-                                <p className="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-1">
+                                <p className="text-3xl font-bold text-green-600 dark:text-green-400 mb-1 tracking-tight">
                                   {currency} {price.toFixed(2)}
                                 </p>
                                 {product.latestLandingCost && (
@@ -1899,7 +1909,7 @@ export default function POS() {
                   cart.map((item) => (
                     <div 
                       key={item.id} 
-                      className="pos-card-premium rounded-xl p-5 pos-animate-fade-in-up hover:pos-shadow-medium transition-all duration-200"
+                      className="pos-card-premium rounded-xl p-5 pos-animate-fade-in-up hover:pos-shadow-card-hover transition-all duration-300 pos-hover-lift"
                       data-testid={`cart-item-${item.id}`}
                     >
                       <div className="flex items-start justify-between mb-3">
@@ -1942,8 +1952,11 @@ export default function POS() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="h-10 w-10 p-0 pos-button-secondary hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all duration-200"
-                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            className="h-10 w-10 p-0 pos-button-secondary hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all duration-200 pos-hover-scale pos-click-effect"
+                            onClick={() => {
+                              updateQuantity(item.id, item.quantity - 1);
+                              if (enableSounds) soundEffects.playClickSound();
+                            }}
                             data-testid={`decrease-quantity-${item.id}`}
                           >
                             <Minus className="h-4 w-4" />
@@ -1960,8 +1973,11 @@ export default function POS() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="h-10 w-10 p-0 pos-button-secondary hover:bg-green-50 hover:text-green-600 hover:border-green-200 transition-all duration-200"
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            className="h-10 w-10 p-0 pos-button-secondary hover:bg-green-50 hover:text-green-600 hover:border-green-200 transition-all duration-200 pos-hover-scale pos-click-effect"
+                            onClick={() => {
+                              updateQuantity(item.id, item.quantity + 1);
+                              if (enableSounds) soundEffects.playClickSound();
+                            }}
                             data-testid={`increase-quantity-${item.id}`}
                           >
                             <Plus className="h-4 w-4" />
