@@ -337,26 +337,23 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                   <Button
                     variant="ghost"
                     className={cn(
-                      "w-full justify-between text-left font-medium px-4 py-3 rounded-lg touch-target transition-all duration-200",
+                      "w-full justify-between text-left font-medium px-4 py-2.5 rounded-lg touch-target transition-all duration-200 min-h-[44px]",
                       "hover:bg-gray-50 dark:hover:bg-gray-800",
                       isActive && "bg-white shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700"
                     )}
                   >
                   <div className="flex items-center gap-3">
-                    <item.icon className={cn("h-5 w-5 transition-colors", item.color)} />
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">{item.name}</span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">{item.description}</span>
-                    </div>
+                    <item.icon className={cn("h-5 w-5 transition-colors flex-shrink-0", item.color)} />
+                    <span className="text-sm font-medium text-gray-900 dark:text-white truncate">{item.name}</span>
                   </div>
                   <ChevronDown className={cn(
-                    "h-4 w-4 transition-transform duration-200 text-gray-400",
+                    "h-4 w-4 transition-transform duration-200 text-gray-400 flex-shrink-0",
                     isOpen && "rotate-180"
                   )} />
                 </Button>
               </CollapsibleTrigger>
-              <CollapsibleContent className="mt-2">
-                <div className="ml-6 space-y-1">
+              <CollapsibleContent className="mt-1">
+                <div className="ml-6 space-y-0.5">
                   {item.children.map((child) => {
                     const isChildActive = location === child.href;
                     return (
@@ -373,14 +370,16 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                             variant="ghost"
                             size="sm"
                             className={cn(
-                              "w-full justify-start text-gray-600 dark:text-gray-300 px-4 py-2.5 rounded-lg touch-target transition-all duration-200 text-sm relative",
+                              "w-full justify-start text-gray-600 dark:text-gray-300 px-3 py-2 rounded-md touch-target transition-all duration-200 text-sm min-h-[36px]",
                               "hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white",
-                              "before:content-[''] before:absolute before:left-2 before:top-1/2 before:-translate-y-1/2 before:w-1 before:h-1 before:bg-gray-400 before:rounded-full before:transition-colors",
-                              isChildActive && "bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white font-medium before:bg-current"
+                              isChildActive && "bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white font-medium"
                             )}
                             onClick={() => setIsMobileMenuOpen(false)}
                           >
-                            <span className="ml-3">{child.name}</span>
+                            <div className="flex items-center gap-2">
+                              <div className="w-1 h-1 rounded-full bg-gray-400 flex-shrink-0"></div>
+                              <span className="truncate">{child.name}</span>
+                            </div>
                           </Button>
                         </Link>
                       </div>
@@ -433,18 +432,15 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
               <Button
                 variant="ghost"
                 className={cn(
-                  "w-full justify-start font-medium px-4 py-3 rounded-lg touch-target transition-all duration-200",
+                  "w-full justify-start font-medium px-4 py-2.5 rounded-lg touch-target transition-all duration-200 min-h-[44px]",
                   "hover:bg-gray-50 dark:hover:bg-gray-800",
                   isActive && "bg-white shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700"
                 )}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <div className="flex items-center gap-3">
-                  <item.icon className={cn("h-5 w-5 transition-colors", item.color)} />
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">{item.name}</span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">{item.description}</span>
-                  </div>
+                  <item.icon className={cn("h-5 w-5 transition-colors flex-shrink-0", item.color)} />
+                  <span className="text-sm font-medium text-gray-900 dark:text-white truncate">{item.name}</span>
                 </div>
               </Button>
             </Link>
