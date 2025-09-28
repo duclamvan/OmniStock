@@ -135,27 +135,75 @@
 }
 
 :root {
+  /* Base colors - Enhanced for POS sophistication */
   --background: hsl(0, 0%, 100%);
-  --foreground: hsl(222, 84%, 4.9%);
-  --muted: hsl(210, 40%, 98%);
+  --foreground: hsl(215, 25%, 15%);
+  --muted: hsl(220, 15%, 97%);
   --muted-foreground: hsl(215, 16%, 46.9%);
   --popover: hsl(0, 0%, 100%);
-  --popover-foreground: hsl(222, 84%, 4.9%);
+  --popover-foreground: hsl(215, 25%, 15%);
   --card: hsl(0, 0%, 100%);
-  --card-foreground: hsl(222, 84%, 4.9%);
-  --border: hsl(214, 32%, 91%);
-  --input: hsl(214, 32%, 91%);
-  --primary: hsl(142, 76%, 36%);
-  --primary-foreground: hsl(355, 100%, 97%);
-  --secondary: hsl(210, 40%, 98%);
-  --secondary-foreground: hsl(222, 84%, 4.9%);
-  --accent: hsl(210, 40%, 98%);
-  --accent-foreground: hsl(222, 84%, 4.9%);
+  --card-foreground: hsl(215, 25%, 15%);
+  --border: hsl(220, 25%, 92%);
+  --input: hsl(220, 25%, 94%);
+  
+  /* Premium green palette - Professional retail-grade */
+  --primary: hsl(145, 63%, 42%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --primary-50: hsl(145, 63%, 96%);
+  --primary-100: hsl(145, 63%, 91%);
+  --primary-200: hsl(145, 63%, 82%);
+  --primary-300: hsl(145, 63%, 68%);
+  --primary-400: hsl(145, 63%, 55%);
+  --primary-500: hsl(145, 63%, 42%);
+  --primary-600: hsl(145, 63%, 35%);
+  --primary-700: hsl(145, 63%, 28%);
+  --primary-800: hsl(145, 63%, 22%);
+  --primary-900: hsl(145, 63%, 18%);
+  
+  /* Professional secondary palette */
+  --secondary: hsl(220, 20%, 96%);
+  --secondary-foreground: hsl(215, 25%, 15%);
+  
+  /* Sophisticated accent colors */
+  --accent: hsl(220, 20%, 96%);
+  --accent-foreground: hsl(215, 25%, 15%);
+  --accent-blue: hsl(210, 100%, 56%);
+  --accent-purple: hsl(270, 91%, 65%);
+  --accent-orange: hsl(25, 95%, 53%);
+  --accent-teal: hsl(185, 84%, 44%);
+  
+  /* Professional status colors */
+  --success: hsl(145, 63%, 42%);
+  --success-foreground: hsl(0, 0%, 100%);
+  --warning: hsl(43, 96%, 56%);
+  --warning-foreground: hsl(43, 16%, 15%);
   --destructive: hsl(0, 84%, 60%);
   --destructive-foreground: hsl(210, 40%, 98%);
-  --ring: hsl(142, 76%, 36%);
-  --radius: 0.75rem;
-  --chart-1: hsl(142, 76%, 36%);
+  
+  /* Enhanced grays for professional depth */
+  --gray-50: hsl(220, 15%, 98%);
+  --gray-100: hsl(220, 15%, 95%);
+  --gray-200: hsl(220, 15%, 90%);
+  --gray-300: hsl(220, 15%, 80%);
+  --gray-400: hsl(220, 15%, 65%);
+  --gray-500: hsl(220, 15%, 50%);
+  --gray-600: hsl(220, 15%, 40%);
+  --gray-700: hsl(220, 15%, 30%);
+  --gray-800: hsl(220, 15%, 20%);
+  --gray-900: hsl(220, 15%, 12%);
+  
+  /* Professional shadows and effects */
+  --shadow-soft: 0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+  --shadow-medium: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+  --shadow-large: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+  --shadow-premium: 0 25px 50px -12px rgba(0, 0, 0, 0.12), 0 8px 16px -8px rgba(0, 0, 0, 0.08);
+  
+  /* Other tokens */
+  --ring: hsl(145, 63%, 42%);
+  --radius: 0.5rem;
+  --chart-1: hsl(145, 63%, 42%);
   --chart-2: hsl(215, 20%, 65%);
   --chart-3: hsl(43, 96%, 56%);
   --chart-4: hsl(224, 76%, 48%);
@@ -500,6 +548,185 @@ body > div[style*="z-index: 999999"] {
 .stagger-animation > *:nth-child(6) { animation-delay: 0.3s; }
 .stagger-animation > *:nth-child(7) { animation-delay: 0.35s; }
 .stagger-animation > *:nth-child(8) { animation-delay: 0.4s; }
+
+/* Professional POS-Specific Styles */
+.pos-premium-bg {
+  background: linear-gradient(135deg, hsl(var(--gray-50)) 0%, hsl(var(--gray-100)) 100%);
+}
+
+.pos-header-gradient {
+  background: linear-gradient(135deg, 
+    hsl(var(--primary-500)) 0%, 
+    hsl(var(--primary-600)) 50%, 
+    hsl(var(--primary-700)) 100%);
+}
+
+.pos-card-premium {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  box-shadow: var(--shadow-soft);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pos-card-premium:hover {
+  box-shadow: var(--shadow-medium);
+  transform: translateY(-1px);
+  border-color: hsl(var(--primary-200));
+}
+
+.pos-card-interactive {
+  background: hsl(var(--card));
+  border: 2px solid hsl(var(--border));
+  box-shadow: var(--shadow-soft);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.pos-card-interactive::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  transition: left 0.5s;
+}
+
+.pos-card-interactive:hover {
+  box-shadow: var(--shadow-large);
+  transform: translateY(-2px) scale(1.02);
+  border-color: hsl(var(--primary-300));
+}
+
+.pos-card-interactive:hover::before {
+  left: 100%;
+}
+
+.pos-button-primary {
+  background: linear-gradient(135deg, 
+    hsl(var(--primary-500)) 0%, 
+    hsl(var(--primary-600)) 100%);
+  color: hsl(var(--primary-foreground));
+  border: none;
+  box-shadow: var(--shadow-medium);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pos-button-primary:hover {
+  background: linear-gradient(135deg, 
+    hsl(var(--primary-600)) 0%, 
+    hsl(var(--primary-700)) 100%);
+  box-shadow: var(--shadow-large);
+  transform: translateY(-1px);
+}
+
+.pos-button-secondary {
+  background: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
+  border: 1px solid hsl(var(--border));
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pos-button-secondary:hover {
+  background: hsl(var(--primary-50));
+  border-color: hsl(var(--primary-200));
+  box-shadow: var(--shadow-soft);
+}
+
+.pos-input-premium {
+  background: hsl(var(--background));
+  border: 2px solid hsl(var(--border));
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pos-input-premium:focus {
+  border-color: hsl(var(--primary-500));
+  box-shadow: 0 0 0 3px hsl(var(--primary-500) / 0.1);
+  outline: none;
+}
+
+.pos-badge-success {
+  background: hsl(var(--primary-100));
+  color: hsl(var(--primary-700));
+  border: 1px solid hsl(var(--primary-200));
+}
+
+.pos-badge-warning {
+  background: hsl(var(--warning) / 0.1);
+  color: hsl(var(--warning-foreground));
+  border: 1px solid hsl(var(--warning) / 0.2);
+}
+
+.pos-badge-info {
+  background: hsl(var(--accent-blue) / 0.1);
+  color: hsl(var(--accent-blue));
+  border: 1px solid hsl(var(--accent-blue) / 0.2);
+}
+
+/* Professional animations */
+@keyframes pos-slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pos-scale-in {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes pos-fade-in-up {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.pos-animate-slide-in-right {
+  animation: pos-slide-in-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pos-animate-scale-in {
+  animation: pos-scale-in 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pos-animate-fade-in-up {
+  animation: pos-fade-in-up 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Professional loading states */
+.pos-loading-shimmer {
+  background: linear-gradient(90deg,
+    hsl(var(--muted)) 25%,
+    hsl(var(--muted) / 0.5) 50%,
+    hsl(var(--muted)) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite ease-in-out;
+}
+
+/* Enhanced shadows for depth */
+.pos-shadow-soft { box-shadow: var(--shadow-soft); }
+.pos-shadow-medium { box-shadow: var(--shadow-medium); }
+.pos-shadow-large { box-shadow: var(--shadow-large); }
+.pos-shadow-xl { box-shadow: var(--shadow-xl); }
+.pos-shadow-premium { box-shadow: var(--shadow-premium); }
 
 /* Professional Stacked Toast Notifications */
 @keyframes toast-slide-in {
