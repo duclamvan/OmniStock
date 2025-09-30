@@ -17,7 +17,6 @@ import {
   Banknote,
   Building,
   X,
-  Scan,
   Package
 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -93,9 +92,9 @@ export default function POS() {
   const [selectedCategory, setSelectedCategory] = useState<string>('favorites');
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [amountReceived, setAmountReceived] = useState('');
-  const [barcodeInput, setBarcodeInput] = useState('');
   const receiptRef = useRef<HTMLDivElement>(null);
-  const barcodeInputRef = useRef<HTMLInputElement>(null);
+  const barcodeBufferRef = useRef<string>('');
+  const barcodeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const today = format(new Date(), 'yyyy-MM-dd');
 
@@ -133,65 +132,77 @@ export default function POS() {
 
   const displayProducts = selectedCategory === 'favorites' ? favoriteProducts : filteredProducts;
 
-  // Barcode scanning
+  // Background barcode scanning - detects rapid keystrokes from scanner
   useEffect(() => {
-    const handleBarcodeScan = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' && barcodeInput.trim()) {
-        const product = products.find(p => 
-          p.barcode === barcodeInput.trim() || 
-          p.sku === barcodeInput.trim()
-        );
-        
-        if (product) {
-          addToCart({
-            id: product.id,
-            name: product.name,
-            price: currency === 'EUR' ? parseFloat(product.priceEur || '0') : parseFloat(product.priceCzk || '0'),
-            type: 'product',
-            sku: product.sku,
-            landingCost: product.latestLandingCost ? parseFloat(product.latestLandingCost) : null,
-            latestLandingCost: product.latestLandingCost ? parseFloat(product.latestLandingCost) : null
-          });
-          playSound('add');
-          setBarcodeInput('');
-        } else {
-          playSound('error');
-          toast({
-            title: 'Product Not Found',
-            description: `No product found with barcode/SKU: ${barcodeInput}`,
-            variant: 'destructive'
-          });
-          setBarcodeInput('');
-        }
-      }
-    };
-
-    if (barcodeInputRef.current) {
-      barcodeInputRef.current.addEventListener('keydown', handleBarcodeScan);
-    }
-
-    return () => {
-      if (barcodeInputRef.current) {
-        barcodeInputRef.current.removeEventListener('keydown', handleBarcodeScan);
-      }
-    };
-  }, [barcodeInput, products, currency]);
-
-  // Auto-focus barcode input when not typing elsewhere
-  useEffect(() => {
-    const interval = setInterval(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Ignore if user is typing in an input field
       const activeElement = document.activeElement;
       const isTypingInInput = activeElement?.tagName === 'INPUT' || 
                               activeElement?.tagName === 'TEXTAREA' || 
                               activeElement?.tagName === 'SELECT';
       
-      // Only refocus to barcode if user is not typing in any input field
-      if (barcodeInputRef.current && !isTypingInInput) {
-        barcodeInputRef.current.focus();
+      if (isTypingInInput) {
+        return;
       }
-    }, 500); // Reduced frequency to be less aggressive
-    return () => clearInterval(interval);
-  }, []);
+
+      // Clear previous timeout
+      if (barcodeTimeoutRef.current) {
+        clearTimeout(barcodeTimeoutRef.current);
+      }
+
+      // Handle Enter key - process the barcode
+      if (e.key === 'Enter') {
+        const barcode = barcodeBufferRef.current.trim();
+        if (barcode) {
+          const product = products.find(p => 
+            p.barcode === barcode || 
+            p.sku === barcode
+          );
+          
+          if (product) {
+            addToCart({
+              id: product.id,
+              name: product.name,
+              price: currency === 'EUR' ? parseFloat(product.priceEur || '0') : parseFloat(product.priceCzk || '0'),
+              type: 'product',
+              sku: product.sku,
+              landingCost: product.latestLandingCost ? parseFloat(product.latestLandingCost) : null,
+              latestLandingCost: product.latestLandingCost ? parseFloat(product.latestLandingCost) : null
+            });
+            playSound('add');
+          } else {
+            playSound('error');
+            toast({
+              title: 'Product Not Found',
+              description: `No product found with barcode/SKU: ${barcode}`,
+              variant: 'destructive'
+            });
+          }
+        }
+        barcodeBufferRef.current = '';
+        return;
+      }
+
+      // Add character to buffer if it's a valid barcode character
+      if (e.key.length === 1) {
+        barcodeBufferRef.current += e.key;
+        
+        // Reset buffer after 100ms of inactivity (scanners type faster than this)
+        barcodeTimeoutRef.current = setTimeout(() => {
+          barcodeBufferRef.current = '';
+        }, 100);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyPress);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyPress);
+      if (barcodeTimeoutRef.current) {
+        clearTimeout(barcodeTimeoutRef.current);
+      }
+    };
+  }, [products, currency]);
 
   // Add item to cart
   const addToCart = (item: { 
@@ -545,26 +556,15 @@ export default function POS() {
             </div>
           </div>
 
-          {/* Search and Barcode */}
-          <div className="flex gap-3 px-6 py-3 border-b">
-            <div className="relative flex-1">
+          {/* Search */}
+          <div className="px-6 py-3 border-b">
+            <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
               <Input
                 placeholder="Search products..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 h-12 text-lg"
-              />
-            </div>
-            <div className="relative flex-1">
-              <Scan className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
-              <Input
-                ref={barcodeInputRef}
-                placeholder="Scan barcode..."
-                value={barcodeInput}
-                onChange={(e) => setBarcodeInput(e.target.value)}
-                className="pl-10 h-12 text-lg font-mono"
-                data-testid="input-barcode"
               />
             </div>
           </div>
