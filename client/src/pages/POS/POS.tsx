@@ -17,12 +17,14 @@ import {
   Banknote,
   Building,
   X,
-  Package
+  Package,
+  Check
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 import type { Product } from '@shared/schema';
 import {
   Dialog,
@@ -571,49 +573,82 @@ export default function POS() {
 
           {/* Products Grid */}
           <ScrollArea className="flex-1">
-            <div className="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 p-6">
-              {displayProducts.map(product => (
-                <Card
-                  key={product.id}
-                  className="cursor-pointer hover:shadow-lg hover:scale-[1.01] transition-all duration-150 border-2 hover:border-primary active:scale-[0.99]"
-                  onClick={() => addToCart({
-                    id: product.id,
-                    name: product.name,
-                    price: currency === 'EUR' 
-                      ? parseFloat(product.priceEur || '0')
-                      : parseFloat(product.priceCzk || '0'),
-                    type: 'product',
-                    sku: product.sku,
-                    landingCost: product.latestLandingCost ? parseFloat(product.latestLandingCost) : null,
-                    latestLandingCost: product.latestLandingCost ? parseFloat(product.latestLandingCost) : null
-                  })}
-                  data-testid={`card-product-${product.id}`}
-                >
-                  <CardContent className="p-0 flex items-center h-28">
-                    {product.imageUrl ? (
-                      <div className="w-28 h-28 flex-shrink-0 overflow-hidden bg-muted">
-                        <img 
-                          src={product.imageUrl} 
-                          alt={product.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    ) : (
-                      <div className="w-28 h-28 flex-shrink-0 bg-muted flex items-center justify-center border-r">
-                        <Package className="h-10 w-10 text-muted-foreground/40" />
+            <div className="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 p-6">
+              {displayProducts.map(product => {
+                const isInCart = cart.some(item => item.id === product.id);
+                return (
+                  <Card
+                    key={product.id}
+                    className={cn(
+                      "cursor-pointer transition-all duration-150 border-2 relative group",
+                      "hover:shadow-xl hover:border-primary/60 hover:bg-accent/5",
+                      "active:scale-[0.98] touch-manipulation",
+                      isInCart ? "border-primary bg-primary/5 shadow-md" : "border-border"
+                    )}
+                    onClick={() => addToCart({
+                      id: product.id,
+                      name: product.name,
+                      price: currency === 'EUR' 
+                        ? parseFloat(product.priceEur || '0')
+                        : parseFloat(product.priceCzk || '0'),
+                      type: 'product',
+                      sku: product.sku,
+                      landingCost: product.latestLandingCost ? parseFloat(product.latestLandingCost) : null,
+                      latestLandingCost: product.latestLandingCost ? parseFloat(product.latestLandingCost) : null
+                    })}
+                    data-testid={`card-product-${product.id}`}
+                  >
+                    {/* Selected indicator */}
+                    {isInCart && (
+                      <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1 z-10">
+                        <Check className="h-4 w-4" />
                       </div>
                     )}
-                    <div className="flex-1 p-3 min-w-0 flex items-center justify-between gap-2">
-                      <h3 className="font-semibold text-sm leading-tight flex-1 min-w-0">{product.name}</h3>
-                      <p className="text-sm font-bold text-primary whitespace-nowrap">
-                        {currency} {currency === 'EUR' 
-                          ? parseFloat(product.priceEur || '0').toFixed(2)
-                          : parseFloat(product.priceCzk || '0').toFixed(2)}
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    
+                    <CardContent className="p-0 flex flex-col min-h-[144px]">
+                      {/* Product Image/Icon Section */}
+                      <div className="relative h-24 bg-muted/50 border-b overflow-hidden">
+                        {product.imageUrl ? (
+                          <img 
+                            src={product.imageUrl} 
+                            alt={product.name}
+                            className="w-full h-full object-contain p-2"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Package className="h-12 w-12 text-muted-foreground/30" />
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Product Details Section */}
+                      <div className="flex flex-col flex-1 p-4 gap-2">
+                        {/* Product Name */}
+                        <div className="flex-1">
+                          <h3 className="font-medium text-sm leading-tight line-clamp-2 text-foreground/90 group-hover:text-foreground min-h-[2.5rem]">
+                            {product.name}
+                          </h3>
+                          {product.sku && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              SKU: {product.sku}
+                            </p>
+                          )}
+                        </div>
+                        
+                        {/* Price Section */}
+                        <div className="flex items-end justify-between pt-2 border-t">
+                          <span className="text-xs text-muted-foreground">Price</span>
+                          <p className="text-lg font-bold text-primary">
+                            {currency} {currency === 'EUR' 
+                              ? parseFloat(product.priceEur || '0').toFixed(2)
+                              : parseFloat(product.priceCzk || '0').toFixed(2)}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </ScrollArea>
         </div>
