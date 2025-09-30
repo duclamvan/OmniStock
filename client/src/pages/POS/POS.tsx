@@ -19,7 +19,8 @@ import {
   X,
   TrendingUp,
   AlertTriangle,
-  Scan
+  Scan,
+  Package
 } from 'lucide-react';
 import MarginPill from '@/components/orders/MarginPill';
 import { format } from 'date-fns';
@@ -573,11 +574,11 @@ export default function POS() {
 
           {/* Products Grid */}
           <ScrollArea className="flex-1">
-            <div className="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 pb-4">
+            <div className="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 pb-4">
               {displayProducts.map(product => (
                 <Card
                   key={product.id}
-                  className="cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-200 border-2 hover:border-primary"
+                  className="cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-200 border-2 hover:border-primary active:scale-95"
                   onClick={() => addToCart({
                     id: product.id,
                     name: product.name,
@@ -591,19 +592,23 @@ export default function POS() {
                   })}
                   data-testid={`card-product-${product.id}`}
                 >
-                  <CardContent className="p-4">
-                    {product.imageUrl && (
-                      <div className="w-full h-32 mb-3 rounded-lg overflow-hidden bg-muted">
+                  <CardContent className="p-0 flex items-center gap-3 h-24">
+                    {product.imageUrl ? (
+                      <div className="w-24 h-24 flex-shrink-0 overflow-hidden bg-muted">
                         <img 
                           src={product.imageUrl} 
                           alt={product.name}
                           className="w-full h-full object-cover"
                         />
                       </div>
+                    ) : (
+                      <div className="w-24 h-24 flex-shrink-0 bg-muted flex items-center justify-center">
+                        <Package className="h-10 w-10 text-muted-foreground/50" />
+                      </div>
                     )}
-                    <h3 className="font-bold text-sm line-clamp-2 min-h-[2.5rem] mb-2">{product.name}</h3>
-                    <p className="text-xs text-muted-foreground mb-3">{product.sku}</p>
-                    <div className="flex items-center justify-between">
+                    <div className="flex-1 pr-4 py-3 min-w-0">
+                      <h3 className="font-bold text-base line-clamp-2 mb-1">{product.name}</h3>
+                      <p className="text-xs text-muted-foreground mb-2 truncate">{product.sku}</p>
                       <p className="text-xl font-bold text-primary">
                         {currency} {currency === 'EUR' 
                           ? parseFloat(product.priceEur || '0').toFixed(2)
