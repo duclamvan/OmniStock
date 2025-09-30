@@ -65,13 +65,6 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
   // Check if we're on the Pick & Pack page
   const isPickPackPage = location === '/orders/pick-pack';
 
-  // Auto-collapse sidebar on POS page
-  useEffect(() => {
-    if (location.includes('/pos')) {
-      setIsCollapsed(true);
-    }
-  }, [location]);
-
   useEffect(() => {
     localStorage.setItem('sidebarCollapsed', JSON.stringify(isCollapsed));
   }, [isCollapsed]);
