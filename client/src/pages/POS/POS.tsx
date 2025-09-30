@@ -94,7 +94,11 @@ export default function POS() {
   const [selectedCategory, setSelectedCategory] = useState<string>('favorites');
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [amountReceived, setAmountReceived] = useState('');
+  const [showQuantityDialog, setShowQuantityDialog] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [quantityInput, setQuantityInput] = useState('1');
   const receiptRef = useRef<HTMLDivElement>(null);
+  const quantityInputRef = useRef<HTMLInputElement>(null);
   const barcodeBufferRef = useRef<string>('');
   const barcodeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -206,7 +210,87 @@ export default function POS() {
     };
   }, [products, currency]);
 
-  // Add item to cart
+  // Auto-focus quantity input when dialog opens
+  useEffect(() => {
+    if (showQuantityDialog && quantityInputRef.current) {
+      setTimeout(() => {
+        quantityInputRef.current?.focus();
+        quantityInputRef.current?.select();
+      }, 100);
+    }
+  }, [showQuantityDialog]);
+
+  // Open quantity dialog for product
+  const openQuantityDialog = (product: Product) => {
+    setSelectedProduct(product);
+    setQuantityInput('1');
+    setShowQuantityDialog(true);
+  };
+
+  // Confirm and add to cart with specified quantity
+  const confirmAddToCart = () => {
+    if (!selectedProduct) return;
+    
+    const qty = parseInt(quantityInput);
+    if (isNaN(qty) || qty <= 0) {
+      toast({
+        title: 'Invalid Quantity',
+        description: 'Please enter a valid quantity',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    const price = currency === 'EUR' 
+      ? parseFloat(selectedProduct.priceEur || '0')
+      : parseFloat(selectedProduct.priceCzk || '0');
+
+    addToCartWithQuantity({
+      id: selectedProduct.id,
+      name: selectedProduct.name,
+      price: price,
+      type: 'product',
+      sku: selectedProduct.sku,
+      landingCost: selectedProduct.latestLandingCost ? parseFloat(selectedProduct.latestLandingCost) : null,
+      latestLandingCost: selectedProduct.latestLandingCost ? parseFloat(selectedProduct.latestLandingCost) : null
+    }, qty);
+
+    setShowQuantityDialog(false);
+    setSelectedProduct(null);
+    playSound('add');
+  };
+
+  // Add item to cart with specific quantity
+  const addToCartWithQuantity = (item: { 
+    id: string; 
+    name: string; 
+    price: number; 
+    type: 'product' | 'bundle';
+    sku?: string;
+    landingCost?: number | null;
+    latestLandingCost?: number | null;
+  }, quantity: number = 1) => {
+    const existingItem = cart.find(cartItem => 
+      cartItem.id === item.id && cartItem.type === item.type
+    );
+
+    if (existingItem) {
+      updateQuantity(existingItem.id, existingItem.quantity + quantity);
+    } else {
+      setCart([...cart, {
+        id: item.id,
+        productId: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: quantity,
+        type: item.type,
+        sku: item.sku,
+        landingCost: item.landingCost || item.latestLandingCost || null
+      }]);
+    }
+  };
+
+  // Add item to cart (legacy - for barcode scanner)
   const addToCart = (item: { 
     id: string; 
     name: string; 
@@ -216,24 +300,7 @@ export default function POS() {
     landingCost?: number | null;
     latestLandingCost?: number | null;
   }) => {
-    const existingItem = cart.find(cartItem => 
-      cartItem.id === item.id && cartItem.type === item.type
-    );
-
-    if (existingItem) {
-      updateQuantity(existingItem.id, existingItem.quantity + 1);
-    } else {
-      setCart([...cart, {
-        id: item.id,
-        productId: item.id,
-        name: item.name,
-        price: item.price,
-        quantity: 1,
-        type: item.type,
-        sku: item.sku,
-        landingCost: item.landingCost || item.latestLandingCost || null
-      }]);
-    }
+    addToCartWithQuantity(item, 1);
     playSound('add');
   };
 
@@ -586,17 +653,7 @@ export default function POS() {
                       "active:scale-[0.98] touch-manipulation",
                       isInCart ? "border-primary bg-primary/5 shadow-md" : "border-border"
                     )}
-                    onClick={() => addToCart({
-                      id: product.id,
-                      name: product.name,
-                      price: currency === 'EUR' 
-                        ? parseFloat(product.priceEur || '0')
-                        : parseFloat(product.priceCzk || '0'),
-                      type: 'product',
-                      sku: product.sku,
-                      landingCost: product.latestLandingCost ? parseFloat(product.latestLandingCost) : null,
-                      latestLandingCost: product.latestLandingCost ? parseFloat(product.latestLandingCost) : null
-                    })}
+                    onClick={() => openQuantityDialog(product)}
                     data-testid={`card-product-${product.id}`}
                   >
                     {/* Quantity indicator */}
@@ -831,6 +888,82 @@ export default function POS() {
           )}
         </div>
       </div>
+
+      {/* Quantity Input Dialog */}
+      <Dialog open={showQuantityDialog} onOpenChange={setShowQuantityDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Enter Quantity</DialogTitle>
+            <DialogDescription>
+              {selectedProduct?.name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Quantity</label>
+              <Input
+                ref={quantityInputRef}
+                type="number"
+                min="1"
+                step="1"
+                value={quantityInput}
+                onChange={(e) => setQuantityInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    confirmAddToCart();
+                  }
+                }}
+                className="text-3xl h-20 text-center font-bold"
+                data-testid="input-quantity"
+              />
+            </div>
+            
+            {selectedProduct && (
+              <div className="bg-muted rounded-lg p-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Unit Price:</span>
+                  <span className="font-semibold">
+                    {currency} {currency === 'EUR' 
+                      ? parseFloat(selectedProduct.priceEur || '0').toFixed(2)
+                      : parseFloat(selectedProduct.priceCzk || '0').toFixed(2)}
+                  </span>
+                </div>
+                {quantityInput && !isNaN(parseInt(quantityInput)) && parseInt(quantityInput) > 0 && (
+                  <div className="flex justify-between text-base border-t pt-2">
+                    <span className="font-bold">Subtotal:</span>
+                    <span className="font-bold text-primary">
+                      {currency} {(
+                        (currency === 'EUR' 
+                          ? parseFloat(selectedProduct.priceEur || '0')
+                          : parseFloat(selectedProduct.priceCzk || '0')) * parseInt(quantityInput)
+                      ).toFixed(2)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowQuantityDialog(false)}
+              data-testid="button-cancel-quantity"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={confirmAddToCart}
+              disabled={!quantityInput || isNaN(parseInt(quantityInput)) || parseInt(quantityInput) <= 0}
+              data-testid="button-confirm-quantity"
+            >
+              Add to Cart
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Payment Dialog for Cash */}
       <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
