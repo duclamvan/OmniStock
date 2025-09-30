@@ -603,9 +603,9 @@ export default function POS() {
                         <Package className="h-10 w-10 text-muted-foreground/40" />
                       </div>
                     )}
-                    <div className="flex-1 p-3 min-w-0 flex flex-col justify-center">
-                      <h3 className="font-semibold text-sm leading-tight line-clamp-2 mb-2">{product.name}</h3>
-                      <p className="text-lg font-bold text-primary">
+                    <div className="flex-1 p-3 min-w-0 flex items-center justify-between gap-2">
+                      <h3 className="font-semibold text-sm leading-tight flex-1 min-w-0">{product.name}</h3>
+                      <p className="text-sm font-bold text-primary whitespace-nowrap">
                         {currency} {currency === 'EUR' 
                           ? parseFloat(product.priceEur || '0').toFixed(2)
                           : parseFloat(product.priceCzk || '0').toFixed(2)}
