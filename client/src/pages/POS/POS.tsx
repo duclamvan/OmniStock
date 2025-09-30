@@ -619,10 +619,10 @@ export default function POS() {
             </div>
           </CardHeader>
           
-          <CardContent className="flex-1 flex flex-col">
+          <CardContent className="flex-1 flex flex-col overflow-hidden">
             {/* Cart Items */}
-            <ScrollArea className="flex-1">
-              <div className="space-y-3">
+            <ScrollArea className="flex-1 max-h-[calc(100vh-28rem)]">
+              <div className="space-y-3 pr-4">
                 {cart.length === 0 ? (
                   <div className="text-center py-12 text-muted-foreground">
                     <div className="bg-muted rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
