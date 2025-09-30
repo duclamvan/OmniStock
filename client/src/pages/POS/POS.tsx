@@ -29,7 +29,17 @@ import { format } from 'date-fns';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { Product, ProductVariant, ProductBundle } from '@shared/schema';
+import type { Product } from '@shared/schema';
+
+interface ProductBundle {
+  id: string;
+  name: string;
+  bundleId: string;
+  priceEur: string | null;
+  priceCzk: string | null;
+  discountPercentage: string | null;
+  sku?: string;
+}
 import {
   Dialog,
   DialogContent,
@@ -61,6 +71,7 @@ export default function POS() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [amountReceived, setAmountReceived] = useState('');
+  const [backgroundImage, setBackgroundImage] = useState<string>('');
   const receiptRef = useRef<HTMLDivElement>(null);
 
   // Get today's date
@@ -81,15 +92,14 @@ export default function POS() {
     queryKey: ['/api/bundles']
   });
 
-  // Get unique categories from products
-  const categories = ['all', ...Array.from(new Set(products.map(p => p.category).filter(Boolean)))];
+  // Get unique categories from products (using categoryId for now)
+  const categories = ['all'];
 
-  // Filter products based on search and category
+  // Filter products based on search
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           product.sku?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+    return matchesSearch;
   });
 
   // Get favorite products (for demo, using first 6 products)
@@ -177,10 +187,10 @@ export default function POS() {
       
       return await apiRequest('POST', '/api/orders', orderData);
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast({
         title: 'Order Created',
-        description: `Order #${data.orderId} has been created successfully`
+        description: `Order #${data.orderId || data.id} has been created successfully`
       });
       printReceipt();
       setCart([]);
@@ -389,9 +399,20 @@ export default function POS() {
   };
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen relative">
+      {/* Full-screen background image */}
+      {backgroundImage && (
+        <div 
+          className="absolute inset-0 bg-cover bg-center transition-all duration-500 ease-in-out z-0"
+          style={{
+            backgroundImage: `url(${backgroundImage})`,
+            opacity: 0.15,
+            filter: 'blur(2px)'
+          }}
+        />
+      )}
       {/* Left Panel - Product Selection */}
-      <div className="flex-1 flex flex-col p-4 space-y-4 overflow-hidden">
+      <div className="flex-1 flex flex-col p-4 space-y-4 overflow-hidden relative z-10">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Point of Sale</h1>
           <div className="flex items-center gap-2">
@@ -434,7 +455,7 @@ export default function POS() {
                 {favoriteProducts.map(product => (
                   <Card 
                     key={product.id} 
-                    className="cursor-pointer hover:shadow-md transition-shadow"
+                    className="cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200 border-2 hover:border-primary/50"
                     onClick={() => addToCart({
                       id: product.id,
                       name: product.name,
@@ -444,19 +465,31 @@ export default function POS() {
                       type: 'product',
                       sku: product.sku
                     })}
+                    onMouseEnter={() => product.imageUrl && setBackgroundImage(product.imageUrl)}
+                    onMouseLeave={() => setBackgroundImage('')}
                   >
                     <CardContent className="p-4">
-                      <h3 className="font-semibold text-sm line-clamp-1">{product.name}</h3>
+                      {product.imageUrl && (
+                        <div className="w-full h-24 mb-3 rounded-md overflow-hidden bg-muted">
+                          <img 
+                            src={product.imageUrl} 
+                            alt={product.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                      <h3 className="font-semibold text-sm line-clamp-2 min-h-[2.5rem]">{product.name}</h3>
                       <p className="text-xs text-muted-foreground mt-1">{product.sku}</p>
-                      <p className="text-lg font-bold mt-2">
-                        {currency} {currency === 'EUR' 
-                          ? parseFloat(product.priceEur || '0').toFixed(2)
-                          : parseFloat(product.priceCzk || '0').toFixed(2)}
-                      </p>
-                      <Badge variant="outline" className="mt-2">
-                        <Star className="mr-1 h-3 w-3" />
-                        Favorite
-                      </Badge>
+                      <div className="flex items-center justify-between mt-3">
+                        <p className="text-lg font-bold">
+                          {currency} {currency === 'EUR' 
+                            ? parseFloat(product.priceEur || '0').toFixed(2)
+                            : parseFloat(product.priceCzk || '0').toFixed(2)}
+                        </p>
+                        <Badge variant="outline" className="">
+                          <Star className="mr-1 h-3 w-3 fill-yellow-400 text-yellow-400" />
+                        </Badge>
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
@@ -484,7 +517,7 @@ export default function POS() {
                   {filteredProducts.map(product => (
                     <Card 
                       key={product.id} 
-                      className="cursor-pointer hover:shadow-md transition-shadow"
+                      className="cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200 border-2 hover:border-primary/50"
                       onClick={() => addToCart({
                         id: product.id,
                         name: product.name,
@@ -494,20 +527,26 @@ export default function POS() {
                         type: 'product',
                         sku: product.sku
                       })}
+                      onMouseEnter={() => product.imageUrl && setBackgroundImage(product.imageUrl)}
+                      onMouseLeave={() => setBackgroundImage('')}
                     >
                       <CardContent className="p-4">
-                        <h3 className="font-semibold text-sm line-clamp-1">{product.name}</h3>
+                        {product.imageUrl && (
+                          <div className="w-full h-24 mb-3 rounded-md overflow-hidden bg-muted">
+                            <img 
+                              src={product.imageUrl} 
+                              alt={product.name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
+                        <h3 className="font-semibold text-sm line-clamp-2 min-h-[2.5rem]">{product.name}</h3>
                         <p className="text-xs text-muted-foreground mt-1">{product.sku}</p>
-                        <p className="text-lg font-bold mt-2">
+                        <p className="text-lg font-bold mt-3">
                           {currency} {currency === 'EUR' 
                             ? parseFloat(product.priceEur || '0').toFixed(2)
                             : parseFloat(product.priceCzk || '0').toFixed(2)}
                         </p>
-                        {product.category && (
-                          <Badge variant="secondary" className="mt-2 text-xs">
-                            {product.category}
-                          </Badge>
-                        )}
                       </CardContent>
                     </Card>
                   ))}
@@ -520,7 +559,7 @@ export default function POS() {
                 {bundles.map(bundle => (
                   <Card 
                     key={bundle.id} 
-                    className="cursor-pointer hover:shadow-md transition-shadow"
+                    className="cursor-pointer hover:shadow-lg hover:scale-105 transition-all duration-200 border-2 hover:border-primary/50"
                     onClick={() => addToCart({
                       id: bundle.id,
                       name: bundle.name,
@@ -532,18 +571,24 @@ export default function POS() {
                     })}
                   >
                     <CardContent className="p-4">
-                      <h3 className="font-semibold text-sm line-clamp-1">{bundle.name}</h3>
-                      <p className="text-xs text-muted-foreground mt-1">{bundle.bundleId}</p>
-                      <p className="text-lg font-bold mt-2">
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="font-semibold text-sm line-clamp-2 flex-1">{bundle.name}</h3>
+                        {bundle.discountPercentage && parseFloat(bundle.discountPercentage) > 0 && (
+                          <Badge variant="destructive" className="text-xs ml-2">
+                            -{parseFloat(bundle.discountPercentage).toFixed(0)}%
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">{bundle.bundleId}</p>
+                      <p className="text-lg font-bold mt-3">
                         {currency} {currency === 'EUR' 
                           ? parseFloat(bundle.priceEur || '0').toFixed(2)
                           : parseFloat(bundle.priceCzk || '0').toFixed(2)}
                       </p>
-                      {bundle.discountPercentage && parseFloat(bundle.discountPercentage) > 0 && (
-                        <Badge variant="default" className="mt-2 text-xs">
-                          {parseFloat(bundle.discountPercentage).toFixed(0)}% OFF
-                        </Badge>
-                      )}
+                      <Badge variant="outline" className="mt-2">
+                        <Package className="mr-1 h-3 w-3" />
+                        Bundle
+                      </Badge>
                     </CardContent>
                   </Card>
                 ))}
@@ -554,7 +599,7 @@ export default function POS() {
       </div>
 
       {/* Right Panel - Cart */}
-      <div className="w-96 border-l flex flex-col">
+      <div className="w-96 border-l flex flex-col relative z-10 bg-background/95 backdrop-blur-sm">
         <Card className="flex-1 flex flex-col m-4">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
@@ -577,22 +622,29 @@ export default function POS() {
           <CardContent className="flex-1 flex flex-col">
             {/* Cart Items */}
             <ScrollArea className="flex-1">
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {cart.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <ShoppingCart className="mx-auto h-12 w-12 mb-2" />
-                    <p>Cart is empty</p>
+                  <div className="text-center py-12 text-muted-foreground">
+                    <div className="bg-muted rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
+                      <ShoppingCart className="h-10 w-10" />
+                    </div>
+                    <p className="text-sm">Your cart is empty</p>
+                    <p className="text-xs mt-1">Add products to get started</p>
                   </div>
                 ) : (
-                  cart.map((item) => (
-                    <div key={item.id} className="border rounded-lg p-3">
-                      <div className="flex items-start justify-between">
+                  cart.map((item, index) => (
+                    <div 
+                      key={item.id} 
+                      className="border rounded-xl p-4 bg-card hover:shadow-md transition-all duration-200"
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
+                      <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
-                          <h4 className="font-medium text-sm">{item.name}</h4>
-                          <p className="text-xs text-muted-foreground">{item.sku || 'No SKU'}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <p className="text-sm">
-                              {currency} {item.price.toFixed(2)} each
+                          <h4 className="font-semibold text-sm">{item.name}</h4>
+                          <p className="text-xs text-muted-foreground mt-0.5">{item.sku || 'No SKU'}</p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <p className="text-sm font-medium">
+                              {currency} {item.price.toFixed(2)}
                             </p>
                             {item.landingCost && (
                               <MarginPill
@@ -604,44 +656,43 @@ export default function POS() {
                               />
                             )}
                             {item.landingCost && item.price < item.landingCost && (
-                              <AlertTriangle className="h-3 w-3 text-red-500" title="Selling below cost!" />
+                              <AlertTriangle className="h-3 w-3 text-red-500" />
                             )}
                           </div>
                         </div>
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-6 w-6"
+                          className="h-7 w-7 -mt-1 -mr-1 hover:bg-destructive/10 hover:text-destructive"
                           onClick={() => removeFromCart(item.id)}
                         >
                           <X className="h-4 w-4" />
                         </Button>
                       </div>
                       
-                      <div className="flex items-center gap-2 mt-2">
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          className="h-8 w-8"
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                        >
-                          <Minus className="h-3 w-3" />
-                        </Button>
-                        <Input
-                          type="number"
-                          value={item.quantity}
-                          onChange={(e) => updateQuantity(item.id, parseInt(e.target.value) || 0)}
-                          className="w-16 text-center h-8"
-                        />
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          className="h-8 w-8"
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                        >
-                          <Plus className="h-3 w-3" />
-                        </Button>
-                        <div className="ml-auto font-semibold">
+                      <div className="flex items-center justify-between gap-3 bg-muted/50 rounded-lg p-2">
+                        <div className="flex items-center gap-1">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 hover:bg-background"
+                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          >
+                            <Minus className="h-3 w-3" />
+                          </Button>
+                          <div className="w-12 text-center font-semibold">
+                            {item.quantity}
+                          </div>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8 hover:bg-background"
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          >
+                            <Plus className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <div className="text-lg font-bold">
                           {currency} {(item.price * item.quantity).toFixed(2)}
                         </div>
                       </div>
@@ -653,7 +704,7 @@ export default function POS() {
 
             {/* Totals */}
             {cart.length > 0 && (
-              <div className="space-y-2 pt-4 border-t">
+              <div className="space-y-3 pt-4 border-t mt-4">
                 {/* Margin Summary */}
                 {(() => {
                   const totalLandingCost = cart.reduce((sum, item) => 
@@ -663,17 +714,17 @@ export default function POS() {
                   const totalProfit = totalSellingPrice - totalLandingCost;
                   
                   return totalLandingCost > 0 ? (
-                    <div className="pb-2 mb-2 border-b">
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="flex items-center gap-1">
-                          <TrendingUp className="h-3 w-3 text-green-500" />
-                          Total Profit:
+                    <div className="bg-muted/50 rounded-lg p-3 mb-3">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="flex items-center gap-1.5 text-sm font-medium">
+                          <TrendingUp className="h-4 w-4 text-green-500" />
+                          Profit:
                         </span>
-                        <span className={totalProfit >= 0 ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
+                        <span className={`text-lg font-bold ${totalProfit >= 0 ? "text-green-600" : "text-red-600"}`}>
                           {currency} {totalProfit.toFixed(2)}
                         </span>
                       </div>
-                      <div className="flex justify-between">
+                      <div className="flex justify-between items-center">
                         <span className="text-xs text-muted-foreground">Margin:</span>
                         <MarginPill
                           sellingPrice={totalSellingPrice}
@@ -687,60 +738,61 @@ export default function POS() {
                   ) : null;
                 })()}
                 
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-sm text-muted-foreground">
                   <span>Subtotal:</span>
-                  <span>{currency} {subtotal.toFixed(2)}</span>
+                  <span className="font-medium">{currency} {subtotal.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-sm text-muted-foreground">
                   <span>VAT (21%):</span>
-                  <span>{currency} {tax.toFixed(2)}</span>
+                  <span className="font-medium">{currency} {tax.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between font-bold text-lg">
-                  <span>Total:</span>
-                  <span>{currency} {total.toFixed(2)}</span>
+                <Separator className="my-2" />
+                <div className="flex justify-between items-center bg-primary/5 rounded-lg p-3">
+                  <span className="text-lg font-bold">Total:</span>
+                  <span className="text-2xl font-bold text-primary">{currency} {total.toFixed(2)}</span>
                 </div>
               </div>
             )}
 
             {/* Payment Method */}
-            <div className="space-y-2 pt-4 border-t">
-              <p className="text-sm font-medium">Payment Method:</p>
+            <div className="space-y-3 pt-4 border-t mt-4">
+              <p className="text-sm font-semibold">Payment Method</p>
               <div className="grid grid-cols-3 gap-2">
                 <Button
                   size="sm"
                   variant={paymentMethod === 'cash' ? 'default' : 'outline'}
                   onClick={() => setPaymentMethod('cash')}
-                  className="flex flex-col gap-1 h-auto py-2"
+                  className="flex flex-col gap-1.5 h-auto py-3 transition-all"
                 >
-                  <Banknote className="h-4 w-4" />
-                  <span className="text-xs">Cash</span>
+                  <Banknote className="h-5 w-5" />
+                  <span className="text-xs font-medium">Cash</span>
                 </Button>
                 <Button
                   size="sm"
                   variant={paymentMethod === 'pay_later' ? 'default' : 'outline'}
                   onClick={() => setPaymentMethod('pay_later')}
-                  className="flex flex-col gap-1 h-auto py-2"
+                  className="flex flex-col gap-1.5 h-auto py-3 transition-all"
                 >
-                  <CreditCard className="h-4 w-4" />
-                  <span className="text-xs">Pay Later</span>
+                  <CreditCard className="h-5 w-5" />
+                  <span className="text-xs font-medium">Pay Later</span>
                 </Button>
                 <Button
                   size="sm"
                   variant={paymentMethod === 'bank_transfer' ? 'default' : 'outline'}
                   onClick={() => setPaymentMethod('bank_transfer')}
-                  className="flex flex-col gap-1 h-auto py-2"
+                  className="flex flex-col gap-1.5 h-auto py-3 transition-all"
                 >
-                  <Building className="h-4 w-4" />
-                  <span className="text-xs">Bank</span>
+                  <Building className="h-5 w-5" />
+                  <span className="text-xs font-medium">Bank</span>
                 </Button>
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-2 pt-4">
+            <div className="flex gap-3 pt-4">
               <Button 
                 variant="outline" 
-                className="flex-1"
+                className="flex-1 h-12"
                 onClick={() => setCart([])}
                 disabled={cart.length === 0}
               >
@@ -748,11 +800,12 @@ export default function POS() {
                 Clear
               </Button>
               <Button 
-                className="flex-1"
+                className="flex-1 h-12 text-base font-semibold"
                 onClick={handleCheckout}
                 disabled={cart.length === 0}
+                size="lg"
               >
-                <Printer className="mr-2 h-4 w-4" />
+                <Printer className="mr-2 h-5 w-5" />
                 Checkout
               </Button>
             </div>
