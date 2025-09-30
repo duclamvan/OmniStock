@@ -624,9 +624,9 @@ export default function POS() {
 
         {/* Right Panel - Cart */}
         <div className="w-[420px] border-l flex flex-col bg-card">
-          <div className="p-6 border-b">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold flex items-center gap-2">
+          <div className="px-4 py-3 border-b">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold flex items-center gap-2">
                 <ShoppingCart className="h-5 w-5" />
                 Cart ({totalItems})
               </h2>
@@ -638,92 +638,88 @@ export default function POS() {
                     setCart([]);
                     playSound('remove');
                   }}
-                  className="text-destructive hover:text-destructive"
+                  className="text-destructive hover:text-destructive h-8"
                 >
-                  <Trash2 className="h-4 w-4 mr-2" />
+                  <Trash2 className="h-4 w-4 mr-1" />
                   Clear
                 </Button>
               )}
             </div>
           </div>
 
-          <ScrollArea className="flex-1 max-h-[calc(100vh-32rem)]">
-            <div className="space-y-3 p-6">
+          <ScrollArea className="flex-1">
+            <div className="space-y-2 p-3">
               {cart.length === 0 ? (
-                <div className="text-center py-16 text-muted-foreground">
-                  <div className="bg-muted rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4">
-                    <ShoppingCart className="h-12 w-12" />
+                <div className="text-center py-12 text-muted-foreground">
+                  <div className="bg-muted rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-3">
+                    <ShoppingCart className="h-10 w-10" />
                   </div>
                   <p className="text-sm font-medium">Your cart is empty</p>
-                  <p className="text-xs mt-2">Scan or click products to add</p>
+                  <p className="text-xs mt-1">Scan or click products to add</p>
                 </div>
               ) : (
                 cart.map((item) => (
                   <div 
                     key={item.id} 
-                    className="border-2 rounded-xl p-4 bg-background hover:shadow-md transition-all"
+                    className="border-2 rounded-lg p-2 bg-background hover:shadow-md transition-all"
                     data-testid={`cart-item-${item.id}`}
                   >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <h4 className="font-bold text-sm">{item.name}</h4>
-                        <p className="text-xs text-muted-foreground mt-1">{item.sku || 'No SKU'}</p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <p className="text-sm font-semibold">
-                            {currency} {item.price.toFixed(2)}
-                          </p>
-                          {item.landingCost && (
-                            <MarginPill
-                              sellingPrice={item.price}
-                              landingCost={item.landingCost}
-                              currency={currency}
-                              showProfit={false}
-                              className="text-xs"
-                            />
-                          )}
-                          {item.landingCost && item.price < item.landingCost && (
-                            <AlertTriangle className="h-3 w-3 text-red-500" />
-                          )}
-                        </div>
-                      </div>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
-                        onClick={() => removeFromCart(item.id)}
-                        data-testid={`button-remove-${item.id}`}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    
-                    <div className="flex items-center justify-between gap-3 bg-muted/50 rounded-lg p-3">
-                      <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2">
+                      {/* Quantity Controls */}
+                      <div className="flex items-center gap-1 bg-muted/50 rounded-md px-1">
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-9 w-9 hover:bg-background"
+                          className="h-8 w-8 hover:bg-background"
                           onClick={() => updateQuantity(item.id, item.quantity - 1)}
                           data-testid={`button-decrease-${item.id}`}
                         >
-                          <Minus className="h-4 w-4" />
+                          <Minus className="h-3 w-3" />
                         </Button>
-                        <div className="w-12 text-center font-bold text-lg">
+                        <div className="w-8 text-center font-bold text-sm">
                           {item.quantity}
                         </div>
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-9 w-9 hover:bg-background"
+                          className="h-8 w-8 hover:bg-background"
                           onClick={() => updateQuantity(item.id, item.quantity + 1)}
                           data-testid={`button-increase-${item.id}`}
                         >
-                          <Plus className="h-4 w-4" />
+                          <Plus className="h-3 w-3" />
                         </Button>
                       </div>
-                      <div className="text-xl font-bold">
-                        {currency} {(item.price * item.quantity).toFixed(2)}
+
+                      {/* Product Info */}
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-bold text-sm truncate">{item.name}</h4>
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs text-muted-foreground">
+                            {currency} {item.price.toFixed(2)}
+                          </p>
+                          {item.landingCost && item.price < item.landingCost && (
+                            <AlertTriangle className="h-3 w-3 text-red-500" />
+                          )}
+                        </div>
                       </div>
+
+                      {/* Total Price */}
+                      <div className="text-right">
+                        <p className="text-base font-bold">
+                          {currency} {(item.price * item.quantity).toFixed(2)}
+                        </p>
+                      </div>
+
+                      {/* Remove Button */}
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive flex-shrink-0"
+                        onClick={() => removeFromCart(item.id)}
+                        data-testid={`button-remove-${item.id}`}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 ))
@@ -733,7 +729,7 @@ export default function POS() {
 
           {/* Totals and Actions */}
           {cart.length > 0 && (
-            <div className="border-t p-6 space-y-4">
+            <div className="border-t p-4 space-y-3">
               {/* Margin Summary */}
               {(() => {
                 const totalLandingCost = cart.reduce((sum, item) => 
@@ -743,13 +739,13 @@ export default function POS() {
                 const totalProfit = totalSellingPrice - totalLandingCost;
                 
                 return totalLandingCost > 0 ? (
-                  <div className="bg-muted/50 rounded-lg p-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="flex items-center gap-2 text-sm font-semibold">
-                        <TrendingUp className="h-4 w-4 text-green-500" />
+                  <div className="bg-muted/50 rounded-lg p-3">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="flex items-center gap-2 text-xs font-semibold">
+                        <TrendingUp className="h-3 w-3 text-green-500" />
                         Profit:
                       </span>
-                      <span className={`text-lg font-bold ${totalProfit >= 0 ? "text-green-600" : "text-red-600"}`}>
+                      <span className={`text-sm font-bold ${totalProfit >= 0 ? "text-green-600" : "text-red-600"}`}>
                         {currency} {totalProfit.toFixed(2)}
                       </span>
                     </div>
@@ -766,7 +762,7 @@ export default function POS() {
                 ) : null;
               })()}
               
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <div className="flex justify-between text-sm">
                   <span>Subtotal:</span>
                   <span className="font-semibold">{currency} {subtotal.toFixed(2)}</span>
@@ -776,43 +772,43 @@ export default function POS() {
                   <span className="font-semibold">{currency} {tax.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between items-center bg-primary/10 rounded-lg p-3 mt-2">
-                  <span className="text-lg font-bold">Total:</span>
-                  <span className="text-2xl font-bold text-primary">{currency} {total.toFixed(2)}</span>
+                  <span className="text-base font-bold">Total:</span>
+                  <span className="text-xl font-bold text-primary">{currency} {total.toFixed(2)}</span>
                 </div>
               </div>
 
               {/* Payment Method */}
               <div>
-                <p className="text-sm font-semibold mb-3">Payment Method</p>
+                <p className="text-xs font-semibold mb-2">Payment Method</p>
                 <div className="grid grid-cols-3 gap-2">
                   <Button
                     size="sm"
                     variant={paymentMethod === 'cash' ? 'default' : 'outline'}
                     onClick={() => setPaymentMethod('cash')}
-                    className="flex flex-col gap-2 h-auto py-3"
+                    className="flex flex-col gap-1.5 h-auto py-2.5"
                     data-testid="button-payment-cash"
                   >
-                    <Banknote className="h-5 w-5" />
+                    <Banknote className="h-4 w-4" />
                     <span className="text-xs font-medium">Cash</span>
                   </Button>
                   <Button
                     size="sm"
                     variant={paymentMethod === 'pay_later' ? 'default' : 'outline'}
                     onClick={() => setPaymentMethod('pay_later')}
-                    className="flex flex-col gap-2 h-auto py-3"
+                    className="flex flex-col gap-1.5 h-auto py-2.5"
                     data-testid="button-payment-later"
                   >
-                    <CreditCard className="h-5 w-5" />
+                    <CreditCard className="h-4 w-4" />
                     <span className="text-xs font-medium">Pay Later</span>
                   </Button>
                   <Button
                     size="sm"
                     variant={paymentMethod === 'bank_transfer' ? 'default' : 'outline'}
                     onClick={() => setPaymentMethod('bank_transfer')}
-                    className="flex flex-col gap-2 h-auto py-3"
+                    className="flex flex-col gap-1.5 h-auto py-2.5"
                     data-testid="button-payment-bank"
                   >
-                    <Building className="h-5 w-5" />
+                    <Building className="h-4 w-4" />
                     <span className="text-xs font-medium">Bank</span>
                   </Button>
                 </div>
@@ -820,7 +816,7 @@ export default function POS() {
 
               {/* Checkout Button */}
               <Button 
-                className="w-full h-14 text-lg font-bold"
+                className="w-full h-12 text-base font-bold"
                 onClick={handleCheckout}
                 disabled={cart.length === 0}
                 data-testid="button-checkout"
