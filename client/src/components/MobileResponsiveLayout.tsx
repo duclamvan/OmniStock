@@ -337,58 +337,56 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                   <Button
                     variant="ghost"
                     className={cn(
-                      "w-full justify-between text-left font-medium px-4 py-3 rounded-lg touch-target transition-all duration-200",
+                      "w-full justify-start font-medium px-4 py-3 rounded-lg touch-target transition-all duration-200",
                       "hover:bg-gray-50 dark:hover:bg-gray-800",
                       isActive && "bg-white shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700"
                     )}
                   >
-                  <div className="flex items-center gap-3">
-                    <item.icon className={cn("h-5 w-5 transition-colors", item.color)} />
-                    <div className="flex flex-col">
+                    <item.icon className={cn("mr-4 h-5 w-5 flex-shrink-0 transition-colors", item.color)} />
+                    <div className="flex flex-col items-start flex-1">
                       <span className="text-sm font-medium text-gray-900 dark:text-white">{item.name}</span>
                       <span className="text-xs text-gray-500 dark:text-gray-400">{item.description}</span>
                     </div>
+                    <ChevronDown className={cn(
+                      "h-4 w-4 transition-transform duration-200 text-gray-400 ml-2",
+                      isOpen && "rotate-180"
+                    )} />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-1">
+                  <div className="ml-12 space-y-1 border-l border-gray-200 dark:border-gray-700 pl-4">
+                    {item.children.map((child) => {
+                      const isChildActive = location === child.href;
+                      return (
+                        <div
+                          key={child.href}
+                          ref={el => {
+                            if (isChildActive && el) {
+                              itemRefs.current[`${item.name}-${child.href}`] = el;
+                            }
+                          }}
+                        >
+                          <Link href={child.href}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className={cn(
+                                "w-full justify-start text-gray-600 dark:text-gray-300 px-3 py-2 rounded-md touch-target transition-colors text-sm",
+                                "hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white",
+                                isChildActive && "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-medium"
+                              )}
+                              onClick={() => setIsMobileMenuOpen(false)}
+                            >
+                              <div className="w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600 mr-3 flex-shrink-0"></div>
+                              {child.name}
+                            </Button>
+                          </Link>
+                        </div>
+                      );
+                    })}
                   </div>
-                  <ChevronDown className={cn(
-                    "h-4 w-4 transition-transform duration-200 text-gray-400",
-                    isOpen && "rotate-180"
-                  )} />
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-1">
-                <div className="ml-12 space-y-1 border-l border-gray-200 dark:border-gray-700 pl-4">
-                  {item.children.map((child) => {
-                    const isChildActive = location === child.href;
-                    return (
-                      <div
-                        key={child.href}
-                        ref={el => {
-                          if (isChildActive && el) {
-                            itemRefs.current[`${item.name}-${child.href}`] = el;
-                          }
-                        }}
-                      >
-                        <Link href={child.href}>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className={cn(
-                              "w-full justify-start text-gray-600 dark:text-gray-300 px-3 py-2 rounded-md touch-target transition-colors text-sm",
-                              "hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white",
-                              isChildActive && "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-medium"
-                            )}
-                            onClick={() => setIsMobileMenuOpen(false)}
-                          >
-                            <div className="w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600 mr-3 flex-shrink-0"></div>
-                            {child.name}
-                          </Button>
-                        </Link>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
+                </CollapsibleContent>
+              </Collapsible>
           </div>
           );
         }
