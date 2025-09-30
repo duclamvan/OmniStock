@@ -696,57 +696,65 @@ export default function POS() {
                     className="border rounded-lg p-3 bg-background/50 hover:bg-background transition-colors"
                     data-testid={`cart-item-${item.id}`}
                   >
-                    <div className="flex items-center gap-3">
+                    {/* Header Row: Product Name and Remove Button */}
+                    <div className="flex items-start justify-between gap-2 mb-3">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-sm leading-tight">{item.name}</h4>
+                        {item.sku && (
+                          <p className="text-xs text-muted-foreground mt-0.5">SKU: {item.sku}</p>
+                        )}
+                      </div>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive flex-shrink-0 -mt-1"
+                        onClick={() => removeFromCart(item.id)}
+                        data-testid={`button-remove-${item.id}`}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    {/* Footer Row: Quantity Controls and Pricing */}
+                    <div className="flex items-center justify-between gap-3">
                       {/* Quantity Controls */}
                       <div className="flex items-center gap-0.5 bg-muted rounded-md">
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-9 w-9 rounded-l-md rounded-r-none hover:bg-background"
+                          className="h-8 w-8 rounded-l-md rounded-r-none hover:bg-background"
                           onClick={() => updateQuantity(item.id, item.quantity - 1)}
                           data-testid={`button-decrease-${item.id}`}
                         >
-                          <Minus className="h-4 w-4" />
+                          <Minus className="h-3.5 w-3.5" />
                         </Button>
-                        <div className="w-10 text-center font-bold">
+                        <div className="w-9 text-center font-bold text-sm">
                           {item.quantity}
                         </div>
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-9 w-9 rounded-r-md rounded-l-none hover:bg-background"
+                          className="h-8 w-8 rounded-r-md rounded-l-none hover:bg-background"
                           onClick={() => updateQuantity(item.id, item.quantity + 1)}
                           data-testid={`button-increase-${item.id}`}
                         >
-                          <Plus className="h-4 w-4" />
+                          <Plus className="h-3.5 w-3.5" />
                         </Button>
                       </div>
 
-                      {/* Product Info */}
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-sm truncate leading-tight mb-1">{item.name}</h4>
+                      {/* Unit Price */}
+                      <div className="flex-1 text-center min-w-0">
                         <p className="text-xs text-muted-foreground">
                           {currency} {item.price.toFixed(2)} each
                         </p>
                       </div>
 
                       {/* Total Price */}
-                      <div className="text-right">
-                        <p className="text-lg font-bold whitespace-nowrap">
+                      <div className="text-right min-w-[90px]">
+                        <p className="text-base font-bold text-primary whitespace-nowrap">
                           {currency} {(item.price * item.quantity).toFixed(2)}
                         </p>
                       </div>
-
-                      {/* Remove Button */}
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-9 w-9 hover:bg-destructive/10 hover:text-destructive flex-shrink-0"
-                        onClick={() => removeFromCart(item.id)}
-                        data-testid={`button-remove-${item.id}`}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
                     </div>
                   </div>
                 ))
