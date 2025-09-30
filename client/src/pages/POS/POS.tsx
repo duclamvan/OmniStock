@@ -503,50 +503,50 @@ export default function POS() {
         </div>
       </div>
 
-      {/* Categories Bar */}
-      <div className="bg-background border-b px-6 py-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <Button
-            size="lg"
-            variant={selectedCategory === 'favorites' ? 'default' : 'outline'}
-            onClick={() => setSelectedCategory('favorites')}
-            className="whitespace-nowrap h-14 px-6 text-base"
-            data-testid="button-category-favorites"
-          >
-            <Star className="mr-2 h-5 w-5" />
-            Favorites
-          </Button>
-          <Button
-            size="lg"
-            variant={selectedCategory === 'all' ? 'default' : 'outline'}
-            onClick={() => setSelectedCategory('all')}
-            className="whitespace-nowrap h-14 px-6 text-base"
-            data-testid="button-category-all"
-          >
-            All Products
-          </Button>
-          {categories.filter(c => c !== 'favorites' && c !== 'all').map(category => (
-            category && (
-              <Button
-                key={category}
-                size="lg"
-                variant={selectedCategory === category ? 'default' : 'outline'}
-                onClick={() => setSelectedCategory(category)}
-                className="whitespace-nowrap h-14 px-6 text-base"
-                data-testid={`button-category-${category}`}
-              >
-                {category}
-              </Button>
-            )
-          ))}
-        </div>
-      </div>
-
       <div className="flex flex-1 overflow-hidden">
         {/* Left Panel - Products */}
-        <div className="flex-1 flex flex-col p-6 overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Categories Section */}
+          <div className="border-b px-6 py-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                size="sm"
+                variant={selectedCategory === 'favorites' ? 'default' : 'outline'}
+                onClick={() => setSelectedCategory('favorites')}
+                className="whitespace-nowrap h-10 px-4 text-sm"
+                data-testid="button-category-favorites"
+              >
+                <Star className="mr-2 h-4 w-4" />
+                Favorites
+              </Button>
+              <Button
+                size="sm"
+                variant={selectedCategory === 'all' ? 'default' : 'outline'}
+                onClick={() => setSelectedCategory('all')}
+                className="whitespace-nowrap h-10 px-4 text-sm"
+                data-testid="button-category-all"
+              >
+                All Products
+              </Button>
+              {categories.filter(c => c !== 'favorites' && c !== 'all').map(category => (
+                category && (
+                  <Button
+                    key={category}
+                    size="sm"
+                    variant={selectedCategory === category ? 'default' : 'outline'}
+                    onClick={() => setSelectedCategory(category)}
+                    className="whitespace-nowrap h-10 px-4 text-sm"
+                    data-testid={`button-category-${category}`}
+                  >
+                    {category}
+                  </Button>
+                )
+              ))}
+            </div>
+          </div>
+
           {/* Search and Barcode */}
-          <div className="flex gap-3 mb-4">
+          <div className="flex gap-3 px-6 py-3 border-b">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
               <Input
@@ -571,7 +571,7 @@ export default function POS() {
 
           {/* Products Grid */}
           <ScrollArea className="flex-1">
-            <div className="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 pb-4">
+            <div className="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 p-6">
               {displayProducts.map(product => (
                 <Card
                   key={product.id}
