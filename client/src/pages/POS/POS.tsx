@@ -17,12 +17,9 @@ import {
   Banknote,
   Building,
   X,
-  TrendingUp,
-  AlertTriangle,
   Scan,
   Package
 } from 'lucide-react';
-import MarginPill from '@/components/orders/MarginPill';
 import { format } from 'date-fns';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -724,38 +721,6 @@ export default function POS() {
           {/* Totals and Actions */}
           {cart.length > 0 && (
             <div className="border-t p-4 space-y-3">
-              {/* Margin Summary */}
-              {(() => {
-                const totalLandingCost = cart.reduce((sum, item) => 
-                  sum + (item.landingCost || 0) * item.quantity, 0);
-                const totalSellingPrice = cart.reduce((sum, item) => 
-                  sum + item.price * item.quantity, 0);
-                const totalProfit = totalSellingPrice - totalLandingCost;
-                
-                return totalLandingCost > 0 ? (
-                  <div className="bg-muted/50 rounded-lg p-3">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="flex items-center gap-2 text-xs font-semibold">
-                        <TrendingUp className="h-3 w-3 text-green-500" />
-                        Profit:
-                      </span>
-                      <span className={`text-sm font-bold ${totalProfit >= 0 ? "text-green-600" : "text-red-600"}`}>
-                        {currency} {totalProfit.toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-muted-foreground">Margin:</span>
-                      <MarginPill
-                        sellingPrice={totalSellingPrice}
-                        landingCost={totalLandingCost}
-                        currency={currency}
-                        showProfit={false}
-                      />
-                    </div>
-                  </div>
-                ) : null;
-              })()}
-              
               <div className="space-y-1.5">
                 <div className="flex justify-between text-sm">
                   <span>Subtotal:</span>
