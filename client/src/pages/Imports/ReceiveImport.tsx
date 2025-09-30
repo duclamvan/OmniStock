@@ -78,7 +78,7 @@ export default function ReceiveImport() {
       const itemIds = checkedItems.map(item => item.id);
       const receivedQuantities = checkedItems.map(item => item.receivedQuantity);
       
-      return apiRequest(`/api/import-orders/${id}/receive`, 'POST', {
+      return apiRequest('POST', `/api/import-orders/${id}/receive`, {
         itemIds,
         receivedQuantities
       });
@@ -106,7 +106,7 @@ export default function ReceiveImport() {
       const checkedItems = receivingItems.filter(item => item.checked);
       const itemIds = checkedItems.map(item => item.id);
       
-      return apiRequest(`/api/import-orders/${id}/add-to-inventory`, 'POST', {
+      return apiRequest('POST', `/api/import-orders/${id}/add-to-inventory`, {
         itemIds
       });
     },

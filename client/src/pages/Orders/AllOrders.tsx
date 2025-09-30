@@ -92,7 +92,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
 
   const updateOrderMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
-      await apiRequest(`/api/orders/${id}`, 'PATCH', updates);
+      await apiRequest('PATCH', `/api/orders/${id}`, updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
@@ -113,7 +113,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
 
   const deleteOrderMutation = useMutation({
     mutationFn: async (ids: string[]) => {
-      await Promise.all(ids.map(id => apiRequest(`/api/orders/${id}`, 'DELETE')));
+      await Promise.all(ids.map(id => apiRequest('DELETE', `/api/orders/${id}`)));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
@@ -137,7 +137,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   const bulkUpdateStatusMutation = useMutation({
     mutationFn: async ({ orderIds, status }: { orderIds: string[], status: string }) => {
       await Promise.all(orderIds.map(id => 
-        apiRequest(`/api/orders/${id}`, 'PATCH', { orderStatus: status })
+        apiRequest('PATCH', `/api/orders/${id}`, { orderStatus: status })
       ));
     },
     onSuccess: () => {
@@ -162,7 +162,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   const bulkUpdatePaymentMutation = useMutation({
     mutationFn: async ({ orderIds, paymentStatus }: { orderIds: string[], paymentStatus: string }) => {
       await Promise.all(orderIds.map(id => 
-        apiRequest(`/api/orders/${id}`, 'PATCH', { paymentStatus })
+        apiRequest('PATCH', `/api/orders/${id}`, { paymentStatus })
       ));
     },
     onSuccess: () => {

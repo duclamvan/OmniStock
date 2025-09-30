@@ -448,7 +448,7 @@ export default function EditOrder() {
           type: selectedCustomer.type || 'regular',
         };
         console.log('Sending customer data:', customerData);
-        const response = await apiRequest('/api/customers', 'POST', customerData);
+        const response = await apiRequest('POST', '/api/customers', customerData);
         const customerResponse = await response.json();
         console.log('Customer API response:', customerResponse);
         console.log('New customer created with ID:', customerResponse?.id);
@@ -459,7 +459,7 @@ export default function EditOrder() {
       }
       
       console.log('Updating order with customerId:', data.customerId);
-      await apiRequest(`/api/orders/${id}`, 'PATCH', data);
+      await apiRequest('PATCH', `/api/orders/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });

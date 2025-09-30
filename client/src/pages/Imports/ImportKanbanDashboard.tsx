@@ -461,7 +461,7 @@ export default function ImportKanbanDashboard() {
   const { data: purchases = [], isLoading: purchasesLoading } = useQuery({
     queryKey: ['/api/imports/purchases'],
     queryFn: async () => {
-      const response = await apiRequest('/api/imports/purchases');
+      const response = await apiRequest('GET', '/api/imports/purchases');
       return response.json() as Promise<Purchase[]>;
     }
   });
@@ -469,7 +469,7 @@ export default function ImportKanbanDashboard() {
   const { data: customItems = [], isLoading: customItemsLoading } = useQuery({
     queryKey: ['/api/imports/custom-items'],
     queryFn: async () => {
-      const response = await apiRequest('/api/imports/custom-items');
+      const response = await apiRequest('GET', '/api/imports/custom-items');
       return response.json() as Promise<CustomItem[]>;
     }
   });
@@ -477,7 +477,7 @@ export default function ImportKanbanDashboard() {
   const { data: consolidations = [], isLoading: consolidationsLoading } = useQuery({
     queryKey: ['/api/imports/consolidations'],
     queryFn: async () => {
-      const response = await apiRequest('/api/imports/consolidations');
+      const response = await apiRequest('GET', '/api/imports/consolidations');
       return response.json() as Promise<Consolidation[]>;
     }
   });
@@ -485,7 +485,7 @@ export default function ImportKanbanDashboard() {
   const { data: shipments = [], isLoading: shipmentsLoading } = useQuery({
     queryKey: ['/api/imports/shipments'],
     queryFn: async () => {
-      const response = await apiRequest('/api/imports/shipments');
+      const response = await apiRequest('GET', '/api/imports/shipments');
       return response.json() as Promise<Shipment[]>;
     }
   });

@@ -2482,14 +2482,14 @@ export default function PickPack() {
         });
 
         // Log packing completion activity
-        await apiRequest(`/api/orders/${activePackingOrder.id}/pick-pack-logs`, 'POST', {
+        await apiRequest('POST', `/api/orders/${activePackingOrder.id}/pick-pack-logs`, {
           activityType: 'pack_complete',
           userName: currentEmployee,
           notes: `Packing completed. ${selectedCartons.length} carton(s), Total weight: ${packageWeight}kg`
         });
 
         // Complete packing with multi-carton data
-        await apiRequest(`/api/orders/${activePackingOrder.id}/pack/complete`, 'POST', {
+        await apiRequest('POST', `/api/orders/${activePackingOrder.id}/pack/complete`, {
           cartons: selectedCartons,
           packageWeight: packageWeight,
           printedDocuments: printedDocuments,

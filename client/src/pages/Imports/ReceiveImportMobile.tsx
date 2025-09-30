@@ -97,7 +97,7 @@ export default function ReceiveImportMobile() {
       const itemIds = checkedItems.map(item => item.id);
       const receivedQuantities = checkedItems.map(item => item.receivedQuantity);
       
-      return apiRequest(`/api/import-orders/${id}/receive`, 'POST', {
+      return apiRequest('POST', `/api/import-orders/${id}/receive`, {
         itemIds,
         receivedQuantities
       });
@@ -128,7 +128,7 @@ export default function ReceiveImportMobile() {
         .filter(item => item.receivedQuantity > 0)
         .map(item => item.id);
       
-      return apiRequest(`/api/import-orders/${id}/add-to-inventory`, 'POST', {
+      return apiRequest('POST', `/api/import-orders/${id}/add-to-inventory`, {
         itemIds
       });
     },

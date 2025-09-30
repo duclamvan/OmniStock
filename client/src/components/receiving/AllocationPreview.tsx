@@ -175,7 +175,7 @@ const AllocationPreview = ({ shipmentId }: AllocationPreviewProps) => {
   // Mutation for updating allocation method
   const updateAllocationMethod = useMutation({
     mutationFn: async (method: string) => {
-      const response = await apiRequest(`/api/imports/shipments/${shipmentId}/landing-cost-preview?method=${method}`);
+      const response = await apiRequest('GET', `/api/imports/shipments/${shipmentId}/landing-cost-preview?method=${method}`);
       return response;
     },
     onSuccess: (data) => {

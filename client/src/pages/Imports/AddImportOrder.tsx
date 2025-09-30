@@ -108,7 +108,7 @@ export default function AddImportOrder() {
           totalCost: item.totalCost,
         })),
       };
-      return apiRequest('/api/import-orders', 'POST', orderData);
+      return apiRequest('POST', '/api/import-orders', orderData);
     },
     onSuccess: (data: any) => {
       toast({

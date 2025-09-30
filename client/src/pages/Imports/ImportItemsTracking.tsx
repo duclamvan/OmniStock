@@ -96,7 +96,7 @@ export default function ImportItemsTracking() {
   // Link item to product
   const linkToProductMutation = useMutation({
     mutationFn: async (data: { itemId: string; productId: string }) => {
-      return apiRequest(`/api/import-items/${data.itemId}/link-product`, 'POST', {
+      return apiRequest('POST', `/api/import-items/${data.itemId}/link-product`, {
         productId: data.productId
       });
     },
@@ -114,7 +114,7 @@ export default function ImportItemsTracking() {
   // Create new product and link
   const createAndLinkMutation = useMutation({
     mutationFn: async (data: { itemId: string; productData: any }) => {
-      return apiRequest(`/api/import-items/${data.itemId}/create-and-link`, 'POST', {
+      return apiRequest('POST', `/api/import-items/${data.itemId}/create-and-link`, {
         productData: data.productData
       });
     },

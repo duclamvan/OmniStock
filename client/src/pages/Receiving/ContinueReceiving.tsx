@@ -630,7 +630,7 @@ export default function ContinueReceiving() {
       const receiptId = receipt?.receipt?.id || receipt?.id;
       if (!receiptId) {
         // Create receipt first if it doesn't exist
-        const response = await apiRequest('/api/imports/receipts/auto-save', 'POST', {
+        const response = await apiRequest('POST', '/api/imports/receipts/auto-save', {
           shipmentId: shipment?.id,
           consolidationId: shipment?.consolidationId,
           receivedBy: field === 'receivedBy' ? value : receivedBy,
@@ -679,7 +679,7 @@ export default function ContinueReceiving() {
         };
         
         try {
-          const response = await apiRequest('/api/imports/receipts/auto-save', 'POST', autoSaveData);
+          const response = await apiRequest('POST', '/api/imports/receipts/auto-save', autoSaveData);
           const autoSaveResponse = await response.json();
           receiptId = autoSaveResponse?.receipt?.id;
           

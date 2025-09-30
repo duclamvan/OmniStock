@@ -107,7 +107,7 @@ export default function EditPackingMaterial() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: FormData) => apiRequest(`/api/packing-materials/${id}`, "PATCH", data),
+    mutationFn: (data: FormData) => apiRequest("PATCH", `/api/packing-materials/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/packing-materials"] });
       queryClient.invalidateQueries({ queryKey: [`/api/packing-materials/${id}`] });

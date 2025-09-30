@@ -606,7 +606,7 @@ export default function StartReceiving() {
       const receiptId = receipt?.receipt?.id || receipt?.id;
       if (!receiptId) {
         // Create receipt first if it doesn't exist
-        const response = await apiRequest('/api/imports/receipts/auto-save', 'POST', {
+        const response = await apiRequest('POST', '/api/imports/receipts/auto-save', {
           shipmentId: shipment?.id,
           consolidationId: shipment?.consolidationId,
           receivedBy: field === 'receivedBy' ? value : receivedBy,
@@ -655,7 +655,7 @@ export default function StartReceiving() {
         };
         
         try {
-          const response = await apiRequest('/api/imports/receipts/auto-save', 'POST', autoSaveData);
+          const response = await apiRequest('POST', '/api/imports/receipts/auto-save', autoSaveData);
           const autoSaveResponse = await response.json();
           receiptId = autoSaveResponse?.receipt?.id;
           
@@ -841,7 +841,7 @@ export default function StartReceiving() {
       const receiptId = receipt?.receipt?.id || receipt?.id;
       if (!receiptId) {
         // Create receipt first if it doesn't exist
-        const response = await apiRequest('/api/imports/receipts/auto-save', 'POST', {
+        const response = await apiRequest('POST', '/api/imports/receipts/auto-save', {
           shipmentId: shipment?.id,
           consolidationId: shipment?.consolidationId,
           receivedBy,
@@ -1265,7 +1265,7 @@ export default function StartReceiving() {
   // Legacy auto-save mutation for initial creation and items batch update
   const autoSaveMutation = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest('/api/imports/receipts/auto-save', 'POST', data);
+      return await apiRequest('POST', '/api/imports/receipts/auto-save', data);
     },
     onSuccess: (response) => {
       // Invalidate receivable query only if this is the first receipt creation
@@ -1495,7 +1495,7 @@ export default function StartReceiving() {
     const receiptId = receipt?.receipt?.id || receipt?.id;
     if (!receiptId) {
       // Create receipt first with current data
-      const response = await apiRequest('/api/imports/receipts/auto-save', 'POST', {
+      const response = await apiRequest('POST', '/api/imports/receipts/auto-save', {
         shipmentId: shipment?.id,
         consolidationId: shipment?.consolidationId,
         receivedBy,

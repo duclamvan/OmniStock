@@ -251,7 +251,7 @@ export default function StoreItems() {
         }))
       );
       
-      return apiRequest(`/api/imports/receipts/${id}/store-items`, 'POST', {
+      return apiRequest('POST', `/api/imports/receipts/${id}/store-items`, {
         locations: locationsToSave
       });
     },
