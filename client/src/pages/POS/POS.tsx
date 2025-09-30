@@ -506,22 +506,24 @@ export default function POS() {
       </div>
 
       {/* Categories Bar */}
-      <div className="bg-background border-b px-6 py-3">
-        <div className="flex items-center gap-2 overflow-x-auto pb-2">
+      <div className="bg-background border-b px-6 py-4">
+        <div className="flex items-center gap-3 overflow-x-auto pb-2">
           <Button
-            size="sm"
+            size="lg"
             variant={selectedCategory === 'favorites' ? 'default' : 'outline'}
             onClick={() => setSelectedCategory('favorites')}
-            className="whitespace-nowrap"
+            className="whitespace-nowrap h-14 px-6 text-base"
+            data-testid="button-category-favorites"
           >
-            <Star className="mr-2 h-4 w-4" />
+            <Star className="mr-2 h-5 w-5" />
             Favorites
           </Button>
           <Button
-            size="sm"
+            size="lg"
             variant={selectedCategory === 'all' ? 'default' : 'outline'}
             onClick={() => setSelectedCategory('all')}
-            className="whitespace-nowrap"
+            className="whitespace-nowrap h-14 px-6 text-base"
+            data-testid="button-category-all"
           >
             All Products
           </Button>
@@ -529,10 +531,11 @@ export default function POS() {
             category && (
               <Button
                 key={category}
-                size="sm"
+                size="lg"
                 variant={selectedCategory === category ? 'default' : 'outline'}
                 onClick={() => setSelectedCategory(category)}
-                className="whitespace-nowrap"
+                className="whitespace-nowrap h-14 px-6 text-base"
+                data-testid={`button-category-${category}`}
               >
                 {category}
               </Button>
