@@ -578,7 +578,7 @@ export default function POS() {
               {displayProducts.map(product => (
                 <Card
                   key={product.id}
-                  className="cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-200 border-2 hover:border-primary active:scale-95"
+                  className="cursor-pointer hover:shadow-lg hover:scale-[1.01] transition-all duration-150 border-2 hover:border-primary active:scale-[0.99]"
                   onClick={() => addToCart({
                     id: product.id,
                     name: product.name,
@@ -592,9 +592,9 @@ export default function POS() {
                   })}
                   data-testid={`card-product-${product.id}`}
                 >
-                  <CardContent className="p-0 flex items-center gap-3 h-24">
+                  <CardContent className="p-0 flex items-center h-28">
                     {product.imageUrl ? (
-                      <div className="w-24 h-24 flex-shrink-0 overflow-hidden bg-muted">
+                      <div className="w-28 h-28 flex-shrink-0 overflow-hidden bg-muted">
                         <img 
                           src={product.imageUrl} 
                           alt={product.name}
@@ -602,14 +602,13 @@ export default function POS() {
                         />
                       </div>
                     ) : (
-                      <div className="w-24 h-24 flex-shrink-0 bg-muted flex items-center justify-center">
-                        <Package className="h-10 w-10 text-muted-foreground/50" />
+                      <div className="w-28 h-28 flex-shrink-0 bg-muted flex items-center justify-center border-r">
+                        <Package className="h-10 w-10 text-muted-foreground/40" />
                       </div>
                     )}
-                    <div className="flex-1 pr-4 py-3 min-w-0">
-                      <h3 className="font-bold text-base line-clamp-2 mb-1">{product.name}</h3>
-                      <p className="text-xs text-muted-foreground mb-2 truncate">{product.sku}</p>
-                      <p className="text-xl font-bold text-primary">
+                    <div className="flex-1 p-3 min-w-0 flex flex-col justify-center">
+                      <h3 className="font-semibold text-sm leading-tight line-clamp-2 mb-2">{product.name}</h3>
+                      <p className="text-lg font-bold text-primary">
                         {currency} {currency === 'EUR' 
                           ? parseFloat(product.priceEur || '0').toFixed(2)
                           : parseFloat(product.priceCzk || '0').toFixed(2)}
@@ -661,51 +660,46 @@ export default function POS() {
                 cart.map((item) => (
                   <div 
                     key={item.id} 
-                    className="border-2 rounded-lg p-2 bg-background hover:shadow-md transition-all"
+                    className="border rounded-lg p-3 bg-background/50 hover:bg-background transition-colors"
                     data-testid={`cart-item-${item.id}`}
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                       {/* Quantity Controls */}
-                      <div className="flex items-center gap-1 bg-muted/50 rounded-md px-1">
+                      <div className="flex items-center gap-0.5 bg-muted rounded-md">
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-8 w-8 hover:bg-background"
+                          className="h-9 w-9 rounded-l-md rounded-r-none hover:bg-background"
                           onClick={() => updateQuantity(item.id, item.quantity - 1)}
                           data-testid={`button-decrease-${item.id}`}
                         >
-                          <Minus className="h-3 w-3" />
+                          <Minus className="h-4 w-4" />
                         </Button>
-                        <div className="w-8 text-center font-bold text-sm">
+                        <div className="w-10 text-center font-bold">
                           {item.quantity}
                         </div>
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="h-8 w-8 hover:bg-background"
+                          className="h-9 w-9 rounded-r-md rounded-l-none hover:bg-background"
                           onClick={() => updateQuantity(item.id, item.quantity + 1)}
                           data-testid={`button-increase-${item.id}`}
                         >
-                          <Plus className="h-3 w-3" />
+                          <Plus className="h-4 w-4" />
                         </Button>
                       </div>
 
                       {/* Product Info */}
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-bold text-sm truncate">{item.name}</h4>
-                        <div className="flex items-center gap-2">
-                          <p className="text-xs text-muted-foreground">
-                            {currency} {item.price.toFixed(2)}
-                          </p>
-                          {item.landingCost && item.price < item.landingCost && (
-                            <AlertTriangle className="h-3 w-3 text-red-500" />
-                          )}
-                        </div>
+                        <h4 className="font-semibold text-sm truncate leading-tight mb-1">{item.name}</h4>
+                        <p className="text-xs text-muted-foreground">
+                          {currency} {item.price.toFixed(2)} each
+                        </p>
                       </div>
 
                       {/* Total Price */}
                       <div className="text-right">
-                        <p className="text-base font-bold">
+                        <p className="text-lg font-bold whitespace-nowrap">
                           {currency} {(item.price * item.quantity).toFixed(2)}
                         </p>
                       </div>
@@ -714,7 +708,7 @@ export default function POS() {
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive flex-shrink-0"
+                        className="h-9 w-9 hover:bg-destructive/10 hover:text-destructive flex-shrink-0"
                         onClick={() => removeFromCart(item.id)}
                         data-testid={`button-remove-${item.id}`}
                       >
