@@ -179,13 +179,19 @@ export default function POS() {
     };
   }, [barcodeInput, products, currency]);
 
-  // Auto-focus barcode input
+  // Auto-focus barcode input when not typing elsewhere
   useEffect(() => {
     const interval = setInterval(() => {
-      if (barcodeInputRef.current && document.activeElement !== barcodeInputRef.current) {
+      const activeElement = document.activeElement;
+      const isTypingInInput = activeElement?.tagName === 'INPUT' || 
+                              activeElement?.tagName === 'TEXTAREA' || 
+                              activeElement?.tagName === 'SELECT';
+      
+      // Only refocus to barcode if user is not typing in any input field
+      if (barcodeInputRef.current && !isTypingInInput) {
         barcodeInputRef.current.focus();
       }
-    }, 100);
+    }, 500); // Reduced frequency to be less aggressive
     return () => clearInterval(interval);
   }, []);
 
