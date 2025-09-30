@@ -34,6 +34,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface ProductBundle {
   id: string;
@@ -97,6 +107,7 @@ export default function POS() {
   const [showQuantityDialog, setShowQuantityDialog] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quantityInput, setQuantityInput] = useState('1');
+  const [showClearCartDialog, setShowClearCartDialog] = useState(false);
   const receiptRef = useRef<HTMLDivElement>(null);
   const quantityInputRef = useRef<HTMLInputElement>(null);
   const barcodeBufferRef = useRef<string>('');
@@ -318,6 +329,13 @@ export default function POS() {
   // Remove from cart
   const removeFromCart = (id: string) => {
     setCart(cart.filter(item => item.id !== id));
+    playSound('remove');
+  };
+
+  // Clear entire cart
+  const handleClearCart = () => {
+    setCart([]);
+    setShowClearCartDialog(false);
     playSound('remove');
   };
 
@@ -723,11 +741,9 @@ export default function POS() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => {
-                    setCart([]);
-                    playSound('remove');
-                  }}
+                  onClick={() => setShowClearCartDialog(true)}
                   className="text-destructive hover:text-destructive h-8"
+                  data-testid="button-clear-cart"
                 >
                   <Trash2 className="h-4 w-4 mr-1" />
                   Clear
@@ -1018,6 +1034,28 @@ export default function POS() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Clear Cart Confirmation Dialog */}
+      <AlertDialog open={showClearCartDialog} onOpenChange={setShowClearCartDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear Cart?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to clear all items from the cart? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-clear">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleClearCart}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="button-confirm-clear"
+            >
+              Clear Cart
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Hidden Receipt for Printing */}
       <div ref={receiptRef} style={{ display: 'none' }} />
