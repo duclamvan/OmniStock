@@ -84,7 +84,7 @@ export default function AddPackingMaterial() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: FormData) => apiRequest("/api/packing-materials", "POST", data),
+    mutationFn: (data: FormData) => apiRequest("POST", "/api/packing-materials", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/packing-materials"] });
       toast({

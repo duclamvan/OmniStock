@@ -125,10 +125,7 @@ export default function Bundles() {
   // Create bundle mutation
   const createBundleMutation = useMutation({
     mutationFn: (data: BundleFormData) => 
-      apiRequest('/api/bundles', {
-        method: 'POST',
-        body: JSON.stringify(data)
-      }),
+      apiRequest('POST', '/api/bundles', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/bundles'] });
       setIsCreateDialogOpen(false);
@@ -150,10 +147,7 @@ export default function Bundles() {
   // Update bundle mutation
   const updateBundleMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: BundleFormData }) =>
-      apiRequest(`/api/bundles/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data)
-      }),
+      apiRequest('PUT', `/api/bundles/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/bundles'] });
       setEditingBundle(null);
@@ -175,9 +169,7 @@ export default function Bundles() {
   // Delete bundle mutation
   const deleteBundleMutation = useMutation({
     mutationFn: (id: string) =>
-      apiRequest(`/api/bundles/${id}`, {
-        method: 'DELETE'
-      }),
+      apiRequest('DELETE', `/api/bundles/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/bundles'] });
       toast({

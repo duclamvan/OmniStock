@@ -67,7 +67,7 @@ export default function AllSuppliers() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      await apiRequest(`/api/suppliers/${id}`, "DELETE");
+      await apiRequest("DELETE", `/api/suppliers/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });

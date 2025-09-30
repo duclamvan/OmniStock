@@ -152,7 +152,7 @@ export default function EditImportOrder() {
           status: item.status,
         })),
       };
-      return apiRequest(`/api/import-orders/${id}`, 'PATCH', orderData);
+      return apiRequest('PATCH', `/api/import-orders/${id}`, orderData);
     },
     onSuccess: (data: any) => {
       toast({

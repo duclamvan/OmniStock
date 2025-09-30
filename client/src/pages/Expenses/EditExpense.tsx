@@ -118,10 +118,7 @@ export default function EditExpense() {
 
   const updateExpenseMutation = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest(`/api/expenses/${id}`, {
-        method: 'PATCH',
-        body: data,
-      });
+      return await apiRequest('PATCH', `/api/expenses/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/expenses'] });

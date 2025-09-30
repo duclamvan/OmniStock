@@ -253,7 +253,7 @@ export default function SupplierProcessing() {
   // Add item mutation
   const addItemMutation = useMutation({
     mutationFn: async ({ purchaseId, item }: { purchaseId: number; item: any }) => {
-      const response = await apiRequest(`/api/imports/purchases/${purchaseId}/items`, 'POST', item);
+      const response = await apiRequest('POST', `/api/imports/purchases/${purchaseId}/items`, item);
       return response.json();
     },
     onSuccess: () => {
@@ -274,7 +274,7 @@ export default function SupplierProcessing() {
   // Update status mutation
   const updateStatusMutation = useMutation({
     mutationFn: async ({ purchaseId, status }: { purchaseId: number; status: string }) => {
-      const response = await apiRequest(`/api/imports/purchases/${purchaseId}`, 'PATCH', { status });
+      const response = await apiRequest('PATCH', `/api/imports/purchases/${purchaseId}`, { status });
       return response.json();
     },
     onSuccess: () => {
@@ -293,7 +293,7 @@ export default function SupplierProcessing() {
   // Delete purchase mutation
   const deletePurchaseMutation = useMutation({
     mutationFn: async (purchaseId: number) => {
-      const response = await apiRequest(`/api/imports/purchases/${purchaseId}`, 'DELETE');
+      const response = await apiRequest('DELETE', `/api/imports/purchases/${purchaseId}`);
       return response.json();
     },
     onSuccess: () => {

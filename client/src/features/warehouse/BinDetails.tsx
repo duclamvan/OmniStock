@@ -46,10 +46,7 @@ export function BinDetails({ location, open, onOpenChange, onUpdate }: BinDetail
   // Update location mutation
   const updateMutation = useMutation({
     mutationFn: async (updates: any) => {
-      return apiRequest(`/api/locations/${location.id}`, {
-        method: "PUT",
-        body: JSON.stringify(updates),
-      });
+      return apiRequest("PUT", `/api/locations/${location.id}`, updates);
     },
     onSuccess: () => {
       toast({

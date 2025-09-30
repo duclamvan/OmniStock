@@ -72,7 +72,7 @@ export default function EditCategory() {
         ...data,
         name: data.nameEn
       };
-      const response = await apiRequest(`/api/categories/${id}`, 'PATCH', submitData);
+      const response = await apiRequest('PATCH', `/api/categories/${id}`, submitData);
       return response.json();
     },
     onSuccess: () => {

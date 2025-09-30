@@ -493,11 +493,7 @@ export default function ImportKanbanDashboard() {
   // Update status mutations
   const updatePurchaseStatusMutation = useMutation({
     mutationFn: async ({ purchaseId, status }: { purchaseId: number; status: string }) => {
-      const response = await apiRequest(`/api/imports/purchases/${purchaseId}/status`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status }),
-        headers: { 'Content-Type': 'application/json' }
-      });
+      const response = await apiRequest('PATCH', `/api/imports/purchases/${purchaseId}/status`, { status });
       return response.json();
     },
     onSuccess: () => {

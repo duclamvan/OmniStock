@@ -81,10 +81,7 @@ export default function ShippingManagement() {
   // Create test parcel mutation
   const createTestParcelMutation = useMutation({
     mutationFn: (address: TestAddress) => 
-      apiRequest('/api/shipping/create-test-parcel', {
-        method: 'POST',
-        body: JSON.stringify(address)
-      }),
+      apiRequest('POST', '/api/shipping/create-test-parcel', address),
     onSuccess: (data) => {
       toast({
         title: "Test Parcel Created",

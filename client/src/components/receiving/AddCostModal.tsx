@@ -181,15 +181,9 @@ const AddCostModal = ({ shipmentId, cost, onClose, onSave }: AddCostModalProps) 
       };
 
       if (isEditing && cost) {
-        return apiRequest(`/api/imports/shipments/${shipmentId}/costs/${cost.id}`, {
-          method: 'PUT',
-          body: JSON.stringify(payload)
-        });
+        return apiRequest('PUT', `/api/imports/shipments/${shipmentId}/costs/${cost.id}`, payload);
       } else {
-        return apiRequest(`/api/imports/shipments/${shipmentId}/costs`, {
-          method: 'POST',
-          body: JSON.stringify(payload)
-        });
+        return apiRequest('POST', `/api/imports/shipments/${shipmentId}/costs`, payload);
       }
     },
     onSuccess: () => {

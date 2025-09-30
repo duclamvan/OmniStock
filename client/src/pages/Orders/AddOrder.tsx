@@ -416,7 +416,7 @@ export default function AddOrder() {
           type: selectedCustomer.type || 'regular',
         };
         console.log('Sending customer data:', customerData);
-        const response = await apiRequest('/api/customers', 'POST', customerData);
+        const response = await apiRequest('POST', '/api/customers', customerData);
         const customerResponse = await response.json();
         console.log('Customer API response:', customerResponse);
         console.log('New customer created with ID:', customerResponse?.id);
@@ -434,7 +434,7 @@ export default function AddOrder() {
         selectedDocumentIds: selectedDocumentIds.length > 0 ? selectedDocumentIds : undefined
       };
       
-      await apiRequest('/api/orders', 'POST', orderData);
+      await apiRequest('POST', '/api/orders', orderData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });

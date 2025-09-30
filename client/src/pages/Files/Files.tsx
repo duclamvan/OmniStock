@@ -68,7 +68,7 @@ export default function Files() {
 
   // Create file mutation
   const createFileMutation = useMutation({
-    mutationFn: (data: any) => apiRequest("/api/product-files", "POST", data),
+    mutationFn: (data: any) => apiRequest("POST", "/api/product-files", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/product-files"] });
       setIsAddDialogOpen(false);
@@ -89,7 +89,7 @@ export default function Files() {
   // Update file mutation
   const updateFileMutation = useMutation({
     mutationFn: ({ id, ...data }: any) => 
-      apiRequest(`/api/product-files/${id}`, "PUT", data),
+      apiRequest("PUT", `/api/product-files/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/product-files"] });
       setEditingFile(null);
@@ -109,7 +109,7 @@ export default function Files() {
 
   // Delete file mutation
   const deleteFileMutation = useMutation({
-    mutationFn: (id: string) => apiRequest(`/api/product-files/${id}`, "DELETE"),
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/product-files/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/product-files"] });
       toast({

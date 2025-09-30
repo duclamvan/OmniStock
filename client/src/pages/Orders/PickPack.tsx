@@ -633,7 +633,7 @@ export default function PickPack() {
       selectedCartonId: string; 
       optimizeMultipleCartons?: boolean 
     }) => {
-      const response = await apiRequest(`/api/orders/${orderId}/calculate-weight`, 'POST', { selectedCartonId, optimizeMultipleCartons });
+      const response = await apiRequest('POST', `/api/orders/${orderId}/calculate-weight`, { selectedCartonId, optimizeMultipleCartons });
       return await response.json();
     },
     onSuccess: (data, variables) => {
@@ -1621,7 +1621,7 @@ export default function PickPack() {
       
       // Reset pack status to move order back to packing (non-blocking)
       promises.push(
-        apiRequest(`/api/orders/${order.id}`, 'PATCH', {
+        apiRequest('PATCH', `/api/orders/${order.id}`, {
           orderStatus: 'to_fulfill',
           packStatus: 'not_started',
           packStartTime: null,
@@ -1635,7 +1635,7 @@ export default function PickPack() {
         for (const item of order.items) {
           if (item.id) {
             promises.push(
-              apiRequest(`/api/orders/${order.id}/items/${item.id}`, 'PATCH', {
+              apiRequest('PATCH', `/api/orders/${order.id}/items/${item.id}`, {
                 packedQuantity: 0
               })
             );
@@ -1701,7 +1701,7 @@ export default function PickPack() {
       
       // Clear modification flag and return to packing (non-blocking)
       promises.push(
-        apiRequest(`/api/orders/${order.id}`, 'PATCH', {
+        apiRequest('PATCH', `/api/orders/${order.id}`, {
           orderStatus: 'to_fulfill',
           packStatus: 'not_started',
           packStartTime: null,
@@ -1717,7 +1717,7 @@ export default function PickPack() {
         for (const item of order.items) {
           if (item.id) {
             promises.push(
-              apiRequest(`/api/orders/${order.id}/items/${item.id}`, 'PATCH', {
+              apiRequest('PATCH', `/api/orders/${order.id}/items/${item.id}`, {
                 packedQuantity: 0
               })
             );
@@ -1764,7 +1764,7 @@ export default function PickPack() {
       
       // Reset order status (non-blocking)
       promises.push(
-        apiRequest(`/api/orders/${order.id}`, 'PATCH', {
+        apiRequest('PATCH', `/api/orders/${order.id}`, {
           pickStatus: 'not_started',
           packStatus: 'not_started',
           pickStartTime: null,
@@ -1781,7 +1781,7 @@ export default function PickPack() {
         for (const item of order.items) {
           if (item.id) {
             promises.push(
-              apiRequest(`/api/orders/${order.id}/items/${item.id}`, 'PATCH', {
+              apiRequest('PATCH', `/api/orders/${order.id}/items/${item.id}`, {
                 pickedQuantity: 0,
                 packedQuantity: 0
               })
@@ -2231,7 +2231,7 @@ export default function PickPack() {
   // Mutation to update order status
   const updateOrderStatusMutation = useMutation({
     mutationFn: async ({ orderId, status, pickStatus, packStatus, pickedBy, packedBy }: any) => {
-      return apiRequest(`/api/orders/${orderId}/status`, 'PATCH', { 
+      return apiRequest('PATCH', `/api/orders/${orderId}/status`, { 
         orderStatus: status, 
         pickStatus, 
         packStatus,
@@ -2323,7 +2323,7 @@ export default function PickPack() {
       // Only update database for real orders (not mock orders)
       if (!activePickingOrder.id.startsWith('mock-')) {
         // Update order to mark picking as completed (non-blocking)
-        apiRequest(`/api/orders/${activePickingOrder.id}`, 'PATCH', {
+        apiRequest('PATCH', `/api/orders/${activePickingOrder.id}`, {
           pickStatus: 'completed',
           pickEndTime: new Date().toISOString(),
           pickedBy: currentEmployee
@@ -2428,7 +2428,7 @@ export default function PickPack() {
       packingChecklist: typeof packingChecklist;
       multiCartonOptimization: boolean;
     }) => {
-      return apiRequest(`/api/orders/${data.orderId}/packing-details`, 'POST', data);
+      return apiRequest('POST', `/api/orders/${data.orderId}/packing-details`, data);
     },
     onSuccess: () => {
       // Suppress notifications in picking/packing mode

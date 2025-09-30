@@ -212,7 +212,7 @@ export default function InternationalTransit() {
   // Regenerate shipment name mutation
   const regenerateNameMutation = useMutation({
     mutationFn: async (shipmentId: number) => {
-      const response = await apiRequest(`/api/imports/shipments/${shipmentId}/regenerate-name`, 'POST');
+      const response = await apiRequest('POST', `/api/imports/shipments/${shipmentId}/regenerate-name`);
       return response.json();
     },
     onSuccess: (data) => {
@@ -254,7 +254,7 @@ export default function InternationalTransit() {
   // Update tracking mutation
   const updateTrackingMutation = useMutation({
     mutationFn: async ({ shipmentId, data }: { shipmentId: number; data: any }) => {
-      const response = await apiRequest(`/api/imports/shipments/${shipmentId}/tracking`, 'PATCH', data);
+      const response = await apiRequest('PATCH', `/api/imports/shipments/${shipmentId}/tracking`, data);
       return response.json();
     },
     onSuccess: (updatedShipment, variables) => {
@@ -279,7 +279,7 @@ export default function InternationalTransit() {
   // Edit shipment mutation
   const editShipmentMutation = useMutation({
     mutationFn: async ({ shipmentId, data }: { shipmentId: number; data: any }) => {
-      const response = await apiRequest(`/api/imports/shipments/${shipmentId}`, 'PUT', data);
+      const response = await apiRequest('PUT', `/api/imports/shipments/${shipmentId}`, data);
       return { ...response.json(), shipmentId };
     },
     onSuccess: (data) => {
@@ -319,7 +319,7 @@ export default function InternationalTransit() {
     
     setIsPredicting(true);
     try {
-      const response = await apiRequest('/api/imports/shipments/predict-delivery', 'POST', {
+      const response = await apiRequest('POST', '/api/imports/shipments/predict-delivery', {
         shipmentId: shipment.id,
         origin: shipment.origin,
         destination: shipment.destination,

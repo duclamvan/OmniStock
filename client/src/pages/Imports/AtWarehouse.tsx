@@ -717,7 +717,7 @@ export default function AtWarehouse() {
   // Receive without unpacking mutation
   const receiveMutation = useMutation({
     mutationFn: async (purchaseId: number) => {
-      return apiRequest('/api/imports/purchases/receive', 'POST', { purchaseId });
+      return apiRequest('POST', '/api/imports/purchases/receive', { purchaseId });
     },
     onSuccess: () => {
       toast({
@@ -741,7 +741,7 @@ export default function AtWarehouse() {
   // Update purchase order status mutation
   const updateOrderStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: number, status: string }) => {
-      return apiRequest(`/api/imports/purchases/${id}`, 'PATCH', { status });
+      return apiRequest('PATCH', `/api/imports/purchases/${id}`, { status });
     },
     onSuccess: () => {
       toast({
@@ -765,7 +765,7 @@ export default function AtWarehouse() {
   // Update custom item status mutation
   const updateItemStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: number, status: string }) => {
-      return apiRequest(`/api/imports/custom-items/${id}`, 'PATCH', { status });
+      return apiRequest('PATCH', `/api/imports/custom-items/${id}`, { status });
     },
     onSuccess: () => {
       toast({
@@ -789,7 +789,7 @@ export default function AtWarehouse() {
   // Update item classification mutation
   const updateItemClassificationMutation = useMutation({
     mutationFn: async ({ id, classification }: { id: number, classification: string | null }) => {
-      return apiRequest(`/api/imports/custom-items/${id}`, 'PATCH', { classification });
+      return apiRequest('PATCH', `/api/imports/custom-items/${id}`, { classification });
     },
     onSuccess: () => {
       toast({
@@ -875,7 +875,7 @@ export default function AtWarehouse() {
   // Create custom item mutation
   const createCustomItemMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest('/api/imports/custom-items', 'POST', data);
+      return apiRequest('POST', '/api/imports/custom-items', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
@@ -890,7 +890,7 @@ export default function AtWarehouse() {
   // Update custom item mutation
   const updateCustomItemMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number, data: any }) => {
-      return apiRequest(`/api/imports/custom-items/${id}`, 'PATCH', data);
+      return apiRequest('PATCH', `/api/imports/custom-items/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
@@ -907,7 +907,7 @@ export default function AtWarehouse() {
   // Delete custom item mutation
   const deleteCustomItemMutation = useMutation({
     mutationFn: async (id: number) => {
-      return apiRequest(`/api/imports/custom-items/${id}`, 'DELETE');
+      return apiRequest('DELETE', `/api/imports/custom-items/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/custom-items'] });
@@ -923,7 +923,7 @@ export default function AtWarehouse() {
   // Unpack custom item mutation
   const unpackItemMutation = useMutation({
     mutationFn: async (itemId: number) => {
-      const response = await apiRequest(`/api/imports/custom-items/${itemId}/unpack`, 'POST');
+      const response = await apiRequest('POST', `/api/imports/custom-items/${itemId}/unpack`);
       return response;
     },
     onSuccess: (data: any) => {
@@ -1012,7 +1012,7 @@ export default function AtWarehouse() {
   // Simple add items mutation with optimized cache updates
   const addItemsToConsolidationMutation = useMutation({
     mutationFn: async ({ consolidationId, itemIds }: { consolidationId: number, itemIds: number[] }) => {
-      return apiRequest(`/api/imports/consolidations/${consolidationId}/items`, 'POST', { itemIds });
+      return apiRequest('POST', `/api/imports/consolidations/${consolidationId}/items`, { itemIds });
     },
     onMutate: async ({ consolidationId, itemIds }) => {
       // Cancel outgoing refetches to prevent overwriting optimistic update
@@ -1069,7 +1069,7 @@ export default function AtWarehouse() {
   // Create consolidation mutation
   const createConsolidationMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest('/api/imports/consolidations', 'POST', data);
+      return apiRequest('POST', '/api/imports/consolidations', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/consolidations'] });
@@ -1084,7 +1084,7 @@ export default function AtWarehouse() {
   // Delete consolidation mutation
   const deleteConsolidationMutation = useMutation({
     mutationFn: async (consolidationId: number) => {
-      return apiRequest(`/api/imports/consolidations/${consolidationId}`, 'DELETE');
+      return apiRequest('DELETE', `/api/imports/consolidations/${consolidationId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/consolidations'] });
@@ -1099,7 +1099,7 @@ export default function AtWarehouse() {
   // Remove item from consolidation mutation with optimistic updates
   const removeItemFromConsolidationMutation = useMutation({
     mutationFn: async ({ consolidationId, itemId }: { consolidationId: number, itemId: number }) => {
-      return apiRequest(`/api/imports/consolidations/${consolidationId}/items/${itemId}`, 'DELETE');
+      return apiRequest('DELETE', `/api/imports/consolidations/${consolidationId}/items/${itemId}`);
     },
     onMutate: async ({ consolidationId }) => {
       // Cancel any outgoing refetches
@@ -1168,7 +1168,7 @@ export default function AtWarehouse() {
   // Ship consolidation mutation
   const shipConsolidationMutation = useMutation({
     mutationFn: async ({ id, trackingNumber, carrier }: { id: number, trackingNumber?: string, carrier?: string }) => {
-      return apiRequest(`/api/imports/consolidations/${id}/ship`, 'POST', { trackingNumber, carrier });
+      return apiRequest('POST', `/api/imports/consolidations/${id}/ship`, { trackingNumber, carrier });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/consolidations'] });
@@ -1185,7 +1185,7 @@ export default function AtWarehouse() {
   // Update consolidation mutation  
   const updateConsolidationMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number, data: any }) => {
-      return apiRequest(`/api/imports/consolidations/${id}`, 'PATCH', data);
+      return apiRequest('PATCH', `/api/imports/consolidations/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/imports/consolidations'] });

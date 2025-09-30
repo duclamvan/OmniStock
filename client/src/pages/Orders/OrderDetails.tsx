@@ -88,7 +88,7 @@ export default function OrderDetails() {
   // Mutations for updating order status
   const updateOrderStatusMutation = useMutation({
     mutationFn: async (newStatus: string) => {
-      return apiRequest(`/api/orders/${id}`, 'PATCH', { orderStatus: newStatus });
+      return apiRequest('PATCH', `/api/orders/${id}`, { orderStatus: newStatus });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/orders/${id}`] });
@@ -109,7 +109,7 @@ export default function OrderDetails() {
 
   const updatePaymentStatusMutation = useMutation({
     mutationFn: async (newStatus: string) => {
-      return apiRequest(`/api/orders/${id}`, 'PATCH', { paymentStatus: newStatus });
+      return apiRequest('PATCH', `/api/orders/${id}`, { paymentStatus: newStatus });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/orders/${id}`] });
@@ -1394,7 +1394,7 @@ export default function OrderDetails() {
 
                 try {
                   // Create the custom price
-                  await apiRequest(`/api/customers/${order?.customerId}/prices`, 'POST', {
+                  await apiRequest('POST', `/api/customers/${order?.customerId}/prices`, {
                     productId: selectedPriceItem?.productId,
                     price: parseFloat(customPrice),
                     currency: order?.currency || 'EUR',

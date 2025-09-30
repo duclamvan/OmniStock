@@ -873,7 +873,7 @@ export default function ContinueReceiving() {
       const receiptId = receipt?.receipt?.id || receipt?.id;
       if (!receiptId) {
         // Create receipt first if it doesn't exist
-        const response = await apiRequest('/api/imports/receipts/auto-save', 'POST', {
+        const response = await apiRequest('POST', '/api/imports/receipts/auto-save', {
           shipmentId: shipment?.id,
           consolidationId: shipment?.consolidationId,
           receivedBy,
@@ -1357,7 +1357,7 @@ export default function ContinueReceiving() {
   // Legacy auto-save mutation for initial creation and items batch update
   const autoSaveMutation = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest('/api/imports/receipts/auto-save', 'POST', data);
+      return await apiRequest('POST', '/api/imports/receipts/auto-save', data);
     },
     onSuccess: (response) => {
       // Don't invalidate cache during active editing to prevent jumping values
@@ -1585,7 +1585,7 @@ export default function ContinueReceiving() {
     const receiptId = receipt?.receipt?.id || receipt?.id;
     if (!receiptId) {
       // Create receipt first with current data
-      const response = await apiRequest('/api/imports/receipts/auto-save', 'POST', {
+      const response = await apiRequest('POST', '/api/imports/receipts/auto-save', {
         shipmentId: shipment?.id,
         consolidationId: shipment?.consolidationId,
         receivedBy,

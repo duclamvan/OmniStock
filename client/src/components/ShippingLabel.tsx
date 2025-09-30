@@ -75,10 +75,7 @@ export function ShippingLabel({ order, onLabelCreated }: ShippingLabelProps) {
   // Create shipping label mutation
   const createLabelMutation = useMutation({
     mutationFn: (data: any) => 
-      apiRequest('/api/shipping/create-label', {
-        method: 'POST',
-        body: JSON.stringify(data)
-      }),
+      apiRequest('POST', '/api/shipping/create-label', data),
     onSuccess: (data) => {
       toast({
         title: "Shipping Label Created",

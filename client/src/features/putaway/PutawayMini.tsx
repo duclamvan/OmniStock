@@ -30,7 +30,8 @@ export function PutawayMini() {
     queryKey: [`/api/putaway/suggestions`, currentProduct?.id, quantity],
     queryFn: async () => {
       if (!currentProduct) return [];
-      return apiRequest(`/api/putaway/suggestions?productId=${currentProduct.id}&quantity=${quantity}`);
+      const response = await apiRequest('GET', `/api/putaway/suggestions?productId=${currentProduct.id}&quantity=${quantity}`);
+      return response.json();
     },
     enabled: !!currentProduct,
   });
@@ -40,13 +41,11 @@ export function PutawayMini() {
     mutationFn: async () => {
       if (!selectedSuggestion) throw new Error("No suggestion selected");
       
-      return apiRequest("/api/putaway/complete", {
-        method: "POST",
-        body: JSON.stringify({
-          suggestionId: selectedSuggestion.id,
-          actualQuantity: quantity,
-        }),
+      const response = await apiRequest("POST", "/api/putaway/complete", {
+        suggestionId: selectedSuggestion.id,
+        actualQuantity: quantity,
       });
+      return response.json();
     },
     onSuccess: () => {
       toast({

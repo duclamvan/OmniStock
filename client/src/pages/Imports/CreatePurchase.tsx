@@ -380,7 +380,7 @@ export default function CreatePurchase() {
   // Create purchase mutation
   const createPurchaseMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest('/api/imports/purchases', 'POST', data);
+      const response = await apiRequest('POST', '/api/imports/purchases', data);
       return response.json();
     },
     onSuccess: () => {
@@ -400,7 +400,7 @@ export default function CreatePurchase() {
   // Update purchase mutation
   const updatePurchaseMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest(`/api/imports/purchases/${purchaseId}`, 'PATCH', data);
+      const response = await apiRequest('PATCH', `/api/imports/purchases/${purchaseId}`, data);
       return response.json();
     },
     onSuccess: () => {

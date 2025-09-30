@@ -80,7 +80,7 @@ export default function Categories() {
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await apiRequest(`/api/categories/${id}`, 'DELETE');
+      const response = await apiRequest('DELETE', `/api/categories/${id}`);
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || 'Failed to delete category');
