@@ -110,6 +110,7 @@ export default function POS() {
   const [showClearCartDialog, setShowClearCartDialog] = useState(false);
   const receiptRef = useRef<HTMLDivElement>(null);
   const quantityInputRef = useRef<HTMLInputElement>(null);
+  const cartScrollRef = useRef<HTMLDivElement>(null);
   const barcodeBufferRef = useRef<string>('');
   const barcodeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -230,6 +231,18 @@ export default function POS() {
       }, 100);
     }
   }, [showQuantityDialog]);
+
+  // Auto-scroll cart to bottom when items are added
+  useEffect(() => {
+    if (cartScrollRef.current && cart.length > 0) {
+      const scrollElement = cartScrollRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (scrollElement) {
+        setTimeout(() => {
+          scrollElement.scrollTop = scrollElement.scrollHeight;
+        }, 50);
+      }
+    }
+  }, [cart.length, cart]);
 
   // Open quantity dialog for product
   const openQuantityDialog = (product: Product) => {
@@ -752,7 +765,7 @@ export default function POS() {
             </div>
           </div>
 
-          <ScrollArea className="flex-1">
+          <ScrollArea className="flex-1" ref={cartScrollRef}>
             <div className="space-y-2 p-3">
               {cart.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
