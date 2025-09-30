@@ -575,7 +575,8 @@ export default function POS() {
           <ScrollArea className="flex-1">
             <div className="grid grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 p-6">
               {displayProducts.map(product => {
-                const isInCart = cart.some(item => item.id === product.id);
+                const cartItem = cart.find(item => item.id === product.id);
+                const isInCart = !!cartItem;
                 return (
                   <Card
                     key={product.id}
@@ -598,10 +599,10 @@ export default function POS() {
                     })}
                     data-testid={`card-product-${product.id}`}
                   >
-                    {/* Selected indicator */}
-                    {isInCart && (
-                      <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-1 z-10">
-                        <Check className="h-4 w-4" />
+                    {/* Quantity indicator */}
+                    {isInCart && cartItem && (
+                      <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full px-2.5 py-1 z-10 font-bold text-sm shadow-md">
+                        {cartItem.quantity}x
                       </div>
                     )}
                     
