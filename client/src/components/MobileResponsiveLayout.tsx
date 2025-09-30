@@ -377,7 +377,6 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                               )}
                               onClick={() => setIsMobileMenuOpen(false)}
                             >
-                              <div className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-500 mr-2.5 flex-shrink-0"></div>
                               {child.name}
                             </Button>
                           </Link>
