@@ -354,7 +354,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                   </Button>
                 </CollapsibleTrigger>
                 <CollapsibleContent className="mt-1">
-                  <div className="ml-12 space-y-1 border-l border-gray-200 dark:border-gray-700 pl-4">
+                  <div className="ml-8 space-y-1 border-l border-gray-200 dark:border-gray-700 pl-2">
                     {item.children.map((child) => {
                       const isChildActive = location === child.href;
                       return (
@@ -377,7 +377,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                               )}
                               onClick={() => setIsMobileMenuOpen(false)}
                             >
-                              <div className="w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600 mr-3 flex-shrink-0"></div>
+                              <div className="w-1.5 h-1.5 rounded-full bg-gray-400 dark:bg-gray-500 mr-2.5 flex-shrink-0"></div>
                               {child.name}
                             </Button>
                           </Link>
