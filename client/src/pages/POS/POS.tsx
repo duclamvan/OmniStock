@@ -507,7 +507,7 @@ export default function POS() {
 
       {/* Categories Bar */}
       <div className="bg-background border-b px-6 py-4">
-        <div className="flex items-center gap-3 overflow-x-auto pb-2">
+        <div className="flex flex-wrap items-center gap-3">
           <Button
             size="lg"
             variant={selectedCategory === 'favorites' ? 'default' : 'outline'}
