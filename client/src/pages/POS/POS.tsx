@@ -1146,7 +1146,20 @@ export default function POS() {
             </div>
             
             <div className="space-y-2">
-              <label className="text-sm font-medium">Amount Received</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-sm font-medium">Amount Received</label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setAmountReceived(total.toFixed(2))}
+                  className="h-7 text-xs"
+                  data-testid="button-exact-amount"
+                >
+                  <Check className="h-3 w-3 mr-1" />
+                  Exact Amount
+                </Button>
+              </div>
               <Input
                 type="number"
                 step="0.01"
