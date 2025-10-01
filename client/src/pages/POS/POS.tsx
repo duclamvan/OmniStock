@@ -920,9 +920,28 @@ export default function POS() {
                         >
                           <Minus className="h-3.5 w-3.5" />
                         </Button>
-                        <div className="w-9 text-center font-bold text-sm">
-                          {item.quantity}
-                        </div>
+                        <Input
+                          type="number"
+                          min="1"
+                          value={item.quantity}
+                          onChange={(e) => {
+                            const newQty = parseInt(e.target.value);
+                            if (!isNaN(newQty) && newQty > 0) {
+                              updateQuantity(item.id, newQty);
+                            } else if (e.target.value === '') {
+                              // Allow empty field temporarily while typing
+                            }
+                          }}
+                          onBlur={(e) => {
+                            // If field is empty on blur, reset to 1
+                            if (e.target.value === '' || parseInt(e.target.value) < 1) {
+                              updateQuantity(item.id, 1);
+                            }
+                          }}
+                          onFocus={(e) => e.target.select()}
+                          className="w-9 h-8 text-center font-bold text-sm border-0 bg-transparent p-0 focus-visible:ring-0 focus-visible:ring-offset-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          data-testid={`input-quantity-${item.id}`}
+                        />
                         <Button
                           size="icon"
                           variant="ghost"
