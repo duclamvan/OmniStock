@@ -115,9 +115,13 @@ export default function POS() {
   const [customPrice, setCustomPrice] = useState('');
   const [showClearCartDialog, setShowClearCartDialog] = useState(false);
   const [showCartDetailsDialog, setShowCartDetailsDialog] = useState(false);
+  const [vatEnabled, setVatEnabled] = useState(false); // Default OFF
   const [vatRate, setVatRate] = useState<string>('0'); // 0, 19, 21, or custom
   const [customVatRate, setCustomVatRate] = useState<string>('');
-  const [selectedWarehouse, setSelectedWarehouse] = useState<string>('');
+  const [selectedWarehouse, setSelectedWarehouse] = useState<string>(() => {
+    // Load from localStorage on init
+    return localStorage.getItem('pos_warehouse') || '';
+  });
   const receiptRef = useRef<HTMLDivElement>(null);
   const quantityInputRef = useRef<HTMLInputElement>(null);
   const cartScrollRef = useRef<HTMLDivElement>(null);
@@ -347,6 +351,13 @@ export default function POS() {
     }
   }, [cart.length, cart]);
 
+  // Save warehouse selection to localStorage
+  useEffect(() => {
+    if (selectedWarehouse) {
+      localStorage.setItem('pos_warehouse', selectedWarehouse);
+    }
+  }, [selectedWarehouse]);
+
   // Open quantity dialog for product
   const openQuantityDialog = (product: Product) => {
     setSelectedProduct(product);
@@ -476,7 +487,7 @@ export default function POS() {
 
   // Calculate totals
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const actualVatRate = vatRate === 'custom' ? parseFloat(customVatRate || '0') : parseFloat(vatRate);
+  const actualVatRate = vatEnabled ? (vatRate === 'custom' ? parseFloat(customVatRate || '0') : parseFloat(vatRate)) : 0;
   const tax = subtotal * (actualVatRate / 100);
   const total = subtotal + tax;
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -765,32 +776,42 @@ export default function POS() {
             </SelectContent>
           </Select>
           
-          {/* VAT Rate Selector */}
+          {/* VAT Toggle and Rate Selector */}
           <div className="flex items-center gap-2 bg-primary-foreground/10 rounded-lg px-3 py-2">
             <Label className="text-sm font-medium whitespace-nowrap">VAT:</Label>
-            <Select value={vatRate} onValueChange={setVatRate}>
-              <SelectTrigger className="w-28 h-8 bg-primary-foreground text-primary" data-testid="select-vat">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">0%</SelectItem>
-                <SelectItem value="19">19%</SelectItem>
-                <SelectItem value="21">21%</SelectItem>
-                <SelectItem value="custom">Custom</SelectItem>
-              </SelectContent>
-            </Select>
-            {vatRate === 'custom' && (
-              <Input
-                type="number"
-                min="0"
-                max="100"
-                step="0.01"
-                placeholder="%"
-                value={customVatRate}
-                onChange={(e) => setCustomVatRate(e.target.value)}
-                className="w-16 h-8 bg-primary-foreground text-primary text-center"
-                data-testid="input-custom-vat"
-              />
+            <Switch
+              checked={vatEnabled}
+              onCheckedChange={setVatEnabled}
+              className="data-[state=checked]:bg-primary-foreground data-[state=unchecked]:bg-primary-foreground/30"
+              data-testid="switch-vat-enabled"
+            />
+            {vatEnabled && (
+              <>
+                <Select value={vatRate} onValueChange={setVatRate}>
+                  <SelectTrigger className="w-28 h-8 bg-primary-foreground text-primary" data-testid="select-vat">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">0%</SelectItem>
+                    <SelectItem value="19">19%</SelectItem>
+                    <SelectItem value="21">21%</SelectItem>
+                    <SelectItem value="custom">Custom</SelectItem>
+                  </SelectContent>
+                </Select>
+                {vatRate === 'custom' && (
+                  <Input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    placeholder="%"
+                    value={customVatRate}
+                    onChange={(e) => setCustomVatRate(e.target.value)}
+                    className="w-16 h-8 bg-primary-foreground text-primary text-center"
+                    data-testid="input-custom-vat"
+                  />
+                )}
+              </>
             )}
           </div>
           
