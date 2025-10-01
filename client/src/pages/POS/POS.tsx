@@ -111,6 +111,8 @@ export default function POS() {
   const [showQuantityDialog, setShowQuantityDialog] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quantityInput, setQuantityInput] = useState('1');
+  const [customPriceEnabled, setCustomPriceEnabled] = useState(false);
+  const [customPrice, setCustomPrice] = useState('');
   const [showClearCartDialog, setShowClearCartDialog] = useState(false);
   const [showCartDetailsDialog, setShowCartDetailsDialog] = useState(false);
   const [vatRate, setVatRate] = useState<string>('0'); // 0, 19, 21, or custom
@@ -349,6 +351,8 @@ export default function POS() {
   const openQuantityDialog = (product: Product) => {
     setSelectedProduct(product);
     setQuantityInput('1');
+    setCustomPriceEnabled(false);
+    setCustomPrice('');
     setShowQuantityDialog(true);
   };
 
@@ -366,9 +370,24 @@ export default function POS() {
       return;
     }
 
-    const price = currency === 'EUR' 
-      ? parseFloat(selectedProduct.priceEur || '0')
-      : parseFloat(selectedProduct.priceCzk || '0');
+    // Use custom price if enabled, otherwise use default price
+    let price: number;
+    if (customPriceEnabled) {
+      const parsedCustomPrice = parseFloat(customPrice);
+      if (isNaN(parsedCustomPrice) || parsedCustomPrice <= 0) {
+        toast({
+          title: 'Invalid Price',
+          description: 'Please enter a valid price',
+          variant: 'destructive'
+        });
+        return;
+      }
+      price = parsedCustomPrice;
+    } else {
+      price = currency === 'EUR' 
+        ? parseFloat(selectedProduct.priceEur || '0')
+        : parseFloat(selectedProduct.priceCzk || '0');
+    }
 
     shouldScrollRef.current = true; // Enable auto-scroll when adding from product grid
     addToCartWithQuantity({
@@ -1146,7 +1165,7 @@ export default function POS() {
                 value={quantityInput}
                 onChange={(e) => setQuantityInput(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
+                  if (e.key === 'Enter' && !customPriceEnabled) {
                     e.preventDefault();
                     confirmAddToCart();
                   }
@@ -1157,24 +1176,86 @@ export default function POS() {
             </div>
             
             {selectedProduct && (
-              <div className="bg-muted rounded-lg p-4 space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Unit Price:</span>
-                  <span className="font-semibold">
-                    {currency} {currency === 'EUR' 
-                      ? parseFloat(selectedProduct.priceEur || '0').toFixed(2)
-                      : parseFloat(selectedProduct.priceCzk || '0').toFixed(2)}
-                  </span>
+              <div className="bg-muted rounded-lg p-4 space-y-3">
+                {/* Custom Price Toggle */}
+                <div className="flex items-center justify-between pb-2 border-b">
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="custom-price"
+                      checked={customPriceEnabled}
+                      onCheckedChange={(checked) => {
+                        setCustomPriceEnabled(checked);
+                        if (checked) {
+                          const defaultPrice = currency === 'EUR' 
+                            ? parseFloat(selectedProduct.priceEur || '0')
+                            : parseFloat(selectedProduct.priceCzk || '0');
+                          setCustomPrice(defaultPrice.toFixed(2));
+                        }
+                      }}
+                      data-testid="switch-custom-price"
+                    />
+                    <Label htmlFor="custom-price" className="text-sm font-medium cursor-pointer">
+                      Custom Price
+                    </Label>
+                  </div>
                 </div>
+
+                {/* Price Display */}
+                {!customPriceEnabled ? (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Unit Price:</span>
+                    <span className="font-semibold">
+                      {currency} {currency === 'EUR' 
+                        ? parseFloat(selectedProduct.priceEur || '0').toFixed(2)
+                        : parseFloat(selectedProduct.priceCzk || '0').toFixed(2)}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>Original Price:</span>
+                      <span className="line-through">
+                        {currency} {currency === 'EUR' 
+                          ? parseFloat(selectedProduct.priceEur || '0').toFixed(2)
+                          : parseFloat(selectedProduct.priceCzk || '0').toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium">Custom Unit Price:</label>
+                      <Input
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        value={customPrice}
+                        onChange={(e) => setCustomPrice(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            confirmAddToCart();
+                          }
+                        }}
+                        className="text-xl h-12 text-center font-bold"
+                        placeholder="0.00"
+                        data-testid="input-custom-price"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Subtotal Calculation */}
                 {quantityInput && !isNaN(parseInt(quantityInput)) && parseInt(quantityInput) > 0 && (
                   <div className="flex justify-between text-base border-t pt-2">
                     <span className="font-bold">Subtotal:</span>
                     <span className="font-bold text-primary">
-                      {currency} {(
-                        (currency === 'EUR' 
-                          ? parseFloat(selectedProduct.priceEur || '0')
-                          : parseFloat(selectedProduct.priceCzk || '0')) * parseInt(quantityInput)
-                      ).toFixed(2)}
+                      {currency} {(() => {
+                        const qty = parseInt(quantityInput);
+                        const unitPrice = customPriceEnabled && customPrice 
+                          ? parseFloat(customPrice)
+                          : (currency === 'EUR' 
+                            ? parseFloat(selectedProduct.priceEur || '0')
+                            : parseFloat(selectedProduct.priceCzk || '0'));
+                        return (unitPrice * qty).toFixed(2);
+                      })()}
                     </span>
                   </div>
                 )}
