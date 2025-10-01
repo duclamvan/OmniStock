@@ -119,6 +119,7 @@ export default function POS() {
   const cartScrollRef = useRef<HTMLDivElement>(null);
   const barcodeBufferRef = useRef<string>('');
   const barcodeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const shouldScrollRef = useRef<boolean>(false);
 
   const today = format(new Date(), 'yyyy-MM-dd');
 
@@ -319,13 +320,14 @@ export default function POS() {
     }
   }, [showQuantityDialog]);
 
-  // Auto-scroll cart to bottom when items are added
+  // Auto-scroll cart to bottom when items are added (only when adding from product grid)
   useEffect(() => {
-    if (cartScrollRef.current && cart.length > 0) {
+    if (shouldScrollRef.current && cartScrollRef.current && cart.length > 0) {
       const scrollElement = cartScrollRef.current.querySelector('[data-radix-scroll-area-viewport]');
       if (scrollElement) {
         setTimeout(() => {
           scrollElement.scrollTop = scrollElement.scrollHeight;
+          shouldScrollRef.current = false; // Reset after scrolling
         }, 50);
       }
     }
@@ -356,6 +358,7 @@ export default function POS() {
       ? parseFloat(selectedProduct.priceEur || '0')
       : parseFloat(selectedProduct.priceCzk || '0');
 
+    shouldScrollRef.current = true; // Enable auto-scroll when adding from product grid
     addToCartWithQuantity({
       id: selectedProduct.id,
       name: selectedProduct.name,
@@ -411,6 +414,7 @@ export default function POS() {
     landingCost?: number | null;
     latestLandingCost?: number | null;
   }) => {
+    shouldScrollRef.current = true; // Enable auto-scroll when adding from barcode scanner
     addToCartWithQuantity(item, 1);
     playSound('add');
   };
