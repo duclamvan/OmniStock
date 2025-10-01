@@ -519,7 +519,7 @@ export default function POS() {
         taxRate: actualVatRate.toFixed(2),
         taxAmount: tax.toFixed(2),
         grandTotal: total.toFixed(2),
-        paymentMethod: paymentMethod,
+        paymentMethod: paymentMethod === 'cash' ? 'Cash' : paymentMethod === 'bank_transfer' ? 'Bank Transfer' : 'COD',
         paymentStatus: paymentMethod === 'cash' ? 'paid' : 'pending',
         orderStatus: 'shipped', // POS sales are immediately fulfilled
         notes: `POS Sale - ${format(new Date(), 'PPp')}\nWarehouse Location: ${warehouseLocation}${paymentMethod === 'cash' && amountReceived ? `\nCash Received: ${currency} ${parseFloat(amountReceived).toFixed(2)}\nChange: ${currency} ${(parseFloat(amountReceived) - total).toFixed(2)}` : ''}`
