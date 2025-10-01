@@ -113,7 +113,9 @@ export default function POS() {
   const [quantityInput, setQuantityInput] = useState('1');
   const [showClearCartDialog, setShowClearCartDialog] = useState(false);
   const [showCartDetailsDialog, setShowCartDetailsDialog] = useState(false);
-  const [vatEnabled, setVatEnabled] = useState(false);
+  const [vatRate, setVatRate] = useState<string>('0'); // 0, 19, 21, or custom
+  const [customVatRate, setCustomVatRate] = useState<string>('');
+  const [selectedWarehouse, setSelectedWarehouse] = useState<string>('');
   const receiptRef = useRef<HTMLDivElement>(null);
   const quantityInputRef = useRef<HTMLInputElement>(null);
   const cartScrollRef = useRef<HTMLDivElement>(null);
@@ -136,6 +138,16 @@ export default function POS() {
   // Fetch bundles
   const { data: bundles = [] } = useQuery<ProductBundle[]>({
     queryKey: ['/api/bundles']
+  });
+
+  // Fetch warehouses
+  const { data: warehouses = [] } = useQuery({
+    queryKey: ['/api/warehouses'],
+    queryFn: async () => {
+      const response = await fetch('/api/warehouses');
+      if (!response.ok) throw new Error('Failed to fetch warehouses');
+      return response.json();
+    },
   });
 
   // Categories from products
@@ -445,7 +457,8 @@ export default function POS() {
 
   // Calculate totals
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const tax = vatEnabled ? subtotal * 0.21 : 0;
+  const actualVatRate = vatRate === 'custom' ? parseFloat(customVatRate || '0') : parseFloat(vatRate);
+  const tax = subtotal * (actualVatRate / 100);
   const total = subtotal + tax;
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -604,10 +617,12 @@ export default function POS() {
             <span>Subtotal:</span>
             <span>${currency} ${subtotal.toFixed(2)}</span>
           </div>
+          ${actualVatRate > 0 ? `
           <div class="total-line">
-            <span>VAT (21%):</span>
+            <span>VAT (${actualVatRate.toFixed(2)}%):</span>
             <span>${currency} ${tax.toFixed(2)}</span>
           </div>
+          ` : ''}
           <div class="total-line grand-total">
             <span>TOTAL:</span>
             <span>${currency} ${total.toFixed(2)}</span>
@@ -693,17 +708,51 @@ export default function POS() {
             <div className="text-3xl font-bold">{currency} {total.toFixed(2)}</div>
             <div className="text-sm opacity-90">Total: {totalItems} Items</div>
           </div>
-          <div className="flex items-center gap-3 bg-primary-foreground/10 rounded-lg px-4 py-2">
-            <Switch
-              id="vat-toggle"
-              checked={vatEnabled}
-              onCheckedChange={setVatEnabled}
-              data-testid="switch-vat"
-            />
-            <Label htmlFor="vat-toggle" className="text-sm font-medium cursor-pointer">
-              VAT (21%)
-            </Label>
+          
+          {/* Warehouse Location */}
+          <Select value={selectedWarehouse} onValueChange={setSelectedWarehouse}>
+            <SelectTrigger className="w-48 bg-primary-foreground text-primary" data-testid="select-warehouse">
+              <SelectValue placeholder="Select Location" />
+            </SelectTrigger>
+            <SelectContent>
+              {warehouses.map((warehouse: any) => (
+                <SelectItem key={warehouse.id} value={warehouse.id}>
+                  {warehouse.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          {/* VAT Rate Selector */}
+          <div className="flex items-center gap-2 bg-primary-foreground/10 rounded-lg px-3 py-2">
+            <Label className="text-sm font-medium whitespace-nowrap">VAT:</Label>
+            <Select value={vatRate} onValueChange={setVatRate}>
+              <SelectTrigger className="w-28 h-8 bg-primary-foreground text-primary" data-testid="select-vat">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">0%</SelectItem>
+                <SelectItem value="19">19%</SelectItem>
+                <SelectItem value="21">21%</SelectItem>
+                <SelectItem value="custom">Custom</SelectItem>
+              </SelectContent>
+            </Select>
+            {vatRate === 'custom' && (
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                placeholder="%"
+                value={customVatRate}
+                onChange={(e) => setCustomVatRate(e.target.value)}
+                className="w-16 h-8 bg-primary-foreground text-primary text-center"
+                data-testid="input-custom-vat"
+              />
+            )}
           </div>
+          
+          {/* Currency Selector */}
           <Select value={currency} onValueChange={(v) => setCurrency(v as 'EUR' | 'CZK')}>
             <SelectTrigger className="w-24 bg-primary-foreground text-primary">
               <SelectValue />
@@ -989,9 +1038,9 @@ export default function POS() {
                   <span>Subtotal:</span>
                   <span className="font-semibold">{currency} {subtotal.toFixed(2)}</span>
                 </div>
-                {vatEnabled && (
+                {actualVatRate > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span>VAT (21%):</span>
+                    <span>VAT ({actualVatRate.toFixed(2)}%):</span>
                     <span className="font-semibold">{currency} {tax.toFixed(2)}</span>
                   </div>
                 )}
@@ -1261,9 +1310,9 @@ export default function POS() {
                   <span className="text-muted-foreground">Subtotal:</span>
                   <span className="font-semibold">{currency} {subtotal.toFixed(2)}</span>
                 </div>
-                {vatEnabled && (
+                {actualVatRate > 0 && (
                   <div className="flex justify-between text-xs">
-                    <span className="text-muted-foreground">VAT (21%):</span>
+                    <span className="text-muted-foreground">VAT ({actualVatRate.toFixed(2)}%):</span>
                     <span className="font-semibold">{currency} {tax.toFixed(2)}</span>
                   </div>
                 )}
