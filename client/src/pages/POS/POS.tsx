@@ -529,9 +529,10 @@ export default function POS() {
     },
     onSuccess: (data: any) => {
       playSound('checkout');
+      const orderNumber = data?.orderId || `POS-${Date.now()}`;
       toast({
         title: 'Order Created',
-        description: `Order #${data.orderId || data.id} has been created successfully`
+        description: `Order #${orderNumber} has been created successfully`
       });
       printReceipt();
       setCart([]);
