@@ -26,6 +26,7 @@ import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { normalizeVietnamese } from '@/lib/searchUtils';
 import type { Product } from '@shared/schema';
 import {
   Dialog,
@@ -136,16 +137,93 @@ export default function POS() {
   // Categories from products
   const categories = ['favorites', 'all', ...Array.from(new Set(products.map(p => p.categoryId).filter(Boolean)))];
 
-  // Filter products based on search and category
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          product.sku?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          product.barcode?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || 
-                           selectedCategory === 'favorites' || 
-                           product.categoryId === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  // Fuzzy search function with Vietnamese support
+  const fuzzySearch = (product: Product, query: string): { matches: boolean; score: number } => {
+    if (!query.trim()) return { matches: true, score: 0 };
+
+    const normalizedQuery = normalizeVietnamese(query.toLowerCase().trim());
+    const queryWords = normalizedQuery.split(/\s+/);
+
+    // Normalize product fields
+    const normalizedName = normalizeVietnamese(product.name.toLowerCase());
+    const normalizedSku = normalizeVietnamese((product.sku || '').toLowerCase());
+    const normalizedBarcode = normalizeVietnamese((product.barcode || '').toLowerCase());
+
+    let totalScore = 0;
+    let matchedWords = 0;
+
+    for (const word of queryWords) {
+      let wordMatched = false;
+      
+      // Exact match (highest score)
+      if (normalizedName === word || normalizedSku === word || normalizedBarcode === word) {
+        totalScore += 100;
+        wordMatched = true;
+      }
+      // Starts with (high score)
+      else if (normalizedName.startsWith(word) || normalizedSku.startsWith(word) || normalizedBarcode.startsWith(word)) {
+        totalScore += 80;
+        wordMatched = true;
+      }
+      // Word boundary match (medium-high score)
+      else if (
+        normalizedName.split(/\s+/).some(w => w.startsWith(word)) ||
+        normalizedSku.split(/\s+/).some(w => w.startsWith(word))
+      ) {
+        totalScore += 60;
+        wordMatched = true;
+      }
+      // Contains (medium score)
+      else if (normalizedName.includes(word) || normalizedSku.includes(word) || normalizedBarcode.includes(word)) {
+        totalScore += 40;
+        wordMatched = true;
+      }
+      // Fuzzy partial match - allow 1 character difference for words > 3 chars
+      else if (word.length > 3) {
+        const fields = [normalizedName, normalizedSku, normalizedBarcode];
+        for (const field of fields) {
+          const fieldWords = field.split(/\s+/);
+          for (const fieldWord of fieldWords) {
+            if (fieldWord.length >= word.length - 1 && fieldWord.length <= word.length + 1) {
+              let differences = 0;
+              const minLen = Math.min(word.length, fieldWord.length);
+              for (let i = 0; i < minLen; i++) {
+                if (word[i] !== fieldWord[i]) differences++;
+              }
+              differences += Math.abs(word.length - fieldWord.length);
+              if (differences <= 1) {
+                totalScore += 20;
+                wordMatched = true;
+                break;
+              }
+            }
+          }
+          if (wordMatched) break;
+        }
+      }
+
+      if (wordMatched) matchedWords++;
+    }
+
+    // All query words must match for the product to be included
+    const matches = matchedWords === queryWords.length;
+    return { matches, score: totalScore };
+  };
+
+  // Filter and sort products based on fuzzy search and category
+  const filteredProducts = products
+    .map(product => {
+      const searchResult = fuzzySearch(product, searchQuery);
+      return { product, ...searchResult };
+    })
+    .filter(({ matches, product }) => {
+      const matchesCategory = selectedCategory === 'all' || 
+                             selectedCategory === 'favorites' || 
+                             product.categoryId === selectedCategory;
+      return matches && matchesCategory;
+    })
+    .sort((a, b) => b.score - a.score)
+    .map(({ product }) => product);
 
   // Get favorite products (first 12 products)
   const favoriteProducts = products.slice(0, 12);
