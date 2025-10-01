@@ -465,26 +465,34 @@ export default function POS() {
   // Create order mutation
   const createOrderMutation = useMutation({
     mutationFn: async () => {
+      if (!selectedWarehouse) {
+        throw new Error('Please select a warehouse location');
+      }
+
+      const selectedWarehouseData = warehouses.find((w: any) => w.id === selectedWarehouse);
+      const warehouseLocation = selectedWarehouseData ? selectedWarehouseData.name : selectedWarehouse;
+      
       const orderData = {
+        orderId: `POS-${Date.now()}`,
         customerId: 'walk-in-customer',
         customerName: 'Walk-in Customer',
-        orderDate: today,
         currency: currency,
         items: cart.map(item => ({
           productId: item.productId,
           variantId: item.variantId,
           bundleId: item.bundleId,
           quantity: item.quantity,
-          price: item.price,
+          price: item.price.toString(),
           productName: item.name
         })),
-        subtotal: subtotal,
-        tax: tax,
-        total: total,
+        subtotal: subtotal.toFixed(2),
+        taxRate: actualVatRate.toFixed(2),
+        taxAmount: tax.toFixed(2),
+        grandTotal: total.toFixed(2),
         paymentMethod: paymentMethod,
         paymentStatus: paymentMethod === 'cash' ? 'paid' : 'pending',
         orderStatus: 'completed',
-        notes: `POS Sale - ${format(new Date(), 'PPp')}`
+        notes: `POS Sale - ${format(new Date(), 'PPp')}\nWarehouse Location: ${warehouseLocation}${paymentMethod === 'cash' && amountReceived ? `\nCash Received: ${currency} ${parseFloat(amountReceived).toFixed(2)}\nChange: ${currency} ${(parseFloat(amountReceived) - total).toFixed(2)}` : ''}`
       };
       
       return await apiRequest('POST', '/api/orders', orderData);
@@ -497,6 +505,7 @@ export default function POS() {
       });
       printReceipt();
       setCart([]);
+      setAmountReceived('');
       setShowPaymentDialog(false);
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
     },
@@ -514,6 +523,9 @@ export default function POS() {
   const printReceipt = () => {
     const printWindow = window.open('', '', 'width=300,height=600');
     if (!printWindow) return;
+
+    const selectedWarehouseData = warehouses.find((w: any) => w.id === selectedWarehouse);
+    const warehouseLocation = selectedWarehouseData ? selectedWarehouseData.name : selectedWarehouse;
 
     const receiptHTML = `
       <!DOCTYPE html>
@@ -597,6 +609,7 @@ export default function POS() {
           <div>Date: ${format(new Date(), 'dd/MM/yyyy')}</div>
           <div>Time: ${format(new Date(), 'HH:mm:ss')}</div>
           <div>Receipt #: ${Math.random().toString(36).substr(2, 9).toUpperCase()}</div>
+          <div>Location: ${warehouseLocation}</div>
         </div>
         
         <div class="items">
@@ -669,6 +682,16 @@ export default function POS() {
       toast({
         title: 'Cart Empty',
         description: 'Please add items to cart before checkout',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (!selectedWarehouse) {
+      playSound('error');
+      toast({
+        title: 'Warehouse Required',
+        description: 'Please select a warehouse location before checkout',
         variant: 'destructive'
       });
       return;
