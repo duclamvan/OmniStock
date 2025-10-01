@@ -521,7 +521,7 @@ export default function POS() {
         grandTotal: total.toFixed(2),
         paymentMethod: paymentMethod,
         paymentStatus: paymentMethod === 'cash' ? 'paid' : 'pending',
-        orderStatus: 'completed',
+        orderStatus: 'shipped', // POS sales are immediately fulfilled
         notes: `POS Sale - ${format(new Date(), 'PPp')}\nWarehouse Location: ${warehouseLocation}${paymentMethod === 'cash' && amountReceived ? `\nCash Received: ${currency} ${parseFloat(amountReceived).toFixed(2)}\nChange: ${currency} ${(parseFloat(amountReceived) - total).toFixed(2)}` : ''}`
       };
       
