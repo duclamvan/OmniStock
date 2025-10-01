@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { 
   ShoppingCart, 
   Printer, 
@@ -111,6 +113,7 @@ export default function POS() {
   const [quantityInput, setQuantityInput] = useState('1');
   const [showClearCartDialog, setShowClearCartDialog] = useState(false);
   const [showCartDetailsDialog, setShowCartDetailsDialog] = useState(false);
+  const [vatEnabled, setVatEnabled] = useState(false);
   const receiptRef = useRef<HTMLDivElement>(null);
   const quantityInputRef = useRef<HTMLInputElement>(null);
   const cartScrollRef = useRef<HTMLDivElement>(null);
@@ -434,7 +437,7 @@ export default function POS() {
 
   // Calculate totals
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const tax = subtotal * 0.21;
+  const tax = vatEnabled ? subtotal * 0.21 : 0;
   const total = subtotal + tax;
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -681,6 +684,17 @@ export default function POS() {
           <div className="text-right">
             <div className="text-3xl font-bold">{currency} {total.toFixed(2)}</div>
             <div className="text-sm opacity-90">Total: {totalItems} Items</div>
+          </div>
+          <div className="flex items-center gap-3 bg-primary-foreground/10 rounded-lg px-4 py-2">
+            <Switch
+              id="vat-toggle"
+              checked={vatEnabled}
+              onCheckedChange={setVatEnabled}
+              data-testid="switch-vat"
+            />
+            <Label htmlFor="vat-toggle" className="text-sm font-medium cursor-pointer">
+              VAT (21%)
+            </Label>
           </div>
           <Select value={currency} onValueChange={(v) => setCurrency(v as 'EUR' | 'CZK')}>
             <SelectTrigger className="w-24 bg-primary-foreground text-primary">
@@ -948,10 +962,12 @@ export default function POS() {
                   <span>Subtotal:</span>
                   <span className="font-semibold">{currency} {subtotal.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span>VAT (21%):</span>
-                  <span className="font-semibold">{currency} {tax.toFixed(2)}</span>
-                </div>
+                {vatEnabled && (
+                  <div className="flex justify-between text-sm">
+                    <span>VAT (21%):</span>
+                    <span className="font-semibold">{currency} {tax.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center bg-primary/10 rounded-lg p-3 mt-2">
                   <span className="text-base font-bold">Total:</span>
                   <span className="text-xl font-bold text-primary">{currency} {total.toFixed(2)}</span>
@@ -1205,10 +1221,12 @@ export default function POS() {
                   <span className="text-muted-foreground">Subtotal:</span>
                   <span className="font-semibold">{currency} {subtotal.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">VAT (21%):</span>
-                  <span className="font-semibold">{currency} {tax.toFixed(2)}</span>
-                </div>
+                {vatEnabled && (
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">VAT (21%):</span>
+                    <span className="font-semibold">{currency} {tax.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="border-t pt-2 mt-2">
                   <div className="flex justify-between items-center">
                     <span className="text-base font-bold">Grand Total:</span>
