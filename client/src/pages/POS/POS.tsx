@@ -18,7 +18,8 @@ import {
   Building,
   X,
   Package,
-  Check
+  Check,
+  Eye
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { apiRequest, queryClient } from '@/lib/queryClient';
@@ -108,6 +109,7 @@ export default function POS() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quantityInput, setQuantityInput] = useState('1');
   const [showClearCartDialog, setShowClearCartDialog] = useState(false);
+  const [showCartDetailsDialog, setShowCartDetailsDialog] = useState(false);
   const receiptRef = useRef<HTMLDivElement>(null);
   const quantityInputRef = useRef<HTMLInputElement>(null);
   const cartScrollRef = useRef<HTMLDivElement>(null);
@@ -751,16 +753,28 @@ export default function POS() {
                 Cart ({totalItems})
               </h2>
               {cart.length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowClearCartDialog(true)}
-                  className="text-destructive hover:text-destructive h-8"
-                  data-testid="button-clear-cart"
-                >
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  Clear
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowCartDetailsDialog(true)}
+                    className="h-8"
+                    data-testid="button-view-cart"
+                  >
+                    <Eye className="h-4 w-4 mr-1" />
+                    View
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowClearCartDialog(true)}
+                    className="text-destructive hover:text-destructive h-8"
+                    data-testid="button-clear-cart"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Clear
+                  </Button>
+                </div>
               )}
             </div>
           </div>
@@ -1043,6 +1057,114 @@ export default function POS() {
               data-testid="button-complete-payment"
             >
               Complete Payment
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cart Details Dialog */}
+      <Dialog open={showCartDetailsDialog} onOpenChange={setShowCartDetailsDialog}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5" />
+              Cart Details
+            </DialogTitle>
+            <DialogDescription>
+              Complete summary of all items in your cart
+            </DialogDescription>
+          </DialogHeader>
+          
+          <ScrollArea className="flex-1 pr-4">
+            <div className="space-y-4">
+              {/* Cart Items Table */}
+              <div className="border rounded-lg overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-muted">
+                    <tr className="text-left text-sm">
+                      <th className="p-3 font-semibold">Item</th>
+                      <th className="p-3 font-semibold text-center">Qty</th>
+                      <th className="p-3 font-semibold text-right">Unit Price</th>
+                      <th className="p-3 font-semibold text-right">Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {cart.map((item, index) => (
+                      <tr key={item.id} className="hover:bg-accent/5">
+                        <td className="p-3">
+                          <div>
+                            <p className="font-medium text-sm">{item.name}</p>
+                            {item.sku && (
+                              <p className="text-xs text-muted-foreground">SKU: {item.sku}</p>
+                            )}
+                          </div>
+                        </td>
+                        <td className="p-3 text-center">
+                          <Badge variant="secondary" className="font-bold">
+                            {item.quantity}x
+                          </Badge>
+                        </td>
+                        <td className="p-3 text-right text-sm">
+                          {currency} {item.price.toFixed(2)}
+                        </td>
+                        <td className="p-3 text-right font-semibold text-primary">
+                          {currency} {(item.price * item.quantity).toFixed(2)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Summary Section */}
+              <div className="space-y-3 bg-muted/30 rounded-lg p-4">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Total Items:</span>
+                  <span className="font-semibold">{totalItems} items</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Subtotal:</span>
+                  <span className="font-semibold">{currency} {subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">VAT (21%):</span>
+                  <span className="font-semibold">{currency} {tax.toFixed(2)}</span>
+                </div>
+                <div className="border-t pt-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg font-bold">Grand Total:</span>
+                    <span className="text-2xl font-bold text-primary">
+                      {currency} {total.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Additional Info */}
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="space-y-1">
+                  <p className="text-muted-foreground">Payment Method</p>
+                  <p className="font-semibold capitalize">
+                    {paymentMethod.replace('_', ' ')}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-muted-foreground">Date & Time</p>
+                  <p className="font-semibold">
+                    {format(new Date(), 'PPp')}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </ScrollArea>
+          
+          <DialogFooter className="mt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowCartDetailsDialog(false)}
+              data-testid="button-close-cart-details"
+            >
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
