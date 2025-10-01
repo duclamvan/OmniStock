@@ -213,6 +213,9 @@ export default function POS() {
     return { matches, score: totalScore };
   };
 
+  // Get favorite products (first 12 products)
+  const favoriteProducts = products.slice(0, 12);
+
   // Filter and sort products based on fuzzy search and category
   const filteredProducts = products
     .map(product => {
@@ -220,18 +223,19 @@ export default function POS() {
       return { product, ...searchResult };
     })
     .filter(({ matches, product }) => {
-      const matchesCategory = selectedCategory === 'all' || 
-                             selectedCategory === 'favorites' || 
-                             product.categoryId === selectedCategory;
+      // If on favorites category, only include favorite products
+      if (selectedCategory === 'favorites') {
+        return matches && favoriteProducts.some(fav => fav.id === product.id);
+      }
+      // Otherwise filter by category
+      const matchesCategory = selectedCategory === 'all' || product.categoryId === selectedCategory;
       return matches && matchesCategory;
     })
     .sort((a, b) => b.score - a.score)
     .map(({ product }) => product);
 
-  // Get favorite products (first 12 products)
-  const favoriteProducts = products.slice(0, 12);
-
-  const displayProducts = selectedCategory === 'favorites' ? favoriteProducts : filteredProducts;
+  // Always use filtered products (search applies to all categories)
+  const displayProducts = filteredProducts;
 
   // Background barcode scanning - detects rapid keystrokes from scanner
   useEffect(() => {
