@@ -1064,8 +1064,8 @@ export default function POS() {
 
       {/* Cart Details Dialog */}
       <Dialog open={showCartDetailsDialog} onOpenChange={setShowCartDetailsDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] p-0 gap-0 flex flex-col">
-          <DialogHeader className="px-6 pt-6 pb-4 border-b">
+        <DialogContent className="max-w-4xl max-h-[90vh] p-0 gap-0 flex flex-col overflow-hidden">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b flex-shrink-0">
             <DialogTitle className="flex items-center gap-2 text-lg">
               <ShoppingCart className="h-5 w-5" />
               Cart Details
@@ -1075,8 +1075,8 @@ export default function POS() {
             </DialogDescription>
           </DialogHeader>
           
-          <ScrollArea className="max-h-[calc(90vh-180px)] px-6">
-            <div className="space-y-3 py-4">
+          <ScrollArea className="flex-1 px-6">
+            <div className="space-y-3 py-4 pr-4">
               {/* Cart Items Table */}
               <div className="border rounded-lg overflow-hidden">
                 <table className="w-full text-sm">
@@ -1158,7 +1158,7 @@ export default function POS() {
             </div>
           </ScrollArea>
           
-          <DialogFooter className="px-6 py-4 border-t">
+          <DialogFooter className="px-6 py-4 border-t flex-shrink-0">
             <Button 
               variant="outline" 
               onClick={() => setShowCartDetailsDialog(false)}
