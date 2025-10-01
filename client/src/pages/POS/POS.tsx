@@ -1064,50 +1064,50 @@ export default function POS() {
 
       {/* Cart Details Dialog */}
       <Dialog open={showCartDetailsDialog} onOpenChange={setShowCartDetailsDialog}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+        <DialogContent className="max-w-4xl max-h-[90vh] p-0 gap-0 flex flex-col">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b">
+            <DialogTitle className="flex items-center gap-2 text-lg">
               <ShoppingCart className="h-5 w-5" />
               Cart Details
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-xs">
               Complete summary of all items in your cart
             </DialogDescription>
           </DialogHeader>
           
-          <ScrollArea className="flex-1 pr-4">
-            <div className="space-y-4">
+          <ScrollArea className="max-h-[calc(90vh-180px)] px-6">
+            <div className="space-y-3 py-4">
               {/* Cart Items Table */}
               <div className="border rounded-lg overflow-hidden">
-                <table className="w-full">
-                  <thead className="bg-muted">
-                    <tr className="text-left text-sm">
-                      <th className="p-3 font-semibold">Item</th>
-                      <th className="p-3 font-semibold text-center">Qty</th>
-                      <th className="p-3 font-semibold text-right">Unit Price</th>
-                      <th className="p-3 font-semibold text-right">Subtotal</th>
+                <table className="w-full text-sm">
+                  <thead className="bg-muted sticky top-0">
+                    <tr className="text-left text-xs">
+                      <th className="px-2 py-2 font-semibold">Item</th>
+                      <th className="px-2 py-2 font-semibold text-center w-16">Qty</th>
+                      <th className="px-2 py-2 font-semibold text-right w-24">Unit</th>
+                      <th className="px-2 py-2 font-semibold text-right w-28">Total</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
                     {cart.map((item, index) => (
-                      <tr key={item.id} className="hover:bg-accent/5">
-                        <td className="p-3">
+                      <tr key={item.id} className="hover:bg-accent/5" data-testid={`cart-detail-row-${item.id}`}>
+                        <td className="px-2 py-2">
                           <div>
-                            <p className="font-medium text-sm">{item.name}</p>
+                            <p className="font-medium text-sm leading-tight">{item.name}</p>
                             {item.sku && (
-                              <p className="text-xs text-muted-foreground">SKU: {item.sku}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5">SKU: {item.sku}</p>
                             )}
                           </div>
                         </td>
-                        <td className="p-3 text-center">
-                          <Badge variant="secondary" className="font-bold">
+                        <td className="px-2 py-2 text-center">
+                          <Badge variant="secondary" className="font-bold text-xs h-5 px-2">
                             {item.quantity}x
                           </Badge>
                         </td>
-                        <td className="p-3 text-right text-sm">
+                        <td className="px-2 py-2 text-right text-xs">
                           {currency} {item.price.toFixed(2)}
                         </td>
-                        <td className="p-3 text-right font-semibold text-primary">
+                        <td className="px-2 py-2 text-right font-semibold text-primary">
                           {currency} {(item.price * item.quantity).toFixed(2)}
                         </td>
                       </tr>
@@ -1117,23 +1117,23 @@ export default function POS() {
               </div>
 
               {/* Summary Section */}
-              <div className="space-y-3 bg-muted/30 rounded-lg p-4">
-                <div className="flex justify-between text-sm">
+              <div className="space-y-2 bg-muted/30 rounded-lg p-3">
+                <div className="flex justify-between text-xs">
                   <span className="text-muted-foreground">Total Items:</span>
                   <span className="font-semibold">{totalItems} items</span>
                 </div>
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-xs">
                   <span className="text-muted-foreground">Subtotal:</span>
                   <span className="font-semibold">{currency} {subtotal.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-xs">
                   <span className="text-muted-foreground">VAT (21%):</span>
                   <span className="font-semibold">{currency} {tax.toFixed(2)}</span>
                 </div>
-                <div className="border-t pt-3">
+                <div className="border-t pt-2 mt-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-lg font-bold">Grand Total:</span>
-                    <span className="text-2xl font-bold text-primary">
+                    <span className="text-base font-bold">Grand Total:</span>
+                    <span className="text-xl font-bold text-primary">
                       {currency} {total.toFixed(2)}
                     </span>
                   </div>
@@ -1141,14 +1141,14 @@ export default function POS() {
               </div>
 
               {/* Additional Info */}
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="space-y-1">
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="space-y-0.5">
                   <p className="text-muted-foreground">Payment Method</p>
                   <p className="font-semibold capitalize">
                     {paymentMethod.replace('_', ' ')}
                   </p>
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-0.5">
                   <p className="text-muted-foreground">Date & Time</p>
                   <p className="font-semibold">
                     {format(new Date(), 'PPp')}
@@ -1158,7 +1158,7 @@ export default function POS() {
             </div>
           </ScrollArea>
           
-          <DialogFooter className="mt-4">
+          <DialogFooter className="px-6 py-4 border-t">
             <Button 
               variant="outline" 
               onClick={() => setShowCartDetailsDialog(false)}
