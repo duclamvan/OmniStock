@@ -3150,6 +3150,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create order items
       if (items && items.length > 0) {
+        console.log('Creating order items, items received:', JSON.stringify(items));
+        console.log('Order ID:', order.id, 'Order Currency:', order.currency);
         for (const item of items) {
           // Map frontend price field to schema fields
           const price = item.price || 0; // Default to 0 if price is undefined
@@ -3167,8 +3169,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             tax: String(item.tax || 0),
             total: String(item.total || price),
           };
-          await storage.createOrderItem(orderItem);
+          console.log('Creating order item:', JSON.stringify(orderItem));
+          try {
+            const createdItem = await storage.createOrderItem(orderItem);
+            console.log('Successfully created order item:', createdItem?.id);
+          } catch (itemError) {
+            console.error('Failed to create order item:', itemError);
+          }
         }
+      } else {
+        console.log('No items to create or empty items array');
       }
       
       await storage.createUserActivity({
