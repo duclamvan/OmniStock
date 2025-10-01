@@ -1346,9 +1346,9 @@ export default function POS() {
             </div>
             
             {amountReceived && parseFloat(amountReceived) >= total && (
-              <div className="space-y-2 bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
-                <label className="text-sm font-medium">Change</label>
-                <div className="text-2xl font-bold text-green-600">
+              <div className="space-y-2 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                <label className="text-sm font-medium text-blue-900 dark:text-blue-100">Change</label>
+                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                   {currency} {(parseFloat(amountReceived) - total).toFixed(2)}
                 </div>
               </div>
