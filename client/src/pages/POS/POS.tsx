@@ -1075,8 +1075,9 @@ export default function POS() {
             </DialogDescription>
           </DialogHeader>
           
-          <ScrollArea className="flex-1 px-6">
-            <div className="space-y-3 py-4 pr-4">
+          <div className="flex-1 min-h-0 px-6">
+            <ScrollArea className="h-full">
+              <div className="space-y-3 py-4 pr-4">
               {/* Cart Items Table */}
               <div className="border rounded-lg overflow-hidden">
                 <table className="w-full text-sm">
@@ -1156,7 +1157,8 @@ export default function POS() {
                 </div>
               </div>
             </div>
-          </ScrollArea>
+            </ScrollArea>
+          </div>
           
           <DialogFooter className="px-6 py-4 border-t flex-shrink-0">
             <Button 
