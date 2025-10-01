@@ -1064,7 +1064,7 @@ export default function POS() {
 
       {/* Cart Details Dialog */}
       <Dialog open={showCartDetailsDialog} onOpenChange={setShowCartDetailsDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] p-0 gap-0 flex flex-col overflow-hidden">
+        <DialogContent className="max-w-4xl h-[90vh] p-0 gap-0 flex flex-col overflow-hidden">
           <DialogHeader className="px-6 pt-6 pb-4 border-b flex-shrink-0">
             <DialogTitle className="flex items-center gap-2 text-lg">
               <ShoppingCart className="h-5 w-5" />
