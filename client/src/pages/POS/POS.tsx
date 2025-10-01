@@ -508,12 +508,12 @@ export default function POS() {
         customerName: 'Walk-in Customer',
         currency: currency,
         items: cart.map(item => ({
-          productId: item.productId,
-          variantId: item.variantId,
-          bundleId: item.bundleId,
+          productId: item.id,
           quantity: item.quantity,
           price: item.price.toString(),
-          productName: item.name
+          productName: item.name,
+          sku: item.sku || '',
+          total: (item.price * item.quantity).toString()
         })),
         subtotal: subtotal.toFixed(2),
         taxRate: actualVatRate.toFixed(2),
