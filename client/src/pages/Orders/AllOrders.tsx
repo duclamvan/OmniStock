@@ -327,69 +327,40 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   // Bulk actions for DataTable
   const bulkActions = [
     {
-      label: "→ Pending",
-      action: (orders: any[]) => {
+      type: "select" as const,
+      label: "Order Status",
+      placeholder: "Change status...",
+      options: [
+        { label: "Pending", value: "pending" },
+        { label: "To Fulfill", value: "to_fulfill" },
+        { label: "Ready to Ship", value: "ready_to_ship" },
+        { label: "Shipped", value: "shipped" },
+      ],
+      action: (orders: any[], value: string) => {
         bulkUpdateStatusMutation.mutate({
           orderIds: orders.map(o => o.id),
-          status: 'pending'
+          status: value
         });
       },
     },
     {
-      label: "→ To Fulfill",
-      action: (orders: any[]) => {
-        bulkUpdateStatusMutation.mutate({
-          orderIds: orders.map(o => o.id),
-          status: 'to_fulfill'
-        });
-      },
-    },
-    {
-      label: "→ Ready to Ship",
-      action: (orders: any[]) => {
-        bulkUpdateStatusMutation.mutate({
-          orderIds: orders.map(o => o.id),
-          status: 'ready_to_ship'
-        });
-      },
-    },
-    {
-      label: "→ Shipped",
-      action: (orders: any[]) => {
-        bulkUpdateStatusMutation.mutate({
-          orderIds: orders.map(o => o.id),
-          status: 'shipped'
-        });
-      },
-    },
-    {
-      label: "💳 Payment: Pending",
-      action: (orders: any[]) => {
+      type: "select" as const,
+      label: "Payment Status",
+      placeholder: "Change payment...",
+      options: [
+        { label: "Pending", value: "pending" },
+        { label: "Paid", value: "paid" },
+        { label: "Pay Later", value: "pay_later" },
+      ],
+      action: (orders: any[], value: string) => {
         bulkUpdatePaymentMutation.mutate({
           orderIds: orders.map(o => o.id),
-          paymentStatus: 'pending'
+          paymentStatus: value
         });
       },
     },
     {
-      label: "✓ Payment: Paid",
-      action: (orders: any[]) => {
-        bulkUpdatePaymentMutation.mutate({
-          orderIds: orders.map(o => o.id),
-          paymentStatus: 'paid'
-        });
-      },
-    },
-    {
-      label: "⏰ Payment: Pay Later",
-      action: (orders: any[]) => {
-        bulkUpdatePaymentMutation.mutate({
-          orderIds: orders.map(o => o.id),
-          paymentStatus: 'pay_later'
-        });
-      },
-    },
-    {
+      type: "button" as const,
       label: "Delete",
       variant: "destructive" as const,
       action: (orders: any[]) => {

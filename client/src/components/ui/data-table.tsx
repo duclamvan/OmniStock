@@ -23,14 +23,25 @@ export interface DataTableColumn<T> {
   className?: string;
 }
 
+type BulkAction<T> = 
+  | {
+      type: "button";
+      label: string;
+      action: (selectedItems: T[]) => void;
+      variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+    }
+  | {
+      type: "select";
+      label: string;
+      placeholder?: string;
+      options: { label: string; value: string }[];
+      action: (selectedItems: T[], value: string) => void;
+    };
+
 interface DataTableProps<T> {
   data: T[];
   columns: DataTableColumn<T>[];
-  bulkActions?: {
-    label: string;
-    action: (selectedItems: T[]) => void;
-    variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
-  }[];
+  bulkActions?: BulkAction<T>[];
   itemsPerPageOptions?: number[];
   defaultItemsPerPage?: number;
   showPagination?: boolean;
@@ -165,10 +176,16 @@ export function DataTable<T>({
     }
   };
 
-  // Bulk action handler
-  const handleBulkAction = (action: (selectedItems: T[]) => void) => {
+  // Bulk action handlers
+  const handleBulkActionButton = (action: (selectedItems: T[]) => void) => {
     const selectedItems = data.filter(item => selectedRows.has(getRowKey(item)));
     action(selectedItems);
+    setSelectedRows(new Set());
+  };
+
+  const handleBulkActionSelect = (action: (selectedItems: T[], value: string) => void, value: string) => {
+    const selectedItems = data.filter(item => selectedRows.has(getRowKey(item)));
+    action(selectedItems, value);
     setSelectedRows(new Set());
   };
 
@@ -193,23 +210,45 @@ export function DataTable<T>({
       {/* Bulk Actions */}
       {bulkActions && selectedRows.size > 0 && (
         <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-primary/5 border border-primary/20 rounded-lg">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <Badge variant="secondary" className="font-medium">
               {selectedRows.size} selected
             </Badge>
-            <div className="h-4 w-px bg-border" />
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {bulkActions.map((action, index) => (
-                <Button
-                  key={index}
-                  size="sm"
-                  variant={action.variant || "ghost"}
-                  onClick={() => handleBulkAction(action.action)}
-                  className="h-7 px-3 text-xs"
-                >
-                  {action.label}
-                </Button>
-              ))}
+            <div className="h-4 w-px bg-border hidden sm:block" />
+            <div className="flex items-center gap-2 flex-wrap">
+              {bulkActions.map((action, index) => {
+                if (action.type === "select") {
+                  return (
+                    <Select
+                      key={index}
+                      onValueChange={(value) => handleBulkActionSelect(action.action, value)}
+                    >
+                      <SelectTrigger className="h-7 w-[140px] text-xs">
+                        <SelectValue placeholder={action.placeholder || action.label} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {action.options.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  );
+                } else {
+                  return (
+                    <Button
+                      key={index}
+                      size="sm"
+                      variant={action.variant || "ghost"}
+                      onClick={() => handleBulkActionButton(action.action)}
+                      className="h-7 px-3 text-xs"
+                    >
+                      {action.label}
+                    </Button>
+                  );
+                }
+              })}
             </div>
           </div>
         </div>
