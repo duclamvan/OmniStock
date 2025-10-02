@@ -351,6 +351,22 @@ export default function POS() {
     }
   }, [cart.length, cart]);
 
+  // Auto-select first warehouse if none selected or saved warehouse is invalid
+  useEffect(() => {
+    if (warehouses && Array.isArray(warehouses) && warehouses.length > 0) {
+      const savedWarehouse = localStorage.getItem('pos_warehouse');
+      const warehouseExists = warehouses.some((w: any) => w.id === savedWarehouse);
+      
+      // If no warehouse selected or saved warehouse doesn't exist, auto-select first warehouse
+      if (!selectedWarehouse || (savedWarehouse && !warehouseExists)) {
+        const firstWarehouse = warehouses[0];
+        if (firstWarehouse && firstWarehouse.id) {
+          setSelectedWarehouse(firstWarehouse.id);
+        }
+      }
+    }
+  }, [warehouses]);
+
   // Save warehouse selection to localStorage
   useEffect(() => {
     if (selectedWarehouse) {
