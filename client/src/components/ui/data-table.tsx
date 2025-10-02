@@ -291,7 +291,13 @@ export function DataTable<T>({
                       </TableCell>
                     )}
                     {bulkActions && (
-                      <TableCell>
+                      <TableCell 
+                        className="cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSelectRow(key, !isSelected);
+                        }}
+                      >
                         <Checkbox
                           checked={isSelected}
                           onCheckedChange={(checked) => handleSelectRow(key, checked as boolean)}
