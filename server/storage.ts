@@ -585,7 +585,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getOrderById(id: string): Promise<Order | undefined> {
-    return this.getOrder(id);
+    const [order] = await db.select().from(orders).where(eq(orders.id, id));
+    
+    if (order) {
+      const items = await this.getOrderItems(order.id);
+      return { ...order, items };
+    }
+    
+    return undefined;
   }
 
   async generateOrderId(): Promise<string> {
@@ -707,11 +714,15 @@ export class DatabaseStorage implements IStorage {
 
   // Order Items
   async getOrderItems(orderId: string): Promise<OrderItem[]> {
-    return [];
+    return await db
+      .select()
+      .from(orderItems)
+      .where(eq(orderItems.orderId, orderId));
   }
 
   async createOrderItem(item: any): Promise<OrderItem> {
-    return { id: Date.now().toString(), ...item };
+    const [newItem] = await db.insert(orderItems).values(item).returning();
+    return newItem;
   }
 
   async updateOrderItem(id: string, item: any): Promise<OrderItem | undefined> {
