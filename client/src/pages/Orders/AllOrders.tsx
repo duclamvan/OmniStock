@@ -457,6 +457,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
             data={filteredOrders}
             columns={columns}
             bulkActions={bulkActions}
+            tableId="all-orders"
             getRowKey={(order) => order.id}
             itemsPerPageOptions={[10, 20, 50, 100]}
             defaultItemsPerPage={20}

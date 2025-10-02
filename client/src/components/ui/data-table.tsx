@@ -12,7 +12,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ChevronUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight, MoreVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface DataTableColumn<T> {
@@ -55,6 +61,7 @@ interface DataTableProps<T> {
   onRowClick?: (item: T) => void;
   defaultExpandAll?: boolean;
   compact?: boolean;
+  tableId?: string;
 }
 
 type SortDirection = "asc" | "desc" | null;
@@ -72,6 +79,7 @@ export function DataTable<T>({
   onRowClick,
   defaultExpandAll = false,
   compact = false,
+  tableId,
 }: DataTableProps<T>) {
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
@@ -79,6 +87,9 @@ export function DataTable<T>({
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(defaultItemsPerPage);
+  const [visibleColumns, setVisibleColumns] = useState<Set<string>>(() => {
+    return new Set(columns.map(col => col.key));
+  });
   
   // Effect to handle external expand/collapse all
   useEffect(() => {
@@ -93,6 +104,37 @@ export function DataTable<T>({
       }
     }
   }, [defaultExpandAll, data, expandable, getRowKey]);
+
+  // Load column visibility from localStorage on mount
+  useEffect(() => {
+    if (tableId) {
+      const storageKey = `datatable-columns-${tableId}`;
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        try {
+          const columnKeys = JSON.parse(stored) as string[];
+          const validKeys = columnKeys.filter(key => 
+            columns.some(col => col.key === key)
+          );
+          if (validKeys.length > 0) {
+            setVisibleColumns(new Set(validKeys));
+          }
+        } catch (e) {
+          console.error('Failed to load column visibility settings', e);
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tableId]);
+
+  // Save column visibility to localStorage when it changes
+  useEffect(() => {
+    if (tableId) {
+      const storageKey = `datatable-columns-${tableId}`;
+      const columnKeys = Array.from(visibleColumns);
+      localStorage.setItem(storageKey, JSON.stringify(columnKeys));
+    }
+  }, [visibleColumns, tableId]);
 
   // Sorting logic
   const sortedData = useMemo(() => {
@@ -152,6 +194,19 @@ export function DataTable<T>({
     }
     setExpandedRows(newExpanded);
   };
+
+  const handleToggleColumn = (columnKey: string) => {
+    const newVisible = new Set(visibleColumns);
+    if (newVisible.has(columnKey)) {
+      newVisible.delete(columnKey);
+    } else {
+      newVisible.add(columnKey);
+    }
+    setVisibleColumns(newVisible);
+  };
+
+  // Filter columns based on visibility
+  const displayColumns = columns.filter(col => visibleColumns.has(col.key));
 
   const isAllSelected = paginatedData.length > 0 && 
     paginatedData.every(item => selectedRows.has(getRowKey(item)));
@@ -274,7 +329,7 @@ export function DataTable<T>({
                   />
                 </TableHead>
               )}
-              {columns.map((column) => (
+              {displayColumns.map((column) => (
                 <TableHead
                   key={column.key}
                   className={cn(
@@ -296,7 +351,7 @@ export function DataTable<T>({
             {paginatedData.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length + (bulkActions ? 1 : 0) + (expandable ? 1 : 0)}
+                  colSpan={displayColumns.length + (bulkActions ? 1 : 0) + (expandable ? 1 : 0)}
                   className="h-24 text-center"
                 >
                   No results found.
@@ -353,7 +408,7 @@ export function DataTable<T>({
                         />
                       </TableCell>
                     )}
-                    {columns.map((column) => (
+                    {displayColumns.map((column) => (
                       <TableCell 
                         key={column.key} 
                         className={cn(
@@ -372,7 +427,7 @@ export function DataTable<T>({
                   elements.push(
                     <TableRow key={`${key}-expanded-1`} className="hover:bg-transparent">
                       <TableCell
-                        colSpan={columns.length + (bulkActions ? 1 : 0) + 1}
+                        colSpan={displayColumns.length + (bulkActions ? 1 : 0) + 1}
                         className="bg-slate-50 dark:bg-slate-900/30 p-6 border-l-4 border-l-blue-500 shadow-inner"
                       >
                         <div className="relative">
@@ -384,7 +439,7 @@ export function DataTable<T>({
                   elements.push(
                     <TableRow key={`${key}-expanded-2`} className="hover:bg-transparent border-b-2 border-slate-200 dark:border-slate-700">
                       <TableCell 
-                        colSpan={columns.length + (bulkActions ? 1 : 0) + 1} 
+                        colSpan={displayColumns.length + (bulkActions ? 1 : 0) + 1} 
                         className="p-0 h-2 bg-gradient-to-b from-slate-50 dark:from-slate-900/30 to-transparent"
                       />
                     </TableRow>
@@ -472,6 +527,31 @@ export function DataTable<T>({
             >
               Last
             </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  data-testid="button-column-visibility"
+                >
+                  <MoreVertical className="h-4 w-4" />
+                  <span className="sr-only">Column visibility</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {columns.map((column) => (
+                  <DropdownMenuCheckboxItem
+                    key={column.key}
+                    checked={visibleColumns.has(column.key)}
+                    onCheckedChange={() => handleToggleColumn(column.key)}
+                    data-testid={`checkbox-column-${column.key}`}
+                  >
+                    {column.header}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       )}
