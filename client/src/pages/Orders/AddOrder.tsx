@@ -58,7 +58,7 @@ const addOrderSchema = z.object({
   paymentStatus: z.enum(['pending', 'paid', 'pay_later']).default('pending'),
   shippingMethod: z.enum(['GLS', 'PPL', 'DHL', 'DPD']).optional(),
   paymentMethod: z.enum(['Bank Transfer', 'PayPal', 'COD', 'Cash']).optional(),
-  discountType: z.enum(['amount', 'percentage']).default('amount'),
+  discountType: z.enum(['flat', 'rate']).default('flat'),
   discountValue: z.coerce.number().min(0).default(0),
   // Tax Invoice fields
   taxInvoiceEnabled: z.boolean().default(false),
@@ -575,7 +575,7 @@ export default function AddOrder() {
     
     // Calculate actual discount based on type
     let actualDiscount = 0;
-    if (discountType === 'percentage') {
+    if (discountType === 'rate') {
       actualDiscount = (subtotal * discountAmount) / 100;
     } else {
       actualDiscount = discountAmount;
@@ -1467,25 +1467,25 @@ export default function AddOrder() {
                 <div className="flex gap-2 mt-1">
                   <Select 
                     value={form.watch('discountType')} 
-                    onValueChange={(value) => form.setValue('discountType', value as 'amount' | 'percentage')}
+                    onValueChange={(value) => form.setValue('discountType', value as 'flat' | 'rate')}
                   >
                     <SelectTrigger className="w-32">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="amount">Amount</SelectItem>
-                      <SelectItem value="percentage">Percentage</SelectItem>
+                      <SelectItem value="flat">Amount</SelectItem>
+                      <SelectItem value="rate">Percentage</SelectItem>
                     </SelectContent>
                   </Select>
                   <Input
                     type="number"
                     step="0.01"
                     min="0"
-                    placeholder={form.watch('discountType') === 'percentage' ? '0-100' : '0'}
+                    placeholder={form.watch('discountType') === 'rate' ? '0-100' : '0'}
                     {...form.register('discountValue', { valueAsNumber: true })}
                     className="flex-1"
                   />
-                  {form.watch('discountType') === 'percentage' && (
+                  {form.watch('discountType') === 'rate' && (
                     <div className="flex items-center px-3 text-gray-500">
                       <Percent className="h-4 w-4" />
                     </div>
@@ -1496,7 +1496,7 @@ export default function AddOrder() {
                 <div className="mt-2">
                   <div className="text-xs text-gray-500 mb-1">Quick select:</div>
                   <div className="flex flex-wrap gap-1">
-                    {form.watch('discountType') === 'percentage' && [5, 10, 15, 20, 25].map(amount => (
+                    {form.watch('discountType') === 'rate' && [5, 10, 15, 20, 25].map(amount => (
                       <Button
                         key={amount}
                         type="button"
@@ -1508,7 +1508,7 @@ export default function AddOrder() {
                         {amount}%
                       </Button>
                     ))}
-                    {form.watch('discountType') === 'amount' && form.watch('currency') === 'CZK' && [50, 100, 200, 500].map(amount => (
+                    {form.watch('discountType') === 'flat' && form.watch('currency') === 'CZK' && [50, 100, 200, 500].map(amount => (
                       <Button
                         key={amount}
                         type="button"
@@ -1520,7 +1520,7 @@ export default function AddOrder() {
                         {amount} CZK
                       </Button>
                     ))}
-                    {form.watch('discountType') === 'amount' && form.watch('currency') === 'EUR' && [5, 10, 20, 50].map(amount => (
+                    {form.watch('discountType') === 'flat' && form.watch('currency') === 'EUR' && [5, 10, 20, 50].map(amount => (
                       <Button
                         key={amount}
                         type="button"
@@ -1851,11 +1851,11 @@ export default function AddOrder() {
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">
-                          Discount{form.watch('discountType') === 'percentage' && ` (${form.watch('discountValue') || 0}%)`}:
+                          Discount{form.watch('discountType') === 'rate' && ` (${form.watch('discountValue') || 0}%)`}:
                         </span>
                         <span className="font-medium text-green-600">
                           -{formatCurrency(
-                            form.watch('discountType') === 'percentage' 
+                            form.watch('discountType') === 'rate' 
                               ? (calculateSubtotal() * (Number(form.watch('discountValue')) || 0)) / 100
                               : Number(form.watch('discountValue')) || 0, 
                             form.watch('currency')

@@ -389,10 +389,27 @@ export const orderItems = pgTable('order_items', {
   id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
   orderId: varchar('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
   productId: varchar('product_id').notNull().references(() => products.id),
+  productName: varchar('product_name'),
+  sku: varchar('sku'),
   quantity: integer('quantity').notNull(),
-  unitPrice: decimal('unit_price', { precision: 10, scale: 2 }).notNull(),
-  totalPrice: decimal('total_price', { precision: 10, scale: 2 }).notNull(),
-  createdAt: timestamp('created_at').notNull().defaultNow()
+  price: decimal('price', { precision: 10, scale: 2 }),
+  discount: decimal('discount', { precision: 10, scale: 2 }),
+  tax: decimal('tax', { precision: 10, scale: 2 }),
+  total: decimal('total', { precision: 10, scale: 2 }),
+  variantId: varchar('variant_id'),
+  unitPrice: decimal('unit_price', { precision: 10, scale: 2 }),
+  appliedPrice: decimal('applied_price', { precision: 10, scale: 2 }),
+  currency: varchar('currency'),
+  customerPriceId: varchar('customer_price_id'),
+  pickedQuantity: integer('picked_quantity'),
+  packedQuantity: integer('packed_quantity'),
+  warehouseLocation: varchar('warehouse_location'),
+  barcode: varchar('barcode'),
+  image: varchar('image'),
+  pickStartTime: timestamp('pick_start_time'),
+  pickEndTime: timestamp('pick_end_time'),
+  packStartTime: timestamp('pack_start_time'),
+  packEndTime: timestamp('pack_end_time')
 });
 
 // Product warehouse locations table
