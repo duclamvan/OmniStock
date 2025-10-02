@@ -3189,7 +3189,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         description: `Created order: ${order.orderId}`,
       });
       
-      res.json(order);
+      // Fetch the complete order with items to return
+      const completeOrder = await storage.getOrderById(order.id);
+      res.json(completeOrder);
     } catch (error) {
       console.error("Error creating order:", error);
       res.status(500).json({ message: "Failed to create order" });
