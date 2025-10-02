@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronUp, ChevronDown, ChevronsUpDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -191,20 +192,26 @@ export function DataTable<T>({
     <div className={cn("space-y-4", className)}>
       {/* Bulk Actions */}
       {bulkActions && selectedRows.size > 0 && (
-        <div className="flex items-center gap-2 p-4 bg-muted rounded-md">
-          <span className="text-sm text-muted-foreground">
-            {selectedRows.size} item{selectedRows.size !== 1 ? 's' : ''} selected
-          </span>
-          {bulkActions.map((action, index) => (
-            <Button
-              key={index}
-              size="sm"
-              variant={action.variant || "outline"}
-              onClick={() => handleBulkAction(action.action)}
-            >
-              {action.label}
-            </Button>
-          ))}
+        <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-primary/5 border border-primary/20 rounded-lg">
+          <div className="flex items-center gap-3">
+            <Badge variant="secondary" className="font-medium">
+              {selectedRows.size} selected
+            </Badge>
+            <div className="h-4 w-px bg-border" />
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {bulkActions.map((action, index) => (
+                <Button
+                  key={index}
+                  size="sm"
+                  variant={action.variant || "ghost"}
+                  onClick={() => handleBulkAction(action.action)}
+                  className="h-7 px-3 text-xs"
+                >
+                  {action.label}
+                </Button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
