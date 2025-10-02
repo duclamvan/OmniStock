@@ -46,11 +46,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [selectedOrders, setSelectedOrders] = useState<any[]>([]);
-  const [selectAll, setSelectAll] = useState(false);
-  const [showBulkActions, setShowBulkActions] = useState(false);
-  const [bulkActionType, setBulkActionType] = useState<'status' | 'payment' | null>(null);
-  const [bulkNewStatus, setBulkNewStatus] = useState("");
+  const [ordersToDelete, setOrdersToDelete] = useState<any[]>([]);
   
   // Load saved expand preference from localStorage
   const [expandAll, setExpandAll] = useState(() => {
@@ -115,14 +111,12 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     mutationFn: async (ids: string[]) => {
       await Promise.all(ids.map(id => apiRequest('DELETE', `/api/orders/${id}`)));
     },
-    onSuccess: () => {
+    onSuccess: (_, ids) => {
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
       toast({
         title: "Success",
-        description: `Deleted ${selectedOrders.length} order(s) successfully`,
+        description: `Deleted ${ids.length} order(s) successfully`,
       });
-      setSelectedOrders([]);
-      setSelectAll(false);
     },
     onError: (error: any) => {
       console.error("Order delete error:", error);
@@ -140,15 +134,12 @@ export default function AllOrders({ filter }: AllOrdersProps) {
         apiRequest('PATCH', `/api/orders/${id}`, { orderStatus: status })
       ));
     },
-    onSuccess: () => {
+    onSuccess: (_, { orderIds }) => {
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
       toast({
         title: "Success",
-        description: `Updated ${selectedOrders.length} order(s) successfully`,
+        description: `Updated ${orderIds.length} order(s) successfully`,
       });
-      setSelectedOrders([]);
-      setSelectAll(false);
-      setShowBulkActions(false);
     },
     onError: (error: any) => {
       toast({
@@ -165,15 +156,12 @@ export default function AllOrders({ filter }: AllOrdersProps) {
         apiRequest('PATCH', `/api/orders/${id}`, { paymentStatus })
       ));
     },
-    onSuccess: () => {
+    onSuccess: (_, { orderIds }) => {
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
       toast({
         title: "Success",
-        description: `Updated payment status for ${selectedOrders.length} order(s)`,
+        description: `Updated payment status for ${orderIds.length} order(s)`,
       });
-      setSelectedOrders([]);
-      setSelectAll(false);
-      setShowBulkActions(false);
     },
     onError: (error: any) => {
       toast({
@@ -276,29 +264,6 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   // Define table columns
   const columns: DataTableColumn<any>[] = [
     {
-      key: "select",
-      header: "",
-      sortable: false,
-      cell: (order) => (
-        <label className="relative inline-flex items-center cursor-pointer" onClick={(e) => e.stopPropagation()}>
-          <input
-            type="checkbox"
-            checked={selectedOrders.some(o => o.id === order.id)}
-            onChange={(e) => {
-              e.stopPropagation();
-              handleOrderSelect(order, e.target.checked);
-            }}
-            className="sr-only peer"
-          />
-          <div className="w-5 h-5 bg-white border-2 border-gray-300 rounded-full peer-checked:bg-blue-600 peer-checked:border-blue-600 transition-all duration-200 peer-hover:border-blue-400 peer-focus:ring-2 peer-focus:ring-blue-300 peer-focus:ring-offset-1">
-            <svg className="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity duration-200 absolute top-[3px] left-[3px]" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-            </svg>
-          </div>
-        </label>
-      ),
-    },
-    {
       key: "customer",
       header: "Customer",
       sortable: true,
@@ -359,15 +324,68 @@ export default function AllOrders({ filter }: AllOrdersProps) {
 
   ];
 
-  // Bulk actions
+  // Bulk actions for DataTable
   const bulkActions = [
     {
-      label: "Update Status",
+      label: "→ Pending",
       action: (orders: any[]) => {
-        // TODO: Implement bulk status update
-        toast({
-          title: "Bulk Update",
-          description: `Updating ${orders.length} orders...`,
+        bulkUpdateStatusMutation.mutate({
+          orderIds: orders.map(o => o.id),
+          status: 'pending'
+        });
+      },
+    },
+    {
+      label: "→ To Fulfill",
+      action: (orders: any[]) => {
+        bulkUpdateStatusMutation.mutate({
+          orderIds: orders.map(o => o.id),
+          status: 'to_fulfill'
+        });
+      },
+    },
+    {
+      label: "→ Ready to Ship",
+      action: (orders: any[]) => {
+        bulkUpdateStatusMutation.mutate({
+          orderIds: orders.map(o => o.id),
+          status: 'ready_to_ship'
+        });
+      },
+    },
+    {
+      label: "→ Shipped",
+      action: (orders: any[]) => {
+        bulkUpdateStatusMutation.mutate({
+          orderIds: orders.map(o => o.id),
+          status: 'shipped'
+        });
+      },
+    },
+    {
+      label: "💳 Payment: Pending",
+      action: (orders: any[]) => {
+        bulkUpdatePaymentMutation.mutate({
+          orderIds: orders.map(o => o.id),
+          paymentStatus: 'pending'
+        });
+      },
+    },
+    {
+      label: "✓ Payment: Paid",
+      action: (orders: any[]) => {
+        bulkUpdatePaymentMutation.mutate({
+          orderIds: orders.map(o => o.id),
+          paymentStatus: 'paid'
+        });
+      },
+    },
+    {
+      label: "⏰ Payment: Pay Later",
+      action: (orders: any[]) => {
+        bulkUpdatePaymentMutation.mutate({
+          orderIds: orders.map(o => o.id),
+          paymentStatus: 'pay_later'
         });
       },
     },
@@ -375,62 +393,16 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       label: "Delete",
       variant: "destructive" as const,
       action: (orders: any[]) => {
-        setSelectedOrders(orders);
+        setOrdersToDelete(orders);
         setShowDeleteDialog(true);
-      },
-    },
-    {
-      label: "Export",
-      action: (orders: any[]) => {
-        // TODO: Implement export functionality
-        toast({
-          title: "Export",
-          description: `Exporting ${orders.length} orders...`,
-        });
       },
     },
   ];
 
   const handleDeleteConfirm = () => {
-    deleteOrderMutation.mutate(selectedOrders.map(order => order.id));
+    deleteOrderMutation.mutate(ordersToDelete.map(order => order.id));
     setShowDeleteDialog(false);
-  };
-
-  // Handle select all checkbox
-  const handleSelectAll = (checked: boolean) => {
-    setSelectAll(checked);
-    if (checked) {
-      setSelectedOrders(filteredOrders);
-    } else {
-      setSelectedOrders([]);
-    }
-  };
-
-  // Handle individual order selection
-  const handleOrderSelect = (order: any, checked: boolean) => {
-    if (checked) {
-      setSelectedOrders([...selectedOrders, order]);
-    } else {
-      setSelectedOrders(selectedOrders.filter(o => o.id !== order.id));
-      setSelectAll(false);
-    }
-  };
-
-  // Handle bulk status update
-  const handleBulkStatusUpdate = () => {
-    if (!bulkNewStatus || selectedOrders.length === 0) return;
-    
-    if (bulkActionType === 'status') {
-      bulkUpdateStatusMutation.mutate({
-        orderIds: selectedOrders.map(o => o.id),
-        status: bulkNewStatus
-      });
-    } else if (bulkActionType === 'payment') {
-      bulkUpdatePaymentMutation.mutate({
-        orderIds: selectedOrders.map(o => o.id),
-        paymentStatus: bulkNewStatus
-      });
-    }
+    setOrdersToDelete([]);
   };
 
   // Remove loading state to prevent UI refresh indicators
@@ -495,342 +467,111 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       <Card>
         <CardHeader className="p-4 sm:p-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={selectAll}
-                  onChange={(e) => handleSelectAll(e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="w-5 h-5 bg-white border-2 border-gray-300 rounded-full peer-checked:bg-blue-600 peer-checked:border-blue-600 transition-all duration-200 peer-hover:border-blue-400 peer-focus:ring-2 peer-focus:ring-blue-300 peer-focus:ring-offset-1">
-                  <svg className="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity duration-200 absolute top-[3px] left-[3px]" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-              </label>
-              <CardTitle className="text-mobile-lg">Orders ({filteredOrders?.length || 0})</CardTitle>
-              {selectedOrders.length > 0 && (
-                <Badge variant="secondary">{selectedOrders.length} selected</Badge>
-              )}
-            </div>
+            <CardTitle className="text-mobile-lg">Orders ({filteredOrders?.length || 0})</CardTitle>
             <div className="flex items-center gap-2">
-              {selectedOrders.length > 0 && (
-                <>
-                  {/* Mobile: Compact dropdown menu */}
-                  <div className="sm:hidden">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button size="sm" variant="outline">
-                          Actions <ChevronDown className="ml-1 h-3 w-3" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuLabel>Update Status</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => bulkUpdateStatusMutation.mutate({
-                          orderIds: selectedOrders.map(o => o.id),
-                          status: 'pending'
-                        })}>
-                          → Pending
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => bulkUpdateStatusMutation.mutate({
-                          orderIds: selectedOrders.map(o => o.id),
-                          status: 'to_fulfill'
-                        })}>
-                          → To Fulfill
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => bulkUpdateStatusMutation.mutate({
-                          orderIds: selectedOrders.map(o => o.id),
-                          status: 'ready_to_ship'
-                        })}>
-                          → Ready to Ship
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => bulkUpdateStatusMutation.mutate({
-                          orderIds: selectedOrders.map(o => o.id),
-                          status: 'shipped'
-                        })}>
-                          → Shipped
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuLabel>Payment Status</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => bulkUpdatePaymentMutation.mutate({
-                          orderIds: selectedOrders.map(o => o.id),
-                          paymentStatus: 'pending'
-                        })}>
-                          💳 Pending
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => bulkUpdatePaymentMutation.mutate({
-                          orderIds: selectedOrders.map(o => o.id),
-                          paymentStatus: 'paid'
-                        })}>
-                          ✓ Paid
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => bulkUpdatePaymentMutation.mutate({
-                          orderIds: selectedOrders.map(o => o.id),
-                          paymentStatus: 'pay_later'
-                        })}>
-                          ⏰ Pay Later
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                          className="text-red-600"
-                          onClick={() => setShowDeleteDialog(true)}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete Selected
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                  
-                  {/* Desktop: Original layout */}
-                  <div className="hidden sm:flex gap-2">
-                    <Select onValueChange={(value) => {
-                      bulkUpdateStatusMutation.mutate({
-                        orderIds: selectedOrders.map(o => o.id),
-                        status: value
-                      });
-                    }}>
-                      <SelectTrigger className="w-[140px]">
-                        <SelectValue placeholder="Update Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="to_fulfill">To Fulfill</SelectItem>
-                        <SelectItem value="ready_to_ship">Ready to Ship</SelectItem>
-                        <SelectItem value="shipped">Shipped</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    
-                    <Select onValueChange={(value) => {
-                      bulkUpdatePaymentMutation.mutate({
-                        orderIds: selectedOrders.map(o => o.id),
-                        paymentStatus: value
-                      });
-                    }}>
-                      <SelectTrigger className="w-[140px]">
-                        <SelectValue placeholder="Payment Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="paid">Paid</SelectItem>
-                        <SelectItem value="pay_later">Pay Later</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    
-                    <Button 
-                      size="sm" 
-                      variant="destructive"
-                      onClick={() => setShowDeleteDialog(true)}
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </>
-              )}
-              <div className="hidden sm:flex items-center gap-2">
-                <Label htmlFor="expand-all" className="text-sm text-slate-600 cursor-pointer">
-                  {expandAll ? 'Collapse All' : 'Expand All'}
-                </Label>
-                <Switch
-                  id="expand-all"
-                  checked={expandAll}
-                  onCheckedChange={handleExpandAllChange}
-                  className="data-[state=checked]:bg-blue-600"
-                />
-              </div>
+              <Label htmlFor="expand-all" className="text-sm text-slate-600 cursor-pointer">
+                {expandAll ? 'Collapse All' : 'Expand All'}
+              </Label>
+              <Switch
+                id="expand-all"
+                checked={expandAll}
+                onCheckedChange={handleExpandAllChange}
+                className="data-[state=checked]:bg-blue-600"
+              />
             </div>
           </div>
         </CardHeader>
         <CardContent className="p-0 sm:p-6">
-          {/* Mobile Card View */}
-          <div className="sm:hidden space-y-3 p-3">
-            {filteredOrders?.map((order: any) => (
-              <div 
-                key={order.id} 
-                className="bg-white rounded-lg shadow-sm border border-gray-100 p-4 cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => navigate(`/orders/${order.id}`)}
-              >
-                <div className="space-y-3">
-                  {/* Top Row - Customer, Status, Edit */}
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <label className="relative inline-flex items-center cursor-pointer" onClick={(e) => e.stopPropagation()}>
-                        <input
-                          type="checkbox"
-                          checked={selectedOrders.some(o => o.id === order.id)}
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            handleOrderSelect(order, e.target.checked);
-                          }}
-                          className="sr-only peer"
-                        />
-                        <div className="w-5 h-5 bg-white border-2 border-gray-300 rounded-full peer-checked:bg-blue-600 peer-checked:border-blue-600 transition-all duration-200 peer-hover:border-blue-400 peer-focus:ring-2 peer-focus:ring-blue-300 peer-focus:ring-offset-1">
-                          <svg className="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity duration-200 absolute top-[3px] left-[3px]" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                      </label>
-                      <Avatar className="h-10 w-10 flex-shrink-0">
-                        <AvatarImage src={order.customer?.profileImageUrl} />
-                        <AvatarFallback className="text-sm bg-gray-100">{order.customer?.name?.charAt(0) || 'C'}</AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-gray-900 truncate">{order.customer?.name || 'N/A'}</p>
-                        <p className="text-xs text-gray-500 truncate">FB: {order.customer?.facebookName || 'N/A'}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      {getStatusBadge(order.orderStatus)}
-                      <Button 
-                        size="icon" 
-                        variant="ghost" 
-                        className="h-8 w-8"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/orders/${order.id}/edit`);
-                        }}
-                      >
-                        <Edit className="h-4 w-4" />
+          <DataTable
+            data={filteredOrders}
+            columns={columns}
+            bulkActions={bulkActions}
+            getRowKey={(order) => order.id}
+            itemsPerPageOptions={[10, 20, 50, 100]}
+            defaultItemsPerPage={20}
+            defaultExpandAll={expandAll}
+            compact={true}
+            onRowClick={(order) => {
+              sessionStorage.setItem('orderDetailsReferrer', location);
+              navigate(`/orders/${order.id}`);
+            }}
+            expandable={{
+              render: (order) => (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                      <Package className="h-4 w-4" />
+                      Order Items ({order.items?.length || 0})
+                    </h4>
+                    <Link href={`/orders/${order.id}`}>
+                      <Button size="sm" variant="outline">
+                        <Eye className="mr-2 h-4 w-4" />
+                        View Details
                       </Button>
-                    </div>
+                    </Link>
                   </div>
-                  
-                  {/* Middle Row - Order Info */}
-                  <div className="flex items-center justify-between text-sm text-gray-600">
-                    <span>Order ID: <span className="font-medium text-gray-900">{order.orderId}</span></span>
-                    <span>{new Date(order.createdAt).toLocaleDateString('vi-VN')}</span>
-                  </div>
-                  
-                  {/* Items Summary */}
-                  {order.items && order.items.length > 0 && (
-                    <div className="bg-gray-50 rounded-md p-2 text-xs">
-                      <p className="font-medium text-gray-700 mb-1">Items ({order.items.length}):</p>
-                      <div className="space-y-1">
-                        {order.items.slice(0, 2).map((item: any, index: number) => (
-                          <p key={index} className="text-gray-600">
-                            {item.productName} × {item.quantity}
-                          </p>
+                  <div className="border rounded-lg overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-slate-50">
+                          <TableHead className="text-xs">Product</TableHead>
+                          <TableHead className="text-xs text-center">Qty</TableHead>
+                          <TableHead className="text-xs text-right">Unit Price</TableHead>
+                          <TableHead className="text-xs text-right">Total</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {order.items?.map((item: any, index: number) => (
+                          <TableRow key={item.id || index} className="text-sm">
+                            <TableCell className="font-medium">
+                              {item.productName}
+                              <div className="text-xs text-slate-500">SKU: {item.sku}</div>
+                            </TableCell>
+                            <TableCell className="text-center">{item.quantity}</TableCell>
+                            <TableCell className="text-right">
+                              {formatCurrency(item.price || 0, order.currency || 'EUR')}
+                            </TableCell>
+                            <TableCell className="text-right font-medium">
+                              {formatCurrency(item.total || 0, order.currency || 'EUR')}
+                            </TableCell>
+                          </TableRow>
                         ))}
-                        {order.items.length > 2 && (
-                          <p className="text-gray-500 italic">+{order.items.length - 2} more items</p>
-                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2">
+                    <div className="text-sm">
+                      <p className="text-slate-500">Subtotal</p>
+                      <p className="font-medium">{formatCurrency(order.subtotal || 0, order.currency || 'EUR')}</p>
+                    </div>
+                    {order.discountValue > 0 && (
+                      <div className="text-sm">
+                        <p className="text-slate-500">Discount</p>
+                        <p className="font-medium text-green-600">
+                          -{formatCurrency(
+                            order.discountType === 'rate' 
+                              ? (order.subtotal * order.discountValue / 100) 
+                              : order.discountValue || 0, 
+                            order.currency || 'EUR'
+                          )}
+                        </p>
                       </div>
+                    )}
+                    {order.shippingCost > 0 && (
+                      <div className="text-sm">
+                        <p className="text-slate-500">Shipping</p>
+                        <p className="font-medium">{formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}</p>
+                      </div>
+                    )}
+                    <div className="text-sm">
+                      <p className="text-slate-500">Grand Total</p>
+                      <p className="font-bold text-lg">{formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}</p>
                     </div>
-                  )}
-                  
-                  {/* Bottom Row - Financial */}
-                  <div className="flex items-end justify-between">
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Total / Profit</p>
-                      <p className="text-lg font-bold text-gray-900">
-                        {formatCurrency(parseFloat(order.grandTotal || '0'), order.currency)}
-                      </p>
-                      <p className={`text-sm font-medium ${calculateOrderProfit(order) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {formatCurrency(calculateOrderProfit(order), order.currency)}
-                      </p>
-                    </div>
-                    {getPaymentStatusBadge(order.paymentStatus)}
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-          
-          {/* Desktop Table View */}
-          <div className="hidden sm:block">
-            <DataTable
-              data={filteredOrders}
-              columns={columns}
-              bulkActions={bulkActions}
-              getRowKey={(order) => order.id}
-              itemsPerPageOptions={[10, 20, 50, 100]}
-              defaultItemsPerPage={20}
-              defaultExpandAll={expandAll}
-              onRowClick={(order) => {
-                // Store the current path before navigating
-                sessionStorage.setItem('orderDetailsReferrer', location);
-                navigate(`/orders/${order.id}`);
-              }}
-              expandable={{
-                render: (order) => (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                        <Package className="h-4 w-4" />
-                        Order Items ({order.items?.length || 0})
-                      </h4>
-                      <Link href={`/orders/${order.id}`}>
-                        <Button size="sm" variant="outline">
-                          <Eye className="mr-2 h-4 w-4" />
-                          View Details
-                        </Button>
-                      </Link>
-                    </div>
-                    <div className="border rounded-lg overflow-hidden">
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="bg-slate-50">
-                            <TableHead className="text-xs">Product</TableHead>
-                            <TableHead className="text-xs text-center">Qty</TableHead>
-                            <TableHead className="text-xs text-right">Unit Price</TableHead>
-                            <TableHead className="text-xs text-right">Total</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {order.items?.map((item: any, index: number) => (
-                            <TableRow key={item.id || index} className="text-sm">
-                              <TableCell className="font-medium">
-                                {item.productName}
-                                <div className="text-xs text-slate-500">SKU: {item.sku}</div>
-                              </TableCell>
-                              <TableCell className="text-center">{item.quantity}</TableCell>
-                              <TableCell className="text-right">
-                                {formatCurrency(item.price || 0, order.currency || 'EUR')}
-                              </TableCell>
-                              <TableCell className="text-right font-medium">
-                                {formatCurrency(item.total || 0, order.currency || 'EUR')}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2">
-                      <div className="text-sm">
-                        <p className="text-slate-500">Subtotal</p>
-                        <p className="font-medium">{formatCurrency(order.subtotal || 0, order.currency || 'EUR')}</p>
-                      </div>
-                      {order.discountValue > 0 && (
-                        <div className="text-sm">
-                          <p className="text-slate-500">Discount</p>
-                          <p className="font-medium text-green-600">
-                            -{formatCurrency(
-                              order.discountType === 'rate' 
-                                ? (order.subtotal * order.discountValue / 100) 
-                                : order.discountValue || 0, 
-                              order.currency || 'EUR'
-                            )}
-                          </p>
-                        </div>
-                      )}
-                      {order.shippingCost > 0 && (
-                        <div className="text-sm">
-                          <p className="text-slate-500">Shipping</p>
-                          <p className="font-medium">{formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}</p>
-                        </div>
-                      )}
-                      <div className="text-sm">
-                        <p className="text-slate-500">Grand Total</p>
-                        <p className="font-bold text-lg">{formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}</p>
-                      </div>
-                    </div>
-                  </div>
-                ),
-              }}
-            />
-          </div>
+              ),
+            }}
+          />
         </CardContent>
       </Card>
 
@@ -840,7 +581,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Orders</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete {selectedOrders.length} order(s)? This action cannot be undone.
+              Are you sure you want to delete {ordersToDelete.length} order(s)? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
