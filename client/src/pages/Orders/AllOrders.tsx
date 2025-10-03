@@ -469,87 +469,75 @@ export default function AllOrders({ filter }: AllOrdersProps) {
             }}
             expandable={{
               render: (order) => (
-                <div className="space-y-2">
-                  {/* Header with item count and action button */}
-                  <div className="flex items-center justify-between pb-1.5 border-b border-slate-200 dark:border-slate-700">
-                    <div className="flex items-center gap-1.5">
-                      <Package className="h-3.5 w-3.5 text-slate-600 dark:text-slate-400" />
-                      <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">
-                        {order.items?.length || 0} {order.items?.length === 1 ? 'Item' : 'Items'}
-                      </span>
-                    </div>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                      <Package className="h-4 w-4" />
+                      Order Items ({order.items?.length || 0})
+                    </h4>
                     <Link href={`/orders/${order.id}`}>
-                      <Button size="sm" variant="ghost" className="h-6 text-xs px-2 hover:bg-slate-100 dark:hover:bg-slate-800">
-                        <Eye className="mr-1 h-3 w-3" />
-                        Details
+                      <Button size="sm" variant="outline">
+                        <Eye className="mr-2 h-4 w-4" />
+                        View Details
                       </Button>
                     </Link>
                   </div>
-
-                  {/* Items list - compact */}
-                  {order.items && order.items.length > 0 && (
-                    <div className="space-y-0.5 pt-1">
-                      {order.items.map((item: any, idx: number) => (
-                        <div 
-                          key={item.id || idx} 
-                          className="flex items-center justify-between gap-3 py-1"
-                        >
-                          <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                            <span className="text-[11px] text-slate-500 dark:text-slate-400 flex-shrink-0 w-4">{idx + 1}.</span>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-[11px] font-medium text-slate-900 dark:text-slate-100 truncate leading-tight">
-                                {item.productName}
-                              </p>
-                              {item.sku && (
-                                <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
-                                  {item.sku}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            <span className="text-[11px] text-slate-600 dark:text-slate-300 font-medium">
-                              ×{item.quantity}
-                            </span>
-                            <span className="text-[11px] font-semibold text-slate-900 dark:text-slate-100 min-w-[50px] text-right">
+                  <div className="border rounded-lg overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-slate-50">
+                          <TableHead className="text-xs">Product</TableHead>
+                          <TableHead className="text-xs text-center">Qty</TableHead>
+                          <TableHead className="text-xs text-right">Unit Price</TableHead>
+                          <TableHead className="text-xs text-right">Total</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {order.items?.map((item: any, index: number) => (
+                          <TableRow key={item.id || index} className="text-sm">
+                            <TableCell className="font-medium">
+                              {item.productName}
+                              <div className="text-xs text-slate-500">SKU: {item.sku}</div>
+                            </TableCell>
+                            <TableCell className="text-center">{item.quantity}</TableCell>
+                            <TableCell className="text-right">
+                              {formatCurrency(item.price || 0, order.currency || 'EUR')}
+                            </TableCell>
+                            <TableCell className="text-right font-medium">
                               {formatCurrency(item.total || 0, order.currency || 'EUR')}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2">
+                    <div className="text-sm">
+                      <p className="text-slate-500">Subtotal</p>
+                      <p className="font-medium">{formatCurrency(order.subtotal || 0, order.currency || 'EUR')}</p>
                     </div>
-                  )}
-
-                  {/* Order summary - compact */}
-                  <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
-                    <div className="space-y-0.5">
-                      <div className="flex justify-between text-[11px]">
-                        <span className="text-slate-600 dark:text-slate-400">Subtotal</span>
-                        <span className="font-medium text-slate-900 dark:text-slate-100">{formatCurrency(order.subtotal || 0, order.currency || 'EUR')}</span>
+                    {order.discountValue > 0 && (
+                      <div className="text-sm">
+                        <p className="text-slate-500">Discount</p>
+                        <p className="font-medium text-green-600">
+                          -{formatCurrency(
+                            order.discountType === 'rate' 
+                              ? (order.subtotal * order.discountValue / 100) 
+                              : order.discountValue || 0, 
+                            order.currency || 'EUR'
+                          )}
+                        </p>
                       </div>
-                      {order.discountValue > 0 && (
-                        <div className="flex justify-between text-[11px]">
-                          <span className="text-slate-600 dark:text-slate-400">Discount</span>
-                          <span className="font-medium text-green-600 dark:text-green-500">
-                            -{formatCurrency(
-                              order.discountType === 'rate' 
-                                ? (order.subtotal * order.discountValue / 100) 
-                                : order.discountValue || 0, 
-                              order.currency || 'EUR'
-                            )}
-                          </span>
-                        </div>
-                      )}
-                      {order.shippingCost > 0 && (
-                        <div className="flex justify-between text-[11px]">
-                          <span className="text-slate-600 dark:text-slate-400">Shipping</span>
-                          <span className="font-medium text-slate-900 dark:text-slate-100">{formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between text-xs font-bold pt-1.5 border-t border-slate-300 dark:border-slate-600 mt-1.5">
-                        <span className="text-slate-900 dark:text-slate-100">Total</span>
-                        <span className="text-blue-600 dark:text-blue-400">{formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}</span>
+                    )}
+                    {order.shippingCost > 0 && (
+                      <div className="text-sm">
+                        <p className="text-slate-500">Shipping</p>
+                        <p className="font-medium">{formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}</p>
                       </div>
+                    )}
+                    <div className="text-sm">
+                      <p className="text-slate-500">Grand Total</p>
+                      <p className="font-bold text-lg">{formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}</p>
                     </div>
                   </div>
                 </div>
