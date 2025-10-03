@@ -223,254 +223,200 @@ export default function OrderDetails() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => navigate(previousPath.current)}
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <h1 className="text-2xl font-bold text-slate-900">Order #{order.orderId}</h1>
+      {/* Clean Header */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-4 flex-1">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6"
-                onClick={() => copyToClipboard(order.orderId, "Order ID")}
+                onClick={() => navigate(previousPath.current)}
+                className="mt-1"
               >
-                <Copy className="h-3 w-3" />
+                <ArrowLeft className="h-5 w-5" />
               </Button>
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-3">
+                  <h1 className="text-3xl font-bold text-slate-900">#{order.orderId}</h1>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => copyToClipboard(order.orderId, "Order ID")}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                {/* Status Row */}
+                <div className="flex flex-wrap items-center gap-3 mb-3">
+                  {/* Order Status */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button 
+                        className="inline-flex items-center focus:outline-none"
+                        disabled={updateOrderStatusMutation.isPending}
+                      >
+                        <Badge 
+                          variant={statusVariant} 
+                          className="cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1.5 px-3 py-1"
+                        >
+                          {statusText}
+                          <ChevronDown className="h-3 w-3" />
+                        </Badge>
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                      <DropdownMenuItem 
+                        onClick={() => updateOrderStatusMutation.mutate('pending')}
+                        className={order.orderStatus === 'pending' ? 'bg-accent' : ''}
+                      >
+                        <AlertCircle className="mr-2 h-4 w-4" />
+                        Pending
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => updateOrderStatusMutation.mutate('to_fulfill')}
+                        className={order.orderStatus === 'to_fulfill' ? 'bg-accent' : ''}
+                      >
+                        <Package className="mr-2 h-4 w-4" />
+                        To Fulfill
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => updateOrderStatusMutation.mutate('shipped')}
+                        className={order.orderStatus === 'shipped' ? 'bg-accent' : ''}
+                      >
+                        <Truck className="mr-2 h-4 w-4" />
+                        Shipped
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        onClick={() => updateOrderStatusMutation.mutate('cancelled')}
+                        className={cn(
+                          "text-destructive",
+                          order.orderStatus === 'cancelled' ? 'bg-accent' : ''
+                        )}
+                      >
+                        <XCircle className="mr-2 h-4 w-4" />
+                        Cancelled
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
 
+                  {/* Payment Status */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button 
+                        className="inline-flex items-center focus:outline-none"
+                        disabled={updatePaymentStatusMutation.isPending}
+                      >
+                        <Badge 
+                          variant={paymentStatusVariant} 
+                          className="cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1.5 px-3 py-1"
+                        >
+                          {paymentStatusText}
+                          <ChevronDown className="h-3 w-3" />
+                        </Badge>
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                      <DropdownMenuItem 
+                        onClick={() => updatePaymentStatusMutation.mutate('pending')}
+                        className={order.paymentStatus === 'pending' ? 'bg-accent' : ''}
+                      >
+                        <Clock className="mr-2 h-4 w-4" />
+                        Payment Pending
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => updatePaymentStatusMutation.mutate('paid')}
+                        className={order.paymentStatus === 'paid' ? 'bg-accent' : ''}
+                      >
+                        <CheckCircle2 className="mr-2 h-4 w-4" />
+                        Paid
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => updatePaymentStatusMutation.mutate('pay_later')}
+                        className={order.paymentStatus === 'pay_later' ? 'bg-accent' : ''}
+                      >
+                        <AlertCircle className="mr-2 h-4 w-4" />
+                        Pay Later
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  {order.priority && order.priority !== 'low' && (
+                    <Badge variant={priorityVariant} className="px-3 py-1">
+                      {order.priority === 'high' ? 'High Priority' : 'Medium Priority'}
+                    </Badge>
+                  )}
+                </div>
+
+                {/* Meta Info */}
+                <div className="flex items-center gap-4 text-sm text-slate-500">
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="h-4 w-4" />
+                    <span>{new Date(order.createdAt).toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Package className="h-4 w-4" />
+                    <span>{order.items?.length || 0} items</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Banknote className="h-4 w-4" />
+                    <span className="font-semibold text-slate-900">{formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {/* Order Status Dropdown */}
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button 
-                    className="inline-flex items-center focus:outline-none"
-                    disabled={updateOrderStatusMutation.isPending}
-                  >
-                    <Badge 
-                      variant={statusVariant} 
-                      className="cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1"
-                    >
-                      {statusText}
-                      <ChevronDown className="h-3 w-3" />
-                    </Badge>
-                  </button>
+                  <Button variant="outline" size="sm">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  <DropdownMenuItem 
-                    onClick={() => updateOrderStatusMutation.mutate('pending')}
-                    className={order.orderStatus === 'pending' ? 'bg-accent' : ''}
-                  >
-                    <AlertCircle className="mr-2 h-4 w-4" />
-                    Pending
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handlePrint}>
+                    <Printer className="mr-2 h-4 w-4" />
+                    Print
                   </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => updateOrderStatusMutation.mutate('to_fulfill')}
-                    className={order.orderStatus === 'to_fulfill' ? 'bg-accent' : ''}
-                  >
-                    <Package className="mr-2 h-4 w-4" />
-                    To Fulfill
+                  <DropdownMenuItem onClick={handleShare}>
+                    <Share2 className="mr-2 h-4 w-4" />
+                    Share
                   </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => updateOrderStatusMutation.mutate('shipped')}
-                    className={order.orderStatus === 'shipped' ? 'bg-accent' : ''}
-                  >
-                    <Truck className="mr-2 h-4 w-4" />
-                    Shipped
+                  <DropdownMenuItem onClick={handleExport}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Export
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
-                    onClick={() => updateOrderStatusMutation.mutate('cancelled')}
-                    className={cn(
-                      "text-destructive",
-                      order.orderStatus === 'cancelled' ? 'bg-accent' : ''
-                    )}
+                    onClick={() => {
+                      const newSelectedItems = new Set<string>();
+                      const newQuantities: Record<string, number> = {};
+                      order.items?.forEach((item: any) => {
+                        newSelectedItems.add(item.id);
+                        newQuantities[item.id] = item.quantity;
+                      });
+                      setSelectedItems(newSelectedItems);
+                      setReturnQuantities(newQuantities);
+                      setShowReturnDialog(true);
+                    }}
                   >
-                    <XCircle className="mr-2 h-4 w-4" />
-                    Cancelled
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Create Return
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-
-              {/* Payment Status Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button 
-                    className="inline-flex items-center focus:outline-none"
-                    disabled={updatePaymentStatusMutation.isPending}
-                  >
-                    <Badge 
-                      variant={paymentStatusVariant} 
-                      className="cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1"
-                    >
-                      {paymentStatusText}
-                      <ChevronDown className="h-3 w-3" />
-                    </Badge>
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  <DropdownMenuItem 
-                    onClick={() => updatePaymentStatusMutation.mutate('pending')}
-                    className={order.paymentStatus === 'pending' ? 'bg-accent' : ''}
-                  >
-                    <Clock className="mr-2 h-4 w-4" />
-                    Payment Pending
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => updatePaymentStatusMutation.mutate('paid')}
-                    className={order.paymentStatus === 'paid' ? 'bg-accent' : ''}
-                  >
-                    <CheckCircle2 className="mr-2 h-4 w-4" />
-                    Paid
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => updatePaymentStatusMutation.mutate('pay_later')}
-                    className={order.paymentStatus === 'pay_later' ? 'bg-accent' : ''}
-                  >
-                    <AlertCircle className="mr-2 h-4 w-4" />
-                    Pay Later
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              {order.priority && order.priority !== 'low' && (
-                <Badge variant={priorityVariant}>
-                  {order.priority === 'high' ? 'High Priority' : 'Medium Priority'}
-                </Badge>
-              )}
-              <span className="text-sm text-slate-500">
-                <Clock className="inline h-3 w-3 mr-1" />
-                {new Date(order.createdAt).toLocaleString()}
-              </span>
+              <Button size="sm" onClick={() => navigate(`/orders/${id}/edit`)}>
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
+              </Button>
             </div>
           </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handlePrint} className="hidden sm:flex">
-            <Printer className="mr-2 h-4 w-4" />
-            Print
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleShare} className="hidden sm:flex">
-            <Share2 className="mr-2 h-4 w-4" />
-            Share
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleExport} className="hidden sm:flex">
-            <Download className="mr-2 h-4 w-4" />
-            Export
-          </Button>
-          <Button 
-            variant="outline"
-            size="sm" 
-            onClick={() => {
-              // Pre-select all items and set quantities
-              const newSelectedItems = new Set<string>();
-              const newQuantities: Record<string, number> = {};
-              order.items?.forEach((item: any) => {
-                newSelectedItems.add(item.id);
-                newQuantities[item.id] = item.quantity;
-              });
-              setSelectedItems(newSelectedItems);
-              setReturnQuantities(newQuantities);
-              setShowReturnDialog(true);
-            }}
-          >
-            <RotateCcw className="mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">Create Return</span>
-            <span className="sm:hidden">Return</span>
-          </Button>
-          <Button size="sm" onClick={() => navigate(`/orders/${id}/edit`)}>
-            <Edit className="mr-2 h-4 w-4" />
-            <span className="hidden sm:inline">Edit Order</span>
-            <span className="sm:hidden">Edit</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="border-l-4 border-l-blue-500">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600 mb-1">Total Amount</p>
-                <p className="text-2xl font-bold text-slate-900">
-                  {formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}
-                </p>
-              </div>
-              <Banknote className="h-8 w-8 text-blue-500 opacity-20" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-purple-500">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600 mb-1">Total Items</p>
-                <p className="text-2xl font-bold text-slate-900">{order.items?.length || 0}</p>
-              </div>
-              <ShoppingCart className="h-8 w-8 text-purple-500 opacity-20" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-green-500">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600 mb-1">Payment Status</p>
-                <div className="flex items-center gap-2">
-                  {order.paymentStatus === 'paid' ? (
-                    <CheckCircle2 className="h-5 w-5 text-green-500" />
-                  ) : order.paymentStatus === 'pay_later' ? (
-                    <AlertCircle className="h-5 w-5 text-yellow-500" />
-                  ) : (
-                    <XCircle className="h-5 w-5 text-red-500" />
-                  )}
-                  <p className="text-lg font-semibold">{paymentStatusText}</p>
-                </div>
-              </div>
-              <CreditCard className="h-8 w-8 text-green-500 opacity-20" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-orange-500">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600 mb-1">Shipping Status</p>
-                <div className="flex items-center gap-2">
-                  {order.orderStatus === 'shipped' || order.shippedAt ? (
-                    <>
-                      <CheckCircle2 className="h-5 w-5 text-green-500" />
-                      <p className="text-lg font-semibold text-green-700">Shipped</p>
-                    </>
-                  ) : (
-                    <>
-                      <Truck className="h-5 w-5 text-orange-500" />
-                      <p className="text-lg font-semibold">Not Shipped</p>
-                    </>
-                  )}
-                </div>
-                {order.shippedAt && (
-                  <p className="text-xs text-slate-500 mt-1">
-                    {new Date(order.shippedAt).toLocaleDateString()}
-                  </p>
-                )}
-              </div>
-              <Package className="h-8 w-8 text-orange-500 opacity-20" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

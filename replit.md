@@ -3,10 +3,12 @@ Davie Supply is a full-stack web application designed for comprehensive warehous
 
 # Recent Changes (October 2025)
 
-## Invoice-Style Order Details UI (Completed)
-- **Combined Layout**: Merged Order Items and Pricing Breakdown into single "Invoice" card for cleaner appearance
-- **Professional Design**: Items listed at top, pricing breakdown at bottom with separator, creating traditional invoice flow
-- **Enhanced Readability**: Larger, bolder grand total for emphasis and easier scanning
+## Order Details UI Redesign (Completed)
+- **Clean Header Card**: Consolidated all header information into a single professional card with clear visual hierarchy
+- **Organized Status Info**: Status badges grouped together, meta info (date/items/total) displayed in clean row with icons
+- **Simplified Actions**: Print/Share/Export/Create Return moved to dropdown menu, reducing visual clutter
+- **Invoice Layout**: Merged Order Items and Pricing Breakdown into single "Invoice" card with traditional invoice flow
+- **Professional Design**: Enhanced readability with larger fonts, better spacing, and cleaner alignment throughout
 
 ## Edit Order Storage Fix (Completed)
 - **Fixed Update Order**: Added missing `deleteOrderItems()` method to properly update order items
