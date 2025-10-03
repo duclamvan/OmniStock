@@ -123,7 +123,7 @@ export interface IStorage {
   completePickingOrder(id: string): Promise<Order | undefined>;
   startPackingOrder(id: string, employeeId: string): Promise<Order | undefined>;
   completePackingOrder(id: string, items: any[]): Promise<Order | undefined>;
-  getOrdersByCustomerId(customerId: number): Promise<Order[]>;
+  getOrdersByCustomerId(customerId: string): Promise<Order[]>;
   getUnpaidOrders(): Promise<Order[]>;
   getDashboardMetrics(): Promise<any>;
   
@@ -564,11 +564,32 @@ export class DatabaseStorage implements IStorage {
   async getOrders(customerId?: number): Promise<Order[]> {
     try {
       if (customerId) {
-        const ordersData = await db.select().from(orders).where(eq(orders.customerId, customerId.toString())).orderBy(desc(orders.createdAt));
-        return ordersData;
+        const ordersData = await db.select({
+          order: orders,
+          customer: customers,
+        })
+        .from(orders)
+        .leftJoin(customers, eq(orders.customerId, customers.id))
+        .where(eq(orders.customerId, customerId.toString()))
+        .orderBy(desc(orders.createdAt));
+        
+        return ordersData.map(row => ({
+          ...row.order,
+          customer: row.customer || undefined,
+        })) as any;
       } else {
-        const ordersData = await db.select().from(orders).orderBy(desc(orders.createdAt));
-        return ordersData;
+        const ordersData = await db.select({
+          order: orders,
+          customer: customers,
+        })
+        .from(orders)
+        .leftJoin(customers, eq(orders.customerId, customers.id))
+        .orderBy(desc(orders.createdAt));
+        
+        return ordersData.map(row => ({
+          ...row.order,
+          customer: row.customer || undefined,
+        })) as any;
       }
     } catch (error) {
       console.error('Error fetching orders:', error);
@@ -578,11 +599,19 @@ export class DatabaseStorage implements IStorage {
 
   async getOrdersByStatus(status: string): Promise<Order[]> {
     try {
-      const ordersData = await db.select()
-        .from(orders)
-        .where(eq(orders.orderStatus, status))
-        .orderBy(desc(orders.createdAt));
-      return ordersData;
+      const ordersData = await db.select({
+        order: orders,
+        customer: customers,
+      })
+      .from(orders)
+      .leftJoin(customers, eq(orders.customerId, customers.id))
+      .where(eq(orders.orderStatus, status))
+      .orderBy(desc(orders.createdAt));
+      
+      return ordersData.map(row => ({
+        ...row.order,
+        customer: row.customer || undefined,
+      }));
     } catch (error) {
       console.error('Error fetching orders by status:', error);
       return [];
@@ -591,11 +620,19 @@ export class DatabaseStorage implements IStorage {
 
   async getOrdersByPaymentStatus(paymentStatus: string): Promise<Order[]> {
     try {
-      const ordersData = await db.select()
-        .from(orders)
-        .where(eq(orders.paymentStatus, paymentStatus))
-        .orderBy(desc(orders.createdAt));
-      return ordersData;
+      const ordersData = await db.select({
+        order: orders,
+        customer: customers,
+      })
+      .from(orders)
+      .leftJoin(customers, eq(orders.customerId, customers.id))
+      .where(eq(orders.paymentStatus, paymentStatus))
+      .orderBy(desc(orders.createdAt));
+      
+      return ordersData.map(row => ({
+        ...row.order,
+        customer: row.customer || undefined,
+      }));
     } catch (error) {
       console.error('Error fetching orders by payment status:', error);
       return [];
@@ -604,8 +641,20 @@ export class DatabaseStorage implements IStorage {
 
   async getOrder(id: string): Promise<Order | undefined> {
     try {
-      const [order] = await db.select().from(orders).where(eq(orders.id, id));
-      return order || undefined;
+      const [result] = await db.select({
+        order: orders,
+        customer: customers,
+      })
+      .from(orders)
+      .leftJoin(customers, eq(orders.customerId, customers.id))
+      .where(eq(orders.id, id));
+      
+      if (!result) return undefined;
+      
+      return {
+        ...result.order,
+        customer: result.customer || undefined,
+      } as any;
     } catch (error) {
       console.error('Error fetching order:', error);
       return undefined;
@@ -613,11 +662,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getOrderById(id: string): Promise<Order | undefined> {
-    const [order] = await db.select().from(orders).where(eq(orders.id, id));
+    const [result] = await db.select({
+      order: orders,
+      customer: customers,
+    })
+    .from(orders)
+    .leftJoin(customers, eq(orders.customerId, customers.id))
+    .where(eq(orders.id, id));
     
-    if (order) {
-      const items = await this.getOrderItems(order.id);
-      return { ...order, items };
+    if (result) {
+      const items = await this.getOrderItems(result.order.id);
+      return { 
+        ...result.order, 
+        customer: result.customer || undefined,
+        items 
+      } as any;
     }
     
     return undefined;
@@ -714,8 +773,25 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-  async getOrdersByCustomerId(customerId: number): Promise<Order[]> {
-    return [];
+  async getOrdersByCustomerId(customerId: string): Promise<Order[]> {
+    try {
+      const ordersData = await db.select({
+        order: orders,
+        customer: customers,
+      })
+      .from(orders)
+      .leftJoin(customers, eq(orders.customerId, customers.id))
+      .where(eq(orders.customerId, customerId))
+      .orderBy(desc(orders.createdAt));
+      
+      return ordersData.map(row => ({
+        ...row.order,
+        customer: row.customer || undefined,
+      }));
+    } catch (error) {
+      console.error('Error fetching orders by customer ID:', error);
+      return [];
+    }
   }
   
   async getUnpaidOrders(): Promise<Order[]> {
