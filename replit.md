@@ -3,6 +3,12 @@ Davie Supply is a full-stack web application designed for comprehensive warehous
 
 # Recent Changes (October 2025)
 
+## Pick & Pack Completion Button Fix (Completed)
+- **Fixed Missing Storage Methods**: Added `createPickPackLog`, `updateOrderItemPickedQuantity`, and `updateOrderItemPackedQuantity` methods to storage implementation
+- **Activity Logging**: Pick/pack activities now properly log to userActivities table for audit trail
+- **Button Functionality**: "Complete Order - Ready for Shipping" button now works when all packing checklist items are completed
+- **Database Status Mapping**: Fixed database enum mismatch by properly mapping pick/pack statuses to valid orderStatus enum values (pending, to_fulfill, ready_to_ship, shipped)
+
 ## POS Invoice Modification (Completed)
 - **Recall Last Sale**: Added ability to recall and modify the most recent POS order after payment completion
 - **Edit Mode Indicators**: Visual "Editing" badge and button text changes ("Update Order" instead of "Checkout")
@@ -22,12 +28,11 @@ Davie Supply is a full-stack web application designed for comprehensive warehous
 - Solution: Implemented optimistic updates with onMutate to instantly remove deleted orders from cache, then sync with server in background
 - Result: Smooth single-update deletion that preserves expanded row states
 
-## Pick & Pack Orders Bug Fix (Completed)
+## Pick & Pack Orders Display Fix (Completed)
 - Fixed critical bug where "To Fulfill" status orders were not appearing in Pick & Pack page
-- Root cause: DatabaseStorage.getPickPackOrders() method was a stub returning empty array
-- Solution: Implemented proper database query using Drizzle ORM to fetch orders by status (orderStatus column)
-- Method now filters orders by: to_fulfill, picking, packing, ready_to_ship statuses
-- Orders are joined with customers table to include customer names and sorted by creation date
+- Root cause: DatabaseStorage.getPickPackOrders() method was returning empty array and had invalid database enum values
+- Solution: Implemented proper database query using valid orderStatus values and separate pickStatus/packStatus columns
+- Method now properly filters orders by their fulfillment status and maps database values to frontend display
 
 ## DataTable UI Improvements (Completed)
 - Implemented inline bulk actions across all pages (Orders, Inventory, Suppliers, Customers, Discounts, Warehouses, Expenses, Returns)

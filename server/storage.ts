@@ -131,6 +131,8 @@ export interface IStorage {
   createOrderItem(item: any): Promise<OrderItem>;
   updateOrderItem(id: string, item: any): Promise<OrderItem | undefined>;
   deleteOrderItem(id: string): Promise<boolean>;
+  updateOrderItemPickedQuantity(id: string, quantity: number, timestamp?: Date): Promise<OrderItem | undefined>;
+  updateOrderItemPackedQuantity(id: string, quantity: number): Promise<OrderItem | undefined>;
   
   // Products
   getProducts(): Promise<Product[]>;
@@ -221,6 +223,7 @@ export interface IStorage {
   // User Activities
   getUserActivities(): Promise<UserActivity[]>;
   createUserActivity(activity: any): Promise<UserActivity>;
+  createPickPackLog(log: any): Promise<UserActivity>;
   
   // Categories
   getCategories(): Promise<Category[]>;
@@ -836,6 +839,42 @@ export class DatabaseStorage implements IStorage {
     return true;
   }
 
+  async updateOrderItemPickedQuantity(id: string, quantity: number, timestamp?: Date): Promise<OrderItem | undefined> {
+    try {
+      const [updatedItem] = await db
+        .update(orderItems)
+        .set({ 
+          pickedQuantity: quantity,
+          pickedAt: timestamp || new Date(),
+          updatedAt: new Date()
+        })
+        .where(eq(orderItems.id, id))
+        .returning();
+      return updatedItem;
+    } catch (error) {
+      console.error('Error updating picked quantity:', error);
+      return undefined;
+    }
+  }
+
+  async updateOrderItemPackedQuantity(id: string, quantity: number): Promise<OrderItem | undefined> {
+    try {
+      const [updatedItem] = await db
+        .update(orderItems)
+        .set({ 
+          packedQuantity: quantity,
+          packedAt: new Date(),
+          updatedAt: new Date()
+        })
+        .where(eq(orderItems.id, id))
+        .returning();
+      return updatedItem;
+    } catch (error) {
+      console.error('Error updating packed quantity:', error);
+      return undefined;
+    }
+  }
+
   // Products
   async getProducts(): Promise<Product[]> {
     try {
@@ -1423,6 +1462,18 @@ export class DatabaseStorage implements IStorage {
 
   async getUserActivities(): Promise<UserActivity[]> { return []; }
   async createUserActivity(activity: any): Promise<UserActivity> { return { id: Date.now().toString(), ...activity }; }
+  
+  async createPickPackLog(log: any): Promise<UserActivity> {
+    // Convert pick/pack log to user activity format
+    const activity = {
+      userId: log.userId || "test-user",
+      action: log.activityType || 'updated',
+      entityType: 'order',
+      entityId: log.orderId,
+      description: log.notes || `Pick/pack activity: ${log.activityType}`,
+    };
+    return this.createUserActivity(activity);
+  }
 
   // Categories - Optimized with proper error handling
   async getCategories(): Promise<Category[]> {
