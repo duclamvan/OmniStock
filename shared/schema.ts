@@ -250,7 +250,50 @@ export const customers = pgTable('customers', {
   averageOrderValue: decimal('average_order_value').default('0'),
   customerRank: varchar('customer_rank'),
   lastContactDate: timestamp('last_contact_date'),
-  preferredLanguage: varchar('preferred_language').default('cs')
+  preferredLanguage: varchar('preferred_language').default('cs'),
+  
+  // Billing address fields
+  billingFirstName: varchar('billing_first_name'),
+  billingLastName: varchar('billing_last_name'),
+  billingCompany: varchar('billing_company'),
+  billingEmail: varchar('billing_email'),
+  billingTel: varchar('billing_tel'),
+  billingStreet: varchar('billing_street'),
+  billingStreetNumber: varchar('billing_street_number'),
+  billingCity: varchar('billing_city'),
+  billingZipCode: varchar('billing_zip_code'),
+  billingCountry: varchar('billing_country'),
+  billingState: varchar('billing_state'),
+  
+  // Tax information fields
+  ico: varchar('ico'), // Czech company ID
+  dic: varchar('dic'), // Czech tax ID (auto-filled from ARES)
+  vatNumber: varchar('vat_number'), // EU VAT number
+  vatValid: boolean('vat_valid'), // VAT validation status
+  vatCheckedAt: timestamp('vat_checked_at'), // Last VAT validation check
+  vatCompanyName: varchar('vat_company_name'), // Company name from VAT validation
+  vatCompanyAddress: text('vat_company_address'), // Company address from VAT validation
+});
+
+// Customer shipping addresses (multiple per customer)
+export const customerShippingAddresses = pgTable('customer_shipping_addresses', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  customerId: varchar('customer_id').notNull().references(() => customers.id, { onDelete: 'cascade' }),
+  firstName: varchar('first_name').notNull(),
+  lastName: varchar('last_name').notNull(),
+  company: varchar('company'),
+  email: varchar('email'),
+  tel: varchar('tel'),
+  street: varchar('street').notNull(),
+  streetNumber: varchar('street_number'),
+  city: varchar('city').notNull(),
+  zipCode: varchar('zip_code').notNull(),
+  country: varchar('country').notNull(),
+  state: varchar('state'),
+  isPrimary: boolean('is_primary').default(false), // Mark one as default
+  label: varchar('label'), // e.g., "Home", "Office", "Warehouse"
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 export const suppliers = pgTable('suppliers', {
@@ -720,6 +763,7 @@ export const insertLandedCostSchema = createInsertSchema(landedCosts).omit({ id:
 
 // Core business schemas
 export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCustomerShippingAddressSchema = createInsertSchema(customerShippingAddresses).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true, createdAt: true });
 export const insertWarehouseSchema = createInsertSchema(warehouses).omit({ createdAt: true });
 export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true, updatedAt: true });
@@ -772,6 +816,8 @@ export type InsertLandedCost = z.infer<typeof insertLandedCostSchema>;
 // Core business types
 export type Customer = typeof customers.$inferSelect;
 export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
+export type CustomerShippingAddress = typeof customerShippingAddresses.$inferSelect;
+export type InsertCustomerShippingAddress = z.infer<typeof insertCustomerShippingAddressSchema>;
 export type Supplier = typeof suppliers.$inferSelect;
 export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
 export type Warehouse = typeof warehouses.$inferSelect;
