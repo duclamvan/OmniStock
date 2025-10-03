@@ -278,10 +278,10 @@ export function DataTable<T>({
                       key={index}
                       onValueChange={(value) => handleBulkActionSelect(action.action, value)}
                     >
-                      <SelectTrigger className="h-7 w-[140px] text-xs">
+                      <SelectTrigger className="h-7 w-auto min-w-[160px] text-xs justify-start">
                         <SelectValue placeholder={action.placeholder || action.label} />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent align="start">
                         {action.options.map((option) => (
                           <SelectItem key={option.value} value={option.value}>
                             {option.label}
