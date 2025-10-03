@@ -13,6 +13,7 @@ import {
   insertSupplierSchema,
   insertProductSchema,
   insertProductLocationSchema,
+  insertProductTieredPricingSchema,
   insertOrderSchema,
   insertOrderItemSchema,
   insertDiscountSchema,
@@ -1320,6 +1321,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error downloading product file:", error);
       res.status(500).json({ message: "Failed to download product file" });
+    }
+  });
+
+  app.get('/api/products/:id/tiered-pricing', async (req, res) => {
+    try {
+      const pricing = await storage.getProductTieredPricing(req.params.id);
+      res.json(pricing);
+    } catch (error) {
+      console.error("Error fetching product tiered pricing:", error);
+      res.status(500).json({ message: "Failed to fetch product tiered pricing" });
+    }
+  });
+
+  app.post('/api/products/:id/tiered-pricing', async (req, res) => {
+    try {
+      const productId = req.params.id;
+      const validationResult = insertProductTieredPricingSchema.safeParse({
+        ...req.body,
+        productId
+      });
+
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid tiered pricing data",
+          errors: validationResult.error.errors
+        });
+      }
+
+      const newPricing = await storage.createProductTieredPricing(validationResult.data);
+      res.status(201).json(newPricing);
+    } catch (error) {
+      console.error("Error creating product tiered pricing:", error);
+      res.status(500).json({ message: "Failed to create product tiered pricing" });
+    }
+  });
+
+  app.patch('/api/products/tiered-pricing/:id', async (req, res) => {
+    try {
+      const validationResult = insertProductTieredPricingSchema.partial().safeParse(req.body);
+
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid tiered pricing data",
+          errors: validationResult.error.errors
+        });
+      }
+
+      const updated = await storage.updateProductTieredPricing(
+        req.params.id,
+        validationResult.data
+      );
+
+      if (!updated) {
+        return res.status(404).json({ message: "Tiered pricing not found" });
+      }
+
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating product tiered pricing:", error);
+      res.status(500).json({ message: "Failed to update product tiered pricing" });
+    }
+  });
+
+  app.delete('/api/products/tiered-pricing/:id', async (req, res) => {
+    try {
+      const deleted = await storage.deleteProductTieredPricing(req.params.id);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "Tiered pricing not found" });
+      }
+      
+      res.json({ message: "Tiered pricing deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting product tiered pricing:", error);
+      res.status(500).json({ message: "Failed to delete product tiered pricing" });
     }
   });
 

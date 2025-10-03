@@ -13,6 +13,7 @@ import {
   products,
   productFiles,
   productLocations,
+  productTieredPricing,
   orders,
   orderItems,
   warehouses,
@@ -44,6 +45,8 @@ import {
   type InsertProductFile,
   type ProductLocation,
   type InsertProductLocation,
+  type ProductTieredPricing,
+  type InsertProductTieredPricing,
   type Order,
   type InsertOrder,
   type OrderItem,
@@ -166,6 +169,12 @@ export interface IStorage {
   getProductFile(id: string): Promise<ProductFile | undefined>;
   createProductFile(file: InsertProductFile): Promise<ProductFile>;
   deleteProductFile(id: string): Promise<boolean>;
+  
+  // Product Tiered Pricing
+  getProductTieredPricing(productId: string): Promise<ProductTieredPricing[]>;
+  createProductTieredPricing(data: InsertProductTieredPricing): Promise<ProductTieredPricing>;
+  updateProductTieredPricing(id: string, data: Partial<InsertProductTieredPricing>): Promise<ProductTieredPricing | undefined>;
+  deleteProductTieredPricing(id: string): Promise<boolean>;
   
   // Customers
   getCustomers(): Promise<Customer[]>;
@@ -1285,6 +1294,59 @@ export class DatabaseStorage implements IStorage {
       return (result.rowCount ?? 0) > 0;
     } catch (error) {
       console.error('Error deleting product file:', error);
+      return false;
+    }
+  }
+
+  async getProductTieredPricing(productId: string): Promise<ProductTieredPricing[]> {
+    try {
+      const pricing = await db
+        .select()
+        .from(productTieredPricing)
+        .where(eq(productTieredPricing.productId, productId))
+        .orderBy(asc(productTieredPricing.minQuantity));
+      return pricing;
+    } catch (error) {
+      console.error('Error fetching product tiered pricing:', error);
+      return [];
+    }
+  }
+
+  async createProductTieredPricing(data: InsertProductTieredPricing): Promise<ProductTieredPricing> {
+    try {
+      const [newPricing] = await db
+        .insert(productTieredPricing)
+        .values(data)
+        .returning();
+      return newPricing;
+    } catch (error) {
+      console.error('Error creating product tiered pricing:', error);
+      throw error;
+    }
+  }
+
+  async updateProductTieredPricing(id: string, data: Partial<InsertProductTieredPricing>): Promise<ProductTieredPricing | undefined> {
+    try {
+      const [updated] = await db
+        .update(productTieredPricing)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(productTieredPricing.id, id))
+        .returning();
+      return updated;
+    } catch (error) {
+      console.error('Error updating product tiered pricing:', error);
+      return undefined;
+    }
+  }
+
+  async deleteProductTieredPricing(id: string): Promise<boolean> {
+    try {
+      const result = await db
+        .delete(productTieredPricing)
+        .where(eq(productTieredPricing.id, id));
+      return (result.rowCount ?? 0) > 0;
+    } catch (error) {
+      console.error('Error deleting product tiered pricing:', error);
       return false;
     }
   }
