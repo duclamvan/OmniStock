@@ -122,6 +122,9 @@ export default function POS() {
     // Load from localStorage on init
     return localStorage.getItem('pos_warehouse') || '';
   });
+  const [lastCompletedOrderId, setLastCompletedOrderId] = useState<string | null>(null);
+  const [isEditingOrder, setIsEditingOrder] = useState(false);
+  const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
   const receiptRef = useRef<HTMLDivElement>(null);
   const quantityInputRef = useRef<HTMLInputElement>(null);
   const cartScrollRef = useRef<HTMLDivElement>(null);
@@ -498,6 +501,8 @@ export default function POS() {
   const handleClearCart = () => {
     setCart([]);
     setShowClearCartDialog(false);
+    setIsEditingOrder(false);
+    setEditingOrderId(null);
     playSound('remove');
   };
 
@@ -508,7 +513,7 @@ export default function POS() {
   const total = subtotal + tax;
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Create order mutation
+  // Create or update order mutation
   const createOrderMutation = useMutation({
     mutationFn: async () => {
       if (!selectedWarehouse) {
@@ -519,7 +524,7 @@ export default function POS() {
       const warehouseLocation = selectedWarehouseData ? selectedWarehouseData.name : selectedWarehouse;
       
       const orderData = {
-        orderId: `POS-${Date.now()}`,
+        orderId: isEditingOrder ? undefined : `POS-${Date.now()}`,
         customerId: 'walk-in-customer',
         customerName: 'Walk-in Customer',
         currency: currency,
@@ -538,22 +543,34 @@ export default function POS() {
         paymentMethod: paymentMethod === 'cash' ? 'Cash' : paymentMethod === 'bank_transfer' ? 'Bank Transfer' : 'COD',
         paymentStatus: paymentMethod === 'cash' ? 'paid' : 'pending',
         orderStatus: 'shipped', // POS sales are immediately fulfilled
-        notes: `POS Sale - ${format(new Date(), 'PPp')}\nWarehouse Location: ${warehouseLocation}${paymentMethod === 'cash' && amountReceived ? `\nCash Received: ${currency} ${parseFloat(amountReceived).toFixed(2)}\nChange: ${currency} ${(parseFloat(amountReceived) - total).toFixed(2)}` : ''}`
+        notes: `POS Sale - ${format(new Date(), 'PPp')}\nWarehouse Location: ${warehouseLocation}${paymentMethod === 'cash' && amountReceived ? `\nCash Received: ${currency} ${parseFloat(amountReceived).toFixed(2)}\nChange: ${currency} ${(parseFloat(amountReceived) - total).toFixed(2)}` : ''}${isEditingOrder ? '\n[Modified after completion]' : ''}`
       };
       
-      return await apiRequest('POST', '/api/orders', orderData);
+      if (isEditingOrder && editingOrderId) {
+        return await apiRequest('PATCH', `/api/orders/${editingOrderId}`, orderData);
+      } else {
+        return await apiRequest('POST', '/api/orders', orderData);
+      }
     },
     onSuccess: (data: any) => {
       playSound('checkout');
       const orderNumber = data?.orderId || `POS-${Date.now()}`;
       toast({
-        title: 'Order Created',
-        description: `Order #${orderNumber} has been created successfully`
+        title: isEditingOrder ? 'Order Updated' : 'Order Created',
+        description: `Order #${orderNumber} has been ${isEditingOrder ? 'updated' : 'created'} successfully`
       });
       printReceipt();
+      
+      // Store last completed order ID
+      if (data?.id) {
+        setLastCompletedOrderId(data.id);
+      }
+      
       setCart([]);
       setAmountReceived('');
       setShowPaymentDialog(false);
+      setIsEditingOrder(false);
+      setEditingOrderId(null);
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
     },
     onError: (error: any) => {
@@ -763,6 +780,69 @@ export default function POS() {
       return;
     }
     createOrderMutation.mutate();
+  };
+
+  // Recall last sale to modify
+  const recallLastSale = async () => {
+    if (!lastCompletedOrderId) {
+      toast({
+        title: 'No Recent Sale',
+        description: 'No recent sale to recall',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      // Fetch order details
+      const response = await fetch(`/api/orders/${lastCompletedOrderId}`);
+      if (!response.ok) throw new Error('Failed to fetch order');
+      const order = await response.json();
+
+      // Load order items into cart
+      const cartItems: CartItem[] = order.items.map((item: any) => ({
+        id: item.productId,
+        productId: item.productId,
+        name: item.productName,
+        price: parseFloat(item.price || item.unitPrice || '0'),
+        quantity: item.quantity,
+        type: 'product' as const,
+        sku: item.sku,
+        landingCost: null
+      }));
+
+      setCart(cartItems);
+      setCurrency(order.currency);
+      setIsEditingOrder(true);
+      setEditingOrderId(order.id);
+      
+      // Extract VAT from order if present
+      if (order.taxRate && parseFloat(order.taxRate) > 0) {
+        setVatEnabled(true);
+        const rate = parseFloat(order.taxRate);
+        if ([0, 19, 21].includes(rate)) {
+          setVatRate(rate.toString());
+        } else {
+          setVatRate('custom');
+          setCustomVatRate(rate.toString());
+        }
+      }
+
+      toast({
+        title: 'Sale Recalled',
+        description: `Order #${order.orderId} loaded for modification`,
+      });
+
+      playSound('add');
+    } catch (error) {
+      console.error('Error recalling sale:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to recall last sale',
+        variant: 'destructive'
+      });
+      playSound('error');
+    }
   };
 
   return (
@@ -980,31 +1060,50 @@ export default function POS() {
               <h2 className="text-lg font-bold flex items-center gap-2">
                 <ShoppingCart className="h-5 w-5" />
                 Cart ({totalItems})
+                {isEditingOrder && (
+                  <Badge variant="outline" className="ml-2 bg-amber-100 text-amber-800 border-amber-300">
+                    Editing
+                  </Badge>
+                )}
               </h2>
-              {cart.length > 0 && (
-                <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
+                {lastCompletedOrderId && cart.length === 0 && !isEditingOrder && (
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setShowCartDetailsDialog(true)}
-                    className="h-8"
-                    data-testid="button-view-cart"
+                    onClick={recallLastSale}
+                    className="h-8 text-xs"
+                    data-testid="button-recall-sale"
                   >
-                    <Eye className="h-4 w-4 mr-1" />
-                    View
+                    <Package className="h-3 w-3 mr-1" />
+                    Recall Last
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowClearCartDialog(true)}
-                    className="text-destructive hover:text-destructive h-8"
-                    data-testid="button-clear-cart"
-                  >
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    Clear
-                  </Button>
-                </div>
-              )}
+                )}
+                {cart.length > 0 && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowCartDetailsDialog(true)}
+                      className="h-8"
+                      data-testid="button-view-cart"
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      View
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowClearCartDialog(true)}
+                      className="text-destructive hover:text-destructive h-8"
+                      data-testid="button-clear-cart"
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Clear
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
@@ -1175,7 +1274,7 @@ export default function POS() {
                 data-testid="button-checkout"
               >
                 <Printer className="mr-2 h-5 w-5" />
-                Checkout
+                {isEditingOrder ? 'Update Order' : 'Checkout'}
               </Button>
             </div>
           )}
@@ -1324,9 +1423,9 @@ export default function POS() {
       <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Cash Payment</DialogTitle>
+            <DialogTitle>{isEditingOrder ? 'Update Payment' : 'Cash Payment'}</DialogTitle>
             <DialogDescription>
-              Enter the amount received from customer
+              {isEditingOrder ? 'Update the amount received from customer' : 'Enter the amount received from customer'}
             </DialogDescription>
           </DialogHeader>
           
@@ -1381,7 +1480,7 @@ export default function POS() {
               disabled={!amountReceived || parseFloat(amountReceived) < total}
               data-testid="button-complete-payment"
             >
-              Complete Payment
+              {isEditingOrder ? 'Update Payment' : 'Complete Payment'}
             </Button>
           </DialogFooter>
         </DialogContent>
