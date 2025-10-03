@@ -35,6 +35,7 @@ const navigation = [
       { name: "Add Order", href: "/orders/add" },
       { name: "To Fulfill", href: "/orders/to-fulfill" },
       { name: "Shipped", href: "/orders/shipped" },
+      { name: "Pay Later", href: "/orders/pay-later" },
       { name: "Pre-Orders", href: "/orders/pre-orders" },
     ],
   },

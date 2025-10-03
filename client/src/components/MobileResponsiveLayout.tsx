@@ -109,6 +109,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
         { name: "Pick & Pack", href: "/orders/pick-pack" },
         { name: "To Fulfill", href: "/orders/to-fulfill" },
         { name: "Shipped", href: "/orders/shipped" },
+        { name: "Pay Later", href: "/orders/pay-later" },
         { name: "Pre-Orders", href: "/orders/pre-orders" },
       ],
     },

@@ -2335,7 +2335,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const includeItems = req.query.includeItems === 'true';
       
       let orders;
-      if (status) {
+      // Special filter: pay_later means shipped orders with pay_later payment status
+      if (status === 'pay_later') {
+        const allOrders = await storage.getOrders();
+        orders = allOrders.filter(order => 
+          order.orderStatus === 'shipped' && order.paymentStatus === 'pay_later'
+        );
+      } else if (status) {
         orders = await storage.getOrdersByStatus(status);
       } else if (paymentStatus) {
         orders = await storage.getOrdersByPaymentStatus(paymentStatus);

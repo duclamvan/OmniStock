@@ -3,6 +3,12 @@ Davie Supply is a full-stack web application designed for comprehensive warehous
 
 # Recent Changes (October 2025)
 
+## Pay Later Orders Subpage (Completed)
+- **New Menu Item**: Added "Pay Later" to Orders navigation menu
+- **Smart Filtering**: Displays shipped orders with "pay later" payment status
+- **Dual Filter Logic**: Backend filters by both orderStatus='shipped' AND paymentStatus='pay_later'
+- **Same UI**: Uses AllOrders component with special filter parameter
+
 ## Order Details UI Redesign (Completed)
 - **Clean Header Card**: Consolidated all header information into a single professional card with clear visual hierarchy
 - **Organized Status Info**: Status badges grouped together, meta info (date/items/total) displayed in clean row with icons
