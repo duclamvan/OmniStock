@@ -63,7 +63,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   const { data: orders = [], isLoading, error } = useQuery({
     queryKey: filter ? ['/api/orders', 'status', filter] : ['/api/orders'],
     queryFn: async () => {
-      const url = filter ? `/api/orders?status=${filter}` : '/api/orders';
+      const url = filter ? `/api/orders?status=${filter}&includeItems=true` : '/api/orders?includeItems=true';
       const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch orders');
       return response.json();
