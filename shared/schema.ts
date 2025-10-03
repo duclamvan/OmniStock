@@ -368,7 +368,8 @@ export const orders = pgTable('orders', {
   modificationNotes: text('modification_notes'),
   lastModifiedAt: timestamp('last_modified_at'),
   previousPackStatus: varchar('previous_pack_status'),
-  selectedDocumentIds: text('selected_document_ids').array() // Array of product_file IDs to print
+  selectedDocumentIds: text('selected_document_ids').array(), // Array of product_file IDs to print
+  trackingNumber: text('tracking_number')
 });
 
 // Product Files table for document management

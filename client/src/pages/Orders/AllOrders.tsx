@@ -15,7 +15,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { Plus, Search, Filter, Download, FileText, Edit, Trash2, Package, Eye, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Search, Filter, Download, FileText, Edit, Trash2, Package, Eye, ChevronDown, ChevronUp, Settings, Check } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -53,11 +53,47 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     const saved = localStorage.getItem('ordersExpandAll');
     return saved === 'true';
   });
+
+  // Column visibility state with localStorage persistence
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() => {
+    const saved = localStorage.getItem('ordersVisibleColumns');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return {
+          customer: true,
+          createdAt: true,
+          total: true,
+          status: true,
+          paymentStatus: true,
+          profit: true,
+          tracking: true,
+        };
+      }
+    }
+    return {
+      customer: true,
+      createdAt: true,
+      total: true,
+      status: true,
+      paymentStatus: true,
+      profit: true,
+      tracking: true,
+    };
+  });
   
   // Save expand preference to localStorage
   const handleExpandAllChange = (checked: boolean) => {
     setExpandAll(checked);
     localStorage.setItem('ordersExpandAll', checked.toString());
+  };
+
+  // Toggle column visibility
+  const toggleColumnVisibility = (columnKey: string) => {
+    const updated = { ...visibleColumns, [columnKey]: !visibleColumns[columnKey] };
+    setVisibleColumns(updated);
+    localStorage.setItem('ordersVisibleColumns', JSON.stringify(updated));
   };
 
   const { data: orders = [], isLoading, error } = useQuery({
@@ -421,8 +457,24 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       },
       className: "text-right",
     },
-
+    {
+      key: "tracking",
+      header: "Tracking",
+      sortable: true,
+      cell: (order) => (
+        <div className="text-sm">
+          {order.trackingNumber ? (
+            <span className="font-mono text-slate-700">{order.trackingNumber}</span>
+          ) : (
+            <span className="text-slate-400">—</span>
+          )}
+        </div>
+      ),
+    },
   ];
+
+  // Filter columns based on visibility
+  const visibleColumnsFiltered = columns.filter(col => visibleColumns[col.key] !== false);
 
   // Bulk actions for DataTable
   const bulkActions = [
@@ -539,7 +591,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
         <CardContent className="p-0 sm:p-6">
           <DataTable
             data={filteredOrders}
-            columns={columns}
+            columns={visibleColumnsFiltered}
             bulkActions={bulkActions}
             tableId="all-orders"
             getRowKey={(order) => order.id}
@@ -607,6 +659,33 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                       onCheckedChange={handleExpandAllChange}
                       className="data-[state=checked]:bg-blue-600"
                     />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Settings className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <div className="px-2 py-1.5 text-sm font-semibold">Show Columns</div>
+                        {columns.map((column) => (
+                          <DropdownMenuItem
+                            key={column.key}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              toggleColumnVisibility(column.key);
+                            }}
+                            className="cursor-pointer"
+                          >
+                            <div className="flex items-center justify-between w-full">
+                              <span>{column.header}</span>
+                              {visibleColumns[column.key] !== false && (
+                                <Check className="h-4 w-4 text-blue-600" />
+                              )}
+                            </div>
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               </div>
