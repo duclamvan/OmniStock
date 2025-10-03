@@ -134,7 +134,7 @@ function Router() {
         <Route path="/discounts/:id/edit" component={EditDiscount} />
         <Route path="/customers" component={AllCustomers} />
         <Route path="/customers/add" component={AddCustomer} />
-        <Route path="/customers/:id/edit" component={EditCustomer} />
+        <Route path="/customers/:id/edit" component={AddCustomer} />
         <Route path="/customers/:id" component={CustomerDetails} />
         <Route path="/suppliers" component={AllSuppliers} />
         <Route path="/suppliers/new" component={AddSupplier} />
