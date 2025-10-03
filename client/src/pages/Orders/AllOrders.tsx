@@ -111,19 +111,56 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     mutationFn: async (ids: string[]) => {
       await Promise.all(ids.map(id => apiRequest('DELETE', `/api/orders/${id}`)));
     },
+    onMutate: async (ids) => {
+      // Predicate to match only list queries (not detail queries)
+      const isListQuery = (query: any) => {
+        return query.queryKey[0] === '/api/orders' && 
+               query.queryKey.length <= 3 && // Matches ['/api/orders'] or ['/api/orders', 'status', filter]
+               Array.isArray(query.state.data); // Only process array data
+      };
+      
+      // Cancel ALL list query refetches
+      await queryClient.cancelQueries({ predicate: isListQuery });
+      
+      // Snapshot ALL list queries for rollback
+      const previousQueries = queryClient.getQueriesData({ predicate: isListQuery });
+      
+      // Optimistically update ALL list queries by removing deleted orders
+      queryClient.setQueriesData(
+        { predicate: isListQuery },
+        (old: any[] | undefined) => {
+          if (!old || !Array.isArray(old)) return old;
+          return old.filter(order => !ids.includes(order.id));
+        }
+      );
+      
+      // Return context with previous data for rollback
+      return { previousQueries };
+    },
     onSuccess: (_, ids) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
       toast({
         title: "Success",
         description: `Deleted ${ids.length} order(s) successfully`,
       });
     },
-    onError: (error: any) => {
+    onError: (error: any, _, context) => {
+      // Rollback ALL queries to previous data on error
+      if (context?.previousQueries) {
+        context.previousQueries.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
       console.error("Order delete error:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to delete orders",
         variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      // Invalidate ALL order queries to ensure sync with server
+      queryClient.invalidateQueries({ 
+        predicate: (query) => query.queryKey[0] === '/api/orders'
       });
     },
   });

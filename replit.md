@@ -16,6 +16,12 @@ Davie Supply is a full-stack web application designed for comprehensive warehous
 - Solution: Implemented proper database update using Drizzle ORM with `db.update()` and `.returning()` pattern
 - Also fixed DatabaseStorage.deleteOrder() to properly cascade delete order items before deleting order
 
+## Order Delete Double Refresh Bug Fix (Completed)
+- Fixed UI issue where deleting orders caused table to refresh/re-render twice, closing expanded rows
+- Root cause: React Query invalidation triggered two state updates (isFetching change + data change)
+- Solution: Implemented optimistic updates with onMutate to instantly remove deleted orders from cache, then sync with server in background
+- Result: Smooth single-update deletion that preserves expanded row states
+
 # User Preferences
 Preferred communication style: Simple, everyday language.
 
