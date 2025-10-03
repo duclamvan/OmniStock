@@ -536,8 +536,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
 
       {/* Orders Table */}
       <Card>
-        <CardHeader className="p-4 sm:p-6">
-          <div className="flex items-center justify-between">
+        <CardHeader className="p-4 sm:p-6 pb-0">
+          <div className="flex items-center justify-between mb-4">
             <CardTitle className="text-mobile-lg">Orders ({filteredOrders?.length || 0})</CardTitle>
             <div className="flex items-center gap-2">
               <Label htmlFor="expand-all" className="text-sm text-slate-600 cursor-pointer">
@@ -552,7 +552,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-0 sm:p-6">
+        <CardContent className="p-0 sm:p-6 sm:pt-0">
           <DataTable
             data={filteredOrders}
             columns={columns}
@@ -567,6 +567,55 @@ export default function AllOrders({ filter }: AllOrdersProps) {
               sessionStorage.setItem('orderDetailsReferrer', location);
               navigate(`/orders/${order.id}`);
             }}
+            renderBulkActions={({ selectedRows, selectedItems, bulkActions: actions }) => (
+              selectedRows.size > 0 && (
+                <div className="px-4 sm:px-6 pb-4">
+                  <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-primary/5 border border-primary/20 rounded-lg">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <Badge variant="secondary" className="font-medium">
+                        {selectedRows.size} selected
+                      </Badge>
+                      <div className="h-4 w-px bg-border hidden sm:block" />
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {actions.map((action, index) => {
+                          if (action.type === "select") {
+                            return (
+                              <Select
+                                key={index}
+                                onValueChange={(value) => action.action(selectedItems, value)}
+                              >
+                                <SelectTrigger className="h-7 w-auto min-w-[160px] text-xs justify-start">
+                                  <SelectValue placeholder={action.placeholder || action.label} />
+                                </SelectTrigger>
+                                <SelectContent align="start">
+                                  {action.options.map((option) => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                      {option.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            );
+                          } else {
+                            return (
+                              <Button
+                                key={index}
+                                size="sm"
+                                variant={action.variant || "ghost"}
+                                onClick={() => action.action(selectedItems)}
+                                className="h-7 px-3 text-xs"
+                              >
+                                {action.label}
+                              </Button>
+                            );
+                          }
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            )}
             expandable={{
               render: (order) => (
                 <div className="space-y-4">

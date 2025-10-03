@@ -62,6 +62,11 @@ interface DataTableProps<T> {
   defaultExpandAll?: boolean;
   compact?: boolean;
   tableId?: string;
+  renderBulkActions?: (params: {
+    selectedRows: Set<string>;
+    selectedItems: T[];
+    bulkActions: BulkAction<T>[];
+  }) => React.ReactNode;
 }
 
 type SortDirection = "asc" | "desc" | null;
@@ -80,6 +85,7 @@ export function DataTable<T>({
   defaultExpandAll = false,
   compact = false,
   tableId,
+  renderBulkActions,
 }: DataTableProps<T>) {
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
@@ -266,53 +272,67 @@ export function DataTable<T>({
   };
 
   return (
-    <div className={cn("space-y-4", className)}>
-      {/* Bulk Actions */}
-      {bulkActions && selectedRows.size > 0 && (
-        <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-primary/5 border border-primary/20 rounded-lg">
-          <div className="flex items-center gap-3 flex-wrap">
-            <Badge variant="secondary" className="font-medium">
-              {selectedRows.size} selected
-            </Badge>
-            <div className="h-4 w-px bg-border hidden sm:block" />
-            <div className="flex items-center gap-2 flex-wrap">
-              {bulkActions.map((action, index) => {
-                if (action.type === "select") {
-                  return (
-                    <Select
-                      key={index}
-                      onValueChange={(value) => handleBulkActionSelect(action.action, value)}
-                    >
-                      <SelectTrigger className="h-7 w-auto min-w-[160px] text-xs justify-start">
-                        <SelectValue placeholder={action.placeholder || action.label} />
-                      </SelectTrigger>
-                      <SelectContent align="start">
-                        {action.options.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  );
-                } else {
-                  return (
-                    <Button
-                      key={index}
-                      size="sm"
-                      variant={action.variant || "ghost"}
-                      onClick={() => handleBulkActionButton(action.action)}
-                      className="h-7 px-3 text-xs"
-                    >
-                      {action.label}
-                    </Button>
-                  );
-                }
-              })}
+    <div className={cn(className)}>
+      {/* Bulk Actions - Only render here if not using custom render prop */}
+      {bulkActions && !renderBulkActions && (
+        <div className={cn(
+          "transition-all duration-200",
+          selectedRows.size > 0 ? "mb-4" : "mb-0"
+        )}>
+          {selectedRows.size > 0 && (
+            <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-primary/5 border border-primary/20 rounded-lg">
+              <div className="flex items-center gap-3 flex-wrap">
+                <Badge variant="secondary" className="font-medium">
+                  {selectedRows.size} selected
+                </Badge>
+                <div className="h-4 w-px bg-border hidden sm:block" />
+                <div className="flex items-center gap-2 flex-wrap">
+                  {bulkActions.map((action, index) => {
+                    if (action.type === "select") {
+                      return (
+                        <Select
+                          key={index}
+                          onValueChange={(value) => handleBulkActionSelect(action.action, value)}
+                        >
+                          <SelectTrigger className="h-7 w-auto min-w-[160px] text-xs justify-start">
+                            <SelectValue placeholder={action.placeholder || action.label} />
+                          </SelectTrigger>
+                          <SelectContent align="start">
+                            {action.options.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      );
+                    } else {
+                      return (
+                        <Button
+                          key={index}
+                          size="sm"
+                          variant={action.variant || "ghost"}
+                          onClick={() => handleBulkActionButton(action.action)}
+                          className="h-7 px-3 text-xs"
+                        >
+                          {action.label}
+                        </Button>
+                      );
+                    }
+                  })}
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
+      
+      {/* Custom bulk actions rendering */}
+      {renderBulkActions && bulkActions && renderBulkActions({
+        selectedRows,
+        selectedItems: sortedData.filter(item => selectedRows.has(getRowKey(item))),
+        bulkActions,
+      })}
 
       {/* Table */}
       <div className="rounded-md border">
