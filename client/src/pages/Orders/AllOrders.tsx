@@ -536,8 +536,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
 
       {/* Orders Table */}
       <Card>
-        <CardHeader className="p-4 sm:p-6 pb-0">
-          <div className="flex items-center justify-between mb-4">
+        <CardHeader className="p-4 sm:p-6">
+          <div className="flex items-start justify-between gap-4">
             <CardTitle className="text-mobile-lg">Orders ({filteredOrders?.length || 0})</CardTitle>
             <div className="flex items-center gap-2">
               <Label htmlFor="expand-all" className="text-sm text-slate-600 cursor-pointer">
@@ -568,8 +568,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
               navigate(`/orders/${order.id}`);
             }}
             renderBulkActions={({ selectedRows, selectedItems, bulkActions: actions }) => (
-              <div className="px-4 sm:px-6 mb-4" style={{ minHeight: '52px' }}>
-                {selectedRows.size > 0 && (
+              selectedRows.size > 0 && (
+                <div className="px-4 sm:px-6 mb-4">
                   <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-primary/5 border border-primary/20 rounded-lg">
                     <div className="flex items-center gap-3 flex-wrap">
                       <Badge variant="secondary" className="font-medium">
@@ -613,8 +613,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                       </div>
                     </div>
                   </div>
-                )}
-              </div>
+                </div>
+              )
             )}
             expandable={{
               render: (order) => (
