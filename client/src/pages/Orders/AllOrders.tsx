@@ -568,8 +568,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
               navigate(`/orders/${order.id}`);
             }}
             renderBulkActions={({ selectedRows, selectedItems, bulkActions: actions }) => (
-              selectedRows.size > 0 && (
-                <div className="px-4 sm:px-6 pb-4">
+              <div className="px-4 sm:px-6 mb-4" style={{ minHeight: '52px' }}>
+                {selectedRows.size > 0 && (
                   <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-primary/5 border border-primary/20 rounded-lg">
                     <div className="flex items-center gap-3 flex-wrap">
                       <Badge variant="secondary" className="font-medium">
@@ -613,8 +613,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                       </div>
                     </div>
                   </div>
-                </div>
-              )
+                )}
+              </div>
             )}
             expandable={{
               render: (order) => (
