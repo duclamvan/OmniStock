@@ -723,16 +723,37 @@ export class DatabaseStorage implements IStorage {
         .leftJoin(customers, eq(orders.customerId, customers.id));
 
       // If status is provided, filter by that status
-      // Otherwise, return all orders in pick/pack workflow statuses
+      // Otherwise, return all orders that need pick/pack processing
       if (status) {
-        query = query.where(eq(orders.orderStatus, status)) as any;
+        // Map frontend status to database status/columns
+        if (status === 'pending' || status === 'to_fulfill') {
+          query = query.where(eq(orders.orderStatus, 'to_fulfill')) as any;
+        } else if (status === 'picking') {
+          // Orders that are in to_fulfill status AND pick_status is in_progress
+          query = query.where(
+            and(
+              eq(orders.orderStatus, 'to_fulfill'),
+              eq(orders.pickStatus, 'in_progress')
+            )
+          ) as any;
+        } else if (status === 'packing') {
+          // Orders that are in to_fulfill status AND pack_status is in_progress
+          query = query.where(
+            and(
+              eq(orders.orderStatus, 'to_fulfill'),
+              eq(orders.packStatus, 'in_progress')
+            )
+          ) as any;
+        } else if (status === 'ready') {
+          query = query.where(eq(orders.orderStatus, 'ready_to_ship')) as any;
+        } else {
+          query = query.where(eq(orders.orderStatus, status)) as any;
+        }
       } else {
-        // Default: return orders in pick/pack workflow (to_fulfill, picking, packing, ready_to_ship)
+        // Default: return all orders that need fulfillment (to_fulfill and ready_to_ship)
         query = query.where(
           or(
             eq(orders.orderStatus, 'to_fulfill'),
-            eq(orders.orderStatus, 'picking'),
-            eq(orders.orderStatus, 'packing'),
             eq(orders.orderStatus, 'ready_to_ship')
           )
         ) as any;
@@ -740,15 +761,42 @@ export class DatabaseStorage implements IStorage {
 
       const results = await query.orderBy(desc(orders.createdAt));
 
-      // Map results to include customer name
+      // Map results to include customer name and format status for frontend
       return results.map((row: any) => ({
         ...row.order,
         customerName: row.customer?.name || 'Unknown Customer',
+        // Map database status to frontend status based on pick/pack status
+        status: this.getPickPackStatus(row.order),
       }));
     } catch (error) {
       console.error('Error fetching pick/pack orders:', error);
       return [];
     }
+  }
+
+  // Helper method to determine the pick/pack status for display
+  private getPickPackStatus(order: any): string {
+    // If order is ready to ship, it's ready
+    if (order.orderStatus === 'ready_to_ship') {
+      return 'ready_to_ship';
+    }
+    
+    // If order is to_fulfill, check pick/pack statuses
+    if (order.orderStatus === 'to_fulfill') {
+      if (order.packStatus === 'completed') {
+        return 'ready_to_ship';
+      } else if (order.packStatus === 'in_progress') {
+        return 'packing';
+      } else if (order.pickStatus === 'completed') {
+        return 'packing';
+      } else if (order.pickStatus === 'in_progress') {
+        return 'picking';
+      } else {
+        return 'to_fulfill';
+      }
+    }
+    
+    return order.orderStatus;
   }
 
   async startPickingOrder(id: string, employeeId: string): Promise<Order | undefined> {
