@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import {
   Table,
   TableBody,
@@ -91,9 +91,13 @@ export function DataTable<T>({
     return new Set(columns.map(col => col.key));
   });
   
+  // Track previous defaultExpandAll to only update when it changes
+  const prevDefaultExpandAll = useRef(defaultExpandAll);
+  
   // Effect to handle external expand/collapse all
   useEffect(() => {
-    if (expandable && defaultExpandAll !== undefined) {
+    // Only update if defaultExpandAll actually changed
+    if (expandable && defaultExpandAll !== prevDefaultExpandAll.current) {
       if (defaultExpandAll) {
         // Expand all rows
         const allKeys = new Set(data.map(item => getRowKey(item)));
@@ -102,6 +106,7 @@ export function DataTable<T>({
         // Collapse all rows
         setExpandedRows(new Set());
       }
+      prevDefaultExpandAll.current = defaultExpandAll;
     }
   }, [defaultExpandAll, data, expandable, getRowKey]);
 
