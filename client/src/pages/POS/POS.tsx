@@ -530,6 +530,8 @@ export default function POS() {
         currency: currency,
         items: cart.map(item => ({
           productId: item.id,
+          variantId: item.variantId || undefined,
+          bundleId: item.bundleId || undefined,
           quantity: item.quantity,
           price: item.price.toString(),
           productName: item.name,
@@ -799,17 +801,29 @@ export default function POS() {
       if (!response.ok) throw new Error('Failed to fetch order');
       const order = await response.json();
 
-      // Load order items into cart
-      const cartItems: CartItem[] = order.items.map((item: any) => ({
-        id: item.productId,
-        productId: item.productId,
-        name: item.productName,
-        price: parseFloat(item.price || item.unitPrice || '0'),
-        quantity: item.quantity,
-        type: 'product' as const,
-        sku: item.sku,
-        landingCost: null
-      }));
+      // Load order items into cart, preserving type, bundleId, and variantId
+      const cartItems: CartItem[] = order.items.map((item: any) => {
+        // Determine the type based on bundleId or variantId presence
+        let itemType: 'product' | 'variant' | 'bundle' = 'product';
+        if (item.bundleId) {
+          itemType = 'bundle';
+        } else if (item.variantId) {
+          itemType = 'variant';
+        }
+
+        return {
+          id: item.productId,
+          productId: item.productId,
+          variantId: item.variantId || undefined,
+          bundleId: item.bundleId || undefined,
+          name: item.productName,
+          price: parseFloat(item.price || item.unitPrice || '0'),
+          quantity: item.quantity,
+          type: itemType,
+          sku: item.sku,
+          landingCost: null
+        };
+      });
 
       setCart(cartItems);
       setCurrency(order.currency);
