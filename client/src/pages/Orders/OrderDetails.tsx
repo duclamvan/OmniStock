@@ -248,6 +248,44 @@ export default function OrderDetails() {
                     <Copy className="h-4 w-4" />
                   </Button>
                 </div>
+
+                {/* Customer Name & Badges */}
+                {order.customer && (
+                  <div className="flex items-center gap-2 mb-3 flex-wrap">
+                    <Link href={`/customers/${order.customer.id}`}>
+                      <p className="font-semibold text-lg text-blue-600 hover:text-blue-800 cursor-pointer flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        {order.customer.name}
+                      </p>
+                    </Link>
+                    {order.customer.type && (
+                      <Badge 
+                        variant={
+                          order.customer.type === 'vip' ? 'default' : 
+                          order.customer.type === 'wholesale' ? 'secondary' : 
+                          order.customer.type === 'business' ? 'outline' : 
+                          'secondary'
+                        }
+                        className="text-xs"
+                      >
+                        {order.customer.type === 'vip' ? 'VIP' : 
+                         order.customer.type === 'wholesale' ? 'Wholesale' : 
+                         order.customer.type === 'business' ? 'Business' : 
+                         'Retail'}
+                      </Badge>
+                    )}
+                    {order.customer.customerRank && (
+                      <Badge variant="default" className="text-xs bg-amber-500 hover:bg-amber-600">
+                        {order.customer.customerRank}
+                      </Badge>
+                    )}
+                    {order.paymentStatus === 'pay_later' && (
+                      <Badge variant="outline" className="text-xs border-orange-500 text-orange-600">
+                        Pay Later
+                      </Badge>
+                    )}
+                  </div>
+                )}
                 
                 {/* Status Row */}
                 <div className="flex flex-wrap items-center gap-3 mb-3">
@@ -692,119 +730,20 @@ export default function OrderDetails() {
             </CardContent>
           </Card>
 
-          {/* Order Timeline */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                Order Timeline
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5"></div>
-                  <div className="flex-1">
-                    <p className="font-medium text-sm">Order Created</p>
-                    <p className="text-sm text-slate-500">
-                      {new Date(order.createdAt).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-                
-                {order.paymentStatus === 'paid' && order.updatedAt && (
-                  <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mt-1.5"></div>
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">Payment Received</p>
-                      <p className="text-sm text-slate-500">
-                        {new Date(order.updatedAt).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                )}
-                
-                {/* Picking Started */}
-                {order.pickStartTime && (
-                  <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full mt-1.5"></div>
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">Picking Started</p>
-                      <p className="text-sm text-slate-500">
-                        {new Date(order.pickStartTime).toLocaleString()}
-                        {order.pickedBy && ` by ${order.pickedBy}`}
-                      </p>
-                    </div>
-                  </div>
-                )}
-                
-                {/* Picking Completed */}
-                {order.pickEndTime && (
-                  <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full mt-1.5"></div>
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">Picking Completed</p>
-                      <p className="text-sm text-slate-500">
-                        {new Date(order.pickEndTime).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                )}
-                
-                {/* Packing Started */}
-                {order.packStartTime && (
-                  <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-indigo-500 rounded-full mt-1.5"></div>
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">Packing Started</p>
-                      <p className="text-sm text-slate-500">
-                        {new Date(order.packStartTime).toLocaleString()}
-                        {order.packedBy && ` by ${order.packedBy}`}
-                      </p>
-                    </div>
-                  </div>
-                )}
-                
-                {/* Packing Completed */}
-                {order.packEndTime && (
-                  <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-indigo-500 rounded-full mt-1.5"></div>
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">Packing Completed</p>
-                      <p className="text-sm text-slate-500">
-                        {new Date(order.packEndTime).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                )}
-                
-                {/* Ready to Ship */}
-                {order.orderStatus === 'ready_to_ship' && !order.shippedAt && (
-                  <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-teal-500 rounded-full mt-1.5"></div>
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">Ready to Ship</p>
-                      <p className="text-sm text-slate-500">
-                        {order.packEndTime ? new Date(order.packEndTime).toLocaleString() : 'Awaiting shipment'}
-                      </p>
-                    </div>
-                  </div>
-                )}
-                
-                {order.shippedAt && (
-                  <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-orange-500 rounded-full mt-1.5"></div>
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">Order Shipped</p>
-                      <p className="text-sm text-slate-500">
-                        {new Date(order.shippedAt).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          {/* Notes */}
+          {order.notes && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Order Notes
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-slate-600 whitespace-pre-wrap">{order.notes}</p>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Pick & Pack Activity Logs */}
           {pickPackLogs && pickPackLogs.length > 0 && (
@@ -969,20 +908,119 @@ export default function OrderDetails() {
             </CardContent>
           </Card>
 
-          {/* Notes */}
-          {order.notes && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Order Notes
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-slate-600 whitespace-pre-wrap">{order.notes}</p>
-              </CardContent>
-            </Card>
-          )}
+          {/* Order Timeline */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Order Timeline
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5"></div>
+                  <div className="flex-1">
+                    <p className="font-medium text-sm">Order Created</p>
+                    <p className="text-sm text-slate-500">
+                      {new Date(order.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+                
+                {order.paymentStatus === 'paid' && order.updatedAt && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mt-1.5"></div>
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">Payment Received</p>
+                      <p className="text-sm text-slate-500">
+                        {new Date(order.updatedAt).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Picking Started */}
+                {order.pickStartTime && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full mt-1.5"></div>
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">Picking Started</p>
+                      <p className="text-sm text-slate-500">
+                        {new Date(order.pickStartTime).toLocaleString()}
+                        {order.pickedBy && ` by ${order.pickedBy}`}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Picking Completed */}
+                {order.pickEndTime && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full mt-1.5"></div>
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">Picking Completed</p>
+                      <p className="text-sm text-slate-500">
+                        {new Date(order.pickEndTime).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Packing Started */}
+                {order.packStartTime && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-indigo-500 rounded-full mt-1.5"></div>
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">Packing Started</p>
+                      <p className="text-sm text-slate-500">
+                        {new Date(order.packStartTime).toLocaleString()}
+                        {order.packedBy && ` by ${order.packedBy}`}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Packing Completed */}
+                {order.packEndTime && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-indigo-500 rounded-full mt-1.5"></div>
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">Packing Completed</p>
+                      <p className="text-sm text-slate-500">
+                        {new Date(order.packEndTime).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Ready to Ship */}
+                {order.orderStatus === 'ready_to_ship' && !order.shippedAt && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-teal-500 rounded-full mt-1.5"></div>
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">Ready to Ship</p>
+                      <p className="text-sm text-slate-500">
+                        {order.packEndTime ? new Date(order.packEndTime).toLocaleString() : 'Awaiting shipment'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                
+                {order.shippedAt && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-orange-500 rounded-full mt-1.5"></div>
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">Order Shipped</p>
+                      <p className="text-sm text-slate-500">
+                        {new Date(order.shippedAt).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Attachments */}
           {order.attachmentUrl && (
