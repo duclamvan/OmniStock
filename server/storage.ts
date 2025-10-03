@@ -713,7 +713,42 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPickPackOrders(status?: string): Promise<Order[]> {
-    return [];
+    try {
+      let query = db
+        .select({
+          order: orders,
+          customer: customers,
+        })
+        .from(orders)
+        .leftJoin(customers, eq(orders.customerId, customers.id));
+
+      // If status is provided, filter by that status
+      // Otherwise, return all orders in pick/pack workflow statuses
+      if (status) {
+        query = query.where(eq(orders.orderStatus, status)) as any;
+      } else {
+        // Default: return orders in pick/pack workflow (to_fulfill, picking, packing, ready_to_ship)
+        query = query.where(
+          or(
+            eq(orders.orderStatus, 'to_fulfill'),
+            eq(orders.orderStatus, 'picking'),
+            eq(orders.orderStatus, 'packing'),
+            eq(orders.orderStatus, 'ready_to_ship')
+          )
+        ) as any;
+      }
+
+      const results = await query.orderBy(desc(orders.createdAt));
+
+      // Map results to include customer name
+      return results.map((row: any) => ({
+        ...row.order,
+        customerName: row.customer?.name || 'Unknown Customer',
+      }));
+    } catch (error) {
+      console.error('Error fetching pick/pack orders:', error);
+      return [];
+    }
   }
 
   async startPickingOrder(id: string, employeeId: string): Promise<Order | undefined> {

@@ -22,6 +22,20 @@ Davie Supply is a full-stack web application designed for comprehensive warehous
 - Solution: Implemented optimistic updates with onMutate to instantly remove deleted orders from cache, then sync with server in background
 - Result: Smooth single-update deletion that preserves expanded row states
 
+## Pick & Pack Orders Bug Fix (Completed)
+- Fixed critical bug where "To Fulfill" status orders were not appearing in Pick & Pack page
+- Root cause: DatabaseStorage.getPickPackOrders() method was a stub returning empty array
+- Solution: Implemented proper database query using Drizzle ORM to fetch orders by status (orderStatus column)
+- Method now filters orders by: to_fulfill, picking, packing, ready_to_ship statuses
+- Orders are joined with customers table to include customer names and sorted by creation date
+
+## DataTable UI Improvements (Completed)
+- Implemented inline bulk actions across all pages (Orders, Inventory, Suppliers, Customers, Discounts, Warehouses, Expenses, Returns)
+- Bulk action controls now appear inline next to page titles instead of underneath (prevents table shift when selecting items)
+- Reduced top spacing on all tables using consistent padding pattern (px-4 sm:px-0 pb-3)
+- Selection count badge and action buttons display next to title when items are selected
+- Consistent design pattern applied across all 8 pages with DataTable components
+
 # User Preferences
 Preferred communication style: Simple, everyday language.
 
