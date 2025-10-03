@@ -8,6 +8,7 @@ import {
   customItems,
   deliveryHistory,
   customers,
+  customerShippingAddresses,
   suppliers,
   products,
   productFiles,
@@ -33,6 +34,8 @@ import {
   type InsertDeliveryHistory,
   type Customer,
   type InsertCustomer,
+  type CustomerShippingAddress,
+  type InsertCustomerShippingAddress,
   type Supplier,
   type InsertSupplier,
   type Product,
@@ -171,6 +174,14 @@ export interface IStorage {
   createCustomer(customer: any): Promise<Customer>;
   updateCustomer(id: number, customer: any): Promise<Customer | undefined>;
   deleteCustomer(id: number): Promise<boolean>;
+  
+  // Customer Shipping Addresses
+  getCustomerShippingAddresses(customerId: string): Promise<CustomerShippingAddress[]>;
+  getCustomerShippingAddress(id: string): Promise<CustomerShippingAddress | undefined>;
+  createCustomerShippingAddress(address: InsertCustomerShippingAddress): Promise<CustomerShippingAddress>;
+  updateCustomerShippingAddress(id: string, address: Partial<InsertCustomerShippingAddress>): Promise<CustomerShippingAddress | undefined>;
+  deleteCustomerShippingAddress(id: string): Promise<boolean>;
+  setPrimaryShippingAddress(customerId: string, addressId: string): Promise<void>;
   
   // Discounts
   getDiscounts(): Promise<Discount[]>;
@@ -1391,6 +1402,94 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error deleting customer:', error);
       return false;
+    }
+  }
+
+  // Customer Shipping Addresses
+  async getCustomerShippingAddresses(customerId: string): Promise<CustomerShippingAddress[]> {
+    try {
+      const addresses = await db
+        .select()
+        .from(customerShippingAddresses)
+        .where(eq(customerShippingAddresses.customerId, customerId))
+        .orderBy(desc(customerShippingAddresses.isPrimary), desc(customerShippingAddresses.createdAt));
+      return addresses;
+    } catch (error) {
+      console.error('Error fetching customer shipping addresses:', error);
+      return [];
+    }
+  }
+
+  async getCustomerShippingAddress(id: string): Promise<CustomerShippingAddress | undefined> {
+    try {
+      const [address] = await db
+        .select()
+        .from(customerShippingAddresses)
+        .where(eq(customerShippingAddresses.id, id));
+      return address || undefined;
+    } catch (error) {
+      console.error('Error fetching customer shipping address:', error);
+      return undefined;
+    }
+  }
+
+  async createCustomerShippingAddress(address: InsertCustomerShippingAddress): Promise<CustomerShippingAddress> {
+    try {
+      const [newAddress] = await db
+        .insert(customerShippingAddresses)
+        .values(address)
+        .returning();
+      return newAddress;
+    } catch (error) {
+      console.error('Error creating customer shipping address:', error);
+      throw error;
+    }
+  }
+
+  async updateCustomerShippingAddress(id: string, address: Partial<InsertCustomerShippingAddress>): Promise<CustomerShippingAddress | undefined> {
+    try {
+      const [updated] = await db
+        .update(customerShippingAddresses)
+        .set({ ...address, updatedAt: new Date() })
+        .where(eq(customerShippingAddresses.id, id))
+        .returning();
+      return updated || undefined;
+    } catch (error) {
+      console.error('Error updating customer shipping address:', error);
+      return undefined;
+    }
+  }
+
+  async deleteCustomerShippingAddress(id: string): Promise<boolean> {
+    try {
+      const result = await db
+        .delete(customerShippingAddresses)
+        .where(eq(customerShippingAddresses.id, id));
+      return (result.rowCount ?? 0) > 0;
+    } catch (error) {
+      console.error('Error deleting customer shipping address:', error);
+      return false;
+    }
+  }
+
+  async setPrimaryShippingAddress(customerId: string, addressId: string): Promise<void> {
+    try {
+      await db.transaction(async (tx) => {
+        // First, set all addresses for this customer to non-primary
+        await tx
+          .update(customerShippingAddresses)
+          .set({ isPrimary: false, updatedAt: new Date() })
+          .where(eq(customerShippingAddresses.customerId, customerId));
+        
+        // Then, set the specified address to primary
+        await tx
+          .update(customerShippingAddresses)
+          .set({ isPrimary: true, updatedAt: new Date() })
+          .where(eq(customerShippingAddresses.id, addressId));
+      });
+    } catch (error) {
+      console.error('Error setting primary shipping address:', error);
+      throw error;
     }
   }
 

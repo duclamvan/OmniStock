@@ -2166,6 +2166,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Customer Shipping Addresses endpoints
+  app.get('/api/customers/:customerId/shipping-addresses', async (req, res) => {
+    try {
+      const { customerId } = req.params;
+      const addresses = await storage.getCustomerShippingAddresses(customerId);
+      res.json(addresses);
+    } catch (error) {
+      console.error("Error fetching customer shipping addresses:", error);
+      res.status(500).json({ message: "Failed to fetch shipping addresses" });
+    }
+  });
+
+  app.get('/api/shipping-addresses/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const address = await storage.getCustomerShippingAddress(id);
+      if (!address) {
+        return res.status(404).json({ message: 'Address not found' });
+      }
+      res.json(address);
+    } catch (error) {
+      console.error("Error fetching shipping address:", error);
+      res.status(500).json({ message: "Failed to fetch shipping address" });
+    }
+  });
+
+  app.post('/api/customers/:customerId/shipping-addresses', async (req: any, res) => {
+    try {
+      const { customerId } = req.params;
+      const address = await storage.createCustomerShippingAddress({
+        customerId,
+        ...req.body
+      });
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'created',
+        entityType: 'shipping_address',
+        entityId: address.id,
+        description: `Created shipping address for customer ${customerId}`,
+      });
+      
+      res.status(201).json(address);
+    } catch (error) {
+      console.error("Error creating shipping address:", error);
+      res.status(500).json({ message: "Failed to create shipping address" });
+    }
+  });
+
+  app.patch('/api/shipping-addresses/:id', async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const address = await storage.updateCustomerShippingAddress(id, req.body);
+      if (!address) {
+        return res.status(404).json({ message: 'Address not found' });
+      }
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'updated',
+        entityType: 'shipping_address',
+        entityId: address.id,
+        description: `Updated shipping address`,
+      });
+      
+      res.json(address);
+    } catch (error) {
+      console.error("Error updating shipping address:", error);
+      res.status(500).json({ message: "Failed to update shipping address" });
+    }
+  });
+
+  app.delete('/api/shipping-addresses/:id', async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const success = await storage.deleteCustomerShippingAddress(id);
+      if (!success) {
+        return res.status(404).json({ message: 'Address not found' });
+      }
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'deleted',
+        entityType: 'shipping_address',
+        entityId: id,
+        description: `Deleted shipping address`,
+      });
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting shipping address:", error);
+      res.status(500).json({ message: "Failed to delete shipping address" });
+    }
+  });
+
+  app.post('/api/customers/:customerId/shipping-addresses/:addressId/set-primary', async (req: any, res) => {
+    try {
+      const { customerId, addressId } = req.params;
+      await storage.setPrimaryShippingAddress(customerId, addressId);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'updated',
+        entityType: 'shipping_address',
+        entityId: addressId,
+        description: `Set shipping address as primary for customer ${customerId}`,
+      });
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error setting primary shipping address:", error);
+      res.status(500).json({ message: "Failed to set primary shipping address" });
+    }
+  });
+
   // Customer Prices endpoints
   app.get('/api/customers/:customerId/prices', async (req, res) => {
     try {
