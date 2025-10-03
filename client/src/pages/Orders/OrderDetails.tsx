@@ -476,13 +476,13 @@ export default function OrderDetails() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Order Items and Pricing */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Order Items */}
+          {/* Invoice - Order Items & Pricing */}
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <Package className="h-5 w-5" />
-                  Order Items
+                  Invoice
                 </CardTitle>
                 {order.orderStatus === 'to_fulfill' && (
                   <Button
@@ -497,6 +497,7 @@ export default function OrderDetails() {
               </div>
             </CardHeader>
             <CardContent>
+              {/* Order Items */}
               <div className="space-y-4">
                 {order.items?.map((item: any, index: number) => (
                   <div key={item.id || index}>
@@ -683,71 +684,63 @@ export default function OrderDetails() {
                   </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
 
-          {/* Pricing Breakdown */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Banknote className="h-5 w-5" />
-                Pricing Breakdown
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Subtotal</span>
-                  <span className="font-medium">{formatCurrency(order.subtotal || 0, order.currency || 'EUR')}</span>
-                </div>
-                
-                {order.discountValue > 0 && (
+              {/* Pricing Breakdown - Integrated */}
+              <div className="mt-6 pt-6 border-t">
+                <div className="space-y-3">
                   <div className="flex justify-between text-sm">
-                    <span className="text-green-600">
-                      Discount {order.discountType === 'rate' && `(${order.discountValue}%)`}
-                    </span>
-                    <span className="font-medium text-green-600">
-                      -{formatCurrency(
-                        order.discountType === 'rate' 
-                          ? (order.subtotal * order.discountValue / 100) 
-                          : order.discountValue || 0, 
-                        order.currency || 'EUR'
-                      )}
-                    </span>
+                    <span className="text-slate-600">Subtotal</span>
+                    <span className="font-medium">{formatCurrency(order.subtotal || 0, order.currency || 'EUR')}</span>
                   </div>
-                )}
-                
-                {order.taxAmount > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-600">Tax ({order.taxRate}%)</span>
-                    <span className="font-medium">{formatCurrency(order.taxAmount || 0, order.currency || 'EUR')}</span>
-                  </div>
-                )}
-                
-                {order.shippingCost > 0 && (
-                  <>
+                  
+                  {order.discountValue > 0 && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-slate-600">Shipping ({order.shippingMethod})</span>
-                      <span className="font-medium">{formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}</span>
+                      <span className="text-green-600">
+                        Discount {order.discountType === 'rate' && `(${order.discountValue}%)`}
+                      </span>
+                      <span className="font-medium text-green-600">
+                        -{formatCurrency(
+                          order.discountType === 'rate' 
+                            ? (order.subtotal * order.discountValue / 100) 
+                            : order.discountValue || 0, 
+                          order.currency || 'EUR'
+                        )}
+                      </span>
                     </div>
-                    {order.actualShippingCost > 0 && order.actualShippingCost !== order.shippingCost && (
+                  )}
+                  
+                  {order.taxAmount > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-600">Tax ({order.taxRate}%)</span>
+                      <span className="font-medium">{formatCurrency(order.taxAmount || 0, order.currency || 'EUR')}</span>
+                    </div>
+                  )}
+                  
+                  {order.shippingCost > 0 && (
+                    <>
                       <div className="flex justify-between text-sm">
-                        <span className="text-slate-500 text-xs">Actual Shipping Cost</span>
-                        <span className="text-slate-500 text-xs">
-                          {formatCurrency(order.actualShippingCost || 0, order.currency || 'EUR')}
-                        </span>
+                        <span className="text-slate-600">Shipping ({order.shippingMethod})</span>
+                        <span className="font-medium">{formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}</span>
                       </div>
-                    )}
-                  </>
-                )}
-                
-                <Separator />
-                
-                <div className="flex justify-between">
-                  <span className="font-semibold text-slate-900">Grand Total</span>
-                  <span className="font-bold text-xl text-slate-900">
-                    {formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}
-                  </span>
+                      {order.actualShippingCost > 0 && order.actualShippingCost !== order.shippingCost && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-500 text-xs">Actual Shipping Cost</span>
+                          <span className="text-slate-500 text-xs">
+                            {formatCurrency(order.actualShippingCost || 0, order.currency || 'EUR')}
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  
+                  <Separator />
+                  
+                  <div className="flex justify-between pt-2">
+                    <span className="font-semibold text-slate-900 text-lg">Grand Total</span>
+                    <span className="font-bold text-2xl text-slate-900">
+                      {formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}
+                    </span>
+                  </div>
                 </div>
               </div>
             </CardContent>

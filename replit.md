@@ -3,6 +3,16 @@ Davie Supply is a full-stack web application designed for comprehensive warehous
 
 # Recent Changes (October 2025)
 
+## Invoice-Style Order Details UI (Completed)
+- **Combined Layout**: Merged Order Items and Pricing Breakdown into single "Invoice" card for cleaner appearance
+- **Professional Design**: Items listed at top, pricing breakdown at bottom with separator, creating traditional invoice flow
+- **Enhanced Readability**: Larger, bolder grand total for emphasis and easier scanning
+
+## Edit Order Storage Fix (Completed)
+- **Fixed Update Order**: Added missing `deleteOrderItems()` method to properly update order items
+- **Fixed Pick/Pack Logs**: Added `getPickPackLogs()` method to retrieve activity logs
+- **Proper Item Replacement**: Order updates now correctly delete old items before adding new ones
+
 ## Pick & Pack Completion Button Fix (Completed)
 - **Fixed Missing Storage Methods**: Added `createPickPackLog`, `updateOrderItemPickedQuantity`, and `updateOrderItemPackedQuantity` methods to storage implementation
 - **Activity Logging**: Pick/pack activities now properly log to userActivities table for audit trail
