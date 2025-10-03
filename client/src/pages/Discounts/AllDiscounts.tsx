@@ -201,6 +201,7 @@ export default function AllDiscounts() {
   // Bulk actions
   const bulkActions = [
     {
+      type: "button" as const,
       label: "Activate",
       action: (sales: any[]) => {
         toast({
@@ -210,6 +211,7 @@ export default function AllDiscounts() {
       },
     },
     {
+      type: "button" as const,
       label: "Deactivate",
       action: (sales: any[]) => {
         toast({
@@ -219,6 +221,7 @@ export default function AllDiscounts() {
       },
     },
     {
+      type: "button" as const,
       label: "Delete",
       variant: "destructive" as const,
       action: (sales: any[]) => {
@@ -227,6 +230,7 @@ export default function AllDiscounts() {
       },
     },
     {
+      type: "button" as const,
       label: "Export",
       action: (sales: any[]) => {
         toast({
@@ -331,10 +335,7 @@ export default function AllDiscounts() {
 
       {/* Sales Table */}
       <Card className="overflow-hidden">
-        <CardHeader className="px-4 lg:px-6">
-          <CardTitle className="text-base lg:text-xl">Discounts ({filteredSales?.length || 0})</CardTitle>
-        </CardHeader>
-        <CardContent className="px-2 lg:px-6">
+        <CardContent className="p-0 sm:p-6">
           <div className="overflow-x-auto">
             <DataTable
               data={filteredSales}
@@ -343,6 +344,38 @@ export default function AllDiscounts() {
               getRowKey={(sale) => sale.id}
               itemsPerPageOptions={[10, 20, 50, 100]}
               defaultItemsPerPage={20}
+              renderBulkActions={({ selectedRows, selectedItems, bulkActions: actions }) => (
+                <div className="px-4 sm:px-0 pb-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h2 className="text-mobile-lg font-semibold">Discounts ({filteredSales?.length || 0})</h2>
+                      {selectedRows.size > 0 && (
+                        <>
+                          <Badge variant="secondary" className="text-xs h-6 px-2">
+                            {selectedRows.size}
+                          </Badge>
+                          {actions.map((action, index) => {
+                            if (action.type === "button") {
+                              return (
+                                <Button
+                                  key={index}
+                                  size="sm"
+                                  variant={action.variant || "ghost"}
+                                  onClick={() => action.action(selectedItems)}
+                                  className="h-6 px-2 text-xs"
+                                >
+                                  {action.label}
+                                </Button>
+                              );
+                            }
+                            return null;
+                          })}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             />
           </div>
         </CardContent>

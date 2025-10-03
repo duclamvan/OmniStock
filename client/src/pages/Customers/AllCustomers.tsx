@@ -219,6 +219,7 @@ export default function AllCustomers() {
   // Bulk actions
   const bulkActions = [
     {
+      type: "button" as const,
       label: "Send Email",
       action: (customers: any[]) => {
         toast({
@@ -228,6 +229,7 @@ export default function AllCustomers() {
       },
     },
     {
+      type: "button" as const,
       label: "Update Type",
       action: (customers: any[]) => {
         toast({
@@ -237,6 +239,7 @@ export default function AllCustomers() {
       },
     },
     {
+      type: "button" as const,
       label: "Delete",
       variant: "destructive" as const,
       action: (customers: any[]) => {
@@ -245,6 +248,7 @@ export default function AllCustomers() {
       },
     },
     {
+      type: "button" as const,
       label: "Export",
       action: (customers: any[]) => {
         toast({
@@ -361,10 +365,7 @@ export default function AllCustomers() {
 
       {/* Customers Table */}
       <Card className="overflow-hidden">
-        <CardHeader className="px-4 lg:px-6">
-          <CardTitle className="text-base lg:text-xl">Customers ({customers?.length || 0})</CardTitle>
-        </CardHeader>
-        <CardContent className="px-2 lg:px-6">
+        <CardContent className="p-0 sm:p-6">
           <div className="overflow-x-auto">
             <DataTable
               data={customers}
@@ -373,6 +374,38 @@ export default function AllCustomers() {
               getRowKey={(customer) => customer.id}
               itemsPerPageOptions={[10, 20, 50, 100]}
               defaultItemsPerPage={20}
+              renderBulkActions={({ selectedRows, selectedItems, bulkActions: actions }) => (
+                <div className="px-4 sm:px-0 pb-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h2 className="text-mobile-lg font-semibold">Customers ({customers?.length || 0})</h2>
+                      {selectedRows.size > 0 && (
+                        <>
+                          <Badge variant="secondary" className="text-xs h-6 px-2">
+                            {selectedRows.size}
+                          </Badge>
+                          {actions.map((action, index) => {
+                            if (action.type === "button") {
+                              return (
+                                <Button
+                                  key={index}
+                                  size="sm"
+                                  variant={action.variant || "ghost"}
+                                  onClick={() => action.action(selectedItems)}
+                                  className="h-6 px-2 text-xs"
+                                >
+                                  {action.label}
+                                </Button>
+                              );
+                            }
+                            return null;
+                          })}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             />
           </div>
         </CardContent>

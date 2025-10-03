@@ -227,6 +227,7 @@ export default function AllExpenses() {
 
   const bulkActions = [
     {
+      type: "button" as const,
       label: "Delete Selected",
       action: (selectedItems: any[]) => {
         setSelectedExpenses(selectedItems);
@@ -301,26 +302,53 @@ export default function AllExpenses() {
 
       {/* Expenses Table */}
       <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <CardTitle>All Expenses</CardTitle>
-            <div className="relative w-full sm:w-80">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search expenses..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="p-0 sm:p-6">
           <DataTable
             columns={columns}
             data={filteredExpenses}
             bulkActions={bulkActions}
             getRowKey={(expense) => expense.id}
+            renderBulkActions={({ selectedRows, selectedItems, bulkActions: actions }) => (
+              <div className="px-4 sm:px-0 pb-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-mobile-lg font-semibold">All Expenses ({filteredExpenses?.length || 0})</h2>
+                    {selectedRows.size > 0 && (
+                      <>
+                        <Badge variant="secondary" className="text-xs h-6 px-2">
+                          {selectedRows.size}
+                        </Badge>
+                        {actions.map((action, index) => {
+                          if (action.type === "button") {
+                            return (
+                              <Button
+                                key={index}
+                                size="sm"
+                                variant={action.variant || "ghost"}
+                                onClick={() => action.action(selectedItems)}
+                                className="h-6 px-2 text-xs"
+                              >
+                                {action.label}
+                              </Button>
+                            );
+                          }
+                          return null;
+                        })}
+                      </>
+                    )}
+                  </div>
+                  <div className="relative w-full sm:w-80">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      placeholder="Search expenses..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           />
         </CardContent>
       </Card>

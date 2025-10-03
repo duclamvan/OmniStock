@@ -309,6 +309,7 @@ export default function AllInventory() {
   // Bulk actions
   const bulkActions = showArchive ? [
     {
+      type: "button" as const,
       label: "Restore Selected",
       action: async (products: any[]) => {
         const results = await Promise.allSettled(
@@ -335,6 +336,7 @@ export default function AllInventory() {
       },
     },
     {
+      type: "button" as const,
       label: "Export",
       action: (products: any[]) => {
         toast({
@@ -345,6 +347,7 @@ export default function AllInventory() {
     },
   ] : [
     {
+      type: "button" as const,
       label: "Update Stock",
       action: (products: any[]) => {
         toast({
@@ -354,6 +357,7 @@ export default function AllInventory() {
       },
     },
     {
+      type: "button" as const,
       label: "Delete",
       variant: "destructive" as const,
       action: async (products: any[]) => {
@@ -373,6 +377,7 @@ export default function AllInventory() {
       },
     },
     {
+      type: "button" as const,
       label: "Export",
       action: (products: any[]) => {
         toast({
@@ -550,11 +555,6 @@ export default function AllInventory() {
 
       {/* Products Table */}
       <Card>
-        <CardHeader className="p-4 sm:p-6">
-          <CardTitle className="text-mobile-lg">
-            {showArchive ? `Archived Products (${filteredProducts?.length || 0})` : `Products (${filteredProducts?.length || 0})`}
-          </CardTitle>
-        </CardHeader>
         <CardContent className="p-0 sm:p-6">
           {/* Mobile Card View */}
           <div className="sm:hidden space-y-3 p-3">
@@ -675,6 +675,40 @@ export default function AllInventory() {
               getRowKey={(product) => product.id}
               itemsPerPageOptions={[10, 20, 50, 100]}
               defaultItemsPerPage={20}
+              renderBulkActions={({ selectedRows, selectedItems, bulkActions: actions }) => (
+                <div className="px-4 sm:px-0 pb-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h2 className="text-mobile-lg font-semibold">
+                        {showArchive ? `Archived Products (${filteredProducts?.length || 0})` : `Products (${filteredProducts?.length || 0})`}
+                      </h2>
+                      {selectedRows.size > 0 && (
+                        <>
+                          <Badge variant="secondary" className="text-xs h-6 px-2">
+                            {selectedRows.size}
+                          </Badge>
+                          {actions.map((action, index) => {
+                            if (action.type === "button") {
+                              return (
+                                <Button
+                                  key={index}
+                                  size="sm"
+                                  variant={action.variant || "ghost"}
+                                  onClick={() => action.action(selectedItems)}
+                                  className="h-6 px-2 text-xs"
+                                >
+                                  {action.label}
+                                </Button>
+                              );
+                            }
+                            return null;
+                          })}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             />
           </div>
         </CardContent>

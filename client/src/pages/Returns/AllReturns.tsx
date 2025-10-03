@@ -175,6 +175,7 @@ export default function AllReturns() {
 
   const bulkActions = [
     {
+      type: "button" as const,
       label: "Delete Selected",
       action: (selectedItems: any[]) => {
         setSelectedReturns(selectedItems);
@@ -278,10 +279,7 @@ export default function AllReturns() {
 
       {/* Returns Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>Returns ({filteredReturns?.length || 0})</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="p-0 sm:p-6">
           <DataTable
             data={filteredReturns}
             columns={columns}
@@ -289,6 +287,38 @@ export default function AllReturns() {
             getRowKey={(returnItem) => returnItem.id}
             itemsPerPageOptions={[10, 20, 50, 100]}
             defaultItemsPerPage={20}
+            renderBulkActions={({ selectedRows, selectedItems, bulkActions: actions }) => (
+              <div className="px-4 sm:px-0 pb-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-mobile-lg font-semibold">Returns ({filteredReturns?.length || 0})</h2>
+                    {selectedRows.size > 0 && (
+                      <>
+                        <Badge variant="secondary" className="text-xs h-6 px-2">
+                          {selectedRows.size}
+                        </Badge>
+                        {actions.map((action, index) => {
+                          if (action.type === "button") {
+                            return (
+                              <Button
+                                key={index}
+                                size="sm"
+                                variant={action.variant || "ghost"}
+                                onClick={() => action.action(selectedItems)}
+                                className="h-6 px-2 text-xs"
+                              >
+                                {action.label}
+                              </Button>
+                            );
+                          }
+                          return null;
+                        })}
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           />
         </CardContent>
       </Card>
