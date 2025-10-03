@@ -341,7 +341,7 @@ export const products = pgTable('products', {
   sku: varchar('sku').notNull(),
   categoryId: varchar('category_id'),
   warehouseId: varchar('warehouse_id'),
-  supplierId: varchar('supplier_id'),
+  supplierId: varchar('supplier_id').references(() => suppliers.id),
   description: text('description'),
   quantity: integer('quantity').default(0),
   lowStockAlert: integer('low_stock_alert').default(5),
@@ -371,6 +371,22 @@ export const products = pgTable('products', {
   packingInstructionsImage: text('packing_instructions_image'),
   // Latest landing cost tracking
   latestLandingCost: decimal('latest_landing_cost', { precision: 12, scale: 4 })
+});
+
+// Product tiered pricing table
+export const productTieredPricing = pgTable('product_tiered_pricing', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  productId: varchar('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
+  minQuantity: integer('min_quantity').notNull(),
+  maxQuantity: integer('max_quantity'),
+  priceCzk: decimal('price_czk', { precision: 10, scale: 2 }),
+  priceEur: decimal('price_eur', { precision: 10, scale: 2 }),
+  priceUsd: decimal('price_usd', { precision: 10, scale: 2 }),
+  priceVnd: decimal('price_vnd', { precision: 10, scale: 2 }),
+  priceCny: decimal('price_cny', { precision: 10, scale: 2 }),
+  priceType: varchar('price_type').notNull().default('tiered'), // 'tiered' or 'wholesale'
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow()
 });
 
 export const orders = pgTable('orders', {
@@ -767,6 +783,7 @@ export const insertCustomerShippingAddressSchema = createInsertSchema(customerSh
 export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true, createdAt: true });
 export const insertWarehouseSchema = createInsertSchema(warehouses).omit({ createdAt: true });
 export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertProductTieredPricingSchema = createInsertSchema(productTieredPricing).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProductFileSchema = createInsertSchema(productFiles).omit({ id: true, uploadedAt: true });
 export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true });
 export const insertOrderItemSchema = createInsertSchema(orderItems).omit({ id: true });
@@ -824,6 +841,8 @@ export type Warehouse = typeof warehouses.$inferSelect;
 export type InsertWarehouse = z.infer<typeof insertWarehouseSchema>;
 export type Product = typeof products.$inferSelect;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
+export type ProductTieredPricing = typeof productTieredPricing.$inferSelect;
+export type InsertProductTieredPricing = z.infer<typeof insertProductTieredPricingSchema>;
 export type ProductFile = typeof productFiles.$inferSelect;
 export type InsertProductFile = z.infer<typeof insertProductFileSchema>;
 export type Order = typeof orders.$inferSelect;
