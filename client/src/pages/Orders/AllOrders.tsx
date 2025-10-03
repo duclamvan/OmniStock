@@ -552,7 +552,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
               navigate(`/orders/${order.id}`);
             }}
             renderBulkActions={({ selectedRows, selectedItems, bulkActions: actions }) => (
-              <div className="p-4 sm:p-6 pb-2">
+              <div className="px-4 sm:px-0 pb-3">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h2 className="text-mobile-lg font-semibold">Orders ({filteredOrders?.length || 0})</h2>
