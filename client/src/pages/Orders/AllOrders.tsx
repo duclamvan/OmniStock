@@ -537,8 +537,10 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       {/* Orders Table */}
       <Card>
         <CardHeader className="p-4 sm:p-6">
-          <div className="flex items-start justify-between gap-4">
-            <CardTitle className="text-mobile-lg">Orders ({filteredOrders?.length || 0})</CardTitle>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2 flex-wrap flex-1">
+              <CardTitle className="text-mobile-lg whitespace-nowrap">Orders ({filteredOrders?.length || 0})</CardTitle>
+            </div>
             <div className="flex items-center gap-2">
               <Label htmlFor="expand-all" className="text-sm text-slate-600 cursor-pointer">
                 {expandAll ? 'Collapse All' : 'Expand All'}
@@ -570,48 +572,44 @@ export default function AllOrders({ filter }: AllOrdersProps) {
             renderBulkActions={({ selectedRows, selectedItems, bulkActions: actions }) => (
               selectedRows.size > 0 && (
                 <div className="px-4 sm:px-6 mb-4">
-                  <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-primary/5 border border-primary/20 rounded-lg">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <Badge variant="secondary" className="font-medium">
-                        {selectedRows.size} selected
-                      </Badge>
-                      <div className="h-4 w-px bg-border hidden sm:block" />
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {actions.map((action, index) => {
-                          if (action.type === "select") {
-                            return (
-                              <Select
-                                key={index}
-                                onValueChange={(value) => action.action(selectedItems, value)}
-                              >
-                                <SelectTrigger className="h-7 w-auto min-w-[160px] text-xs justify-start">
-                                  <SelectValue placeholder={action.placeholder || action.label} />
-                                </SelectTrigger>
-                                <SelectContent align="start">
-                                  {action.options.map((option) => (
-                                    <SelectItem key={option.value} value={option.value}>
-                                      {option.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            );
-                          } else {
-                            return (
-                              <Button
-                                key={index}
-                                size="sm"
-                                variant={action.variant || "ghost"}
-                                onClick={() => action.action(selectedItems)}
-                                className="h-7 px-3 text-xs"
-                              >
-                                {action.label}
-                              </Button>
-                            );
-                          }
-                        })}
-                      </div>
-                    </div>
+                  <div className="flex items-center gap-2 flex-wrap px-2.5 py-1.5 bg-primary/5 border border-primary/20 rounded-lg">
+                    <Badge variant="secondary" className="font-medium text-xs">
+                      {selectedRows.size}
+                    </Badge>
+                    <div className="h-4 w-px bg-border" />
+                    {actions.map((action, index) => {
+                      if (action.type === "select") {
+                        return (
+                          <Select
+                            key={index}
+                            onValueChange={(value) => action.action(selectedItems, value)}
+                          >
+                            <SelectTrigger className="h-6 w-auto min-w-[110px] text-xs">
+                              <SelectValue placeholder={action.placeholder || action.label} />
+                            </SelectTrigger>
+                            <SelectContent align="start">
+                              {action.options.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        );
+                      } else {
+                        return (
+                          <Button
+                            key={index}
+                            size="sm"
+                            variant={action.variant || "ghost"}
+                            onClick={() => action.action(selectedItems)}
+                            className="h-6 px-2 text-xs"
+                          >
+                            {action.label}
+                          </Button>
+                        );
+                      }
+                    })}
                   </div>
                 </div>
               )
