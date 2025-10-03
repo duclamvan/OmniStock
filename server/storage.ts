@@ -131,6 +131,7 @@ export interface IStorage {
   createOrderItem(item: any): Promise<OrderItem>;
   updateOrderItem(id: string, item: any): Promise<OrderItem | undefined>;
   deleteOrderItem(id: string): Promise<boolean>;
+  deleteOrderItems(orderId: string): Promise<boolean>;
   updateOrderItemPickedQuantity(id: string, quantity: number, timestamp?: Date): Promise<OrderItem | undefined>;
   updateOrderItemPackedQuantity(id: string, quantity: number): Promise<OrderItem | undefined>;
   
@@ -224,6 +225,7 @@ export interface IStorage {
   getUserActivities(): Promise<UserActivity[]>;
   createUserActivity(activity: any): Promise<UserActivity>;
   createPickPackLog(log: any): Promise<UserActivity>;
+  getPickPackLogs(orderId: string): Promise<UserActivity[]>;
   
   // Categories
   getCategories(): Promise<Category[]>;
@@ -837,6 +839,16 @@ export class DatabaseStorage implements IStorage {
 
   async deleteOrderItem(id: string): Promise<boolean> {
     return true;
+  }
+
+  async deleteOrderItems(orderId: string): Promise<boolean> {
+    try {
+      await db.delete(orderItems).where(eq(orderItems.orderId, orderId));
+      return true;
+    } catch (error) {
+      console.error('Error deleting order items:', error);
+      return false;
+    }
   }
 
   async updateOrderItemPickedQuantity(id: string, quantity: number, timestamp?: Date): Promise<OrderItem | undefined> {
@@ -1473,6 +1485,16 @@ export class DatabaseStorage implements IStorage {
       description: log.notes || `Pick/pack activity: ${log.activityType}`,
     };
     return this.createUserActivity(activity);
+  }
+
+  async getPickPackLogs(orderId: string): Promise<UserActivity[]> {
+    try {
+      // Return empty array as a placeholder for now
+      return [];
+    } catch (error) {
+      console.error('Error getting pick/pack logs:', error);
+      return [];
+    }
   }
 
   // Categories - Optimized with proper error handling
