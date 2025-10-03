@@ -1288,12 +1288,11 @@ export default function AddOrder() {
                     {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found - Click to add
                   </div>
                   {filteredProducts.map((product: any) => (
-                    <div
+                    <button
+                      type="button"
                       key={product.id}
-                      className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0 transition-colors"
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
+                      className="w-full p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0 transition-colors text-left"
+                      onClick={() => {
                         addProductToOrder(product);
                       }}
                       data-testid={`product-item-${product.id}`}
@@ -1330,7 +1329,7 @@ export default function AddOrder() {
                           )}
                         </div>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               )}
