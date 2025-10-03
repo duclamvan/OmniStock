@@ -1009,30 +1009,41 @@ export class DatabaseStorage implements IStorage {
   // Products
   async getProducts(): Promise<Product[]> {
     try {
-      const productsData = await db.select().from(products).orderBy(desc(products.createdAt));
+      const productsData = await db.select({
+        product: products,
+        supplier: suppliers,
+      })
+      .from(products)
+      .leftJoin(suppliers, eq(products.supplierId, suppliers.id))
+      .orderBy(desc(products.createdAt));
       
-      // Include primary location for each product
-      const productsWithLocations = await Promise.all(
-        productsData.map(async (product) => {
+      // Include primary location and supplier for each product
+      const productsWithDetails = await Promise.all(
+        productsData.map(async (row) => {
           const [primaryLocation] = await db
             .select()
             .from(productLocations)
             .where(
               and(
-                eq(productLocations.productId, product.id),
+                eq(productLocations.productId, row.product.id),
                 eq(productLocations.isPrimary, true)
               )
             )
             .limit(1);
           
           return {
-            ...product,
-            primaryLocation: primaryLocation || null
+            ...row.product,
+            primaryLocation: primaryLocation || null,
+            supplier: row.supplier ? {
+              id: row.supplier.id,
+              name: row.supplier.name,
+              country: row.supplier.country
+            } : null
           };
         })
       );
       
-      return productsWithLocations;
+      return productsWithDetails;
     } catch (error) {
       console.error('Error fetching products:', error);
       return [];
@@ -1041,9 +1052,15 @@ export class DatabaseStorage implements IStorage {
 
   async getProduct(id: string): Promise<Product | undefined> {
     try {
-      const [product] = await db.select().from(products).where(eq(products.id, id));
+      const [productData] = await db.select({
+        product: products,
+        supplier: suppliers,
+      })
+      .from(products)
+      .leftJoin(suppliers, eq(products.supplierId, suppliers.id))
+      .where(eq(products.id, id));
       
-      if (!product) {
+      if (!productData) {
         return undefined;
       }
       
@@ -1055,8 +1072,13 @@ export class DatabaseStorage implements IStorage {
         .orderBy(desc(productLocations.isPrimary), productLocations.locationCode);
       
       return {
-        ...product,
-        locations
+        ...productData.product,
+        locations,
+        supplier: productData.supplier ? {
+          id: productData.supplier.id,
+          name: productData.supplier.name,
+          country: productData.supplier.country
+        } : null
       };
     } catch (error) {
       console.error('Error fetching product:', error);
@@ -1070,8 +1092,26 @@ export class DatabaseStorage implements IStorage {
 
   async getProductBySku(sku: string): Promise<Product | undefined> {
     try {
-      const [product] = await db.select().from(products).where(eq(products.sku, sku));
-      return product || undefined;
+      const [productData] = await db.select({
+        product: products,
+        supplier: suppliers,
+      })
+      .from(products)
+      .leftJoin(suppliers, eq(products.supplierId, suppliers.id))
+      .where(eq(products.sku, sku));
+      
+      if (!productData) {
+        return undefined;
+      }
+      
+      return {
+        ...productData.product,
+        supplier: productData.supplier ? {
+          id: productData.supplier.id,
+          name: productData.supplier.name,
+          country: productData.supplier.country
+        } : null
+      };
     } catch (error) {
       console.error('Error fetching product by SKU:', error);
       return undefined;
