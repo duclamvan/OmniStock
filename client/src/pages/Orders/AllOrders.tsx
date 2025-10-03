@@ -157,12 +157,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
         variant: "destructive",
       });
     },
-    onSettled: () => {
-      // Invalidate ALL order queries to ensure sync with server
-      queryClient.invalidateQueries({ 
-        predicate: (query) => query.queryKey[0] === '/api/orders'
-      });
-    },
+    // Only refetch on error (handled in onError), not on success
   });
 
   const bulkUpdateStatusMutation = useMutation({
@@ -171,14 +166,48 @@ export default function AllOrders({ filter }: AllOrdersProps) {
         apiRequest('PATCH', `/api/orders/${id}`, { orderStatus: status })
       ));
     },
+    onMutate: async ({ orderIds, status }) => {
+      // Predicate to match only list queries
+      const isListQuery = (query: any) => {
+        return query.queryKey[0] === '/api/orders' && 
+               query.queryKey.length <= 3 &&
+               Array.isArray(query.state.data);
+      };
+      
+      // Cancel list query refetches
+      await queryClient.cancelQueries({ predicate: isListQuery });
+      
+      // Snapshot list queries for rollback
+      const previousQueries = queryClient.getQueriesData({ predicate: isListQuery });
+      
+      // Optimistically update ALL list queries
+      queryClient.setQueriesData(
+        { predicate: isListQuery },
+        (old: any[] | undefined) => {
+          if (!old || !Array.isArray(old)) return old;
+          return old.map(order => 
+            orderIds.includes(order.id) 
+              ? { ...order, orderStatus: status }
+              : order
+          );
+        }
+      );
+      
+      return { previousQueries };
+    },
     onSuccess: (_, { orderIds }) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
       toast({
         title: "Success",
         description: `Updated ${orderIds.length} order(s) successfully`,
       });
     },
-    onError: (error: any) => {
+    onError: (error: any, _, context) => {
+      // Rollback on error
+      if (context?.previousQueries) {
+        context.previousQueries.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
       toast({
         title: "Error",
         description: error.message || "Failed to update orders",
@@ -193,14 +222,48 @@ export default function AllOrders({ filter }: AllOrdersProps) {
         apiRequest('PATCH', `/api/orders/${id}`, { paymentStatus })
       ));
     },
+    onMutate: async ({ orderIds, paymentStatus }) => {
+      // Predicate to match only list queries
+      const isListQuery = (query: any) => {
+        return query.queryKey[0] === '/api/orders' && 
+               query.queryKey.length <= 3 &&
+               Array.isArray(query.state.data);
+      };
+      
+      // Cancel list query refetches
+      await queryClient.cancelQueries({ predicate: isListQuery });
+      
+      // Snapshot list queries for rollback
+      const previousQueries = queryClient.getQueriesData({ predicate: isListQuery });
+      
+      // Optimistically update ALL list queries
+      queryClient.setQueriesData(
+        { predicate: isListQuery },
+        (old: any[] | undefined) => {
+          if (!old || !Array.isArray(old)) return old;
+          return old.map(order => 
+            orderIds.includes(order.id) 
+              ? { ...order, paymentStatus: paymentStatus }
+              : order
+          );
+        }
+      );
+      
+      return { previousQueries };
+    },
     onSuccess: (_, { orderIds }) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
       toast({
         title: "Success",
         description: `Updated payment status for ${orderIds.length} order(s)`,
       });
     },
-    onError: (error: any) => {
+    onError: (error: any, _, context) => {
+      // Rollback on error
+      if (context?.previousQueries) {
+        context.previousQueries.forEach(([queryKey, data]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
       toast({
         title: "Error",
         description: error.message || "Failed to update payment status",
