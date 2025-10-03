@@ -112,6 +112,7 @@ export interface IStorage {
   // Orders (compatibility layer for old code)
   getOrders(customerId?: number): Promise<Order[]>;
   getOrdersByStatus(status: string): Promise<Order[]>;
+  getOrdersByPaymentStatus(paymentStatus: string): Promise<Order[]>;
   getOrder(id: string): Promise<Order | undefined>;
   getOrderById(id: string): Promise<Order | undefined>;
   createOrder(order: any): Promise<Order>;
@@ -576,7 +577,29 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getOrdersByStatus(status: string): Promise<Order[]> {
-    return [];
+    try {
+      const ordersData = await db.select()
+        .from(orders)
+        .where(eq(orders.orderStatus, status))
+        .orderBy(desc(orders.createdAt));
+      return ordersData;
+    } catch (error) {
+      console.error('Error fetching orders by status:', error);
+      return [];
+    }
+  }
+
+  async getOrdersByPaymentStatus(paymentStatus: string): Promise<Order[]> {
+    try {
+      const ordersData = await db.select()
+        .from(orders)
+        .where(eq(orders.paymentStatus, paymentStatus))
+        .orderBy(desc(orders.createdAt));
+      return ordersData;
+    } catch (error) {
+      console.error('Error fetching orders by payment status:', error);
+      return [];
+    }
   }
 
   async getOrder(id: string): Promise<Order | undefined> {
