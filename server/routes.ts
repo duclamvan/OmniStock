@@ -4966,6 +4966,168 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Address Autocomplete Endpoint
+  app.get('/api/addresses/autocomplete', async (req, res) => {
+    try {
+      const query = req.query.q as string;
+      
+      if (!query) {
+        return res.status(400).json({ message: 'Query parameter "q" is required' });
+      }
+
+      // Call Nominatim API with proper User-Agent header
+      const nominatimUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=5`;
+      const response = await fetch(nominatimUrl, {
+        headers: {
+          'User-Agent': 'DavieSupply/1.0 (Warehouse Management System)'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Nominatim API error: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      // Format results
+      const formattedResults = data.map((item: any) => ({
+        displayName: item.display_name,
+        street: item.address?.road || item.address?.pedestrian || '',
+        streetNumber: item.address?.house_number || '',
+        city: item.address?.city || item.address?.town || item.address?.village || '',
+        zipCode: item.address?.postcode || '',
+        country: item.address?.country || '',
+        state: item.address?.state || '',
+        lat: item.lat,
+        lon: item.lon
+      }));
+
+      res.json(formattedResults);
+    } catch (error) {
+      console.error('Error fetching address autocomplete:', error);
+      res.status(500).json({ message: 'Failed to fetch address suggestions' });
+    }
+  });
+
+  // ARES Lookup Endpoint (Czech company registry)
+  app.get('/api/tax/ares-lookup', async (req, res) => {
+    try {
+      const ico = req.query.ico as string;
+      
+      if (!ico) {
+        return res.status(400).json({ message: 'Query parameter "ico" is required' });
+      }
+
+      // Call ARES API
+      const aresUrl = `https://ares.gov.cz/ekonomicke-subjekty-v-be/rest/ekonomicke-subjekty/${ico}`;
+      const response = await fetch(aresUrl, {
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+
+      if (response.status === 404) {
+        return res.status(404).json({ message: 'Company not found in ARES registry' });
+      }
+
+      if (!response.ok) {
+        throw new Error(`ARES API error: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      // Extract company information
+      const companyName = data.obchodniJmeno || data.nazev || '';
+      const address = data.sidlo || {};
+      
+      const result = {
+        companyName,
+        street: address.nazevUlice || '',
+        streetNumber: `${address.cisloDomovni || ''}${address.cisloOrientacni ? '/' + address.cisloOrientacni : ''}`.trim(),
+        city: address.nazevObce || '',
+        zipCode: address.psc ? address.psc.toString() : '',
+        country: 'CZ',
+        dic: data.dic || ''
+      };
+
+      res.json(result);
+    } catch (error) {
+      console.error('Error fetching ARES data:', error);
+      res.status(500).json({ message: 'Failed to fetch company data from ARES' });
+    }
+  });
+
+  // VIES VAT Validation Endpoint
+  app.post('/api/tax/validate-vat', async (req, res) => {
+    try {
+      const { vatNumber, countryCode } = req.body;
+
+      // Validate input
+      if (!vatNumber || !countryCode) {
+        return res.status(400).json({ message: 'vatNumber and countryCode are required' });
+      }
+
+      if (countryCode.length !== 2) {
+        return res.status(400).json({ message: 'countryCode must be 2 letters' });
+      }
+
+      // Clean VAT number (remove spaces and special characters)
+      const cleanVatNumber = vatNumber.replace(/[^A-Z0-9]/gi, '');
+      const upperCountryCode = countryCode.toUpperCase();
+
+      // Create SOAP request for VIES
+      const soapRequest = `<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <checkVat xmlns="urn:ec.europa.eu:taxud:vies:services:checkVat:types">
+      <countryCode>${upperCountryCode}</countryCode>
+      <vatNumber>${cleanVatNumber}</vatNumber>
+    </checkVat>
+  </soap:Body>
+</soap:Envelope>`;
+
+      const response = await fetch('http://ec.europa.eu/taxation_customs/vies/services/checkVatService', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/xml; charset=utf-8',
+          'SOAPAction': 'checkVat'
+        },
+        body: soapRequest
+      });
+
+      if (!response.ok) {
+        throw new Error(`VIES API error: ${response.statusText}`);
+      }
+
+      const xmlText = await response.text();
+
+      // Parse SOAP response
+      const validMatch = xmlText.match(/<valid>([^<]+)<\/valid>/);
+      const nameMatch = xmlText.match(/<name>([^<]+)<\/name>/);
+      const addressMatch = xmlText.match(/<address>([^<]+)<\/address>/);
+
+      const isValid = validMatch ? validMatch[1] === 'true' : false;
+
+      const result = {
+        valid: isValid,
+        companyName: nameMatch ? nameMatch[1] : undefined,
+        companyAddress: addressMatch ? addressMatch[1] : undefined,
+        checkedAt: new Date().toISOString()
+      };
+
+      res.json(result);
+    } catch (error) {
+      console.error('Error validating VAT:', error);
+      
+      // Return a response indicating the service might be unavailable
+      res.json({
+        valid: false,
+        error: 'Unable to validate VAT number. VIES service may be unavailable.',
+        checkedAt: new Date().toISOString()
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
