@@ -658,12 +658,32 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateOrder(id: string, order: any): Promise<Order | undefined> {
-    return { id, ...order };
+  async updateOrder(id: string, orderUpdates: any): Promise<Order | undefined> {
+    try {
+      const [updated] = await db
+        .update(orders)
+        .set({ ...orderUpdates, updatedAt: new Date() })
+        .where(eq(orders.id, id))
+        .returning();
+      return updated || undefined;
+    } catch (error) {
+      console.error('Error updating order:', error);
+      return undefined;
+    }
   }
 
   async deleteOrder(id: string): Promise<boolean> {
-    return true;
+    try {
+      // First delete order items
+      await db.delete(orderItems).where(eq(orderItems.orderId, id));
+      
+      // Then delete the order
+      const result = await db.delete(orders).where(eq(orders.id, id));
+      return (result.rowCount ?? 0) > 0;
+    } catch (error) {
+      console.error('Error deleting order:', error);
+      return false;
+    }
   }
   
   async getOrdersByCustomerId(customerId: number): Promise<Order[]> {

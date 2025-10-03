@@ -1,6 +1,21 @@
 # Overview
 Davie Supply is a full-stack web application designed for comprehensive warehouse and order management. It aims to streamline supply chain operations by managing the entire order lifecycle, tracking inventory, customer management, and providing multi-currency financial reporting. Key capabilities include real-time Vietnamese diacritics search, customer-specific pricing, and integration with external shipping APIs. The project's ambition is to offer a robust and efficient platform for supply chain management, incorporating advanced warehouse mapping and a comprehensive Pick & Pack workflow.
 
+# Recent Changes (October 2025)
+
+## POS Invoice Modification (Completed)
+- **Recall Last Sale**: Added ability to recall and modify the most recent POS order after payment completion
+- **Edit Mode Indicators**: Visual "Editing" badge and button text changes ("Update Order" instead of "Checkout")
+- **Bundle/Variant Preservation**: Fixed critical bug where recalling orders with bundles or variants would convert them to plain products
+- **Audit Trail**: Updated orders include "[Modified after completion]" note for tracking
+- **Persistent Warehouse**: POS warehouse location persists using localStorage
+
+## Order Status Update Bug Fix (Completed)
+- Fixed critical bug where order status changes via dropdown in OrderDetails page were not persisting to database
+- Root cause: DatabaseStorage.updateOrder() method was a stub that returned data without database update
+- Solution: Implemented proper database update using Drizzle ORM with `db.update()` and `.returning()` pattern
+- Also fixed DatabaseStorage.deleteOrder() to properly cascade delete order items before deleting order
+
 # User Preferences
 Preferred communication style: Simple, everyday language.
 
