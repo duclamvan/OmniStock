@@ -1291,7 +1291,12 @@ export default function AddOrder() {
                     <div
                       key={product.id}
                       className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0 transition-colors"
-                      onClick={() => addProductToOrder(product)}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        addProductToOrder(product);
+                      }}
+                      data-testid={`product-item-${product.id}`}
                     >
                       <div className="flex items-center justify-between">
                         <div>
