@@ -537,10 +537,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       {/* Orders Table */}
       <Card>
         <CardHeader className="p-4 sm:p-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2 flex-wrap flex-1">
-              <CardTitle className="text-mobile-lg whitespace-nowrap">Orders ({filteredOrders?.length || 0})</CardTitle>
-            </div>
+          <div className="flex items-center justify-between gap-4">
+            <CardTitle className="text-mobile-lg">Orders ({filteredOrders?.length || 0})</CardTitle>
             <div className="flex items-center gap-2">
               <Label htmlFor="expand-all" className="text-sm text-slate-600 cursor-pointer">
                 {expandAll ? 'Collapse All' : 'Expand All'}
