@@ -397,6 +397,63 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     return profit;
   };
 
+  // Calculate statistics for the filtered orders (only show for to_fulfill filter)
+  const statistics = useMemo(() => {
+    if (filter !== 'to_fulfill' || !filteredOrders.length) return null;
+
+    const totalOrders = filteredOrders.length;
+    const totalRevenue = filteredOrders.reduce((sum, order) => sum + parseFloat(order.grandTotal || '0'), 0);
+    const totalProfit = filteredOrders.reduce((sum, order) => sum + calculateOrderProfit(order), 0);
+
+    // Calculate new vs returning customers
+    const customerIds = new Set<string>();
+    const customerOrderCounts = new Map<string, number>();
+    
+    // Count all orders for each customer (not just filtered ones)
+    orders.forEach((order: any) => {
+      if (order.customerId) {
+        customerOrderCounts.set(
+          order.customerId, 
+          (customerOrderCounts.get(order.customerId) || 0) + 1
+        );
+      }
+    });
+
+    // Count new vs returning in filtered orders
+    let newCustomers = 0;
+    let returningCustomers = 0;
+    
+    filteredOrders.forEach((order: any) => {
+      if (order.customerId && !customerIds.has(order.customerId)) {
+        customerIds.add(order.customerId);
+        const orderCount = customerOrderCounts.get(order.customerId) || 0;
+        if (orderCount <= 1) {
+          newCustomers++;
+        } else {
+          returningCustomers++;
+        }
+      }
+    });
+
+    // Determine the primary currency (most common in filtered orders)
+    const currencyCounts = new Map<string, number>();
+    filteredOrders.forEach((order: any) => {
+      const currency = order.currency || 'EUR';
+      currencyCounts.set(currency, (currencyCounts.get(currency) || 0) + 1);
+    });
+    const primaryCurrency = Array.from(currencyCounts.entries())
+      .sort((a, b) => b[1] - a[1])[0]?.[0] || 'EUR';
+
+    return {
+      totalOrders,
+      totalRevenue,
+      totalProfit,
+      newCustomers,
+      returningCustomers,
+      primaryCurrency,
+    };
+  }, [filter, filteredOrders, orders]);
+
   // Define table columns
   const columns: DataTableColumn<any>[] = [
     {
@@ -554,6 +611,59 @@ export default function AllOrders({ filter }: AllOrdersProps) {
           </Link>
         </div>
       </div>
+
+      {/* Statistics (only show for to_fulfill) */}
+      {statistics && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-slate-600">Total Orders</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-slate-900">{statistics.totalOrders}</div>
+              <p className="text-xs text-slate-500 mt-1">To fulfill</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-slate-600">Total Revenue</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-slate-900">
+                {formatCurrency(statistics.totalRevenue, statistics.primaryCurrency)}
+              </div>
+              <p className="text-xs text-slate-500 mt-1">Expected income</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-slate-600">Total Profit</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${statistics.totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {formatCurrency(statistics.totalProfit, statistics.primaryCurrency)}
+              </div>
+              <p className="text-xs text-slate-500 mt-1">After costs</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-slate-600">Customers</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-slate-900">{statistics.newCustomers + statistics.returningCustomers}</div>
+              <p className="text-xs text-slate-500 mt-1">
+                <span className="text-blue-600">{statistics.newCustomers} new</span>
+                {' • '}
+                <span className="text-slate-600">{statistics.returningCustomers} returning</span>
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Filters */}
       <Card>
