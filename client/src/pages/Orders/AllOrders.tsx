@@ -469,17 +469,17 @@ export default function AllOrders({ filter }: AllOrdersProps) {
             }}
             expandable={{
               render: (order) => (
-                <div className="space-y-2.5">
+                <div className="space-y-2">
                   {/* Header with item count and action button */}
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between pb-1.5 border-b border-slate-200 dark:border-slate-700">
                     <div className="flex items-center gap-1.5">
-                      <Package className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      <Package className="h-3.5 w-3.5 text-slate-600 dark:text-slate-400" />
+                      <span className="text-xs font-semibold text-slate-900 dark:text-slate-100">
                         {order.items?.length || 0} {order.items?.length === 1 ? 'Item' : 'Items'}
                       </span>
                     </div>
                     <Link href={`/orders/${order.id}`}>
-                      <Button size="sm" variant="ghost" className="h-7 text-xs px-2">
+                      <Button size="sm" variant="ghost" className="h-6 text-xs px-2 hover:bg-slate-100 dark:hover:bg-slate-800">
                         <Eye className="mr-1 h-3 w-3" />
                         Details
                       </Button>
@@ -488,32 +488,30 @@ export default function AllOrders({ filter }: AllOrdersProps) {
 
                   {/* Items list - compact */}
                   {order.items && order.items.length > 0 && (
-                    <div className="space-y-1">
+                    <div className="space-y-0.5 pt-1">
                       {order.items.map((item: any, idx: number) => (
                         <div 
                           key={item.id || idx} 
-                          className="flex items-start justify-between gap-2 py-1.5 border-b border-slate-100 dark:border-slate-800 last:border-0"
+                          className="flex items-center justify-between gap-3 py-1"
                         >
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-baseline gap-2">
-                              <span className="text-xs text-muted-foreground flex-shrink-0">{idx + 1}.</span>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs font-medium text-slate-900 dark:text-slate-100 truncate">
-                                  {item.productName}
+                          <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                            <span className="text-[11px] text-slate-500 dark:text-slate-400 flex-shrink-0 w-4">{idx + 1}.</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[11px] font-medium text-slate-900 dark:text-slate-100 truncate leading-tight">
+                                {item.productName}
+                              </p>
+                              {item.sku && (
+                                <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
+                                  {item.sku}
                                 </p>
-                                {item.sku && (
-                                  <p className="text-[10px] text-muted-foreground">
-                                    SKU: {item.sku}
-                                  </p>
-                                )}
-                              </div>
+                              )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-3 flex-shrink-0">
-                            <span className="text-xs text-muted-foreground">
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <span className="text-[11px] text-slate-600 dark:text-slate-300 font-medium">
                               ×{item.quantity}
                             </span>
-                            <span className="text-xs font-medium text-slate-700 dark:text-slate-300 min-w-[60px] text-right">
+                            <span className="text-[11px] font-semibold text-slate-900 dark:text-slate-100 min-w-[50px] text-right">
                               {formatCurrency(item.total || 0, order.currency || 'EUR')}
                             </span>
                           </div>
@@ -524,15 +522,15 @@ export default function AllOrders({ filter }: AllOrdersProps) {
 
                   {/* Order summary - compact */}
                   <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                    <div className="space-y-0.5">
                       <div className="flex justify-between text-[11px]">
-                        <span className="text-muted-foreground">Subtotal</span>
-                        <span className="font-medium">{formatCurrency(order.subtotal || 0, order.currency || 'EUR')}</span>
+                        <span className="text-slate-600 dark:text-slate-400">Subtotal</span>
+                        <span className="font-medium text-slate-900 dark:text-slate-100">{formatCurrency(order.subtotal || 0, order.currency || 'EUR')}</span>
                       </div>
                       {order.discountValue > 0 && (
                         <div className="flex justify-between text-[11px]">
-                          <span className="text-muted-foreground">Discount</span>
-                          <span className="font-medium text-green-600">
+                          <span className="text-slate-600 dark:text-slate-400">Discount</span>
+                          <span className="font-medium text-green-600 dark:text-green-500">
                             -{formatCurrency(
                               order.discountType === 'rate' 
                                 ? (order.subtotal * order.discountValue / 100) 
@@ -544,13 +542,13 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                       )}
                       {order.shippingCost > 0 && (
                         <div className="flex justify-between text-[11px]">
-                          <span className="text-muted-foreground">Shipping</span>
-                          <span className="font-medium">{formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}</span>
+                          <span className="text-slate-600 dark:text-slate-400">Shipping</span>
+                          <span className="font-medium text-slate-900 dark:text-slate-100">{formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}</span>
                         </div>
                       )}
-                      <div className="flex justify-between text-xs font-bold col-span-2 pt-1 border-t border-slate-100 dark:border-slate-800 mt-1">
-                        <span>Total</span>
-                        <span className="text-primary">{formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}</span>
+                      <div className="flex justify-between text-xs font-bold pt-1.5 border-t border-slate-300 dark:border-slate-600 mt-1.5">
+                        <span className="text-slate-900 dark:text-slate-100">Total</span>
+                        <span className="text-blue-600 dark:text-blue-400">{formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}</span>
                       </div>
                     </div>
                   </div>

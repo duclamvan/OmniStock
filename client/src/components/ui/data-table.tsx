@@ -428,7 +428,7 @@ export function DataTable<T>({
                     <TableRow key={`${key}-expanded-1`} className="hover:bg-transparent">
                       <TableCell
                         colSpan={displayColumns.length + (bulkActions ? 1 : 0) + 1}
-                        className="bg-slate-50 dark:bg-slate-900/30 p-6 border-l-4 border-l-blue-500 shadow-inner"
+                        className="bg-white dark:bg-slate-950 p-4 border-l-4 border-l-blue-500"
                       >
                         <div className="relative">
                           {expandable.render(item)}
@@ -437,10 +437,10 @@ export function DataTable<T>({
                     </TableRow>
                   );
                   elements.push(
-                    <TableRow key={`${key}-expanded-2`} className="hover:bg-transparent border-b-2 border-slate-200 dark:border-slate-700">
+                    <TableRow key={`${key}-expanded-2`} className="hover:bg-transparent">
                       <TableCell 
                         colSpan={displayColumns.length + (bulkActions ? 1 : 0) + 1} 
-                        className="p-0 h-2 bg-gradient-to-b from-slate-50 dark:from-slate-900/30 to-transparent"
+                        className="p-0 h-px bg-slate-300 dark:bg-slate-700"
                       />
                     </TableRow>
                   );
