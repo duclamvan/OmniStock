@@ -463,6 +463,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       key: "customer",
       header: "Customer",
       sortable: true,
+      sortKey: "customer.name", // Sort by nested customer.name property
       cell: (order) => (
         <div className="flex items-center gap-2">
           <Avatar className="h-8 w-8">
@@ -488,6 +489,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       key: "total",
       header: "Total",
       sortable: true,
+      sortKey: "grandTotal", // Sort by grandTotal property
       cell: (order) => formatCurrency(parseFloat(order.grandTotal || '0'), order.currency),
       className: "text-right",
     },
@@ -495,6 +497,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       key: "status",
       header: "Status",
       sortable: true,
+      sortKey: "orderStatus", // Sort by orderStatus property
       cell: (order) => getStatusBadge(order.orderStatus),
     },
     {
@@ -506,7 +509,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     {
       key: "profit",
       header: "Total Profit",
-      sortable: true,
+      sortable: false, // Disable sorting for calculated values
       cell: (order) => {
         const profit = calculateOrderProfit(order);
         return (
@@ -521,6 +524,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       key: "tracking",
       header: "Tracking",
       sortable: true,
+      sortKey: "trackingNumber", // Sort by trackingNumber property
       cell: (order) => (
         <div className="text-sm">
           {order.trackingNumber ? (

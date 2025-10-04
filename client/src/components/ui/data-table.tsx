@@ -25,6 +25,7 @@ export interface DataTableColumn<T> {
   key: string;
   header: string;
   sortable?: boolean;
+  sortKey?: string; // Optional: custom property path for sorting (e.g., "customer.name")
   cell?: (item: T) => React.ReactNode;
   className?: string;
 }
@@ -151,9 +152,26 @@ export function DataTable<T>({
   const sortedData = useMemo(() => {
     if (!sortColumn || !sortDirection) return data;
 
+    const column = columns.find(col => col.key === sortColumn);
+    const sortKey = column?.sortKey || sortColumn;
+
     return [...data].sort((a, b) => {
-      const aValue = (a as any)[sortColumn];
-      const bValue = (b as any)[sortColumn];
+      // Get nested property value using dot notation (e.g., "customer.name")
+      const getNestedValue = (obj: any, path: string) => {
+        return path.split('.').reduce((current, prop) => current?.[prop], obj);
+      };
+
+      let aValue = getNestedValue(a, sortKey);
+      let bValue = getNestedValue(b, sortKey);
+
+      // Handle null/undefined values
+      if (aValue == null && bValue == null) return 0;
+      if (aValue == null) return 1;
+      if (bValue == null) return -1;
+
+      // Convert to comparable types
+      if (typeof aValue === 'string') aValue = aValue.toLowerCase();
+      if (typeof bValue === 'string') bValue = bValue.toLowerCase();
 
       if (aValue === bValue) return 0;
       
@@ -163,7 +181,7 @@ export function DataTable<T>({
         return aValue > bValue ? -1 : 1;
       }
     });
-  }, [data, sortColumn, sortDirection]);
+  }, [data, sortColumn, sortDirection, columns]);
 
   // Pagination logic
   const paginatedData = useMemo(() => {
