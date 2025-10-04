@@ -19,6 +19,7 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 import { calculateShippingCost } from "@/lib/shippingCosts";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import OrderDocumentSelector from "@/components/OrderDocumentSelector";
 import { 
   Plus, 
@@ -102,6 +103,8 @@ export default function AddOrder() {
   const [debouncedCustomerSearch, setDebouncedCustomerSearch] = useState("");
   const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
+  const [selectedShippingAddress, setSelectedShippingAddress] = useState<any>(null);
+  const [showNewAddressForm, setShowNewAddressForm] = useState(false);
   const [newCustomer, setNewCustomer] = useState({
     name: "",
     facebookName: "",
@@ -348,6 +351,35 @@ export default function AddOrder() {
   // Fetch all customers for real-time filtering
   const { data: allCustomers } = useQuery({
     queryKey: ['/api/customers'],
+  });
+
+  // Fetch shipping addresses for selected customer
+  const { data: shippingAddresses, isLoading: isLoadingShippingAddresses } = useQuery({
+    queryKey: ['/api/customers', selectedCustomer?.id, 'shipping-addresses'],
+    enabled: !!selectedCustomer?.id,
+  });
+
+  // Mutation to create new shipping address
+  const createShippingAddressMutation = useMutation({
+    mutationFn: async (addressData: any) => {
+      const response = await apiRequest('POST', `/api/customers/${selectedCustomer.id}/shipping-addresses`, addressData);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/customers', selectedCustomer?.id, 'shipping-addresses'] });
+      setShowNewAddressForm(false);
+      toast({
+        title: "Success",
+        description: "Shipping address created successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to create shipping address",
+        variant: "destructive",
+      });
+    },
   });
 
   // Update product prices when currency changes
@@ -1004,6 +1036,257 @@ export default function AddOrder() {
                   </Button>
                 </div>
               </div>
+            )}
+
+            {/* Shipping Address Section */}
+            {selectedCustomer && selectedCustomer.id && (
+              <Card className="mt-4" data-testid="card-shipping-address">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5" />
+                    Shipping Address
+                  </CardTitle>
+                  <CardDescription>Select or add a shipping address for this order</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {isLoadingShippingAddresses ? (
+                    <div className="text-center py-4 text-slate-500">Loading addresses...</div>
+                  ) : shippingAddresses && Array.isArray(shippingAddresses) && shippingAddresses.length > 0 ? (
+                    <RadioGroup
+                      value={selectedShippingAddress?.id || ""}
+                      onValueChange={(value) => {
+                        const address = shippingAddresses.find((a: any) => a.id === value);
+                        setSelectedShippingAddress(address);
+                      }}
+                      data-testid="radiogroup-shipping-addresses"
+                    >
+                      {shippingAddresses.map((address: any) => (
+                        <div
+                          key={address.id}
+                          className={`flex items-start space-x-3 p-4 rounded-lg border-2 transition-all cursor-pointer ${
+                            selectedShippingAddress?.id === address.id
+                              ? 'border-blue-500 bg-blue-50'
+                              : 'border-slate-200 hover:border-slate-300'
+                          }`}
+                          onClick={() => setSelectedShippingAddress(address)}
+                          data-testid={`card-address-${address.id}`}
+                        >
+                          <RadioGroupItem value={address.id} id={address.id} data-testid={`radio-address-${address.id}`} />
+                          <div className="flex-1">
+                            <Label htmlFor={address.id} className="cursor-pointer">
+                              <div className="font-medium text-slate-900">
+                                {address.firstName} {address.lastName}
+                              </div>
+                              {address.company && (
+                                <div className="text-sm text-slate-600 mt-1">
+                                  <Building className="h-3 w-3 inline mr-1" />
+                                  {address.company}
+                                </div>
+                              )}
+                              <div className="text-sm text-slate-600 mt-1">
+                                {address.street}{address.streetNumber ? ` ${address.streetNumber}` : ''}, {address.city}, {address.zipCode}, {address.country}
+                              </div>
+                              {address.email && (
+                                <div className="text-sm text-slate-500 mt-1">
+                                  <Mail className="h-3 w-3 inline mr-1" />
+                                  {address.email}
+                                </div>
+                              )}
+                              {address.tel && (
+                                <div className="text-sm text-slate-500 mt-1">
+                                  <Phone className="h-3 w-3 inline mr-1" />
+                                  {address.tel}
+                                </div>
+                              )}
+                            </Label>
+                          </div>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  ) : (
+                    <div className="text-center py-4 text-slate-500">
+                      No shipping addresses found. Add one below.
+                    </div>
+                  )}
+
+                  {!showNewAddressForm && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => setShowNewAddressForm(true)}
+                      data-testid="button-add-address"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add New Address
+                    </Button>
+                  )}
+
+                  {/* New Address Form */}
+                  {showNewAddressForm && (
+                    <div className="space-y-4 border border-blue-200 bg-blue-50 p-4 rounded-lg" data-testid="form-new-address">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium text-blue-900">New Shipping Address</h4>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowNewAddressForm(false)}
+                          data-testid="button-cancel-address"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="firstName">First Name *</Label>
+                          <Input
+                            id="firstName"
+                            placeholder="John"
+                            data-testid="input-first-name"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="lastName">Last Name *</Label>
+                          <Input
+                            id="lastName"
+                            placeholder="Doe"
+                            data-testid="input-last-name"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="addressCompany">Company</Label>
+                          <Input
+                            id="addressCompany"
+                            placeholder="Optional"
+                            data-testid="input-company"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="addressEmail">Email</Label>
+                          <Input
+                            id="addressEmail"
+                            type="email"
+                            placeholder="Optional"
+                            data-testid="input-email"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="addressStreet">Street *</Label>
+                          <Input
+                            id="addressStreet"
+                            placeholder="Main Street"
+                            data-testid="input-street"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="addressStreetNumber">Street Number</Label>
+                          <Input
+                            id="addressStreetNumber"
+                            placeholder="123A"
+                            data-testid="input-street-number"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <Label htmlFor="addressCity">City *</Label>
+                          <Input
+                            id="addressCity"
+                            placeholder="Prague"
+                            data-testid="input-city"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="addressZipCode">Zip Code *</Label>
+                          <Input
+                            id="addressZipCode"
+                            placeholder="110 00"
+                            data-testid="input-zip-code"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="addressCountry">Country *</Label>
+                          <Input
+                            id="addressCountry"
+                            placeholder="Czechia"
+                            data-testid="input-country"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="addressTel">Phone</Label>
+                        <Input
+                          id="addressTel"
+                          placeholder="Optional"
+                          data-testid="input-tel"
+                        />
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            const firstName = (document.getElementById('firstName') as HTMLInputElement)?.value;
+                            const lastName = (document.getElementById('lastName') as HTMLInputElement)?.value;
+                            const company = (document.getElementById('addressCompany') as HTMLInputElement)?.value;
+                            const email = (document.getElementById('addressEmail') as HTMLInputElement)?.value;
+                            const street = (document.getElementById('addressStreet') as HTMLInputElement)?.value;
+                            const streetNumber = (document.getElementById('addressStreetNumber') as HTMLInputElement)?.value;
+                            const city = (document.getElementById('addressCity') as HTMLInputElement)?.value;
+                            const zipCode = (document.getElementById('addressZipCode') as HTMLInputElement)?.value;
+                            const country = (document.getElementById('addressCountry') as HTMLInputElement)?.value;
+                            const tel = (document.getElementById('addressTel') as HTMLInputElement)?.value;
+
+                            if (!firstName || !lastName || !street || !city || !zipCode || !country) {
+                              toast({
+                                title: "Error",
+                                description: "Please fill in all required fields",
+                                variant: "destructive",
+                              });
+                              return;
+                            }
+
+                            createShippingAddressMutation.mutate({
+                              firstName,
+                              lastName,
+                              company: company || undefined,
+                              email: email || undefined,
+                              street,
+                              streetNumber: streetNumber || undefined,
+                              city,
+                              zipCode,
+                              country,
+                              tel: tel || undefined,
+                            });
+                          }}
+                          disabled={createShippingAddressMutation.isPending}
+                          data-testid="button-save-address"
+                        >
+                          {createShippingAddressMutation.isPending ? "Saving..." : "Save Address"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setShowNewAddressForm(false)}
+                          data-testid="button-cancel-new-address"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             )}
 
             {/* New customer form */}
