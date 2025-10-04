@@ -18,6 +18,8 @@ import {
   orderItems,
   warehouses,
   services,
+  preOrders,
+  preOrderItems,
   type User,
   type InsertUser,
   type Category,
@@ -55,7 +57,11 @@ import {
   type Warehouse,
   type InsertWarehouse,
   type Service,
-  type InsertService
+  type InsertService,
+  type PreOrder,
+  type InsertPreOrder,
+  type PreOrderItem,
+  type InsertPreOrderItem
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, like, sql, gte, lte, inArray, ne, asc, isNull, notInArray } from "drizzle-orm";
@@ -240,6 +246,17 @@ export interface IStorage {
   createService(service: any): Promise<Service>;
   updateService(id: string, service: any): Promise<Service>;
   deleteService(id: string): Promise<boolean>;
+  
+  // Pre-Orders
+  getPreOrders(): Promise<PreOrder[]>;
+  getPreOrder(id: string): Promise<PreOrder | undefined>;
+  createPreOrder(preOrder: InsertPreOrder): Promise<PreOrder>;
+  updatePreOrder(id: string, preOrder: Partial<InsertPreOrder>): Promise<PreOrder>;
+  deletePreOrder(id: string): Promise<boolean>;
+  getPreOrderItems(preOrderId: string): Promise<PreOrderItem[]>;
+  createPreOrderItem(item: InsertPreOrderItem): Promise<PreOrderItem>;
+  updatePreOrderItem(id: string, item: Partial<InsertPreOrderItem>): Promise<PreOrderItem>;
+  deletePreOrderItem(id: string): Promise<boolean>;
   
   // Purchases
   getPurchases(): Promise<Purchase[]>;
@@ -1796,6 +1813,110 @@ export class DatabaseStorage implements IStorage {
       return (result.rowCount ?? 0) > 0;
     } catch (error) {
       console.error('Error deleting service:', error);
+      return false;
+    }
+  }
+
+  async getPreOrders(): Promise<PreOrder[]> {
+    return await db
+      .select({
+        id: preOrders.id,
+        customerId: preOrders.customerId,
+        status: preOrders.status,
+        notes: preOrders.notes,
+        expectedDate: preOrders.expectedDate,
+        createdAt: preOrders.createdAt,
+        updatedAt: preOrders.updatedAt,
+        customer: customers
+      })
+      .from(preOrders)
+      .leftJoin(customers, eq(preOrders.customerId, customers.id))
+      .orderBy(desc(preOrders.createdAt)) as any;
+  }
+
+  async getPreOrder(id: string): Promise<PreOrder | undefined> {
+    const [preOrder] = await db
+      .select({
+        id: preOrders.id,
+        customerId: preOrders.customerId,
+        status: preOrders.status,
+        notes: preOrders.notes,
+        expectedDate: preOrders.expectedDate,
+        createdAt: preOrders.createdAt,
+        updatedAt: preOrders.updatedAt,
+        customer: customers
+      })
+      .from(preOrders)
+      .leftJoin(customers, eq(preOrders.customerId, customers.id))
+      .where(eq(preOrders.id, id)) as any;
+    
+    if (!preOrder) return undefined;
+
+    const items = await db
+      .select()
+      .from(preOrderItems)
+      .where(eq(preOrderItems.preOrderId, id));
+
+    return { ...preOrder, items } as any;
+  }
+
+  async createPreOrder(preOrder: InsertPreOrder): Promise<PreOrder> {
+    const [newPreOrder] = await db
+      .insert(preOrders)
+      .values(preOrder)
+      .returning();
+    return newPreOrder;
+  }
+
+  async updatePreOrder(id: string, preOrder: Partial<InsertPreOrder>): Promise<PreOrder> {
+    const [updated] = await db
+      .update(preOrders)
+      .set({ ...preOrder, updatedAt: new Date() })
+      .where(eq(preOrders.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deletePreOrder(id: string): Promise<boolean> {
+    try {
+      const result = await db.delete(preOrders).where(eq(preOrders.id, id));
+      return (result.rowCount ?? 0) > 0;
+    } catch (error) {
+      console.error('Error deleting pre-order:', error);
+      return false;
+    }
+  }
+
+  async getPreOrderItems(preOrderId: string): Promise<PreOrderItem[]> {
+    return await db
+      .select()
+      .from(preOrderItems)
+      .where(eq(preOrderItems.preOrderId, preOrderId));
+  }
+
+  async createPreOrderItem(item: InsertPreOrderItem): Promise<PreOrderItem> {
+    const [newItem] = await db
+      .insert(preOrderItems)
+      .values(item)
+      .returning();
+    return newItem;
+  }
+
+  async updatePreOrderItem(id: string, item: Partial<InsertPreOrderItem>): Promise<PreOrderItem> {
+    const [updated] = await db
+      .update(preOrderItems)
+      .set({ ...item, updatedAt: new Date() })
+      .where(eq(preOrderItems.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deletePreOrderItem(id: string): Promise<boolean> {
+    try {
+      const result = await db.delete(preOrderItems).where(eq(preOrderItems.id, id));
+      return (result.rowCount ?? 0) > 0;
+    } catch (error) {
+      console.error('Error deleting pre-order item:', error);
       return false;
     }
   }
