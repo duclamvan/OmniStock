@@ -332,16 +332,19 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     return filtered;
   }, [orders, searchQuery, statusFilter]);
 
+  // Color Psychology: Green=success, Amber=warning/pending, Blue=in-progress, Red=error/urgent
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return <Badge variant="secondary">Pending</Badge>;
+        return <Badge className="bg-amber-100 text-amber-800">Pending</Badge>;
       case 'to_fulfill':
-        return <Badge variant="default">To Fulfill</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800">To Fulfill</Badge>;
       case 'ready_to_ship':
         return <Badge className="bg-blue-100 text-blue-800">Ready to Ship</Badge>;
       case 'shipped':
         return <Badge className="bg-green-100 text-green-800">Shipped</Badge>;
+      case 'cancelled':
+        return <Badge variant="destructive">Cancelled</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -350,7 +353,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   const getPaymentStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return <Badge variant="secondary">Pending</Badge>;
+        return <Badge className="bg-amber-100 text-amber-800">Pending</Badge>;
       case 'paid':
         return <Badge className="bg-green-100 text-green-800">Paid</Badge>;
       case 'pay_later':

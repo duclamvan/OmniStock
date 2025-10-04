@@ -212,12 +212,20 @@ export default function OrderDetails() {
     return null;
   }
 
+  // Color Psychology: Green=success, Amber=warning/pending, Blue=in-progress, Red=error/urgent
   const statusVariant = 
-    order.orderStatus === 'shipped' ? 'default' :
-    order.orderStatus === 'to_fulfill' ? 'secondary' :
-    order.orderStatus === 'pending' ? 'outline' :
+    order.orderStatus === 'shipped' ? 'default' : // Will use custom green class
+    order.orderStatus === 'to_fulfill' ? 'default' : // Will use custom blue class
+    order.orderStatus === 'pending' ? 'default' : // Will use custom amber class
     order.orderStatus === 'cancelled' ? 'destructive' :
     'secondary';
+
+  const statusClassName = 
+    order.orderStatus === 'shipped' ? 'bg-green-100 text-green-800 hover:bg-green-100/80' :
+    order.orderStatus === 'to_fulfill' ? 'bg-blue-100 text-blue-800 hover:bg-blue-100/80' :
+    order.orderStatus === 'pending' ? 'bg-amber-100 text-amber-800 hover:bg-amber-100/80' :
+    order.orderStatus === 'cancelled' ? '' : // destructive variant
+    '';
 
   const statusText = 
     order.orderStatus === 'to_fulfill' ? 'To Fulfill' :
@@ -227,10 +235,16 @@ export default function OrderDetails() {
     order.orderStatus?.charAt(0).toUpperCase() + order.orderStatus?.slice(1) || 'Unknown';
 
   const paymentStatusVariant = 
-    order.paymentStatus === 'paid' ? 'default' :
-    order.paymentStatus === 'pending' ? 'secondary' :
-    order.paymentStatus === 'pay_later' ? 'outline' :
+    order.paymentStatus === 'paid' ? 'default' : // Will use custom green class
+    order.paymentStatus === 'pending' ? 'default' : // Will use custom amber class
+    order.paymentStatus === 'pay_later' ? 'default' : // Will use custom blue class
     'secondary';
+
+  const paymentStatusClassName = 
+    order.paymentStatus === 'paid' ? 'bg-green-100 text-green-800 hover:bg-green-100/80' :
+    order.paymentStatus === 'pending' ? 'bg-amber-100 text-amber-800 hover:bg-amber-100/80' :
+    order.paymentStatus === 'pay_later' ? 'bg-blue-100 text-blue-800 hover:bg-blue-100/80' :
+    '';
 
   const paymentStatusText = 
     order.paymentStatus === 'paid' ? 'Paid' :
@@ -240,8 +254,13 @@ export default function OrderDetails() {
 
   const priorityVariant = 
     order.priority === 'high' ? 'destructive' :
-    order.priority === 'medium' ? 'secondary' :
-    'outline';
+    order.priority === 'medium' ? 'default' : // Will use custom amber class
+    'secondary';
+
+  const priorityClassName = 
+    order.priority === 'high' ? '' : // destructive variant
+    order.priority === 'medium' ? 'bg-amber-100 text-amber-800 hover:bg-amber-100/80' :
+    '';
 
   const priorityText = 
     order.priority === 'high' ? 'High Priority' :
@@ -325,8 +344,11 @@ export default function OrderDetails() {
                         disabled={updateOrderStatusMutation.isPending}
                       >
                         <Badge 
-                          variant={statusVariant} 
-                          className="cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1.5 px-3 py-1"
+                          variant={order.orderStatus === 'cancelled' ? 'destructive' : 'default'} 
+                          className={cn(
+                            "cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1.5 px-3 py-1",
+                            statusClassName
+                          )}
                         >
                           {statusText}
                           <ChevronDown className="h-3 w-3" />
@@ -336,14 +358,20 @@ export default function OrderDetails() {
                     <DropdownMenuContent align="start">
                       <DropdownMenuItem 
                         onClick={() => updateOrderStatusMutation.mutate('pending')}
-                        className={order.orderStatus === 'pending' ? 'bg-accent' : ''}
+                        className={cn(
+                          "text-amber-700",
+                          order.orderStatus === 'pending' ? 'bg-amber-50' : ''
+                        )}
                       >
                         <AlertCircle className="mr-2 h-4 w-4" />
                         Pending
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         onClick={() => updateOrderStatusMutation.mutate('to_fulfill')}
-                        className={order.orderStatus === 'to_fulfill' ? 'bg-accent' : ''}
+                        className={cn(
+                          "text-blue-700",
+                          order.orderStatus === 'to_fulfill' ? 'bg-blue-50' : ''
+                        )}
                       >
                         <Package className="mr-2 h-4 w-4" />
                         To Fulfill
@@ -351,8 +379,8 @@ export default function OrderDetails() {
                       <DropdownMenuItem 
                         onClick={() => updateOrderStatusMutation.mutate('shipped')}
                         className={cn(
-                          "text-primary",
-                          order.orderStatus === 'shipped' ? 'bg-accent' : ''
+                          "text-green-700",
+                          order.orderStatus === 'shipped' ? 'bg-green-50' : ''
                         )}
                       >
                         <Truck className="mr-2 h-4 w-4" />
@@ -380,8 +408,11 @@ export default function OrderDetails() {
                         disabled={updatePaymentStatusMutation.isPending}
                       >
                         <Badge 
-                          variant={paymentStatusVariant} 
-                          className="cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1.5 px-3 py-1"
+                          variant="default"
+                          className={cn(
+                            "cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1.5 px-3 py-1",
+                            paymentStatusClassName
+                          )}
                         >
                           {paymentStatusText}
                           <ChevronDown className="h-3 w-3" />
@@ -391,7 +422,10 @@ export default function OrderDetails() {
                     <DropdownMenuContent align="start">
                       <DropdownMenuItem 
                         onClick={() => updatePaymentStatusMutation.mutate('pending')}
-                        className={order.paymentStatus === 'pending' ? 'bg-accent' : ''}
+                        className={cn(
+                          "text-amber-700",
+                          order.paymentStatus === 'pending' ? 'bg-amber-50' : ''
+                        )}
                       >
                         <Clock className="mr-2 h-4 w-4" />
                         Payment Pending
@@ -399,8 +433,8 @@ export default function OrderDetails() {
                       <DropdownMenuItem 
                         onClick={() => updatePaymentStatusMutation.mutate('paid')}
                         className={cn(
-                          "text-primary",
-                          order.paymentStatus === 'paid' ? 'bg-accent' : ''
+                          "text-green-700",
+                          order.paymentStatus === 'paid' ? 'bg-green-50' : ''
                         )}
                       >
                         <CheckCircle2 className="mr-2 h-4 w-4" />
@@ -408,7 +442,10 @@ export default function OrderDetails() {
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         onClick={() => updatePaymentStatusMutation.mutate('pay_later')}
-                        className={order.paymentStatus === 'pay_later' ? 'bg-accent' : ''}
+                        className={cn(
+                          "text-blue-700",
+                          order.paymentStatus === 'pay_later' ? 'bg-blue-50' : ''
+                        )}
                       >
                         <AlertCircle className="mr-2 h-4 w-4" />
                         Pay Later
@@ -424,8 +461,11 @@ export default function OrderDetails() {
                         disabled={updatePriorityMutation.isPending}
                       >
                         <Badge 
-                          variant={priorityVariant} 
-                          className="cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1.5 px-3 py-1"
+                          variant={order.priority === 'high' ? 'destructive' : order.priority === 'low' ? 'secondary' : 'default'}
+                          className={cn(
+                            "cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1.5 px-3 py-1",
+                            priorityClassName
+                          )}
                         >
                           {priorityText}
                           <ChevronDown className="h-3 w-3" />
@@ -442,7 +482,10 @@ export default function OrderDetails() {
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         onClick={() => updatePriorityMutation.mutate('medium')}
-                        className={order.priority === 'medium' ? 'bg-accent' : ''}
+                        className={cn(
+                          "text-amber-700",
+                          order.priority === 'medium' ? 'bg-amber-50' : ''
+                        )}
                       >
                         <TrendingUp className="mr-2 h-4 w-4" />
                         Medium Priority
