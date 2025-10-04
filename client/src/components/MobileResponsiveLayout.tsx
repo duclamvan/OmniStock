@@ -70,6 +70,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
   const [openItems, setOpenItems] = useState<string[]>([]);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const previousLocation = useRef(location);
   const [isCollapsed, setIsCollapsed] = useState(() => {
     const saved = localStorage.getItem('sidebarCollapsed');
     return saved ? JSON.parse(saved) : false;
@@ -84,11 +85,21 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
   
 
   const toggleItem = (itemName: string) => {
+    // Save current scroll position
+    const currentScrollTop = navRef.current?.scrollTop || 0;
+    
     setOpenItems(prev => 
       prev.includes(itemName) 
         ? prev.filter(name => name !== itemName)
         : [...prev, itemName]
     );
+    
+    // Restore scroll position after DOM update
+    requestAnimationFrame(() => {
+      if (navRef.current) {
+        navRef.current.scrollTop = currentScrollTop;
+      }
+    });
   };
 
   const navigation = [
@@ -231,6 +242,12 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
 
   // Automatically open parent menus and scroll to active item when location changes
   useEffect(() => {
+    // Only run if location actually changed
+    if (previousLocation.current === location) {
+      return;
+    }
+    previousLocation.current = location;
+    
     // Find parent menus that should be open based on current location
     const activeParentMenus: string[] = [];
     navigation.forEach(item => {
