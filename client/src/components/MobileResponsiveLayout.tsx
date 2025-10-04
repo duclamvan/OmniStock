@@ -252,7 +252,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
     },
   ];
 
-  // Automatically open parent menus and scroll to active item when location changes
+  // Automatically open parent menus when location changes (without scrolling)
   useEffect(() => {
     // Only run if location actually changed
     if (previousLocation.current === location) {
@@ -277,32 +277,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
       return Array.from(newOpenItems);
     });
     
-    // Scroll to active item after a short delay to ensure DOM is updated
-    setTimeout(() => {
-      // Find the active item key
-      let activeKey = location;
-      
-      // Check if it's a child item
-      navigation.forEach(item => {
-        if (item.children) {
-          const activeChild = item.children.find(child => child.href === location);
-          if (activeChild) {
-            activeKey = `${item.name}-${activeChild.href}`;
-          }
-        } else if (item.href === location) {
-          activeKey = item.name;
-        }
-      });
-      
-      // Scroll the active item into view
-      const activeElement = itemRefs.current[activeKey];
-      if (activeElement && navRef.current) {
-        activeElement.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center'
-        });
-      }
-    }, 100);
+    // No scrolling - sidebar stays in place
   }, [location]);
 
   const NavLinks = ({ collapsed = false }: { collapsed?: boolean }) => (
