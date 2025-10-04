@@ -72,7 +72,7 @@ export default function AllPreOrders() {
 
   const deletePreOrderMutation = useMutation({
     mutationFn: async (id: string) => {
-      return await apiRequest(`/api/pre-orders/${id}`, 'DELETE');
+      return await apiRequest('DELETE', `/api/pre-orders/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/pre-orders'] });

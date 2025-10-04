@@ -141,7 +141,7 @@ export default function EditPreOrder() {
   const updatePreOrderMutation = useMutation({
     mutationFn: async (data: any) => {
       // First, update the pre-order
-      await apiRequest(`/api/pre-orders/${id}`, 'PATCH', {
+      await apiRequest('PATCH', `/api/pre-orders/${id}`, {
         customerId: data.customerId,
         status: data.status,
         notes: data.notes,
@@ -152,7 +152,7 @@ export default function EditPreOrder() {
       if (preOrder?.items) {
         await Promise.all(
           preOrder.items.map((item: any) =>
-            apiRequest(`/api/pre-order-items/${item.id}`, 'DELETE')
+            apiRequest('DELETE', `/api/pre-order-items/${item.id}`)
           )
         );
       }
@@ -160,7 +160,7 @@ export default function EditPreOrder() {
       // Finally, create new items
       await Promise.all(
         data.items.map((item: any) =>
-          apiRequest('/api/pre-order-items', 'POST', {
+          apiRequest('POST', '/api/pre-order-items', {
             preOrderId: id,
             productId: item.productId || null,
             itemName: item.itemName,

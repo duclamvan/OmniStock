@@ -102,7 +102,7 @@ export default function AddPreOrder() {
 
   const createPreOrderMutation = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest('/api/pre-orders', 'POST', data);
+      return await apiRequest('POST', '/api/pre-orders', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/pre-orders'] });

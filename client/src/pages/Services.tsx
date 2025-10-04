@@ -59,7 +59,7 @@ export default function Services() {
 
   const createServiceMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      return await apiRequest('/api/services', 'POST', data);
+      return await apiRequest('POST', '/api/services', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/services'] });
@@ -81,7 +81,7 @@ export default function Services() {
 
   const updateServiceMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: typeof formData }) => {
-      return await apiRequest(`/api/services/${id}`, 'PATCH', data);
+      return await apiRequest('PATCH', `/api/services/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/services'] });
@@ -104,7 +104,7 @@ export default function Services() {
 
   const deleteServiceMutation = useMutation({
     mutationFn: async (id: string) => {
-      return await apiRequest(`/api/services/${id}`, 'DELETE');
+      return await apiRequest('DELETE', `/api/services/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/services'] });
