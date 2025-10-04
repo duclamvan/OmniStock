@@ -441,9 +441,13 @@ export default function OrderDetails() {
                         <TrendingUp className="mr-2 h-4 w-4" />
                         Medium Priority
                       </DropdownMenuItem>
+                      <DropdownMenuSeparator />
                       <DropdownMenuItem 
                         onClick={() => updatePriorityMutation.mutate('high')}
-                        className={order.priority === 'high' ? 'bg-accent' : ''}
+                        className={cn(
+                          "text-destructive",
+                          order.priority === 'high' ? 'bg-accent' : ''
+                        )}
                       >
                         <BarChart3 className="mr-2 h-4 w-4" />
                         High Priority
