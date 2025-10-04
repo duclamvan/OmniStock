@@ -3,6 +3,13 @@ Davie Supply is a full-stack web application designed for comprehensive warehous
 
 # Recent Changes (October 2025)
 
+## Country Selector Enhancement (Completed)
+- **Pinned Countries**: Most frequent countries (CZ, DE, SK, PL, AT, VN) displayed at top of dropdown
+- **Custom Pin/Unpin**: Users can pin/unpin any country via hover button with pin icon
+- **Persistent Storage**: Pinned countries saved in localStorage for user preference persistence
+- **Two-Section Layout**: "Pinned Countries" and "All Countries" groups with headings
+- **Visual Feedback**: Pinned countries show filled pin icon (blue), unpinned show outlined pin icon (gray)
+
 ## Invoice UI Enhancement (Completed)
 - **Product Images**: Added product thumbnail display (64x64px) in invoice items, with placeholder icon for products without images
 - **Prominent Quantity Display**: Quantity now shown in large, bold badge format for better visibility

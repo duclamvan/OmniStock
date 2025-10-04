@@ -13,7 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ArrowLeft, Plus, Trash2, Edit2, Check, X, Loader2, CheckCircle, XCircle, Globe, Building, MapPin, FileText, Truck, ChevronsUpDown } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Edit2, Check, X, Loader2, CheckCircle, XCircle, Globe, Building, MapPin, FileText, Truck, ChevronsUpDown, Pin } from "lucide-react";
 import { europeanCountries, euCountryCodes, getCountryFlag } from "@/lib/countries";
 import type { Customer, CustomerShippingAddress } from "@shared/schema";
 import { cn } from "@/lib/utils";
@@ -92,6 +92,8 @@ interface VatValidationResult {
   error?: string;
 }
 
+const DEFAULT_PINNED_COUNTRIES = ['CZ', 'DE', 'SK', 'PL', 'AT', 'VN'];
+
 export default function AddCustomer() {
   const [, navigate] = useLocation();
   const params = useParams();
@@ -101,6 +103,11 @@ export default function AddCustomer() {
 
   const [openCountryCombobox, setOpenCountryCombobox] = useState(false);
   const [countrySearchQuery, setCountrySearchQuery] = useState("");
+  
+  const [pinnedCountries, setPinnedCountries] = useState<string[]>(() => {
+    const stored = localStorage.getItem('pinnedCountries');
+    return stored ? JSON.parse(stored) : DEFAULT_PINNED_COUNTRIES;
+  });
 
   const [billingAddressQuery, setBillingAddressQuery] = useState("");
   const [billingAddressSuggestions, setBillingAddressSuggestions] = useState<AddressAutocompleteResult[]>([]);
@@ -468,9 +475,25 @@ export default function AddCustomer() {
   const isCzech = selectedCountry === 'CZ';
   const isEU = euCountryCodes.includes(selectedCountry);
 
+  const togglePinCountry = (countryCode: string) => {
+    const newPinned = pinnedCountries.includes(countryCode)
+      ? pinnedCountries.filter(code => code !== countryCode)
+      : [...pinnedCountries, countryCode];
+    setPinnedCountries(newPinned);
+    localStorage.setItem('pinnedCountries', JSON.stringify(newPinned));
+  };
+
   const filteredCountries = availableCountries.filter(country =>
     country.name.toLowerCase().includes(countrySearchQuery.toLowerCase()) ||
     country.code.toLowerCase().includes(countrySearchQuery.toLowerCase())
+  );
+
+  const pinnedFilteredCountries = filteredCountries.filter(country => 
+    pinnedCountries.includes(country.code)
+  );
+  
+  const unpinnedFilteredCountries = filteredCountries.filter(country => 
+    !pinnedCountries.includes(country.code)
   );
 
   const selectedCountryData = availableCountries.find(c => c.code === selectedCountry);
@@ -542,29 +565,90 @@ export default function AddCustomer() {
                     />
                     <CommandList>
                       <CommandEmpty>No country found.</CommandEmpty>
-                      <CommandGroup>
-                        {filteredCountries.map((country) => (
-                          <CommandItem
-                            key={country.code}
-                            value={country.code}
-                            onSelect={() => {
-                              form.setValue('country', country.code);
-                              setOpenCountryCombobox(false);
-                              setCountrySearchQuery("");
-                            }}
-                            data-testid={`option-country-${country.code}`}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                selectedCountry === country.code ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                            <span className="text-xl mr-2">{getCountryFlag(country.code)}</span>
-                            {country.name}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
+                      
+                      {pinnedFilteredCountries.length > 0 && (
+                        <CommandGroup heading="Pinned Countries">
+                          {pinnedFilteredCountries.map((country) => (
+                            <CommandItem
+                              key={country.code}
+                              value={country.code}
+                              onSelect={() => {
+                                form.setValue('country', country.code);
+                                setOpenCountryCombobox(false);
+                                setCountrySearchQuery("");
+                              }}
+                              data-testid={`option-country-${country.code}`}
+                              className="flex items-center justify-between group"
+                            >
+                              <div className="flex items-center flex-1">
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    selectedCountry === country.code ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                <span className="text-xl mr-2">{getCountryFlag(country.code)}</span>
+                                {country.name}
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  togglePinCountry(country.code);
+                                }}
+                                data-testid={`button-unpin-${country.code}`}
+                              >
+                                <Pin className="h-3 w-3 fill-current text-blue-600" />
+                              </Button>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      )}
+                      
+                      {unpinnedFilteredCountries.length > 0 && (
+                        <CommandGroup heading={pinnedFilteredCountries.length > 0 ? "All Countries" : undefined}>
+                          {unpinnedFilteredCountries.map((country) => (
+                            <CommandItem
+                              key={country.code}
+                              value={country.code}
+                              onSelect={() => {
+                                form.setValue('country', country.code);
+                                setOpenCountryCombobox(false);
+                                setCountrySearchQuery("");
+                              }}
+                              data-testid={`option-country-${country.code}`}
+                              className="flex items-center justify-between group"
+                            >
+                              <div className="flex items-center flex-1">
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    selectedCountry === country.code ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                <span className="text-xl mr-2">{getCountryFlag(country.code)}</span>
+                                {country.name}
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  togglePinCountry(country.code);
+                                }}
+                                data-testid={`button-pin-${country.code}`}
+                              >
+                                <Pin className="h-3 w-3 text-slate-400" />
+                              </Button>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      )}
                     </CommandList>
                   </Command>
                 </PopoverContent>
