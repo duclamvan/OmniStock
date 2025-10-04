@@ -55,6 +55,7 @@ const editOrderSchema = z.object({
   paymentMethod: z.enum(['Bank Transfer', 'PayPal', 'COD', 'Cash']).optional(),
   discountType: z.enum(['flat', 'rate']).optional(),
   discountValue: z.coerce.number().min(0).default(0),
+  totalPaid: z.coerce.number().min(0).default(0),
   taxRate: z.coerce.number().min(0).max(100).default(0),
   shippingCost: z.coerce.number().min(0).default(0),
   actualShippingCost: z.coerce.number().min(0).default(0),
@@ -72,6 +73,7 @@ const addOrderSchema = z.object({
   paymentMethod: z.enum(['Bank Transfer', 'PayPal', 'COD', 'Cash']).optional(),
   discountType: z.enum(['flat', 'rate']).optional(),
   discountValue: z.coerce.number().min(0).default(0),
+  totalPaid: z.coerce.number().min(0).default(0),
   taxRate: z.coerce.number().min(0).max(100).default(0),
   shippingCost: z.coerce.number().min(0).default(0),
   actualShippingCost: z.coerce.number().min(0).default(0),
@@ -295,6 +297,7 @@ export default function EditOrder() {
       orderStatus: 'pending',
       paymentStatus: 'pending',
       discountValue: 0,
+      totalPaid: 0,
       taxRate: 0,
       shippingCost: 0,
       actualShippingCost: 0,
@@ -360,6 +363,7 @@ export default function EditOrder() {
   // Initialize form with order data when loaded
   useEffect(() => {
     if (order) {
+      const grandTotal = parseFloat(order.grandTotal || '0');
       form.reset({
         customerId: order.customerId || '',
         currency: order.currency || 'EUR',
@@ -370,6 +374,7 @@ export default function EditOrder() {
         shippingMethod: order.shippingMethod || undefined,
         discountType: order.discountType || 'flat',
         discountValue: order.discountValue ? parseFloat(order.discountValue) : 0,
+        totalPaid: grandTotal, // Default to Grand Total
         taxRate: order.taxRate ? parseFloat(order.taxRate) : 0,
         shippingCost: order.shippingCost ? parseFloat(order.shippingCost) : 0,
         actualShippingCost: order.actualShippingCost ? parseFloat(order.actualShippingCost) : 0,
@@ -614,6 +619,30 @@ export default function EditOrder() {
 
     return subtotal + tax + shipping - discount;
   };
+
+  // Handler to auto-calculate discount when Total Paid changes
+  const handleTotalPaidBlur = () => {
+    const grandTotal = calculateGrandTotal();
+    const totalPaidValue = form.watch('totalPaid');
+    const totalPaid = typeof totalPaidValue === 'string' ? parseFloat(totalPaidValue || '0') : (totalPaidValue || 0);
+    
+    // Calculate discount: Grand Total - Total Paid
+    const calculatedDiscount = Math.max(0, grandTotal - totalPaid);
+    
+    // Update discount field
+    form.setValue('discountValue', calculatedDiscount);
+  };
+
+  // Auto-sync totalPaid with Grand Total when order items or pricing changes
+  useEffect(() => {
+    const grandTotal = calculateGrandTotal();
+    const currentTotalPaid = form.watch('totalPaid');
+    
+    // Only update if totalPaid hasn't been manually edited (equals old grand total or is 0)
+    if (currentTotalPaid === 0 || !currentTotalPaid) {
+      form.setValue('totalPaid', grandTotal);
+    }
+  }, [orderItems, form.watch('taxRate'), form.watch('shippingCost')]);
 
   const onSubmit = (data: z.infer<typeof addOrderSchema>) => {
     if (orderItems.length === 0) {
@@ -1482,14 +1511,33 @@ export default function EditOrder() {
           <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
+                <Label htmlFor="totalPaid">Total Paid</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  {...form.register('totalPaid', { valueAsNumber: true })}
+                  onBlur={handleTotalPaidBlur}
+                  className="font-medium"
+                  data-testid="input-total-paid"
+                />
+                <p className="text-xs text-blue-600 mt-1">💡 Defaults to Grand Total. Edit to auto-calculate discount.</p>
+              </div>
+
+              <div>
                 <Label htmlFor="discountValue">Discount Amount</Label>
                 <Input
                   type="number"
                   step="0.01"
                   {...form.register('discountValue', { valueAsNumber: true })}
+                  className="bg-slate-50"
+                  readOnly
+                  data-testid="input-discount-value"
                 />
+                <p className="text-xs text-gray-500 mt-1">Auto-calculated from Total Paid</p>
               </div>
+            </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <Label htmlFor="taxRate">Tax Rate (%)</Label>
                 <Input
