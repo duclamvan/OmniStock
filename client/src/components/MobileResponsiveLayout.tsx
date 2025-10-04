@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'wouter';
+import { useQuery } from '@tanstack/react-query';
 import { 
   Menu, 
   X, 
@@ -44,6 +45,7 @@ import {
   Wrench
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
@@ -78,6 +80,16 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
 
   // Check if we're on the Pick & Pack page
   const isPickPackPage = location === '/orders/pick-pack';
+
+  // Fetch pre-orders to count fully arrived ones
+  const { data: preOrders } = useQuery<any[]>({
+    queryKey: ['/api/pre-orders'],
+    refetchInterval: 30000, // Refetch every 30 seconds
+    retry: false, // Don't retry on error
+    refetchOnWindowFocus: false, // Don't refetch on window focus to reduce errors
+  });
+
+  const fullyArrivedCount = preOrders?.filter(po => po.status === 'fully_arrived').length || 0;
 
   useEffect(() => {
     localStorage.setItem('sidebarCollapsed', JSON.stringify(isCollapsed));
@@ -333,10 +345,15 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                   {item.children.map((child) => (
                     <Link key={child.href} href={child.href}>
                       <DropdownMenuItem className={cn(
-                        "rounded-md px-3 py-2 cursor-pointer transition-colors",
+                        "rounded-md px-3 py-2 cursor-pointer transition-colors flex items-center justify-between",
                         location === child.href && "bg-gray-100 dark:bg-gray-800"
                       )}>
                         <span className="text-sm">{child.name}</span>
+                        {child.href === '/orders/pre-orders' && fullyArrivedCount > 0 && (
+                          <Badge variant="default" className="ml-2 bg-green-600 hover:bg-green-700 text-white text-xs h-5 min-w-5 px-1.5">
+                            {fullyArrivedCount}
+                          </Badge>
+                        )}
                       </DropdownMenuItem>
                     </Link>
                   ))}
@@ -403,7 +420,12 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                               )}
                               onClick={() => setIsMobileMenuOpen(false)}
                             >
-                              {child.name}
+                              <span className="flex-1 text-left">{child.name}</span>
+                              {child.href === '/orders/pre-orders' && fullyArrivedCount > 0 && (
+                                <Badge variant="default" className="ml-2 bg-green-600 hover:bg-green-700 text-white text-xs h-5 min-w-5 px-1.5">
+                                  {fullyArrivedCount}
+                                </Badge>
+                              )}
                             </Button>
                           </Link>
                         </div>
