@@ -531,6 +531,31 @@ export const services = pgTable('services', {
   updatedAt: timestamp('updated_at').notNull().defaultNow()
 });
 
+// Pre-orders table for customer pre-order management
+export const preOrders = pgTable('pre_orders', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  customerId: varchar('customer_id').notNull().references(() => customers.id),
+  status: varchar('status').notNull().default('pending'), // pending, partially_arrived, fully_arrived, cancelled
+  notes: text('notes'),
+  expectedDate: date('expected_date'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
+// Pre-order items
+export const preOrderItems = pgTable('pre_order_items', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  preOrderId: varchar('pre_order_id').notNull().references(() => preOrders.id, { onDelete: 'cascade' }),
+  productId: varchar('product_id').references(() => products.id), // nullable - can be new item
+  itemName: varchar('item_name').notNull(),
+  itemDescription: text('item_description'),
+  quantity: integer('quantity').notNull(),
+  arrivedQuantity: integer('arrived_quantity').notNull().default(0),
+  purchaseItemId: integer('purchase_item_id').references(() => purchaseItems.id), // link to import items
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
 // User activities tracking
 export const userActivities = pgTable('user_activities', {
   id: serial('id').primaryKey(),
@@ -813,6 +838,8 @@ export const insertProductLocationSchema = createInsertSchema(productLocations)
 export const insertDiscountSchema = createInsertSchema(discounts).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertExpenseSchema = createInsertSchema(expenses).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertServiceSchema = createInsertSchema(services).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertPreOrderSchema = createInsertSchema(preOrders).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertPreOrderItemSchema = createInsertSchema(preOrderItems).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertUserActivitySchema = createInsertSchema(userActivities).omit({ id: true, createdAt: true });
 
 // Landing Cost Tracking Schemas
@@ -872,6 +899,10 @@ export type Expense = typeof expenses.$inferSelect;
 export type InsertExpense = z.infer<typeof insertExpenseSchema>;
 export type Service = typeof services.$inferSelect;
 export type InsertService = z.infer<typeof insertServiceSchema>;
+export type PreOrder = typeof preOrders.$inferSelect;
+export type InsertPreOrder = z.infer<typeof insertPreOrderSchema>;
+export type PreOrderItem = typeof preOrderItems.$inferSelect;
+export type InsertPreOrderItem = z.infer<typeof insertPreOrderItemSchema>;
 export type UserActivity = typeof userActivities.$inferSelect;
 export type InsertUserActivity = z.infer<typeof insertUserActivitySchema>;
 
