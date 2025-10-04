@@ -8,18 +8,27 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ArrowLeft, Plus, Trash2, Edit2, Check, X, Loader2, CheckCircle, XCircle } from "lucide-react";
-import { europeanCountries, euCountryCodes } from "@/lib/countries";
+import { ArrowLeft, Plus, Trash2, Edit2, Check, X, Loader2, CheckCircle, XCircle, Globe, Building, MapPin, FileText, Truck, ChevronsUpDown } from "lucide-react";
+import { europeanCountries, euCountryCodes, getCountryFlag } from "@/lib/countries";
 import type { Customer, CustomerShippingAddress } from "@shared/schema";
+import { cn } from "@/lib/utils";
+
+const availableCountries = [
+  ...europeanCountries,
+  { code: 'VN', name: 'Vietnam' },
+  { code: 'Other', name: 'Other' }
+];
 
 const customerFormSchema = z.object({
+  country: z.string().min(1, "Country is required"),
+  billingCompany: z.string().optional(),
   billingFirstName: z.string().min(1, "First name is required"),
   billingLastName: z.string().min(1, "Last name is required"),
-  billingCompany: z.string().optional(),
   billingEmail: z.string().email("Invalid email").optional().or(z.literal("")),
   billingTel: z.string().optional(),
   billingStreet: z.string().optional(),
@@ -90,6 +99,9 @@ export default function AddCustomer() {
   const isEditMode = !!customerId;
   const { toast } = useToast();
 
+  const [openCountryCombobox, setOpenCountryCombobox] = useState(false);
+  const [countrySearchQuery, setCountrySearchQuery] = useState("");
+
   const [billingAddressQuery, setBillingAddressQuery] = useState("");
   const [billingAddressSuggestions, setBillingAddressSuggestions] = useState<AddressAutocompleteResult[]>([]);
   const [showBillingDropdown, setShowBillingDropdown] = useState(false);
@@ -110,6 +122,7 @@ export default function AddCustomer() {
   const form = useForm<CustomerFormData>({
     resolver: zodResolver(customerFormSchema),
     defaultValues: {
+      country: "",
       billingFirstName: "",
       billingLastName: "",
       billingCompany: "",
@@ -162,6 +175,7 @@ export default function AddCustomer() {
   useEffect(() => {
     if (existingCustomer && isEditMode) {
       form.reset({
+        country: existingCustomer.country || "",
         billingFirstName: existingCustomer.billingFirstName || "",
         billingLastName: existingCustomer.billingLastName || "",
         billingCompany: existingCustomer.billingCompany || "",
@@ -210,6 +224,14 @@ export default function AddCustomer() {
       })));
     }
   }, [existingShippingAddresses]);
+
+  const selectedCountry = form.watch('country');
+
+  useEffect(() => {
+    if (selectedCountry && !isEditMode) {
+      form.setValue('billingCountry', selectedCountry);
+    }
+  }, [selectedCountry, isEditMode, form]);
 
   const debounce = <T extends (...args: any[]) => any>(
     func: T,
@@ -363,7 +385,7 @@ export default function AddCustomer() {
       streetNumber: "",
       city: "",
       zipCode: "",
-      country: "",
+      country: form.getValues('billingCountry') || "",
       state: "",
       isPrimary: shippingAddresses.length === 0,
     });
@@ -443,9 +465,15 @@ export default function AddCustomer() {
     createOrUpdateCustomerMutation.mutate(data);
   };
 
-  const billingCountry = form.watch('billingCountry');
-  const isCzech = billingCountry === 'CZ' || billingCountry === 'Czech Republic';
-  const isEU = europeanCountries.some(c => c.name === billingCountry || c.code === billingCountry);
+  const isCzech = selectedCountry === 'CZ';
+  const isEU = euCountryCodes.includes(selectedCountry);
+
+  const filteredCountries = availableCountries.filter(country =>
+    country.name.toLowerCase().includes(countrySearchQuery.toLowerCase()) ||
+    country.code.toLowerCase().includes(countrySearchQuery.toLowerCase())
+  );
+
+  const selectedCountryData = availableCountries.find(c => c.code === selectedCountry);
 
   if (isLoadingCustomer) {
     return (
@@ -475,16 +503,96 @@ export default function AddCustomer() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>1. Identity</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Globe className="h-5 w-5 text-blue-500" />
+              Location & Business Info
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="country" className="text-base font-semibold">Country / Location *</Label>
+              <p className="text-sm text-slate-500 mb-2">Select the primary country where this customer operates</p>
+              <Popover open={openCountryCombobox} onOpenChange={setOpenCountryCombobox}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={openCountryCombobox}
+                    className="w-full justify-between"
+                    data-testid="button-country-selector"
+                  >
+                    {selectedCountryData ? (
+                      <span className="flex items-center gap-2">
+                        <span className="text-2xl">{getCountryFlag(selectedCountryData.code)}</span>
+                        {selectedCountryData.name}
+                      </span>
+                    ) : (
+                      "Select country..."
+                    )}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0" align="start">
+                  <Command>
+                    <CommandInput 
+                      placeholder="Search country..." 
+                      value={countrySearchQuery}
+                      onValueChange={setCountrySearchQuery}
+                      data-testid="input-country-search"
+                    />
+                    <CommandList>
+                      <CommandEmpty>No country found.</CommandEmpty>
+                      <CommandGroup>
+                        {filteredCountries.map((country) => (
+                          <CommandItem
+                            key={country.code}
+                            value={country.code}
+                            onSelect={() => {
+                              form.setValue('country', country.code);
+                              setOpenCountryCombobox(false);
+                              setCountrySearchQuery("");
+                            }}
+                            data-testid={`option-country-${country.code}`}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                selectedCountry === country.code ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            <span className="text-xl mr-2">{getCountryFlag(country.code)}</span>
+                            {country.name}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              {form.formState.errors.country && (
+                <p className="text-sm text-red-500 mt-1">{form.formState.errors.country.message}</p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="billingCompany" className="text-base font-semibold">Company Name</Label>
+              <Input
+                id="billingCompany"
+                {...form.register('billingCompany')}
+                placeholder="Nail Salon Prague s.r.o."
+                className="text-base"
+                data-testid="input-billingCompany"
+              />
+              <p className="text-xs text-slate-500 mt-1">Leave empty for individual customers</p>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="billingFirstName">First Name *</Label>
                 <Input
                   id="billingFirstName"
                   {...form.register('billingFirstName')}
-                  placeholder="John"
+                  placeholder="Jan"
                   data-testid="input-billingFirstName"
                 />
                 {form.formState.errors.billingFirstName && (
@@ -496,7 +604,7 @@ export default function AddCustomer() {
                 <Input
                   id="billingLastName"
                   {...form.register('billingLastName')}
-                  placeholder="Doe"
+                  placeholder="Novák"
                   data-testid="input-billingLastName"
                 />
                 {form.formState.errors.billingLastName && (
@@ -504,28 +612,23 @@ export default function AddCustomer() {
                 )}
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="billingCompany">Company</Label>
-                <Input
-                  id="billingCompany"
-                  {...form.register('billingCompany')}
-                  placeholder="Company name"
-                  data-testid="input-billingCompany"
-                />
-              </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="billingEmail">Email</Label>
                 <Input
                   id="billingEmail"
                   type="email"
                   {...form.register('billingEmail')}
-                  placeholder="name@example.com"
+                  placeholder="jan.novak@nailsalon.cz"
                   data-testid="input-billingEmail"
                 />
+                {form.formState.errors.billingEmail && (
+                  <p className="text-sm text-red-500 mt-1">{form.formState.errors.billingEmail.message}</p>
+                )}
               </div>
               <div>
-                <Label htmlFor="billingTel">Tel</Label>
+                <Label htmlFor="billingTel">Phone</Label>
                 <Input
                   id="billingTel"
                   {...form.register('billingTel')}
@@ -539,11 +642,15 @@ export default function AddCustomer() {
 
         <Card>
           <CardHeader>
-            <CardTitle>2. Billing Address</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-green-500" />
+              Billing Address
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="billingAddressAutocomplete">Search Address</Label>
+              <Label htmlFor="billingAddressAutocomplete" className="text-base font-semibold">Quick Address Lookup</Label>
+              <p className="text-sm text-slate-500 mb-2">Start typing to search and autocomplete address</p>
               <div className="relative">
                 <Input
                   id="billingAddressAutocomplete"
@@ -552,7 +659,8 @@ export default function AddCustomer() {
                     setBillingAddressQuery(e.target.value);
                     searchBillingAddress(e.target.value);
                   }}
-                  placeholder="Start typing to search..."
+                  placeholder="Type address to search..."
+                  className="text-base"
                   data-testid="input-billingAddressAutocomplete"
                 />
                 {billingAddressQuery && (
@@ -595,203 +703,335 @@ export default function AddCustomer() {
                 )}
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="billingStreet">Street Address</Label>
-                <Input
-                  id="billingStreet"
-                  {...form.register('billingStreet')}
-                  placeholder="Main Street"
-                  data-testid="input-billingStreet"
-                />
+
+            <div className="pt-4 border-t">
+              <h4 className="font-semibold mb-3">Or enter manually:</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="md:col-span-2">
+                  <Label htmlFor="billingStreet">Street Address</Label>
+                  <Input
+                    id="billingStreet"
+                    {...form.register('billingStreet')}
+                    placeholder="Main Street"
+                    data-testid="input-billingStreet"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="billingStreetNumber">Number</Label>
+                  <Input
+                    id="billingStreetNumber"
+                    {...form.register('billingStreetNumber')}
+                    placeholder="123"
+                    data-testid="input-billingStreetNumber"
+                  />
+                </div>
               </div>
-              <div>
-                <Label htmlFor="billingStreetNumber">Street Number</Label>
-                <Input
-                  id="billingStreetNumber"
-                  {...form.register('billingStreetNumber')}
-                  placeholder="123"
-                  data-testid="input-billingStreetNumber"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="billingCity">City</Label>
-                <Input
-                  id="billingCity"
-                  {...form.register('billingCity')}
-                  placeholder="Prague"
-                  data-testid="input-billingCity"
-                />
-              </div>
-              <div>
-                <Label htmlFor="billingZipCode">ZIP/Postal Code</Label>
-                <Input
-                  id="billingZipCode"
-                  {...form.register('billingZipCode')}
-                  placeholder="12000"
-                  data-testid="input-billingZipCode"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="billingCountry">Country</Label>
-                <Select
-                  value={form.watch('billingCountry')}
-                  onValueChange={(value) => form.setValue('billingCountry', value)}
-                >
-                  <SelectTrigger id="billingCountry" data-testid="select-billingCountry">
-                    <SelectValue placeholder="Select country" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {europeanCountries.map((country) => (
-                      <SelectItem key={country.code} value={country.code} data-testid={`select-country-${country.code}`}>
-                        {country.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="billingState">State/Region</Label>
-                <Input
-                  id="billingState"
-                  {...form.register('billingState')}
-                  placeholder="State or region"
-                  data-testid="input-billingState"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <div>
+                  <Label htmlFor="billingCity">City</Label>
+                  <Input
+                    id="billingCity"
+                    {...form.register('billingCity')}
+                    placeholder="Prague"
+                    data-testid="input-billingCity"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="billingZipCode">Postal Code</Label>
+                  <Input
+                    id="billingZipCode"
+                    {...form.register('billingZipCode')}
+                    placeholder="110 00"
+                    data-testid="input-billingZipCode"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="billingCountry">Country</Label>
+                  <Input
+                    id="billingCountry"
+                    {...form.register('billingCountry')}
+                    placeholder="Czech Republic"
+                    readOnly
+                    className="bg-slate-50"
+                    data-testid="input-billingCountry"
+                  />
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>3. Shipping Addresses</CardTitle>
-            {!isAddingShipping && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleAddShippingAddress}
-                data-testid="button-addShippingAddress"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Shipping Address
-              </Button>
-            )}
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {shippingAddresses.length > 0 && !isAddingShipping && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {shippingAddresses.map((address, index) => (
-                  <Card key={index} className="border-2" data-testid={`card-shippingAddress-${index}`}>
-                    <CardContent className="pt-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-semibold" data-testid={`text-shippingLabel-${index}`}>{address.label}</h4>
-                          {address.isPrimary && (
-                            <Badge variant="default" data-testid={`badge-primary-${index}`}>Primary</Badge>
+        {(isCzech || isEU) && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-purple-500" />
+                Tax & Business Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {isCzech && (
+                <div className="space-y-4 pb-4 border-b">
+                  <h4 className="font-semibold text-sm flex items-center gap-2">
+                    <span className="text-2xl">🇨🇿</span>
+                    Czech Company Information
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="ico">IČO (Company ID)</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="ico"
+                          {...form.register('ico')}
+                          placeholder="12345678"
+                          onBlur={(e) => handleAresLookup(e.target.value)}
+                          data-testid="input-ico"
+                        />
+                        {isLoadingAres && <Loader2 className="h-5 w-5 animate-spin mt-2" data-testid="loader-ares" />}
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">Enter IČO to auto-fill company details from ARES</p>
+                    </div>
+                    <div>
+                      <Label htmlFor="dic">DIČ (Tax ID)</Label>
+                      <Input
+                        id="dic"
+                        {...form.register('dic')}
+                        placeholder="CZ12345678"
+                        readOnly
+                        className="bg-slate-50"
+                        data-testid="input-dic"
+                      />
+                      <p className="text-xs text-slate-500 mt-1">Auto-filled from ARES</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {isEU && (
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-sm flex items-center gap-2">
+                    <span className="text-2xl">🇪🇺</span>
+                    VAT Information
+                  </h4>
+                  <div>
+                    <Label htmlFor="vatNumber">VAT Number</Label>
+                    <div className="flex gap-2 items-start">
+                      <div className="flex-1">
+                        <Input
+                          id="vatNumber"
+                          {...form.register('vatNumber')}
+                          placeholder="Enter VAT number"
+                          onBlur={(e) => {
+                            const vatNumber = e.target.value;
+                            const country = selectedCountry;
+                            if (vatNumber && country) {
+                              handleVatValidation(vatNumber, country);
+                            }
+                          }}
+                          data-testid="input-vatNumber"
+                        />
+                        <p className="text-xs text-slate-500 mt-1">Will be validated using EU VIES system</p>
+                      </div>
+                      {isValidatingVat && (
+                        <Loader2 className="h-5 w-5 animate-spin mt-2" data-testid="loader-vat" />
+                      )}
+                      {!isValidatingVat && vatValidationResult && (
+                        <div className="flex items-center gap-2 mt-2">
+                          {vatValidationResult.valid ? (
+                            <>
+                              <CheckCircle className="h-5 w-5 text-green-500" data-testid="icon-vatValid" />
+                              <Badge variant="default" className="bg-green-500" data-testid="badge-vatValid">Valid</Badge>
+                            </>
+                          ) : (
+                            <>
+                              <XCircle className="h-5 w-5 text-red-500" data-testid="icon-vatInvalid" />
+                              <Badge variant="destructive" data-testid="badge-vatInvalid">Invalid</Badge>
+                            </>
                           )}
                         </div>
-                        <div className="flex gap-1">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditShippingAddress(index)}
-                            data-testid={`button-editShipping-${index}`}
-                          >
-                            <Edit2 className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteShippingAddress(index)}
-                            data-testid={`button-deleteShipping-${index}`}
-                          >
-                            <Trash2 className="h-3 w-3 text-red-500" />
-                          </Button>
-                        </div>
-                      </div>
-                      <div className="text-sm text-slate-600 space-y-1">
-                        <p>{address.firstName} {address.lastName}</p>
-                        {address.company && <p>{address.company}</p>}
-                        <p>{address.street} {address.streetNumber}</p>
-                        <p>{address.city} {address.zipCode}</p>
-                        <p>{address.country}</p>
-                      </div>
-                      {!address.isPrimary && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="mt-2 w-full"
-                          onClick={() => handleSetPrimary(index)}
-                          data-testid={`button-setPrimary-${index}`}
-                        >
-                          Set as Primary
-                        </Button>
                       )}
-                    </CardContent>
-                  </Card>
-                ))}
+                    </div>
+                    {vatValidationResult?.companyName && (
+                      <p className="text-sm text-slate-600 mt-2" data-testid="text-vatCompanyName">
+                        Company: {vatValidationResult.companyName}
+                      </p>
+                    )}
+                    {vatValidationResult?.error && (
+                      <p className="text-sm text-red-500 mt-2">{vatValidationResult.error}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Truck className="h-5 w-5 text-orange-500" />
+                Shipping Addresses
+              </span>
+              {!isAddingShipping && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddShippingAddress}
+                  data-testid="button-addShipping"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Shipping Address
+                </Button>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {shippingAddresses.map((addr, index) => (
+              <div key={index} className="p-4 border rounded-lg bg-slate-50">
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-semibold">{addr.label}</h4>
+                    {addr.isPrimary && (
+                      <Badge variant="default" data-testid={`badge-primary-${index}`}>Primary</Badge>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    {!addr.isPrimary && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSetPrimary(index)}
+                        data-testid={`button-setPrimary-${index}`}
+                      >
+                        Set Primary
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditShippingAddress(index)}
+                      data-testid={`button-editShipping-${index}`}
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteShippingAddress(index)}
+                      data-testid={`button-deleteShipping-${index}`}
+                    >
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="text-sm text-slate-600" data-testid={`text-shippingAddress-${index}`}>
+                  {addr.company && <p className="font-medium">{addr.company}</p>}
+                  <p>{addr.firstName} {addr.lastName}</p>
+                  {addr.street && <p>{addr.street} {addr.streetNumber}</p>}
+                  {addr.city && <p>{addr.zipCode} {addr.city}</p>}
+                  {addr.country && <p>{addr.country}</p>}
+                  {addr.tel && <p>Tel: {addr.tel}</p>}
+                  {addr.email && <p>Email: {addr.email}</p>}
+                </div>
               </div>
-            )}
+            ))}
 
             {isAddingShipping && (
-              <div className="space-y-4 border-2 border-dashed p-4 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-semibold">
-                    {editingShippingIndex !== null ? 'Edit Shipping Address' : 'New Shipping Address'}
-                  </h4>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setIsAddingShipping(false);
-                      setEditingShippingIndex(null);
-                      shippingForm.reset();
-                    }}
-                    data-testid="button-cancelShipping"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div>
-                  <Label htmlFor="shippingLabel">Label *</Label>
-                  <Input
-                    id="shippingLabel"
-                    {...shippingForm.register('label')}
-                    placeholder="Home, Office, etc."
-                    data-testid="input-shippingLabel"
-                  />
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 border rounded-lg bg-blue-50">
+                <h4 className="font-semibold mb-4">
+                  {editingShippingIndex !== null ? 'Edit' : 'Add'} Shipping Address
+                </h4>
+                <div className="space-y-4">
                   <div>
-                    <Label htmlFor="shippingFirstName">First Name *</Label>
+                    <Label htmlFor="shippingLabel">Label / Name *</Label>
                     <Input
-                      id="shippingFirstName"
-                      {...shippingForm.register('firstName')}
-                      placeholder="John"
-                      data-testid="input-shippingFirstName"
+                      id="shippingLabel"
+                      {...shippingForm.register('label')}
+                      placeholder="e.g., Main Office, Warehouse"
+                      data-testid="input-shippingLabel"
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="shippingLastName">Last Name *</Label>
-                    <Input
-                      id="shippingLastName"
-                      {...shippingForm.register('lastName')}
-                      placeholder="Doe"
-                      data-testid="input-shippingLastName"
-                    />
+
+                  <div className="space-y-2">
+                    <Label htmlFor="shippingAddressAutocomplete">Search Address</Label>
+                    <div className="relative">
+                      <Input
+                        id="shippingAddressAutocomplete"
+                        value={shippingAddressQuery}
+                        onChange={(e) => {
+                          setShippingAddressQuery(e.target.value);
+                          searchShippingAddress(e.target.value);
+                        }}
+                        placeholder="Start typing to search..."
+                        data-testid="input-shippingAddressAutocomplete"
+                      />
+                      {shippingAddressQuery && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-1 top-1 h-8 w-8 p-0"
+                          onClick={() => {
+                            setShippingAddressQuery("");
+                            setShippingAddressSuggestions([]);
+                            setShowShippingDropdown(false);
+                          }}
+                          data-testid="button-clearShippingAutocomplete"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {showShippingDropdown && (
+                        <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-72 overflow-y-auto z-50">
+                          {isLoadingShippingAutocomplete ? (
+                            <div className="p-4 text-center" data-testid="text-shippingAutocompleteLoading">
+                              <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+                            </div>
+                          ) : shippingAddressSuggestions.length > 0 ? (
+                            shippingAddressSuggestions.map((suggestion, index) => (
+                              <div
+                                key={index}
+                                className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0"
+                                onClick={() => selectShippingAddress(suggestion)}
+                                data-testid={`button-shippingAddressSuggestion-${index}`}
+                              >
+                                {suggestion.displayName}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="p-4 text-center text-slate-500">No addresses found</div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="shippingFirstName">First Name *</Label>
+                      <Input
+                        id="shippingFirstName"
+                        {...shippingForm.register('firstName')}
+                        placeholder="First name"
+                        data-testid="input-shippingFirstName"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="shippingLastName">Last Name *</Label>
+                      <Input
+                        id="shippingLastName"
+                        {...shippingForm.register('lastName')}
+                        placeholder="Last name"
+                        data-testid="input-shippingLastName"
+                      />
+                    </div>
+                  </div>
+
                   <div>
                     <Label htmlFor="shippingCompany">Company</Label>
                     <Input
@@ -801,282 +1041,109 @@ export default function AddCustomer() {
                       data-testid="input-shippingCompany"
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="shippingEmail">Email</Label>
-                    <Input
-                      id="shippingEmail"
-                      type="email"
-                      {...shippingForm.register('email')}
-                      placeholder="name@example.com"
-                      data-testid="input-shippingEmail"
-                    />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="shippingEmail">Email</Label>
+                      <Input
+                        id="shippingEmail"
+                        type="email"
+                        {...shippingForm.register('email')}
+                        placeholder="email@example.com"
+                        data-testid="input-shippingEmail"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="shippingTel">Phone</Label>
+                      <Input
+                        id="shippingTel"
+                        {...shippingForm.register('tel')}
+                        placeholder="+420 123 456 789"
+                        data-testid="input-shippingTel"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="shippingTel">Tel</Label>
-                    <Input
-                      id="shippingTel"
-                      {...shippingForm.register('tel')}
-                      placeholder="+420 123 456 789"
-                      data-testid="input-shippingTel"
-                    />
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="md:col-span-2">
+                      <Label htmlFor="shippingStreet">Street</Label>
+                      <Input
+                        id="shippingStreet"
+                        {...shippingForm.register('street')}
+                        placeholder="Street name"
+                        data-testid="input-shippingStreet"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="shippingStreetNumber">Number</Label>
+                      <Input
+                        id="shippingStreetNumber"
+                        {...shippingForm.register('streetNumber')}
+                        placeholder="123"
+                        data-testid="input-shippingStreetNumber"
+                      />
+                    </div>
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="shippingAddressAutocomplete">Search Address</Label>
-                  <div className="relative">
-                    <Input
-                      id="shippingAddressAutocomplete"
-                      value={shippingAddressQuery}
-                      onChange={(e) => {
-                        setShippingAddressQuery(e.target.value);
-                        searchShippingAddress(e.target.value);
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="shippingCity">City</Label>
+                      <Input
+                        id="shippingCity"
+                        {...shippingForm.register('city')}
+                        placeholder="City"
+                        data-testid="input-shippingCity"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="shippingZipCode">Postal Code</Label>
+                      <Input
+                        id="shippingZipCode"
+                        {...shippingForm.register('zipCode')}
+                        placeholder="12345"
+                        data-testid="input-shippingZipCode"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="shippingCountry">Country</Label>
+                      <Input
+                        id="shippingCountry"
+                        {...shippingForm.register('country')}
+                        placeholder="Country"
+                        data-testid="input-shippingCountry"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-4 border-t">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setIsAddingShipping(false);
+                        setEditingShippingIndex(null);
+                        shippingForm.reset();
                       }}
-                      placeholder="Start typing to search..."
-                      data-testid="input-shippingAddressAutocomplete"
-                    />
-                    {shippingAddressQuery && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-1 top-1 h-8 w-8 p-0"
-                        onClick={() => {
-                          setShippingAddressQuery("");
-                          setShippingAddressSuggestions([]);
-                          setShowShippingDropdown(false);
-                        }}
-                        data-testid="button-clearShippingAutocomplete"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
-                    {showShippingDropdown && (
-                      <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-72 overflow-y-auto z-50">
-                        {isLoadingShippingAutocomplete ? (
-                          <div className="p-4 text-center" data-testid="text-shippingAutocompleteLoading">
-                            <Loader2 className="h-4 w-4 animate-spin mx-auto" />
-                          </div>
-                        ) : shippingAddressSuggestions.length > 0 ? (
-                          shippingAddressSuggestions.map((suggestion, index) => (
-                            <div
-                              key={index}
-                              className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0"
-                              onClick={() => selectShippingAddress(suggestion)}
-                              data-testid={`button-shippingAddressSuggestion-${index}`}
-                            >
-                              {suggestion.displayName}
-                            </div>
-                          ))
-                        ) : (
-                          <div className="p-4 text-center text-slate-500">No addresses found</div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="shippingStreet">Street Address</Label>
-                    <Input
-                      id="shippingStreet"
-                      {...shippingForm.register('street')}
-                      placeholder="Main Street"
-                      data-testid="input-shippingStreet"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="shippingStreetNumber">Street Number</Label>
-                    <Input
-                      id="shippingStreetNumber"
-                      {...shippingForm.register('streetNumber')}
-                      placeholder="123"
-                      data-testid="input-shippingStreetNumber"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="shippingCity">City</Label>
-                    <Input
-                      id="shippingCity"
-                      {...shippingForm.register('city')}
-                      placeholder="Prague"
-                      data-testid="input-shippingCity"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="shippingZipCode">ZIP/Postal Code</Label>
-                    <Input
-                      id="shippingZipCode"
-                      {...shippingForm.register('zipCode')}
-                      placeholder="12000"
-                      data-testid="input-shippingZipCode"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="shippingCountry">Country</Label>
-                    <Select
-                      value={shippingForm.watch('country')}
-                      onValueChange={(value) => shippingForm.setValue('country', value)}
+                      data-testid="button-cancelShipping"
                     >
-                      <SelectTrigger id="shippingCountry" data-testid="select-shippingCountry">
-                        <SelectValue placeholder="Select country" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {europeanCountries.map((country) => (
-                          <SelectItem key={country.code} value={country.code}>
-                            {country.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      <X className="h-4 w-4 mr-2" />
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={shippingForm.handleSubmit(handleSaveShippingAddress)}
+                      data-testid="button-saveShipping"
+                    >
+                      <Check className="h-4 w-4 mr-2" />
+                      Save Address
+                    </Button>
                   </div>
-                  <div>
-                    <Label htmlFor="shippingState">State/Region</Label>
-                    <Input
-                      id="shippingState"
-                      {...shippingForm.register('state')}
-                      placeholder="State or region"
-                      data-testid="input-shippingState"
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="shippingIsPrimary"
-                    {...shippingForm.register('isPrimary')}
-                    className="h-4 w-4"
-                    data-testid="checkbox-shippingIsPrimary"
-                  />
-                  <Label htmlFor="shippingIsPrimary" className="cursor-pointer">Set as Primary Address</Label>
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setIsAddingShipping(false);
-                      setEditingShippingIndex(null);
-                      shippingForm.reset();
-                    }}
-                    data-testid="button-cancelShippingForm"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={shippingForm.handleSubmit(handleSaveShippingAddress)}
-                    data-testid="button-saveShipping"
-                  >
-                    <Check className="h-4 w-4 mr-2" />
-                    Save Address
-                  </Button>
                 </div>
               </div>
             )}
 
             {shippingAddresses.length === 0 && !isAddingShipping && (
               <p className="text-center text-slate-500 py-8">No shipping addresses added yet</p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>4. Tax Info</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {isCzech && (
-              <div className="space-y-4 pb-4 border-b">
-                <h4 className="font-semibold text-sm">Czech Company Information</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="ico">IČO (Company ID)</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="ico"
-                        {...form.register('ico')}
-                        placeholder="12345678"
-                        onBlur={(e) => handleAresLookup(e.target.value)}
-                        data-testid="input-ico"
-                      />
-                      {isLoadingAres && <Loader2 className="h-5 w-5 animate-spin mt-2" data-testid="loader-ares" />}
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="dic">DIČ (Tax ID)</Label>
-                    <Input
-                      id="dic"
-                      {...form.register('dic')}
-                      placeholder="CZ12345678"
-                      readOnly
-                      className="bg-slate-50"
-                      data-testid="input-dic"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {isEU && (
-              <div className="space-y-4">
-                <h4 className="font-semibold text-sm">VAT Information</h4>
-                <div>
-                  <Label htmlFor="vatNumber">VAT Number</Label>
-                  <div className="flex gap-2 items-start">
-                    <div className="flex-1">
-                      <Input
-                        id="vatNumber"
-                        {...form.register('vatNumber')}
-                        placeholder="Enter VAT number"
-                        onBlur={(e) => {
-                          const vatNumber = e.target.value;
-                          const country = form.getValues('billingCountry');
-                          if (vatNumber && country) {
-                            handleVatValidation(vatNumber, country);
-                          }
-                        }}
-                        data-testid="input-vatNumber"
-                      />
-                    </div>
-                    {isValidatingVat && (
-                      <Loader2 className="h-5 w-5 animate-spin mt-2" data-testid="loader-vat" />
-                    )}
-                    {!isValidatingVat && vatValidationResult && (
-                      <div className="flex items-center gap-2 mt-2">
-                        {vatValidationResult.valid ? (
-                          <>
-                            <CheckCircle className="h-5 w-5 text-green-500" data-testid="icon-vatValid" />
-                            <Badge variant="default" className="bg-green-500" data-testid="badge-vatValid">Valid</Badge>
-                          </>
-                        ) : (
-                          <>
-                            <XCircle className="h-5 w-5 text-red-500" data-testid="icon-vatInvalid" />
-                            <Badge variant="destructive" data-testid="badge-vatInvalid">Invalid</Badge>
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  {vatValidationResult?.companyName && (
-                    <p className="text-sm text-slate-600 mt-2" data-testid="text-vatCompanyName">
-                      Company: {vatValidationResult.companyName}
-                    </p>
-                  )}
-                  {vatValidationResult?.error && (
-                    <p className="text-sm text-red-500 mt-2">{vatValidationResult.error}</p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {!isCzech && !isEU && (
-              <p className="text-center text-slate-500 py-4">
-                Select a billing country to see tax information fields
-              </p>
             )}
           </CardContent>
         </Card>
