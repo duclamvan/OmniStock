@@ -49,6 +49,7 @@ import POS from "@/pages/POS/POS";
 import AllPreOrders from "@/pages/PreOrders/AllPreOrders";
 import AddPreOrder from "@/pages/PreOrders/AddPreOrder";
 import EditPreOrder from "@/pages/PreOrders/EditPreOrder";
+import PreOrderDetails from "@/pages/PreOrders/PreOrderDetails";
 import Categories from "@/pages/Inventory/Categories";
 import AddCategory from "@/pages/Inventory/AddCategory";
 import EditCategory from "@/pages/Inventory/EditCategory";
@@ -107,6 +108,7 @@ function Router() {
         <Route path="/orders/pre-orders" component={AllPreOrders} />
         <Route path="/orders/pre-orders/add" component={AddPreOrder} />
         <Route path="/orders/pre-orders/:id/edit" component={EditPreOrder} />
+        <Route path="/orders/pre-orders/:id" component={PreOrderDetails} />
         <Route path="/orders/:id/edit" component={EditOrder} />
         <Route path="/orders/:id" component={OrderDetails} />
         <Route path="/inventory" component={AllInventory} />
