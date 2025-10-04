@@ -3,6 +3,19 @@ Davie Supply is a full-stack web application designed for comprehensive warehous
 
 # Recent Changes (October 2025)
 
+## Product Tiered Pricing & Supplier Integration (Completed)
+- **Database Schema**: Added product_tiered_pricing table for quantity-based pricing (tiered/wholesale), foreign key constraint products.supplier_id → suppliers.id
+- **Backend APIs**: Full CRUD endpoints for tiered pricing (GET/POST/PATCH/DELETE /api/products/:id/tiered-pricing)
+- **Product Endpoints Enhancement**: Products now include supplier details (id, name, country) via LEFT JOIN
+- **Product Form Redesign**: Reorganized into 4 professional tabs using shadcn/ui Tabs:
+  - **Tab 1 - Basic Info**: Name, English name, SKU (with generator), category, description, image upload
+  - **Tab 2 - Pricing & Tiered Pricing**: Standard prices (CZK, EUR, USD, VND, CNY) + tiered pricing table with add/edit/delete functionality
+  - **Tab 3 - Import Cost & Supplier**: Supplier dropdown with country flag emojis (🇨🇿 format), supplier link, import costs (USD/CZK/EUR), landing cost display
+  - **Tab 4 - Inventory & Location**: Quantity, low stock alert, warehouse, location, barcode, dimensions, packing material
+- **Tiered Pricing Features**: Dialog-based add/edit forms, min/max quantity validation, multi-currency support, price type (tiered/wholesale), proper cache invalidation
+- **Country Flags Helper**: Added getCountryFlag() and getCountryNameByCode() functions supporting 40+ countries
+- **Data Validation**: Proper numeric conversion for all form submissions, handles optional fields correctly
+
 ## Pay Later Orders Subpage (Completed)
 - **New Menu Item**: Added "Pay Later" to Orders navigation menu
 - **Smart Filtering**: Displays shipped orders with "pay later" payment status
