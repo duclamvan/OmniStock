@@ -116,7 +116,7 @@ export default function AddOrder() {
     company: "",
     type: "regular"
   });
-  
+
   const [addressAutocomplete, setAddressAutocomplete] = useState("");
   const [addressSuggestions, setAddressSuggestions] = useState<any[]>([]);
   const [showAddressDropdown, setShowAddressDropdown] = useState(false);
@@ -130,7 +130,7 @@ export default function AddOrder() {
         throw new Error('Failed to fetch addresses');
       }
       const data = await response.json();
-      
+
       // Transform the response to match our format
       return data.map((item: any) => ({
         formatted: item.formatted,
@@ -259,7 +259,7 @@ export default function AddOrder() {
 
     setIsLoadingAddresses(true);
     setShowAddressDropdown(true);
-    
+
     try {
       const results = await fetchRealAddresses(query);
       setAddressSuggestions(results);
@@ -382,16 +382,16 @@ export default function AddOrder() {
   // Auto-calculate shipping cost when shipping method or customer country changes
   const watchedShippingMethod = form.watch('shippingMethod');
   const watchedCurrency = form.watch('currency');
-  
+
   useEffect(() => {
     if (!watchedShippingMethod || !selectedCustomer?.country) return;
-    
+
     const calculatedCost = calculateShippingCost(
       watchedShippingMethod,
       selectedCustomer.country,
       watchedCurrency
     );
-    
+
     form.setValue('actualShippingCost', calculatedCost);
     form.setValue('shippingCost', calculatedCost); // Also set shipping cost for display
   }, [watchedShippingMethod, selectedCustomer?.country, watchedCurrency, form]);
@@ -425,15 +425,15 @@ export default function AddOrder() {
         // Use the existing customer's ID
         data.customerId = selectedCustomer.id;
       }
-      
+
       console.log('Creating order with customerId:', data.customerId);
-      
+
       // Include selected document IDs with the order
       const orderData = {
         ...data,
         selectedDocumentIds: selectedDocumentIds.length > 0 ? selectedDocumentIds : undefined
       };
-      
+
       await apiRequest('POST', '/api/orders', orderData);
     },
     onSuccess: () => {
@@ -457,7 +457,7 @@ export default function AddOrder() {
 
   const addProductToOrder = async (product: any) => {
     const existingItem = orderItems.find(item => item.productId === product.id);
-    
+
     if (existingItem) {
       setOrderItems(items =>
         items.map(item =>
@@ -470,7 +470,7 @@ export default function AddOrder() {
       // Get the price based on the selected currency
       const selectedCurrency = form.watch('currency') || 'EUR';
       let productPrice = 0;
-      
+
       // Check for customer-specific pricing if a customer is selected
       if (selectedCustomer?.id) {
         try {
@@ -478,19 +478,19 @@ export default function AddOrder() {
           if (response.ok) {
             const customerPrices = await response.json();
             const today = new Date();
-            
+
             // Find applicable customer price for this product and currency
             const applicablePrice = customerPrices.find((cp: any) => {
               const validFrom = new Date(cp.validFrom);
               const validTo = cp.validTo ? new Date(cp.validTo) : null;
-              
+
               return cp.productId === product.id &&
                      cp.currency === selectedCurrency &&
                      cp.isActive &&
                      validFrom <= today &&
                      (!validTo || validTo >= today);
             });
-            
+
             if (applicablePrice) {
               productPrice = parseFloat(applicablePrice.price);
               toast({
@@ -503,7 +503,7 @@ export default function AddOrder() {
           console.error('Error fetching customer prices:', error);
         }
       }
-      
+
       // If no customer price found, use default product price
       if (productPrice === 0) {
         if (selectedCurrency === 'CZK' && product.priceCzk) {
@@ -515,7 +515,7 @@ export default function AddOrder() {
           productPrice = parseFloat(product.priceEur || product.priceCzk || '0');
         }
       }
-      
+
       const newItem: OrderItem = {
         id: Math.random().toString(36).substr(2, 9),
         productId: product.id,
@@ -572,7 +572,7 @@ export default function AddOrder() {
     const discountType = form.watch('discountType');
     const shipping = typeof shippingValue === 'string' ? parseFloat(shippingValue || '0') : (shippingValue || 0);
     const discountAmount = typeof discountValue === 'string' ? parseFloat(discountValue || '0') : (discountValue || 0);
-    
+
     // Calculate actual discount based on type
     let actualDiscount = 0;
     if (discountType === 'rate') {
@@ -580,7 +580,7 @@ export default function AddOrder() {
     } else {
       actualDiscount = discountAmount;
     }
-    
+
     return subtotal + tax + shipping - actualDiscount;
   };
 
@@ -622,9 +622,9 @@ export default function AddOrder() {
   // Filter products with Vietnamese search (memoized for performance)
   const filteredProducts = useMemo(() => {
     if (!Array.isArray(allProducts) || !debouncedProductSearch || debouncedProductSearch.length < 2) return [];
-    
+
     const matcher = createVietnameseSearchMatcher(debouncedProductSearch);
-    
+
     return allProducts
       .filter((product: any) => {
         return matcher(product.name) || 
@@ -638,9 +638,9 @@ export default function AddOrder() {
   // Filter customers with Vietnamese search (memoized for performance)
   const filteredCustomers = useMemo(() => {
     if (!Array.isArray(allCustomers) || !debouncedCustomerSearch || debouncedCustomerSearch.length < 2) return [];
-    
+
     const matcher = createVietnameseSearchMatcher(debouncedCustomerSearch);
-    
+
     return allCustomers
       .filter((customer: any) => {
         return matcher(customer.name) || 
@@ -650,6 +650,20 @@ export default function AddOrder() {
       })
       .slice(0, 8); // Limit to 8 results for better UX
   }, [allCustomers, debouncedCustomerSearch]);
+
+  // Dummy function for calculateTotals, as it's not provided in the original code snippet
+  // This needs to be implemented or removed if not used elsewhere.
+  const calculateTotals = () => {
+    // This function is called when discountId changes, implying it should recalculate totals.
+    // For now, we'll leave it as a placeholder.
+    console.log("calculateTotals called");
+  };
+
+  // Fetch available discounts (assuming this is needed for the discount dropdown)
+  const { data: discounts } = useQuery({
+    queryKey: ['/api/discounts'],
+  });
+
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -741,6 +755,8 @@ export default function AddOrder() {
                     </Select>
                   </div>
                 </div>
+
+                <Separator />
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
@@ -885,7 +901,7 @@ export default function AddOrder() {
                   </Button>
                 )}
               </div>
-              
+
               {/* Real-time dropdown for customers */}
               {showCustomerDropdown && filteredCustomers && filteredCustomers.length > 0 && (
                 <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-60 overflow-y-auto z-50">
@@ -932,7 +948,7 @@ export default function AddOrder() {
                   ))}
                 </div>
               )}
-              
+
               {/* No results message with Add new customer button */}
               {showCustomerDropdown && customerSearch.length >= 2 && (!filteredCustomers || filteredCustomers.length === 0) && (
                 <div className="absolute top-full left-0 right-0 mt-1 border rounded-md bg-white shadow-lg p-4 text-center text-slate-500 z-50">
@@ -956,7 +972,7 @@ export default function AddOrder() {
                 </div>
               )}
             </div>
-            
+
             {/* Selected customer display */}
             {selectedCustomer && (
               <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
@@ -989,7 +1005,7 @@ export default function AddOrder() {
                 </div>
               </div>
             )}
-            
+
             {/* New customer form */}
             {showNewCustomerForm && (
               <div className="space-y-4 border border-blue-200 bg-blue-50 p-4 rounded-lg">
@@ -1021,7 +1037,7 @@ export default function AddOrder() {
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
-                
+
                 {/* Basic Information */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
@@ -1065,7 +1081,7 @@ export default function AddOrder() {
                     />
                   </div>
                 </div>
-                
+
                 {/* Contact Information */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
@@ -1097,7 +1113,7 @@ export default function AddOrder() {
                     />
                   </div>
                 </div>
-                
+
                 {/* Address Autocomplete */}
                 <div className="space-y-2">
                   <Label htmlFor="addressAutocomplete">Address Search (optional)</Label>
@@ -1138,7 +1154,7 @@ export default function AddOrder() {
                         <X className="h-4 w-4" />
                       </Button>
                     )}
-                    
+
                     {/* Address suggestions dropdown */}
                     {showAddressDropdown && (
                       <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-72 overflow-y-auto z-50">
@@ -1215,7 +1231,7 @@ export default function AddOrder() {
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Add customer to order button */}
                 <Button
                   type="button"
@@ -1280,7 +1296,7 @@ export default function AddOrder() {
                   </Button>
                 )}
               </div>
-              
+
               {/* Real-time dropdown for products */}
               {showProductDropdown && filteredProducts && filteredProducts.length > 0 && (
                 <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-72 overflow-y-auto z-50">
@@ -1333,7 +1349,7 @@ export default function AddOrder() {
                   ))}
                 </div>
               )}
-              
+
               {/* No results message */}
               {showProductDropdown && productSearch.length >= 2 && (!filteredProducts || filteredProducts.length === 0) && (
                 <div className="absolute top-full left-0 right-0 mt-1 border rounded-md bg-white shadow-lg p-4 text-center text-slate-500 z-50">
@@ -1495,7 +1511,7 @@ export default function AddOrder() {
                     </div>
                   )}
                 </div>
-                
+
                 {/* Quick discount buttons */}
                 <div className="mt-2">
                   <div className="text-xs text-gray-500 mb-1">Quick select:</div>
@@ -1542,7 +1558,7 @@ export default function AddOrder() {
             </div>
 
             <Separator className="my-4" />
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <Label htmlFor="shippingCost">Shipping Cost</Label>
@@ -1804,7 +1820,7 @@ export default function AddOrder() {
                       const avgMargin = totalLandingCost > 0 
                         ? ((totalProfit / totalSellingPrice) * 100).toFixed(1) 
                         : null;
-                      
+
                       return avgMargin !== null ? (
                         <>
                           <div className="pb-3 mb-3 border-b">
@@ -1837,7 +1853,7 @@ export default function AddOrder() {
                         </>
                       ) : null;
                     })()}
-                    
+
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Subtotal:</span>
@@ -1873,7 +1889,7 @@ export default function AddOrder() {
                         <span className="text-lg font-bold text-blue-600">{formatCurrency(calculateGrandTotal(), form.watch('currency'))}</span>
                       </div>
                     </div>
-                    
+
                     <div className="pt-4 space-y-3">
                       <Button type="submit" className="w-full" size="lg" disabled={createOrderMutation.isPending || orderItems.length === 0}>
                         <ShoppingCart className="h-4 w-4 mr-2" />

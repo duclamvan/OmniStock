@@ -61,6 +61,23 @@ const editOrderSchema = z.object({
   notes: z.string().optional(),
 });
 
+// Define a schema for the add order mutation, similar to editOrderSchema but potentially with different defaults or optional fields
+const addOrderSchema = z.object({
+  customerId: z.string().optional(),
+  currency: z.enum(['CZK', 'EUR', 'USD', 'VND', 'CNY']).default('EUR'),
+  priority: z.enum(['low', 'medium', 'high']).default('medium'),
+  orderStatus: z.enum(['pending', 'to_fulfill', 'shipped']).default('pending'),
+  paymentStatus: z.enum(['pending', 'paid', 'pay_later']).default('pending'),
+  shippingMethod: z.enum(['GLS', 'PPL', 'DHL', 'DPD']).optional(),
+  paymentMethod: z.enum(['Bank Transfer', 'PayPal', 'COD', 'Cash']).optional(),
+  discountType: z.enum(['flat', 'rate']).optional(),
+  discountValue: z.coerce.number().min(0).default(0),
+  taxRate: z.coerce.number().min(0).max(100).default(0),
+  shippingCost: z.coerce.number().min(0).default(0),
+  actualShippingCost: z.coerce.number().min(0).default(0),
+  notes: z.string().optional(),
+});
+
 interface OrderItem {
   id: string;
   productId: string;
@@ -100,7 +117,7 @@ export default function EditOrder() {
     company: "",
     type: "regular"
   });
-  
+
   const [addressAutocomplete, setAddressAutocomplete] = useState("");
   const [addressSuggestions, setAddressSuggestions] = useState<any[]>([]);
   const [showAddressDropdown, setShowAddressDropdown] = useState(false);
@@ -114,7 +131,7 @@ export default function EditOrder() {
         throw new Error('Failed to fetch addresses');
       }
       const data = await response.json();
-      
+
       // Transform the response to match our format
       return data.map((item: any) => ({
         formatted: item.formatted,
@@ -243,7 +260,7 @@ export default function EditOrder() {
 
     setIsLoadingAddresses(true);
     setShowAddressDropdown(true);
-    
+
     try {
       const results = await fetchRealAddresses(query);
       setAddressSuggestions(results);
@@ -356,7 +373,6 @@ export default function EditOrder() {
         taxRate: order.taxRate ? parseFloat(order.taxRate) : 0,
         shippingCost: order.shippingCost ? parseFloat(order.shippingCost) : 0,
         actualShippingCost: order.actualShippingCost ? parseFloat(order.actualShippingCost) : 0,
-        notes: order.notes || '',
       });
 
       // Initialize order items - check both 'items' and 'orderItems' for compatibility
@@ -414,16 +430,16 @@ export default function EditOrder() {
   // Auto-calculate shipping cost when shipping method or customer country changes
   const watchedShippingMethod = form.watch('shippingMethod');
   const watchedCurrency = form.watch('currency');
-  
+
   useEffect(() => {
     if (!watchedShippingMethod || !selectedCustomer?.country) return;
-    
+
     const calculatedCost = calculateShippingCost(
       watchedShippingMethod,
       selectedCustomer.country,
       watchedCurrency
     );
-    
+
     form.setValue('actualShippingCost', calculatedCost);
     form.setValue('shippingCost', calculatedCost); // Also set shipping cost for display
   }, [watchedShippingMethod, selectedCustomer?.country, watchedCurrency, form]);
@@ -457,7 +473,7 @@ export default function EditOrder() {
         // Use the existing customer's ID
         data.customerId = selectedCustomer.id;
       }
-      
+
       console.log('Updating order with customerId:', data.customerId);
       await apiRequest('PATCH', `/api/orders/${id}`, data);
     },
@@ -482,7 +498,7 @@ export default function EditOrder() {
 
   const addProductToOrder = async (product: any) => {
     const existingItem = orderItems.find(item => item.productId === product.id);
-    
+
     if (existingItem) {
       setOrderItems(items =>
         items.map(item =>
@@ -495,7 +511,7 @@ export default function EditOrder() {
       // Get the price based on the selected currency
       const selectedCurrency = form.watch('currency') || 'EUR';
       let productPrice = 0;
-      
+
       // Check for customer-specific pricing if a customer is selected
       if (selectedCustomer?.id) {
         try {
@@ -503,19 +519,19 @@ export default function EditOrder() {
           if (response.ok) {
             const customerPrices = await response.json();
             const today = new Date();
-            
+
             // Find applicable customer price for this product and currency
             const applicablePrice = customerPrices.find((cp: any) => {
               const validFrom = new Date(cp.validFrom);
               const validTo = cp.validTo ? new Date(cp.validTo) : null;
-              
+
               return cp.productId === product.id &&
                      cp.currency === selectedCurrency &&
                      cp.isActive &&
                      validFrom <= today &&
                      (!validTo || validTo >= today);
             });
-            
+
             if (applicablePrice) {
               productPrice = parseFloat(applicablePrice.price);
               toast({
@@ -528,7 +544,7 @@ export default function EditOrder() {
           console.error('Error fetching customer prices:', error);
         }
       }
-      
+
       // If no customer price found, use default product price
       if (productPrice === 0) {
         if (selectedCurrency === 'CZK' && product.priceCzk) {
@@ -540,7 +556,7 @@ export default function EditOrder() {
           productPrice = parseFloat(product.priceEur || product.priceCzk || '0');
         }
       }
-      
+
       const newItem: OrderItem = {
         id: Math.random().toString(36).substr(2, 9),
         productId: product.id,
@@ -595,7 +611,7 @@ export default function EditOrder() {
     const discountValue = form.watch('discountValue');
     const shipping = typeof shippingValue === 'string' ? parseFloat(shippingValue || '0') : (shippingValue || 0);
     const discount = typeof discountValue === 'string' ? parseFloat(discountValue || '0') : (discountValue || 0);
-    
+
     return subtotal + tax + shipping - discount;
   };
 
@@ -648,9 +664,9 @@ export default function EditOrder() {
   // Filter products with Vietnamese search (memoized for performance)
   const filteredProducts = useMemo(() => {
     if (!Array.isArray(allProducts) || !debouncedProductSearch || debouncedProductSearch.length < 2) return [];
-    
+
     const matcher = createVietnameseSearchMatcher(debouncedProductSearch);
-    
+
     return allProducts
       .filter((product: any) => {
         return matcher(product.name) || 
@@ -664,9 +680,9 @@ export default function EditOrder() {
   // Filter customers with Vietnamese search (memoized for performance)
   const filteredCustomers = useMemo(() => {
     if (!Array.isArray(allCustomers) || !debouncedCustomerSearch || debouncedCustomerSearch.length < 2) return [];
-    
+
     const matcher = createVietnameseSearchMatcher(debouncedCustomerSearch);
-    
+
     return allCustomers
       .filter((customer: any) => {
         return matcher(customer.name) || 
@@ -911,7 +927,7 @@ export default function EditOrder() {
                   </Button>
                 )}
               </div>
-              
+
               {/* Real-time dropdown for customers */}
               {showCustomerDropdown && filteredCustomers && filteredCustomers.length > 0 && (
                 <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-60 overflow-y-auto z-50">
@@ -958,7 +974,7 @@ export default function EditOrder() {
                   ))}
                 </div>
               )}
-              
+
               {/* No results message with Add new customer button */}
               {showCustomerDropdown && customerSearch.length >= 2 && (!filteredCustomers || filteredCustomers.length === 0) && (
                 <div className="absolute top-full left-0 right-0 mt-1 border rounded-md bg-white shadow-lg p-4 text-center text-slate-500 z-50">
@@ -982,7 +998,7 @@ export default function EditOrder() {
                 </div>
               )}
             </div>
-            
+
             {/* Selected customer display */}
             {selectedCustomer && (
               <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
@@ -1015,7 +1031,7 @@ export default function EditOrder() {
                 </div>
               </div>
             )}
-            
+
             {/* New customer form */}
             {showNewCustomerForm && (
               <div className="space-y-4 border border-blue-200 bg-blue-50 p-4 rounded-lg">
@@ -1047,7 +1063,7 @@ export default function EditOrder() {
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
-                
+
                 {/* Basic Information */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
@@ -1091,7 +1107,7 @@ export default function EditOrder() {
                     />
                   </div>
                 </div>
-                
+
                 {/* Contact Information */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
@@ -1123,7 +1139,7 @@ export default function EditOrder() {
                     />
                   </div>
                 </div>
-                
+
                 {/* Address Autocomplete */}
                 <div className="space-y-2">
                   <Label htmlFor="addressAutocomplete">Address Search (optional)</Label>
@@ -1164,7 +1180,7 @@ export default function EditOrder() {
                         <X className="h-4 w-4" />
                       </Button>
                     )}
-                    
+
                     {/* Address suggestions dropdown */}
                     {showAddressDropdown && (
                       <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-72 overflow-y-auto z-50">
@@ -1241,7 +1257,7 @@ export default function EditOrder() {
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Add customer to order button */}
                 <Button
                   type="button"
@@ -1306,7 +1322,7 @@ export default function EditOrder() {
                   </Button>
                 )}
               </div>
-              
+
               {/* Real-time dropdown for products */}
               {showProductDropdown && filteredProducts && filteredProducts.length > 0 && (
                 <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-72 overflow-y-auto z-50">
@@ -1355,7 +1371,7 @@ export default function EditOrder() {
                   ))}
                 </div>
               )}
-              
+
               {/* No results message */}
               {showProductDropdown && productSearch.length >= 2 && (!filteredProducts || filteredProducts.length === 0) && (
                 <div className="absolute top-full left-0 right-0 mt-1 border rounded-md bg-white shadow-lg p-4 text-center text-slate-500 z-50">
@@ -1466,7 +1482,7 @@ export default function EditOrder() {
           <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
-                <Label htmlFor="discountValue">Discount</Label>
+                <Label htmlFor="discountValue">Discount Amount</Label>
                 <Input
                   type="number"
                   step="0.01"
@@ -1486,7 +1502,7 @@ export default function EditOrder() {
             </div>
 
             <Separator className="my-4" />
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <Label htmlFor="shippingCost">Shipping Cost</Label>
@@ -1557,7 +1573,7 @@ export default function EditOrder() {
                         <span className="text-lg font-bold text-blue-600">{formatCurrency(calculateGrandTotal(), form.watch('currency'))}</span>
                       </div>
                     </div>
-                    
+
                     <div className="pt-4 space-y-3">
                       <Button type="submit" className="w-full" size="lg" disabled={updateOrderMutation.isPending || orderItems.length === 0}>
                         <ShoppingCart className="h-4 w-4 mr-2" />
