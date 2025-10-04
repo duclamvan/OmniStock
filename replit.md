@@ -3,6 +3,12 @@ Davie Supply is a full-stack web application designed for comprehensive warehous
 
 # Recent Changes (October 2025)
 
+## Order Priority Edit Feature (Completed)
+- **Editable Priority**: Order priority is now editable via dropdown in OrderDetails page, matching the design of Order Status and Payment Status
+- **Three Priority Levels**: Low Priority, Medium Priority, High Priority with appropriate badge colors
+- **Real-time Updates**: Priority changes instantly update the order and refresh all order lists
+- **Professional UI**: Dropdown includes icons (AlertCircle for low, TrendingUp for medium, BarChart3 for high)
+
 ## Customer Form Redesign (Completed)
 - **Facebook Integration**: Added Facebook Name and Facebook URL fields in Location & Business Info section
 - **Reorganized Sections**: New order - Location & Business Info → Shipping Addresses → Tax Info → Billing Address

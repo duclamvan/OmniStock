@@ -129,6 +129,27 @@ export default function OrderDetails() {
     },
   });
 
+  const updatePriorityMutation = useMutation({
+    mutationFn: async (newPriority: string) => {
+      return apiRequest('PATCH', `/api/orders/${id}`, { priority: newPriority });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/orders/${id}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      toast({
+        title: "Priority Updated",
+        description: "Order priority has been updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Update Failed",
+        description: error.message || "Failed to update priority",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Track where the user came from
   useEffect(() => {
     const referrer = sessionStorage.getItem('orderDetailsReferrer');
@@ -221,6 +242,11 @@ export default function OrderDetails() {
     order.priority === 'high' ? 'destructive' :
     order.priority === 'medium' ? 'secondary' :
     'outline';
+
+  const priorityText = 
+    order.priority === 'high' ? 'High Priority' :
+    order.priority === 'medium' ? 'Medium Priority' :
+    'Low Priority';
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
@@ -384,11 +410,46 @@ export default function OrderDetails() {
                     </DropdownMenuContent>
                   </DropdownMenu>
 
-                  {order.priority && order.priority !== 'low' && (
-                    <Badge variant={priorityVariant} className="px-3 py-1">
-                      {order.priority === 'high' ? 'High Priority' : 'Medium Priority'}
-                    </Badge>
-                  )}
+                  {/* Priority */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button 
+                        className="inline-flex items-center focus:outline-none"
+                        disabled={updatePriorityMutation.isPending}
+                      >
+                        <Badge 
+                          variant={priorityVariant} 
+                          className="cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1.5 px-3 py-1"
+                        >
+                          {priorityText}
+                          <ChevronDown className="h-3 w-3" />
+                        </Badge>
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                      <DropdownMenuItem 
+                        onClick={() => updatePriorityMutation.mutate('low')}
+                        className={order.priority === 'low' ? 'bg-accent' : ''}
+                      >
+                        <AlertCircle className="mr-2 h-4 w-4" />
+                        Low Priority
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => updatePriorityMutation.mutate('medium')}
+                        className={order.priority === 'medium' ? 'bg-accent' : ''}
+                      >
+                        <TrendingUp className="mr-2 h-4 w-4" />
+                        Medium Priority
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => updatePriorityMutation.mutate('high')}
+                        className={order.priority === 'high' ? 'bg-accent' : ''}
+                      >
+                        <BarChart3 className="mr-2 h-4 w-4" />
+                        High Priority
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
 
                 {/* Meta Info */}
