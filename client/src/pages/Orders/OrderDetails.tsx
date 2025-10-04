@@ -67,6 +67,7 @@ import { formatCurrency } from "@/lib/currencyUtils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
+import { getCountryFlag } from "@/lib/countries";
 
 export default function OrderDetails() {
   const { id } = useParams();
@@ -254,6 +255,7 @@ export default function OrderDetails() {
                   <div className="flex items-center gap-2 mb-3 flex-wrap">
                     <Link href={`/customers/${order.customer.id}`}>
                       <p className="font-semibold text-lg text-blue-600 hover:text-blue-800 cursor-pointer flex items-center gap-2">
+                        {order.customer.country && <span className="text-xl">{getCountryFlag(order.customer.country)}</span>}
                         <User className="h-4 w-4" />
                         {order.customer.name}
                       </p>
