@@ -229,6 +229,7 @@ export const customers = pgTable('customers', {
   id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
   name: varchar('name').notNull(),
   facebookName: varchar('facebook_name'),
+  facebookUrl: varchar('facebook_url'),
   facebookId: varchar('facebook_id'),
   email: varchar('email'),
   phone: varchar('phone'),

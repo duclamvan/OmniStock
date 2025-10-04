@@ -3,6 +3,13 @@ Davie Supply is a full-stack web application designed for comprehensive warehous
 
 # Recent Changes (October 2025)
 
+## Customer Form Redesign (Completed)
+- **Facebook Integration**: Added Facebook Name and Facebook URL fields in Location & Business Info section
+- **Reorganized Sections**: New order - Location & Business Info → Shipping Addresses → Tax Info → Billing Address
+- **Enhanced Billing Address**: Added First Name, Last Name, and Company fields to billing address section for complete contact information
+- **Database Schema**: Added facebook_url column to customers table
+- **Streamlined UI**: Removed redundant fields from Location section, moved to appropriate sections
+
 ## Country Selector Enhancement (Completed)
 - **Pinned Countries**: Most frequent countries (CZ, DE, SK, PL, AT, VN) displayed at top of dropdown
 - **Custom Pin/Unpin**: Users can pin/unpin any country via hover button with pin icon

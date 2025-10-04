@@ -26,6 +26,8 @@ const availableCountries = [
 
 const customerFormSchema = z.object({
   country: z.string().min(1, "Country is required"),
+  facebookName: z.string().optional(),
+  facebookUrl: z.string().optional(),
   billingCompany: z.string().optional(),
   billingFirstName: z.string().min(1, "First name is required"),
   billingLastName: z.string().min(1, "Last name is required"),
@@ -130,6 +132,8 @@ export default function AddCustomer() {
     resolver: zodResolver(customerFormSchema),
     defaultValues: {
       country: "",
+      facebookName: "",
+      facebookUrl: "",
       billingFirstName: "",
       billingLastName: "",
       billingCompany: "",
@@ -183,6 +187,8 @@ export default function AddCustomer() {
     if (existingCustomer && isEditMode) {
       form.reset({
         country: existingCustomer.country || "",
+        facebookName: existingCustomer.facebookName || "",
+        facebookUrl: existingCustomer.facebookUrl || "",
         billingFirstName: existingCustomer.billingFirstName || "",
         billingLastName: existingCustomer.billingLastName || "",
         billingCompany: existingCustomer.billingCompany || "",
@@ -659,296 +665,30 @@ export default function AddCustomer() {
             </div>
 
             <div>
-              <Label htmlFor="billingCompany" className="text-base font-semibold">Company Name</Label>
+              <Label htmlFor="facebookName" className="text-base font-semibold">Facebook Name</Label>
               <Input
-                id="billingCompany"
-                {...form.register('billingCompany')}
-                placeholder="Nail Salon Prague s.r.o."
+                id="facebookName"
+                {...form.register('facebookName')}
+                placeholder="Customer's Facebook display name"
                 className="text-base"
-                data-testid="input-billingCompany"
+                data-testid="input-facebookName"
               />
-              <p className="text-xs text-slate-500 mt-1">Leave empty for individual customers</p>
+              <p className="text-xs text-slate-500 mt-1">The customer's name as it appears on Facebook</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="billingFirstName">First Name *</Label>
-                <Input
-                  id="billingFirstName"
-                  {...form.register('billingFirstName')}
-                  placeholder="Jan"
-                  data-testid="input-billingFirstName"
-                />
-                {form.formState.errors.billingFirstName && (
-                  <p className="text-sm text-red-500 mt-1">{form.formState.errors.billingFirstName.message}</p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="billingLastName">Last Name *</Label>
-                <Input
-                  id="billingLastName"
-                  {...form.register('billingLastName')}
-                  placeholder="Novák"
-                  data-testid="input-billingLastName"
-                />
-                {form.formState.errors.billingLastName && (
-                  <p className="text-sm text-red-500 mt-1">{form.formState.errors.billingLastName.message}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="billingEmail">Email</Label>
-                <Input
-                  id="billingEmail"
-                  type="email"
-                  {...form.register('billingEmail')}
-                  placeholder="jan.novak@nailsalon.cz"
-                  data-testid="input-billingEmail"
-                />
-                {form.formState.errors.billingEmail && (
-                  <p className="text-sm text-red-500 mt-1">{form.formState.errors.billingEmail.message}</p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="billingTel">Phone</Label>
-                <Input
-                  id="billingTel"
-                  {...form.register('billingTel')}
-                  placeholder="+420 123 456 789"
-                  data-testid="input-billingTel"
-                />
-              </div>
+            <div>
+              <Label htmlFor="facebookUrl" className="text-base font-semibold">Facebook URL</Label>
+              <Input
+                id="facebookUrl"
+                {...form.register('facebookUrl')}
+                placeholder="https://www.facebook.com/username"
+                className="text-base"
+                data-testid="input-facebookUrl"
+              />
+              <p className="text-xs text-slate-500 mt-1">Link to customer's Facebook profile</p>
             </div>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-green-500" />
-              Billing Address
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="billingAddressAutocomplete" className="text-base font-semibold">Quick Address Lookup</Label>
-              <p className="text-sm text-slate-500 mb-2">Start typing to search and autocomplete address</p>
-              <div className="relative">
-                <Input
-                  id="billingAddressAutocomplete"
-                  value={billingAddressQuery}
-                  onChange={(e) => {
-                    setBillingAddressQuery(e.target.value);
-                    searchBillingAddress(e.target.value);
-                  }}
-                  placeholder="Type address to search..."
-                  className="text-base"
-                  data-testid="input-billingAddressAutocomplete"
-                />
-                {billingAddressQuery && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-1 top-1 h-8 w-8 p-0"
-                    onClick={() => {
-                      setBillingAddressQuery("");
-                      setBillingAddressSuggestions([]);
-                      setShowBillingDropdown(false);
-                    }}
-                    data-testid="button-clearBillingAutocomplete"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
-                {showBillingDropdown && (
-                  <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-72 overflow-y-auto z-50">
-                    {isLoadingBillingAutocomplete ? (
-                      <div className="p-4 text-center" data-testid="text-billingAutocompleteLoading">
-                        <Loader2 className="h-4 w-4 animate-spin mx-auto" />
-                      </div>
-                    ) : billingAddressSuggestions.length > 0 ? (
-                      billingAddressSuggestions.map((suggestion, index) => (
-                        <div
-                          key={index}
-                          className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0"
-                          onClick={() => selectBillingAddress(suggestion)}
-                          data-testid={`button-billingAddressSuggestion-${index}`}
-                        >
-                          {suggestion.displayName}
-                        </div>
-                      ))
-                    ) : (
-                      <div className="p-4 text-center text-slate-500">No addresses found</div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="pt-4 border-t">
-              <h4 className="font-semibold mb-3">Or enter manually:</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="md:col-span-2">
-                  <Label htmlFor="billingStreet">Street Address</Label>
-                  <Input
-                    id="billingStreet"
-                    {...form.register('billingStreet')}
-                    placeholder="Main Street"
-                    data-testid="input-billingStreet"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="billingStreetNumber">Number</Label>
-                  <Input
-                    id="billingStreetNumber"
-                    {...form.register('billingStreetNumber')}
-                    placeholder="123"
-                    data-testid="input-billingStreetNumber"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                <div>
-                  <Label htmlFor="billingCity">City</Label>
-                  <Input
-                    id="billingCity"
-                    {...form.register('billingCity')}
-                    placeholder="Prague"
-                    data-testid="input-billingCity"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="billingZipCode">Postal Code</Label>
-                  <Input
-                    id="billingZipCode"
-                    {...form.register('billingZipCode')}
-                    placeholder="110 00"
-                    data-testid="input-billingZipCode"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="billingCountry">Country</Label>
-                  <Input
-                    id="billingCountry"
-                    {...form.register('billingCountry')}
-                    placeholder="Czech Republic"
-                    readOnly
-                    className="bg-slate-50"
-                    data-testid="input-billingCountry"
-                  />
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {(isCzech || isEU) && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-purple-500" />
-                Tax & Business Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {isCzech && (
-                <div className="space-y-4 pb-4 border-b">
-                  <h4 className="font-semibold text-sm flex items-center gap-2">
-                    <span className="text-2xl">🇨🇿</span>
-                    Czech Company Information
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="ico">IČO (Company ID)</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          id="ico"
-                          {...form.register('ico')}
-                          placeholder="12345678"
-                          onBlur={(e) => handleAresLookup(e.target.value)}
-                          data-testid="input-ico"
-                        />
-                        {isLoadingAres && <Loader2 className="h-5 w-5 animate-spin mt-2" data-testid="loader-ares" />}
-                      </div>
-                      <p className="text-xs text-slate-500 mt-1">Enter IČO to auto-fill company details from ARES</p>
-                    </div>
-                    <div>
-                      <Label htmlFor="dic">DIČ (Tax ID)</Label>
-                      <Input
-                        id="dic"
-                        {...form.register('dic')}
-                        placeholder="CZ12345678"
-                        readOnly
-                        className="bg-slate-50"
-                        data-testid="input-dic"
-                      />
-                      <p className="text-xs text-slate-500 mt-1">Auto-filled from ARES</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {isEU && (
-                <div className="space-y-4">
-                  <h4 className="font-semibold text-sm flex items-center gap-2">
-                    <span className="text-2xl">🇪🇺</span>
-                    VAT Information
-                  </h4>
-                  <div>
-                    <Label htmlFor="vatNumber">VAT Number</Label>
-                    <div className="flex gap-2 items-start">
-                      <div className="flex-1">
-                        <Input
-                          id="vatNumber"
-                          {...form.register('vatNumber')}
-                          placeholder="Enter VAT number"
-                          onBlur={(e) => {
-                            const vatNumber = e.target.value;
-                            const country = selectedCountry;
-                            if (vatNumber && country) {
-                              handleVatValidation(vatNumber, country);
-                            }
-                          }}
-                          data-testid="input-vatNumber"
-                        />
-                        <p className="text-xs text-slate-500 mt-1">Will be validated using EU VIES system</p>
-                      </div>
-                      {isValidatingVat && (
-                        <Loader2 className="h-5 w-5 animate-spin mt-2" data-testid="loader-vat" />
-                      )}
-                      {!isValidatingVat && vatValidationResult && (
-                        <div className="flex items-center gap-2 mt-2">
-                          {vatValidationResult.valid ? (
-                            <>
-                              <CheckCircle className="h-5 w-5 text-green-500" data-testid="icon-vatValid" />
-                              <Badge variant="default" className="bg-green-500" data-testid="badge-vatValid">Valid</Badge>
-                            </>
-                          ) : (
-                            <>
-                              <XCircle className="h-5 w-5 text-red-500" data-testid="icon-vatInvalid" />
-                              <Badge variant="destructive" data-testid="badge-vatInvalid">Invalid</Badge>
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    {vatValidationResult?.companyName && (
-                      <p className="text-sm text-slate-600 mt-2" data-testid="text-vatCompanyName">
-                        Company: {vatValidationResult.companyName}
-                      </p>
-                    )}
-                    {vatValidationResult?.error && (
-                      <p className="text-sm text-red-500 mt-2">{vatValidationResult.error}</p>
-                    )}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
 
         <Card>
           <CardHeader>
@@ -1229,6 +969,271 @@ export default function AddCustomer() {
             {shippingAddresses.length === 0 && !isAddingShipping && (
               <p className="text-center text-slate-500 py-8">No shipping addresses added yet</p>
             )}
+          </CardContent>
+        </Card>
+
+        {(isCzech || isEU) && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-purple-500" />
+                Tax & Business Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {isCzech && (
+                <div className="space-y-4 pb-4 border-b">
+                  <h4 className="font-semibold text-sm flex items-center gap-2">
+                    <span className="text-2xl">🇨🇿</span>
+                    Czech Company Information
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="ico">IČO (Company ID)</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="ico"
+                          {...form.register('ico')}
+                          placeholder="12345678"
+                          onBlur={(e) => handleAresLookup(e.target.value)}
+                          data-testid="input-ico"
+                        />
+                        {isLoadingAres && <Loader2 className="h-5 w-5 animate-spin mt-2" data-testid="loader-ares" />}
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">Enter IČO to auto-fill company details from ARES</p>
+                    </div>
+                    <div>
+                      <Label htmlFor="dic">DIČ (Tax ID)</Label>
+                      <Input
+                        id="dic"
+                        {...form.register('dic')}
+                        placeholder="CZ12345678"
+                        readOnly
+                        className="bg-slate-50"
+                        data-testid="input-dic"
+                      />
+                      <p className="text-xs text-slate-500 mt-1">Auto-filled from ARES</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {isEU && (
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-sm flex items-center gap-2">
+                    <span className="text-2xl">🇪🇺</span>
+                    VAT Information
+                  </h4>
+                  <div>
+                    <Label htmlFor="vatNumber">VAT Number</Label>
+                    <div className="flex gap-2 items-start">
+                      <div className="flex-1">
+                        <Input
+                          id="vatNumber"
+                          {...form.register('vatNumber')}
+                          placeholder="Enter VAT number"
+                          onBlur={(e) => {
+                            const vatNumber = e.target.value;
+                            const country = selectedCountry;
+                            if (vatNumber && country) {
+                              handleVatValidation(vatNumber, country);
+                            }
+                          }}
+                          data-testid="input-vatNumber"
+                        />
+                        <p className="text-xs text-slate-500 mt-1">Will be validated using EU VIES system</p>
+                      </div>
+                      {isValidatingVat && (
+                        <Loader2 className="h-5 w-5 animate-spin mt-2" data-testid="loader-vat" />
+                      )}
+                      {!isValidatingVat && vatValidationResult && (
+                        <div className="flex items-center gap-2 mt-2">
+                          {vatValidationResult.valid ? (
+                            <>
+                              <CheckCircle className="h-5 w-5 text-green-500" data-testid="icon-vatValid" />
+                              <Badge variant="default" className="bg-green-500" data-testid="badge-vatValid">Valid</Badge>
+                            </>
+                          ) : (
+                            <>
+                              <XCircle className="h-5 w-5 text-red-500" data-testid="icon-vatInvalid" />
+                              <Badge variant="destructive" data-testid="badge-vatInvalid">Invalid</Badge>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    {vatValidationResult?.companyName && (
+                      <p className="text-sm text-slate-600 mt-2" data-testid="text-vatCompanyName">
+                        Company: {vatValidationResult.companyName}
+                      </p>
+                    )}
+                    {vatValidationResult?.error && (
+                      <p className="text-sm text-red-500 mt-2">{vatValidationResult.error}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-green-500" />
+              Billing Address
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="billingAddressAutocomplete" className="text-base font-semibold">Quick Address Lookup</Label>
+              <p className="text-sm text-slate-500 mb-2">Start typing to search and autocomplete address</p>
+              <div className="relative">
+                <Input
+                  id="billingAddressAutocomplete"
+                  value={billingAddressQuery}
+                  onChange={(e) => {
+                    setBillingAddressQuery(e.target.value);
+                    searchBillingAddress(e.target.value);
+                  }}
+                  placeholder="Type address to search..."
+                  className="text-base"
+                  data-testid="input-billingAddressAutocomplete"
+                />
+                {billingAddressQuery && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-1 top-1 h-8 w-8 p-0"
+                    onClick={() => {
+                      setBillingAddressQuery("");
+                      setBillingAddressSuggestions([]);
+                      setShowBillingDropdown(false);
+                    }}
+                    data-testid="button-clearBillingAutocomplete"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+                {showBillingDropdown && (
+                  <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-72 overflow-y-auto z-50">
+                    {isLoadingBillingAutocomplete ? (
+                      <div className="p-4 text-center" data-testid="text-billingAutocompleteLoading">
+                        <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+                      </div>
+                    ) : billingAddressSuggestions.length > 0 ? (
+                      billingAddressSuggestions.map((suggestion, index) => (
+                        <div
+                          key={index}
+                          className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0"
+                          onClick={() => selectBillingAddress(suggestion)}
+                          data-testid={`button-billingAddressSuggestion-${index}`}
+                        >
+                          {suggestion.displayName}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-4 text-center text-slate-500">No addresses found</div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="pt-4 border-t">
+              <h4 className="font-semibold mb-3">Or enter manually:</h4>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <Label htmlFor="billingFirstName">First Name *</Label>
+                  <Input
+                    id="billingFirstName"
+                    {...form.register('billingFirstName')}
+                    placeholder="Jan"
+                    data-testid="input-billingFirstName"
+                  />
+                  {form.formState.errors.billingFirstName && (
+                    <p className="text-sm text-red-500 mt-1">{form.formState.errors.billingFirstName.message}</p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="billingLastName">Last Name *</Label>
+                  <Input
+                    id="billingLastName"
+                    {...form.register('billingLastName')}
+                    placeholder="Novák"
+                    data-testid="input-billingLastName"
+                  />
+                  {form.formState.errors.billingLastName && (
+                    <p className="text-sm text-red-500 mt-1">{form.formState.errors.billingLastName.message}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <Label htmlFor="billingCompany">Company Name</Label>
+                <Input
+                  id="billingCompany"
+                  {...form.register('billingCompany')}
+                  placeholder="Nail Salon Prague s.r.o."
+                  data-testid="input-billingCompany"
+                />
+                <p className="text-xs text-slate-500 mt-1">Leave empty for individual customers</p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="md:col-span-2">
+                  <Label htmlFor="billingStreet">Street Address</Label>
+                  <Input
+                    id="billingStreet"
+                    {...form.register('billingStreet')}
+                    placeholder="Main Street"
+                    data-testid="input-billingStreet"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="billingStreetNumber">Number</Label>
+                  <Input
+                    id="billingStreetNumber"
+                    {...form.register('billingStreetNumber')}
+                    placeholder="123"
+                    data-testid="input-billingStreetNumber"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <div>
+                  <Label htmlFor="billingCity">City</Label>
+                  <Input
+                    id="billingCity"
+                    {...form.register('billingCity')}
+                    placeholder="Prague"
+                    data-testid="input-billingCity"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="billingZipCode">Postal Code</Label>
+                  <Input
+                    id="billingZipCode"
+                    {...form.register('billingZipCode')}
+                    placeholder="110 00"
+                    data-testid="input-billingZipCode"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="billingCountry">Country</Label>
+                  <Input
+                    id="billingCountry"
+                    {...form.register('billingCountry')}
+                    placeholder="Czech Republic"
+                    readOnly
+                    className="bg-slate-50"
+                    data-testid="input-billingCountry"
+                  />
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
