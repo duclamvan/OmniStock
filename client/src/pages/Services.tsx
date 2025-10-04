@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Plus, Wrench, Calendar, Trash2, Edit } from "lucide-react";
+import { Plus, Wrench, Trash2, Edit } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -31,7 +31,6 @@ interface Service {
   id: string;
   name: string;
   description: string | null;
-  dueDate: string | null;
   priceCzk: string | null;
   priceEur: string | null;
   status: string;
@@ -48,7 +47,6 @@ export default function Services() {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    dueDate: "",
     priceCzk: "",
     priceEur: "",
   });
@@ -127,7 +125,6 @@ export default function Services() {
     setFormData({
       name: "",
       description: "",
-      dueDate: "",
       priceCzk: "",
       priceEur: "",
     });
@@ -147,7 +144,6 @@ export default function Services() {
     setFormData({
       name: service.name,
       description: service.description || "",
-      dueDate: service.dueDate || "",
       priceCzk: service.priceCzk || "",
       priceEur: service.priceEur || "",
     });
@@ -211,17 +207,6 @@ export default function Services() {
                   placeholder="Service details..."
                   rows={3}
                   data-testid="input-service-description"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="dueDate">Due Date</Label>
-                <Input
-                  id="dueDate"
-                  type="date"
-                  value={formData.dueDate}
-                  onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                  data-testid="input-service-due-date"
                 />
               </div>
 
@@ -325,13 +310,6 @@ export default function Services() {
                   )}
                   
                   <div className="space-y-2">
-                    {service.dueDate && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="h-4 w-4 text-gray-400" />
-                        <span className="text-gray-600">Due: {formatDate(service.dueDate)}</span>
-                      </div>
-                    )}
-                    
                     <div className="flex gap-2 pt-2">
                       {service.priceCzk && (
                         <Badge variant="outline" className="bg-blue-50 border-blue-200 text-blue-700">
