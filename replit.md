@@ -3,6 +3,13 @@ Davie Supply is a full-stack web application designed for comprehensive warehous
 
 # Recent Changes (October 2025)
 
+## Invoice UI Enhancement (Completed)
+- **Product Images**: Added product thumbnail display (64x64px) in invoice items, with placeholder icon for products without images
+- **Prominent Quantity Display**: Quantity now shown in large, bold badge format for better visibility
+- **Professional Layout**: Redesigned invoice items with card-style rows, hover effects, and improved spacing
+- **Visual Hierarchy**: Larger fonts for product names and line totals, better alignment of all elements
+- **Customer Country Flags**: Added country flag emoji next to customer name in order header
+
 ## Product Tiered Pricing & Supplier Integration (Completed)
 - **Database Schema**: Added product_tiered_pricing table for quantity-based pricing (tiered/wholesale), foreign key constraint products.supplier_id → suppliers.id
 - **Backend APIs**: Full CRUD endpoints for tiered pricing (GET/POST/PATCH/DELETE /api/products/:id/tiered-pricing)

@@ -483,11 +483,11 @@ export default function OrderDetails() {
               </div>
             </CardHeader>
             <CardContent>
-              {/* Order Items */}
-              <div className="space-y-4">
+              {/* Order Items - Professional Invoice Layout */}
+              <div className="space-y-3">
                 {order.items?.map((item: any, index: number) => (
                   <div key={item.id || index}>
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-4 p-3 rounded-lg hover:bg-slate-50 transition-colors">
                       {showPickingMode && (
                         <Checkbox
                           checked={pickedItems.has(item.id)}
@@ -503,24 +503,51 @@ export default function OrderDetails() {
                           className="mt-1"
                         />
                       )}
-                      <div className="flex-1">
+                      
+                      {/* Product Image */}
+                      <div className="flex-shrink-0">
+                        {item.image ? (
+                          <img 
+                            src={item.image} 
+                            alt={item.productName}
+                            className="w-16 h-16 object-cover rounded border border-slate-200"
+                          />
+                        ) : (
+                          <div className="w-16 h-16 bg-slate-100 rounded border border-slate-200 flex items-center justify-center">
+                            <Package className="h-8 w-8 text-slate-300" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Product Details */}
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex-1">
                             <p className={cn(
-                              "font-medium text-slate-900",
+                              "font-semibold text-slate-900 text-base mb-1",
                               pickedItems.has(item.id) && "line-through text-slate-400"
                             )}>
                               {item.productName}
                             </p>
-                            <div className="flex items-center gap-4 mt-1 text-sm text-slate-500">
-                              <span>SKU: {item.sku}</span>
-                              <span>•</span>
-                              <span>Qty: {item.quantity}</span>
-                              <span>•</span>
-                              <span>{formatCurrency(item.unitPrice || item.price || 0, order.currency || 'EUR')} each</span>
+                            <p className="text-sm text-slate-500 mb-2">SKU: {item.sku}</p>
+                            
+                            <div className="flex items-center gap-3 flex-wrap">
+                              {/* Quantity - More Visible */}
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-slate-500">Qty:</span>
+                                <Badge variant="secondary" className="text-base font-bold px-3 py-1">
+                                  {item.quantity}
+                                </Badge>
+                              </div>
+                              
+                              {/* Unit Price */}
+                              <div className="text-sm text-slate-600">
+                                <span className="text-slate-500">×</span> {formatCurrency(item.unitPrice || item.price || 0, order.currency || 'EUR')}
+                              </div>
                             </div>
+
                             {item.landingCost && (
-                              <div className="mt-1">
+                              <div className="mt-2">
                                 <MarginPill 
                                   sellingPrice={item.unitPrice || item.price || 0}
                                   landingCost={item.landingCost}
@@ -532,13 +559,15 @@ export default function OrderDetails() {
                               </div>
                             )}
                           </div>
-                          <div className="flex items-center gap-2">
+
+                          {/* Price and Actions */}
+                          <div className="flex items-start gap-3">
                             <div className="text-right">
-                              <p className="font-semibold text-slate-900">
+                              <p className="font-bold text-lg text-slate-900">
                                 {formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}
                               </p>
                               {item.discount > 0 && (
-                                <p className="text-sm text-green-600">
+                                <p className="text-sm text-green-600 mt-1">
                                   -{formatCurrency(item.discount || 0, order.currency || 'EUR')} discount
                                 </p>
                               )}
@@ -581,7 +610,7 @@ export default function OrderDetails() {
                         </div>
                       </div>
                     </div>
-                    {index < order.items.length - 1 && <Separator className="mt-4" />}
+                    {index < order.items.length - 1 && <Separator />}
                   </div>
                 ))}
               </div>
