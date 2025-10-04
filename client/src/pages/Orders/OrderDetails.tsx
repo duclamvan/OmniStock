@@ -350,7 +350,10 @@ export default function OrderDetails() {
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         onClick={() => updateOrderStatusMutation.mutate('shipped')}
-                        className={order.orderStatus === 'shipped' ? 'bg-accent' : ''}
+                        className={cn(
+                          "text-primary",
+                          order.orderStatus === 'shipped' ? 'bg-accent' : ''
+                        )}
                       >
                         <Truck className="mr-2 h-4 w-4" />
                         Shipped
@@ -395,7 +398,10 @@ export default function OrderDetails() {
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         onClick={() => updatePaymentStatusMutation.mutate('paid')}
-                        className={order.paymentStatus === 'paid' ? 'bg-accent' : ''}
+                        className={cn(
+                          "text-primary",
+                          order.paymentStatus === 'paid' ? 'bg-accent' : ''
+                        )}
                       >
                         <CheckCircle2 className="mr-2 h-4 w-4" />
                         Paid
