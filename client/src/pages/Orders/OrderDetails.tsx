@@ -730,6 +730,251 @@ export default function OrderDetails() {
             </CardContent>
           </Card>
 
+          {/* Shipping Information Card */}
+          <Card data-testid="card-shipping-info">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Truck className="h-5 w-5" />
+                Shipping Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Customer & Contact Information */}
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-sm text-slate-700 flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Customer & Contact
+                  </h4>
+                  <div className="space-y-2 text-sm">
+                    {order.customer?.name && (
+                      <div data-testid="text-customer-name">
+                        <span className="text-slate-500">Name:</span>
+                        <p className="font-medium text-slate-900">{order.customer.name}</p>
+                      </div>
+                    )}
+                    {order.customer?.email && (
+                      <div className="flex items-center gap-2" data-testid="text-customer-email">
+                        <Mail className="h-4 w-4 text-slate-400" />
+                        <a href={`mailto:${order.customer.email}`} className="text-blue-600 hover:underline">
+                          {order.customer.email}
+                        </a>
+                      </div>
+                    )}
+                    {order.customer?.phone && (
+                      <div className="flex items-center gap-2" data-testid="text-customer-phone">
+                        <Phone className="h-4 w-4 text-slate-400" />
+                        <a href={`tel:${order.customer.phone}`} className="text-blue-600 hover:underline">
+                          {order.customer.phone}
+                        </a>
+                      </div>
+                    )}
+                    {(order.customer?.billingStreet || order.customer?.billingCity || order.customer?.address) && (
+                      <div className="flex items-start gap-2 mt-3" data-testid="text-billing-address">
+                        <MapPin className="h-4 w-4 text-slate-400 mt-0.5" />
+                        <div className="text-slate-600">
+                          <p className="text-xs text-slate-500 mb-1">Billing Address:</p>
+                          {order.customer.billingStreet && (
+                            <p>
+                              {order.customer.billingStreet}
+                              {order.customer.billingStreetNumber && ` ${order.customer.billingStreetNumber}`}
+                            </p>
+                          )}
+                          {!order.customer.billingStreet && order.customer.address && (
+                            <p>{order.customer.address}</p>
+                          )}
+                          {(order.customer.billingCity || order.customer.city) && (
+                            <p>
+                              {[
+                                order.customer.billingCity || order.customer.city,
+                                order.customer.billingState || order.customer.state,
+                                order.customer.billingZipCode || order.customer.zipCode
+                              ].filter(Boolean).join(', ')}
+                            </p>
+                          )}
+                          {(order.customer.billingCountry || order.customer.country) && (
+                            <p>{order.customer.billingCountry || order.customer.country}</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Shipping Details */}
+                <div className="space-y-3">
+                  <h4 className="font-semibold text-sm text-slate-700 flex items-center gap-2">
+                    <Package className="h-4 w-4" />
+                    Shipping Details
+                  </h4>
+                  <div className="space-y-2 text-sm">
+                    {order.shippingMethod && (
+                      <div data-testid="text-shipping-method">
+                        <span className="text-slate-500">Method:</span>
+                        <div className="mt-1">
+                          <Badge variant="secondary" className="text-xs">
+                            {order.shippingMethod}
+                          </Badge>
+                        </div>
+                      </div>
+                    )}
+                    {order.shippingCost > 0 && (
+                      <div data-testid="text-shipping-cost">
+                        <span className="text-slate-500">Cost:</span>
+                        <p className="font-medium text-slate-900">
+                          {formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}
+                        </p>
+                        {order.actualShippingCost > 0 && order.actualShippingCost !== order.shippingCost && (
+                          <p className="text-xs text-slate-500">
+                            Actual: {formatCurrency(order.actualShippingCost || 0, order.currency || 'EUR')}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    {order.trackingNumber ? (
+                      <div data-testid="text-tracking-number">
+                        <span className="text-slate-500">Tracking Number:</span>
+                        <div className="flex items-center gap-2 mt-1">
+                          <code className="text-xs bg-slate-100 px-2 py-1 rounded font-mono">
+                            {order.trackingNumber}
+                          </code>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => copyToClipboard(order.trackingNumber, "Tracking number")}
+                            data-testid="button-copy-tracking"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div data-testid="text-no-tracking">
+                        <span className="text-slate-500">Tracking Number:</span>
+                        <p className="text-slate-400 text-xs mt-1">No tracking number</p>
+                      </div>
+                    )}
+                    {order.shippedAt && (
+                      <div data-testid="text-shipped-at">
+                        <span className="text-slate-500">Shipped At:</span>
+                        <p className="font-medium text-slate-900">
+                          {new Date(order.shippedAt).toLocaleString()}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Warehouse Location */}
+              {order.warehouseLocation && (
+                <>
+                  <Separator className="my-4" />
+                  <div className="space-y-2" data-testid="section-warehouse-location">
+                    <h4 className="font-semibold text-sm text-slate-700 flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      Fulfillment Location
+                    </h4>
+                    <p className="text-sm text-slate-600">{order.warehouseLocation}</p>
+                  </div>
+                </>
+              )}
+
+              {/* Documents & Notes */}
+              <Separator className="my-4" />
+              <div className="space-y-3" data-testid="section-documents">
+                <h4 className="font-semibold text-sm text-slate-700 flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Documents & Notes
+                </h4>
+                
+                {/* CPNP Documents */}
+                {order.items && order.items.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          const productIds = order.items
+                            .map((item: any) => item.productId)
+                            .filter(Boolean);
+                          
+                          if (productIds.length === 0) {
+                            toast({
+                              title: "No Products",
+                              description: "No products found in this order",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+
+                          const cpnpFiles = [];
+                          
+                          for (const productId of productIds) {
+                            try {
+                              const response = await fetch(`/api/products/${productId}/files`);
+                              if (response.ok) {
+                                const files = await response.json();
+                                const productCpnpFiles = files.filter((f: any) => f.fileType === 'cpnp');
+                                cpnpFiles.push(...productCpnpFiles);
+                              }
+                            } catch (error) {
+                              console.error(`Error fetching files for product ${productId}:`, error);
+                            }
+                          }
+
+                          if (cpnpFiles.length === 0) {
+                            toast({
+                              title: "No CPNP Documents",
+                              description: "No CPNP documents found for products in this order",
+                            });
+                            return;
+                          }
+
+                          for (const file of cpnpFiles) {
+                            window.open(file.filePath, '_blank');
+                          }
+
+                          toast({
+                            title: "CPNP Documents Opened",
+                            description: `${cpnpFiles.length} CPNP document(s) opened in new tabs`,
+                          });
+                        } catch (error) {
+                          console.error('Error fetching CPNP documents:', error);
+                          toast({
+                            title: "Error",
+                            description: "Failed to fetch CPNP documents",
+                            variant: "destructive",
+                          });
+                        }
+                      }}
+                      data-testid="button-print-cpnp"
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      Download CPNP Documents
+                    </Button>
+                  </div>
+                )}
+
+                {/* Shipping Notes */}
+                {order.notes && (
+                  <div data-testid="text-shipping-notes">
+                    <span className="text-slate-500 text-xs">Shipping Notes:</span>
+                    <p className="text-sm text-slate-600 mt-1 whitespace-pre-wrap bg-slate-50 p-3 rounded">
+                      {order.notes}
+                    </p>
+                  </div>
+                )}
+                
+                {!order.notes && (
+                  <p className="text-slate-400 text-xs">No shipping notes</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Notes */}
           {order.notes && (
             <Card>
