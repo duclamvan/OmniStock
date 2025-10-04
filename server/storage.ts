@@ -17,6 +17,7 @@ import {
   orders,
   orderItems,
   warehouses,
+  services,
   type User,
   type InsertUser,
   type Category,
@@ -52,7 +53,9 @@ import {
   type OrderItem,
   type InsertOrderItem,
   type Warehouse,
-  type InsertWarehouse
+  type InsertWarehouse,
+  type Service,
+  type InsertService
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, like, sql, gte, lte, inArray, ne, asc, isNull, notInArray } from "drizzle-orm";
@@ -63,6 +66,7 @@ export type Discount = any;
 export type Return = any;
 export type ReturnItem = any;
 export type Expense = any;
+export type Service = any;
 export type Purchase = any;
 export type Sale = any;
 export type UserActivity = any;
@@ -230,6 +234,12 @@ export interface IStorage {
   createExpense(expense: any): Promise<Expense>;
   updateExpense(id: string, expense: any): Promise<Expense | undefined>;
   deleteExpense(id: string): Promise<boolean>;
+  
+  // Services
+  getServices(): Promise<Service[]>;
+  createService(service: any): Promise<Service>;
+  updateService(id: string, service: any): Promise<Service>;
+  deleteService(id: string): Promise<boolean>;
   
   // Purchases
   getPurchases(): Promise<Purchase[]>;
@@ -1762,6 +1772,33 @@ export class DatabaseStorage implements IStorage {
   async createExpense(expense: any): Promise<Expense> { return { id: Date.now().toString(), ...expense }; }
   async updateExpense(id: string, expense: any): Promise<Expense | undefined> { return { id, ...expense }; }
   async deleteExpense(id: string): Promise<boolean> { return true; }
+
+  async getServices(): Promise<Service[]> {
+    return await db.select().from(services).orderBy(desc(services.createdAt));
+  }
+
+  async createService(service: InsertService): Promise<Service> {
+    const [newService] = await db.insert(services).values(service).returning();
+    return newService;
+  }
+
+  async updateService(id: string, service: Partial<InsertService>): Promise<Service> {
+    const [updated] = await db.update(services)
+      .set({ ...service, updatedAt: new Date() })
+      .where(eq(services.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteService(id: string): Promise<boolean> {
+    try {
+      const result = await db.delete(services).where(eq(services.id, id));
+      return (result.rowCount ?? 0) > 0;
+    } catch (error) {
+      console.error('Error deleting service:', error);
+      return false;
+    }
+  }
 
   async getPurchases(): Promise<Purchase[]> { return []; }
   async getPurchase(id: string): Promise<Purchase | undefined> { return undefined; }

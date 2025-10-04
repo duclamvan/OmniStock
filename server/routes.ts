@@ -18,6 +18,7 @@ import {
   insertOrderItemSchema,
   insertDiscountSchema,
   insertExpenseSchema,
+  insertServiceSchema,
   insertUserActivitySchema,
   productCostHistory,
   products,
@@ -4013,6 +4014,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting expense:", error);
       res.status(500).json({ message: "Failed to delete expense" });
+    }
+  });
+
+  // Services endpoints
+  app.get('/api/services', async (req, res) => {
+    try {
+      const services = await storage.getServices();
+      res.json(services);
+    } catch (error) {
+      console.error("Error fetching services:", error);
+      res.status(500).json({ message: "Failed to fetch services" });
+    }
+  });
+
+  app.post('/api/services', async (req: any, res) => {
+    try {
+      const data = insertServiceSchema.parse(req.body);
+      const service = await storage.createService(data);
+      res.json(service);
+    } catch (error) {
+      console.error("Error creating service:", error);
+      res.status(500).json({ message: "Failed to create service" });
+    }
+  });
+
+  app.patch('/api/services/:id', async (req: any, res) => {
+    try {
+      const service = await storage.updateService(req.params.id, req.body);
+      res.json(service);
+    } catch (error) {
+      console.error("Error updating service:", error);
+      res.status(500).json({ message: "Failed to update service" });
+    }
+  });
+
+  app.delete('/api/services/:id', async (req: any, res) => {
+    try {
+      await storage.deleteService(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting service:", error);
+      res.status(500).json({ message: "Failed to delete service" });
     }
   });
 

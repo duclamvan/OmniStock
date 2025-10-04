@@ -518,6 +518,19 @@ export const expenses = pgTable('expenses', {
   updatedAt: timestamp('updated_at').defaultNow()
 });
 
+// Services table for service management (repairs, etc.)
+export const services = pgTable('services', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar('name').notNull(),
+  description: text('description'),
+  dueDate: date('due_date'),
+  priceCzk: decimal('price_czk', { precision: 10, scale: 2 }),
+  priceEur: decimal('price_eur', { precision: 10, scale: 2 }),
+  status: varchar('status').notNull().default('pending'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
 // User activities tracking
 export const userActivities = pgTable('user_activities', {
   id: serial('id').primaryKey(),
@@ -799,6 +812,7 @@ export const insertProductLocationSchema = createInsertSchema(productLocations)
   });
 export const insertDiscountSchema = createInsertSchema(discounts).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertExpenseSchema = createInsertSchema(expenses).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertServiceSchema = createInsertSchema(services).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertUserActivitySchema = createInsertSchema(userActivities).omit({ id: true, createdAt: true });
 
 // Landing Cost Tracking Schemas
@@ -856,6 +870,8 @@ export type Discount = typeof discounts.$inferSelect;
 export type InsertDiscount = z.infer<typeof insertDiscountSchema>;
 export type Expense = typeof expenses.$inferSelect;
 export type InsertExpense = z.infer<typeof insertExpenseSchema>;
+export type Service = typeof services.$inferSelect;
+export type InsertService = z.infer<typeof insertServiceSchema>;
 export type UserActivity = typeof userActivities.$inferSelect;
 export type InsertUserActivity = z.infer<typeof insertUserActivitySchema>;
 

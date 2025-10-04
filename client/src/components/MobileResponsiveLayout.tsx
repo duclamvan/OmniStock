@@ -40,7 +40,8 @@ import {
   ClipboardCheck,
   Boxes,
   Send,
-  FileText
+  FileText,
+  Wrench
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -171,6 +172,13 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
       icon: Calculator,
       color: "text-pink-600",
       description: "Cost Tracking"
+    },
+    {
+      name: "Services",
+      href: "/services",
+      icon: Wrench,
+      color: "text-purple-600",
+      description: "Repairs & Services"
     },
     {
       name: "POS",
@@ -530,6 +538,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
                  location.includes('/suppliers') ? 'Suppliers' :
                  location.includes('/returns') ? 'Returns' :
                  location.includes('/expenses') ? 'Expenses' :
+                 location.includes('/services') ? 'Services' :
                  location.includes('/pos') ? 'Point of Sale' :
                  location.includes('/shipping') ? 'Shipping Management' :
                  location.includes('/reports') ? 'Reports' : 'Dashboard'}

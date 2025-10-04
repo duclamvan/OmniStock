@@ -44,6 +44,7 @@ import AllExpenses from "@/pages/Expenses/AllExpenses";
 import AddExpense from "@/pages/Expenses/AddExpense";
 import EditExpense from "@/pages/Expenses/EditExpense";
 import ExpenseDetails from "@/pages/Expenses/ExpenseDetails";
+import Services from "@/pages/Services";
 import POS from "@/pages/POS/POS";
 import Categories from "@/pages/Inventory/Categories";
 import AddCategory from "@/pages/Inventory/AddCategory";
@@ -148,6 +149,7 @@ function Router() {
         <Route path="/expenses/add" component={AddExpense} />
         <Route path="/expenses/edit/:id" component={EditExpense} />
         <Route path="/expenses/:id" component={ExpenseDetails} />
+        <Route path="/services" component={Services} />
         <Route path="/pos" component={POS} />
         <Route path="/shipping" component={ShippingManagement} />
         <Route path="/files" component={Files} />
