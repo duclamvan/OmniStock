@@ -46,6 +46,7 @@ import EditExpense from "@/pages/Expenses/EditExpense";
 import ExpenseDetails from "@/pages/Expenses/ExpenseDetails";
 import Services from "@/pages/Services";
 import POS from "@/pages/POS/POS";
+import AllPreOrders from "@/pages/PreOrders/AllPreOrders";
 import Categories from "@/pages/Inventory/Categories";
 import AddCategory from "@/pages/Inventory/AddCategory";
 import EditCategory from "@/pages/Inventory/EditCategory";
@@ -101,9 +102,7 @@ function Router() {
         <Route path="/orders/pay-later">
           {() => <AllOrders filter="pay_later" />}
         </Route>
-        <Route path="/orders/pre-orders">
-          {() => <div>Pre-orders page coming soon</div>}
-        </Route>
+        <Route path="/orders/pre-orders" component={AllPreOrders} />
         <Route path="/orders/:id/edit" component={EditOrder} />
         <Route path="/orders/:id" component={OrderDetails} />
         <Route path="/inventory" component={AllInventory} />

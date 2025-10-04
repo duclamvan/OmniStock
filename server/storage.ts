@@ -1818,6 +1818,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPreOrders(): Promise<PreOrder[]> {
+    const itemsCount = db
+      .select({ 
+        preOrderId: preOrderItems.preOrderId,
+        count: sql<number>`cast(count(*) as integer)`.as('count')
+      })
+      .from(preOrderItems)
+      .groupBy(preOrderItems.preOrderId)
+      .as('items_count');
+
     return await db
       .select({
         id: preOrders.id,
@@ -1827,10 +1836,12 @@ export class DatabaseStorage implements IStorage {
         expectedDate: preOrders.expectedDate,
         createdAt: preOrders.createdAt,
         updatedAt: preOrders.updatedAt,
-        customer: customers
+        customer: customers,
+        itemsCount: sql<number>`coalesce(${itemsCount.count}, 0)`
       })
       .from(preOrders)
       .leftJoin(customers, eq(preOrders.customerId, customers.id))
+      .leftJoin(itemsCount, eq(preOrders.id, itemsCount.preOrderId))
       .orderBy(desc(preOrders.createdAt)) as any;
   }
 
