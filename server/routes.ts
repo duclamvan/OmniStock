@@ -20,6 +20,8 @@ import {
   insertExpenseSchema,
   insertServiceSchema,
   insertUserActivitySchema,
+  insertPreOrderSchema,
+  insertPreOrderItemSchema,
   productCostHistory,
   products,
   productLocations,
@@ -4056,6 +4058,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting service:", error);
       res.status(500).json({ message: "Failed to delete service" });
+    }
+  });
+
+  // Pre-Orders endpoints
+  app.get('/api/pre-orders', async (req, res) => {
+    try {
+      const preOrders = await storage.getPreOrders();
+      res.json(preOrders);
+    } catch (error) {
+      console.error("Error fetching pre-orders:", error);
+      res.status(500).json({ message: "Failed to fetch pre-orders" });
+    }
+  });
+
+  app.get('/api/pre-orders/:id', async (req, res) => {
+    try {
+      const preOrder = await storage.getPreOrder(req.params.id);
+      if (!preOrder) {
+        return res.status(404).json({ message: "Pre-order not found" });
+      }
+      
+      const items = await storage.getPreOrderItems(req.params.id);
+      res.json({ ...preOrder, items });
+    } catch (error) {
+      console.error("Error fetching pre-order:", error);
+      res.status(500).json({ message: "Failed to fetch pre-order" });
+    }
+  });
+
+  app.post('/api/pre-orders', async (req: any, res) => {
+    try {
+      const data = insertPreOrderSchema.parse(req.body);
+      const preOrder = await storage.createPreOrder(data);
+      res.status(201).json(preOrder);
+    } catch (error) {
+      console.error("Error creating pre-order:", error);
+      res.status(500).json({ message: "Failed to create pre-order" });
+    }
+  });
+
+  app.patch('/api/pre-orders/:id', async (req: any, res) => {
+    try {
+      const preOrder = await storage.getPreOrder(req.params.id);
+      if (!preOrder) {
+        return res.status(404).json({ message: "Pre-order not found" });
+      }
+      
+      const updates = insertPreOrderSchema.partial().parse(req.body);
+      const updatedPreOrder = await storage.updatePreOrder(req.params.id, updates);
+      res.json(updatedPreOrder);
+    } catch (error) {
+      console.error("Error updating pre-order:", error);
+      res.status(500).json({ message: "Failed to update pre-order" });
+    }
+  });
+
+  app.delete('/api/pre-orders/:id', async (req: any, res) => {
+    try {
+      const preOrder = await storage.getPreOrder(req.params.id);
+      if (!preOrder) {
+        return res.status(404).json({ message: "Pre-order not found" });
+      }
+      
+      await storage.deletePreOrder(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting pre-order:", error);
+      res.status(500).json({ message: "Failed to delete pre-order" });
+    }
+  });
+
+  // Pre-Order Items endpoints
+  app.get('/api/pre-orders/:preOrderId/items', async (req, res) => {
+    try {
+      const items = await storage.getPreOrderItems(req.params.preOrderId);
+      res.json(items);
+    } catch (error) {
+      console.error("Error fetching pre-order items:", error);
+      res.status(500).json({ message: "Failed to fetch pre-order items" });
+    }
+  });
+
+  app.post('/api/pre-orders/:preOrderId/items', async (req: any, res) => {
+    try {
+      const data = insertPreOrderItemSchema.parse({
+        ...req.body,
+        preOrderId: req.params.preOrderId
+      });
+      const item = await storage.createPreOrderItem(data);
+      res.status(201).json(item);
+    } catch (error) {
+      console.error("Error creating pre-order item:", error);
+      res.status(500).json({ message: "Failed to create pre-order item" });
+    }
+  });
+
+  app.patch('/api/pre-order-items/:id', async (req: any, res) => {
+    try {
+      const updates = insertPreOrderItemSchema.partial().parse(req.body);
+      const item = await storage.updatePreOrderItem(req.params.id, updates);
+      res.json(item);
+    } catch (error) {
+      console.error("Error updating pre-order item:", error);
+      res.status(500).json({ message: "Failed to update pre-order item" });
+    }
+  });
+
+  app.delete('/api/pre-order-items/:id', async (req: any, res) => {
+    try {
+      const deleted = await storage.deletePreOrderItem(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Pre-order item not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting pre-order item:", error);
+      res.status(500).json({ message: "Failed to delete pre-order item" });
     }
   });
 
