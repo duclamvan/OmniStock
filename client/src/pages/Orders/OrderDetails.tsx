@@ -883,153 +883,209 @@ export default function OrderDetails() {
                 Shipping Information
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Customer & Contact Information */}
-                <div className="space-y-3">
-                  <h4 className="font-semibold text-sm text-slate-700 flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    Customer & Contact
-                  </h4>
-                  <div className="space-y-2 text-sm">
-                    {order.customer?.name && (
-                      <div data-testid="text-customer-name">
-                        <span className="text-slate-500">Name:</span>
-                        <p className="font-medium text-slate-900">{order.customer.name}</p>
-                      </div>
-                    )}
-                    {order.customer?.email && (
-                      <div className="flex items-center gap-2" data-testid="text-customer-email">
-                        <Mail className="h-4 w-4 text-slate-400" />
-                        <a href={`mailto:${order.customer.email}`} className="text-blue-600 hover:underline">
-                          {order.customer.email}
-                        </a>
-                      </div>
-                    )}
-                    {order.customer?.phone && (
-                      <div className="flex items-center gap-2" data-testid="text-customer-phone">
-                        <Phone className="h-4 w-4 text-slate-400" />
-                        <a href={`tel:${order.customer.phone}`} className="text-blue-600 hover:underline">
-                          {order.customer.phone}
-                        </a>
-                      </div>
-                    )}
-                    {(order.customer?.billingStreet || order.customer?.billingCity || order.customer?.address) && (
-                      <div className="flex items-start gap-2 mt-3" data-testid="text-billing-address">
-                        <MapPin className="h-4 w-4 text-slate-400 mt-0.5" />
-                        <div className="text-slate-600">
-                          <p className="text-xs text-slate-500 mb-1">Billing Address:</p>
-                          {order.customer.billingStreet && (
-                            <p>
-                              {order.customer.billingStreet}
-                              {order.customer.billingStreetNumber && ` ${order.customer.billingStreetNumber}`}
-                            </p>
-                          )}
-                          {!order.customer.billingStreet && order.customer.address && (
-                            <p>{order.customer.address}</p>
-                          )}
-                          {(order.customer.billingCity || order.customer.city) && (
-                            <p>
-                              {[
-                                order.customer.billingCity || order.customer.city,
-                                order.customer.billingState || order.customer.state,
-                                order.customer.billingZipCode || order.customer.zipCode
-                              ].filter(Boolean).join(', ')}
-                            </p>
-                          )}
-                          {(order.customer.billingCountry || order.customer.country) && (
-                            <p>{order.customer.billingCountry || order.customer.country}</p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+            <CardContent className="space-y-6">
+              {/* PROMINENT SHIPPING ADDRESS - Most Important Section */}
+              <div className="bg-blue-50 dark:bg-blue-950/20 border-2 border-blue-200 dark:border-blue-800 rounded-lg p-6" data-testid="section-shipping-address">
+                <div className="flex items-center gap-3 mb-4">
+                  <MapPin className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">Shipping Address</h3>
                 </div>
-
-                {/* Shipping Details */}
-                <div className="space-y-3">
-                  <h4 className="font-semibold text-sm text-slate-700 flex items-center gap-2">
-                    <Package className="h-4 w-4" />
-                    Shipping Details
-                  </h4>
-                  <div className="space-y-2 text-sm">
-                    {order.shippingMethod && (
-                      <div data-testid="text-shipping-method">
-                        <span className="text-slate-500">Method:</span>
-                        <div className="mt-1">
-                          <Badge variant="secondary" className="text-xs">
-                            {order.shippingMethod}
-                          </Badge>
-                        </div>
-                      </div>
-                    )}
-                    {order.shippingCost > 0 && (
-                      <div data-testid="text-shipping-cost">
-                        <span className="text-slate-500">Cost:</span>
-                        <p className="font-medium text-slate-900">
-                          {formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}
-                        </p>
-                        {order.actualShippingCost > 0 && order.actualShippingCost !== order.shippingCost && (
-                          <p className="text-xs text-slate-500">
-                            Actual: {formatCurrency(order.actualShippingCost || 0, order.currency || 'EUR')}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                    {order.trackingNumber ? (
-                      <div data-testid="text-tracking-number">
-                        <span className="text-slate-500">Tracking Number:</span>
-                        <div className="flex items-center gap-2 mt-1">
-                          <code className="text-xs bg-slate-100 px-2 py-1 rounded font-mono">
-                            {order.trackingNumber}
-                          </code>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => copyToClipboard(order.trackingNumber, "Tracking number")}
-                            data-testid="button-copy-tracking"
-                          >
-                            <Copy className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div data-testid="text-no-tracking">
-                        <span className="text-slate-500">Tracking Number:</span>
-                        <p className="text-slate-400 text-xs mt-1">No tracking number</p>
-                      </div>
-                    )}
-                    {order.shippedAt && (
-                      <div data-testid="text-shipped-at">
-                        <span className="text-slate-500">Shipped At:</span>
-                        <p className="font-medium text-slate-900">
-                          {new Date(order.shippedAt).toLocaleString()}
-                        </p>
-                      </div>
-                    )}
-                  </div>
+                
+                <div className="space-y-2 text-base">
+                  {/* Customer Name */}
+                  {order.customer?.name && (
+                    <p className="font-semibold text-lg text-slate-900 dark:text-slate-100" data-testid="text-shipping-name">
+                      {order.customer.name}
+                    </p>
+                  )}
+                  
+                  {/* Street Address */}
+                  {(order.customer?.billingStreet || order.customer?.address) && (
+                    <p className="text-lg text-slate-800 dark:text-slate-200" data-testid="text-shipping-street">
+                      {order.customer.billingStreet && (
+                        <>
+                          {order.customer.billingStreet}
+                          {order.customer.billingStreetNumber && ` ${order.customer.billingStreetNumber}`}
+                        </>
+                      )}
+                      {!order.customer.billingStreet && order.customer.address && order.customer.address}
+                    </p>
+                  )}
+                  
+                  {/* City, State, ZIP */}
+                  {(order.customer?.billingCity || order.customer?.city) && (
+                    <p className="text-lg text-slate-800 dark:text-slate-200" data-testid="text-shipping-city">
+                      {[
+                        order.customer.billingCity || order.customer.city,
+                        order.customer.billingState || order.customer.state,
+                        order.customer.billingZipCode || order.customer.zipCode
+                      ].filter(Boolean).join(', ')}
+                    </p>
+                  )}
+                  
+                  {/* Country with Flag */}
+                  {(order.customer?.billingCountry || order.customer?.country) && (
+                    <p className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2" data-testid="text-shipping-country">
+                      <span className="text-2xl">{getCountryFlag(order.customer.billingCountry || order.customer.country)}</span>
+                      <span>{order.customer.billingCountry || order.customer.country}</span>
+                    </p>
+                  )}
+                  
+                  {/* No address available */}
+                  {!order.customer?.billingStreet && !order.customer?.address && !order.customer?.billingCity && !order.customer?.city && (
+                    <p className="text-slate-500 italic">No shipping address available</p>
+                  )}
                 </div>
               </div>
 
-              {/* Warehouse Location */}
-              {order.warehouseLocation && (
-                <>
-                  <Separator className="my-4" />
-                  <div className="space-y-2" data-testid="section-warehouse-location">
-                    <h4 className="font-semibold text-sm text-slate-700 flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      Fulfillment Location
-                    </h4>
-                    <p className="text-sm text-slate-600">{order.warehouseLocation}</p>
+              {/* Shipping Method & Tracking */}
+              <div className="bg-slate-50 dark:bg-slate-900/20 border border-slate-200 dark:border-slate-700 rounded-lg p-4" data-testid="section-shipping-method">
+                <h4 className="font-semibold text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-3">
+                  <Truck className="h-4 w-4" />
+                  Shipping Method & Tracking
+                </h4>
+                <div className="space-y-3 text-sm">
+                  {order.shippingMethod && (
+                    <div data-testid="text-shipping-method">
+                      <span className="text-slate-500 dark:text-slate-400">Method:</span>
+                      <div className="mt-1">
+                        <Badge variant="secondary" className="text-xs">
+                          {order.shippingMethod}
+                        </Badge>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {order.trackingNumber ? (
+                    <div data-testid="text-tracking-number">
+                      <span className="text-slate-500 dark:text-slate-400">Tracking Number:</span>
+                      <div className="flex items-center gap-2 mt-1">
+                        <code className="text-sm bg-white dark:bg-slate-800 px-3 py-1.5 rounded font-mono border border-slate-200 dark:border-slate-700">
+                          {order.trackingNumber}
+                        </code>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => copyToClipboard(order.trackingNumber, "Tracking number")}
+                          data-testid="button-copy-tracking"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div data-testid="text-no-tracking">
+                      <span className="text-slate-500 dark:text-slate-400">Tracking Number:</span>
+                      <p className="text-slate-400 dark:text-slate-500 text-xs mt-1">No tracking number</p>
+                    </div>
+                  )}
+                  
+                  {order.shippedAt && (
+                    <div data-testid="text-shipped-at">
+                      <span className="text-slate-500 dark:text-slate-400">Shipped At:</span>
+                      <p className="font-medium text-slate-900 dark:text-slate-100 mt-1">
+                        {new Date(order.shippedAt).toLocaleString()}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Customer Contact - Compact */}
+              <div className="border-l-4 border-slate-300 dark:border-slate-600 pl-4" data-testid="section-customer-contact">
+                <h4 className="font-semibold text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-2">
+                  <User className="h-4 w-4" />
+                  Customer Contact
+                </h4>
+                <div className="space-y-2 text-sm">
+                  {order.customer?.email && (
+                    <div className="flex items-center gap-2" data-testid="text-customer-email">
+                      <Mail className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
+                      <a href={`mailto:${order.customer.email}`} className="text-blue-600 dark:text-blue-400 hover:underline">
+                        {order.customer.email}
+                      </a>
+                    </div>
+                  )}
+                  {order.customer?.phone && (
+                    <div className="flex items-center gap-2" data-testid="text-customer-phone">
+                      <Phone className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
+                      <a href={`tel:${order.customer.phone}`} className="text-blue-600 dark:text-blue-400 hover:underline">
+                        {order.customer.phone}
+                      </a>
+                    </div>
+                  )}
+                  {!order.customer?.email && !order.customer?.phone && (
+                    <p className="text-slate-400 dark:text-slate-500 text-xs">No contact information</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Billing Address (if different) - Less Prominent */}
+              {(order.customer?.billingStreet || order.customer?.billingCity) && (
+                <div className="border-l-4 border-slate-200 dark:border-slate-700 pl-4" data-testid="text-billing-address">
+                  <h4 className="font-semibold text-xs text-slate-600 dark:text-slate-400 flex items-center gap-2 mb-2">
+                    <CreditCard className="h-3.5 w-3.5" />
+                    Billing Address
+                  </h4>
+                  <div className="text-xs text-slate-600 dark:text-slate-400 space-y-0.5">
+                    {order.customer.billingStreet && (
+                      <p>
+                        {order.customer.billingStreet}
+                        {order.customer.billingStreetNumber && ` ${order.customer.billingStreetNumber}`}
+                      </p>
+                    )}
+                    {(order.customer.billingCity) && (
+                      <p>
+                        {[
+                          order.customer.billingCity,
+                          order.customer.billingState,
+                          order.customer.billingZipCode
+                        ].filter(Boolean).join(', ')}
+                      </p>
+                    )}
+                    {order.customer.billingCountry && (
+                      <p>{order.customer.billingCountry}</p>
+                    )}
                   </div>
-                </>
+                </div>
               )}
 
-              {/* Documents & Notes */}
-              <Separator className="my-4" />
+              {/* Shipping Costs - Compact */}
+              {order.shippingCost > 0 && (
+                <div className="border-l-4 border-slate-200 dark:border-slate-700 pl-4" data-testid="section-shipping-cost">
+                  <h4 className="font-semibold text-xs text-slate-600 dark:text-slate-400 flex items-center gap-2 mb-2">
+                    <Banknote className="h-3.5 w-3.5" />
+                    Shipping Costs
+                  </h4>
+                  <div className="text-sm">
+                    <p className="font-medium text-slate-900 dark:text-slate-100">
+                      {formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}
+                    </p>
+                    {order.actualShippingCost > 0 && order.actualShippingCost !== order.shippingCost && (
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        Actual: {formatCurrency(order.actualShippingCost || 0, order.currency || 'EUR')}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Warehouse Location - Compact */}
+              {order.warehouseLocation && (
+                <div className="border-l-4 border-slate-200 dark:border-slate-700 pl-4" data-testid="section-warehouse-location">
+                  <h4 className="font-semibold text-xs text-slate-600 dark:text-slate-400 flex items-center gap-2 mb-2">
+                    <Package className="h-3.5 w-3.5" />
+                    Fulfillment Location
+                  </h4>
+                  <p className="text-sm text-slate-700 dark:text-slate-300">{order.warehouseLocation}</p>
+                </div>
+              )}
+
+              {/* Documents & Notes - At the Bottom */}
+              <Separator />
               <div className="space-y-3" data-testid="section-documents">
-                <h4 className="font-semibold text-sm text-slate-700 flex items-center gap-2">
+                <h4 className="font-semibold text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2">
                   <FileText className="h-4 w-4" />
                   Documents & Notes
                 </h4>
@@ -1106,15 +1162,15 @@ export default function OrderDetails() {
                 {/* Shipping Notes */}
                 {order.notes && (
                   <div data-testid="text-shipping-notes">
-                    <span className="text-slate-500 text-xs">Shipping Notes:</span>
-                    <p className="text-sm text-slate-600 mt-1 whitespace-pre-wrap bg-slate-50 p-3 rounded">
+                    <span className="text-slate-500 dark:text-slate-400 text-xs">Shipping Notes:</span>
+                    <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 whitespace-pre-wrap bg-slate-50 dark:bg-slate-900/50 p-3 rounded border border-slate-200 dark:border-slate-700">
                       {order.notes}
                     </p>
                   </div>
                 )}
                 
                 {!order.notes && (
-                  <p className="text-slate-400 text-xs">No shipping notes</p>
+                  <p className="text-slate-400 dark:text-slate-500 text-xs">No shipping notes</p>
                 )}
               </div>
             </CardContent>
