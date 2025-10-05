@@ -45,6 +45,7 @@ import imports from './routes/imports';
 import optimizeDb from './routes/optimize-db';
 import { weightCalculationService } from "./services/weightCalculation";
 import { ImageCompressionService } from "./services/imageCompression";
+import { optimizeCartonPacking } from "./services/cartonPackingService";
 
 // Configure multer for image uploads with memory storage for compression
 const upload = multer({ 
@@ -5300,6 +5301,180 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error completing packing:', error);
       res.status(500).json({ message: 'Failed to complete packing' });
+    }
+  });
+
+  // Carton Packing Optimization Routes
+  
+  // Get all available packing cartons
+  app.get('/api/packing-cartons', async (req, res) => {
+    try {
+      const cartons = await storage.getPackingCartons();
+      res.json(cartons);
+    } catch (error) {
+      console.error('Error fetching packing cartons:', error);
+      res.status(500).json({ message: 'Failed to fetch packing cartons' });
+    }
+  });
+
+  // Create a packing plan for an order
+  app.post('/api/orders/:orderId/packing-plan', async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      
+      // Fetch order items
+      const orderItems = await storage.getOrderItems(orderId);
+      if (!orderItems || orderItems.length === 0) {
+        return res.status(400).json({ message: 'No order items found for this order' });
+      }
+
+      // Enrich order items with product information
+      const enrichedOrderItems = await Promise.all(
+        orderItems.map(async (item) => {
+          const product = await storage.getProductById(item.productId);
+          return {
+            ...item,
+            product
+          };
+        })
+      );
+
+      // Fetch all packing cartons
+      const cartons = await storage.getPackingCartons();
+      if (!cartons || cartons.length === 0) {
+        return res.status(400).json({ message: 'No packing cartons configured' });
+      }
+
+      // Call optimization service
+      console.log(`Optimizing carton packing for order ${orderId} with ${enrichedOrderItems.length} items`);
+      const packingPlan = await optimizeCartonPacking(enrichedOrderItems, cartons);
+
+      // Save the plan to database
+      const createdPlan = await storage.createOrderCartonPlan({
+        orderId,
+        status: 'draft',
+        totalCartons: packingPlan.totalCartons,
+        totalWeightKg: packingPlan.totalWeightKg.toString(),
+        avgUtilization: packingPlan.avgUtilization.toString(),
+        suggestions: JSON.stringify(packingPlan.suggestions)
+      });
+
+      // Save each carton's items
+      const createdItems = [];
+      for (const carton of packingPlan.cartons) {
+        for (const item of carton.items) {
+          const createdItem = await storage.createOrderCartonItem({
+            planId: createdPlan.id,
+            cartonId: carton.cartonId,
+            cartonNumber: carton.cartonNumber,
+            productId: item.productId,
+            quantity: item.quantity,
+            weightKg: item.weightKg.toString(),
+            aiEstimated: item.aiEstimated
+          });
+          createdItems.push(createdItem);
+        }
+      }
+
+      console.log(`Created packing plan ${createdPlan.id} with ${createdItems.length} items across ${packingPlan.totalCartons} cartons`);
+
+      // Return the created plan with items
+      res.status(201).json({
+        ...createdPlan,
+        items: createdItems,
+        cartons: packingPlan.cartons
+      });
+    } catch (error) {
+      console.error('Error creating packing plan:', error);
+      res.status(500).json({ 
+        message: 'Failed to create packing plan',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Get the latest packing plan for an order
+  app.get('/api/orders/:orderId/packing-plan', async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      
+      // Fetch the latest packing plan
+      const plan = await storage.getOrderCartonPlan(orderId);
+      if (!plan) {
+        return res.status(404).json({ message: 'No packing plan found for this order' });
+      }
+
+      // Fetch carton items for this plan
+      const items = await storage.getOrderCartonItems(plan.id);
+
+      // Group items by carton number
+      const cartonMap = new Map();
+      for (const item of items) {
+        if (!cartonMap.has(item.cartonNumber)) {
+          cartonMap.set(item.cartonNumber, {
+            cartonId: item.cartonId,
+            cartonNumber: item.cartonNumber,
+            items: [],
+            totalWeightKg: 0
+          });
+        }
+        const carton = cartonMap.get(item.cartonNumber);
+        carton.items.push({
+          productId: item.productId,
+          quantity: item.quantity,
+          weightKg: parseFloat(item.weightKg),
+          aiEstimated: item.aiEstimated
+        });
+        carton.totalWeightKg += parseFloat(item.weightKg);
+      }
+
+      // Return plan with nested carton items
+      res.json({
+        ...plan,
+        cartons: Array.from(cartonMap.values()),
+        items
+      });
+    } catch (error) {
+      console.error('Error fetching packing plan:', error);
+      res.status(500).json({ message: 'Failed to fetch packing plan' });
+    }
+  });
+
+  // Update a packing plan (mainly status)
+  app.patch('/api/orders/:orderId/packing-plan/:planId', async (req, res) => {
+    try {
+      const { planId } = req.params;
+      
+      // Validate request body
+      const updateSchema = z.object({
+        status: z.enum(['draft', 'accepted', 'archived']).optional(),
+        totalCartons: z.number().optional(),
+        totalWeightKg: z.string().optional(),
+        avgUtilization: z.string().optional(),
+        suggestions: z.string().optional()
+      });
+
+      const validatedData = updateSchema.parse(req.body);
+
+      // Update the packing plan
+      const updatedPlan = await storage.updateOrderCartonPlan(planId, validatedData);
+      
+      if (!updatedPlan) {
+        return res.status(404).json({ message: 'Packing plan not found' });
+      }
+
+      console.log(`Updated packing plan ${planId} with status: ${validatedData.status || 'unchanged'}`);
+
+      res.json(updatedPlan);
+    } catch (error) {
+      console.error('Error updating packing plan:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: 'Validation error', 
+          errors: error.errors 
+        });
+      }
+      res.status(500).json({ message: 'Failed to update packing plan' });
     }
   });
 
