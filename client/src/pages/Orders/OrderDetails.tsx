@@ -284,7 +284,7 @@ export default function OrderDetails() {
               </Button>
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-2xl font-bold text-slate-900">#{order.orderId}</h1>
+                  <h1 className="text-xl font-bold text-slate-900">#{order.orderId}</h1>
                   <Button
                     variant="ghost"
                     size="icon"
