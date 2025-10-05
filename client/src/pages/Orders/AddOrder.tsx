@@ -20,6 +20,7 @@ import { calculateShippingCost } from "@/lib/shippingCosts";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import OrderDocumentSelector from "@/components/OrderDocumentSelector";
 import { ShippingAddressForm } from "@/components/ShippingAddressForm";
 import { 
@@ -149,6 +150,10 @@ export default function AddOrder() {
   // Packing optimization state
   const [orderId, setOrderId] = useState<string | null>(null);
   const [packingPlan, setPackingPlan] = useState<any>(null);
+
+  // File inclusion state
+  const [includeInvoice, setIncludeInvoice] = useState(false);
+  const [includeCustom, setIncludeCustom] = useState(false);
 
   // Fetch real addresses from geocoding API
   const fetchRealAddresses = async (query: string): Promise<any[]> => {
@@ -383,6 +388,37 @@ export default function AddOrder() {
   const { data: shippingAddresses, isLoading: isLoadingShippingAddresses } = useQuery({
     queryKey: ['/api/customers', selectedCustomer?.id, 'shipping-addresses'],
     enabled: !!selectedCustomer?.id,
+  });
+
+  // Get unique product IDs from cart items
+  const uniqueProductIds = useMemo(() => {
+    return Array.from(new Set(orderItems.map(item => item.productId)));
+  }, [orderItems]);
+
+  // Fetch product files for all products in the cart
+  const { data: productFilesData } = useQuery({
+    queryKey: ['/api/products', 'files', uniqueProductIds],
+    queryFn: async () => {
+      if (uniqueProductIds.length === 0) return {};
+      
+      const filesMap: Record<string, any[]> = {};
+      await Promise.all(
+        uniqueProductIds.map(async (productId) => {
+          try {
+            const response = await fetch(`/api/products/${productId}/files`);
+            if (response.ok) {
+              const files = await response.json();
+              filesMap[productId] = files || [];
+            }
+          } catch (error) {
+            console.error(`Error fetching files for product ${productId}:`, error);
+            filesMap[productId] = [];
+          }
+        })
+      );
+      return filesMap;
+    },
+    enabled: uniqueProductIds.length > 0,
   });
 
   // Mutation to create new shipping address
@@ -2481,6 +2517,95 @@ export default function AddOrder() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Files Section */}
+        {orderItems.length > 0 && (
+          <Card className="shadow-sm">
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+                Files
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                Product files and document options for this order
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-4 sm:p-6 space-y-4">
+              {/* Product Files */}
+              {orderItems.length > 0 && productFilesData && Object.keys(productFilesData).length > 0 ? (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Product Files</h3>
+                  <div className="space-y-2">
+                    {orderItems.map((item) => {
+                      const files = productFilesData[item.productId] || [];
+                      if (files.length === 0) return null;
+                      
+                      return (
+                        <div key={item.id} className="border border-slate-200 dark:border-slate-700 rounded-lg p-3" data-testid={`product-files-${item.productId}`}>
+                          <div className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-2">
+                            {item.productName}
+                          </div>
+                          <div className="space-y-1.5 text-xs">
+                            {files.map((file: any) => (
+                              <div key={file.id} className="flex items-center justify-between py-1 px-2 bg-slate-50 dark:bg-slate-900/20 rounded" data-testid={`file-item-${file.id}`}>
+                                <div className="flex items-center gap-2">
+                                  <FileText className="h-3 w-3 text-slate-500" />
+                                  <span className="text-slate-700 dark:text-slate-300">{file.fileName}</span>
+                                  {file.category && (
+                                    <Badge variant="outline" className="text-xs">
+                                      {file.category}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">
+                  No product files available
+                </div>
+              )}
+
+              {/* Document Options */}
+              <div className="pt-3 border-t border-slate-200 dark:border-slate-700">
+                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Include Documents</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2" data-testid="checkbox-include-invoice">
+                    <Checkbox
+                      id="include-invoice"
+                      checked={includeInvoice}
+                      onCheckedChange={(checked) => setIncludeInvoice(checked as boolean)}
+                    />
+                    <label
+                      htmlFor="include-invoice"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                    >
+                      Invoice
+                    </label>
+                  </div>
+                  <div className="flex items-center space-x-2" data-testid="checkbox-include-custom">
+                    <Checkbox
+                      id="include-custom"
+                      checked={includeCustom}
+                      onCheckedChange={(checked) => setIncludeCustom(checked as boolean)}
+                    />
+                    <label
+                      htmlFor="include-custom"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                    >
+                      Custom
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
             </div>
             {/* End of Main Column */}
 
