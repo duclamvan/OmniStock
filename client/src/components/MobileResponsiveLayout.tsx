@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import { 
@@ -67,7 +67,9 @@ interface MobileResponsiveLayoutProps {
 export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps) {
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const navRef = useRef<HTMLDivElement>(null);
+  const desktopNavRef = useRef<HTMLDivElement>(null);
+  const mobileNavRef = useRef<HTMLDivElement>(null);
+  const scrollPosition = useRef(0);
   const itemRefs = useRef<{ [key: string]: HTMLElement | null }>({});
   const [openItems, setOpenItems] = useState<string[]>([]);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -96,23 +98,25 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
   }, [isCollapsed]);
   
 
+  // Save scroll position whenever user scrolls the desktop nav
+  const handleDesktopScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    scrollPosition.current = e.currentTarget.scrollTop;
+  };
+
   const toggleItem = (itemName: string) => {
-    // Save current scroll position
-    const currentScrollTop = navRef.current?.scrollTop || 0;
-    
     setOpenItems(prev => 
       prev.includes(itemName) 
         ? prev.filter(name => name !== itemName)
         : [...prev, itemName]
     );
-    
-    // Restore scroll position after DOM update
-    requestAnimationFrame(() => {
-      if (navRef.current) {
-        navRef.current.scrollTop = currentScrollTop;
-      }
-    });
   };
+
+  // Restore scroll position after state changes (location, openItems, isCollapsed)
+  useLayoutEffect(() => {
+    if (desktopNavRef.current) {
+      desktopNavRef.current.scrollTop = scrollPosition.current;
+    }
+  }, [openItems, location, isCollapsed]);
 
   const navigation = [
     {
@@ -489,7 +493,7 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
               <div className="p-4 border-b flex-shrink-0">
                 <h2 className="text-lg font-semibold">Menu</h2>
               </div>
-              <nav className="p-4 space-y-2 overflow-y-auto flex-1" ref={navRef}>
+              <nav className="p-4 space-y-2 overflow-y-auto flex-1" ref={mobileNavRef}>
                 <NavLinks />
               </nav>
             </SheetContent>
@@ -522,10 +526,14 @@ export function MobileResponsiveLayout({ children }: MobileResponsiveLayoutProps
             {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           </Button>
         </div>
-        <nav className={cn(
-          "space-y-2 overflow-y-auto flex-1",
-          isCollapsed ? "p-2" : "p-4"
-        )} ref={navRef}>
+        <nav 
+          className={cn(
+            "space-y-2 overflow-y-auto flex-1",
+            isCollapsed ? "p-2" : "p-4"
+          )} 
+          ref={desktopNavRef}
+          onScroll={handleDesktopScroll}
+        >
           <NavLinks collapsed={isCollapsed} />
         </nav>
       </aside>
