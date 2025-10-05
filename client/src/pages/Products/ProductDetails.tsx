@@ -203,99 +203,73 @@ export default function ProductDetails() {
       {/* Pricing Information */}
       <Card>
         <CardHeader>
-          <CardTitle>Pricing & Landing Cost Analysis</CardTitle>
+          <CardTitle>Pricing & Costs</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div>
-              <div className="text-sm text-slate-500 mb-1">Selling Prices</div>
-              <div className="space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Selling Prices */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Selling Prices</h3>
+              <div className="space-y-2 text-sm">
                 {product.priceCzk && (
-                  <div className="flex justify-between">
-                    <span>Czech Republic:</span>
-                    <span className="font-medium">{formatCurrency(product.priceCzk, "CZK")}</span>
+                  <div className="flex justify-between items-center py-1">
+                    <span className="text-slate-600 dark:text-slate-400">Czech Republic</span>
+                    <span className="font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(product.priceCzk, "CZK")}</span>
                   </div>
                 )}
                 {product.priceEur && (
-                  <div className="flex justify-between">
-                    <span>Europe:</span>
-                    <span className="font-medium">{formatCurrency(product.priceEur, "EUR")}</span>
+                  <div className="flex justify-between items-center py-1">
+                    <span className="text-slate-600 dark:text-slate-400">Europe</span>
+                    <span className="font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(product.priceEur, "EUR")}</span>
                   </div>
                 )}
               </div>
             </div>
 
-            <div>
-              <div className="text-sm text-slate-500 mb-1">Landing Cost</div>
-              <div className="space-y-2">
-                {product.latest_landing_cost ? (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="p-3 bg-blue-50 rounded-lg cursor-help" data-testid="landing-cost-display">
-                          <div className="flex justify-between items-center">
-                            <span className="flex items-center gap-1">
-                              <Euro className="h-4 w-4" />
-                              Landing Cost:
-                            </span>
-                            <span className="font-bold text-lg">
-                              €{parseFloat(product.latest_landing_cost).toFixed(2)}
-                            </span>
-                          </div>
-                          <Badge variant="outline" className="mt-2 text-xs">
-                            Per unit, all-in
-                          </Badge>
+            {/* Landing Cost */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Landing Cost</h3>
+              {product.latest_landing_cost ? (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 cursor-help hover:border-slate-300 dark:hover:border-slate-600 transition-colors" data-testid="landing-cost-display">
+                        <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+                          €{parseFloat(product.latest_landing_cost).toFixed(2)}
                         </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <div className="text-sm">
-                          <p className="font-semibold mb-1">Landing Cost Breakdown</p>
-                          <p>Includes: Product cost, freight, duties, and fees</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Latest calculated landing cost
-                          </p>
+                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                          per unit, all-in
                         </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                ) : (
-                  <div className="p-3 bg-yellow-50 rounded-lg" data-testid="landing-cost-pending">
-                    <div className="text-yellow-800 text-sm">
-                      Landing cost pending
-                    </div>
-                    <div className="text-xs text-yellow-600 mt-1">
-                      Will be calculated after receiving shipments
-                    </div>
-                  </div>
-                )}
-                
-                {/* Legacy Import Costs for reference */}
-                {(product.importCostCzk || product.importCostEur || product.importCostUsd) && (
-                  <div className="text-xs text-slate-500 space-y-1 mt-2">
-                    {product.importCostCzk && (
-                      <div className="flex justify-between">
-                        <span>Import (CZK):</span>
-                        <span>{formatCurrency(product.importCostCzk, "CZK")}</span>
                       </div>
-                    )}
-                    {product.importCostEur && (
-                      <div className="flex justify-between">
-                        <span>Import (EUR):</span>
-                        <span>{formatCurrency(product.importCostEur, "EUR")}</span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <div className="text-sm">
+                        <p className="font-semibold mb-1">Landing Cost Breakdown</p>
+                        <p>Includes: Product cost, freight, duties, and fees</p>
                       </div>
-                    )}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ) : (
+                <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3" data-testid="landing-cost-pending">
+                  <div className="text-sm text-slate-600 dark:text-slate-400">
+                    Not calculated yet
                   </div>
-                )}
-              </div>
+                  <div className="text-xs text-slate-500 dark:text-slate-500 mt-1">
+                    Available after receiving shipments
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div>
-              <div className="text-sm text-slate-500 mb-1">Margin Analysis</div>
-              <div className="space-y-2">
-                {product.latest_landing_cost && product.priceEur ? (
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span>Margin:</span>
+            {/* Margin Analysis */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Margin</h3>
+              {product.latest_landing_cost && product.priceEur ? (
+                <div className="space-y-3">
+                  <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-slate-600 dark:text-slate-400">Profit Margin</span>
                       <Badge 
                         variant={getMarginBadgeVariant(Number(profitMargin))}
                         className={`font-bold ${getMarginColor(Number(profitMargin))}`}
@@ -304,29 +278,31 @@ export default function ProductDetails() {
                         {profitMargin}%
                       </Badge>
                     </div>
-                    <div className="text-xs space-y-1">
+                    <div className="space-y-1.5 text-sm border-t border-slate-100 dark:border-slate-800 pt-2">
                       <div className="flex justify-between">
-                        <span className="text-slate-500">Sell Price:</span>
-                        <span>€{parseFloat(product.priceEur).toFixed(2)}</span>
+                        <span className="text-slate-500 dark:text-slate-400">Sell Price</span>
+                        <span className="font-medium">€{parseFloat(product.priceEur).toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-slate-500">Landing Cost:</span>
-                        <span>€{parseFloat(product.latest_landing_cost).toFixed(2)}</span>
+                        <span className="text-slate-500 dark:text-slate-400">Cost</span>
+                        <span className="font-medium">€{parseFloat(product.latest_landing_cost).toFixed(2)}</span>
                       </div>
-                      <div className="flex justify-between font-semibold pt-1 border-t" data-testid="profit-per-unit">
-                        <span className="text-slate-600">Profit/Unit:</span>
-                        <span className={getMarginColor(Number(profitMargin))}>
+                      <div className="flex justify-between pt-1.5 border-t border-slate-100 dark:border-slate-800" data-testid="profit-per-unit">
+                        <span className="text-slate-700 dark:text-slate-300 font-semibold">Profit</span>
+                        <span className={`font-bold ${getMarginColor(Number(profitMargin))}`}>
                           €{(parseFloat(product.priceEur) - parseFloat(product.latest_landing_cost)).toFixed(2)}
                         </span>
                       </div>
                     </div>
                   </div>
-                ) : (
-                  <div className="text-sm text-slate-500">
-                    Margin calculation pending landing cost data
+                </div>
+              ) : (
+                <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3">
+                  <div className="text-sm text-slate-500 dark:text-slate-400">
+                    Requires landing cost data
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
