@@ -598,10 +598,10 @@ export default function OrderDetails() {
             </CardHeader>
             <CardContent>
               {/* Order Items - Professional Invoice Layout */}
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {order.items?.map((item: any, index: number) => (
                   <div key={item.id || index}>
-                    <div className="flex items-start gap-4 p-3 rounded-lg hover:bg-slate-50 transition-colors">
+                    <div className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-50 transition-colors">
                       {showPickingMode && (
                         <Checkbox
                           checked={pickedItems.has(item.id)}
@@ -624,44 +624,44 @@ export default function OrderDetails() {
                           <img 
                             src={item.image} 
                             alt={item.productName}
-                            className="w-16 h-16 object-cover rounded border border-slate-200"
+                            className="w-12 h-12 object-cover rounded border border-slate-200"
                           />
                         ) : (
-                          <div className="w-16 h-16 bg-slate-100 rounded border border-slate-200 flex items-center justify-center">
-                            <Package className="h-8 w-8 text-slate-300" />
+                          <div className="w-12 h-12 bg-slate-100 rounded border border-slate-200 flex items-center justify-center">
+                            <Package className="h-6 w-6 text-slate-300" />
                           </div>
                         )}
                       </div>
 
                       {/* Product Details */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start justify-between gap-3">
                           <div className="flex-1">
                             <p className={cn(
-                              "font-semibold text-slate-900 text-base mb-1",
+                              "font-semibold text-slate-900 text-sm mb-0.5",
                               pickedItems.has(item.id) && "line-through text-slate-400"
                             )}>
                               {item.productName}
                             </p>
-                            <p className="text-sm text-slate-500 mb-2">SKU: {item.sku}</p>
+                            <p className="text-xs text-slate-500 mb-1.5">SKU: {item.sku}</p>
                             
-                            <div className="flex items-center gap-3 flex-wrap">
+                            <div className="flex items-center gap-2 flex-wrap">
                               {/* Quantity - More Visible */}
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-1.5">
                                 <span className="text-xs text-slate-500">Qty:</span>
-                                <Badge variant="secondary" className="text-base font-bold px-3 py-1">
+                                <Badge variant="secondary" className="text-sm font-bold px-2 py-0.5">
                                   {item.quantity}
                                 </Badge>
                               </div>
                               
                               {/* Unit Price */}
-                              <div className="text-sm text-slate-600">
+                              <div className="text-xs text-slate-600">
                                 <span className="text-slate-500">×</span> {formatCurrency(item.unitPrice || item.price || 0, order.currency || 'EUR')}
                               </div>
                             </div>
 
                             {item.landingCost && (
-                              <div className="mt-2">
+                              <div className="mt-1.5">
                                 <MarginPill 
                                   sellingPrice={item.unitPrice || item.price || 0}
                                   landingCost={item.landingCost}
@@ -675,13 +675,13 @@ export default function OrderDetails() {
                           </div>
 
                           {/* Price and Actions */}
-                          <div className="flex items-start gap-3">
+                          <div className="flex items-start gap-2">
                             <div className="text-right">
-                              <p className="font-bold text-lg text-slate-900">
+                              <p className="font-bold text-base text-slate-900">
                                 {formatCurrency((item.unitPrice || item.price || 0) * item.quantity, order.currency || 'EUR')}
                               </p>
                               {item.discount > 0 && (
-                                <p className="text-sm text-green-600 mt-1">
+                                <p className="text-xs text-green-600 mt-0.5">
                                   -{formatCurrency(item.discount || 0, order.currency || 'EUR')} discount
                                 </p>
                               )}
@@ -815,8 +815,8 @@ export default function OrderDetails() {
               )}
 
               {/* Pricing Breakdown - Integrated */}
-              <div className="mt-6 pt-6 border-t">
-                <div className="space-y-3">
+              <div className="mt-4 pt-4 border-t">
+                <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-600">Subtotal</span>
                     <span className="font-medium">{formatCurrency(order.subtotal || 0, order.currency || 'EUR')}</span>
@@ -864,9 +864,9 @@ export default function OrderDetails() {
                   
                   <Separator />
                   
-                  <div className="flex justify-between pt-2">
-                    <span className="font-semibold text-slate-900 text-base">Grand Total</span>
-                    <span className="font-bold text-xl text-slate-900">
+                  <div className="flex justify-between pt-1.5">
+                    <span className="font-semibold text-slate-900 text-sm">Grand Total</span>
+                    <span className="font-bold text-base text-slate-900">
                       {formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}
                     </span>
                   </div>
