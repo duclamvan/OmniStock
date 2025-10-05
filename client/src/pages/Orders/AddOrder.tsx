@@ -1962,7 +1962,6 @@ export default function AddOrder() {
                       <TableHeader>
                         <TableRow className="bg-slate-50 dark:bg-slate-900/50">
                           <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Product</TableHead>
-                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300">SKU</TableHead>
                           <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-center">Qty</TableHead>
                           <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">Price</TableHead>
                           {showDiscountColumn && (
@@ -1982,11 +1981,15 @@ export default function AddOrder() {
                             className={index % 2 === 0 ? 'bg-white dark:bg-slate-950' : 'bg-slate-50/50 dark:bg-slate-900/30'}
                             data-testid={`order-item-${item.id}`}
                           >
-                            <TableCell className="font-medium text-slate-900 dark:text-slate-100">
-                              {item.productName}
-                            </TableCell>
-                            <TableCell className="text-slate-600 dark:text-slate-400 text-sm">
-                              {item.sku}
+                            <TableCell className="py-3">
+                              <div className="flex flex-col gap-1">
+                                <span className="font-medium text-slate-900 dark:text-slate-100">
+                                  {item.productName}
+                                </span>
+                                <span className="text-xs text-slate-500 dark:text-slate-400">
+                                  SKU: {item.sku}
+                                </span>
+                              </div>
                             </TableCell>
                             <TableCell className="text-center">
                               <Input
