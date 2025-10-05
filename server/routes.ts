@@ -5869,8 +5869,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { customerId, facebookUrl, pictureUrl } = req.body;
       
-      if (!customerId || !pictureUrl) {
-        return res.status(400).json({ message: 'customerId and pictureUrl are required' });
+      if (!pictureUrl) {
+        return res.status(400).json({ message: 'pictureUrl is required' });
       }
 
       // Download the image from Facebook CDN
@@ -5882,9 +5882,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const buffer = await response.arrayBuffer();
       const imageBuffer = Buffer.from(buffer);
 
-      // Generate a unique filename
+      // Generate a unique filename - use customerId if available, otherwise use timestamp
       const extension = 'jpg'; // Facebook profile pictures are typically JPG
-      const filename = `${customerId}_${Date.now()}.${extension}`;
+      const identifier = customerId || `temp_${Date.now()}`;
+      const filename = `${identifier}_${Date.now()}.${extension}`;
       const filepath = path.join('uploads', 'profile-pictures', filename);
       
       // Ensure the directory exists
@@ -5896,19 +5897,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate the local URL
       const localUrl = `/uploads/profile-pictures/${filename}`;
       
-      // Update the customer record with the profile picture URL
-      const customer = await storage.getCustomer(customerId);
-      if (customer) {
-        await storage.updateCustomer(customerId, {
-          ...customer,
-          profilePictureUrl: localUrl,
-          facebookUrl: facebookUrl || customer.facebookUrl
-        });
+      // Update the customer record with the profile picture URL if customerId is provided
+      if (customerId) {
+        const customer = await storage.getCustomer(customerId);
+        if (customer) {
+          await storage.updateCustomer(customerId, {
+            ...customer,
+            profilePictureUrl: localUrl,
+            facebookUrl: facebookUrl || customer.facebookUrl
+          });
+        }
       }
       
       res.json({
         success: true,
-        localUrl,
+        profilePictureUrl: localUrl,
         message: 'Profile picture downloaded and saved successfully'
       });
     } catch (error) {

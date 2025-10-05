@@ -417,7 +417,14 @@ export default function AddCustomer() {
         // If it's a numeric ID and we have a picture URL, download it locally
         if (data.isNumericId && data.pictureUrl) {
           try {
-            const downloadResponse = await fetch(`/api/facebook/download-profile-picture?url=${encodeURIComponent(facebookUrl)}`);
+            const downloadResponse = await fetch('/api/facebook/download-profile-picture', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                pictureUrl: data.pictureUrl,
+                facebookUrl: facebookUrl
+              })
+            });
             if (downloadResponse.ok) {
               const downloadData = await downloadResponse.json();
               if (downloadData.profilePictureUrl) {
