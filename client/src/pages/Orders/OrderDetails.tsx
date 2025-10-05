@@ -1096,97 +1096,97 @@ export default function OrderDetails() {
                 </div>
               )}
 
-              {/* Documents & Notes - At the Bottom */}
-              <Separator />
-              <div className="space-y-3" data-testid="section-documents">
-                <h4 className="font-semibold text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  Documents & Notes
-                </h4>
-                
-                {/* CPNP Documents */}
-                {order.items && order.items.length > 0 && (
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={async () => {
-                        try {
-                          const productIds = order.items
-                            .map((item: any) => item.productId)
-                            .filter(Boolean);
-                          
-                          if (productIds.length === 0) {
-                            toast({
-                              title: "No Products",
-                              description: "No products found in this order",
-                              variant: "destructive",
-                            });
-                            return;
-                          }
-
-                          const cpnpFiles = [];
-                          
-                          for (const productId of productIds) {
+              {/* Documents & Notes - Only show if there are notes or documents */}
+              {(order.notes || (order.items && order.items.length > 0)) && (
+                <>
+                  <Separator />
+                  <div className="space-y-3" data-testid="section-documents">
+                    <h4 className="font-semibold text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Documents & Notes
+                    </h4>
+                    
+                    {/* CPNP Documents */}
+                    {order.items && order.items.length > 0 && (
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
                             try {
-                              const response = await fetch(`/api/products/${productId}/files`);
-                              if (response.ok) {
-                                const files = await response.json();
-                                const productCpnpFiles = files.filter((f: any) => f.fileType === 'cpnp');
-                                cpnpFiles.push(...productCpnpFiles);
+                              const productIds = order.items
+                                .map((item: any) => item.productId)
+                                .filter(Boolean);
+                              
+                              if (productIds.length === 0) {
+                                toast({
+                                  title: "No Products",
+                                  description: "No products found in this order",
+                                  variant: "destructive",
+                                });
+                                return;
                               }
+
+                              const cpnpFiles = [];
+                              
+                              for (const productId of productIds) {
+                                try {
+                                  const response = await fetch(`/api/products/${productId}/files`);
+                                  if (response.ok) {
+                                    const files = await response.json();
+                                    const productCpnpFiles = files.filter((f: any) => f.fileType === 'cpnp');
+                                    cpnpFiles.push(...productCpnpFiles);
+                                  }
+                                } catch (error) {
+                                  console.error(`Error fetching files for product ${productId}:`, error);
+                                }
+                              }
+
+                              if (cpnpFiles.length === 0) {
+                                toast({
+                                  title: "No CPNP Documents",
+                                  description: "No CPNP documents found for products in this order",
+                                });
+                                return;
+                              }
+
+                              for (const file of cpnpFiles) {
+                                window.open(file.filePath, '_blank');
+                              }
+
+                              toast({
+                                title: "CPNP Documents Opened",
+                                description: `${cpnpFiles.length} CPNP document(s) opened in new tabs`,
+                              });
                             } catch (error) {
-                              console.error(`Error fetching files for product ${productId}:`, error);
+                              console.error('Error fetching CPNP documents:', error);
+                              toast({
+                                title: "Error",
+                                description: "Failed to fetch CPNP documents",
+                                variant: "destructive",
+                              });
                             }
-                          }
+                          }}
+                          data-testid="button-print-cpnp"
+                        >
+                          <Download className="mr-2 h-4 w-4" />
+                          Download CPNP Documents
+                        </Button>
+                      </div>
+                    )}
 
-                          if (cpnpFiles.length === 0) {
-                            toast({
-                              title: "No CPNP Documents",
-                              description: "No CPNP documents found for products in this order",
-                            });
-                            return;
-                          }
-
-                          for (const file of cpnpFiles) {
-                            window.open(file.filePath, '_blank');
-                          }
-
-                          toast({
-                            title: "CPNP Documents Opened",
-                            description: `${cpnpFiles.length} CPNP document(s) opened in new tabs`,
-                          });
-                        } catch (error) {
-                          console.error('Error fetching CPNP documents:', error);
-                          toast({
-                            title: "Error",
-                            description: "Failed to fetch CPNP documents",
-                            variant: "destructive",
-                          });
-                        }
-                      }}
-                      data-testid="button-print-cpnp"
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      Download CPNP Documents
-                    </Button>
+                    {/* Shipping Notes */}
+                    {order.notes && (
+                      <div data-testid="text-shipping-notes">
+                        <span className="text-slate-500 dark:text-slate-400 text-xs">Shipping Notes:</span>
+                        <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 whitespace-pre-wrap bg-slate-50 dark:bg-slate-900/50 p-3 rounded border border-slate-200 dark:border-slate-700">
+                          {order.notes}
+                        </p>
+                      </div>
+                    )}
                   </div>
-                )}
-
-                {/* Shipping Notes */}
-                {order.notes && (
-                  <div data-testid="text-shipping-notes">
-                    <span className="text-slate-500 dark:text-slate-400 text-xs">Shipping Notes:</span>
-                    <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 whitespace-pre-wrap bg-slate-50 dark:bg-slate-900/50 p-3 rounded border border-slate-200 dark:border-slate-700">
-                      {order.notes}
-                    </p>
-                  </div>
-                )}
-                
-                {!order.notes && (
-                  <p className="text-slate-400 dark:text-slate-500 text-xs">No shipping notes</p>
-                )}
-              </div>
+                </>
+              )}
             </CardContent>
           </Card>
 
