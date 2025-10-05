@@ -5753,52 +5753,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let isNumericId = false;
       
       // Handle various Facebook URL formats
-      const urlPatterns = [
-        /facebook\.com\/profile\.php\?id=(\d+)/,
-        /facebook\.com\/people\/([^/]+)\/(\d+)/,
-        /facebook\.com\/([^/?#]+)/,
-        /fb\.com\/([^/?#]+)/
-      ];
-
-      for (const pattern of urlPatterns) {
-        const match = facebookUrl.match(pattern);
-        if (match) {
-          if (pattern.source.includes('profile.php')) {
-            // Numeric ID from profile.php URL
-            facebookId = match[1];
+      // Pattern 1: profile.php?id=NUMERIC_ID
+      const profilePhpMatch = facebookUrl.match(/facebook\.com\/profile\.php\?id=(\d+)/);
+      if (profilePhpMatch) {
+        facebookId = profilePhpMatch[1];
+        isNumericId = true;
+      } else {
+        // Pattern 2: facebook.com/username or facebook.com/username.with.dots
+        const usernameMatch = facebookUrl.match(/facebook\.com\/([^/?#]+)/);
+        if (usernameMatch) {
+          facebookId = usernameMatch[1];
+          // Check if it's numeric
+          if (facebookId.match(/^\d+$/)) {
             isNumericId = true;
-          } else if (pattern.source.includes('people')) {
-            // Extract name from "people" URL format
-            // Properly decode and format the name
-            const rawName = decodeURIComponent(match[1]);
-            // Convert dashes and dots to spaces, capitalize words
-            facebookName = rawName
+          } else {
+            // Extract name from username (convert dots and dashes to spaces)
+            facebookName = facebookId
               .replace(/-/g, ' ')
               .replace(/\./g, ' ')
               .split(' ')
               .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
               .join(' ')
               .trim();
-            facebookId = match[2];
-            isNumericId = true;
-          } else {
-            facebookId = match[1];
-            // Check if it's numeric
-            if (facebookId.match(/^\d+$/)) {
-              isNumericId = true;
-            } else {
-              // Try to extract name from username
-              // Convert username to proper name format
-              facebookName = facebookId
-                .replace(/-/g, ' ')
-                .replace(/\./g, ' ')
-                .split(' ')
-                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                .join(' ')
-                .trim();
-            }
           }
-          break;
         }
       }
 
@@ -5813,39 +5790,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ message: 'Facebook access token not configured' });
       }
 
-      // Try to fetch profile data first
+      // Try to fetch profile data from Facebook Graph API
       let pictureUrl = null;
       let extractedName = facebookName;
 
-      // Only numeric IDs work with basic Graph API access
-      if (isNumericId) {
-        try {
-          // Use v18.0 API version
-          const profileUrl = `https://graph.facebook.com/v18.0/${facebookId}?fields=name,picture.type(large)&access_token=${accessToken}`;
-          console.log('Fetching profile for numeric ID:', facebookId);
+      // Try Graph API call with the extracted ID (works for both numeric and username IDs)
+      try {
+        // Use v18.0 API version
+        const profileUrl = `https://graph.facebook.com/v18.0/${facebookId}?fields=name,picture.type(large)&access_token=${accessToken}`;
+        console.log(`Fetching profile for ${isNumericId ? 'numeric' : 'username'} ID:`, facebookId);
+        
+        const profileResponse = await fetch(profileUrl);
+        const profileText = await profileResponse.text();
+        
+        if (profileResponse.ok) {
+          const profileData = JSON.parse(profileText);
           
-          const profileResponse = await fetch(profileUrl);
-          const profileText = await profileResponse.text();
-          
-          if (profileResponse.ok) {
-            const profileData = JSON.parse(profileText);
-            
-            if (profileData.name) {
-              extractedName = profileData.name;
-            }
-            if (profileData.picture?.data?.url) {
-              pictureUrl = profileData.picture.data.url;
-            }
-          } else {
-            console.log('Profile fetch failed:', profileText);
+          if (profileData.name) {
+            extractedName = profileData.name;
           }
-        } catch (error) {
-          console.log('Could not fetch profile data:', error);
+          if (profileData.picture?.data?.url) {
+            pictureUrl = profileData.picture.data.url;
+          }
+        } else {
+          console.log('Profile fetch failed:', profileText);
         }
-      } else {
-        // Username-based IDs require special permissions
-        console.log('Username-based Facebook ID detected:', facebookId);
-        console.log('Note: Profile pictures for username URLs require special Facebook permissions');
+      } catch (error) {
+        console.log('Could not fetch profile data:', error);
       }
       
       // Ensure we always return a name - either from API or extracted from URL
@@ -5856,7 +5827,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         facebookId,
         facebookName: finalName,
         isNumericId,
-        message: !isNumericId ? 'Username-based Facebook URLs cannot fetch profile pictures. Use the numeric profile URL format (facebook.com/profile.php?id=...) for best results.' : undefined
+        message: pictureUrl ? undefined : 'Could not fetch profile picture. Please check the Facebook URL and try again.'
       });
     } catch (error) {
       console.error('Error fetching Facebook profile picture:', error);

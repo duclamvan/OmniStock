@@ -439,11 +439,11 @@ export default function AddCustomer() {
           form.setValue('profilePictureUrl', '');
         }
         
-        // Show toast message if username-based URL was used
-        if (data.message && !data.isNumericId) {
+        // Show toast message if there was an error
+        if (data.message) {
           toast({
-            title: "Tip",
-            description: "To fetch profile pictures, use the numeric Facebook profile URL (found in Settings > Profile link)",
+            title: "Notice",
+            description: data.message,
             duration: 5000,
           });
         }
