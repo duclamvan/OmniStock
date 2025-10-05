@@ -5738,6 +5738,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Facebook Profile Picture Endpoint
+  app.get('/api/facebook/profile-picture', async (req, res) => {
+    try {
+      const facebookUrl = req.query.url as string;
+      
+      if (!facebookUrl) {
+        return res.status(400).json({ message: 'Query parameter "url" is required' });
+      }
+
+      // Extract Facebook username/ID from URL
+      let facebookId = '';
+      
+      // Handle various Facebook URL formats
+      const urlPatterns = [
+        /facebook\.com\/profile\.php\?id=(\d+)/,
+        /facebook\.com\/([^/?]+)/,
+        /fb\.com\/([^/?]+)/
+      ];
+
+      for (const pattern of urlPatterns) {
+        const match = facebookUrl.match(pattern);
+        if (match) {
+          facebookId = match[1];
+          break;
+        }
+      }
+
+      if (!facebookId) {
+        return res.status(400).json({ message: 'Unable to extract Facebook ID from URL' });
+      }
+
+      // Get access token from environment
+      const accessToken = process.env.FACEBOOK_ACCESS_TOKEN;
+      
+      if (!accessToken) {
+        return res.status(500).json({ message: 'Facebook access token not configured' });
+      }
+
+      // Fetch profile picture from Graph API
+      const graphApiUrl = `https://graph.facebook.com/v18.0/${facebookId}/picture?type=large&redirect=false&access_token=${accessToken}`;
+      
+      const response = await fetch(graphApiUrl);
+      
+      if (!response.ok) {
+        throw new Error(`Facebook Graph API error: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      res.json({
+        pictureUrl: data.data?.url || null,
+        facebookId
+      });
+    } catch (error) {
+      console.error('Error fetching Facebook profile picture:', error);
+      res.status(500).json({ message: 'Failed to fetch Facebook profile picture' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -22,7 +22,7 @@ The database schema, managed with PostgreSQL, Neon serverless driver, and Drizzl
 - **Product Management**: Comprehensive product details, pricing, location tracking, barcode scanning, document management, and packing instructions. Includes tiered pricing and supplier integration.
 - **Order Management**: Creation, shipping/payment selection, automatic shipping cost calculation, CRUD operations, detailed views, real-time synchronization, and a custom order ID format system. Features "Pay Later" orders and editable priority.
 - **Inventory Management**: Soft product deletion, bulk variant operations, detailed UI, and comprehensive category management.
-- **Customer Management**: Enhanced tables with order statistics, forms with address lookup, "Pay Later" functionality, and Facebook integration.
+- **Customer Management**: Enhanced tables with order statistics, forms with address lookup, "Pay Later" functionality, and comprehensive Facebook integration with real-time name syncing and automatic profile picture fetching via Graph API.
 - **Discount Management**: Advanced system supporting various types (percentage, fixed, Buy X Get Y) with flexible scopes.
 - **Customer-Specific Pricing**: Custom pricing per customer-product with validity periods and bulk import.
 - **Supplier Management**: CRUD operations, file upload, and purchase history.
@@ -63,3 +63,4 @@ The database schema, managed with PostgreSQL, Neon serverless driver, and Drizzl
 ## Other APIs
 - **OpenStreetMap Nominatim API**: For address geocoding.
 - **Fawaz Ahmed's free currency API**: For real-time exchange rates.
+- **Facebook Graph API**: For fetching customer profile pictures using secure access token stored in environment variables.

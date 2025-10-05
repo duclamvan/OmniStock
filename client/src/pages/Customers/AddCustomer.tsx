@@ -25,6 +25,7 @@ const availableCountries = [
 ];
 
 const customerFormSchema = z.object({
+  name: z.string().min(1, "Name is required"),
   country: z.string().min(1, "Country is required"),
   facebookName: z.string().optional(),
   facebookUrl: z.string().optional(),
@@ -120,6 +121,10 @@ export default function AddCustomer() {
   const [isValidatingVat, setIsValidatingVat] = useState(false);
   const [vatValidationResult, setVatValidationResult] = useState<VatValidationResult | null>(null);
 
+  const [facebookNameManuallyChanged, setFacebookNameManuallyChanged] = useState(false);
+  const [facebookProfilePicture, setFacebookProfilePicture] = useState<string | null>(null);
+  const [isLoadingProfilePicture, setIsLoadingProfilePicture] = useState(false);
+
   const [shippingAddresses, setShippingAddresses] = useState<ShippingAddressFormData[]>([]);
   const [isAddingShipping, setIsAddingShipping] = useState(false);
   const [editingShippingIndex, setEditingShippingIndex] = useState<number | null>(null);
@@ -131,6 +136,7 @@ export default function AddCustomer() {
   const form = useForm<CustomerFormData>({
     resolver: zodResolver(customerFormSchema),
     defaultValues: {
+      name: "",
       country: "",
       facebookName: "",
       facebookUrl: "",
@@ -186,6 +192,7 @@ export default function AddCustomer() {
   useEffect(() => {
     if (existingCustomer && isEditMode) {
       form.reset({
+        name: existingCustomer.name || "",
         country: existingCustomer.country || "",
         facebookName: existingCustomer.facebookName || "",
         facebookUrl: existingCustomer.facebookUrl || "",
@@ -214,6 +221,12 @@ export default function AddCustomer() {
           companyAddress: existingCustomer.vatCompanyAddress || undefined,
         });
       }
+      if (existingCustomer.facebookId) {
+        setFacebookProfilePicture(existingCustomer.facebookId);
+      }
+      if (existingCustomer.name !== existingCustomer.facebookName) {
+        setFacebookNameManuallyChanged(true);
+      }
     }
   }, [existingCustomer, isEditMode, form]);
 
@@ -239,12 +252,29 @@ export default function AddCustomer() {
   }, [existingShippingAddresses]);
 
   const selectedCountry = form.watch('country');
+  const nameValue = form.watch('name');
+  const facebookNameValue = form.watch('facebookName');
+  const facebookUrlValue = form.watch('facebookUrl');
 
   useEffect(() => {
     if (selectedCountry && !isEditMode) {
       form.setValue('billingCountry', selectedCountry);
     }
   }, [selectedCountry, isEditMode, form]);
+
+  // Real-time syncing from Name to Facebook Name
+  useEffect(() => {
+    if (!facebookNameManuallyChanged && nameValue) {
+      form.setValue('facebookName', nameValue);
+    }
+  }, [nameValue, facebookNameManuallyChanged, form]);
+
+  // Fetch Facebook profile picture when Facebook URL changes
+  useEffect(() => {
+    if (facebookUrlValue) {
+      fetchFacebookProfilePicture(facebookUrlValue);
+    }
+  }, [facebookUrlValue]);
 
   const debounce = <T extends (...args: any[]) => any>(
     func: T,
@@ -354,6 +384,25 @@ export default function AddCustomer() {
       console.error('Error fetching ARES data:', error);
     } finally {
       setIsLoadingAres(false);
+    }
+  };
+
+  const fetchFacebookProfilePicture = async (facebookUrl: string) => {
+    try {
+      setIsLoadingProfilePicture(true);
+      const response = await fetch(`/api/facebook/profile-picture?url=${encodeURIComponent(facebookUrl)}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch profile picture');
+      }
+      const data = await response.json();
+      if (data.pictureUrl) {
+        setFacebookProfilePicture(data.pictureUrl);
+      }
+    } catch (error) {
+      console.error('Error fetching Facebook profile picture:', error);
+      setFacebookProfilePicture(null);
+    } finally {
+      setIsLoadingProfilePicture(false);
     }
   };
 
@@ -539,6 +588,21 @@ export default function AddCustomer() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
+              <Label htmlFor="name" className="text-base font-semibold">Name *</Label>
+              <Input
+                id="name"
+                {...form.register('name')}
+                placeholder="Customer's display name"
+                className="text-base"
+                data-testid="input-name"
+              />
+              <p className="text-xs text-slate-500 mt-1">This will automatically sync to Facebook Name</p>
+              {form.formState.errors.name && (
+                <p className="text-sm text-red-500 mt-1">{form.formState.errors.name.message}</p>
+              )}
+            </div>
+
+            <div>
               <Label htmlFor="country" className="text-base font-semibold">Country / Location *</Label>
               <p className="text-sm text-slate-500 mb-2">Select the primary country where this customer operates</p>
               <Popover open={openCountryCombobox} onOpenChange={setOpenCountryCombobox}>
@@ -664,28 +728,65 @@ export default function AddCustomer() {
               )}
             </div>
 
-            <div>
-              <Label htmlFor="facebookName" className="text-base font-semibold">Facebook Name</Label>
-              <Input
-                id="facebookName"
-                {...form.register('facebookName')}
-                placeholder="Customer's Facebook display name"
-                className="text-base"
-                data-testid="input-facebookName"
-              />
-              <p className="text-xs text-slate-500 mt-1">The customer's name as it appears on Facebook</p>
-            </div>
+            <div className="space-y-4">
+              <div className="flex items-start gap-4">
+                <div className="flex-1 space-y-4">
+                  <div>
+                    <Label htmlFor="facebookName" className="text-base font-semibold">Facebook Name</Label>
+                    <Input
+                      id="facebookName"
+                      {...form.register('facebookName')}
+                      placeholder="Customer's Facebook display name"
+                      className="text-base"
+                      data-testid="input-facebookName"
+                      onChange={(e) => {
+                        form.register('facebookName').onChange(e);
+                        if (e.target.value !== nameValue) {
+                          setFacebookNameManuallyChanged(true);
+                        } else {
+                          setFacebookNameManuallyChanged(false);
+                        }
+                      }}
+                    />
+                    <p className="text-xs text-slate-500 mt-1">
+                      {facebookNameManuallyChanged 
+                        ? "Manually set - no longer syncing with Name" 
+                        : "Auto-syncing from Name field above"}
+                    </p>
+                  </div>
 
-            <div>
-              <Label htmlFor="facebookUrl" className="text-base font-semibold">Facebook URL</Label>
-              <Input
-                id="facebookUrl"
-                {...form.register('facebookUrl')}
-                placeholder="https://www.facebook.com/username"
-                className="text-base"
-                data-testid="input-facebookUrl"
-              />
-              <p className="text-xs text-slate-500 mt-1">Link to customer's Facebook profile</p>
+                  <div>
+                    <Label htmlFor="facebookUrl" className="text-base font-semibold">Facebook URL</Label>
+                    <Input
+                      id="facebookUrl"
+                      {...form.register('facebookUrl')}
+                      placeholder="https://www.facebook.com/username"
+                      className="text-base"
+                      data-testid="input-facebookUrl"
+                    />
+                    <p className="text-xs text-slate-500 mt-1">Link to customer's Facebook profile</p>
+                  </div>
+                </div>
+
+                {/* Facebook Profile Picture */}
+                {(facebookProfilePicture || isLoadingProfilePicture) && (
+                  <div className="flex flex-col items-center gap-2">
+                    <Label className="text-sm font-semibold text-slate-600">Profile Picture</Label>
+                    <div className="w-24 h-24 rounded-full border-2 border-slate-200 overflow-hidden bg-slate-100 flex items-center justify-center">
+                      {isLoadingProfilePicture ? (
+                        <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+                      ) : facebookProfilePicture ? (
+                        <img 
+                          src={facebookProfilePicture} 
+                          alt="Facebook Profile" 
+                          className="w-full h-full object-cover"
+                          data-testid="img-facebook-profile"
+                        />
+                      ) : null}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
