@@ -586,206 +586,207 @@ export default function AddCustomer() {
               Location & Business Info
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="name" className="text-base font-semibold">Name *</Label>
-              <Input
-                id="name"
-                {...form.register('name')}
-                placeholder="Customer's display name"
-                className="text-base"
-                data-testid="input-name"
-              />
-              <p className="text-xs text-slate-500 mt-1">This will automatically sync to Facebook Name</p>
-              {form.formState.errors.name && (
-                <p className="text-sm text-red-500 mt-1">{form.formState.errors.name.message}</p>
-              )}
-            </div>
-
-            <div>
-              <Label htmlFor="country" className="text-base font-semibold">Country / Location *</Label>
-              <p className="text-sm text-slate-500 mb-2">Select the primary country where this customer operates</p>
-              <Popover open={openCountryCombobox} onOpenChange={setOpenCountryCombobox}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={openCountryCombobox}
-                    className="w-full justify-between"
-                    data-testid="button-country-selector"
-                  >
-                    {selectedCountryData ? (
-                      <span className="flex items-center gap-2">
-                        <span className="text-2xl">{getCountryFlag(selectedCountryData.code)}</span>
-                        {selectedCountryData.name}
-                      </span>
-                    ) : (
-                      "Select country..."
-                    )}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-full p-0" align="start">
-                  <Command>
-                    <CommandInput 
-                      placeholder="Search country..." 
-                      value={countrySearchQuery}
-                      onValueChange={setCountrySearchQuery}
-                      data-testid="input-country-search"
+          <CardContent>
+            <div className="flex gap-6">
+              {/* Profile Picture - Left Side */}
+              <div className="flex-shrink-0">
+                <div className="w-32 h-32 rounded-2xl border-2 border-slate-200 overflow-hidden bg-slate-100 flex items-center justify-center">
+                  {isLoadingProfilePicture ? (
+                    <Loader2 className="h-10 w-10 animate-spin text-slate-400" />
+                  ) : facebookProfilePicture ? (
+                    <img 
+                      src={facebookProfilePicture} 
+                      alt="Facebook Profile" 
+                      className="w-full h-full object-cover"
+                      data-testid="img-facebook-profile"
                     />
-                    <CommandList>
-                      <CommandEmpty>No country found.</CommandEmpty>
-                      
-                      {pinnedFilteredCountries.length > 0 && (
-                        <CommandGroup heading="Pinned Countries">
-                          {pinnedFilteredCountries.map((country) => (
-                            <CommandItem
-                              key={country.code}
-                              value={country.code}
-                              onSelect={() => {
-                                form.setValue('country', country.code);
-                                setOpenCountryCombobox(false);
-                                setCountrySearchQuery("");
-                              }}
-                              data-testid={`option-country-${country.code}`}
-                              className="flex items-center justify-between group"
-                            >
-                              <div className="flex items-center flex-1">
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    selectedCountry === country.code ? "opacity-100" : "opacity-0"
-                                  )}
-                                />
-                                <span className="text-xl mr-2">{getCountryFlag(country.code)}</span>
-                                {country.name}
-                              </div>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  togglePinCountry(country.code);
-                                }}
-                                data-testid={`button-unpin-${country.code}`}
-                              >
-                                <Pin className="h-3 w-3 fill-current text-blue-600" />
-                              </Button>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      )}
-                      
-                      {unpinnedFilteredCountries.length > 0 && (
-                        <CommandGroup heading={pinnedFilteredCountries.length > 0 ? "All Countries" : undefined}>
-                          {unpinnedFilteredCountries.map((country) => (
-                            <CommandItem
-                              key={country.code}
-                              value={country.code}
-                              onSelect={() => {
-                                form.setValue('country', country.code);
-                                setOpenCountryCombobox(false);
-                                setCountrySearchQuery("");
-                              }}
-                              data-testid={`option-country-${country.code}`}
-                              className="flex items-center justify-between group"
-                            >
-                              <div className="flex items-center flex-1">
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    selectedCountry === country.code ? "opacity-100" : "opacity-0"
-                                  )}
-                                />
-                                <span className="text-xl mr-2">{getCountryFlag(country.code)}</span>
-                                {country.name}
-                              </div>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  togglePinCountry(country.code);
-                                }}
-                                data-testid={`button-pin-${country.code}`}
-                              >
-                                <Pin className="h-3 w-3 text-slate-400" />
-                              </Button>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      )}
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-              {form.formState.errors.country && (
-                <p className="text-sm text-red-500 mt-1">{form.formState.errors.country.message}</p>
-              )}
-            </div>
+                  ) : (
+                    <div className="text-center p-4">
+                      <Globe className="h-10 w-10 text-slate-300 mx-auto mb-2" />
+                      <p className="text-xs text-slate-400">Add FB URL for photo</p>
+                    </div>
+                  )}
+                </div>
+              </div>
 
-            <div className="space-y-4">
-              <div className="flex items-start gap-4">
-                <div className="flex-1 space-y-4">
-                  <div>
-                    <Label htmlFor="facebookName" className="text-base font-semibold">Facebook Name</Label>
-                    <Input
-                      id="facebookName"
-                      {...form.register('facebookName')}
-                      placeholder="Customer's Facebook display name"
-                      className="text-base"
-                      data-testid="input-facebookName"
-                      onChange={(e) => {
-                        form.register('facebookName').onChange(e);
-                        if (e.target.value !== nameValue) {
-                          setFacebookNameManuallyChanged(true);
-                        } else {
-                          setFacebookNameManuallyChanged(false);
-                        }
-                      }}
-                    />
-                    <p className="text-xs text-slate-500 mt-1">
-                      {facebookNameManuallyChanged 
-                        ? "Manually set - no longer syncing with Name" 
-                        : "Auto-syncing from Name field above"}
-                    </p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="facebookUrl" className="text-base font-semibold">Facebook URL</Label>
-                    <Input
-                      id="facebookUrl"
-                      {...form.register('facebookUrl')}
-                      placeholder="https://www.facebook.com/username"
-                      className="text-base"
-                      data-testid="input-facebookUrl"
-                    />
-                    <p className="text-xs text-slate-500 mt-1">Link to customer's Facebook profile</p>
-                  </div>
+              {/* Form Fields - Right Side */}
+              <div className="flex-1 space-y-4">
+                <div>
+                  <Label htmlFor="name" className="text-base font-semibold">Name *</Label>
+                  <Input
+                    id="name"
+                    {...form.register('name')}
+                    placeholder="Customer's display name"
+                    className="text-base"
+                    data-testid="input-name"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">This will automatically sync to Facebook Name</p>
+                  {form.formState.errors.name && (
+                    <p className="text-sm text-red-500 mt-1">{form.formState.errors.name.message}</p>
+                  )}
                 </div>
 
-                {/* Facebook Profile Picture */}
-                {(facebookProfilePicture || isLoadingProfilePicture) && (
-                  <div className="flex flex-col items-center gap-2">
-                    <Label className="text-sm font-semibold text-slate-600">Profile Picture</Label>
-                    <div className="w-24 h-24 rounded-full border-2 border-slate-200 overflow-hidden bg-slate-100 flex items-center justify-center">
-                      {isLoadingProfilePicture ? (
-                        <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
-                      ) : facebookProfilePicture ? (
-                        <img 
-                          src={facebookProfilePicture} 
-                          alt="Facebook Profile" 
-                          className="w-full h-full object-cover"
-                          data-testid="img-facebook-profile"
+                <div>
+                  <Label htmlFor="facebookName" className="text-base font-semibold">Facebook Name</Label>
+                  <Input
+                    id="facebookName"
+                    {...form.register('facebookName')}
+                    placeholder="Customer's Facebook display name"
+                    className="text-base"
+                    data-testid="input-facebookName"
+                    onChange={(e) => {
+                      form.register('facebookName').onChange(e);
+                      if (e.target.value !== nameValue) {
+                        setFacebookNameManuallyChanged(true);
+                      } else {
+                        setFacebookNameManuallyChanged(false);
+                      }
+                    }}
+                  />
+                  <p className="text-xs text-slate-500 mt-1">
+                    {facebookNameManuallyChanged 
+                      ? "Manually set - no longer syncing with Name" 
+                      : "Auto-syncing from Name field above"}
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="facebookUrl" className="text-base font-semibold">Facebook URL</Label>
+                  <Input
+                    id="facebookUrl"
+                    {...form.register('facebookUrl')}
+                    placeholder="https://www.facebook.com/username"
+                    className="text-base"
+                    data-testid="input-facebookUrl"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">Link to customer's Facebook profile</p>
+                </div>
+
+                <div>
+                  <Label htmlFor="country" className="text-base font-semibold">Country / Location *</Label>
+                  <p className="text-sm text-slate-500 mb-2">Select the primary country where this customer operates</p>
+                  <Popover open={openCountryCombobox} onOpenChange={setOpenCountryCombobox}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={openCountryCombobox}
+                        className="w-full justify-between"
+                        data-testid="button-country-selector"
+                      >
+                        {selectedCountryData ? (
+                          <span className="flex items-center gap-2">
+                            <span className="text-2xl">{getCountryFlag(selectedCountryData.code)}</span>
+                            {selectedCountryData.name}
+                          </span>
+                        ) : (
+                          "Select country..."
+                        )}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput 
+                          placeholder="Search country..." 
+                          value={countrySearchQuery}
+                          onValueChange={setCountrySearchQuery}
+                          data-testid="input-country-search"
                         />
-                      ) : null}
-                    </div>
-                  </div>
-                )}
+                        <CommandList>
+                          <CommandEmpty>No country found.</CommandEmpty>
+                          
+                          {pinnedFilteredCountries.length > 0 && (
+                            <CommandGroup heading="Pinned Countries">
+                              {pinnedFilteredCountries.map((country) => (
+                                <CommandItem
+                                  key={country.code}
+                                  value={country.code}
+                                  onSelect={() => {
+                                    form.setValue('country', country.code);
+                                    setOpenCountryCombobox(false);
+                                    setCountrySearchQuery("");
+                                  }}
+                                  data-testid={`option-country-${country.code}`}
+                                  className="flex items-center justify-between group"
+                                >
+                                  <div className="flex items-center flex-1">
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        selectedCountry === country.code ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    <span className="text-xl mr-2">{getCountryFlag(country.code)}</span>
+                                    {country.name}
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      togglePinCountry(country.code);
+                                    }}
+                                    data-testid={`button-unpin-${country.code}`}
+                                  >
+                                    <Pin className="h-3 w-3 fill-current text-blue-600" />
+                                  </Button>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          )}
+                          
+                          {unpinnedFilteredCountries.length > 0 && (
+                            <CommandGroup heading={pinnedFilteredCountries.length > 0 ? "All Countries" : undefined}>
+                              {unpinnedFilteredCountries.map((country) => (
+                                <CommandItem
+                                  key={country.code}
+                                  value={country.code}
+                                  onSelect={() => {
+                                    form.setValue('country', country.code);
+                                    setOpenCountryCombobox(false);
+                                    setCountrySearchQuery("");
+                                  }}
+                                  data-testid={`option-country-${country.code}`}
+                                  className="flex items-center justify-between group"
+                                >
+                                  <div className="flex items-center flex-1">
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        selectedCountry === country.code ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    <span className="text-xl mr-2">{getCountryFlag(country.code)}</span>
+                                    {country.name}
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      togglePinCountry(country.code);
+                                    }}
+                                    data-testid={`button-pin-${country.code}`}
+                                  >
+                                    <Pin className="h-3 w-3 text-slate-400" />
+                                  </Button>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          )}
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  {form.formState.errors.country && (
+                    <p className="text-sm text-red-500 mt-1">{form.formState.errors.country.message}</p>
+                  )}
+                </div>
               </div>
             </div>
           </CardContent>
