@@ -29,6 +29,7 @@ const customerFormSchema = z.object({
   country: z.string().min(1, "Country is required"),
   facebookName: z.string().optional(),
   facebookUrl: z.string().optional(),
+  profilePictureUrl: z.string().optional(),
   billingCompany: z.string().optional(),
   billingFirstName: z.string().min(1, "First name is required"),
   billingLastName: z.string().min(1, "Last name is required"),
@@ -140,6 +141,7 @@ export default function AddCustomer() {
       country: "",
       facebookName: "",
       facebookUrl: "",
+      profilePictureUrl: "",
       billingFirstName: "",
       billingLastName: "",
       billingCompany: "",
@@ -196,6 +198,7 @@ export default function AddCustomer() {
         country: existingCustomer.country || "",
         facebookName: existingCustomer.facebookName || "",
         facebookUrl: existingCustomer.facebookUrl || "",
+        profilePictureUrl: existingCustomer.profilePictureUrl || "",
         billingFirstName: existingCustomer.billingFirstName || "",
         billingLastName: existingCustomer.billingLastName || "",
         billingCompany: existingCustomer.billingCompany || "",
@@ -221,7 +224,10 @@ export default function AddCustomer() {
           companyAddress: existingCustomer.vatCompanyAddress || undefined,
         });
       }
-      if (existingCustomer.facebookId) {
+      // Use profilePictureUrl if available, otherwise fall back to facebookId
+      if (existingCustomer.profilePictureUrl) {
+        setFacebookProfilePicture(existingCustomer.profilePictureUrl);
+      } else if (existingCustomer.facebookId) {
         setFacebookProfilePicture(existingCustomer.facebookId);
       }
       if (existingCustomer.name !== existingCustomer.facebookName) {
@@ -384,25 +390,57 @@ export default function AddCustomer() {
     debounce(async (facebookUrl: string) => {
       if (!facebookUrl || facebookUrl.length < 10) {
         setFacebookProfilePicture(null);
+        form.setValue('profilePictureUrl', '');
         return;
       }
       
       try {
         setIsLoadingProfilePicture(true);
+        
+        // First, call the profile picture API to get Facebook data
         const response = await fetch(`/api/facebook/profile-picture?url=${encodeURIComponent(facebookUrl)}`);
         if (!response.ok) {
           throw new Error('Failed to fetch profile picture');
         }
         const data = await response.json();
         
-        if (data.pictureUrl) {
-          setFacebookProfilePicture(data.pictureUrl);
-        } else {
-          setFacebookProfilePicture(null);
-        }
-        
+        // Auto-fill Facebook Name if not manually changed
         if (data.facebookName && !facebookNameManuallyChanged) {
           form.setValue('facebookName', data.facebookName);
+        }
+        
+        // Auto-fill Name field if it's empty
+        if (data.facebookName && !form.getValues('name')) {
+          form.setValue('name', data.facebookName);
+        }
+        
+        // If it's a numeric ID and we have a picture URL, download it locally
+        if (data.isNumericId && data.pictureUrl) {
+          try {
+            const downloadResponse = await fetch(`/api/facebook/download-profile-picture?url=${encodeURIComponent(facebookUrl)}`);
+            if (downloadResponse.ok) {
+              const downloadData = await downloadResponse.json();
+              if (downloadData.profilePictureUrl) {
+                // Use the locally downloaded image
+                setFacebookProfilePicture(downloadData.profilePictureUrl);
+                form.setValue('profilePictureUrl', downloadData.profilePictureUrl);
+                return;
+              }
+            }
+          } catch (downloadError) {
+            console.error('Error downloading profile picture:', downloadError);
+            // Fall back to the external URL if download fails
+          }
+        }
+        
+        // Fall back to the external URL if not numeric ID or download failed
+        if (data.pictureUrl) {
+          setFacebookProfilePicture(data.pictureUrl);
+          // Don't store external URL in profilePictureUrl field
+          form.setValue('profilePictureUrl', '');
+        } else {
+          setFacebookProfilePicture(null);
+          form.setValue('profilePictureUrl', '');
         }
         
         // Show toast message if username-based URL was used
@@ -416,11 +454,12 @@ export default function AddCustomer() {
       } catch (error) {
         console.error('Error fetching Facebook profile picture:', error);
         setFacebookProfilePicture(null);
+        form.setValue('profilePictureUrl', '');
       } finally {
         setIsLoadingProfilePicture(false);
       }
     }, 500),
-    [facebookNameManuallyChanged, form]
+    [facebookNameManuallyChanged, form, toast]
   );
 
   const handleVatValidation = async (vatNumber: string, countryCode: string) => {
