@@ -13,7 +13,10 @@ The client-side is built with React and TypeScript using Vite, following a compo
 The server-side is implemented with Express.js and TypeScript (ESM modules), offering RESTful API endpoints with consistent error handling.
 
 ## Authentication System
-Authentication uses Replit's OpenID Connect (OIDC), with PostgreSQL-backed sessions secured by HTTP-only cookies.
+The application supports multiple authentication methods:
+- **Facebook OAuth Login**: Users can log in with their Facebook account using OAuth 2.0 flow. The system uses Facebook App ID and App Secret (stored as environment variables) to authenticate users and fetch their profile information.
+- **Traditional Login/Register**: Simple email/password authentication with login and registration pages (backend implementation pending).
+- Sessions are managed with HTTP-only cookies for security.
 
 ## Database Design
 The database schema, managed with PostgreSQL, Neon serverless driver, and Drizzle ORM, supports a comprehensive e-commerce workflow. It includes core entities for users, products, orders, customers, warehouses, suppliers, and returns. The design facilitates complete order lifecycle management, inventory tracking (including variants and stock), multi-currency financial tracking, and an audit trail for user activities.

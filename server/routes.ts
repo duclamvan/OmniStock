@@ -5916,6 +5916,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Facebook OAuth endpoints
+  app.get('/api/auth/facebook', (req, res) => {
+    const appId = process.env.FACEBOOK_APP_ID;
+    if (!appId) {
+      return res.status(500).json({ message: 'Facebook App ID not configured' });
+    }
+
+    const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/facebook/callback`;
+    const scope = 'email,public_profile';
+    
+    const facebookAuthUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code`;
+    
+    res.redirect(facebookAuthUrl);
+  });
+
+  app.get('/api/auth/facebook/callback', async (req, res) => {
+    try {
+      const { code } = req.query;
+      const appId = process.env.FACEBOOK_APP_ID;
+      const appSecret = process.env.FACEBOOK_APP_SECRET;
+
+      if (!code || !appId || !appSecret) {
+        return res.redirect('/login?error=auth_failed');
+      }
+
+      const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/facebook/callback`;
+
+      // Exchange code for access token
+      const tokenResponse = await fetch(
+        `https://graph.facebook.com/v18.0/oauth/access_token?client_id=${appId}&client_secret=${appSecret}&code=${code}&redirect_uri=${encodeURIComponent(redirectUri)}`
+      );
+      
+      const tokenData = await tokenResponse.json();
+      
+      if (!tokenData.access_token) {
+        console.error('Facebook token error:', tokenData);
+        return res.redirect('/login?error=auth_failed');
+      }
+
+      // Get user info from Facebook
+      const userResponse = await fetch(
+        `https://graph.facebook.com/v18.0/me?fields=id,name,email,picture.type(large)&access_token=${tokenData.access_token}`
+      );
+      
+      const userData = await userResponse.json();
+      
+      if (!userData.id) {
+        console.error('Facebook user data error:', userData);
+        return res.redirect('/login?error=auth_failed');
+      }
+
+      console.log('Facebook user data:', { id: userData.id, name: userData.name, email: userData.email });
+
+      // Here you would create/login the user in your database
+      // For now, we'll just create a session with the Facebook user data
+      if (req.session) {
+        req.session.user = {
+          id: userData.id,
+          email: userData.email || `${userData.id}@facebook.com`,
+          name: userData.name,
+          provider: 'facebook'
+        };
+      }
+
+      // Redirect to home page after successful login
+      res.redirect('/');
+    } catch (error) {
+      console.error('Facebook OAuth error:', error);
+      res.redirect('/login?error=auth_failed');
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
