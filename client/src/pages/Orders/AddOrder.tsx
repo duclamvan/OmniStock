@@ -49,9 +49,19 @@ import {
   ChevronDown,
   ChevronUp,
   TrendingUp,
-  MessageSquare
+  MessageSquare,
+  Box,
+  Weight,
+  Loader2
 } from "lucide-react";
 import MarginPill from "@/components/orders/MarginPill";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const addOrderSchema = z.object({
   customerId: z.string().optional(),
@@ -135,6 +145,10 @@ export default function AddOrder() {
   const [quickCustomerName, setQuickCustomerName] = useState("");
   const [quickCustomerPhone, setQuickCustomerPhone] = useState("");
   const [quickCustomerSocialApp, setQuickCustomerSocialApp] = useState<'viber' | 'whatsapp' | 'zalo' | 'email'>('whatsapp');
+
+  // Packing optimization state
+  const [orderId, setOrderId] = useState<string | null>(null);
+  const [packingPlan, setPackingPlan] = useState<any>(null);
 
   // Fetch real addresses from geocoding API
   const fetchRealAddresses = async (query: string): Promise<any[]> => {
@@ -523,16 +537,21 @@ export default function AddOrder() {
         selectedDocumentIds: selectedDocumentIds.length > 0 ? selectedDocumentIds : undefined
       };
 
-      await apiRequest('POST', '/api/orders', orderData);
+      const response = await apiRequest('POST', '/api/orders', orderData);
+      const createdOrder = await response.json();
+      return createdOrder;
     },
-    onSuccess: () => {
+    onSuccess: (createdOrder) => {
       queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
       queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+      
+      // Set the order ID so packing optimization can be run
+      setOrderId(createdOrder.id);
+      
       toast({
         title: "Success",
-        description: "Order created successfully",
+        description: "Order created successfully. You can now run AI packing optimization.",
       });
-      setLocation('/orders');
     },
     onError: (error) => {
       console.error("Order creation error:", error);
@@ -543,6 +562,43 @@ export default function AddOrder() {
       });
     },
   });
+
+  // Packing optimization mutation
+  const packingOptimizationMutation = useMutation({
+    mutationFn: async () => {
+      if (!orderId) {
+        throw new Error('Please save order first');
+      }
+      const response = await apiRequest('POST', `/api/orders/${orderId}/packing-plan`, {});
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setPackingPlan(data);
+      toast({
+        title: "Success",
+        description: "Packing plan optimized successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to optimize packing",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const runPackingOptimization = () => {
+    if (!orderId) {
+      toast({
+        title: "Error",
+        description: "Please save order first",
+        variant: "destructive",
+      });
+      return;
+    }
+    packingOptimizationMutation.mutate();
+  };
 
   const addProductToOrder = async (product: any) => {
     const existingItem = orderItems.find(item => item.productId === product.id);
@@ -1884,6 +1940,220 @@ export default function AddOrder() {
           onDocumentSelectionChange={setSelectedDocumentIds}
         />
 
+        {/* AI Carton Packing Optimization Panel */}
+        {orderItems.length > 0 && (
+          <Card className="shadow-sm">
+            <CardHeader className="p-4 sm:p-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                    <Box className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+                    AI Carton Packing
+                  </CardTitle>
+                  <CardDescription className="text-xs sm:text-sm">
+                    Automatically calculate optimal carton sizes and shipping costs
+                  </CardDescription>
+                </div>
+                <Button
+                  type="button"
+                  onClick={runPackingOptimization}
+                  disabled={packingOptimizationMutation.isPending}
+                  data-testid="button-run-packing-optimization"
+                  className="ml-2"
+                >
+                  {packingOptimizationMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Calculating...
+                    </>
+                  ) : (
+                    <>
+                      <Package className="h-4 w-4 mr-2" />
+                      Run AI Optimization
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardHeader>
+
+            {packingPlan && (
+              <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-4">
+                {/* Summary Cards */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                  {/* Total Cartons */}
+                  <div className="bg-blue-50 dark:bg-blue-950 p-3 sm:p-4 rounded-lg">
+                    <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 mb-1">
+                      <Box className="h-4 w-4" />
+                      <span className="text-xs font-medium">Total Cartons</span>
+                    </div>
+                    <p className="text-xl sm:text-2xl font-bold text-blue-900 dark:text-blue-100" data-testid="text-total-cartons">
+                      {packingPlan.totalCartons || 0}
+                    </p>
+                  </div>
+
+                  {/* Total Weight */}
+                  <div className="bg-purple-50 dark:bg-purple-950 p-3 sm:p-4 rounded-lg">
+                    <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 mb-1">
+                      <Weight className="h-4 w-4" />
+                      <span className="text-xs font-medium">Total Weight</span>
+                    </div>
+                    <p className="text-xl sm:text-2xl font-bold text-purple-900 dark:text-purple-100" data-testid="text-total-weight">
+                      {packingPlan.totalWeight ? `${packingPlan.totalWeight.toFixed(2)} kg` : '0 kg'}
+                    </p>
+                  </div>
+
+                  {/* Avg Utilization */}
+                  <div className={`p-3 sm:p-4 rounded-lg ${
+                    (packingPlan.avgUtilization || 0) > 80 
+                      ? 'bg-green-50 dark:bg-green-950' 
+                      : (packingPlan.avgUtilization || 0) > 70 
+                      ? 'bg-yellow-50 dark:bg-yellow-950' 
+                      : 'bg-red-50 dark:bg-red-950'
+                  }`}>
+                    <div className={`flex items-center gap-2 mb-1 ${
+                      (packingPlan.avgUtilization || 0) > 80 
+                        ? 'text-green-600 dark:text-green-400' 
+                        : (packingPlan.avgUtilization || 0) > 70 
+                        ? 'text-yellow-600 dark:text-yellow-400' 
+                        : 'text-red-600 dark:text-red-400'
+                    }`}>
+                      <Package className="h-4 w-4" />
+                      <span className="text-xs font-medium">Avg Utilization</span>
+                    </div>
+                    <p className={`text-xl sm:text-2xl font-bold ${
+                      (packingPlan.avgUtilization || 0) > 80 
+                        ? 'text-green-900 dark:text-green-100' 
+                        : (packingPlan.avgUtilization || 0) > 70 
+                        ? 'text-yellow-900 dark:text-yellow-100' 
+                        : 'text-red-900 dark:text-red-100'
+                    }`} data-testid="text-avg-utilization">
+                      {packingPlan.avgUtilization ? `${packingPlan.avgUtilization.toFixed(1)}%` : '0%'}
+                    </p>
+                  </div>
+
+                  {/* Est. Shipping Cost */}
+                  <div className="bg-indigo-50 dark:bg-indigo-950 p-3 sm:p-4 rounded-lg">
+                    <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 mb-1">
+                      <Truck className="h-4 w-4" />
+                      <span className="text-xs font-medium">Est. Shipping</span>
+                    </div>
+                    <p className="text-xl sm:text-2xl font-bold text-indigo-900 dark:text-indigo-100" data-testid="text-shipping-cost">
+                      {packingPlan.estimatedShippingCost 
+                        ? formatCurrency(packingPlan.estimatedShippingCost, form.watch('currency'))
+                        : formatCurrency(0, form.watch('currency'))
+                      }
+                    </p>
+                  </div>
+                </div>
+
+                {/* Suggestions */}
+                {packingPlan.suggestions && packingPlan.suggestions.length > 0 && (
+                  <div className="space-y-2">
+                    {packingPlan.suggestions.map((suggestion: string, index: number) => (
+                      <Alert key={index} className="bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800">
+                        <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                        <AlertDescription className="text-amber-800 dark:text-amber-200">
+                          {suggestion}
+                        </AlertDescription>
+                      </Alert>
+                    ))}
+                  </div>
+                )}
+
+                {/* Detailed Carton Breakdown */}
+                {packingPlan.cartons && packingPlan.cartons.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                      <Box className="h-4 w-4" />
+                      Carton Breakdown
+                    </h4>
+                    <Accordion type="single" collapsible className="w-full">
+                      {packingPlan.cartons.map((carton: any, index: number) => (
+                        <AccordionItem 
+                          key={index} 
+                          value={`carton-${index}`}
+                          data-testid={`accordion-carton-${index + 1}`}
+                        >
+                          <AccordionTrigger className="hover:no-underline">
+                            <div className="flex items-center justify-between w-full pr-4">
+                              <div className="flex items-center gap-2">
+                                <Box className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                <span className="font-medium">
+                                  Carton #{index + 1}: {carton.cartonName || 'Standard Box'}
+                                  {carton.dimensions && ` (${carton.dimensions})`}
+                                </span>
+                              </div>
+                              <Badge 
+                                variant="outline" 
+                                className={
+                                  (carton.utilization || 0) > 80 
+                                    ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 border-green-300 dark:border-green-700' 
+                                    : (carton.utilization || 0) > 70 
+                                    ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 border-yellow-300 dark:border-yellow-700' 
+                                    : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 border-red-300 dark:border-red-700'
+                                }
+                              >
+                                {carton.utilization ? `${carton.utilization.toFixed(1)}%` : '0%'} utilized
+                              </Badge>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            <div className="space-y-3 pt-2 pb-3 px-4">
+                              {/* Carton Stats */}
+                              <div className="grid grid-cols-2 gap-3 text-sm">
+                                <div className="flex items-center gap-2">
+                                  <Weight className="h-3 w-3 text-gray-500" />
+                                  <span className="text-gray-600 dark:text-gray-400">Weight:</span>
+                                  <span className="font-medium">{carton.weight ? `${carton.weight.toFixed(2)} kg` : 'N/A'}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Package className="h-3 w-3 text-gray-500" />
+                                  <span className="text-gray-600 dark:text-gray-400">Items:</span>
+                                  <span className="font-medium">{carton.items?.length || 0}</span>
+                                </div>
+                              </div>
+
+                              {/* Items in Carton */}
+                              {carton.items && carton.items.length > 0 && (
+                                <div className="space-y-2">
+                                  <h5 className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                                    Items in Carton
+                                  </h5>
+                                  <div className="space-y-1">
+                                    {carton.items.map((item: any, itemIndex: number) => (
+                                      <div 
+                                        key={itemIndex}
+                                        className="flex items-center justify-between text-sm bg-gray-50 dark:bg-gray-800 p-2 rounded"
+                                      >
+                                        <div className="flex items-center gap-2">
+                                          <span className="font-medium">{item.productName || item.name}</span>
+                                          {item.isEstimated && (
+                                            <Badge variant="secondary" className="text-xs">
+                                              AI Estimated
+                                            </Badge>
+                                          )}
+                                        </div>
+                                        <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400">
+                                          <span>Qty: {item.quantity}</span>
+                                          {item.weight && <span>Weight: {item.weight.toFixed(2)} kg</span>}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      ))}
+                    </Accordion>
+                  </div>
+                )}
+              </CardContent>
+            )}
+          </Card>
+        )}
+
         {/* Payment Details - Mobile Optimized */}
         <Card className="shadow-sm">
           <CardHeader className="p-4 sm:p-6">
@@ -2305,13 +2575,37 @@ export default function AddOrder() {
                     </div>
 
                     <div className="pt-4 space-y-3">
-                      <Button type="submit" className="w-full" size="lg" disabled={createOrderMutation.isPending || orderItems.length === 0}>
-                        <ShoppingCart className="h-4 w-4 mr-2" />
-                        {createOrderMutation.isPending ? 'Creating...' : 'Create Order'}
-                      </Button>
-                      <Button type="button" variant="outline" className="w-full" onClick={() => setLocation('/orders')}>
-                        Cancel
-                      </Button>
+                      {orderId ? (
+                        <>
+                          <Button 
+                            type="button" 
+                            className="w-full" 
+                            size="lg" 
+                            onClick={() => setLocation(`/orders/${orderId}`)}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            View Order
+                          </Button>
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            className="w-full" 
+                            onClick={() => setLocation('/orders')}
+                          >
+                            Back to Orders
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button type="submit" className="w-full" size="lg" disabled={createOrderMutation.isPending || orderItems.length === 0}>
+                            <ShoppingCart className="h-4 w-4 mr-2" />
+                            {createOrderMutation.isPending ? 'Creating...' : 'Create Order'}
+                          </Button>
+                          <Button type="button" variant="outline" className="w-full" onClick={() => setLocation('/orders')}>
+                            Cancel
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
