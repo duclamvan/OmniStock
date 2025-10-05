@@ -3337,12 +3337,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { items, ...orderData } = req.body;
       
-      // Generate order ID
-      const orderId = await storage.generateOrderId();
+      // Get orderType from request body, default to 'ord'
+      const orderType = orderData.orderType || 'ord';
+      
+      // Generate order ID with the specified order type
+      const orderId = await storage.generateOrderId(orderType);
       
       const data = insertOrderSchema.parse({
         ...orderData,
         orderId,
+        orderType,
         billerId: "test-user",
       });
       

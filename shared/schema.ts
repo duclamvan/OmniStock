@@ -390,6 +390,16 @@ export const productTieredPricing = pgTable('product_tiered_pricing', {
   updatedAt: timestamp('updated_at').defaultNow()
 });
 
+// Daily sequences table for order ID generation
+export const dailySequences = pgTable('daily_sequences', {
+  id: serial('id').primaryKey(),
+  orderType: varchar('order_type').notNull(), // 'pos', 'ord', 'web', 'tel'
+  date: date('date').notNull(), // Date in YYYY-MM-DD format
+  currentSequence: integer('current_sequence').notNull(), // Current sequence number
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
 export const orders = pgTable('orders', {
   id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
   orderId: varchar('order_id').notNull(),
@@ -429,7 +439,8 @@ export const orders = pgTable('orders', {
   lastModifiedAt: timestamp('last_modified_at'),
   previousPackStatus: varchar('previous_pack_status'),
   selectedDocumentIds: text('selected_document_ids').array(), // Array of product_file IDs to print
-  trackingNumber: text('tracking_number')
+  trackingNumber: text('tracking_number'),
+  orderType: varchar('order_type').notNull().default('ord') // 'pos', 'ord', 'web', 'tel'
 });
 
 // Product Files table for document management
@@ -824,6 +835,7 @@ export const insertWarehouseSchema = createInsertSchema(warehouses).omit({ creat
 export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProductTieredPricingSchema = createInsertSchema(productTieredPricing).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProductFileSchema = createInsertSchema(productFiles).omit({ id: true, uploadedAt: true });
+export const insertDailySequenceSchema = createInsertSchema(dailySequences).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true });
 export const insertOrderItemSchema = createInsertSchema(orderItems).omit({ id: true });
 export const insertProductLocationSchema = createInsertSchema(productLocations)
@@ -887,6 +899,8 @@ export type ProductTieredPricing = typeof productTieredPricing.$inferSelect;
 export type InsertProductTieredPricing = z.infer<typeof insertProductTieredPricingSchema>;
 export type ProductFile = typeof productFiles.$inferSelect;
 export type InsertProductFile = z.infer<typeof insertProductFileSchema>;
+export type DailySequence = typeof dailySequences.$inferSelect;
+export type InsertDailySequence = z.infer<typeof insertDailySequenceSchema>;
 export type Order = typeof orders.$inferSelect;
 export type InsertOrder = z.infer<typeof insertOrderSchema>;
 export type OrderItem = typeof orderItems.$inferSelect;

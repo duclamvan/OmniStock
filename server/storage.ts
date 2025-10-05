@@ -14,6 +14,7 @@ import {
   productFiles,
   productLocations,
   productTieredPricing,
+  dailySequences,
   orders,
   orderItems,
   warehouses,
@@ -50,6 +51,8 @@ import {
   type InsertProductLocation,
   type ProductTieredPricing,
   type InsertProductTieredPricing,
+  type DailySequence,
+  type InsertDailySequence,
   type Order,
   type InsertOrder,
   type OrderItem,
@@ -729,28 +732,65 @@ export class DatabaseStorage implements IStorage {
     return undefined;
   }
 
-  async generateOrderId(): Promise<string> {
-    // Generate order ID in format ORDER-YYYYMMDD-XXXX
-    const date = new Date();
-    const dateStr = date.getFullYear().toString() + 
-                   (date.getMonth() + 1).toString().padStart(2, '0') + 
-                   date.getDate().toString().padStart(2, '0');
+  async generateOrderId(orderType: string = 'ord', date: Date = new Date()): Promise<string> {
+    // Generate order ID in format [TYPE]-[YYMMDD]-[XXXX]
+    // TYPE is uppercase: POS, ORD, WEB, TEL
+    const typeUpper = orderType.toUpperCase();
     
-    // Get existing orders count for today to generate sequence
-    const todayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    const todayEnd = new Date(todayStart);
-    todayEnd.setDate(todayEnd.getDate() + 1);
+    // Format date as YYMMDD
+    const year = date.getFullYear().toString().slice(-2);
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const dateStr = `${year}${month}${day}`;
+    
+    // Format date for DB query (YYYY-MM-DD)
+    const dbDateStr = date.getFullYear() + '-' + 
+                     (date.getMonth() + 1).toString().padStart(2, '0') + '-' + 
+                     date.getDate().toString().padStart(2, '0');
     
     try {
-      const todayOrders = await db.select().from(orders)
-        .where(sql`${orders.createdAt} >= ${todayStart} AND ${orders.createdAt} < ${todayEnd}`);
+      // Check if we have a sequence for this order type and date
+      const existingSequence = await db.select()
+        .from(dailySequences)
+        .where(and(
+          eq(dailySequences.orderType, orderType),
+          eq(dailySequences.date, dbDateStr)
+        ))
+        .limit(1);
       
-      const sequence = (todayOrders.length + 1).toString().padStart(4, '0');
-      return `ORDER-${dateStr}-${sequence}`;
+      let sequence: number;
+      
+      if (existingSequence.length > 0) {
+        // Increment existing sequence
+        sequence = existingSequence[0].currentSequence + 1;
+        
+        // Update the sequence
+        await db.update(dailySequences)
+          .set({ 
+            currentSequence: sequence,
+            updatedAt: new Date()
+          })
+          .where(eq(dailySequences.id, existingSequence[0].id));
+      } else {
+        // Create new sequence with random starting point (1000-5000)
+        sequence = Math.floor(Math.random() * 4001) + 1000;
+        
+        // Insert new sequence
+        await db.insert(dailySequences).values({
+          orderType,
+          date: dbDateStr,
+          currentSequence: sequence
+        });
+      }
+      
+      // Format sequence as 4-digit string
+      const sequenceStr = sequence.toString().padStart(4, '0');
+      return `${typeUpper}-${dateStr}-${sequenceStr}`;
     } catch (error) {
+      console.error('Error generating order ID:', error);
       // Fallback to timestamp-based ID if query fails
       const timestamp = Date.now().toString().slice(-4);
-      return `ORDER-${dateStr}-${timestamp}`;
+      return `${typeUpper}-${dateStr}-${timestamp}`;
     }
   }
 
