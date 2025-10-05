@@ -829,47 +829,6 @@ export default function AddOrder() {
                 <CardDescription className="text-xs sm:text-sm mt-1">Configure status, payment, and shipping</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-4">
-                {/* Order Type Selector */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
-                  <Label htmlFor="orderType" className="text-sm font-semibold text-blue-900 mb-2 block">Order Type *</Label>
-                  <RadioGroup 
-                    value={form.watch('orderType')} 
-                    onValueChange={(value) => form.setValue('orderType', value as any)}
-                    className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3"
-                  >
-                    <div className="flex items-center space-x-2 bg-white rounded-md p-2 sm:p-3 border-2 border-gray-200 hover:border-blue-400 transition-colors cursor-pointer has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50">
-                      <RadioGroupItem value="ord" id="order-type-ord" data-testid="radio-ordertype-ord" />
-                      <Label htmlFor="order-type-ord" className="cursor-pointer flex-1 text-xs sm:text-sm font-medium">
-                        Regular Order<br />
-                        <span className="text-xs text-gray-500">(ORD)</span>
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2 bg-white rounded-md p-2 sm:p-3 border-2 border-gray-200 hover:border-blue-400 transition-colors cursor-pointer has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50">
-                      <RadioGroupItem value="pos" id="order-type-pos" data-testid="radio-ordertype-pos" />
-                      <Label htmlFor="order-type-pos" className="cursor-pointer flex-1 text-xs sm:text-sm font-medium">
-                        POS<br />
-                        <span className="text-xs text-gray-500">(POS)</span>
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2 bg-white rounded-md p-2 sm:p-3 border-2 border-gray-200 hover:border-blue-400 transition-colors cursor-pointer has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50">
-                      <RadioGroupItem value="web" id="order-type-web" data-testid="radio-ordertype-web" />
-                      <Label htmlFor="order-type-web" className="cursor-pointer flex-1 text-xs sm:text-sm font-medium">
-                        Online/Web<br />
-                        <span className="text-xs text-gray-500">(WEB)</span>
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2 bg-white rounded-md p-2 sm:p-3 border-2 border-gray-200 hover:border-blue-400 transition-colors cursor-pointer has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50">
-                      <RadioGroupItem value="tel" id="order-type-tel" data-testid="radio-ordertype-tel" />
-                      <Label htmlFor="order-type-tel" className="cursor-pointer flex-1 text-xs sm:text-sm font-medium">
-                        Telephone<br />
-                        <span className="text-xs text-gray-500">(TEL)</span>
-                      </Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-
-                <Separator />
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
                     <Label htmlFor="currency">Currency *</Label>
@@ -1074,6 +1033,8 @@ export default function AddOrder() {
                       };
                       setSelectedCustomer(tempCustomer);
                       setCustomerSearch("Telephone Order");
+                      // Automatically set order type to telephone
+                      form.setValue('orderType', 'tel');
                     }}
                     data-testid="button-telephone-customer"
                   >
