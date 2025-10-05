@@ -15,6 +15,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { getCountryFlag } from "@/lib/countries";
 import { Plus, Search, Filter, Download, FileText, Edit, Trash2, Package, Eye, ChevronDown, ChevronUp, Settings, Check } from "lucide-react";
 import {
   AlertDialog,
@@ -471,7 +472,14 @@ export default function AllOrders({ filter }: AllOrdersProps) {
             <AvatarFallback>{order.customer?.name?.charAt(0) || 'C'}</AvatarFallback>
           </Avatar>
           <div>
-            <div className="font-medium">{order.customer?.name || 'N/A'}</div>
+            <div className="font-medium flex items-center gap-1.5">
+              {order.customer?.billingCountry && (
+                <span className="text-base" title={order.customer.billingCountry}>
+                  {getCountryFlag(order.customer.billingCountry)}
+                </span>
+              )}
+              <span>{order.customer?.name || 'N/A'}</span>
+            </div>
             {order.customer?.facebookName && (
               <div className="text-xs text-gray-500">FB: {order.customer.facebookName}</div>
             )}
