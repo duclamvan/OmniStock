@@ -5767,14 +5767,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (facebookId.match(/^\d+$/)) {
             isNumericId = true;
           } else {
-            // Extract name from username (convert dots and dashes to spaces)
-            facebookName = facebookId
-              .replace(/-/g, ' ')
-              .replace(/\./g, ' ')
+            // Extract name from username - try to find meaningful name parts
+            // Remove common prefixes like "itz", "its", "im", "i.am", etc.
+            let cleanedUsername = facebookId
+              .replace(/^(itz|its|im|i\.am|the|mr|mrs|ms|dr)[-.]?/i, '')
+              .replace(/[-._]/g, ' ')
               .split(' ')
+              .filter(word => word.length > 0)
               .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
               .join(' ')
               .trim();
+            
+            facebookName = cleanedUsername || facebookId;
           }
         }
       }
