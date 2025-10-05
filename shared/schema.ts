@@ -371,7 +371,12 @@ export const products = pgTable('products', {
   packingInstructionsText: text('packing_instructions_text'),
   packingInstructionsImage: text('packing_instructions_image'),
   // Latest landing cost tracking
-  latestLandingCost: decimal('latest_landing_cost', { precision: 12, scale: 4 })
+  latestLandingCost: decimal('latest_landing_cost', { precision: 12, scale: 4 }),
+  // AI-powered packing dimensions and weight
+  unitWeightKg: decimal('unit_weight_kg', { precision: 10, scale: 3 }),
+  unitLengthCm: decimal('unit_length_cm', { precision: 10, scale: 2 }),
+  unitWidthCm: decimal('unit_width_cm', { precision: 10, scale: 2 }),
+  unitHeightCm: decimal('unit_height_cm', { precision: 10, scale: 2 })
 });
 
 // Product tiered pricing table
@@ -495,6 +500,48 @@ export const productLocations = pgTable('product_locations', {
   notes: text('notes'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
+// AI-powered carton packing tables
+export const packingCartons = pgTable('packing_cartons', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar('name').notNull(),
+  innerLengthCm: decimal('inner_length_cm', { precision: 10, scale: 2 }).notNull(),
+  innerWidthCm: decimal('inner_width_cm', { precision: 10, scale: 2 }).notNull(),
+  innerHeightCm: decimal('inner_height_cm', { precision: 10, scale: 2 }).notNull(),
+  maxWeightKg: decimal('max_weight_kg', { precision: 10, scale: 2 }).notNull(),
+  tareWeightKg: decimal('tare_weight_kg', { precision: 10, scale: 2 }).notNull(),
+  carrierCode: varchar('carrier_code'),
+  costCurrency: varchar('cost_currency'),
+  costAmount: decimal('cost_amount', { precision: 10, scale: 2 }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
+export const orderCartonPlans = pgTable('order_carton_plans', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
+  totalCartons: integer('total_cartons').notNull(),
+  totalWeightKg: decimal('total_weight_kg', { precision: 10, scale: 2 }).notNull(),
+  totalShippingCost: decimal('total_shipping_cost', { precision: 10, scale: 2 }),
+  shippingCurrency: varchar('shipping_currency'),
+  aiConfidenceScore: decimal('ai_confidence_score', { precision: 3, scale: 2 }),
+  status: varchar('status').notNull().default('draft'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
+export const orderCartonItems = pgTable('order_carton_items', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  planId: varchar('plan_id').notNull().references(() => orderCartonPlans.id, { onDelete: 'cascade' }),
+  cartonNumber: integer('carton_number').notNull(),
+  cartonId: varchar('carton_id').references(() => packingCartons.id),
+  orderItemId: varchar('order_item_id').references(() => orderItems.id),
+  productId: varchar('product_id').references(() => products.id),
+  quantity: integer('quantity').notNull(),
+  itemWeightKg: decimal('item_weight_kg', { precision: 10, scale: 2 }).notNull(),
+  aiEstimated: boolean('ai_estimated').default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow()
 });
 
 export const discounts = pgTable('discounts', {
@@ -847,6 +894,12 @@ export const insertProductLocationSchema = createInsertSchema(productLocations)
     locationType: z.enum(['display', 'warehouse', 'pallet', 'other']),
     quantity: z.number().int().min(0, 'Quantity must be non-negative')
   });
+
+// AI-powered carton packing schemas
+export const insertPackingCartonSchema = createInsertSchema(packingCartons).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertOrderCartonPlanSchema = createInsertSchema(orderCartonPlans).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertOrderCartonItemSchema = createInsertSchema(orderCartonItems).omit({ id: true, createdAt: true });
+
 export const insertDiscountSchema = createInsertSchema(discounts).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertExpenseSchema = createInsertSchema(expenses).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertServiceSchema = createInsertSchema(services).omit({ id: true, createdAt: true, updatedAt: true });
@@ -907,6 +960,15 @@ export type OrderItem = typeof orderItems.$inferSelect;
 export type InsertOrderItem = z.infer<typeof insertOrderItemSchema>;
 export type ProductLocation = typeof productLocations.$inferSelect;
 export type InsertProductLocation = z.infer<typeof insertProductLocationSchema>;
+
+// AI-powered carton packing types
+export type PackingCarton = typeof packingCartons.$inferSelect;
+export type InsertPackingCarton = z.infer<typeof insertPackingCartonSchema>;
+export type OrderCartonPlan = typeof orderCartonPlans.$inferSelect;
+export type InsertOrderCartonPlan = z.infer<typeof insertOrderCartonPlanSchema>;
+export type OrderCartonItem = typeof orderCartonItems.$inferSelect;
+export type InsertOrderCartonItem = z.infer<typeof insertOrderCartonItemSchema>;
+
 export type Discount = typeof discounts.$inferSelect;
 export type InsertDiscount = z.infer<typeof insertDiscountSchema>;
 export type Expense = typeof expenses.$inferSelect;
