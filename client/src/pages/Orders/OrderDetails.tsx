@@ -283,25 +283,25 @@ export default function OrderDetails() {
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <div className="flex-1">
-                <div className="flex items-center gap-3 mb-3">
-                  <h1 className="text-3xl font-bold text-slate-900">#{order.orderId}</h1>
+                <div className="flex items-center gap-3 mb-2">
+                  <h1 className="text-2xl font-bold text-slate-900">#{order.orderId}</h1>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7"
+                    className="h-6 w-6"
                     onClick={() => copyToClipboard(order.orderId, "Order ID")}
                   >
-                    <Copy className="h-4 w-4" />
+                    <Copy className="h-3.5 w-3.5" />
                   </Button>
                 </div>
 
                 {/* Customer Name & Badges */}
                 {order.customer && (
-                  <div className="flex items-center gap-2 mb-3 flex-wrap">
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <Link href={`/customers/${order.customer.id}`}>
-                      <p className="font-semibold text-lg text-blue-600 hover:text-blue-800 cursor-pointer flex items-center gap-2">
-                        {order.customer.country && <span className="text-xl">{getCountryFlag(order.customer.country)}</span>}
-                        <User className="h-4 w-4" />
+                      <p className="font-semibold text-base text-blue-600 hover:text-blue-800 cursor-pointer flex items-center gap-2">
+                        {order.customer.country && <span className="text-lg">{getCountryFlag(order.customer.country)}</span>}
+                        <User className="h-3.5 w-3.5" />
                         {order.customer.name}
                       </p>
                     </Link>
@@ -335,7 +335,7 @@ export default function OrderDetails() {
                 )}
                 
                 {/* Status Row */}
-                <div className="flex flex-wrap items-center gap-3 mb-3">
+                <div className="flex flex-wrap items-center gap-2 mb-2">
                   {/* Order Status */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -346,7 +346,7 @@ export default function OrderDetails() {
                         <Badge 
                           variant={order.orderStatus === 'cancelled' ? 'destructive' : 'default'} 
                           className={cn(
-                            "cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1.5 px-3 py-1",
+                            "cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1 px-2 py-0.5 text-xs",
                             statusClassName
                           )}
                         >
@@ -410,7 +410,7 @@ export default function OrderDetails() {
                         <Badge 
                           variant="default"
                           className={cn(
-                            "cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1.5 px-3 py-1",
+                            "cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1 px-2 py-0.5 text-xs",
                             paymentStatusClassName
                           )}
                         >
@@ -463,7 +463,7 @@ export default function OrderDetails() {
                         <Badge 
                           variant={order.priority === 'high' ? 'destructive' : order.priority === 'low' ? 'secondary' : 'default'}
                           className={cn(
-                            "cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1.5 px-3 py-1",
+                            "cursor-pointer hover:opacity-80 transition-opacity flex items-center gap-1 px-2 py-0.5 text-xs",
                             priorityClassName
                           )}
                         >
@@ -506,17 +506,17 @@ export default function OrderDetails() {
                 </div>
 
                 {/* Meta Info */}
-                <div className="flex items-center gap-4 text-sm text-slate-500">
-                  <div className="flex items-center gap-1.5">
-                    <Clock className="h-4 w-4" />
+                <div className="flex items-center gap-3 text-xs text-slate-500">
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-3.5 w-3.5" />
                     <span>{new Date(order.createdAt).toLocaleString()}</span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <Package className="h-4 w-4" />
+                  <div className="flex items-center gap-1">
+                    <Package className="h-3.5 w-3.5" />
                     <span>{order.items?.length || 0} items</span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <Banknote className="h-4 w-4" />
+                  <div className="flex items-center gap-1">
+                    <Banknote className="h-3.5 w-3.5" />
                     <span className="font-semibold text-slate-900">{formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}</span>
                   </div>
                 </div>
@@ -580,8 +580,8 @@ export default function OrderDetails() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <Package className="h-5 w-5" />
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Package className="h-4 w-4" />
                   Invoice
                 </CardTitle>
                 {order.orderStatus === 'to_fulfill' && (
@@ -865,8 +865,8 @@ export default function OrderDetails() {
                   <Separator />
                   
                   <div className="flex justify-between pt-2">
-                    <span className="font-semibold text-slate-900 text-lg">Grand Total</span>
-                    <span className="font-bold text-2xl text-slate-900">
+                    <span className="font-semibold text-slate-900 text-base">Grand Total</span>
+                    <span className="font-bold text-xl text-slate-900">
                       {formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}
                     </span>
                   </div>
@@ -878,8 +878,8 @@ export default function OrderDetails() {
           {/* Shipping Information Card */}
           <Card data-testid="card-shipping-info">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Truck className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Truck className="h-4 w-4" />
                 Shipping Information
               </CardTitle>
             </CardHeader>
@@ -887,8 +887,8 @@ export default function OrderDetails() {
               {/* Shipping Address */}
               <div className="border-2 border-blue-500 dark:border-blue-600 rounded-lg p-4" data-testid="section-shipping-address">
                 <div className="flex items-center gap-2 mb-3">
-                  <MapPin className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                  <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">Shipping Address</h3>
+                  <MapPin className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Shipping Address</h3>
                 </div>
                 
                 <div className="space-y-1.5 text-sm">
@@ -1194,8 +1194,8 @@ export default function OrderDetails() {
           {order.notes && (
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <FileText className="h-4 w-4" />
                   Order Notes
                 </CardTitle>
               </CardHeader>
@@ -1209,8 +1209,8 @@ export default function OrderDetails() {
           {pickPackLogs && pickPackLogs.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Package className="h-5 w-5" />
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Package className="h-4 w-4" />
                   Pick & Pack Activity
                 </CardTitle>
               </CardHeader>
@@ -1261,15 +1261,15 @@ export default function OrderDetails() {
           {order.customer && (
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <User className="h-4 w-4" />
                   Customer Information
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
                   <Link href={`/customers/${order.customer.id}`}>
-                    <p className="font-medium text-blue-600 hover:text-blue-800 cursor-pointer">
+                    <p className="font-medium text-sm text-blue-600 hover:text-blue-800 cursor-pointer">
                       {order.customer.name}
                     </p>
                   </Link>
@@ -1319,8 +1319,8 @@ export default function OrderDetails() {
           {/* Order Details */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-base">
+                <FileText className="h-4 w-4" />
                 Order Details
               </CardTitle>
             </CardHeader>
@@ -1371,8 +1371,8 @@ export default function OrderDetails() {
           {/* Order Timeline */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Clock className="h-4 w-4" />
                 Order Timeline
               </CardTitle>
             </CardHeader>
@@ -1486,8 +1486,8 @@ export default function OrderDetails() {
           {order.attachmentUrl && (
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <FileText className="h-4 w-4" />
                   Attachments
                 </CardTitle>
               </CardHeader>
