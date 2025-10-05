@@ -21,6 +21,10 @@ import {
   services,
   preOrders,
   preOrderItems,
+  packingCartons,
+  orderCartonPlans,
+  orderCartonItems,
+  expenses,
   type User,
   type InsertUser,
   type Category,
@@ -64,7 +68,13 @@ import {
   type PreOrder,
   type InsertPreOrder,
   type PreOrderItem,
-  type InsertPreOrderItem
+  type InsertPreOrderItem,
+  type PackingCarton,
+  type InsertPackingCarton,
+  type OrderCartonPlan,
+  type InsertOrderCartonPlan,
+  type OrderCartonItem,
+  type InsertOrderCartonItem
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, like, sql, gte, lte, inArray, ne, asc, isNull, notInArray } from "drizzle-orm";
@@ -75,11 +85,11 @@ export type Discount = any;
 export type Return = any;
 export type ReturnItem = any;
 export type Expense = any;
-export type Service = any;
+export type AppService = any;
 export type Purchase = any;
 export type Sale = any;
 export type UserActivity = any;
-export type Category = any;
+export type AppCategory = any;
 export type Bundle = any;
 export type BundleItem = any;
 export type CustomerPrice = any;
@@ -245,9 +255,9 @@ export interface IStorage {
   deleteExpense(id: string): Promise<boolean>;
   
   // Services
-  getServices(): Promise<Service[]>;
-  createService(service: any): Promise<Service>;
-  updateService(id: string, service: any): Promise<Service>;
+  getServices(): Promise<AppService[]>;
+  createService(service: any): Promise<AppService>;
+  updateService(id: string, service: any): Promise<AppService>;
   deleteService(id: string): Promise<boolean>;
   
   // Pre-Orders
@@ -279,10 +289,10 @@ export interface IStorage {
   getPickPackLogs(orderId: string): Promise<UserActivity[]>;
   
   // Categories
-  getCategories(): Promise<Category[]>;
-  getCategoryById(id: string): Promise<Category | undefined>;
-  createCategory(category: any): Promise<Category>;
-  updateCategory(id: string, category: any): Promise<Category | undefined>;
+  getCategories(): Promise<AppCategory[]>;
+  getCategoryById(id: string): Promise<AppCategory | undefined>;
+  createCategory(category: any): Promise<AppCategory>;
+  updateCategory(id: string, category: any): Promise<AppCategory | undefined>;
   deleteCategory(id: string): Promise<boolean>;
   
   // Bundles
@@ -322,6 +332,22 @@ export interface IStorage {
   createFile(file: any): Promise<FileType>;
   updateFile(id: string, file: any): Promise<FileType | undefined>;
   deleteFile(id: string): Promise<boolean>;
+  
+  // Packing Cartons
+  getPackingCartons(): Promise<PackingCarton[]>;
+  getPackingCarton(id: string): Promise<PackingCarton | undefined>;
+  createPackingCarton(carton: InsertPackingCarton): Promise<PackingCarton>;
+  updatePackingCarton(id: string, carton: Partial<InsertPackingCarton>): Promise<PackingCarton | undefined>;
+  deletePackingCarton(id: string): Promise<boolean>;
+  
+  // Order Carton Plans
+  getOrderCartonPlan(orderId: string): Promise<OrderCartonPlan | undefined>;
+  getOrderCartonPlanById(planId: string): Promise<OrderCartonPlan | undefined>;
+  createOrderCartonPlan(plan: InsertOrderCartonPlan): Promise<OrderCartonPlan>;
+  updateOrderCartonPlan(planId: string, plan: Partial<InsertOrderCartonPlan>): Promise<OrderCartonPlan | undefined>;
+  getOrderCartonItems(planId: string): Promise<OrderCartonItem[]>;
+  createOrderCartonItem(item: InsertOrderCartonItem): Promise<OrderCartonItem>;
+  deleteOrderCartonPlan(planId: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -599,7 +625,7 @@ export class DatabaseStorage implements IStorage {
       if (filters.origin) conditions.push(eq(deliveryHistory.origin, filters.origin));
       if (filters.destination) conditions.push(eq(deliveryHistory.destination, filters.destination));
       if (filters.shippingMethod) conditions.push(eq(deliveryHistory.shippingMethod, filters.shippingMethod));
-      if (filters.seasonalFactor !== undefined) conditions.push(eq(deliveryHistory.seasonalFactor, filters.seasonalFactor));
+      if (filters.seasonalFactor !== undefined) conditions.push(sql`${deliveryHistory.seasonalFactor} = ${filters.seasonalFactor}`);
       
       if (conditions.length > 0) {
         // @ts-ignore - Temporary fix for type mismatch
@@ -1043,8 +1069,7 @@ export class DatabaseStorage implements IStorage {
         .update(orderItems)
         .set({ 
           pickedQuantity: quantity,
-          pickedAt: timestamp || new Date(),
-          updatedAt: new Date()
+          pickEndTime: timestamp || new Date()
         })
         .where(eq(orderItems.id, id))
         .returning();
@@ -1061,8 +1086,7 @@ export class DatabaseStorage implements IStorage {
         .update(orderItems)
         .set({ 
           packedQuantity: quantity,
-          packedAt: new Date(),
-          updatedAt: new Date()
+          packEndTime: new Date()
         })
         .where(eq(orderItems.id, id))
         .returning();
@@ -1146,7 +1170,7 @@ export class DatabaseStorage implements IStorage {
           name: productData.supplier.name,
           country: productData.supplier.country
         } : null
-      };
+      } as any;
     } catch (error) {
       console.error('Error fetching product:', error);
       return undefined;
@@ -1178,7 +1202,7 @@ export class DatabaseStorage implements IStorage {
           name: productData.supplier.name,
           country: productData.supplier.country
         } : null
-      };
+      } as any;
     } catch (error) {
       console.error('Error fetching product by SKU:', error);
       return undefined;
@@ -1523,7 +1547,7 @@ export class DatabaseStorage implements IStorage {
 
   async getCustomer(id: number): Promise<Customer | undefined> {
     try {
-      const [customer] = await db.select().from(customers).where(eq(customers.id, id));
+      const [customer] = await db.select().from(customers).where(eq(customers.id, String(id)));
       return customer || undefined;
     } catch (error) {
       console.error('Error fetching customer:', error);
@@ -1553,7 +1577,7 @@ export class DatabaseStorage implements IStorage {
       const [updated] = await db
         .update(customers)
         .set({ ...customerData, updatedAt: new Date() })
-        .where(eq(customers.id, id))
+        .where(eq(customers.id, String(id)))
         .returning();
       return updated || undefined;
     } catch (error) {
@@ -1566,7 +1590,7 @@ export class DatabaseStorage implements IStorage {
     try {
       const result = await db
         .delete(customers)
-        .where(eq(customers.id, id));
+        .where(eq(customers.id, String(id)));
       return (result.rowCount ?? 0) > 0;
     } catch (error) {
       console.error('Error deleting customer:', error);
@@ -1830,16 +1854,16 @@ export class DatabaseStorage implements IStorage {
   async updateExpense(id: string, expense: any): Promise<Expense | undefined> { return { id, ...expense }; }
   async deleteExpense(id: string): Promise<boolean> { return true; }
 
-  async getServices(): Promise<Service[]> {
+  async getServices(): Promise<AppService[]> {
     return await db.select().from(services).orderBy(desc(services.createdAt));
   }
 
-  async createService(service: InsertService): Promise<Service> {
+  async createService(service: InsertService): Promise<AppService> {
     const [newService] = await db.insert(services).values(service).returning();
     return newService;
   }
 
-  async updateService(id: string, service: Partial<InsertService>): Promise<Service> {
+  async updateService(id: string, service: Partial<InsertService>): Promise<AppService> {
     const [updated] = await db.update(services)
       .set({ ...service, updatedAt: new Date() })
       .where(eq(services.id, id))
@@ -2007,7 +2031,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Categories - Optimized with proper error handling
-  async getCategories(): Promise<Category[]> {
+  async getCategories(): Promise<AppCategory[]> {
     try {
       // Using raw SQL for now to avoid schema mismatch issues
       const result = await db.execute(sql`
@@ -2015,14 +2039,14 @@ export class DatabaseStorage implements IStorage {
         FROM categories 
         ORDER BY name
       `);
-      return result.rows as Category[];
+      return result.rows as AppCategory[];
     } catch (error) {
       console.error('Error fetching categories:', error);
       return [];
     }
   }
 
-  async getCategoryById(id: string): Promise<Category | undefined> {
+  async getCategoryById(id: string): Promise<AppCategory | undefined> {
     try {
       const result = await db.execute(sql`
         SELECT id::integer as id, name, name_en, name_cz, name_vn, description, created_at, updated_at 
@@ -2037,7 +2061,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async createCategory(category: InsertCategory): Promise<Category> {
+  async createCategory(category: InsertCategory): Promise<AppCategory> {
     try {
       // Use English name as default name if not provided
       const nameEn = (category as any).nameEn || category.name;
@@ -2053,7 +2077,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateCategory(id: string, updates: Partial<InsertCategory>): Promise<Category | undefined> {
+  async updateCategory(id: string, updates: Partial<InsertCategory>): Promise<AppCategory | undefined> {
     try {
       // Handle multi-language fields
       const nameEn = (updates as any).nameEn || updates.name;
@@ -2118,6 +2142,190 @@ export class DatabaseStorage implements IStorage {
   async createFile(file: any): Promise<FileType> { return { id: Date.now().toString(), ...file }; }
   async updateFile(id: string, file: any): Promise<FileType | undefined> { return { id, ...file }; }
   async deleteFile(id: string): Promise<boolean> { return true; }
+  
+  async getPackingCartons(): Promise<PackingCarton[]> {
+    try {
+      return await db
+        .select()
+        .from(packingCartons)
+        .orderBy(desc(packingCartons.createdAt));
+    } catch (error) {
+      console.error('Error fetching packing cartons:', error);
+      return [];
+    }
+  }
+
+  async getPackingCarton(id: string): Promise<PackingCarton | undefined> {
+    try {
+      const [carton] = await db
+        .select()
+        .from(packingCartons)
+        .where(eq(packingCartons.id, id));
+      return carton || undefined;
+    } catch (error) {
+      console.error('Error fetching packing carton:', error);
+      return undefined;
+    }
+  }
+
+  async createPackingCarton(carton: InsertPackingCarton): Promise<PackingCarton> {
+    try {
+      const [newCarton] = await db
+        .insert(packingCartons)
+        .values(carton)
+        .returning();
+      return newCarton;
+    } catch (error) {
+      console.error('Error creating packing carton:', error);
+      throw error;
+    }
+  }
+
+  async updatePackingCarton(id: string, carton: Partial<InsertPackingCarton>): Promise<PackingCarton | undefined> {
+    try {
+      const [updated] = await db
+        .update(packingCartons)
+        .set({ ...carton, updatedAt: new Date() })
+        .where(eq(packingCartons.id, id))
+        .returning();
+      return updated || undefined;
+    } catch (error) {
+      console.error('Error updating packing carton:', error);
+      return undefined;
+    }
+  }
+
+  async deletePackingCarton(id: string): Promise<boolean> {
+    try {
+      const result = await db
+        .delete(packingCartons)
+        .where(eq(packingCartons.id, id));
+      return (result.rowCount ?? 0) > 0;
+    } catch (error) {
+      console.error('Error deleting packing carton:', error);
+      return false;
+    }
+  }
+
+  async getOrderCartonPlan(orderId: string): Promise<OrderCartonPlan | undefined> {
+    try {
+      const [plan] = await db
+        .select()
+        .from(orderCartonPlans)
+        .where(eq(orderCartonPlans.orderId, orderId))
+        .orderBy(desc(orderCartonPlans.createdAt))
+        .limit(1);
+      return plan || undefined;
+    } catch (error) {
+      console.error('Error fetching order carton plan:', error);
+      return undefined;
+    }
+  }
+
+  async getOrderCartonPlanById(planId: string): Promise<OrderCartonPlan | undefined> {
+    try {
+      const [plan] = await db
+        .select()
+        .from(orderCartonPlans)
+        .where(eq(orderCartonPlans.id, planId));
+      return plan || undefined;
+    } catch (error) {
+      console.error('Error fetching order carton plan by ID:', error);
+      return undefined;
+    }
+  }
+
+  async createOrderCartonPlan(plan: InsertOrderCartonPlan): Promise<OrderCartonPlan> {
+    try {
+      const [newPlan] = await db
+        .insert(orderCartonPlans)
+        .values(plan)
+        .returning();
+      return newPlan;
+    } catch (error) {
+      console.error('Error creating order carton plan:', error);
+      throw error;
+    }
+  }
+
+  async updateOrderCartonPlan(planId: string, plan: Partial<InsertOrderCartonPlan>): Promise<OrderCartonPlan | undefined> {
+    try {
+      const [updated] = await db
+        .update(orderCartonPlans)
+        .set({ ...plan, updatedAt: new Date() })
+        .where(eq(orderCartonPlans.id, planId))
+        .returning();
+      return updated || undefined;
+    } catch (error) {
+      console.error('Error updating order carton plan:', error);
+      return undefined;
+    }
+  }
+
+  async getOrderCartonItems(planId: string): Promise<OrderCartonItem[]> {
+    try {
+      const items = await db
+        .select({
+          id: orderCartonItems.id,
+          planId: orderCartonItems.planId,
+          cartonNumber: orderCartonItems.cartonNumber,
+          cartonId: orderCartonItems.cartonId,
+          orderItemId: orderCartonItems.orderItemId,
+          productId: orderCartonItems.productId,
+          quantity: orderCartonItems.quantity,
+          itemWeightKg: orderCartonItems.itemWeightKg,
+          aiEstimated: orderCartonItems.aiEstimated,
+          createdAt: orderCartonItems.createdAt,
+          carton: packingCartons
+        })
+        .from(orderCartonItems)
+        .leftJoin(packingCartons, eq(orderCartonItems.cartonId, packingCartons.id))
+        .where(eq(orderCartonItems.planId, planId))
+        .orderBy(asc(orderCartonItems.cartonNumber));
+      
+      return items.map(item => ({
+        id: item.id,
+        planId: item.planId,
+        cartonNumber: item.cartonNumber,
+        cartonId: item.cartonId,
+        orderItemId: item.orderItemId,
+        productId: item.productId,
+        quantity: item.quantity,
+        itemWeightKg: item.itemWeightKg,
+        aiEstimated: item.aiEstimated,
+        createdAt: item.createdAt,
+        carton: item.carton || undefined
+      })) as any;
+    } catch (error) {
+      console.error('Error fetching order carton items:', error);
+      return [];
+    }
+  }
+
+  async createOrderCartonItem(item: InsertOrderCartonItem): Promise<OrderCartonItem> {
+    try {
+      const [newItem] = await db
+        .insert(orderCartonItems)
+        .values(item)
+        .returning();
+      return newItem;
+    } catch (error) {
+      console.error('Error creating order carton item:', error);
+      throw error;
+    }
+  }
+
+  async deleteOrderCartonPlan(planId: string): Promise<boolean> {
+    try {
+      const result = await db
+        .delete(orderCartonPlans)
+        .where(eq(orderCartonPlans.id, planId));
+      return (result.rowCount ?? 0) > 0;
+    } catch (error) {
+      console.error('Error deleting order carton plan:', error);
+      return false;
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();
