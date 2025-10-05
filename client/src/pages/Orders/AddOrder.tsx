@@ -566,10 +566,22 @@ export default function AddOrder() {
   // Packing optimization mutation
   const packingOptimizationMutation = useMutation({
     mutationFn: async () => {
-      if (!orderId) {
-        throw new Error('Please save order first');
+      if (orderItems.length === 0) {
+        throw new Error('Please add items to the order first');
       }
-      const response = await apiRequest('POST', `/api/orders/${orderId}/packing-plan`, {});
+      
+      const items = orderItems.map(item => ({
+        productId: item.productId,
+        productName: item.productName,
+        sku: item.sku,
+        quantity: item.quantity,
+        price: item.price
+      }));
+      
+      const response = await apiRequest('POST', '/api/packing/optimize', {
+        items,
+        shippingCountry: 'CZ'
+      });
       return response.json();
     },
     onSuccess: (data) => {
@@ -589,10 +601,10 @@ export default function AddOrder() {
   });
 
   const runPackingOptimization = () => {
-    if (!orderId) {
+    if (orderItems.length === 0) {
       toast({
         title: "Error",
-        description: "Please save order first",
+        description: "Please add items to the order first",
         variant: "destructive",
       });
       return;

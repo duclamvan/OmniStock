@@ -5317,6 +5317,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Optimize packing without saving (on-the-fly optimization)
+  app.post('/api/packing/optimize', async (req, res) => {
+    try {
+      const { items, shippingCountry } = req.body;
+      
+      if (!items || items.length === 0) {
+        return res.status(400).json({ message: 'No items provided for optimization' });
+      }
+
+      // Enrich items with product information
+      const enrichedItems = await Promise.all(
+        items.map(async (item: any) => {
+          const product = await storage.getProductById(item.productId);
+          return {
+            productId: item.productId,
+            productName: item.productName,
+            sku: item.sku,
+            quantity: item.quantity,
+            price: item.price,
+            product
+          };
+        })
+      );
+
+      // Fetch all packing cartons
+      const cartons = await storage.getPackingCartons();
+      if (!cartons || cartons.length === 0) {
+        return res.status(400).json({ message: 'No packing cartons configured' });
+      }
+
+      // Call optimization service
+      console.log(`Optimizing carton packing for ${enrichedItems.length} items (shipping to ${shippingCountry})`);
+      const packingPlan = await optimizeCartonPacking(enrichedItems, cartons);
+
+      // Calculate estimated shipping cost based on total weight and cartons
+      let estimatedShippingCost = 0;
+      for (const carton of packingPlan.cartons) {
+        const cartonInfo = cartons.find(c => c.id === carton.cartonId);
+        if (cartonInfo && cartonInfo.shippingCost) {
+          estimatedShippingCost += parseFloat(cartonInfo.shippingCost);
+        }
+      }
+
+      // Return the optimization plan without saving to database
+      res.json({
+        totalCartons: packingPlan.totalCartons,
+        totalWeight: packingPlan.totalWeightKg,
+        avgUtilization: packingPlan.avgUtilization,
+        estimatedShippingCost,
+        suggestions: packingPlan.suggestions,
+        cartons: packingPlan.cartons.map(carton => {
+          const cartonInfo = cartons.find(c => c.id === carton.cartonId);
+          return {
+            cartonNumber: carton.cartonNumber,
+            cartonId: carton.cartonId,
+            cartonName: cartonInfo?.name || 'Unknown',
+            dimensions: cartonInfo ? `${cartonInfo.lengthCm}x${cartonInfo.widthCm}x${cartonInfo.heightCm}cm` : '',
+            weight: carton.totalWeightKg,
+            utilization: carton.utilization,
+            items: carton.items.map(item => ({
+              productId: item.productId,
+              productName: item.productName,
+              quantity: item.quantity,
+              weight: item.weightKg,
+              isEstimated: item.aiEstimated
+            }))
+          };
+        })
+      });
+    } catch (error) {
+      console.error('Error optimizing packing:', error);
+      res.status(500).json({ 
+        message: 'Failed to optimize packing',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // Create a packing plan for an order
   app.post('/api/orders/:orderId/packing-plan', async (req, res) => {
     try {
