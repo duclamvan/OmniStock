@@ -133,6 +133,7 @@ export default function AddOrder() {
   const [showShippingAddressDropdown, setShowShippingAddressDropdown] = useState(false);
   const [isLoadingShippingSearch, setIsLoadingShippingSearch] = useState(false);
   const [labelManuallyEdited, setLabelManuallyEdited] = useState(false);
+  const [addressLabelValue, setAddressLabelValue] = useState("");
 
   // Quick customer form states
   const [quickCustomerType, setQuickCustomerType] = useState<'quick' | 'tel' | 'msg' | 'custom' | null>(null);
@@ -374,8 +375,7 @@ export default function AddOrder() {
         label = label ? `${label} (${city})` : city;
       }
       
-      const labelInput = document.getElementById('addressLabel') as HTMLInputElement;
-      if (labelInput) labelInput.value = label;
+      setAddressLabelValue(label);
     }
 
     setShippingAddressSearch(suggestion.formatted);
@@ -463,6 +463,9 @@ export default function AddOrder() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/customers', selectedCustomer?.id, 'shipping-addresses'] });
       setShowNewAddressForm(false);
+      // Reset label state after successful save
+      setAddressLabelValue("");
+      setLabelManuallyEdited(false);
       toast({
         title: "Success",
         description: "Shipping address created successfully",
@@ -1464,7 +1467,12 @@ export default function AddOrder() {
                       type="button"
                       variant="outline"
                       className="w-full"
-                      onClick={() => setShowNewAddressForm(true)}
+                      onClick={() => {
+                        setShowNewAddressForm(true);
+                        // Reset label state when opening new address form
+                        setAddressLabelValue("");
+                        setLabelManuallyEdited(false);
+                      }}
                       data-testid="button-add-address"
                     >
                       <Plus className="h-4 w-4 mr-2" />
@@ -1481,7 +1489,12 @@ export default function AddOrder() {
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => setShowNewAddressForm(false)}
+                          onClick={() => {
+                            setShowNewAddressForm(false);
+                            // Reset label state when closing
+                            setAddressLabelValue("");
+                            setLabelManuallyEdited(false);
+                          }}
                           data-testid="button-cancel-address"
                         >
                           <X className="h-4 w-4" />
@@ -1514,8 +1527,7 @@ export default function AddOrder() {
                                   label = label ? `${label} (${city})` : city;
                                 }
                                 
-                                const labelInput = document.getElementById('addressLabel') as HTMLInputElement;
-                                if (labelInput) labelInput.value = label;
+                                setAddressLabelValue(label);
                               }
                             }}
                           />
@@ -1545,8 +1557,7 @@ export default function AddOrder() {
                                   label = label ? `${label} (${city})` : city;
                                 }
                                 
-                                const labelInput = document.getElementById('addressLabel') as HTMLInputElement;
-                                if (labelInput) labelInput.value = label;
+                                setAddressLabelValue(label);
                               }
                             }}
                           />
@@ -1578,8 +1589,7 @@ export default function AddOrder() {
                                 label = label ? `${label} (${city})` : city;
                               }
                               
-                              const labelInput = document.getElementById('addressLabel') as HTMLInputElement;
-                              if (labelInput) labelInput.value = label;
+                              setAddressLabelValue(label);
                             }
                           }}
                         />
@@ -1709,8 +1719,7 @@ export default function AddOrder() {
                                   label = label ? `${label} (${city})` : city;
                                 }
                                 
-                                const labelInput = document.getElementById('addressLabel') as HTMLInputElement;
-                                if (labelInput) labelInput.value = label;
+                                setAddressLabelValue(label);
                               }
                             }}
                           />
@@ -1759,16 +1768,18 @@ export default function AddOrder() {
                         <Label htmlFor="addressLabel">Label / Name</Label>
                         <Input
                           id="addressLabel"
+                          value={addressLabelValue}
                           placeholder="Auto-generated from name and company"
                           data-testid="input-label"
                           className={labelManuallyEdited ? "bg-white" : "bg-slate-50"}
                           onChange={(e) => {
-                            // Track manual edits - once edited, stop auto-generation
+                            // Track manual edits - once edited, stop auto-generation permanently
+                            setAddressLabelValue(e.target.value);
                             setLabelManuallyEdited(true);
                           }}
                         />
                         <p className="text-xs text-slate-500 mt-1">
-                          {labelManuallyEdited ? "Manually edited - auto-generation disabled" : "Auto-generated from name, company, and city"}
+                          {labelManuallyEdited ? "🔒 Manually edited - auto-generation disabled" : "Auto-generated from name, company, and city"}
                         </p>
                       </div>
 
@@ -1786,7 +1797,6 @@ export default function AddOrder() {
                             const zipCode = (document.getElementById('addressZipCode') as HTMLInputElement)?.value;
                             const country = (document.getElementById('addressCountry') as HTMLInputElement)?.value;
                             const tel = (document.getElementById('addressTel') as HTMLInputElement)?.value;
-                            const label = (document.getElementById('addressLabel') as HTMLInputElement)?.value;
 
                             if (!firstName || !lastName || !street || !city || !zipCode || !country) {
                               toast({
@@ -1811,11 +1821,14 @@ export default function AddOrder() {
                                 zipCode,
                                 country,
                                 tel: tel || undefined,
-                                label: label || undefined,
+                                label: addressLabelValue || undefined,
                                 isNew: true,
                               };
                               setSelectedShippingAddress(newAddress);
                               setShowNewAddressForm(false);
+                              // Reset label state
+                              setAddressLabelValue("");
+                              setLabelManuallyEdited(false);
                               toast({
                                 title: "Success",
                                 description: "Address saved (will be created with customer)",
@@ -1833,7 +1846,7 @@ export default function AddOrder() {
                                 zipCode,
                                 country,
                                 tel: tel || undefined,
-                                label: label || undefined,
+                                label: addressLabelValue || undefined,
                               });
                             }
                           }}
@@ -1845,7 +1858,12 @@ export default function AddOrder() {
                         <Button
                           type="button"
                           variant="outline"
-                          onClick={() => setShowNewAddressForm(false)}
+                          onClick={() => {
+                            setShowNewAddressForm(false);
+                            // Reset label state when cancelling
+                            setAddressLabelValue("");
+                            setLabelManuallyEdited(false);
+                          }}
                           data-testid="button-cancel-new-address"
                         >
                           Cancel
