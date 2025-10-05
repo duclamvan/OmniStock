@@ -53,7 +53,9 @@ import {
   MessageSquare,
   Box,
   Weight,
-  Loader2
+  Loader2,
+  Upload,
+  Download
 } from "lucide-react";
 import MarginPill from "@/components/orders/MarginPill";
 import {
@@ -154,6 +156,7 @@ export default function AddOrder() {
   // File inclusion state
   const [includeInvoice, setIncludeInvoice] = useState(false);
   const [includeCustom, setIncludeCustom] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
 
   // Column visibility toggles
   const [showVatColumn, setShowVatColumn] = useState(false);
@@ -748,6 +751,26 @@ export default function AddOrder() {
 
   const removeOrderItem = (id: string) => {
     setOrderItems(items => items.filter(item => item.id !== id));
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files) {
+      const newFiles = Array.from(files);
+      setUploadedFiles(prev => [...prev, ...newFiles]);
+      toast({
+        title: "Success",
+        description: `${newFiles.length} file(s) uploaded successfully`,
+      });
+    }
+  };
+
+  const removeUploadedFile = (index: number) => {
+    setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+    toast({
+      title: "File removed",
+      description: "File has been removed from the upload list",
+    });
   };
 
   const calculateSubtotal = () => {
@@ -2597,60 +2620,151 @@ export default function AddOrder() {
         {orderItems.length > 0 && (
           <Card className="shadow-sm">
             <CardHeader className="p-4 sm:p-6">
-              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
-                Files
-              </CardTitle>
-              <CardDescription className="text-xs sm:text-sm">
-                Product files and document options for this order
-              </CardDescription>
+              <div className="flex items-start justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                    <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+                    Files & Documents
+                  </CardTitle>
+                  <CardDescription className="text-xs sm:text-sm mt-1">
+                    Upload files and manage product documents
+                  </CardDescription>
+                </div>
+                <div>
+                  <input
+                    type="file"
+                    id="file-upload"
+                    multiple
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    data-testid="input-file-upload"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => document.getElementById('file-upload')?.click()}
+                    className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300"
+                    data-testid="button-upload-file"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent className="p-4 sm:p-6 space-y-4">
-              {/* Product Files */}
-              {orderItems.length > 0 && productFilesData && Object.keys(productFilesData).length > 0 ? (
-                <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Product Files</h3>
-                  <div className="space-y-2">
-                    {orderItems.map((item) => {
-                      const files = productFilesData[item.productId] || [];
-                      if (files.length === 0) return null;
-                      
-                      return (
-                        <div key={item.id} className="border border-slate-200 dark:border-slate-700 rounded-lg p-3" data-testid={`product-files-${item.productId}`}>
-                          <div className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-2">
-                            {item.productName}
-                          </div>
-                          <div className="space-y-1.5 text-xs">
-                            {files.map((file: any) => (
-                              <div key={file.id} className="flex items-center justify-between py-1 px-2 bg-slate-50 dark:bg-slate-900/20 rounded" data-testid={`file-item-${file.id}`}>
-                                <div className="flex items-center gap-2">
-                                  <FileText className="h-3 w-3 text-slate-500" />
-                                  <span className="text-slate-700 dark:text-slate-300">{file.fileName}</span>
-                                  {file.category && (
-                                    <Badge variant="outline" className="text-xs">
-                                      {file.category}
-                                    </Badge>
-                                  )}
-                                </div>
+            <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-6">
+              {/* Files List Section */}
+              <div className="space-y-4">
+                {/* Uploaded Files */}
+                {uploadedFiles.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                      <Upload className="h-4 w-4" />
+                      Uploaded Files ({uploadedFiles.length})
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {uploadedFiles.map((file, index) => (
+                        <div
+                          key={index}
+                          className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 bg-white dark:bg-slate-900/20 hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
+                          data-testid={`uploaded-file-${index}`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-start gap-3 flex-1 min-w-0">
+                              <div className="mt-0.5 flex-shrink-0">
+                                <FileText className="h-5 w-5 text-blue-600" />
                               </div>
-                            ))}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
+                                  {file.name}
+                                </p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                  {(file.size / 1024).toFixed(2)} KB
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeUploadedFile(index)}
+                              className="h-8 w-8 p-0 flex-shrink-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
+                              data-testid={`button-remove-uploaded-${index}`}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
                           </div>
                         </div>
-                      );
-                    })}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="text-sm text-slate-500 dark:text-slate-400 text-center py-4">
-                  No product files available
-                </div>
-              )}
+                )}
 
-              {/* Document Options */}
-              <div className="pt-3 border-t border-slate-200 dark:border-slate-700">
-                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Include Documents</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2" data-testid="checkbox-include-invoice">
+                {/* Product Files */}
+                {orderItems.length > 0 && productFilesData && Object.keys(productFilesData).length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                      <Package className="h-4 w-4" />
+                      Product Files
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {orderItems.map((item) => {
+                        const files = productFilesData[item.productId] || [];
+                        if (files.length === 0) return null;
+                        
+                        return files.map((file: any) => (
+                          <div
+                            key={file.id}
+                            className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 bg-white dark:bg-slate-900/20 hover:border-blue-300 dark:hover:border-blue-700 transition-colors"
+                            data-testid={`product-file-${file.id}`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="mt-0.5 flex-shrink-0">
+                                <FileText className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
+                                  {file.fileName}
+                                </p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                                  {item.productName}
+                                </p>
+                                {file.category && (
+                                  <Badge variant="outline" className="text-xs mt-2">
+                                    {file.category}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ));
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {uploadedFiles.length === 0 && (!productFilesData || Object.keys(productFilesData).length === 0) && (
+                  <div className="text-center py-8 bg-slate-50 dark:bg-slate-900/20 rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700">
+                    <FileText className="mx-auto h-12 w-12 mb-3 text-slate-400 dark:text-slate-600" />
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">No files yet</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Upload files or add products with files</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Document Selection Options */}
+              <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
+                <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4 flex items-center gap-2">
+                  <Download className="h-4 w-4" />
+                  Include Documents
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div
+                    className="flex items-center space-x-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/20 hover:border-blue-300 dark:hover:border-blue-700 transition-colors cursor-pointer"
+                    onClick={() => setIncludeInvoice(!includeInvoice)}
+                    data-testid="option-include-invoice"
+                  >
                     <Checkbox
                       id="include-invoice"
                       checked={includeInvoice}
@@ -2658,12 +2772,16 @@ export default function AddOrder() {
                     />
                     <label
                       htmlFor="include-invoice"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                      className="text-sm font-medium leading-none cursor-pointer flex-1"
                     >
                       Invoice
                     </label>
                   </div>
-                  <div className="flex items-center space-x-2" data-testid="checkbox-include-custom">
+                  <div
+                    className="flex items-center space-x-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/20 hover:border-blue-300 dark:hover:border-blue-700 transition-colors cursor-pointer"
+                    onClick={() => setIncludeCustom(!includeCustom)}
+                    data-testid="option-include-custom"
+                  >
                     <Checkbox
                       id="include-custom"
                       checked={includeCustom}
@@ -2671,7 +2789,7 @@ export default function AddOrder() {
                     />
                     <label
                       htmlFor="include-custom"
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                      className="text-sm font-medium leading-none cursor-pointer flex-1"
                     >
                       Custom
                     </label>
