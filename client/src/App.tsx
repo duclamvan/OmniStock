@@ -73,6 +73,8 @@ import ContinueReceiving from "@/pages/Receiving/ContinueReceiving";
 import ReceiptDetails from "@/pages/Receiving/ReceiptDetails";
 import ReviewApprove from "@/pages/Receiving/ReviewApprove";
 import ItemsToStore from "@/pages/Receiving/ItemsToStore";
+import Login from "@/pages/Auth/Login";
+import Register from "@/pages/Auth/Register";
 // Legacy imports - commented out
 // import AllImports from "@/pages/Imports/AllImports";
 // import AddImportOrder from "@/pages/Imports/AddImportOrder";
@@ -89,6 +91,8 @@ import ItemsToStore from "@/pages/Receiving/ItemsToStore";
 function Router() {
   return (
     <Switch>
+      <Route path="/login" component={Login} />
+      <Route path="/register" component={Register} />
       <Layout>
         <Route path="/" component={Home} />
         <Route path="/orders">
