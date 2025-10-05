@@ -1855,7 +1855,6 @@ export default function AddOrder() {
                       <TableHead>Price</TableHead>
                       <TableHead>Discount</TableHead>
                       <TableHead>Total</TableHead>
-                      <TableHead>Margin</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1893,15 +1892,6 @@ export default function AddOrder() {
                         </TableCell>
                         <TableCell>
                           {formatCurrency(item.total, form.watch('currency'))}
-                        </TableCell>
-                        <TableCell>
-                          <MarginPill 
-                            sellingPrice={item.price}
-                            landingCost={item.landingCost}
-                            currency={form.watch('currency')}
-                            quantity={item.quantity}
-                            showProfit={true}
-                          />
                         </TableCell>
                         <TableCell>
                           <Button
