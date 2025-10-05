@@ -122,7 +122,6 @@ export default function AddCustomer() {
   const [isValidatingVat, setIsValidatingVat] = useState(false);
   const [vatValidationResult, setVatValidationResult] = useState<VatValidationResult | null>(null);
 
-  const [facebookNameManuallyChanged, setFacebookNameManuallyChanged] = useState(false);
   const [facebookProfilePicture, setFacebookProfilePicture] = useState<string | null>(null);
   const [isLoadingProfilePicture, setIsLoadingProfilePicture] = useState(false);
 
@@ -268,13 +267,6 @@ export default function AddCustomer() {
     }
   }, [selectedCountry, isEditMode, form]);
 
-  // Real-time syncing from Name to Facebook Name
-  useEffect(() => {
-    if (!facebookNameManuallyChanged && nameValue) {
-      form.setValue('facebookName', nameValue);
-    }
-  }, [nameValue, facebookNameManuallyChanged, form]);
-
   const debounce = <T extends (...args: any[]) => any>(
     func: T,
     delay: number
@@ -404,13 +396,10 @@ export default function AddCustomer() {
         }
         const data = await response.json();
         
-        // Auto-fill Facebook Name if not manually changed
-        if (data.facebookName && !facebookNameManuallyChanged) {
+        // Auto-fill Facebook Name (which will automatically sync to Name via onChange handler)
+        if (data.facebookName) {
           form.setValue('facebookName', data.facebookName);
-        }
-        
-        // Auto-fill Name field if it's empty
-        if (data.facebookName && !form.getValues('name')) {
+          // Also sync to Name field
           form.setValue('name', data.facebookName);
         }
         
@@ -466,7 +455,7 @@ export default function AddCustomer() {
         setIsLoadingProfilePicture(false);
       }
     }, 500),
-    [facebookNameManuallyChanged, form, toast]
+    [form, toast]
   );
 
   const handleVatValidation = async (vatNumber: string, countryCode: string) => {
@@ -691,21 +680,6 @@ export default function AddCustomer() {
                 </div>
 
                 <div>
-                  <Label htmlFor="name" className="text-base font-semibold">Name *</Label>
-                  <Input
-                    id="name"
-                    {...form.register('name')}
-                    placeholder="Customer's display name"
-                    className="text-base"
-                    data-testid="input-name"
-                  />
-                  <p className="text-xs text-slate-500 mt-1">This will automatically sync to Facebook Name</p>
-                  {form.formState.errors.name && (
-                    <p className="text-sm text-red-500 mt-1">{form.formState.errors.name.message}</p>
-                  )}
-                </div>
-
-                <div>
                   <Label htmlFor="facebookName" className="text-base font-semibold">Facebook Name</Label>
                   <Input
                     id="facebookName"
@@ -715,18 +689,26 @@ export default function AddCustomer() {
                     data-testid="input-facebookName"
                     onChange={(e) => {
                       form.register('facebookName').onChange(e);
-                      if (e.target.value !== nameValue) {
-                        setFacebookNameManuallyChanged(true);
-                      } else {
-                        setFacebookNameManuallyChanged(false);
-                      }
+                      // Sync Facebook Name to Name field when typing
+                      form.setValue('name', e.target.value);
                     }}
                   />
-                  <p className="text-xs text-slate-500 mt-1">
-                    {facebookNameManuallyChanged 
-                      ? "Manually set - no longer syncing" 
-                      : "Auto-filled from URL or syncing with Name"}
-                  </p>
+                  <p className="text-xs text-slate-500 mt-1">Auto-filled from URL. Syncs to Name field when you type.</p>
+                </div>
+
+                <div>
+                  <Label htmlFor="name" className="text-base font-semibold">Name *</Label>
+                  <Input
+                    id="name"
+                    {...form.register('name')}
+                    placeholder="Customer's display name"
+                    className="text-base"
+                    data-testid="input-name"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">Edit independently without affecting Facebook Name</p>
+                  {form.formState.errors.name && (
+                    <p className="text-sm text-red-500 mt-1">{form.formState.errors.name.message}</p>
+                  )}
                 </div>
 
                 <div>
