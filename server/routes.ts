@@ -5750,6 +5750,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Extract Facebook username/ID from URL
       let facebookId = '';
       let facebookName = '';
+      let isNumericId = false;
       
       // Handle various Facebook URL formats
       const urlPatterns = [
@@ -5762,14 +5763,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const pattern of urlPatterns) {
         const match = facebookUrl.match(pattern);
         if (match) {
-          if (pattern.source.includes('people')) {
+          if (pattern.source.includes('profile.php')) {
+            // Numeric ID from profile.php URL
+            facebookId = match[1];
+            isNumericId = true;
+          } else if (pattern.source.includes('people')) {
             // Extract name from "people" URL format
             facebookName = decodeURIComponent(match[1]).replace(/-/g, ' ');
             facebookId = match[2];
+            isNumericId = true;
           } else {
             facebookId = match[1];
-            // Try to extract name from username
-            if (!facebookId.match(/^\d+$/)) {
+            // Check if it's numeric
+            if (facebookId.match(/^\d+$/)) {
+              isNumericId = true;
+            } else {
+              // Try to extract name from username
               facebookName = facebookId.replace(/-/g, ' ').replace(/\./g, ' ');
             }
           }
@@ -5792,39 +5801,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let pictureUrl = null;
       let extractedName = facebookName;
 
-      try {
-        // Try to get profile data including name
-        const profileUrl = `https://graph.facebook.com/${facebookId}?fields=name,picture.type(large)&access_token=${accessToken}`;
-        const profileResponse = await fetch(profileUrl);
-        
-        if (profileResponse.ok) {
-          const profileData = await profileResponse.json();
-          if (profileData.name) {
-            extractedName = profileData.name;
+      // Only numeric IDs work with basic Graph API access
+      if (isNumericId) {
+        try {
+          // Use v18.0 API version
+          const profileUrl = `https://graph.facebook.com/v18.0/${facebookId}?fields=name,picture.type(large)&access_token=${accessToken}`;
+          console.log('Fetching profile for numeric ID:', facebookId);
+          
+          const profileResponse = await fetch(profileUrl);
+          const profileText = await profileResponse.text();
+          
+          if (profileResponse.ok) {
+            const profileData = JSON.parse(profileText);
+            
+            if (profileData.name) {
+              extractedName = profileData.name;
+            }
+            if (profileData.picture?.data?.url) {
+              pictureUrl = profileData.picture.data.url;
+            }
+          } else {
+            console.log('Profile fetch failed:', profileText);
           }
-          if (profileData.picture?.data?.url) {
-            pictureUrl = profileData.picture.data.url;
-          }
+        } catch (error) {
+          console.log('Could not fetch profile data:', error);
         }
-      } catch (error) {
-        console.log('Could not fetch profile data, trying picture only:', error);
-      }
-
-      // If we couldn't get picture from profile, try picture endpoint directly
-      if (!pictureUrl) {
-        const pictureApiUrl = `https://graph.facebook.com/${facebookId}/picture?type=large&redirect=false&access_token=${accessToken}`;
-        const pictureResponse = await fetch(pictureApiUrl);
-        
-        if (pictureResponse.ok) {
-          const pictureData = await pictureResponse.json();
-          pictureUrl = pictureData.data?.url || null;
-        }
+      } else {
+        // Username-based IDs require special permissions
+        console.log('Username-based Facebook ID detected:', facebookId);
+        console.log('Note: Profile pictures for username URLs require special Facebook permissions');
       }
       
       res.json({
         pictureUrl,
         facebookId,
-        facebookName: extractedName || null
+        facebookName: extractedName || null,
+        isNumericId,
+        message: !isNumericId ? 'Username-based Facebook URLs cannot fetch profile pictures. Use the numeric profile URL format (facebook.com/profile.php?id=...) for best results.' : undefined
       });
     } catch (error) {
       console.error('Error fetching Facebook profile picture:', error);

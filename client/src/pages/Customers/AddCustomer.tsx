@@ -394,11 +394,24 @@ export default function AddCustomer() {
           throw new Error('Failed to fetch profile picture');
         }
         const data = await response.json();
+        
         if (data.pictureUrl) {
           setFacebookProfilePicture(data.pictureUrl);
+        } else {
+          setFacebookProfilePicture(null);
         }
+        
         if (data.facebookName && !facebookNameManuallyChanged) {
           form.setValue('facebookName', data.facebookName);
+        }
+        
+        // Show toast message if username-based URL was used
+        if (data.message && !data.isNumericId) {
+          toast({
+            title: "Tip",
+            description: "To fetch profile pictures, use the numeric Facebook profile URL (found in Settings > Profile link)",
+            duration: 5000,
+          });
         }
       } catch (error) {
         console.error('Error fetching Facebook profile picture:', error);
