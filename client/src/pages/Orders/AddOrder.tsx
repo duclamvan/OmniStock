@@ -155,6 +155,10 @@ export default function AddOrder() {
   const [includeInvoice, setIncludeInvoice] = useState(false);
   const [includeCustom, setIncludeCustom] = useState(false);
 
+  // Column visibility toggles
+  const [showVatColumn, setShowVatColumn] = useState(false);
+  const [showDiscountColumn, setShowDiscountColumn] = useState(true);
+
   // Fetch real addresses from geocoding API
   const fetchRealAddresses = async (query: string): Promise<any[]> => {
     try {
@@ -1883,84 +1887,155 @@ export default function AddOrder() {
         {/* Order Items - Mobile Optimized */}
         <Card className="shadow-sm">
           <CardHeader className="p-4 sm:p-6">
-            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
-              Order Items
-            </CardTitle>
-            <CardDescription className="text-xs sm:text-sm mt-1">
-              {orderItems.length > 0 ? `${orderItems.length} item${orderItems.length !== 1 ? 's' : ''} added` : 'No items yet'}
-            </CardDescription>
+            <div className="flex items-start justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+                  Order Items
+                </CardTitle>
+                <CardDescription className="text-xs sm:text-sm mt-1">
+                  {orderItems.length > 0 ? `${orderItems.length} item${orderItems.length !== 1 ? 's' : ''} added` : 'No items yet'}
+                </CardDescription>
+              </div>
+              {/* Column Toggles */}
+              {orderItems.length > 0 && (
+                <div className="flex flex-col gap-2 text-xs">
+                  <div className="flex items-center space-x-2" data-testid="toggle-vat-column">
+                    <Checkbox
+                      id="show-vat"
+                      checked={showVatColumn}
+                      onCheckedChange={(checked) => setShowVatColumn(checked as boolean)}
+                    />
+                    <label
+                      htmlFor="show-vat"
+                      className="text-xs font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                    >
+                      VAT
+                    </label>
+                  </div>
+                  <div className="flex items-center space-x-2" data-testid="toggle-discount-column">
+                    <Checkbox
+                      id="show-discount"
+                      checked={showDiscountColumn}
+                      onCheckedChange={(checked) => setShowDiscountColumn(checked as boolean)}
+                    />
+                    <label
+                      htmlFor="show-discount"
+                      className="text-xs font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                    >
+                      Discount
+                    </label>
+                  </div>
+                </div>
+              )}
+            </div>
           </CardHeader>
           <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
             {orderItems.length > 0 ? (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Product</TableHead>
-                      <TableHead>SKU</TableHead>
-                      <TableHead>Quantity</TableHead>
-                      <TableHead>Price</TableHead>
-                      <TableHead>Discount</TableHead>
-                      <TableHead>Total</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {orderItems.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell className="font-medium">{item.productName}</TableCell>
-                        <TableCell>{item.sku}</TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            min="1"
-                            value={item.quantity}
-                            onChange={(e) => updateOrderItem(item.id, 'quantity', parseInt(e.target.value) || 1)}
-                            className="w-20"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={item.price}
-                            onChange={(e) => updateOrderItem(item.id, 'price', parseFloat(e.target.value) || 0)}
-                            className="w-24"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={item.discount}
-                            onChange={(e) => updateOrderItem(item.id, 'discount', parseFloat(e.target.value) || 0)}
-                            className="w-24"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          {formatCurrency(item.total, form.watch('currency'))}
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeOrderItem(item.id)}
+              <div className="overflow-x-auto -mx-4 sm:mx-0">
+                <div className="inline-block min-w-full align-middle">
+                  <div className="overflow-hidden border border-slate-200 dark:border-slate-700 rounded-lg">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-slate-50 dark:bg-slate-900/50">
+                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300">Product</TableHead>
+                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300">SKU</TableHead>
+                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-center">Qty</TableHead>
+                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">Price</TableHead>
+                          {showDiscountColumn && (
+                            <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">Discount</TableHead>
+                          )}
+                          {showVatColumn && (
+                            <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">VAT</TableHead>
+                          )}
+                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-right">Total</TableHead>
+                          <TableHead className="font-semibold text-slate-700 dark:text-slate-300 text-center w-20">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {orderItems.map((item, index) => (
+                          <TableRow 
+                            key={item.id}
+                            className={index % 2 === 0 ? 'bg-white dark:bg-slate-950' : 'bg-slate-50/50 dark:bg-slate-900/30'}
+                            data-testid={`order-item-${item.id}`}
                           >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                            <TableCell className="font-medium text-slate-900 dark:text-slate-100">
+                              {item.productName}
+                            </TableCell>
+                            <TableCell className="text-slate-600 dark:text-slate-400 text-sm">
+                              {item.sku}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Input
+                                type="number"
+                                min="1"
+                                value={item.quantity}
+                                onChange={(e) => updateOrderItem(item.id, 'quantity', parseInt(e.target.value) || 1)}
+                                className="w-16 h-9 text-center"
+                                data-testid={`input-quantity-${item.id}`}
+                              />
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={item.price}
+                                onChange={(e) => updateOrderItem(item.id, 'price', parseFloat(e.target.value) || 0)}
+                                className="w-24 h-9 text-right"
+                                data-testid={`input-price-${item.id}`}
+                              />
+                            </TableCell>
+                            {showDiscountColumn && (
+                              <TableCell className="text-right">
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  value={item.discount}
+                                  onChange={(e) => updateOrderItem(item.id, 'discount', parseFloat(e.target.value) || 0)}
+                                  className="w-24 h-9 text-right"
+                                  data-testid={`input-discount-${item.id}`}
+                                />
+                              </TableCell>
+                            )}
+                            {showVatColumn && (
+                              <TableCell className="text-right">
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  value={item.tax}
+                                  onChange={(e) => updateOrderItem(item.id, 'tax', parseFloat(e.target.value) || 0)}
+                                  className="w-24 h-9 text-right"
+                                  data-testid={`input-vat-${item.id}`}
+                                />
+                              </TableCell>
+                            )}
+                            <TableCell className="text-right font-semibold text-slate-900 dark:text-slate-100">
+                              {formatCurrency(item.total, form.watch('currency'))}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeOrderItem(item.id)}
+                                className="h-9 w-9 p-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
+                                data-testid={`button-remove-${item.id}`}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
               </div>
             ) : (
-              <div className="text-center py-8 text-slate-500">
-                <ShoppingCart className="mx-auto h-12 w-12 mb-4" />
-                <p>No items added to order yet.</p>
-                <p className="text-sm">Search and select products above to add them.</p>
+              <div className="text-center py-12 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/20 rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-700">
+                <ShoppingCart className="mx-auto h-12 w-12 mb-4 text-slate-400 dark:text-slate-600" />
+                <p className="font-medium text-slate-700 dark:text-slate-300">No items added to order yet</p>
+                <p className="text-sm mt-1">Search and select products above to add them</p>
               </div>
             )}
           </CardContent>
