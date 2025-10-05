@@ -5749,18 +5749,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Extract Facebook username/ID from URL
       let facebookId = '';
+      let facebookName = '';
       
       // Handle various Facebook URL formats
       const urlPatterns = [
         /facebook\.com\/profile\.php\?id=(\d+)/,
-        /facebook\.com\/([^/?]+)/,
-        /fb\.com\/([^/?]+)/
+        /facebook\.com\/people\/([^/]+)\/(\d+)/,
+        /facebook\.com\/([^/?#]+)/,
+        /fb\.com\/([^/?#]+)/
       ];
 
       for (const pattern of urlPatterns) {
         const match = facebookUrl.match(pattern);
         if (match) {
-          facebookId = match[1];
+          if (pattern.source.includes('people')) {
+            // Extract name from "people" URL format
+            facebookName = decodeURIComponent(match[1]).replace(/-/g, ' ');
+            facebookId = match[2];
+          } else {
+            facebookId = match[1];
+            // Try to extract name from username
+            if (!facebookId.match(/^\d+$/)) {
+              facebookName = facebookId.replace(/-/g, ' ').replace(/\./g, ' ');
+            }
+          }
           break;
         }
       }
@@ -5776,20 +5788,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ message: 'Facebook access token not configured' });
       }
 
-      // Fetch profile picture from Graph API
-      const graphApiUrl = `https://graph.facebook.com/v18.0/${facebookId}/picture?type=large&redirect=false&access_token=${accessToken}`;
-      
-      const response = await fetch(graphApiUrl);
-      
-      if (!response.ok) {
-        throw new Error(`Facebook Graph API error: ${response.statusText}`);
+      // Try to fetch profile data first
+      let pictureUrl = null;
+      let extractedName = facebookName;
+
+      try {
+        // Try to get profile data including name
+        const profileUrl = `https://graph.facebook.com/${facebookId}?fields=name,picture.type(large)&access_token=${accessToken}`;
+        const profileResponse = await fetch(profileUrl);
+        
+        if (profileResponse.ok) {
+          const profileData = await profileResponse.json();
+          if (profileData.name) {
+            extractedName = profileData.name;
+          }
+          if (profileData.picture?.data?.url) {
+            pictureUrl = profileData.picture.data.url;
+          }
+        }
+      } catch (error) {
+        console.log('Could not fetch profile data, trying picture only:', error);
       }
 
-      const data = await response.json();
+      // If we couldn't get picture from profile, try picture endpoint directly
+      if (!pictureUrl) {
+        const pictureApiUrl = `https://graph.facebook.com/${facebookId}/picture?type=large&redirect=false&access_token=${accessToken}`;
+        const pictureResponse = await fetch(pictureApiUrl);
+        
+        if (pictureResponse.ok) {
+          const pictureData = await pictureResponse.json();
+          pictureUrl = pictureData.data?.url || null;
+        }
+      }
       
       res.json({
-        pictureUrl: data.data?.url || null,
-        facebookId
+        pictureUrl,
+        facebookId,
+        facebookName: extractedName || null
       });
     } catch (error) {
       console.error('Error fetching Facebook profile picture:', error);

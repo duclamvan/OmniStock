@@ -269,13 +269,6 @@ export default function AddCustomer() {
     }
   }, [nameValue, facebookNameManuallyChanged, form]);
 
-  // Fetch Facebook profile picture when Facebook URL changes
-  useEffect(() => {
-    if (facebookUrlValue) {
-      fetchFacebookProfilePicture(facebookUrlValue);
-    }
-  }, [facebookUrlValue]);
-
   const debounce = <T extends (...args: any[]) => any>(
     func: T,
     delay: number
@@ -387,24 +380,35 @@ export default function AddCustomer() {
     }
   };
 
-  const fetchFacebookProfilePicture = async (facebookUrl: string) => {
-    try {
-      setIsLoadingProfilePicture(true);
-      const response = await fetch(`/api/facebook/profile-picture?url=${encodeURIComponent(facebookUrl)}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch profile picture');
+  const fetchFacebookProfilePicture = useCallback(
+    debounce(async (facebookUrl: string) => {
+      if (!facebookUrl || facebookUrl.length < 10) {
+        setFacebookProfilePicture(null);
+        return;
       }
-      const data = await response.json();
-      if (data.pictureUrl) {
-        setFacebookProfilePicture(data.pictureUrl);
+      
+      try {
+        setIsLoadingProfilePicture(true);
+        const response = await fetch(`/api/facebook/profile-picture?url=${encodeURIComponent(facebookUrl)}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch profile picture');
+        }
+        const data = await response.json();
+        if (data.pictureUrl) {
+          setFacebookProfilePicture(data.pictureUrl);
+        }
+        if (data.facebookName && !facebookNameManuallyChanged) {
+          form.setValue('facebookName', data.facebookName);
+        }
+      } catch (error) {
+        console.error('Error fetching Facebook profile picture:', error);
+        setFacebookProfilePicture(null);
+      } finally {
+        setIsLoadingProfilePicture(false);
       }
-    } catch (error) {
-      console.error('Error fetching Facebook profile picture:', error);
-      setFacebookProfilePicture(null);
-    } finally {
-      setIsLoadingProfilePicture(false);
-    }
-  };
+    }, 500),
+    [facebookNameManuallyChanged, form]
+  );
 
   const handleVatValidation = async (vatNumber: string, countryCode: string) => {
     if (!vatNumber || !countryCode) {
@@ -612,6 +616,22 @@ export default function AddCustomer() {
               {/* Form Fields - Right Side */}
               <div className="flex-1 space-y-4">
                 <div>
+                  <Label htmlFor="facebookUrl" className="text-base font-semibold">Facebook URL</Label>
+                  <Input
+                    id="facebookUrl"
+                    {...form.register('facebookUrl')}
+                    placeholder="https://www.facebook.com/username"
+                    className="text-base"
+                    data-testid="input-facebookUrl"
+                    onChange={(e) => {
+                      form.register('facebookUrl').onChange(e);
+                      fetchFacebookProfilePicture(e.target.value);
+                    }}
+                  />
+                  <p className="text-xs text-slate-500 mt-1">Paste Facebook profile URL to fetch photo & name</p>
+                </div>
+
+                <div>
                   <Label htmlFor="name" className="text-base font-semibold">Name *</Label>
                   <Input
                     id="name"
@@ -645,21 +665,9 @@ export default function AddCustomer() {
                   />
                   <p className="text-xs text-slate-500 mt-1">
                     {facebookNameManuallyChanged 
-                      ? "Manually set - no longer syncing with Name" 
-                      : "Auto-syncing from Name field above"}
+                      ? "Manually set - no longer syncing" 
+                      : "Auto-filled from URL or syncing with Name"}
                   </p>
-                </div>
-
-                <div>
-                  <Label htmlFor="facebookUrl" className="text-base font-semibold">Facebook URL</Label>
-                  <Input
-                    id="facebookUrl"
-                    {...form.register('facebookUrl')}
-                    placeholder="https://www.facebook.com/username"
-                    className="text-base"
-                    data-testid="input-facebookUrl"
-                  />
-                  <p className="text-xs text-slate-500 mt-1">Link to customer's Facebook profile</p>
                 </div>
 
                 <div>
