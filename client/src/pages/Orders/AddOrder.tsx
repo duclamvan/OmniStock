@@ -945,6 +945,104 @@ export default function AddOrder() {
                 <CardDescription className="text-xs sm:text-sm mt-1">Search and select or create new</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-4">
+            {/* Quick Customer Options */}
+            {!selectedCustomer && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Quick Customer</Label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-1.5 text-xs"
+                    onClick={() => {
+                      const tempCustomer = {
+                        id: `temp-${Date.now()}`,
+                        name: "Quick Temporary Customer",
+                        email: "",
+                        phone: "",
+                        type: "regular",
+                        isTemporary: true
+                      };
+                      setSelectedCustomer(tempCustomer);
+                      setCustomerSearch("Quick Temporary Customer");
+                    }}
+                    data-testid="button-quick-temp-customer"
+                  >
+                    <User className="h-3.5 w-3.5" />
+                    Quick
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-1.5 text-xs"
+                    onClick={() => {
+                      const tempCustomer = {
+                        id: `temp-tel-${Date.now()}`,
+                        name: "Telephone Order",
+                        email: "",
+                        phone: "",
+                        type: "regular",
+                        isTemporary: true
+                      };
+                      setSelectedCustomer(tempCustomer);
+                      setCustomerSearch("Telephone Order");
+                    }}
+                    data-testid="button-telephone-customer"
+                  >
+                    <Phone className="h-3.5 w-3.5" />
+                    Tel
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-1.5 text-xs"
+                    onClick={() => {
+                      const tempCustomer = {
+                        id: `temp-msg-${Date.now()}`,
+                        name: "WhatsApp/Viber/Zalo",
+                        email: "",
+                        phone: "",
+                        type: "regular",
+                        isTemporary: true
+                      };
+                      setSelectedCustomer(tempCustomer);
+                      setCustomerSearch("WhatsApp/Viber/Zalo");
+                    }}
+                    data-testid="button-messaging-customer"
+                  >
+                    <Mail className="h-3.5 w-3.5" />
+                    Msg
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-1.5 text-xs"
+                    onClick={() => {
+                      const tempCustomer = {
+                        id: `temp-custom-${Date.now()}`,
+                        name: "Custom Customer",
+                        email: "",
+                        phone: "",
+                        type: "regular",
+                        isTemporary: true
+                      };
+                      setSelectedCustomer(tempCustomer);
+                      setCustomerSearch("Custom Customer");
+                    }}
+                    data-testid="button-custom-customer"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Custom
+                  </Button>
+                </div>
+                <Separator className="my-3" />
+              </div>
+            )}
+
             <div className="relative customer-search-container">
               <Label htmlFor="customer">Search Customer</Label>
               <div className="relative">
@@ -1052,18 +1150,36 @@ export default function AddOrder() {
             {selectedCustomer && (
               <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 flex-1">
                     <CheckCircle className="h-5 w-5 text-green-600" />
-                    <div>
+                    <div className="flex-1">
                       <div className="font-medium text-green-800 flex items-center gap-2">
-                        {selectedCustomer.name}
+                        {selectedCustomer.isTemporary ? (
+                          <Input
+                            value={customerSearch}
+                            onChange={(e) => {
+                              setCustomerSearch(e.target.value);
+                              setSelectedCustomer({ ...selectedCustomer, name: e.target.value });
+                            }}
+                            className="h-7 bg-white border-green-300 text-green-800 font-medium max-w-xs"
+                            placeholder="Edit customer name..."
+                            data-testid="input-temp-customer-name"
+                          />
+                        ) : (
+                          selectedCustomer.name
+                        )}
+                        {selectedCustomer.isTemporary && (
+                          <Badge variant="outline" className="text-xs bg-blue-50 border-blue-300 text-blue-700">
+                            Temporary
+                          </Badge>
+                        )}
                         {selectedCustomer.hasPayLaterBadge && (
                           <Badge variant="outline" className="text-xs bg-yellow-50 border-yellow-300 text-yellow-700">
                             Pay Later
                           </Badge>
                         )}
                       </div>
-                      <div className="text-sm text-green-600">{selectedCustomer.email}</div>
+                      <div className="text-sm text-green-600">{selectedCustomer.email || "No email"}</div>
                     </div>
                   </div>
                   <Button
