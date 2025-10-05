@@ -126,6 +126,13 @@ export default function AddOrder() {
   const [showAddressDropdown, setShowAddressDropdown] = useState(false);
   const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
 
+  // Shipping address autocomplete (separate from customer form)
+  const [shippingAddressSearch, setShippingAddressSearch] = useState("");
+  const [shippingAddressSuggestions, setShippingAddressSuggestions] = useState<any[]>([]);
+  const [showShippingAddressDropdown, setShowShippingAddressDropdown] = useState(false);
+  const [isLoadingShippingSearch, setIsLoadingShippingSearch] = useState(false);
+  const [labelManuallyEdited, setLabelManuallyEdited] = useState(false);
+
   // Fetch real addresses from geocoding API
   const fetchRealAddresses = async (query: string): Promise<any[]> => {
     try {
@@ -288,6 +295,85 @@ export default function AddOrder() {
     setAddressAutocomplete(suggestion.formatted);
     setShowAddressDropdown(false);
     setAddressSuggestions([]);
+  };
+
+  // Function to search shipping addresses using real geocoding API
+  const searchShippingAddresses = async (query: string) => {
+    if (!query || query.length < 3) {
+      setShippingAddressSuggestions([]);
+      setShowShippingAddressDropdown(false);
+      return;
+    }
+
+    setIsLoadingShippingSearch(true);
+    setShowShippingAddressDropdown(true);
+
+    try {
+      const results = await fetchRealAddresses(query);
+      setShippingAddressSuggestions(results);
+    } catch (error) {
+      console.error('Error searching shipping addresses:', error);
+      setShippingAddressSuggestions([]);
+    } finally {
+      setIsLoadingShippingSearch(false);
+    }
+  };
+
+  // Function to select a shipping address from suggestions
+  const selectShippingAddress = (suggestion: any) => {
+    // Extract street and street number
+    const streetParts = suggestion.street.split(' ');
+    const lastPart = streetParts[streetParts.length - 1];
+    const hasNumber = /\d/.test(lastPart);
+    
+    let street = suggestion.street;
+    let streetNumber = '';
+    
+    if (hasNumber) {
+      streetNumber = lastPart;
+      street = streetParts.slice(0, -1).join(' ');
+    }
+
+    // Auto-fill the form fields
+    const firstNameInput = document.getElementById('firstName') as HTMLInputElement;
+    const lastNameInput = document.getElementById('lastName') as HTMLInputElement;
+    const streetInput = document.getElementById('addressStreet') as HTMLInputElement;
+    const streetNumberInput = document.getElementById('addressStreetNumber') as HTMLInputElement;
+    const cityInput = document.getElementById('addressCity') as HTMLInputElement;
+    const zipCodeInput = document.getElementById('addressZipCode') as HTMLInputElement;
+    const countryInput = document.getElementById('addressCountry') as HTMLInputElement;
+
+    if (streetInput) streetInput.value = street;
+    if (streetNumberInput) streetNumberInput.value = streetNumber;
+    if (cityInput) cityInput.value = suggestion.city;
+    if (zipCodeInput) zipCodeInput.value = suggestion.zipCode;
+    if (countryInput) countryInput.value = suggestion.country;
+
+    // Auto-generate label if not manually edited
+    if (!labelManuallyEdited) {
+      const firstName = firstNameInput?.value || '';
+      const lastName = lastNameInput?.value || '';
+      const company = (document.getElementById('addressCompany') as HTMLInputElement)?.value || '';
+      const city = suggestion.city;
+      
+      let label = '';
+      if (firstName || lastName) {
+        label = `${firstName} ${lastName}`.trim();
+      }
+      if (company) {
+        label = label ? `${label} - ${company}` : company;
+      }
+      if (city) {
+        label = label ? `${label} (${city})` : city;
+      }
+      
+      const labelInput = document.getElementById('addressLabel') as HTMLInputElement;
+      if (labelInput) labelInput.value = label;
+    }
+
+    setShippingAddressSearch(suggestion.formatted);
+    setShowShippingAddressDropdown(false);
+    setShippingAddressSuggestions([]);
   };
 
   const form = useForm<z.infer<typeof addOrderSchema>>({
@@ -1305,25 +1391,27 @@ export default function AddOrder() {
                             placeholder="John"
                             data-testid="input-first-name"
                             onChange={(e) => {
-                              // Auto-generate label when first name changes
-                              const firstName = e.target.value;
-                              const lastName = (document.getElementById('lastName') as HTMLInputElement)?.value || '';
-                              const company = (document.getElementById('addressCompany') as HTMLInputElement)?.value || '';
-                              const city = (document.getElementById('addressCity') as HTMLInputElement)?.value || '';
-                              
-                              let label = '';
-                              if (firstName || lastName) {
-                                label = `${firstName} ${lastName}`.trim();
+                              // Auto-generate label when first name changes (only if not manually edited)
+                              if (!labelManuallyEdited) {
+                                const firstName = e.target.value;
+                                const lastName = (document.getElementById('lastName') as HTMLInputElement)?.value || '';
+                                const company = (document.getElementById('addressCompany') as HTMLInputElement)?.value || '';
+                                const city = (document.getElementById('addressCity') as HTMLInputElement)?.value || '';
+                                
+                                let label = '';
+                                if (firstName || lastName) {
+                                  label = `${firstName} ${lastName}`.trim();
+                                }
+                                if (company) {
+                                  label = label ? `${label} - ${company}` : company;
+                                }
+                                if (city) {
+                                  label = label ? `${label} (${city})` : city;
+                                }
+                                
+                                const labelInput = document.getElementById('addressLabel') as HTMLInputElement;
+                                if (labelInput) labelInput.value = label;
                               }
-                              if (company) {
-                                label = label ? `${label} - ${company}` : company;
-                              }
-                              if (city) {
-                                label = label ? `${label} (${city})` : city;
-                              }
-                              
-                              const labelInput = document.getElementById('addressLabel') as HTMLInputElement;
-                              if (labelInput) labelInput.value = label;
                             }}
                           />
                         </div>
@@ -1334,25 +1422,27 @@ export default function AddOrder() {
                             placeholder="Doe"
                             data-testid="input-last-name"
                             onChange={(e) => {
-                              // Auto-generate label when last name changes
-                              const lastName = e.target.value;
-                              const firstName = (document.getElementById('firstName') as HTMLInputElement)?.value || '';
-                              const company = (document.getElementById('addressCompany') as HTMLInputElement)?.value || '';
-                              const city = (document.getElementById('addressCity') as HTMLInputElement)?.value || '';
-                              
-                              let label = '';
-                              if (firstName || lastName) {
-                                label = `${firstName} ${lastName}`.trim();
+                              // Auto-generate label when last name changes (only if not manually edited)
+                              if (!labelManuallyEdited) {
+                                const lastName = e.target.value;
+                                const firstName = (document.getElementById('firstName') as HTMLInputElement)?.value || '';
+                                const company = (document.getElementById('addressCompany') as HTMLInputElement)?.value || '';
+                                const city = (document.getElementById('addressCity') as HTMLInputElement)?.value || '';
+                                
+                                let label = '';
+                                if (firstName || lastName) {
+                                  label = `${firstName} ${lastName}`.trim();
+                                }
+                                if (company) {
+                                  label = label ? `${label} - ${company}` : company;
+                                }
+                                if (city) {
+                                  label = label ? `${label} (${city})` : city;
+                                }
+                                
+                                const labelInput = document.getElementById('addressLabel') as HTMLInputElement;
+                                if (labelInput) labelInput.value = label;
                               }
-                              if (company) {
-                                label = label ? `${label} - ${company}` : company;
-                              }
-                              if (city) {
-                                label = label ? `${label} (${city})` : city;
-                              }
-                              
-                              const labelInput = document.getElementById('addressLabel') as HTMLInputElement;
-                              if (labelInput) labelInput.value = label;
                             }}
                           />
                         </div>
@@ -1365,39 +1455,108 @@ export default function AddOrder() {
                           placeholder="Optional"
                           data-testid="input-company"
                           onChange={(e) => {
-                            // Auto-generate label when company changes
-                            const company = e.target.value;
-                            const firstName = (document.getElementById('firstName') as HTMLInputElement)?.value || '';
-                            const lastName = (document.getElementById('lastName') as HTMLInputElement)?.value || '';
-                            const city = (document.getElementById('addressCity') as HTMLInputElement)?.value || '';
-                            
-                            let label = '';
-                            if (firstName || lastName) {
-                              label = `${firstName} ${lastName}`.trim();
+                            // Auto-generate label when company changes (only if not manually edited)
+                            if (!labelManuallyEdited) {
+                              const company = e.target.value;
+                              const firstName = (document.getElementById('firstName') as HTMLInputElement)?.value || '';
+                              const lastName = (document.getElementById('lastName') as HTMLInputElement)?.value || '';
+                              const city = (document.getElementById('addressCity') as HTMLInputElement)?.value || '';
+                              
+                              let label = '';
+                              if (firstName || lastName) {
+                                label = `${firstName} ${lastName}`.trim();
+                              }
+                              if (company) {
+                                label = label ? `${label} - ${company}` : company;
+                              }
+                              if (city) {
+                                label = label ? `${label} (${city})` : city;
+                              }
+                              
+                              const labelInput = document.getElementById('addressLabel') as HTMLInputElement;
+                              if (labelInput) labelInput.value = label;
                             }
-                            if (company) {
-                              label = label ? `${label} - ${company}` : company;
-                            }
-                            if (city) {
-                              label = label ? `${label} (${city})` : city;
-                            }
-                            
-                            const labelInput = document.getElementById('addressLabel') as HTMLInputElement;
-                            if (labelInput) labelInput.value = label;
                           }}
                         />
                       </div>
 
-                      {/* Search Address - Moved to top */}
+                      {/* Search Address - Dynamic with autocomplete */}
                       <div className="space-y-2">
                         <Label htmlFor="searchAddress">Search Address</Label>
                         <div className="relative">
                           <Input
                             id="searchAddress"
+                            value={shippingAddressSearch}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              setShippingAddressSearch(value);
+                              searchShippingAddresses(value);
+                            }}
+                            onFocus={() => {
+                              if (shippingAddressSearch.length >= 3) {
+                                searchShippingAddresses(shippingAddressSearch);
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Escape') {
+                                setShowShippingAddressDropdown(false);
+                              }
+                            }}
                             placeholder="Start typing an address..."
                             data-testid="input-search-address"
+                            className="pr-10"
                           />
+                          {shippingAddressSearch && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="absolute right-1 top-1 h-8 w-8 p-0"
+                              onClick={() => {
+                                setShippingAddressSearch("");
+                                setShippingAddressSuggestions([]);
+                                setShowShippingAddressDropdown(false);
+                              }}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          )}
+
+                          {/* Address suggestions dropdown */}
+                          {showShippingAddressDropdown && (
+                            <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-72 overflow-y-auto z-50">
+                              {isLoadingShippingSearch ? (
+                                <div className="p-4 text-center text-slate-500">
+                                  <div className="text-sm">Searching addresses...</div>
+                                </div>
+                              ) : shippingAddressSuggestions.length > 0 ? (
+                                <>
+                                  <div className="p-2 bg-slate-50 border-b text-xs text-slate-600">
+                                    {shippingAddressSuggestions.length} address{shippingAddressSuggestions.length !== 1 ? 'es' : ''} found
+                                  </div>
+                                  {shippingAddressSuggestions.map((suggestion, index) => (
+                                    <div
+                                      key={index}
+                                      className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0 transition-colors"
+                                      onClick={() => selectShippingAddress(suggestion)}
+                                    >
+                                      <div className="font-medium text-slate-900">
+                                        {suggestion.formatted}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </>
+                              ) : (
+                                <div className="p-4 text-center text-slate-500">
+                                  <div className="text-sm">No addresses found</div>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
+                        <p className="text-xs text-slate-500">
+                          Search for an official address to auto-fill the fields below
+                        </p>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1427,25 +1586,27 @@ export default function AddOrder() {
                             placeholder="Prague"
                             data-testid="input-city"
                             onChange={(e) => {
-                              // Auto-generate label when city changes
-                              const city = e.target.value;
-                              const firstName = (document.getElementById('firstName') as HTMLInputElement)?.value || '';
-                              const lastName = (document.getElementById('lastName') as HTMLInputElement)?.value || '';
-                              const company = (document.getElementById('addressCompany') as HTMLInputElement)?.value || '';
-                              
-                              let label = '';
-                              if (firstName || lastName) {
-                                label = `${firstName} ${lastName}`.trim();
+                              // Auto-generate label when city changes (only if not manually edited)
+                              if (!labelManuallyEdited) {
+                                const city = e.target.value;
+                                const firstName = (document.getElementById('firstName') as HTMLInputElement)?.value || '';
+                                const lastName = (document.getElementById('lastName') as HTMLInputElement)?.value || '';
+                                const company = (document.getElementById('addressCompany') as HTMLInputElement)?.value || '';
+                                
+                                let label = '';
+                                if (firstName || lastName) {
+                                  label = `${firstName} ${lastName}`.trim();
+                                }
+                                if (company) {
+                                  label = label ? `${label} - ${company}` : company;
+                                }
+                                if (city) {
+                                  label = label ? `${label} (${city})` : city;
+                                }
+                                
+                                const labelInput = document.getElementById('addressLabel') as HTMLInputElement;
+                                if (labelInput) labelInput.value = label;
                               }
-                              if (company) {
-                                label = label ? `${label} - ${company}` : company;
-                              }
-                              if (city) {
-                                label = label ? `${label} (${city})` : city;
-                              }
-                              
-                              const labelInput = document.getElementById('addressLabel') as HTMLInputElement;
-                              if (labelInput) labelInput.value = label;
                             }}
                           />
                         </div>
@@ -1467,18 +1628,7 @@ export default function AddOrder() {
                         </div>
                       </div>
 
-                      {/* Label/Name - Auto-generated */}
-                      <div>
-                        <Label htmlFor="addressLabel">Label / Name (auto-generated)</Label>
-                        <Input
-                          id="addressLabel"
-                          placeholder="Auto-generated from name and company"
-                          data-testid="input-label"
-                          className="bg-slate-50"
-                        />
-                      </div>
-
-                      {/* Email and Phone moved to bottom */}
+                      {/* Email and Phone */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <Label htmlFor="addressEmail">Email</Label>
@@ -1497,6 +1647,24 @@ export default function AddOrder() {
                             data-testid="input-tel"
                           />
                         </div>
+                      </div>
+
+                      {/* Label/Name - Moved to bottom, editable but locks when manually changed */}
+                      <div>
+                        <Label htmlFor="addressLabel">Label / Name</Label>
+                        <Input
+                          id="addressLabel"
+                          placeholder="Auto-generated from name and company"
+                          data-testid="input-label"
+                          className={labelManuallyEdited ? "bg-white" : "bg-slate-50"}
+                          onChange={(e) => {
+                            // Track manual edits - once edited, stop auto-generation
+                            setLabelManuallyEdited(true);
+                          }}
+                        />
+                        <p className="text-xs text-slate-500 mt-1">
+                          {labelManuallyEdited ? "Manually edited - auto-generation disabled" : "Auto-generated from name, company, and city"}
+                        </p>
                       </div>
 
                       <div className="flex gap-2">
