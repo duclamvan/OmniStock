@@ -5787,40 +5787,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Unable to extract Facebook ID from URL' });
       }
 
-      // Get access token from environment
-      const accessToken = process.env.FACEBOOK_ACCESS_TOKEN;
+      // Try multiple access token strategies
+      const appId = process.env.FACEBOOK_APP_ID;
+      const appSecret = process.env.FACEBOOK_APP_SECRET;
+      const legacyToken = process.env.FACEBOOK_ACCESS_TOKEN;
       
-      if (!accessToken) {
-        return res.status(500).json({ message: 'Facebook access token not configured' });
-      }
-
       // Try to fetch profile data from Facebook Graph API
       let pictureUrl = null;
       let extractedName = facebookName;
+      
+      // Tokens to try (in order)
+      const tokensToTry = [];
+      
+      // 1. App Access Token (for public pages/profiles)
+      if (appId && appSecret) {
+        tokensToTry.push({ token: `${appId}|${appSecret}`, type: 'App' });
+      }
+      
+      // 2. Legacy token (might be Page or User token)
+      if (legacyToken) {
+        tokensToTry.push({ token: legacyToken, type: 'Legacy' });
+      }
+      
+      if (tokensToTry.length === 0) {
+        return res.status(500).json({ message: 'No Facebook access tokens configured' });
+      }
 
-      // Try Graph API call with the extracted ID (works for both numeric and username IDs)
-      try {
-        // Use v18.0 API version
-        const profileUrl = `https://graph.facebook.com/v18.0/${facebookId}?fields=name,picture.type(large)&access_token=${accessToken}`;
-        console.log(`Fetching profile for ${isNumericId ? 'numeric' : 'username'} ID:`, facebookId);
-        
-        const profileResponse = await fetch(profileUrl);
-        const profileText = await profileResponse.text();
-        
-        if (profileResponse.ok) {
-          const profileData = JSON.parse(profileText);
+      // Try each token until one works
+      let lastError = null;
+      for (const { token, type } of tokensToTry) {
+        try {
+          const profileUrl = `https://graph.facebook.com/v18.0/${facebookId}?fields=name,picture.type(large)&access_token=${token}`;
+          console.log(`Fetching profile with ${type} token for ${isNumericId ? 'numeric' : 'username'} ID:`, facebookId);
           
-          if (profileData.name) {
-            extractedName = profileData.name;
+          const profileResponse = await fetch(profileUrl);
+          const profileText = await profileResponse.text();
+          
+          if (profileResponse.ok) {
+            const profileData = JSON.parse(profileText);
+            
+            if (profileData.name) {
+              extractedName = profileData.name;
+            }
+            if (profileData.picture?.data?.url) {
+              pictureUrl = profileData.picture.data.url;
+            }
+            console.log('Successfully fetched profile with', type, 'token:', { name: extractedName, hasPicture: !!pictureUrl });
+            break; // Success, stop trying other tokens
+          } else {
+            lastError = profileText;
+            console.log(`${type} token failed:`, profileText);
           }
-          if (profileData.picture?.data?.url) {
-            pictureUrl = profileData.picture.data.url;
-          }
-        } else {
-          console.log('Profile fetch failed:', profileText);
+        } catch (error) {
+          lastError = error;
+          console.log(`${type} token error:`, error);
         }
-      } catch (error) {
-        console.log('Could not fetch profile data:', error);
       }
       
       // Ensure we always return a name - either from API or extracted from URL
