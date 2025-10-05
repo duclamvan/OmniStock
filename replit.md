@@ -31,7 +31,7 @@ The database schema, managed with PostgreSQL, Neon serverless driver, and Drizzl
 - **Expenses Management**: Modern UI, enhanced stats, and streamlined forms.
 - **Product Bundles**: Comprehensive system with variant support and multiple pricing modes.
 - **Point of Sale (POS)**: Full-featured system with thermal printer support, multi-currency, real-time cart, VAT calculation, receipt generation, and mobile optimization. Includes ability to recall and modify recent POS orders.
-- **AI-Powered Packing System**: Advanced carton selection algorithm, visual carton representations, packing workflow with checklists, automatic weight calculation, and shipping label integration.
+- **AI-Powered Carton Packing Optimization**: Intelligent carton size selection using AI weight/dimension inference (OpenAI integration), best-fit decreasing packing algorithm with weight/volume constraints, automatic shipping cost estimation, and visual results display. Supports 5 standard carton sizes (small to extra-large) with customizable dimensions. Features include AI-estimated product weights for items without recorded dimensions, utilization tracking, and optimization suggestions for cost reduction.
 - **Files Management System**: Comprehensive document management for product-related files with categorization, linking, tagging, and quick access.
 - **Image Compression System**: Automatic lossless image compression to WebP using Sharp, with thumbnail generation and batch processing.
 - **Multi-Currency Support**: Supports five currencies (CZK, EUR, USD, VND, CNY) with simplified exchange rate conversion.
@@ -56,6 +56,9 @@ The database schema, managed with PostgreSQL, Neon serverless driver, and Drizzl
 - **Radix UI**: Headless UI component primitives.
 - **Tailwind CSS**: Utility-first CSS framework.
 - **Lucide React**: SVG icon library.
+
+## AI Services
+- **OpenAI API**: For AI-powered product weight and dimension inference in carton packing optimization.
 
 ## Other APIs
 - **OpenStreetMap Nominatim API**: For address geocoding.
