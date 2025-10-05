@@ -47,7 +47,8 @@ import {
   Copy,
   ChevronDown,
   ChevronUp,
-  TrendingUp
+  TrendingUp,
+  MessageSquare
 } from "lucide-react";
 import MarginPill from "@/components/orders/MarginPill";
 
@@ -132,6 +133,12 @@ export default function AddOrder() {
   const [showShippingAddressDropdown, setShowShippingAddressDropdown] = useState(false);
   const [isLoadingShippingSearch, setIsLoadingShippingSearch] = useState(false);
   const [labelManuallyEdited, setLabelManuallyEdited] = useState(false);
+
+  // Quick customer form states
+  const [quickCustomerType, setQuickCustomerType] = useState<'quick' | 'tel' | 'msg' | 'custom' | null>(null);
+  const [quickCustomerName, setQuickCustomerName] = useState("");
+  const [quickCustomerPhone, setQuickCustomerPhone] = useState("");
+  const [quickCustomerSocialApp, setQuickCustomerSocialApp] = useState<'viber' | 'whatsapp' | 'zalo' | 'email'>('whatsapp');
 
   // Fetch real addresses from geocoding API
   const fetchRealAddresses = async (query: string): Promise<any[]> => {
@@ -518,8 +525,48 @@ export default function AddOrder() {
 
   const createOrderMutation = useMutation({
     mutationFn: async (data: any) => {
-      // Check if we have a selected customer without an ID (new customer)
-      if (selectedCustomer && !selectedCustomer.id) {
+      // Check if we have a customer that needs to be saved (Tel or Msg types)
+      if (selectedCustomer && selectedCustomer.needsSaving) {
+        console.log('Creating new customer from quick form:', selectedCustomer);
+        const customerData: any = {
+          name: selectedCustomer.name,
+          phone: selectedCustomer.phone || undefined,
+          email: selectedCustomer.email || undefined,
+          type: selectedCustomer.type || 'regular',
+        };
+
+        // Add social media info for Msg customers
+        if (selectedCustomer.socialMediaApp) {
+          customerData.socialMediaApp = selectedCustomer.socialMediaApp;
+        }
+
+        console.log('Sending customer data:', customerData);
+        const response = await apiRequest('POST', '/api/customers', customerData);
+        const customerResponse = await response.json();
+        console.log('Customer API response:', customerResponse);
+        console.log('New customer created with ID:', customerResponse?.id);
+        data.customerId = customerResponse?.id;
+
+        // Also create shipping address if one was added
+        if (selectedShippingAddress && selectedShippingAddress.isNew) {
+          const addressData = {
+            customerId: customerResponse?.id,
+            firstName: selectedShippingAddress.firstName,
+            lastName: selectedShippingAddress.lastName,
+            company: selectedShippingAddress.company || undefined,
+            street: selectedShippingAddress.street,
+            streetNumber: selectedShippingAddress.streetNumber || undefined,
+            city: selectedShippingAddress.city,
+            zipCode: selectedShippingAddress.zipCode,
+            country: selectedShippingAddress.country,
+            tel: selectedShippingAddress.tel || undefined,
+            email: selectedShippingAddress.email || undefined,
+            label: selectedShippingAddress.label || undefined,
+          };
+          await apiRequest('POST', `/api/customers/${customerResponse?.id}/shipping-addresses`, addressData);
+        }
+      } else if (selectedCustomer && !selectedCustomer.id) {
+        // Handle regular new customer creation (from the full customer form)
         console.log('Creating new customer:', selectedCustomer);
         const customerData = {
           name: selectedCustomer.name,
@@ -541,9 +588,14 @@ export default function AddOrder() {
         console.log('Customer API response:', customerResponse);
         console.log('New customer created with ID:', customerResponse?.id);
         data.customerId = customerResponse?.id;
-      } else if (selectedCustomer?.id) {
-        // Use the existing customer's ID
+      } else if (selectedCustomer?.id && !selectedCustomer.id.startsWith('temp-')) {
+        // Use existing customer's ID (not a temporary one)
         data.customerId = selectedCustomer.id;
+      } else if (selectedCustomer && selectedCustomer.isTemporary) {
+        // For one-time customers (Quick and Custom), don't save to database
+        // Just pass the customer name in the order data
+        data.temporaryCustomerName = selectedCustomer.name;
+        data.customerId = null;
       }
 
       console.log('Creating order with customerId:', data.customerId);
@@ -991,7 +1043,7 @@ export default function AddOrder() {
               </CardHeader>
               <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-4">
             {/* Quick Customer Options */}
-            {!selectedCustomer && (
+            {!selectedCustomer && !quickCustomerType && (
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Quick Customer</Label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -1001,16 +1053,8 @@ export default function AddOrder() {
                     size="sm"
                     className="flex items-center gap-1.5 text-xs"
                     onClick={() => {
-                      const tempCustomer = {
-                        id: `temp-${Date.now()}`,
-                        name: "Quick Temporary Customer",
-                        email: "",
-                        phone: "",
-                        type: "regular",
-                        isTemporary: true
-                      };
-                      setSelectedCustomer(tempCustomer);
-                      setCustomerSearch("Quick Temporary Customer");
+                      setQuickCustomerType('quick');
+                      setQuickCustomerName("");
                     }}
                     data-testid="button-quick-temp-customer"
                   >
@@ -1023,17 +1067,9 @@ export default function AddOrder() {
                     size="sm"
                     className="flex items-center gap-1.5 text-xs"
                     onClick={() => {
-                      const tempCustomer = {
-                        id: `temp-tel-${Date.now()}`,
-                        name: "Telephone Order",
-                        email: "",
-                        phone: "",
-                        type: "regular",
-                        isTemporary: true
-                      };
-                      setSelectedCustomer(tempCustomer);
-                      setCustomerSearch("Telephone Order");
-                      // Automatically set order type to telephone
+                      setQuickCustomerType('tel');
+                      setQuickCustomerName("");
+                      setQuickCustomerPhone("");
                       form.setValue('orderType', 'tel');
                     }}
                     data-testid="button-telephone-customer"
@@ -1047,20 +1083,14 @@ export default function AddOrder() {
                     size="sm"
                     className="flex items-center gap-1.5 text-xs"
                     onClick={() => {
-                      const tempCustomer = {
-                        id: `temp-msg-${Date.now()}`,
-                        name: "WhatsApp/Viber/Zalo",
-                        email: "",
-                        phone: "",
-                        type: "regular",
-                        isTemporary: true
-                      };
-                      setSelectedCustomer(tempCustomer);
-                      setCustomerSearch("WhatsApp/Viber/Zalo");
+                      setQuickCustomerType('msg');
+                      setQuickCustomerName("");
+                      setQuickCustomerPhone("");
+                      setQuickCustomerSocialApp('whatsapp');
                     }}
                     data-testid="button-messaging-customer"
                   >
-                    <Mail className="h-3.5 w-3.5" />
+                    <MessageSquare className="h-3.5 w-3.5" />
                     Msg
                   </Button>
                   <Button
@@ -1069,16 +1099,8 @@ export default function AddOrder() {
                     size="sm"
                     className="flex items-center gap-1.5 text-xs"
                     onClick={() => {
-                      const tempCustomer = {
-                        id: `temp-custom-${Date.now()}`,
-                        name: "Custom Customer",
-                        email: "",
-                        phone: "",
-                        type: "regular",
-                        isTemporary: true
-                      };
-                      setSelectedCustomer(tempCustomer);
-                      setCustomerSearch("Custom Customer");
+                      setQuickCustomerType('custom');
+                      setQuickCustomerName("");
                     }}
                     data-testid="button-custom-customer"
                   >
@@ -1087,6 +1109,130 @@ export default function AddOrder() {
                   </Button>
                 </div>
                 <Separator className="my-3" />
+              </div>
+            )}
+
+            {/* Quick Customer Forms */}
+            {quickCustomerType && !selectedCustomer && (
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-blue-900">
+                    {quickCustomerType === 'quick' && 'Quick Customer (One-time)'}
+                    {quickCustomerType === 'tel' && 'Telephone Order'}
+                    {quickCustomerType === 'msg' && 'Social Media Customer'}
+                    {quickCustomerType === 'custom' && 'Custom Customer (One-time)'}
+                  </h4>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setQuickCustomerType(null);
+                      setQuickCustomerName("");
+                      setQuickCustomerPhone("");
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {/* Name field - shown for all types */}
+                <div>
+                  <Label htmlFor="quickCustomerName">Name *</Label>
+                  <Input
+                    id="quickCustomerName"
+                    value={quickCustomerName}
+                    onChange={(e) => setQuickCustomerName(e.target.value)}
+                    placeholder="Enter customer name"
+                    data-testid="input-quick-customer-name"
+                  />
+                </div>
+
+                {/* Phone field - shown for Tel and Msg */}
+                {(quickCustomerType === 'tel' || quickCustomerType === 'msg') && (
+                  <div>
+                    <Label htmlFor="quickCustomerPhone">
+                      {quickCustomerType === 'msg' ? 'ID/Phone Number *' : 'Phone *'}
+                    </Label>
+                    <Input
+                      id="quickCustomerPhone"
+                      value={quickCustomerPhone}
+                      onChange={(e) => {
+                        // Remove all spaces from input
+                        const noSpaces = e.target.value.replace(/\s/g, '');
+                        setQuickCustomerPhone(noSpaces);
+                      }}
+                      placeholder="+420776887045"
+                      data-testid="input-quick-customer-phone"
+                    />
+                    <p className="text-xs text-slate-500 mt-1">Format without spaces (e.g. +420776887045)</p>
+                  </div>
+                )}
+
+                {/* Social Media App - shown for Msg only */}
+                {quickCustomerType === 'msg' && (
+                  <div>
+                    <Label htmlFor="quickCustomerSocialApp">Social Media App *</Label>
+                    <Select 
+                      value={quickCustomerSocialApp} 
+                      onValueChange={(value: any) => setQuickCustomerSocialApp(value)}
+                    >
+                      <SelectTrigger data-testid="select-social-app">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="viber">Viber</SelectItem>
+                        <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                        <SelectItem value="zalo">Zalo</SelectItem>
+                        <SelectItem value="email">E-mail</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                <Button
+                  type="button"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => {
+                    if (!quickCustomerName.trim()) {
+                      toast({
+                        title: "Name required",
+                        description: "Please enter a customer name",
+                        variant: "destructive"
+                      });
+                      return;
+                    }
+
+                    if ((quickCustomerType === 'tel' || quickCustomerType === 'msg') && !quickCustomerPhone.trim()) {
+                      toast({
+                        title: "Phone required",
+                        description: "Please enter a phone number",
+                        variant: "destructive"
+                      });
+                      return;
+                    }
+
+                    // Create temporary customer object
+                    const tempCustomer = {
+                      id: `temp-${quickCustomerType}-${Date.now()}`,
+                      name: quickCustomerName,
+                      email: quickCustomerType === 'msg' && quickCustomerSocialApp === 'email' ? quickCustomerPhone : "",
+                      phone: quickCustomerType === 'tel' || (quickCustomerType === 'msg' && quickCustomerSocialApp !== 'email') ? quickCustomerPhone : "",
+                      type: "regular",
+                      isTemporary: quickCustomerType === 'quick' || quickCustomerType === 'custom',
+                      needsSaving: quickCustomerType === 'tel' || quickCustomerType === 'msg',
+                      socialMediaApp: quickCustomerType === 'msg' ? quickCustomerSocialApp : undefined
+                    };
+
+                    setSelectedCustomer(tempCustomer);
+                    setCustomerSearch(quickCustomerName);
+                  }}
+                  data-testid="button-confirm-quick-customer"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Confirm
+                </Button>
               </div>
             )}
 
@@ -1201,23 +1347,15 @@ export default function AddOrder() {
                     <CheckCircle className="h-5 w-5 text-green-600" />
                     <div className="flex-1">
                       <div className="font-medium text-green-800 flex items-center gap-2">
-                        {selectedCustomer.isTemporary ? (
-                          <Input
-                            value={customerSearch}
-                            onChange={(e) => {
-                              setCustomerSearch(e.target.value);
-                              setSelectedCustomer({ ...selectedCustomer, name: e.target.value });
-                            }}
-                            className="h-7 bg-white border-green-300 text-green-800 font-medium max-w-xs"
-                            placeholder="Edit customer name..."
-                            data-testid="input-temp-customer-name"
-                          />
-                        ) : (
-                          selectedCustomer.name
-                        )}
+                        {selectedCustomer.name}
                         {selectedCustomer.isTemporary && (
                           <Badge variant="outline" className="text-xs bg-blue-50 border-blue-300 text-blue-700">
-                            Temporary
+                            One-time
+                          </Badge>
+                        )}
+                        {selectedCustomer.needsSaving && (
+                          <Badge variant="outline" className="text-xs bg-purple-50 border-purple-300 text-purple-700">
+                            Will Save
                           </Badge>
                         )}
                         {selectedCustomer.hasPayLaterBadge && (
@@ -1226,7 +1364,10 @@ export default function AddOrder() {
                           </Badge>
                         )}
                       </div>
-                      <div className="text-sm text-green-600">{selectedCustomer.email || "No email"}</div>
+                      <div className="text-sm text-green-600">
+                        {selectedCustomer.phone || selectedCustomer.email || "No contact info"}
+                        {selectedCustomer.socialMediaApp && ` (${selectedCustomer.socialMediaApp})`}
+                      </div>
                     </div>
                   </div>
                   <Button
@@ -1236,6 +1377,9 @@ export default function AddOrder() {
                     onClick={() => {
                       setSelectedCustomer(null);
                       setCustomerSearch("");
+                      setQuickCustomerType(null);
+                      setQuickCustomerName("");
+                      setQuickCustomerPhone("");
                     }}
                   >
                     Change
@@ -1653,21 +1797,47 @@ export default function AddOrder() {
                               return;
                             }
 
-                            createShippingAddressMutation.mutate({
-                              firstName,
-                              lastName,
-                              company: company || undefined,
-                              email: email || undefined,
-                              street,
-                              streetNumber: streetNumber || undefined,
-                              city,
-                              zipCode,
-                              country,
-                              tel: tel || undefined,
-                              label: label || undefined,
-                            });
+                            // For quick customers that need saving, store address temporarily
+                            if (selectedCustomer?.needsSaving) {
+                              const newAddress = {
+                                id: `temp-address-${Date.now()}`,
+                                firstName,
+                                lastName,
+                                company: company || undefined,
+                                email: email || undefined,
+                                street,
+                                streetNumber: streetNumber || undefined,
+                                city,
+                                zipCode,
+                                country,
+                                tel: tel || undefined,
+                                label: label || undefined,
+                                isNew: true,
+                              };
+                              setSelectedShippingAddress(newAddress);
+                              setShowNewAddressForm(false);
+                              toast({
+                                title: "Success",
+                                description: "Address saved (will be created with customer)",
+                              });
+                            } else {
+                              // For existing customers, save immediately
+                              createShippingAddressMutation.mutate({
+                                firstName,
+                                lastName,
+                                company: company || undefined,
+                                email: email || undefined,
+                                street,
+                                streetNumber: streetNumber || undefined,
+                                city,
+                                zipCode,
+                                country,
+                                tel: tel || undefined,
+                                label: label || undefined,
+                              });
+                            }
                           }}
-                          disabled={createShippingAddressMutation.isPending}
+                          disabled={createShippingAddressMutation.isPending && !selectedCustomer?.needsSaving}
                           data-testid="button-save-address"
                         >
                           {createShippingAddressMutation.isPending ? "Saving..." : "Save Address"}
