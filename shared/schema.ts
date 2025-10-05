@@ -274,6 +274,7 @@ export const customers = pgTable('customers', {
   vatCheckedAt: timestamp('vat_checked_at'), // Last VAT validation check
   vatCompanyName: varchar('vat_company_name'), // Company name from VAT validation
   vatCompanyAddress: text('vat_company_address'), // Company address from VAT validation
+  profilePictureUrl: varchar('profile_picture_url'), // Local path to downloaded Facebook profile picture
 });
 
 // Customer shipping addresses (multiple per customer)

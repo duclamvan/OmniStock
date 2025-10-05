@@ -27,6 +27,9 @@ app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 // Serve static files for product images
 app.use('/images', express.static('public/images'));
 
+// Serve static files for uploaded content (profile pictures, etc.)
+app.use('/uploads', express.static('uploads'));
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;

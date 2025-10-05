@@ -5769,7 +5769,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             isNumericId = true;
           } else if (pattern.source.includes('people')) {
             // Extract name from "people" URL format
-            facebookName = decodeURIComponent(match[1]).replace(/-/g, ' ');
+            // Properly decode and format the name
+            const rawName = decodeURIComponent(match[1]);
+            // Convert dashes and dots to spaces, capitalize words
+            facebookName = rawName
+              .replace(/-/g, ' ')
+              .replace(/\./g, ' ')
+              .split(' ')
+              .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+              .join(' ')
+              .trim();
             facebookId = match[2];
             isNumericId = true;
           } else {
@@ -5779,7 +5788,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
               isNumericId = true;
             } else {
               // Try to extract name from username
-              facebookName = facebookId.replace(/-/g, ' ').replace(/\./g, ' ');
+              // Convert username to proper name format
+              facebookName = facebookId
+                .replace(/-/g, ' ')
+                .replace(/\./g, ' ')
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                .join(' ')
+                .trim();
             }
           }
           break;
@@ -5832,16 +5848,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('Note: Profile pictures for username URLs require special Facebook permissions');
       }
       
+      // Ensure we always return a name - either from API or extracted from URL
+      const finalName = extractedName || facebookName || null;
+      
       res.json({
         pictureUrl,
         facebookId,
-        facebookName: extractedName || null,
+        facebookName: finalName,
         isNumericId,
         message: !isNumericId ? 'Username-based Facebook URLs cannot fetch profile pictures. Use the numeric profile URL format (facebook.com/profile.php?id=...) for best results.' : undefined
       });
     } catch (error) {
       console.error('Error fetching Facebook profile picture:', error);
       res.status(500).json({ message: 'Failed to fetch Facebook profile picture' });
+    }
+  });
+
+  // New endpoint to download and store Facebook profile pictures
+  app.post('/api/facebook/download-profile-picture', async (req, res) => {
+    try {
+      const { customerId, facebookUrl, pictureUrl } = req.body;
+      
+      if (!customerId || !pictureUrl) {
+        return res.status(400).json({ message: 'customerId and pictureUrl are required' });
+      }
+
+      // Download the image from Facebook CDN
+      const response = await fetch(pictureUrl);
+      if (!response.ok) {
+        throw new Error('Failed to download image from Facebook');
+      }
+
+      const buffer = await response.arrayBuffer();
+      const imageBuffer = Buffer.from(buffer);
+
+      // Generate a unique filename
+      const extension = 'jpg'; // Facebook profile pictures are typically JPG
+      const filename = `${customerId}_${Date.now()}.${extension}`;
+      const filepath = path.join('uploads', 'profile-pictures', filename);
+      
+      // Ensure the directory exists
+      await fs.mkdir(path.join('uploads', 'profile-pictures'), { recursive: true });
+      
+      // Save the image to disk
+      await fs.writeFile(filepath, imageBuffer);
+      
+      // Generate the local URL
+      const localUrl = `/uploads/profile-pictures/${filename}`;
+      
+      // Update the customer record with the profile picture URL
+      const customer = await storage.getCustomer(customerId);
+      if (customer) {
+        await storage.updateCustomer(customerId, {
+          ...customer,
+          profilePictureUrl: localUrl,
+          facebookUrl: facebookUrl || customer.facebookUrl
+        });
+      }
+      
+      res.json({
+        success: true,
+        localUrl,
+        message: 'Profile picture downloaded and saved successfully'
+      });
+    } catch (error) {
+      console.error('Error downloading Facebook profile picture:', error);
+      res.status(500).json({ message: 'Failed to download and save profile picture' });
     }
   });
 
