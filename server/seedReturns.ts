@@ -1,9 +1,12 @@
 import { db } from './db';
-import { returns, returnItems, orders, customers } from '../shared/schema';
+// import { returns, returnItems, orders, customers } from '../shared/schema';
+import { orders, customers } from '../shared/schema';
 import { randomUUID } from 'crypto';
 
 export async function seedReturns() {
   console.log('Seeding returns data...');
+  console.log('Returns and returnItems tables are not yet implemented in schema. Skipping seed.');
+  return;
   
   try {
     // Get some existing orders and customers

@@ -1,23 +1,26 @@
 import { nanoid } from 'nanoid';
-import type { InsertProduct, InsertProductVariant, InsertProductBundle, InsertBundleItem, InsertOrder, InsertOrderItem, InsertCustomer, InsertWarehouse, InsertWarehouseLocation, InsertInventoryBalance } from '@shared/schema';
+// import type { InsertProduct, InsertProductVariant, InsertProductBundle, InsertBundleItem, InsertOrder, InsertOrderItem, InsertCustomer, InsertWarehouse, InsertWarehouseLocation, InsertInventoryBalance } from '@shared/schema';
+import type { InsertProduct, InsertOrder, InsertOrderItem, InsertCustomer, InsertWarehouse } from '@shared/schema';
 import { db } from './db';
 import { 
   products, 
-  productVariants, 
-  productBundles, 
-  bundleItems, 
+  // productVariants, 
+  // productBundles, 
+  // bundleItems, 
   orders, 
   orderItems, 
   customers, 
   warehouses, 
-  warehouseLocations,
-  inventoryBalances,
+  // warehouseLocations,
+  // inventoryBalances,
   categories
 } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 
 export async function seedPickPackData() {
   console.log('Starting comprehensive Pick & Pack data seeding...');
+  console.log('productVariants, productBundles, bundleItems, warehouseLocations, and inventoryBalances tables are not yet implemented in schema. Skipping seed.');
+  return { products: 0, variants: 0, bundles: 0, orders: 0, customers: 0, warehouses: 0 };
   
   try {
     // Clean existing data
