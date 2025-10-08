@@ -34,9 +34,15 @@ import {
   BarChart,
   AlertCircle,
   FileText,
-  Link,
+  Link as LinkIcon,
   Barcode,
-  Tag
+  Tag,
+  ChevronDown,
+  ChevronUp,
+  Box,
+  DollarSign,
+  Warehouse,
+  Info
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -44,6 +50,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import PackingInstructionsUploader from "@/components/PackingInstructionsUploader";
 import {
   Dialog,
@@ -107,6 +119,7 @@ export default function AddProduct() {
   });
   const [packingInstructionsText, setPackingInstructionsText] = useState<string>("");
   const [packingInstructionsImage, setPackingInstructionsImage] = useState<string | null>(null);
+  const [expandedSections, setExpandedSections] = useState<string[]>(["basic"]);
   
   // Auto-conversion state
   const conversionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -474,9 +487,6 @@ export default function AddProduct() {
   };
 
   const onSubmit = (data: z.infer<typeof addProductSchema>) => {
-    // Check if product with same name and SKU exists for quantity update logic
-    // This would be handled in the backend according to the requirements
-    
     const productData = {
       ...data,
       // Convert empty strings to undefined for optional fields
@@ -493,728 +503,920 @@ export default function AddProduct() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="p-6 max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm mb-6 p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+      <div className="container mx-auto px-4 py-4 md:py-6 max-w-7xl">
+        {/* Mobile-Optimized Header */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm mb-4 md:mb-6 p-3 md:p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setLocation("/inventory")}
+                data-testid="button-back"
+                className="shrink-0"
               >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Inventory
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                <span className="hidden sm:inline">Back</span>
               </Button>
-              <div className="h-6 w-px bg-gray-200" />
+              <Separator orientation="vertical" className="h-8 hidden sm:block" />
               <div>
-                <h1 className="text-2xl font-bold text-slate-900">Add New Product</h1>
-                <p className="text-sm text-slate-600">Create a new product with variants and pricing</p>
+                <h1 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                  <Package className="h-5 w-5 md:h-6 md:w-6 text-emerald-600" />
+                  Add Product
+                </h1>
+                <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 mt-0.5">
+                  Create new product with details
+                </p>
               </div>
             </div>
-            <Badge variant="outline" className="text-green-600 border-green-600">
+            <Badge variant="outline" className="text-emerald-600 border-emerald-600 self-start sm:self-center">
               <Plus className="h-3 w-3 mr-1" />
-              New Product
+              New
             </Badge>
           </div>
         </div>
 
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <div className="flex gap-6">
-            {/* Main Column - Scrollable */}
-            <div className="flex-1 space-y-6">
-        {/* Basic Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Basic Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Product Image Upload */}
-            <div>
-              <Label htmlFor="image">Product Image</Label>
-              <div className="mt-2 flex items-center space-x-4">
-                <div className="w-24 h-24 border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center">
-                  {imageFile ? (
-                    <img
-                      src={URL.createObjectURL(imageFile)}
-                      alt="Preview"
-                      className="w-full h-full object-cover rounded-lg"
-                    />
-                  ) : (
-                    <Upload className="h-8 w-8 text-slate-400" />
-                  )}
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          {/* Product Summary Card - Mobile First */}
+          <Card className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950 dark:to-teal-950 border-emerald-200 dark:border-emerald-800">
+            <CardContent className="p-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-white dark:bg-slate-800 rounded-lg">
+                    <Tag className="h-4 w-4 text-emerald-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Variants</p>
+                    <p className="text-lg font-bold text-slate-900 dark:text-slate-100" data-testid="text-variant-count">{variants.length}</p>
+                  </div>
                 </div>
-                <div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-                    className="hidden"
-                    id="image-upload"
-                  />
-                  <label htmlFor="image-upload">
-                    <Button type="button" variant="outline" asChild>
-                      <span>Choose Image</span>
-                    </Button>
-                  </label>
-                  <p className="text-sm text-slate-500 mt-1">
-                    Images will be automatically compressed
-                  </p>
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-white dark:bg-slate-800 rounded-lg">
+                    <BarChart className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Total Stock</p>
+                    <p className="text-lg font-bold text-slate-900 dark:text-slate-100" data-testid="text-total-stock">
+                      {variants.reduce((sum, v) => sum + Number(v.quantity || 0), 0)}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 col-span-2 md:col-span-2">
+                  <div className="p-2 bg-white dark:bg-slate-800 rounded-lg">
+                    <Info className="h-4 w-4 text-amber-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Status</p>
+                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                      {form.watch('name') ? 'Ready to save' : 'Enter product details'}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            </CardContent>
+          </Card>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="name">Product Name</Label>
-                <Input
-                  {...form.register('name')}
-                  placeholder="Enter product name"
-                />
-                {form.formState.errors.name && (
-                  <p className="text-sm text-red-600 mt-1">{form.formState.errors.name.message}</p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="sku">SKU</Label>
-                <div className="flex space-x-2">
-                  <Input
-                    {...form.register('sku')}
-                    placeholder="Enter SKU or auto-generate"
-                  />
-                  <Button type="button" variant="outline" onClick={generateSKU}>
-                    <RotateCcw className="h-4 w-4" />
-                  </Button>
+          {/* Accordion-Based Sections for Mobile */}
+          <Accordion type="multiple" value={expandedSections} onValueChange={setExpandedSections} className="space-y-3">
+            {/* Basic Information */}
+            <AccordionItem value="basic" className="bg-white dark:bg-slate-800 rounded-xl border shadow-sm overflow-hidden">
+              <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                <div className="flex items-center gap-3 text-left">
+                  <div className="p-2 bg-emerald-100 dark:bg-emerald-900 rounded-lg">
+                    <Box className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">Basic Information</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Product name, SKU, category</p>
+                  </div>
                 </div>
-                {form.formState.errors.sku && (
-                  <p className="text-sm text-red-600 mt-1">{form.formState.errors.sku.message}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="categoryId">Category</Label>
-                <Select value={form.watch('categoryId')} onValueChange={(value) => form.setValue('categoryId', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories?.map((category: any) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="warehouseId">Warehouse</Label>
-                <Select value={form.watch('warehouseId')} onValueChange={(value) => form.setValue('warehouseId', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select warehouse" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {warehouses?.map((warehouse: any) => (
-                      <SelectItem key={warehouse.id} value={warehouse.id}>
-                        {warehouse.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="supplierId">Supplier</Label>
-                <Select value={form.watch('supplierId')} onValueChange={(value) => form.setValue('supplierId', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select supplier" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {suppliers?.map((supplier: any) => (
-                      <SelectItem key={supplier.id} value={supplier.id}>
-                        {supplier.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="warehouseLocation">Warehouse Location Code</Label>
-              <Input
-                {...form.register('warehouseLocation')}
-                placeholder="e.g., A1-B2-C3 or RACK-01-SHELF-05"
-              />
-              <p className="text-sm text-slate-500 mt-1">
-                Specify the exact location within the warehouse (aisle, rack, shelf, bin, etc.)
-              </p>
-            </div>
-
-            <div>
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                {...form.register('description')}
-                placeholder="Product description..."
-                rows={3}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Stock Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Stock Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="quantity">Quantity</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  {...form.register('quantity')}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="lowStockAlert">Low Stock Alert</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  {...form.register('lowStockAlert')}
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="barcode">Barcode (EAN-13)</Label>
-              <div className="flex gap-2">
-                <Input
-                  {...form.register('barcode')}
-                  placeholder="Enter barcode or scan"
-                  className="flex-1"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setIsScanning(true);
-                    toast({
-                      title: "Scanner Ready",
-                      description: "Please scan the barcode now",
-                    });
-                    // Simulate barcode scan - in production, this would connect to a barcode scanner
-                    setTimeout(() => {
-                      setIsScanning(false);
-                    }, 3000);
-                  }}
-                  disabled={isScanning}
-                >
-                  <Barcode className="h-4 w-4 mr-2" />
-                  {isScanning ? "Scanning..." : "Scan"}
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Pricing Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Pricing Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="priceCzk">Price CZK</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  {...form.register('priceCzk')}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="priceEur">Price EUR</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  {...form.register('priceEur')}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="importCostUsd">Import Cost USD</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  {...form.register('importCostUsd')}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="importCostCzk">Import Cost CZK</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  {...form.register('importCostCzk')}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="importCostEur">Import Cost EUR</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  {...form.register('importCostEur')}
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="supplierLink">Supplier Link</Label>
-              <Input
-                type="url"
-                {...form.register('supplierLink')}
-                placeholder="https://supplier-website.com/product"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Product Variants */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <CardTitle>Product Variants</CardTitle>
-            <div className="flex gap-2">
-              {selectedVariants.length > 0 && (
-                <Button type="button" variant="destructive" size="sm" onClick={bulkDeleteVariants}>
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Selected ({selectedVariants.length})
-                </Button>
-              )}
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => setIsBulkScanDialogOpen(true)}
-                disabled={variants.length === 0}
-              >
-                <Barcode className="h-4 w-4 mr-2" />
-                Bulk Scan
-              </Button>
-              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button type="button" size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Variant
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[600px]">
-                  <DialogHeader>
-                    <DialogTitle>Add Product Variants</DialogTitle>
-                    <DialogDescription>
-                      Add a single variant or create a series of variants
-                    </DialogDescription>
-                  </DialogHeader>
-                  
-                  {/* Series Creation Section */}
-                  <div className="space-y-4 border-b pb-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="series-input">Create Series</Label>
-                      <div className="space-y-3">
-                        <Input
-                          id="series-input"
-                          value={seriesInput}
-                          onChange={(e) => setSeriesInput(e.target.value)}
-                          placeholder='e.g., "Gel Polish <1-100>"'
-                        />
-                        <p className="text-xs text-slate-500">
-                          Use format like "Gel Polish &lt;1-100&gt;" to automatically create 100 variants
-                        </p>
-                        
-                        <div>
-                          <Label htmlFor="series-quantity">Quantity (each variant)</Label>
-                          <Input
-                            id="series-quantity"
-                            type="number"
-                            value={seriesQuantity}
-                            onChange={(e) => setSeriesQuantity(parseInt(e.target.value) || 0)}
-                            placeholder="0"
+              </AccordionTrigger>
+              <AccordionContent className="px-4 pb-4">
+                <div className="space-y-4 pt-2">
+                  {/* Product Image Upload */}
+                  <div>
+                    <Label htmlFor="image" className="text-sm font-medium">Product Image</Label>
+                    <div className="mt-2 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                      <div className="w-20 h-20 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+                        {imageFile ? (
+                          <img
+                            src={URL.createObjectURL(imageFile)}
+                            alt="Preview"
+                            className="w-full h-full object-cover rounded-xl"
                           />
-                        </div>
+                        ) : (
+                          <Upload className="h-6 w-6 text-slate-400" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                          className="hidden"
+                          id="image-upload"
+                          data-testid="input-image"
+                        />
+                        <label htmlFor="image-upload">
+                          <Button type="button" variant="outline" size="sm" asChild data-testid="button-upload-image">
+                            <span>
+                              <Upload className="h-4 w-4 mr-2" />
+                              Choose Image
+                            </span>
+                          </Button>
+                        </label>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                          Auto-compressed on upload
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Product Name & SKU */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="name" className="text-sm font-medium">Product Name *</Label>
+                      <Input
+                        {...form.register('name')}
+                        placeholder="Enter product name"
+                        data-testid="input-name"
+                        className="mt-1"
+                      />
+                      {form.formState.errors.name && (
+                        <p className="text-xs text-red-600 mt-1">{form.formState.errors.name.message}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="sku" className="text-sm font-medium">SKU *</Label>
+                      <div className="flex gap-2 mt-1">
+                        <Input
+                          {...form.register('sku')}
+                          placeholder="Auto-generate or enter SKU"
+                          data-testid="input-sku"
+                          className="flex-1"
+                        />
+                        <Button type="button" variant="outline" size="icon" onClick={generateSKU} data-testid="button-generate-sku">
+                          <RotateCcw className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      {form.formState.errors.sku && (
+                        <p className="text-xs text-red-600 mt-1">{form.formState.errors.sku.message}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Category, Warehouse, Supplier */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <Label htmlFor="categoryId" className="text-sm font-medium">Category</Label>
+                      <Select value={form.watch('categoryId')} onValueChange={(value) => form.setValue('categoryId', value)}>
+                        <SelectTrigger data-testid="select-category" className="mt-1">
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories?.map((category: any) => (
+                            <SelectItem key={category.id} value={category.id}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="warehouseId" className="text-sm font-medium">Warehouse</Label>
+                      <Select value={form.watch('warehouseId')} onValueChange={(value) => form.setValue('warehouseId', value)}>
+                        <SelectTrigger data-testid="select-warehouse" className="mt-1">
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {warehouses?.map((warehouse: any) => (
+                            <SelectItem key={warehouse.id} value={warehouse.id}>
+                              {warehouse.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="supplierId" className="text-sm font-medium">Supplier</Label>
+                      <Select value={form.watch('supplierId')} onValueChange={(value) => form.setValue('supplierId', value)}>
+                        <SelectTrigger data-testid="select-supplier" className="mt-1">
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {suppliers?.map((supplier: any) => (
+                            <SelectItem key={supplier.id} value={supplier.id}>
+                              {supplier.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {/* Warehouse Location */}
+                  <div>
+                    <Label htmlFor="warehouseLocation" className="text-sm font-medium">Warehouse Location Code</Label>
+                    <Input
+                      {...form.register('warehouseLocation')}
+                      placeholder="e.g., A1-B2-C3 or RACK-01-SHELF-05"
+                      data-testid="input-location"
+                      className="mt-1"
+                    />
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      Exact location within warehouse
+                    </p>
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <Label htmlFor="description" className="text-sm font-medium">Description</Label>
+                    <Textarea
+                      {...form.register('description')}
+                      placeholder="Product description..."
+                      rows={3}
+                      data-testid="input-description"
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* Stock Information */}
+            <AccordionItem value="stock" className="bg-white dark:bg-slate-800 rounded-xl border shadow-sm overflow-hidden">
+              <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                <div className="flex items-center gap-3 text-left">
+                  <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                    <BarChart className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">Stock & Inventory</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Quantity, alerts, barcode</p>
+                  </div>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-4 pb-4">
+                <div className="space-y-4 pt-2">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="quantity" className="text-sm font-medium">Quantity</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        {...form.register('quantity')}
+                        data-testid="input-quantity"
+                        className="mt-1"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="lowStockAlert" className="text-sm font-medium">Low Stock Alert</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        {...form.register('lowStockAlert')}
+                        data-testid="input-low-stock"
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="barcode" className="text-sm font-medium">Barcode (EAN-13)</Label>
+                    <div className="flex gap-2 mt-1">
+                      <Input
+                        {...form.register('barcode')}
+                        placeholder="Enter or scan barcode"
+                        data-testid="input-barcode"
+                        className="flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          setIsScanning(true);
+                          toast({
+                            title: "Scanner Ready",
+                            description: "Please scan the barcode now",
+                          });
+                          setTimeout(() => {
+                            setIsScanning(false);
+                          }, 3000);
+                        }}
+                        disabled={isScanning}
+                        data-testid="button-scan-barcode"
+                      >
+                        <Barcode className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* Pricing */}
+            <AccordionItem value="pricing" className="bg-white dark:bg-slate-800 rounded-xl border shadow-sm overflow-hidden">
+              <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                <div className="flex items-center gap-3 text-left">
+                  <div className="p-2 bg-amber-100 dark:bg-amber-900 rounded-lg">
+                    <DollarSign className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">Pricing & Costs</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Sales price, import costs</p>
+                  </div>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-4 pb-4">
+                <div className="space-y-4 pt-2">
+                  {/* Sales Prices */}
+                  <div>
+                    <Label className="text-sm font-medium mb-2 block">Sales Prices</Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor="priceCzk" className="text-xs text-slate-500">CZK</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          {...form.register('priceCzk')}
+                          placeholder="0.00"
+                          data-testid="input-price-czk"
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="priceEur" className="text-xs text-slate-500">EUR</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          {...form.register('priceEur')}
+                          placeholder="0.00"
+                          data-testid="input-price-eur"
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Import Costs */}
+                  <div>
+                    <Label className="text-sm font-medium mb-2 block">Import Costs</Label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <Label htmlFor="importCostUsd" className="text-xs text-slate-500">USD</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          {...form.register('importCostUsd')}
+                          placeholder="0.00"
+                          data-testid="input-cost-usd"
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="importCostCzk" className="text-xs text-slate-500">CZK</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          {...form.register('importCostCzk')}
+                          placeholder="0.00"
+                          data-testid="input-cost-czk"
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="importCostEur" className="text-xs text-slate-500">EUR</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          {...form.register('importCostEur')}
+                          placeholder="0.00"
+                          data-testid="input-cost-eur"
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      Enter cost in one currency, others auto-convert
+                    </p>
+                  </div>
+
+                  {/* Supplier Link */}
+                  <div>
+                    <Label htmlFor="supplierLink" className="text-sm font-medium">Supplier Link</Label>
+                    <Input
+                      type="url"
+                      {...form.register('supplierLink')}
+                      placeholder="https://supplier-website.com/product"
+                      data-testid="input-supplier-link"
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* Product Variants */}
+            <AccordionItem value="variants" className="bg-white dark:bg-slate-800 rounded-xl border shadow-sm overflow-hidden">
+              <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                <div className="flex items-center gap-3 text-left flex-1">
+                  <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                    <Tag className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold text-slate-900 dark:text-slate-100">Product Variants</h3>
+                      <Badge variant="secondary" className="ml-2">{variants.length}</Badge>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Manage product variations</p>
+                  </div>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-4 pb-4">
+                <div className="space-y-4 pt-2">
+                  {/* Variant Actions */}
+                  <div className="flex flex-wrap gap-2">
+                    <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button type="button" size="sm" data-testid="button-add-variant">
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Variant
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+                        <DialogHeader>
+                          <DialogTitle>Add Product Variants</DialogTitle>
+                          <DialogDescription>
+                            Add a single variant or create a series of variants
+                          </DialogDescription>
+                        </DialogHeader>
                         
-                        <div>
-                          <Label>Import Cost (each variant)</Label>
-                          <div className="grid grid-cols-3 gap-2 mt-2">
-                            <div>
-                              <Label htmlFor="series-cost-usd" className="text-xs text-slate-500">USD</Label>
+                        {/* Series Creation Section */}
+                        <div className="space-y-4 border-b pb-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="series-input">Create Series</Label>
+                            <div className="space-y-3">
                               <Input
-                                id="series-cost-usd"
-                                value={seriesImportCostUsd}
-                                onChange={(e) => setSeriesImportCostUsd(e.target.value)}
-                                placeholder="0.00"
+                                id="series-input"
+                                value={seriesInput}
+                                onChange={(e) => setSeriesInput(e.target.value)}
+                                placeholder='e.g., "Gel Polish <1-100>"'
+                                data-testid="input-series"
+                              />
+                              <p className="text-xs text-slate-500">
+                                Use format like "Gel Polish &lt;1-100&gt;" to automatically create 100 variants
+                              </p>
+                              
+                              <div>
+                                <Label htmlFor="series-quantity">Quantity (each variant)</Label>
+                                <Input
+                                  id="series-quantity"
+                                  type="number"
+                                  value={seriesQuantity}
+                                  onChange={(e) => setSeriesQuantity(parseInt(e.target.value) || 0)}
+                                  placeholder="0"
+                                  data-testid="input-series-quantity"
+                                />
+                              </div>
+                              
+                              <div>
+                                <Label>Import Cost (each variant)</Label>
+                                <div className="grid grid-cols-3 gap-2 mt-2">
+                                  <div>
+                                    <Label htmlFor="series-cost-usd" className="text-xs text-slate-500">USD</Label>
+                                    <Input
+                                      id="series-cost-usd"
+                                      value={seriesImportCostUsd}
+                                      onChange={(e) => setSeriesImportCostUsd(e.target.value)}
+                                      placeholder="0.00"
+                                      data-testid="input-series-cost-usd"
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="series-cost-czk" className="text-xs text-slate-500">CZK</Label>
+                                    <Input
+                                      id="series-cost-czk"
+                                      value={seriesImportCostCzk}
+                                      onChange={(e) => setSeriesImportCostCzk(e.target.value)}
+                                      placeholder="0.00"
+                                      data-testid="input-series-cost-czk"
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="series-cost-eur" className="text-xs text-slate-500">EUR</Label>
+                                    <Input
+                                      id="series-cost-eur"
+                                      value={seriesImportCostEur}
+                                      onChange={(e) => setSeriesImportCostEur(e.target.value)}
+                                      placeholder="0.00"
+                                      data-testid="input-series-cost-eur"
+                                    />
+                                  </div>
+                                </div>
+                                <p className="text-xs text-slate-500 mt-1">
+                                  Enter cost in one currency, others will auto-convert
+                                </p>
+                              </div>
+                              
+                              <Button 
+                                onClick={addVariantSeries}
+                                disabled={!seriesInput}
+                                type="button"
+                                className="w-full"
+                                data-testid="button-add-series"
+                              >
+                                Add Series
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Single Variant Section */}
+                        <div className="space-y-4 pt-4">
+                          <div className="text-sm font-medium text-slate-600">Or add a single variant:</div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor="variant-name">Variant Name</Label>
+                              <Input
+                                id="variant-name"
+                                value={newVariant.name}
+                                onChange={(e) =>
+                                  setNewVariant((prev) => ({ ...prev, name: e.target.value }))
+                                }
+                                placeholder="e.g., Size XL"
+                                data-testid="input-variant-name"
                               />
                             </div>
                             <div>
-                              <Label htmlFor="series-cost-czk" className="text-xs text-slate-500">CZK</Label>
+                              <Label htmlFor="variant-barcode">Barcode</Label>
                               <Input
-                                id="series-cost-czk"
-                                value={seriesImportCostCzk}
-                                onChange={(e) => setSeriesImportCostCzk(e.target.value)}
-                                placeholder="0.00"
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="series-cost-eur" className="text-xs text-slate-500">EUR</Label>
-                              <Input
-                                id="series-cost-eur"
-                                value={seriesImportCostEur}
-                                onChange={(e) => setSeriesImportCostEur(e.target.value)}
-                                placeholder="0.00"
+                                id="variant-barcode"
+                                value={newVariant.barcode}
+                                onChange={(e) =>
+                                  setNewVariant((prev) => ({ ...prev, barcode: e.target.value }))
+                                }
+                                placeholder="123456789012"
+                                data-testid="input-variant-barcode"
                               />
                             </div>
                           </div>
-                          <p className="text-xs text-slate-500 mt-1">
-                            Enter cost in one currency, others will auto-convert
-                          </p>
+                          <div>
+                            <Label htmlFor="variant-quantity">Quantity</Label>
+                            <Input
+                              id="variant-quantity"
+                              type="number"
+                              value={newVariant.quantity}
+                              onChange={(e) =>
+                                setNewVariant((prev) => ({ ...prev, quantity: parseInt(e.target.value) || 0 }))
+                              }
+                              placeholder="0"
+                              data-testid="input-variant-quantity"
+                            />
+                          </div>
+                          <div className="grid grid-cols-3 gap-4">
+                            <div>
+                              <Label htmlFor="variant-cost-usd">Import Cost (USD)</Label>
+                              <Input
+                                id="variant-cost-usd"
+                                value={newVariant.importCostUsd}
+                                onChange={(e) =>
+                                  setNewVariant((prev) => ({ ...prev, importCostUsd: e.target.value }))
+                                }
+                                placeholder="0.00"
+                                data-testid="input-variant-cost-usd"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="variant-cost-czk">Import Cost (CZK)</Label>
+                              <Input
+                                id="variant-cost-czk"
+                                value={newVariant.importCostCzk}
+                                onChange={(e) =>
+                                  setNewVariant((prev) => ({ ...prev, importCostCzk: e.target.value }))
+                                }
+                                placeholder="0.00"
+                                data-testid="input-variant-cost-czk"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="variant-cost-eur">Import Cost (EUR)</Label>
+                              <Input
+                                id="variant-cost-eur"
+                                value={newVariant.importCostEur}
+                                onChange={(e) =>
+                                  setNewVariant((prev) => ({ ...prev, importCostEur: e.target.value }))
+                                }
+                                placeholder="0.00"
+                                data-testid="input-variant-cost-eur"
+                              />
+                            </div>
+                          </div>
                         </div>
-                        
-                        <Button 
-                          onClick={addVariantSeries}
-                          disabled={!seriesInput}
-                          type="button"
-                          className="w-full"
-                        >
-                          Add Series
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* Single Variant Section */}
-                  <div className="space-y-4 pt-4">
-                    <div className="text-sm font-medium text-slate-600">Or add a single variant:</div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="variant-name">Variant Name</Label>
-                        <Input
-                          id="variant-name"
-                          value={newVariant.name}
-                          onChange={(e) =>
-                            setNewVariant((prev) => ({ ...prev, name: e.target.value }))
-                          }
-                          placeholder="e.g., Size XL"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="variant-barcode">Barcode</Label>
-                        <Input
-                          id="variant-barcode"
-                          value={newVariant.barcode}
-                          onChange={(e) =>
-                            setNewVariant((prev) => ({ ...prev, barcode: e.target.value }))
-                          }
-                          placeholder="123456789012"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <Label htmlFor="variant-quantity">Quantity</Label>
-                      <Input
-                        id="variant-quantity"
-                        type="number"
-                        value={newVariant.quantity}
-                        onChange={(e) =>
-                          setNewVariant((prev) => ({ ...prev, quantity: parseInt(e.target.value) || 0 }))
-                        }
-                        placeholder="0"
-                      />
-                    </div>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <Label htmlFor="variant-cost-usd">Import Cost (USD)</Label>
-                        <Input
-                          id="variant-cost-usd"
-                          value={newVariant.importCostUsd}
-                          onChange={(e) =>
-                            setNewVariant((prev) => ({ ...prev, importCostUsd: e.target.value }))
-                          }
-                          placeholder="0.00"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="variant-cost-czk">Import Cost (CZK)</Label>
-                        <Input
-                          id="variant-cost-czk"
-                          value={newVariant.importCostCzk}
-                          onChange={(e) =>
-                            setNewVariant((prev) => ({ ...prev, importCostCzk: e.target.value }))
-                          }
-                          placeholder="0.00"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="variant-cost-eur">Import Cost (EUR)</Label>
-                        <Input
-                          id="variant-cost-eur"
-                          value={newVariant.importCostEur}
-                          onChange={(e) =>
-                            setNewVariant((prev) => ({ ...prev, importCostEur: e.target.value }))
-                          }
-                          placeholder="0.00"
-                        />
-                      </div>
-                    </div>
-                  </div>
+                        <DialogFooter>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setIsAddDialogOpen(false)}
+                            data-testid="button-cancel-variant"
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={addVariant}
+                            disabled={!newVariant.name.trim()}
+                            data-testid="button-save-variant"
+                          >
+                            Add Variant
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
 
-                  <DialogFooter>
                     <Button
                       type="button"
+                      size="sm"
                       variant="outline"
-                      onClick={() => setIsAddDialogOpen(false)}
+                      onClick={() => setIsBulkScanDialogOpen(true)}
+                      disabled={variants.length === 0}
+                      data-testid="button-bulk-scan"
                     >
-                      Cancel
+                      <Barcode className="h-4 w-4 mr-2" />
+                      Bulk Scan
                     </Button>
-                    <Button
-                      type="button"
-                      onClick={addVariant}
-                      disabled={!newVariant.name.trim()}
-                    >
-                      Add Variant
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
 
-            {/* Variants Table */}
-            {variants.length > 0 && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      checked={selectedVariants.length === variants.length && variants.length > 0}
-                      onCheckedChange={toggleSelectAll}
-                    />
-                    <span className="text-sm text-slate-600">
-                      {selectedVariants.length > 0 ? `${selectedVariants.length} selected` : `${variants.length} variants`}
-                    </span>
+                    {selectedVariants.length > 0 && (
+                      <Button type="button" variant="destructive" size="sm" onClick={bulkDeleteVariants} data-testid="button-delete-selected">
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete ({selectedVariants.length})
+                      </Button>
+                    )}
                   </div>
-                  {selectedVariants.length > 0 && (
-                    <Button type="button" variant="destructive" size="sm" onClick={bulkDeleteVariants}>
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete ({selectedVariants.length})
-                    </Button>
-                  )}
-                </div>
 
-                <div className="border rounded-lg overflow-hidden overflow-x-auto">
-                  <Table className="min-w-full">
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-12">
+                  {/* Variants Table/List */}
+                  {variants.length > 0 && (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
                           <Checkbox
                             checked={selectedVariants.length === variants.length && variants.length > 0}
                             onCheckedChange={toggleSelectAll}
+                            data-testid="checkbox-select-all"
                           />
-                        </TableHead>
-                        <TableHead className="min-w-[200px]">Product Name</TableHead>
-                        <TableHead>Barcode</TableHead>
-                        <TableHead>Quantity</TableHead>
-                        <TableHead>Import Cost (USD)</TableHead>
-                        <TableHead>Import Cost (CZK)</TableHead>
-                        <TableHead>Import Cost (EUR)</TableHead>
-                        <TableHead className="w-12"></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {variants.map((variant) => (
-                        <TableRow key={variant.id}>
-                          <TableCell>
-                            <Checkbox
-                              checked={selectedVariants.includes(variant.id)}
-                              onCheckedChange={(checked) => {
-                                if (checked) {
-                                  setSelectedVariants([...selectedVariants, variant.id]);
-                                } else {
-                                  setSelectedVariants(selectedVariants.filter(id => id !== variant.id));
-                                }
-                              }}
-                            />
-                          </TableCell>
-                          <TableCell className="min-w-[200px]">
-                            <Input
-                              value={variant.name}
-                              onChange={(e) => updateVariant(variant.id, 'name', e.target.value)}
-                              className="border-0 bg-transparent p-0 focus-visible:ring-0 w-full"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              value={variant.barcode}
-                              onChange={(e) => updateVariant(variant.id, 'barcode', e.target.value)}
-                              className="border-0 bg-transparent p-0 focus-visible:ring-0"
-                              placeholder="-"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              type="number"
-                              value={variant.quantity}
-                              onChange={(e) => updateVariant(variant.id, 'quantity', parseInt(e.target.value) || 0)}
-                              className="border-0 bg-transparent p-0 focus-visible:ring-0"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              value={variant.importCostUsd}
-                              onChange={(e) => updateVariant(variant.id, 'importCostUsd', e.target.value)}
-                              className="border-0 bg-transparent p-0 focus-visible:ring-0"
-                              placeholder="$0.00"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              value={variant.importCostCzk}
-                              onChange={(e) => updateVariant(variant.id, 'importCostCzk', e.target.value)}
-                              className="border-0 bg-transparent p-0 focus-visible:ring-0"
-                              placeholder="0,00 Kč"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Input
-                              value={variant.importCostEur}
-                              onChange={(e) => updateVariant(variant.id, 'importCostEur', e.target.value)}
-                              className="border-0 bg-transparent p-0 focus-visible:ring-0"
-                              placeholder="0,00 €"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                  onClick={() => removeVariant(variant.id)}
-                                  className="text-red-600"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Packing Instructions */}
-        <PackingInstructionsUploader
-          packingInstructionsText={packingInstructionsText}
-          packingInstructionsImage={packingInstructionsImage || ""}
-          onTextChange={setPackingInstructionsText}
-          onImageChange={setPackingInstructionsImage}
-        />
-            </div>
-            {/* End of Main Column */}
-
-            {/* Right Column - Sticky */}
-            <div className="w-full lg:w-96">
-              <div className="sticky top-20 space-y-6">
-                {/* Quick Actions Card */}
-                <Card className="shadow-lg overflow-hidden">
-                  <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-t-lg">
-                    <CardTitle className="flex items-center gap-2">
-                      <Package className="h-5 w-5 text-green-600" />
-                      Quick Actions
-                    </CardTitle>
-                    <CardDescription>Save your product or cancel</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4 pt-6">
-                    <Button type="submit" className="w-full" size="lg" disabled={createProductMutation.isPending}>
-                      <Save className="h-4 w-4 mr-2" />
-                      {createProductMutation.isPending ? 'Creating...' : 'Create Product'}
-                    </Button>
-                    <Button type="button" variant="outline" className="w-full" onClick={() => setLocation('/inventory')}>
-                      Cancel
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                {/* Product Summary */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm font-medium text-gray-600">Product Summary</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Tag className="h-4 w-4 text-blue-500" />
-                      <span className="text-gray-600">Variants:</span>
-                      <span className="font-medium">{variants.length}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <BarChart className="h-4 w-4 text-green-500" />
-                      <span className="text-gray-600">Total Stock:</span>
-                      <span className="font-medium">
-                        {variants.reduce((sum, v) => sum + Number(v.stock), 0)}
-                      </span>
-                    </div>
-                    {variants.length > 0 && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <Banknote className="h-4 w-4 text-orange-500" />
-                        <span className="text-gray-600">Price Range:</span>
-                        <span className="font-medium">
-                          {Math.min(...variants.map(v => Number(v.price)))} - {Math.max(...variants.map(v => Number(v.price)))}
-                        </span>
+                          <span className="text-slate-600 dark:text-slate-400">
+                            {selectedVariants.length > 0 ? `${selectedVariants.length} selected` : `${variants.length} variants`}
+                          </span>
+                        </div>
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
 
-                {/* Tips */}
-                <Card className="border-blue-200 bg-blue-50/50">
-                  <CardHeader>
-                    <CardTitle className="text-sm font-medium text-blue-900">
-                      <AlertCircle className="h-4 w-4 inline mr-2" />
-                      Tips
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-sm text-blue-800 space-y-2">
-                    <p>• Add at least one variant for your product</p>
-                    <p>• Use clear, descriptive names</p>
-                    <p>• Set realistic stock levels</p>
-                  </CardContent>
-                </Card>
-              </div>
+                      {/* Mobile: Card View, Desktop: Table View */}
+                      <div className="hidden md:block border rounded-lg overflow-hidden overflow-x-auto">
+                        <Table className="min-w-full">
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="w-12">
+                                <Checkbox
+                                  checked={selectedVariants.length === variants.length && variants.length > 0}
+                                  onCheckedChange={toggleSelectAll}
+                                  data-testid="checkbox-select-all-header"
+                                />
+                              </TableHead>
+                              <TableHead className="min-w-[200px]">Product Name</TableHead>
+                              <TableHead>Barcode</TableHead>
+                              <TableHead>Quantity</TableHead>
+                              <TableHead>Import Cost (USD)</TableHead>
+                              <TableHead>Import Cost (CZK)</TableHead>
+                              <TableHead>Import Cost (EUR)</TableHead>
+                              <TableHead className="w-12"></TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {variants.map((variant) => (
+                              <TableRow key={variant.id} data-testid={`row-variant-${variant.id}`}>
+                                <TableCell>
+                                  <Checkbox
+                                    checked={selectedVariants.includes(variant.id)}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        setSelectedVariants([...selectedVariants, variant.id]);
+                                      } else {
+                                        setSelectedVariants(selectedVariants.filter(id => id !== variant.id));
+                                      }
+                                    }}
+                                    data-testid={`checkbox-variant-${variant.id}`}
+                                  />
+                                </TableCell>
+                                <TableCell className="min-w-[200px]">
+                                  <Input
+                                    value={variant.name}
+                                    onChange={(e) => updateVariant(variant.id, 'name', e.target.value)}
+                                    className="border-0 bg-transparent p-0 focus-visible:ring-0 w-full"
+                                    data-testid={`input-variant-name-${variant.id}`}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Input
+                                    value={variant.barcode}
+                                    onChange={(e) => updateVariant(variant.id, 'barcode', e.target.value)}
+                                    className="border-0 bg-transparent p-0 focus-visible:ring-0"
+                                    placeholder="-"
+                                    data-testid={`input-variant-barcode-${variant.id}`}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Input
+                                    type="number"
+                                    value={variant.quantity}
+                                    onChange={(e) => updateVariant(variant.id, 'quantity', parseInt(e.target.value) || 0)}
+                                    className="border-0 bg-transparent p-0 focus-visible:ring-0"
+                                    data-testid={`input-variant-quantity-${variant.id}`}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Input
+                                    value={variant.importCostUsd}
+                                    onChange={(e) => updateVariant(variant.id, 'importCostUsd', e.target.value)}
+                                    className="border-0 bg-transparent p-0 focus-visible:ring-0"
+                                    placeholder="$0.00"
+                                    data-testid={`input-variant-cost-usd-${variant.id}`}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Input
+                                    value={variant.importCostCzk}
+                                    onChange={(e) => updateVariant(variant.id, 'importCostCzk', e.target.value)}
+                                    className="border-0 bg-transparent p-0 focus-visible:ring-0"
+                                    placeholder="0,00 Kč"
+                                    data-testid={`input-variant-cost-czk-${variant.id}`}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Input
+                                    value={variant.importCostEur}
+                                    onChange={(e) => updateVariant(variant.id, 'importCostEur', e.target.value)}
+                                    className="border-0 bg-transparent p-0 focus-visible:ring-0"
+                                    placeholder="0,00 €"
+                                    data-testid={`input-variant-cost-eur-${variant.id}`}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="sm" data-testid={`button-variant-menu-${variant.id}`}>
+                                        <MoreHorizontal className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem
+                                        onClick={() => removeVariant(variant.id)}
+                                        className="text-red-600"
+                                        data-testid={`button-delete-variant-${variant.id}`}
+                                      >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Delete
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+
+                      {/* Mobile Card View */}
+                      <div className="md:hidden space-y-2">
+                        {variants.map((variant) => (
+                          <Card key={variant.id} className="p-3" data-testid={`card-variant-${variant.id}`}>
+                            <div className="flex items-start gap-3">
+                              <Checkbox
+                                checked={selectedVariants.includes(variant.id)}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setSelectedVariants([...selectedVariants, variant.id]);
+                                  } else {
+                                    setSelectedVariants(selectedVariants.filter(id => id !== variant.id));
+                                  }
+                                }}
+                                className="mt-1"
+                                data-testid={`checkbox-variant-mobile-${variant.id}`}
+                              />
+                              <div className="flex-1 space-y-2">
+                                <Input
+                                  value={variant.name}
+                                  onChange={(e) => updateVariant(variant.id, 'name', e.target.value)}
+                                  className="font-medium"
+                                  placeholder="Variant name"
+                                  data-testid={`input-variant-name-mobile-${variant.id}`}
+                                />
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                  <Input
+                                    value={variant.barcode}
+                                    onChange={(e) => updateVariant(variant.id, 'barcode', e.target.value)}
+                                    placeholder="Barcode"
+                                    data-testid={`input-variant-barcode-mobile-${variant.id}`}
+                                  />
+                                  <Input
+                                    type="number"
+                                    value={variant.quantity}
+                                    onChange={(e) => updateVariant(variant.id, 'quantity', parseInt(e.target.value) || 0)}
+                                    placeholder="Qty"
+                                    data-testid={`input-variant-quantity-mobile-${variant.id}`}
+                                  />
+                                </div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeVariant(variant.id)}
+                                className="shrink-0 text-red-600"
+                                data-testid={`button-delete-variant-mobile-${variant.id}`}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {variants.length === 0 && (
+                    <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                      <Tag className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                      <p className="text-sm">No variants added yet</p>
+                      <p className="text-xs mt-1">Click "Add Variant" to get started</p>
+                    </div>
+                  )}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* Packing Instructions */}
+            <AccordionItem value="packing" className="bg-white dark:bg-slate-800 rounded-xl border shadow-sm overflow-hidden">
+              <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                <div className="flex items-center gap-3 text-left">
+                  <div className="p-2 bg-indigo-100 dark:bg-indigo-900 rounded-lg">
+                    <FileText className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">Packing Instructions</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Special handling notes</p>
+                  </div>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-4 pb-4">
+                <div className="pt-2">
+                  <PackingInstructionsUploader
+                    packingInstructionsText={packingInstructionsText}
+                    packingInstructionsImage={packingInstructionsImage || ""}
+                    onTextChange={setPackingInstructionsText}
+                    onImageChange={setPackingInstructionsImage}
+                  />
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+
+          {/* Sticky Bottom Action Bar - Mobile Friendly */}
+          <div className="sticky bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t shadow-lg rounded-t-2xl p-4 z-10">
+            <div className="max-w-7xl mx-auto flex flex-col sm:flex-row gap-3">
+              <Button 
+                type="submit" 
+                className="flex-1 h-12" 
+                disabled={createProductMutation.isPending}
+                data-testid="button-save-product"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {createProductMutation.isPending ? 'Creating...' : 'Create Product'}
+              </Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="sm:w-32 h-12" 
+                onClick={() => setLocation('/inventory')}
+                data-testid="button-cancel"
+              >
+                Cancel
+              </Button>
             </div>
-            {/* End of Right Column */}
           </div>
-          
+
           {/* Bulk Scan Dialog */}
           <Dialog open={isBulkScanDialogOpen} onOpenChange={setIsBulkScanDialogOpen}>
             <DialogContent className="sm:max-w-[500px]">
@@ -1235,6 +1437,7 @@ export default function AddProduct() {
                     placeholder="Scan or paste barcodes here (one per line)"
                     rows={10}
                     className="font-mono text-sm"
+                    data-testid="input-bulk-barcodes"
                   />
                   <p className="text-xs text-slate-500 mt-2">
                     Enter one barcode per line. Barcodes will be assigned to variants in order.
@@ -1242,10 +1445,10 @@ export default function AddProduct() {
                 </div>
                 
                 <div className="flex items-center justify-between text-sm">
-                  <div className="text-slate-600">
+                  <div className="text-slate-600 dark:text-slate-400">
                     <span className="font-medium">{variants.filter(v => !v.barcode).length}</span> variants without barcodes
                   </div>
-                  <div className="text-slate-600">
+                  <div className="text-slate-600 dark:text-slate-400">
                     <span className="font-medium">{bulkBarcodes.split('\n').filter(b => b.trim()).length}</span> barcodes entered
                   </div>
                 </div>
@@ -1260,13 +1463,12 @@ export default function AddProduct() {
                       title: "Scanner Ready",
                       description: "Start scanning barcodes. Press Enter after each scan.",
                     });
-                    // In production, this would interface with a barcode scanner
-                    // For now, users can manually paste or type barcodes
                     setTimeout(() => {
                       setIsScanning(false);
                     }, 3000);
                   }}
                   disabled={isScanning}
+                  data-testid="button-start-scanning"
                 >
                   <Barcode className="h-4 w-4 mr-2" />
                   {isScanning ? "Scanning..." : "Start Scanning"}
@@ -1281,6 +1483,7 @@ export default function AddProduct() {
                     setBulkBarcodes("");
                     setIsBulkScanDialogOpen(false);
                   }}
+                  data-testid="button-cancel-bulk-scan"
                 >
                   Cancel
                 </Button>
@@ -1288,6 +1491,7 @@ export default function AddProduct() {
                   type="button"
                   onClick={handleBulkBarcodeAssign}
                   disabled={!bulkBarcodes.trim() || variants.filter(v => !v.barcode).length === 0}
+                  data-testid="button-assign-barcodes"
                 >
                   Assign Barcodes
                 </Button>
