@@ -103,123 +103,144 @@ function BundleItemRow({
     : products;
 
   return (
-    <div className="border rounded-lg p-4 space-y-3">
-      <div className="flex items-start gap-3">
-        <div className="flex-1 space-y-2">
-          <Label className="text-sm font-medium">Product</Label>
-          <Popover open={isOpen} onOpenChange={setIsOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                role="combobox"
-                aria-expanded={isOpen}
-                className={`w-full justify-between ${errors[`item_${item.id}`] ? 'border-destructive' : ''}`}
-                data-testid={`button-select-product-${index}`}
-              >
-                {item.productId ? (
-                  <span className="truncate">{item.productName}</span>
-                ) : (
-                  <span className="text-muted-foreground">Search products...</span>
-                )}
-                <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[400px] p-0" align="start">
-              <Command>
-                <CommandInput 
-                  placeholder="Type to search products..." 
-                  value={searchQuery}
-                  onValueChange={setSearchQuery}
-                  data-testid={`input-search-product-${index}`}
-                />
-                <CommandEmpty>No products found.</CommandEmpty>
-                <CommandGroup className="max-h-64 overflow-auto">
-                  {filteredProducts.map((product) => (
-                    <CommandItem
-                      key={product.id}
-                      value={product.id}
-                      onSelect={() => {
-                        onItemChange(item.id, 'productId', product.id);
-                        setIsOpen(false);
-                        setSearchQuery('');
-                      }}
-                      data-testid={`product-option-${product.id}`}
-                    >
-                      <Check
-                        className={`mr-2 h-4 w-4 ${
-                          item.productId === product.id ? "opacity-100" : "opacity-0"
-                        }`}
-                      />
-                      <div className="flex-1 flex items-center justify-between">
-                        <span>{product.name}</span>
-                        <span className="text-xs text-muted-foreground ml-2">
-                          {product.sku}
-                        </span>
-                      </div>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </Command>
-            </PopoverContent>
-          </Popover>
-          {errors[`item_${item.id}`] && (
-            <p className="text-xs text-destructive">{errors[`item_${item.id}`]}</p>
-          )}
+    <div className="border rounded-lg overflow-hidden">
+      {/* Top Section - Item Summary */}
+      {item.productName ? (
+        <div className="bg-muted/30 px-4 py-3 border-b">
+          <div className="flex items-center justify-between">
+            <div className="flex-1 min-w-0">
+              <h4 className="font-semibold text-sm truncate">{item.productName}</h4>
+              <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                <span>{item.quantity} × {item.priceCzk.toFixed(2)} Kč</span>
+                <span className="text-xs">= {(item.quantity * item.priceCzk).toFixed(2)} Kč</span>
+              </div>
+              {item.variantIds && item.variantIds.length > 0 && (
+                <div className="mt-1 flex items-center gap-1">
+                  <Badge variant="secondary" className="text-xs">
+                    {item.variantIds.length} variant{item.variantIds.length !== 1 ? 's' : ''}
+                  </Badge>
+                </div>
+              )}
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onRemoveItem(item.id)}
+              data-testid={`button-remove-item-${index}`}
+              className="shrink-0 ml-2"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-muted/30 px-4 py-3 border-b">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">Select a product below</p>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onRemoveItem(item.id)}
+              data-testid={`button-remove-item-${index}`}
+              className="shrink-0"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Bottom Section - Product Selection */}
+      <div className="p-4 space-y-3">
+        <div className="flex gap-3">
+          <div className="flex-1">
+            <Label className="text-xs text-muted-foreground mb-2 block">Product</Label>
+            <Popover open={isOpen} onOpenChange={setIsOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={isOpen}
+                  className={`w-full justify-between ${errors[`item_${item.id}`] ? 'border-destructive' : ''}`}
+                  data-testid={`button-select-product-${index}`}
+                >
+                  {item.productId ? (
+                    <span className="truncate">{item.productName}</span>
+                  ) : (
+                    <span className="text-muted-foreground">Search products...</span>
+                  )}
+                  <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[400px] p-0" align="start">
+                <Command>
+                  <CommandInput 
+                    placeholder="Type to search products..." 
+                    value={searchQuery}
+                    onValueChange={setSearchQuery}
+                    data-testid={`input-search-product-${index}`}
+                  />
+                  <CommandEmpty>No products found.</CommandEmpty>
+                  <CommandGroup className="max-h-64 overflow-auto">
+                    {filteredProducts.map((product) => (
+                      <CommandItem
+                        key={product.id}
+                        value={product.id}
+                        onSelect={() => {
+                          onItemChange(item.id, 'productId', product.id);
+                          setIsOpen(false);
+                          setSearchQuery('');
+                        }}
+                        data-testid={`product-option-${product.id}`}
+                      >
+                        <Check
+                          className={`mr-2 h-4 w-4 ${
+                            item.productId === product.id ? "opacity-100" : "opacity-0"
+                          }`}
+                        />
+                        <div className="flex-1 flex items-center justify-between">
+                          <span>{product.name}</span>
+                          <span className="text-xs text-muted-foreground ml-2">
+                            {product.sku}
+                          </span>
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </Command>
+              </PopoverContent>
+            </Popover>
+            {errors[`item_${item.id}`] && (
+              <p className="text-xs text-destructive mt-1">{errors[`item_${item.id}`]}</p>
+            )}
+          </div>
+
+          <div className="w-24">
+            <Label className="text-xs text-muted-foreground mb-2 block">Quantity</Label>
+            <Input
+              type="number"
+              min="1"
+              value={item.quantity}
+              onChange={(e) => 
+                onItemChange(item.id, 'quantity', parseInt(e.target.value) || 1)
+              }
+              className={errors[`quantity_${item.id}`] ? 'border-destructive' : ''}
+              data-testid={`input-quantity-${index}`}
+            />
+          </div>
         </div>
 
-        <div className="w-24">
-          <Label className="text-sm font-medium">Qty</Label>
-          <Input
-            type="number"
-            min="1"
-            value={item.quantity}
-            onChange={(e) => 
-              onItemChange(item.id, 'quantity', parseInt(e.target.value) || 1)
-            }
-            className={`mt-2 ${errors[`quantity_${item.id}`] ? 'border-destructive' : ''}`}
-            data-testid={`input-quantity-${index}`}
-          />
-        </div>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          className="mt-8"
-          onClick={() => onRemoveItem(item.id)}
-          data-testid={`button-remove-item-${index}`}
-        >
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
-
-      {item.productId && variantsCache[item.productId]?.length > 0 && (
-        <div>
-          <Label className="text-sm font-medium">Variants (Optional)</Label>
-          <div className="mt-2">
+        {item.productId && variantsCache[item.productId]?.length > 0 && (
+          <div>
+            <Label className="text-xs text-muted-foreground mb-2 block">Variants (Optional)</Label>
             <VariantSelector
               variants={variantsCache[item.productId]}
               selectedIds={item.variantIds || []}
               onChange={(ids) => onItemChange(item.id, 'variantIds', ids)}
             />
           </div>
-        </div>
-      )}
-
-      {item.productName && (
-        <div className="bg-muted/50 px-3 py-2 rounded-md">
-          <div className="flex items-center justify-between text-sm">
-            <span className="font-medium">{item.productName}</span>
-            <span className="text-muted-foreground">
-              {item.quantity} × {item.priceCzk.toFixed(2)} Kč
-            </span>
-          </div>
-          {item.variantIds && item.variantIds.length > 0 && (
-            <div className="mt-2 text-xs text-muted-foreground">
-              {item.variantIds.length} variant{item.variantIds.length !== 1 ? 's' : ''} selected
-            </div>
-          )}
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
