@@ -9,7 +9,7 @@ import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
-import { Plus, Search, Edit, Trash2, Warehouse, MapPin, Phone } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Warehouse, MapPin, Package } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -87,14 +87,14 @@ export default function AllWarehouses() {
   const columns: DataTableColumn<any>[] = [
     {
       key: "name",
-      header: "Warehouse",
+      header: "Warehouse Name",
       sortable: true,
-      className: "min-w-[120px]",
+      className: "min-w-[200px]",
       cell: (warehouse) => (
-        <div className="flex items-center gap-1 lg:gap-2">
-          <Warehouse className="h-3 w-3 lg:h-4 lg:w-4 text-gray-400 hidden sm:block" />
+        <div className="flex items-center gap-2">
+          <Warehouse className="h-4 w-4 text-blue-600" />
           <Link href={`/warehouses/${warehouse.id}`}>
-            <span className="font-medium text-xs lg:text-sm text-blue-600 hover:text-blue-800 cursor-pointer truncate max-w-[100px] lg:max-w-none">
+            <span className="font-semibold text-sm text-blue-600 hover:text-blue-800 cursor-pointer hover:underline">
               {warehouse.name}
             </span>
           </Link>
@@ -102,79 +102,38 @@ export default function AllWarehouses() {
       ),
     },
     {
-      key: "location",
-      header: "Location",
+      key: "itemCount",
+      header: "Count of Items",
       sortable: true,
-      className: "hidden md:table-cell",
+      className: "text-center",
       cell: (warehouse) => (
-        <div className="flex items-center gap-1 text-xs">
-          <MapPin className="h-3 w-3 text-gray-400 hidden lg:block" />
-          <div>
-            <div className="truncate max-w-[150px]">{warehouse.location || warehouse.address}</div>
-            <div className="text-xs text-gray-500 truncate max-w-[150px]">
-              {warehouse.city || ''}{warehouse.city && warehouse.country ? ', ' : ''}{warehouse.country || ''}
-            </div>
-          </div>
+        <div className="flex items-center justify-center gap-1">
+          <Package className="h-4 w-4 text-slate-400" />
+          <span className="text-sm font-medium">
+            {warehouse.itemCount || 0}
+          </span>
         </div>
       ),
-    },
-    {
-      key: "manager",
-      header: "Manager",
-      sortable: true,
-      className: "hidden lg:table-cell",
-      cell: (warehouse) => (
-        <span className="text-xs">{warehouse.manager || '-'}</span>
-      ),
-    },
-    {
-      key: "phone",
-      header: "Phone",
-      className: "hidden lg:table-cell",
-      cell: (warehouse) => warehouse.phone ? (
-        <div className="flex items-center gap-1 text-xs">
-          <Phone className="h-3 w-3 text-gray-400" />
-          <span className="truncate max-w-[100px]">{warehouse.phone}</span>
-        </div>
-      ) : <span className="text-xs text-gray-400">-</span>,
     },
     {
       key: "capacity",
       header: "Capacity",
       sortable: true,
-      className: "text-right hidden sm:table-cell",
+      className: "text-center",
       cell: (warehouse) => (
-        <span className="text-xs lg:text-sm">
-          {warehouse.capacity ? `${warehouse.capacity.toLocaleString()}` : '-'}
+        <span className="text-sm font-medium">
+          {warehouse.capacity ? warehouse.capacity.toLocaleString() : '-'}
         </span>
       ),
     },
     {
-      key: "type",
-      header: "Type",
-      sortable: true,
-      cell: (warehouse) => {
-        const types: Record<string, { label: string; color: string }> = {
-          'main': { label: 'Main', color: 'bg-blue-100 text-blue-800' },
-          'branch': { label: 'Branch', color: 'bg-green-100 text-green-800' },
-          'temporary': { label: 'Temp', color: 'bg-yellow-100 text-yellow-800' },
-        };
-        const type = types[warehouse.type] || { label: warehouse.type, color: 'bg-gray-100 text-gray-800' };
-        return (
-          <Badge className={`${type.color} text-xs px-1.5 py-0 h-5`}>
-            {type.label}
-          </Badge>
-        );
-      },
-    },
-    {
       key: "actions",
       header: "",
-      className: "w-10",
+      className: "w-16 text-center",
       cell: (warehouse) => (
         <Link href={`/warehouses/${warehouse.id}/edit`}>
-          <Button size="icon" variant="ghost" className="h-7 w-7 lg:h-8 lg:w-8">
-            <Edit className="h-3 w-3 lg:h-4 lg:w-4" />
+          <Button size="icon" variant="ghost" className="h-8 w-8" data-testid={`button-edit-${warehouse.id}`}>
+            <Edit className="h-4 w-4 text-slate-600" />
           </Button>
         </Link>
       ),

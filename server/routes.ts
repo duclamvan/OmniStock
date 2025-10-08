@@ -510,7 +510,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/warehouses', async (req, res) => {
     try {
       const warehouses = await storage.getWarehouses();
-      res.json(warehouses);
+      const products = await storage.getProducts();
+      
+      // Count products per warehouse
+      const warehousesWithCounts = warehouses.map(warehouse => {
+        const itemCount = products.filter(p => p.warehouseId === warehouse.id).length;
+        return {
+          ...warehouse,
+          itemCount
+        };
+      });
+      
+      res.json(warehousesWithCounts);
     } catch (error) {
       console.error("Error fetching warehouses:", error);
       res.status(500).json({ message: "Failed to fetch warehouses" });
