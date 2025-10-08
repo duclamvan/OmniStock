@@ -14,6 +14,8 @@ import {
   productFiles,
   productLocations,
   productTieredPricing,
+  productBundles,
+  bundleItems,
   dailySequences,
   orders,
   orderItems,
@@ -55,6 +57,10 @@ import {
   type InsertProductLocation,
   type ProductTieredPricing,
   type InsertProductTieredPricing,
+  type ProductBundle,
+  type InsertProductBundle,
+  type BundleItem,
+  type InsertBundleItem,
   type DailySequence,
   type InsertDailySequence,
   type Order,
@@ -91,7 +97,6 @@ export type Sale = any;
 export type UserActivity = any;
 export type AppCategory = any;
 export type Bundle = any;
-export type BundleItem = any;
 export type CustomerPrice = any;
 export type PackingMaterial = any;
 export type PackingMaterialUsage = any;
@@ -198,6 +203,18 @@ export interface IStorage {
   createProductTieredPricing(data: InsertProductTieredPricing): Promise<ProductTieredPricing>;
   updateProductTieredPricing(id: string, data: Partial<InsertProductTieredPricing>): Promise<ProductTieredPricing | undefined>;
   deleteProductTieredPricing(id: string): Promise<boolean>;
+  
+  // Product Bundles
+  getProductBundles(): Promise<ProductBundle[]>;
+  getProductBundle(id: string): Promise<ProductBundle | undefined>;
+  createProductBundle(bundle: InsertProductBundle): Promise<ProductBundle>;
+  updateProductBundle(id: string, bundle: Partial<InsertProductBundle>): Promise<ProductBundle | undefined>;
+  deleteProductBundle(id: string): Promise<boolean>;
+  
+  // Bundle Items
+  getBundleItems(bundleId: string): Promise<BundleItem[]>;
+  createBundleItem(item: InsertBundleItem): Promise<BundleItem>;
+  deleteBundleItems(bundleId: string): Promise<boolean>;
   
   // Customers
   getCustomers(): Promise<Customer[]>;
@@ -1482,6 +1499,114 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getProductBundles(): Promise<ProductBundle[]> {
+    try {
+      const bundles = await db
+        .select()
+        .from(productBundles)
+        .orderBy(desc(productBundles.createdAt));
+      return bundles;
+    } catch (error) {
+      console.error('Error fetching product bundles:', error);
+      return [];
+    }
+  }
+
+  async getProductBundle(id: string): Promise<ProductBundle | undefined> {
+    try {
+      const [bundle] = await db
+        .select()
+        .from(productBundles)
+        .where(eq(productBundles.id, id));
+      return bundle;
+    } catch (error) {
+      console.error('Error fetching product bundle:', error);
+      return undefined;
+    }
+  }
+
+  async createProductBundle(bundle: InsertProductBundle): Promise<ProductBundle> {
+    try {
+      // Generate bundleId in BDL-NAME-XXX format
+      const namePrefix = bundle.name.substring(0, 10).toUpperCase().replace(/[^A-Z0-9]/g, '');
+      const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+      const bundleId = `BDL-${namePrefix}-${randomNum}`;
+
+      const [newBundle] = await db
+        .insert(productBundles)
+        .values({ ...bundle, bundleId })
+        .returning();
+      return newBundle;
+    } catch (error) {
+      console.error('Error creating product bundle:', error);
+      throw error;
+    }
+  }
+
+  async updateProductBundle(id: string, bundle: Partial<InsertProductBundle>): Promise<ProductBundle | undefined> {
+    try {
+      const [updated] = await db
+        .update(productBundles)
+        .set({ ...bundle, updatedAt: new Date() })
+        .where(eq(productBundles.id, id))
+        .returning();
+      return updated;
+    } catch (error) {
+      console.error('Error updating product bundle:', error);
+      return undefined;
+    }
+  }
+
+  async deleteProductBundle(id: string): Promise<boolean> {
+    try {
+      const result = await db
+        .delete(productBundles)
+        .where(eq(productBundles.id, id));
+      return (result.rowCount ?? 0) > 0;
+    } catch (error) {
+      console.error('Error deleting product bundle:', error);
+      return false;
+    }
+  }
+
+  async getBundleItems(bundleId: string): Promise<BundleItem[]> {
+    try {
+      const items = await db
+        .select()
+        .from(bundleItems)
+        .where(eq(bundleItems.bundleId, bundleId));
+      return items;
+    } catch (error) {
+      console.error('Error fetching bundle items:', error);
+      return [];
+    }
+  }
+
+  async createBundleItem(item: InsertBundleItem): Promise<BundleItem> {
+    try {
+      const [newItem] = await db
+        .insert(bundleItems)
+        .values(item)
+        .returning();
+      return newItem;
+    } catch (error) {
+      console.error('Error creating bundle item:', error);
+      throw error;
+    }
+  }
+
+  async deleteBundleItems(bundleId: string): Promise<boolean> {
+    try {
+      const result = await db
+        .delete(bundleItems)
+        .where(eq(bundleItems.bundleId, bundleId));
+      return (result.rowCount ?? 0) > 0;
+    } catch (error) {
+      console.error('Error deleting bundle items:', error);
+      return false;
+    }
+  }
+
   async moveInventory(fromLocationId: string, toLocationId: string, quantity: number): Promise<boolean> {
     try {
       // Start a transaction
@@ -2111,16 +2236,34 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getBundles(): Promise<Bundle[]> { return []; }
-  async getBundleById(id: string): Promise<Bundle | undefined> { return undefined; }
-  async createBundle(bundle: any): Promise<Bundle> { return { id: Date.now().toString(), ...bundle }; }
-  async updateBundle(id: string, bundle: any): Promise<Bundle | undefined> { return { id, ...bundle }; }
-  async deleteBundle(id: string): Promise<boolean> { return true; }
+  // Legacy bundle methods (delegating to ProductBundle methods)
+  async getBundles(): Promise<Bundle[]> { 
+    return this.getProductBundles() as Promise<Bundle[]>; 
+  }
+  
+  async getBundleById(id: string): Promise<Bundle | undefined> { 
+    return this.getProductBundle(id) as Promise<Bundle | undefined>; 
+  }
+  
+  async createBundle(bundle: any): Promise<Bundle> { 
+    return this.createProductBundle(bundle) as Promise<Bundle>; 
+  }
+  
+  async updateBundle(id: string, bundle: any): Promise<Bundle | undefined> { 
+    return this.updateProductBundle(id, bundle) as Promise<Bundle | undefined>; 
+  }
+  
+  async deleteBundle(id: string): Promise<boolean> { 
+    return this.deleteProductBundle(id); 
+  }
 
-  async getBundleItems(bundleId: string): Promise<BundleItem[]> { return []; }
-  async createBundleItem(item: any): Promise<BundleItem> { return { id: Date.now().toString(), ...item }; }
-  async updateBundleItem(id: string, item: any): Promise<BundleItem | undefined> { return { id, ...item }; }
-  async deleteBundleItem(id: string): Promise<boolean> { return true; }
+  async updateBundleItem(id: string, item: any): Promise<BundleItem | undefined> { 
+    return { id, ...item }; 
+  }
+  
+  async deleteBundleItem(id: string): Promise<boolean> { 
+    return true; 
+  }
 
   async getCustomerPrices(customerId?: number): Promise<CustomerPrice[]> { return []; }
   async getActiveCustomerPrice(customerId: number, productId: string): Promise<CustomerPrice | undefined> { return undefined; }
