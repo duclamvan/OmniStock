@@ -89,7 +89,13 @@ export function DataTable<T>({
   renderBulkActions,
 }: DataTableProps<T>) {
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
-  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(() => {
+    // Initialize with all rows expanded if defaultExpandAll is true
+    if (defaultExpandAll && expandable) {
+      return new Set(data.map(item => getRowKey(item)));
+    }
+    return new Set();
+  });
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
   const [currentPage, setCurrentPage] = useState(1);
