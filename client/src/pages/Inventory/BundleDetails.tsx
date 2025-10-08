@@ -42,7 +42,16 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
-import type { ProductBundle, BundleItem, Product, ProductVariant } from '@shared/schema';
+import type { ProductBundle, BundleItem, Product } from '@shared/schema';
+
+interface ProductVariant {
+  id: string;
+  productId: string;
+  name: string;
+  sku?: string;
+  barcode?: string;
+  quantity: number;
+}
 
 interface BundleWithItems extends ProductBundle {
   items: (BundleItem & {
@@ -157,13 +166,7 @@ export default function BundleDetails() {
     }
   });
 
-  if (isLoading || !bundle) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
+  if (!bundle) return null;
 
   // Calculate total base price
   const calculateTotalBasePrice = () => {
