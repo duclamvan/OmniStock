@@ -1286,6 +1286,22 @@ export default function OrderDetails() {
                     </div>
                   </div>
                 )}
+
+                {/* Order Tracking via API - shown only when shipped */}
+                {order.shippedAt && order.trackingNumber && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-sky-500 rounded-full mt-1.5"></div>
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">Tracking Information</p>
+                      <p className="text-sm text-slate-500 italic">
+                        Tracking updates via API (not yet implemented)
+                      </p>
+                      <p className="text-xs text-slate-400 mt-1">
+                        Tracking #{order.trackingNumber}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
