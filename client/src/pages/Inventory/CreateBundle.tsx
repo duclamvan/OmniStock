@@ -74,6 +74,156 @@ interface BundleFormData {
   items: BundleItem[];
 }
 
+// Component for individual bundle item row with search
+function BundleItemRow({
+  item,
+  index,
+  products,
+  variantsCache,
+  errors,
+  onItemChange,
+  onRemoveItem,
+}: {
+  item: BundleItem;
+  index: number;
+  products: Product[];
+  variantsCache: Record<string, ProductVariant[]>;
+  errors: Record<string, string>;
+  onItemChange: (id: string, field: string, value: any) => void;
+  onRemoveItem: (id: string) => void;
+}) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
+  
+  const filteredProducts = searchQuery.length >= 2 
+    ? products.filter(p => 
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.sku?.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : products;
+
+  return (
+    <div className="border rounded-lg p-4 space-y-3">
+      <div className="flex items-start gap-3">
+        <div className="flex-1 space-y-2">
+          <Label className="text-sm font-medium">Product</Label>
+          <Popover open={isOpen} onOpenChange={setIsOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={isOpen}
+                className={`w-full justify-between ${errors[`item_${item.id}`] ? 'border-destructive' : ''}`}
+                data-testid={`button-select-product-${index}`}
+              >
+                {item.productId ? (
+                  <span className="truncate">{item.productName}</span>
+                ) : (
+                  <span className="text-muted-foreground">Search products...</span>
+                )}
+                <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[400px] p-0" align="start">
+              <Command>
+                <CommandInput 
+                  placeholder="Type to search products..." 
+                  value={searchQuery}
+                  onValueChange={setSearchQuery}
+                  data-testid={`input-search-product-${index}`}
+                />
+                <CommandEmpty>No products found.</CommandEmpty>
+                <CommandGroup className="max-h-64 overflow-auto">
+                  {filteredProducts.map((product) => (
+                    <CommandItem
+                      key={product.id}
+                      value={product.id}
+                      onSelect={() => {
+                        onItemChange(item.id, 'productId', product.id);
+                        setIsOpen(false);
+                        setSearchQuery('');
+                      }}
+                      data-testid={`product-option-${product.id}`}
+                    >
+                      <Check
+                        className={`mr-2 h-4 w-4 ${
+                          item.productId === product.id ? "opacity-100" : "opacity-0"
+                        }`}
+                      />
+                      <div className="flex-1 flex items-center justify-between">
+                        <span>{product.name}</span>
+                        <span className="text-xs text-muted-foreground ml-2">
+                          {product.sku}
+                        </span>
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </Command>
+            </PopoverContent>
+          </Popover>
+          {errors[`item_${item.id}`] && (
+            <p className="text-xs text-destructive">{errors[`item_${item.id}`]}</p>
+          )}
+        </div>
+
+        <div className="w-24">
+          <Label className="text-sm font-medium">Qty</Label>
+          <Input
+            type="number"
+            min="1"
+            value={item.quantity}
+            onChange={(e) => 
+              onItemChange(item.id, 'quantity', parseInt(e.target.value) || 1)
+            }
+            className={`mt-2 ${errors[`quantity_${item.id}`] ? 'border-destructive' : ''}`}
+            data-testid={`input-quantity-${index}`}
+          />
+        </div>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className="mt-8"
+          onClick={() => onRemoveItem(item.id)}
+          data-testid={`button-remove-item-${index}`}
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {item.productId && variantsCache[item.productId]?.length > 0 && (
+        <div>
+          <Label className="text-sm font-medium">Variants (Optional)</Label>
+          <div className="mt-2">
+            <VariantSelector
+              variants={variantsCache[item.productId]}
+              selectedIds={item.variantIds || []}
+              onChange={(ids) => onItemChange(item.id, 'variantIds', ids)}
+            />
+          </div>
+        </div>
+      )}
+
+      {item.productName && (
+        <div className="bg-muted/50 px-3 py-2 rounded-md">
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-medium">{item.productName}</span>
+            <span className="text-muted-foreground">
+              {item.quantity} × {item.priceCzk.toFixed(2)} Kč
+            </span>
+          </div>
+          {item.variantIds && item.variantIds.length > 0 && (
+            <div className="mt-2 text-xs text-muted-foreground">
+              {item.variantIds.length} variant{item.variantIds.length !== 1 ? 's' : ''} selected
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Variant selector component
 interface VariantSelectorProps {
   variants: ProductVariant[];
@@ -873,145 +1023,16 @@ export default function CreateBundle() {
               ) : (
                 <div className="space-y-3">
                   {formData.items.map((item, index) => (
-                    <Card key={item.id} className="p-4">
-                      <div className="space-y-3">
-                        <div className="flex gap-3">
-                          <div className="flex-1">
-                            <Label className="text-xs">Product</Label>
-                            <Select
-                              value={item.productId}
-                              onValueChange={(value) => handleItemChange(item.id, 'productId', value)}
-                            >
-                              <SelectTrigger className={errors[`item_${item.id}`] ? 'border-destructive' : ''}>
-                                <SelectValue placeholder="Select a product" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {products.map(product => (
-                                  <SelectItem key={product.id} value={product.id}>
-                                    <div className="flex items-center justify-between w-full">
-                                      <span>{product.name}</span>
-                                      <span className="text-xs text-muted-foreground ml-2">
-                                        SKU: {product.sku}
-                                      </span>
-                                    </div>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            {errors[`item_${item.id}`] && (
-                              <p className="text-xs text-destructive mt-1">{errors[`item_${item.id}`]}</p>
-                            )}
-                          </div>
-
-                          {item.productId && variantsCache[item.productId]?.length > 0 && (
-                            <div className="flex-1">
-                              <Label className="text-xs">Variants (Optional)</Label>
-                              <VariantSelector
-                                variants={variantsCache[item.productId]}
-                                selectedIds={item.variantIds || []}
-                                onChange={(ids) => handleItemChange(item.id, 'variantIds', ids)}
-                              />
-                            </div>
-                          )}
-
-                          <div className="w-32">
-                            <Label className="text-xs">Quantity</Label>
-                            <Input
-                              type="number"
-                              min="1"
-                              value={item.quantity}
-                              onChange={(e) => 
-                                handleItemChange(item.id, 'quantity', parseInt(e.target.value) || 1)
-                              }
-                              className={errors[`quantity_${item.id}`] ? 'border-destructive' : ''}
-                            />
-                            {errors[`quantity_${item.id}`] && (
-                              <p className="text-xs text-destructive mt-1">Invalid</p>
-                            )}
-                          </div>
-
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="mt-6"
-                            onClick={() => handleRemoveItem(item.id)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-
-                        {item.productName && (
-                          <div className="text-sm bg-muted px-3 py-2 rounded space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="font-medium">
-                                {item.productName}
-                              </span>
-                              <span className="text-muted-foreground">
-                                {item.quantity} × CZK {item.priceCzk.toFixed(2)} / EUR {item.priceEur.toFixed(2)}
-                              </span>
-                            </div>
-                            {item.variantIds && item.variantIds.length > 0 && (
-                              <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-xs text-muted-foreground">
-                                    {item.variantIds.length} variant{item.variantIds.length !== 1 ? 's' : ''} selected
-                                  </span>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-6 px-2"
-                                    onClick={() => toggleItemExpanded(item.id)}
-                                  >
-                                    {expandedItems[item.id] ? (
-                                      <>
-                                        <ChevronUp className="h-3 w-3 mr-1" />
-                                        Hide
-                                      </>
-                                    ) : (
-                                      <>
-                                        <ChevronDown className="h-3 w-3 mr-1" />
-                                        Show
-                                      </>
-                                    )}
-                                  </Button>
-                                </div>
-                                
-                                {expandedItems[item.id] && (
-                                  <div className="space-y-1 pl-2 border-l-2 border-muted-foreground/20">
-                                    {item.variantIds.map((variantId, index) => {
-                                      const variant = variantsCache[item.productId]?.find(v => v.id === variantId);
-                                      return (
-                                        <div key={variantId} className="flex items-center justify-between py-1">
-                                          <span className="text-xs">
-                                            {variant?.name || `Variant ${index + 1}`}
-                                          </span>
-                                          <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-5 w-5 p-0"
-                                            onClick={() => handleRemoveVariant(item.id, variantId)}
-                                          >
-                                            <X className="h-3 w-3" />
-                                          </Button>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                )}
-                                
-                                {!expandedItems[item.id] && item.variantNames && (
-                                  <div className="text-xs text-muted-foreground">
-                                    {item.variantNames.length > 3 
-                                      ? `${item.variantNames.slice(0, 3).join(', ')}... (+${item.variantNames.length - 3} more)`
-                                      : item.variantNames.join(', ')}
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </Card>
+                    <BundleItemRow
+                      key={item.id}
+                      item={item}
+                      index={index}
+                      products={products}
+                      variantsCache={variantsCache}
+                      errors={errors}
+                      onItemChange={handleItemChange}
+                      onRemoveItem={handleRemoveItem}
+                    />
                   ))}
                 </div>
               )}
