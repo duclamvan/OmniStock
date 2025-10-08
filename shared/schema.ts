@@ -396,6 +396,34 @@ export const productTieredPricing = pgTable('product_tiered_pricing', {
   updatedAt: timestamp('updated_at').defaultNow()
 });
 
+// Product Bundles table
+export const productBundles = pgTable('product_bundles', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  bundleId: varchar('bundle_id').notNull().unique(),
+  name: varchar('name').notNull(),
+  description: text('description'),
+  sku: varchar('sku'),
+  priceCzk: decimal('price_czk', { precision: 10, scale: 2 }),
+  priceEur: decimal('price_eur', { precision: 10, scale: 2 }),
+  discountPercentage: decimal('discount_percentage', { precision: 5, scale: 2 }).default('0'),
+  notes: text('notes'),
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow()
+});
+
+// Bundle Items table (junction table for bundles and products)
+export const bundleItems = pgTable('bundle_items', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  bundleId: varchar('bundle_id').notNull().references(() => productBundles.id, { onDelete: 'cascade' }),
+  productId: varchar('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
+  variantId: varchar('variant_id'), // Optional - can be null if no variant selected
+  quantity: integer('quantity').notNull().default(1),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow()
+});
+
 // Daily sequences table for order ID generation
 export const dailySequences = pgTable('daily_sequences', {
   id: serial('id').primaryKey(),
@@ -882,6 +910,8 @@ export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: tru
 export const insertWarehouseSchema = createInsertSchema(warehouses).omit({ createdAt: true });
 export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProductTieredPricingSchema = createInsertSchema(productTieredPricing).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertProductBundleSchema = createInsertSchema(productBundles).omit({ id: true, bundleId: true, createdAt: true, updatedAt: true });
+export const insertBundleItemSchema = createInsertSchema(bundleItems).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProductFileSchema = createInsertSchema(productFiles).omit({ id: true, uploadedAt: true });
 export const insertDailySequenceSchema = createInsertSchema(dailySequences).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true });
@@ -951,6 +981,10 @@ export type Product = typeof products.$inferSelect;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
 export type ProductTieredPricing = typeof productTieredPricing.$inferSelect;
 export type InsertProductTieredPricing = z.infer<typeof insertProductTieredPricingSchema>;
+export type ProductBundle = typeof productBundles.$inferSelect;
+export type InsertProductBundle = z.infer<typeof insertProductBundleSchema>;
+export type BundleItem = typeof bundleItems.$inferSelect;
+export type InsertBundleItem = z.infer<typeof insertBundleItemSchema>;
 export type ProductFile = typeof productFiles.$inferSelect;
 export type InsertProductFile = z.infer<typeof insertProductFileSchema>;
 export type DailySequence = typeof dailySequences.$inferSelect;
