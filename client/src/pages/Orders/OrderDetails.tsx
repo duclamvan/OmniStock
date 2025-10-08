@@ -952,6 +952,22 @@ export default function OrderDetails() {
                 </div>
               </div>
 
+              {/* Order Notes - Right after shipping address */}
+              {order.notes && (
+                <>
+                  <Separator />
+                  <div className="space-y-2" data-testid="section-order-notes">
+                    <h4 className="font-semibold text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Order Notes
+                    </h4>
+                    <p className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap bg-slate-50 dark:bg-slate-900/50 p-3 rounded border border-slate-200 dark:border-slate-700">
+                      {order.notes}
+                    </p>
+                  </div>
+                </>
+              )}
+
               {/* Shipping Method & Tracking */}
               <div className="bg-slate-50 dark:bg-slate-900/20 border border-slate-200 dark:border-slate-700 rounded-lg p-4" data-testid="section-shipping-method">
                 <h4 className="font-semibold text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-3">
@@ -1095,44 +1111,8 @@ export default function OrderDetails() {
                   <p className="text-sm text-slate-700 dark:text-slate-300">{order.warehouseLocation}</p>
                 </div>
               )}
-
-              {/* Documents & Notes - Only show if there are notes */}
-              {order.notes && (
-                <>
-                  <Separator />
-                  <div className="space-y-3" data-testid="section-documents">
-                    <h4 className="font-semibold text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                      <FileText className="h-4 w-4" />
-                      Documents & Notes
-                    </h4>
-
-                    {/* Shipping Notes */}
-                    <div data-testid="text-shipping-notes">
-                      <span className="text-slate-500 dark:text-slate-400 text-xs">Shipping Notes:</span>
-                      <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 whitespace-pre-wrap bg-slate-50 dark:bg-slate-900/50 p-3 rounded border border-slate-200 dark:border-slate-700">
-                        {order.notes}
-                      </p>
-                    </div>
-                  </div>
-                </>
-              )}
             </CardContent>
           </Card>
-
-          {/* Notes */}
-          {order.notes && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <FileText className="h-4 w-4" />
-                  Order Notes
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-slate-600 whitespace-pre-wrap">{order.notes}</p>
-              </CardContent>
-            </Card>
-          )}
 
           {/* Pick & Pack Activity Logs */}
           {pickPackLogs && pickPackLogs.length > 0 && (
