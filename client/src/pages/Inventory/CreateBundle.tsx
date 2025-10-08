@@ -345,6 +345,30 @@ export default function CreateBundle() {
     items: []
   });
 
+  // Auto-generate SKU for bundles
+  const generateSKU = () => {
+    const bundleName = formData.name.trim() || 'BUNDLE';
+    
+    // Extract meaningful part from bundle name (first 8 alphanumeric characters)
+    const namePart = bundleName
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, '')
+      .slice(0, 8);
+    
+    // Generate a 3-digit random number for uniqueness
+    const randomNum = Math.floor(100 + Math.random() * 900);
+    
+    // Format: BDL-{NAME}-{NUMBER}
+    const sku = `BDL-${namePart || 'BUNDLE'}-${randomNum}`;
+    
+    setFormData(prev => ({ ...prev, sku }));
+    
+    toast({
+      title: "SKU Generated",
+      description: `Bundle SKU: ${sku}`,
+    });
+  };
+
   // Validation states
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -761,12 +785,28 @@ export default function CreateBundle() {
 
               <div>
                 <Label htmlFor="sku">SKU (Optional)</Label>
-                <Input
-                  id="sku"
-                  value={formData.sku}
-                  onChange={(e) => setFormData(prev => ({ ...prev, sku: e.target.value }))}
-                  placeholder="e.g., BDL-001"
-                />
+                <div className="flex gap-2">
+                  <Input
+                    id="sku"
+                    value={formData.sku}
+                    onChange={(e) => setFormData(prev => ({ ...prev, sku: e.target.value }))}
+                    placeholder="e.g., BDL-BEAUTY-123"
+                    data-testid="input-bundle-sku"
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={generateSKU}
+                    className="whitespace-nowrap"
+                    data-testid="button-generate-sku"
+                  >
+                    <Hash className="h-4 w-4 mr-2" />
+                    Generate
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Format: BDL-[NAME]-[NUMBER] (e.g., BDL-STARTERKIT-456)
+                </p>
               </div>
 
               <div>
