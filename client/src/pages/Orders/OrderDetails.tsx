@@ -1225,58 +1225,6 @@ export default function OrderDetails() {
             </Card>
           )}
 
-          {/* Order Details */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <FileText className="h-4 w-4" />
-                Order Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <p className="text-sm text-slate-600 mb-1">Order ID</p>
-                <div className="flex items-center gap-2">
-                  <p className="font-mono text-sm">{order.orderId}</p>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6"
-                    onClick={() => copyToClipboard(order.orderId, "Order ID")}
-                  >
-                    <Copy className="h-3 w-3" />
-                  </Button>
-                </div>
-              </div>
-
-              <div>
-                <p className="text-sm text-slate-600 mb-1">Payment Method</p>
-                <p className="font-medium">{order.paymentMethod || 'Not specified'}</p>
-              </div>
-
-              <div>
-                <p className="text-sm text-slate-600 mb-1">Shipping Method</p>
-                <p className="font-medium">{order.shippingMethod || 'Not specified'}</p>
-              </div>
-
-              {order.priority && order.priority !== 'low' && (
-                <div>
-                  <p className="text-sm text-slate-600 mb-1">Priority Level</p>
-                  <Badge variant={order.priority === 'high' ? 'destructive' : 'secondary'}>
-                    {order.priority === 'high' ? 'High Priority' : 'Medium Priority'}
-                  </Badge>
-                </div>
-              )}
-
-              {order.billerId && (
-                <div>
-                  <p className="text-sm text-slate-600 mb-1">Processed By</p>
-                  <p className="font-medium">{order.billerId}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
           {/* Order Timeline */}
           <Card>
             <CardHeader>
