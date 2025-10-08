@@ -1022,35 +1022,6 @@ export default function OrderDetails() {
                 </div>
               </div>
 
-              {/* Customer Contact - Compact */}
-              <div className="border-l-4 border-slate-300 dark:border-slate-600 pl-4" data-testid="section-customer-contact">
-                <h4 className="font-semibold text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-2">
-                  <User className="h-4 w-4" />
-                  Customer Contact
-                </h4>
-                <div className="space-y-2 text-sm">
-                  {order.customer?.email && (
-                    <div className="flex items-center gap-2" data-testid="text-customer-email">
-                      <Mail className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
-                      <a href={`mailto:${order.customer.email}`} className="text-blue-600 dark:text-blue-400 hover:underline">
-                        {order.customer.email}
-                      </a>
-                    </div>
-                  )}
-                  {order.customer?.phone && (
-                    <div className="flex items-center gap-2" data-testid="text-customer-phone">
-                      <Phone className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
-                      <a href={`tel:${order.customer.phone}`} className="text-blue-600 dark:text-blue-400 hover:underline">
-                        {order.customer.phone}
-                      </a>
-                    </div>
-                  )}
-                  {!order.customer?.email && !order.customer?.phone && (
-                    <p className="text-slate-400 dark:text-slate-500 text-xs">No contact information</p>
-                  )}
-                </div>
-              </div>
-
               {/* Billing Address (if different) - Less Prominent */}
               {(order.customer?.billingStreet || order.customer?.billingCity) && (
                 <div className="border-l-4 border-slate-200 dark:border-slate-700 pl-4" data-testid="text-billing-address">
@@ -1076,26 +1047,6 @@ export default function OrderDetails() {
                     )}
                     {order.customer.billingCountry && (
                       <p>{order.customer.billingCountry}</p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Shipping Costs - Compact */}
-              {order.shippingCost > 0 && (
-                <div className="border-l-4 border-slate-200 dark:border-slate-700 pl-4" data-testid="section-shipping-cost">
-                  <h4 className="font-semibold text-xs text-slate-600 dark:text-slate-400 flex items-center gap-2 mb-2">
-                    <Banknote className="h-3.5 w-3.5" />
-                    Shipping Costs
-                  </h4>
-                  <div className="text-sm">
-                    <p className="font-medium text-slate-900 dark:text-slate-100">
-                      {formatCurrency(order.shippingCost || 0, order.currency || 'EUR')}
-                    </p>
-                    {order.actualShippingCost > 0 && order.actualShippingCost !== order.shippingCost && (
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                        Actual: {formatCurrency(order.actualShippingCost || 0, order.currency || 'EUR')}
-                      </p>
                     )}
                   </div>
                 </div>
