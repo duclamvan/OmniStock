@@ -104,39 +104,39 @@ function BundleItemRow({
 
   return (
     <div className="border rounded-lg overflow-hidden">
-      {/* Top Section - Item Summary */}
+      {/* Top Section - Complete Item Summary (Product Name + Price) */}
       {item.productName ? (
-        <div className="bg-muted/30 px-4 py-3 border-b">
-          <div className="flex items-center justify-between">
-            <div className="flex-1 min-w-0">
-              <h4 className="font-semibold text-sm truncate">{item.productName}</h4>
-              <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                <span>{item.quantity} × {item.priceCzk.toFixed(2)} Kč</span>
-                <span className="text-xs">= {(item.quantity * item.priceCzk).toFixed(2)} Kč</span>
+        <div className="bg-primary/5 px-4 py-3 border-b">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex-1 min-w-0 flex items-baseline gap-3">
+              <h4 className="font-semibold truncate">{item.productName}</h4>
+              <div className="flex items-center gap-2 text-sm whitespace-nowrap">
+                <span className="text-muted-foreground">{item.quantity} × {item.priceCzk.toFixed(2)} Kč</span>
+                <span className="font-semibold">= {(item.quantity * item.priceCzk).toFixed(2)} Kč</span>
               </div>
-              {item.variantIds && item.variantIds.length > 0 && (
-                <div className="mt-1 flex items-center gap-1">
-                  <Badge variant="secondary" className="text-xs">
-                    {item.variantIds.length} variant{item.variantIds.length !== 1 ? 's' : ''}
-                  </Badge>
-                </div>
-              )}
             </div>
             <Button
               variant="ghost"
               size="icon"
               onClick={() => onRemoveItem(item.id)}
               data-testid={`button-remove-item-${index}`}
-              className="shrink-0 ml-2"
+              className="shrink-0"
             >
               <X className="h-4 w-4" />
             </Button>
           </div>
+          {item.variantIds && item.variantIds.length > 0 && (
+            <div className="mt-2">
+              <Badge variant="secondary" className="text-xs">
+                {item.variantIds.length} variant{item.variantIds.length !== 1 ? 's' : ''} selected
+              </Badge>
+            </div>
+          )}
         </div>
       ) : (
-        <div className="bg-muted/30 px-4 py-3 border-b">
+        <div className="bg-muted/20 px-4 py-3 border-b">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">Select a product below</p>
+            <p className="text-sm text-muted-foreground">No product selected</p>
             <Button
               variant="ghost"
               size="icon"
@@ -150,7 +150,7 @@ function BundleItemRow({
         </div>
       )}
 
-      {/* Bottom Section - Product Selection */}
+      {/* Bottom Section - Product Selection Controls */}
       <div className="p-4 space-y-3">
         <div className="flex gap-3">
           <div className="flex-1">
