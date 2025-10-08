@@ -948,6 +948,11 @@ export default function CreateBundle() {
                       setErrors(prev => ({ ...prev, name: '' }));
                     }
                   }}
+                  onBlur={() => {
+                    if (formData.name.trim() && !formData.sku.trim()) {
+                      generateSKU();
+                    }
+                  }}
                   placeholder="e.g., Starter Beauty Kit"
                   className={errors.name ? 'border-destructive' : ''}
                 />
