@@ -1572,14 +1572,24 @@ export default function EditOrder() {
                 />
               </div>
             </div>
+          </CardContent>
+        </Card>
 
-            <div>
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea
-                {...form.register('notes')}
-                placeholder="Additional order notes..."
-              />
-            </div>
+        {/* Notes Section */}
+        <Card className="shadow-sm">
+          <CardHeader className="p-4 sm:p-6">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+              Notes
+            </CardTitle>
+            <CardDescription className="text-xs sm:text-sm mt-1">Additional information and comments</CardDescription>
+          </CardHeader>
+          <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0">
+            <Textarea
+              {...form.register('notes')}
+              placeholder="Additional order notes..."
+              rows={4}
+            />
           </CardContent>
         </Card>
             </div>
