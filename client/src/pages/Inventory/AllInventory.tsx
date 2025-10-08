@@ -138,6 +138,27 @@ export default function AllInventory() {
     },
   });
 
+  const archiveProductMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest('PATCH', `/api/products/${id}`, { isActive: false });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      toast({
+        title: "Success",
+        description: "Product moved to archive",
+      });
+    },
+    onError: (error) => {
+      console.error("Product archive error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to archive product",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Filter products based on search query, category, and archive status
   const filteredProducts = products?.filter((product: any) => {
     // Archive filter - only show inactive products in archive mode
@@ -354,6 +375,34 @@ export default function AllInventory() {
           title: "Bulk Update",
           description: `Updating stock for ${products.length} products...`,
         });
+      },
+    },
+    {
+      type: "button" as const,
+      label: "Move to Archive",
+      variant: "outline" as const,
+      action: async (products: any[]) => {
+        const results = await Promise.allSettled(
+          products.map(product => 
+            archiveProductMutation.mutateAsync(product.id)
+          )
+        );
+        
+        const succeeded = results.filter(r => r.status === 'fulfilled').length;
+        const failed = results.filter(r => r.status === 'rejected').length;
+        
+        if (failed > 0) {
+          toast({
+            title: "Partial Success",
+            description: `${succeeded} products moved to archive. ${failed} products could not be archived.`,
+            variant: succeeded > 0 ? "default" : "destructive",
+          });
+        } else {
+          toast({
+            title: "Success",
+            description: `All ${succeeded} products have been moved to archive.`,
+          });
+        }
       },
     },
     {
