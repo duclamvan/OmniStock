@@ -43,7 +43,16 @@ import {
 } from '@/components/ui/select';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import type { Product, ProductVariant, ProductBundle } from '@shared/schema';
+import type { Product, ProductBundle } from '@shared/schema';
+
+interface ProductVariant {
+  id: string;
+  productId: string;
+  name: string;
+  sku?: string;
+  barcode?: string;
+  quantity: number;
+}
 
 interface BundleItem {
   id: string; // Unique ID for React key
@@ -262,6 +271,8 @@ export default function EditBundle() {
   const [isLoadingVariants, setIsLoadingVariants] = useState<Record<string, boolean>>({});
   const [variantsCache, setVariantsCache] = useState<Record<string, ProductVariant[]>>({});
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  const [searchQueries, setSearchQueries] = useState<Record<string, string>>({});
+  const [openPopovers, setOpenPopovers] = useState<Record<string, boolean>>({});
 
   // Fetch existing bundle data
   const { data: bundleData, isLoading: isLoadingBundle } = useQuery<any>({
@@ -879,21 +890,71 @@ export default function EditBundle() {
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
                                   <Label>Product</Label>
-                                  <Select
-                                    value={item.productId}
-                                    onValueChange={(value) => handleItemChange(item.id, 'productId', value)}
+                                  <Popover 
+                                    open={openPopovers[item.id] || false} 
+                                    onOpenChange={(open) => setOpenPopovers(prev => ({ ...prev, [item.id]: open }))}
                                   >
-                                    <SelectTrigger className={errors[`item_${item.id}`] ? 'border-destructive' : ''}>
-                                      <SelectValue placeholder="Select product" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {products.map(product => (
-                                        <SelectItem key={product.id} value={product.id}>
-                                          {product.name} ({product.sku})
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
+                                    <PopoverTrigger asChild>
+                                      <div className="relative">
+                                        <Input
+                                          value={searchQueries[item.id] || item.productName || ''}
+                                          onChange={(e) => {
+                                            setSearchQueries(prev => ({ ...prev, [item.id]: e.target.value }));
+                                            setOpenPopovers(prev => ({ ...prev, [item.id]: true }));
+                                          }}
+                                          onFocus={() => setOpenPopovers(prev => ({ ...prev, [item.id]: true }))}
+                                          placeholder="Search products..."
+                                          className={errors[`item_${item.id}`] ? 'border-destructive' : ''}
+                                          data-testid={`input-search-product-${index}`}
+                                        />
+                                        <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                                      </div>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-[400px] p-0" align="start">
+                                      <Command>
+                                        <CommandInput 
+                                          placeholder="Type to search products..." 
+                                          value={searchQueries[item.id] || ''}
+                                          onValueChange={(value) => setSearchQueries(prev => ({ ...prev, [item.id]: value }))}
+                                          className="hidden"
+                                        />
+                                        <CommandEmpty>No products found.</CommandEmpty>
+                                        <CommandGroup className="max-h-64 overflow-auto">
+                                          {products
+                                            .filter(p => {
+                                              const query = searchQueries[item.id] || '';
+                                              if (query.length < 2) return true;
+                                              return p.name.toLowerCase().includes(query.toLowerCase()) ||
+                                                     p.sku?.toLowerCase().includes(query.toLowerCase());
+                                            })
+                                            .map((product) => (
+                                              <CommandItem
+                                                key={product.id}
+                                                value={product.id}
+                                                onSelect={() => {
+                                                  handleItemChange(item.id, 'productId', product.id);
+                                                  setOpenPopovers(prev => ({ ...prev, [item.id]: false }));
+                                                  setSearchQueries(prev => ({ ...prev, [item.id]: '' }));
+                                                }}
+                                                data-testid={`product-option-${product.id}`}
+                                              >
+                                                <Check
+                                                  className={`mr-2 h-4 w-4 ${
+                                                    item.productId === product.id ? "opacity-100" : "opacity-0"
+                                                  }`}
+                                                />
+                                                <div className="flex-1 flex items-center justify-between">
+                                                  <span>{product.name}</span>
+                                                  <span className="text-xs text-muted-foreground ml-2">
+                                                    {product.sku}
+                                                  </span>
+                                                </div>
+                                              </CommandItem>
+                                            ))}
+                                        </CommandGroup>
+                                      </Command>
+                                    </PopoverContent>
+                                  </Popover>
                                   {errors[`item_${item.id}`] && (
                                     <p className="text-sm text-destructive mt-1">{errors[`item_${item.id}`]}</p>
                                   )}
@@ -915,69 +976,60 @@ export default function EditBundle() {
                               </div>
 
                               {/* Variant Selector */}
-                              {item.productId && (
+                              {item.productId && variantsCache[item.productId]?.length > 0 && (
                                 <div>
                                   <Label>Variants (Optional)</Label>
-                                  {isLoadingVariants[item.productId] ? (
-                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                      <Loader2 className="h-4 w-4 animate-spin" />
-                                      Loading variants...
-                                    </div>
-                                  ) : variantsCache[item.productId] && variantsCache[item.productId].length > 0 ? (
-                                    <div className="space-y-2">
-                                      <VariantSelector
-                                        variants={variantsCache[item.productId]}
-                                        selectedIds={item.variantIds || []}
-                                        onChange={(ids) => handleItemChange(item.id, 'variantIds', ids)}
-                                      />
-                                      
-                                      {/* Show selected variants */}
-                                      {item.variantIds && item.variantIds.length > 0 && (
-                                        <div className="mt-2">
-                                          <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => toggleItemExpanded(item.id)}
-                                            className="w-full justify-between"
-                                          >
-                                            <span className="text-sm">
-                                              {item.variantIds.length} variant{item.variantIds.length !== 1 ? 's' : ''} selected
-                                            </span>
-                                            {expandedItems.has(item.id) ? (
-                                              <ChevronUp className="h-4 w-4" />
-                                            ) : (
-                                              <ChevronDown className="h-4 w-4" />
-                                            )}
-                                          </Button>
-                                          
-                                          {expandedItems.has(item.id) && (
-                                            <div className="mt-2 p-3 bg-muted rounded-lg max-h-48 overflow-y-auto">
-                                              <div className="flex flex-wrap gap-2">
-                                                {item.variantNames?.map((name, idx) => (
-                                                  <Badge 
-                                                    key={idx} 
-                                                    variant="secondary"
-                                                    className="cursor-pointer hover:bg-destructive hover:text-destructive-foreground"
-                                                    onClick={() => {
-                                                      const newIds = [...(item.variantIds || [])];
-                                                      newIds.splice(idx, 1);
-                                                      handleItemChange(item.id, 'variantIds', newIds);
-                                                    }}
-                                                  >
-                                                    {name}
-                                                    <X className="ml-1 h-3 w-3" />
-                                                  </Badge>
-                                                ))}
-                                              </div>
-                                            </div>
+                                  <div className="space-y-2">
+                                    <VariantSelector
+                                      variants={variantsCache[item.productId]}
+                                      selectedIds={item.variantIds || []}
+                                      onChange={(ids) => handleItemChange(item.id, 'variantIds', ids)}
+                                    />
+                                    
+                                    {/* Show selected variants */}
+                                    {item.variantIds && item.variantIds.length > 0 && (
+                                      <div className="mt-2">
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => toggleItemExpanded(item.id)}
+                                          className="w-full justify-between"
+                                        >
+                                          <span className="text-sm">
+                                            {item.variantIds.length} variant{item.variantIds.length !== 1 ? 's' : ''} selected
+                                          </span>
+                                          {expandedItems.has(item.id) ? (
+                                            <ChevronUp className="h-4 w-4" />
+                                          ) : (
+                                            <ChevronDown className="h-4 w-4" />
                                           )}
-                                        </div>
-                                      )}
-                                    </div>
-                                  ) : (
-                                    <p className="text-sm text-muted-foreground">No variants available</p>
-                                  )}
+                                        </Button>
+                                        
+                                        {expandedItems.has(item.id) && (
+                                          <div className="mt-2 p-3 bg-muted rounded-lg max-h-48 overflow-y-auto">
+                                            <div className="flex flex-wrap gap-2">
+                                              {item.variantNames?.map((name, idx) => (
+                                                <Badge 
+                                                  key={idx} 
+                                                  variant="secondary"
+                                                  className="cursor-pointer hover:bg-destructive hover:text-destructive-foreground"
+                                                  onClick={() => {
+                                                    const newIds = [...(item.variantIds || [])];
+                                                    newIds.splice(idx, 1);
+                                                    handleItemChange(item.id, 'variantIds', newIds);
+                                                  }}
+                                                >
+                                                  {name}
+                                                  <X className="ml-1 h-3 w-3" />
+                                                </Badge>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               )}
 

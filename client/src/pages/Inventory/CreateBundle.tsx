@@ -43,7 +43,16 @@ import {
 } from '@/components/ui/select';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import type { Product, ProductVariant, ProductBundle } from '@shared/schema';
+import type { Product, ProductBundle } from '@shared/schema';
+
+interface ProductVariant {
+  id: string;
+  productId: string;
+  name: string;
+  sku?: string;
+  barcode?: string;
+  quantity: number;
+}
 
 interface BundleItem {
   id: string; // Unique ID for React key
@@ -607,21 +616,28 @@ export default function CreateBundle() {
 
       // Create bundle items
       if (data.items.length > 0) {
-        const itemsData = data.items.flatMap(item => {
+        type BundleItemData = {
+          bundleId: string;
+          productId: string;
+          variantId: string | null;
+          quantity: number;
+        };
+        
+        const itemsData: BundleItemData[] = data.items.flatMap((item): BundleItemData[] => {
           // If no variants selected, create one item without variant
           if (!item.variantIds || item.variantIds.length === 0) {
             return [{
               bundleId: bundle.id,
               productId: item.productId,
-              variantId: null,
+              variantId: null as string | null,
               quantity: item.quantity
             }];
           }
           // Create an item for each selected variant
-          return item.variantIds.map(variantId => ({
+          return item.variantIds.map((variantId): BundleItemData => ({
             bundleId: bundle.id,
             productId: item.productId,
-            variantId: variantId,
+            variantId: variantId as string | null,
             quantity: item.quantity
           }));
         });
@@ -749,7 +765,7 @@ export default function CreateBundle() {
     }));
   };
 
-  const handleItemChange = (itemId: string, field: keyof BundleItem, value: any) => {
+  const handleItemChange = (itemId: string, field: string, value: any) => {
     setFormData(prev => ({
       ...prev,
       items: prev.items.map(item => {
