@@ -157,20 +157,20 @@ function BundleItemRow({
             <Label className="text-xs text-muted-foreground mb-2 block">Product</Label>
             <Popover open={isOpen} onOpenChange={setIsOpen}>
               <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={isOpen}
-                  className={`w-full justify-between ${errors[`item_${item.id}`] ? 'border-destructive' : ''}`}
-                  data-testid={`button-select-product-${index}`}
-                >
-                  {item.productId ? (
-                    <span className="truncate">{item.productName}</span>
-                  ) : (
-                    <span className="text-muted-foreground">Search products...</span>
-                  )}
-                  <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
+                <div className="relative">
+                  <Input
+                    value={searchQuery || (item.productName || '')}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setIsOpen(true);
+                    }}
+                    onFocus={() => setIsOpen(true)}
+                    placeholder="Search products..."
+                    className={`pr-10 ${errors[`item_${item.id}`] ? 'border-destructive' : ''}`}
+                    data-testid={`input-search-product-${index}`}
+                  />
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                </div>
               </PopoverTrigger>
               <PopoverContent className="w-[400px] p-0" align="start">
                 <Command>
@@ -178,7 +178,7 @@ function BundleItemRow({
                     placeholder="Type to search products..." 
                     value={searchQuery}
                     onValueChange={setSearchQuery}
-                    data-testid={`input-search-product-${index}`}
+                    className="hidden"
                   />
                   <CommandEmpty>No products found.</CommandEmpty>
                   <CommandGroup className="max-h-64 overflow-auto">
