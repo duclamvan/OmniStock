@@ -40,7 +40,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import type { ProductBundle, BundleItem, Product, ProductVariant } from '@shared/schema';
 
@@ -56,10 +56,17 @@ export default function BundleDetails() {
   const [, navigate] = useLocation();
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
 
+  // Redirect if someone accidentally navigates to /bundles/create or /bundles/edit
+  useEffect(() => {
+    if (id === 'create') {
+      navigate('/inventory/bundles/create', { replace: true });
+    }
+  }, [id, navigate]);
+
   // Fetch bundle details
   const { data: bundle, isLoading, error } = useQuery<BundleWithItems>({
     queryKey: ['/api/bundles', id],
-    enabled: !!id
+    enabled: !!id && id !== 'create'
   });
 
   // Fetch orders
