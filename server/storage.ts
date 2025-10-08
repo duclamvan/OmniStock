@@ -28,6 +28,8 @@ import {
   orderCartonPlans,
   orderCartonItems,
   expenses,
+  packingMaterials,
+  packingMaterialUsage,
   type User,
   type InsertUser,
   type Category,
@@ -83,7 +85,11 @@ import {
   type OrderCartonPlan,
   type InsertOrderCartonPlan,
   type OrderCartonItem,
-  type InsertOrderCartonItem
+  type InsertOrderCartonItem,
+  type PackingMaterial,
+  type InsertPackingMaterial,
+  type PackingMaterialUsage,
+  type InsertPackingMaterialUsage
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, like, sql, gte, lte, inArray, ne, asc, isNull, notInArray } from "drizzle-orm";
@@ -101,8 +107,6 @@ export type UserActivity = any;
 export type AppCategory = any;
 export type Bundle = any;
 export type CustomerPrice = any;
-export type PackingMaterial = any;
-export type PackingMaterialUsage = any;
 export type FileType = any;
 
 export interface IStorage {
@@ -2333,14 +2337,94 @@ export class DatabaseStorage implements IStorage {
   async updateCustomerPrice(id: string, price: any): Promise<CustomerPrice | undefined> { return { id, ...price }; }
   async deleteCustomerPrice(id: string): Promise<boolean> { return true; }
 
-  async getPackingMaterials(): Promise<PackingMaterial[]> { return []; }
-  async getPackingMaterial(id: string): Promise<PackingMaterial | undefined> { return undefined; }
-  async createPackingMaterial(material: any): Promise<PackingMaterial> { return { id: Date.now().toString(), ...material }; }
-  async updatePackingMaterial(id: string, material: any): Promise<PackingMaterial | undefined> { return { id, ...material }; }
-  async deletePackingMaterial(id: string): Promise<boolean> { return true; }
+  async getPackingMaterials(): Promise<PackingMaterial[]> {
+    try {
+      return await db
+        .select()
+        .from(packingMaterials)
+        .orderBy(desc(packingMaterials.category), asc(packingMaterials.name));
+    } catch (error) {
+      console.error('Error fetching packing materials:', error);
+      return [];
+    }
+  }
 
-  async getPackingMaterialUsage(orderId: string): Promise<PackingMaterialUsage[]> { return []; }
-  async createPackingMaterialUsage(usage: any): Promise<PackingMaterialUsage> { return { id: Date.now().toString(), ...usage }; }
+  async getPackingMaterial(id: string): Promise<PackingMaterial | undefined> {
+    try {
+      const [material] = await db
+        .select()
+        .from(packingMaterials)
+        .where(eq(packingMaterials.id, id));
+      return material || undefined;
+    } catch (error) {
+      console.error('Error fetching packing material:', error);
+      return undefined;
+    }
+  }
+
+  async createPackingMaterial(material: InsertPackingMaterial): Promise<PackingMaterial> {
+    try {
+      const [newMaterial] = await db
+        .insert(packingMaterials)
+        .values(material)
+        .returning();
+      return newMaterial;
+    } catch (error) {
+      console.error('Error creating packing material:', error);
+      throw error;
+    }
+  }
+
+  async updatePackingMaterial(id: string, material: Partial<InsertPackingMaterial>): Promise<PackingMaterial | undefined> {
+    try {
+      const [updated] = await db
+        .update(packingMaterials)
+        .set({ ...material, updatedAt: new Date() })
+        .where(eq(packingMaterials.id, id))
+        .returning();
+      return updated || undefined;
+    } catch (error) {
+      console.error('Error updating packing material:', error);
+      return undefined;
+    }
+  }
+
+  async deletePackingMaterial(id: string): Promise<boolean> {
+    try {
+      await db
+        .delete(packingMaterials)
+        .where(eq(packingMaterials.id, id));
+      return true;
+    } catch (error) {
+      console.error('Error deleting packing material:', error);
+      return false;
+    }
+  }
+
+  async getPackingMaterialUsage(orderId: string): Promise<PackingMaterialUsage[]> {
+    try {
+      return await db
+        .select()
+        .from(packingMaterialUsage)
+        .where(eq(packingMaterialUsage.orderId, orderId));
+    } catch (error) {
+      console.error('Error fetching packing material usage:', error);
+      return [];
+    }
+  }
+
+  async createPackingMaterialUsage(usage: InsertPackingMaterialUsage): Promise<PackingMaterialUsage> {
+    try {
+      const [newUsage] = await db
+        .insert(packingMaterialUsage)
+        .values(usage)
+        .returning();
+      return newUsage;
+    } catch (error) {
+      console.error('Error creating packing material usage:', error);
+      throw error;
+    }
+  }
 
   async getAllFiles(): Promise<FileType[]> { return []; }
   async getFilesByType(type: string): Promise<FileType[]> { return []; }

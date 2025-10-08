@@ -583,6 +583,39 @@ export const orderCartonItems = pgTable('order_carton_items', {
   createdAt: timestamp('created_at').notNull().defaultNow()
 });
 
+// Packing Materials for warehouse management
+export const packingMaterials = pgTable('packing_materials', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  name: text('name').notNull(),
+  code: varchar('code').notNull().unique(),
+  category: varchar('category').notNull(), // cartons, filling, pallets, protective, tools, supplies
+  type: varchar('type').notNull(),
+  size: varchar('size'),
+  dimensions: text('dimensions'),
+  weight: text('weight'),
+  stockQuantity: integer('stock_quantity').notNull().default(0),
+  minStockLevel: integer('min_stock_level').notNull().default(10),
+  cost: text('cost'),
+  currency: varchar('currency').default('EUR'),
+  supplier: text('supplier'),
+  imageUrl: text('image_url'),
+  description: text('description'),
+  isFragile: boolean('is_fragile').default(false),
+  isReusable: boolean('is_reusable').default(false),
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
+export const packingMaterialUsage = pgTable('packing_material_usage', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
+  materialId: varchar('material_id').notNull().references(() => packingMaterials.id, { onDelete: 'cascade' }),
+  quantity: integer('quantity').notNull(),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').notNull().defaultNow()
+});
+
 export const discounts = pgTable('discounts', {
   id: serial('id').primaryKey(),
   discountId: text('discount_id').notNull().unique(),
@@ -942,6 +975,10 @@ export const insertPackingCartonSchema = createInsertSchema(packingCartons).omit
 export const insertOrderCartonPlanSchema = createInsertSchema(orderCartonPlans).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertOrderCartonItemSchema = createInsertSchema(orderCartonItems).omit({ id: true, createdAt: true });
 
+// Packing Materials schemas
+export const insertPackingMaterialSchema = createInsertSchema(packingMaterials).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertPackingMaterialUsageSchema = createInsertSchema(packingMaterialUsage).omit({ id: true, createdAt: true });
+
 export const insertDiscountSchema = createInsertSchema(discounts).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertExpenseSchema = createInsertSchema(expenses).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertServiceSchema = createInsertSchema(services).omit({ id: true, createdAt: true, updatedAt: true });
@@ -1016,6 +1053,12 @@ export type OrderCartonPlan = typeof orderCartonPlans.$inferSelect;
 export type InsertOrderCartonPlan = z.infer<typeof insertOrderCartonPlanSchema>;
 export type OrderCartonItem = typeof orderCartonItems.$inferSelect;
 export type InsertOrderCartonItem = z.infer<typeof insertOrderCartonItemSchema>;
+
+// Packing Materials types
+export type PackingMaterial = typeof packingMaterials.$inferSelect;
+export type InsertPackingMaterial = z.infer<typeof insertPackingMaterialSchema>;
+export type PackingMaterialUsage = typeof packingMaterialUsage.$inferSelect;
+export type InsertPackingMaterialUsage = z.infer<typeof insertPackingMaterialUsageSchema>;
 
 export type Discount = typeof discounts.$inferSelect;
 export type InsertDiscount = z.infer<typeof insertDiscountSchema>;
