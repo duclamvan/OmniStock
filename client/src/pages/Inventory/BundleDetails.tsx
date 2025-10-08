@@ -157,33 +157,10 @@ export default function BundleDetails() {
     }
   });
 
-  if (isLoading) {
+  if (isLoading || !bundle) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  if (error || !bundle) {
-    return (
-      <div className="container mx-auto p-6 sm:p-8">
-        <Card className="border-destructive">
-          <CardHeader>
-            <CardTitle className="text-destructive">Error Loading Bundle</CardTitle>
-            <CardDescription>
-              {error?.message || 'Bundle not found'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/inventory">
-              <Button variant="outline">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Inventory
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
       </div>
     );
   }
