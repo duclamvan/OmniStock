@@ -638,8 +638,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Warehouse file management endpoints
   app.get('/api/warehouses/:id/files', async (req, res) => {
     try {
-      // Return empty array for now - warehouse files functionality not fully implemented
-      res.json([]);
+      const files = await storage.getWarehouseFiles(req.params.id);
+      res.json(files);
     } catch (error) {
       console.error("Error fetching warehouse files:", error);
       res.status(500).json({ message: "Failed to fetch warehouse files" });

@@ -336,6 +336,16 @@ export const warehouses = pgTable('warehouses', {
   floorArea: decimal('floor_area', { precision: 10, scale: 2 })
 });
 
+export const warehouseFiles = pgTable('warehouse_files', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  warehouseId: text('warehouse_id').notNull().references(() => warehouses.id, { onDelete: 'cascade' }),
+  fileName: text('file_name').notNull(),
+  fileType: text('file_type').notNull(),
+  fileUrl: text('file_url').notNull(),
+  fileSize: integer('file_size').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow()
+});
+
 export const products = pgTable('products', {
   id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
   name: varchar('name').notNull(),
@@ -908,6 +918,7 @@ export const insertCustomerSchema = createInsertSchema(customers).omit({ id: tru
 export const insertCustomerShippingAddressSchema = createInsertSchema(customerShippingAddresses).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true, createdAt: true });
 export const insertWarehouseSchema = createInsertSchema(warehouses).omit({ createdAt: true });
+export const insertWarehouseFileSchema = createInsertSchema(warehouseFiles).omit({ id: true, createdAt: true });
 export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProductTieredPricingSchema = createInsertSchema(productTieredPricing).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProductBundleSchema = createInsertSchema(productBundles).omit({ id: true, bundleId: true, createdAt: true, updatedAt: true });
@@ -977,6 +988,8 @@ export type Supplier = typeof suppliers.$inferSelect;
 export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
 export type Warehouse = typeof warehouses.$inferSelect;
 export type InsertWarehouse = z.infer<typeof insertWarehouseSchema>;
+export type WarehouseFile = typeof warehouseFiles.$inferSelect;
+export type InsertWarehouseFile = z.infer<typeof insertWarehouseFileSchema>;
 export type Product = typeof products.$inferSelect;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
 export type ProductTieredPricing = typeof productTieredPricing.$inferSelect;

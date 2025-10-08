@@ -20,6 +20,7 @@ import {
   orders,
   orderItems,
   warehouses,
+  warehouseFiles,
   services,
   preOrders,
   preOrderItems,
@@ -69,6 +70,8 @@ import {
   type InsertOrderItem,
   type Warehouse,
   type InsertWarehouse,
+  type WarehouseFile,
+  type InsertWarehouseFile,
   type Service,
   type InsertService,
   type PreOrder,
@@ -245,6 +248,12 @@ export interface IStorage {
   createWarehouse(warehouse: any): Promise<Warehouse>;
   updateWarehouse(id: string, warehouse: any): Promise<Warehouse | undefined>;
   deleteWarehouse(id: string): Promise<boolean>;
+  
+  // Warehouse Files
+  getWarehouseFiles(warehouseId: string): Promise<WarehouseFile[]>;
+  getWarehouseFileById(id: string): Promise<WarehouseFile | undefined>;
+  createWarehouseFile(data: InsertWarehouseFile): Promise<WarehouseFile>;
+  deleteWarehouseFile(fileId: string): Promise<boolean>;
   
   // Suppliers
   getSuppliers(): Promise<Supplier[]>;
@@ -1901,6 +1910,59 @@ export class DatabaseStorage implements IStorage {
       return (result.rowCount ?? 0) > 0;
     } catch (error) {
       console.error('Error deleting warehouse:', error);
+      return false;
+    }
+  }
+
+  // Warehouse Files
+  async getWarehouseFiles(warehouseId: string): Promise<WarehouseFile[]> {
+    try {
+      const files = await db
+        .select()
+        .from(warehouseFiles)
+        .where(eq(warehouseFiles.warehouseId, warehouseId))
+        .orderBy(desc(warehouseFiles.createdAt));
+      return files;
+    } catch (error) {
+      console.error('Error fetching warehouse files:', error);
+      return [];
+    }
+  }
+
+  async getWarehouseFileById(id: string): Promise<WarehouseFile | undefined> {
+    try {
+      const [file] = await db
+        .select()
+        .from(warehouseFiles)
+        .where(eq(warehouseFiles.id, id));
+      return file || undefined;
+    } catch (error) {
+      console.error('Error fetching warehouse file:', error);
+      return undefined;
+    }
+  }
+
+  async createWarehouseFile(data: InsertWarehouseFile): Promise<WarehouseFile> {
+    try {
+      const [file] = await db
+        .insert(warehouseFiles)
+        .values(data)
+        .returning();
+      return file;
+    } catch (error) {
+      console.error('Error creating warehouse file:', error);
+      throw error;
+    }
+  }
+
+  async deleteWarehouseFile(fileId: string): Promise<boolean> {
+    try {
+      const result = await db
+        .delete(warehouseFiles)
+        .where(eq(warehouseFiles.id, fileId));
+      return (result.rowCount ?? 0) > 0;
+    } catch (error) {
+      console.error('Error deleting warehouse file:', error);
       return false;
     }
   }
