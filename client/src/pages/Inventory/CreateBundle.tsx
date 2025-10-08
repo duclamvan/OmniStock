@@ -83,7 +83,7 @@ interface BundleFormData {
   items: BundleItem[];
 }
 
-// Component for individual bundle item row with search
+// Component for individual bundle item row with clean combobox design
 function BundleItemRow({
   item,
   index,
@@ -101,156 +101,142 @@ function BundleItemRow({
   onItemChange: (id: string, field: string, value: any) => void;
   onRemoveItem: (id: string) => void;
 }) {
-  const [searchQuery, setSearchQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   
-  const filteredProducts = searchQuery.length >= 2 
-    ? products.filter(p => 
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.sku?.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : products;
+  const selectedProduct = products.find(p => p.id === item.productId);
 
   return (
-    <div className="border rounded-lg overflow-hidden">
-      {/* Top Section - Complete Item Summary (Product Name + Price) */}
-      {item.productName ? (
-        <div className="bg-primary/5 px-4 py-3 border-b">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex-1 min-w-0 flex items-baseline gap-3">
-              <h4 className="font-semibold truncate">{item.productName}</h4>
-              <div className="flex items-center gap-2 text-sm whitespace-nowrap">
-                <span className="text-muted-foreground">{item.quantity} × {item.priceCzk.toFixed(2)} Kč</span>
-                <span className="font-semibold">= {(item.quantity * item.priceCzk).toFixed(2)} Kč</span>
-              </div>
+    <Card className="relative">
+      <CardContent className="p-4">
+        {/* Remove Button - Top Right */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => onRemoveItem(item.id)}
+          data-testid={`button-remove-item-${index}`}
+          className="absolute top-2 right-2 h-8 w-8"
+        >
+          <X className="h-4 w-4" />
+        </Button>
+
+        <div className="space-y-4">
+          {/* Main Row - Product Selector + Quantity */}
+          <div className="flex gap-3 pr-10">
+            {/* Product Selector - Combobox Pattern */}
+            <div className="flex-1 space-y-2">
+              <Label className="text-sm font-medium">Product *</Label>
+              <Popover open={isOpen} onOpenChange={setIsOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={isOpen}
+                    className={`w-full justify-between ${
+                      errors[`item_${item.id}`] ? 'border-destructive' : ''
+                    }`}
+                    data-testid={`button-select-product-${index}`}
+                  >
+                    <span className="truncate">
+                      {selectedProduct ? selectedProduct.name : 'Select product...'}
+                    </span>
+                    <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[400px] p-0" align="start">
+                  <Command>
+                    <CommandInput 
+                      placeholder="Search products..." 
+                      className="h-9"
+                    />
+                    <CommandEmpty>No products found.</CommandEmpty>
+                    <CommandGroup className="max-h-64 overflow-auto">
+                      {products.map((product) => (
+                        <CommandItem
+                          key={product.id}
+                          value={`${product.name} ${product.sku || ''}`}
+                          onSelect={() => {
+                            onItemChange(item.id, 'productId', product.id);
+                            setIsOpen(false);
+                          }}
+                          data-testid={`product-option-${product.id}`}
+                        >
+                          <Check
+                            className={`mr-2 h-4 w-4 ${
+                              item.productId === product.id ? "opacity-100" : "opacity-0"
+                            }`}
+                          />
+                          <div className="flex-1 flex items-center justify-between">
+                            <span>{product.name}</span>
+                            {product.sku && (
+                              <span className="text-xs text-muted-foreground ml-2">
+                                {product.sku}
+                              </span>
+                            )}
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+              {errors[`item_${item.id}`] && (
+                <p className="text-xs text-destructive">{errors[`item_${item.id}`]}</p>
+              )}
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onRemoveItem(item.id)}
-              data-testid={`button-remove-item-${index}`}
-              className="shrink-0"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+
+            {/* Quantity Input - Inline */}
+            <div className="w-28 space-y-2">
+              <Label className="text-sm font-medium">Quantity</Label>
+              <Input
+                type="number"
+                min="1"
+                value={item.quantity}
+                onChange={(e) => 
+                  onItemChange(item.id, 'quantity', parseInt(e.target.value) || 1)
+                }
+                className={errors[`quantity_${item.id}`] ? 'border-destructive' : ''}
+                data-testid={`input-quantity-${index}`}
+              />
+              {errors[`quantity_${item.id}`] && (
+                <p className="text-xs text-destructive">{errors[`quantity_${item.id}`]}</p>
+              )}
+            </div>
           </div>
-          {item.variantIds && item.variantIds.length > 0 && (
-            <div className="mt-2">
-              <Badge variant="secondary" className="text-xs">
-                {item.variantIds.length} variant{item.variantIds.length !== 1 ? 's' : ''} selected
-              </Badge>
+
+          {/* Price Summary - When Product Selected */}
+          {selectedProduct && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground border-t pt-3">
+              <Package className="h-4 w-4" />
+              <span>
+                {item.quantity} × {parseFloat(selectedProduct.priceCzk || '0').toFixed(2)} Kč = 
+                <span className="font-semibold text-foreground ml-1">
+                  {(item.quantity * parseFloat(selectedProduct.priceCzk || '0')).toFixed(2)} Kč
+                </span>
+              </span>
+              {item.variantIds && item.variantIds.length > 0 && (
+                <Badge variant="secondary" className="ml-auto text-xs">
+                  {item.variantIds.length} variant{item.variantIds.length !== 1 ? 's' : ''}
+                </Badge>
+              )}
+            </div>
+          )}
+
+          {/* Variant Selector - Conditional */}
+          {item.productId && variantsCache[item.productId]?.length > 0 && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-muted-foreground">
+                Variants (Optional)
+              </Label>
+              <VariantSelector
+                variants={variantsCache[item.productId]}
+                selectedIds={item.variantIds || []}
+                onChange={(ids) => onItemChange(item.id, 'variantIds', ids)}
+              />
             </div>
           )}
         </div>
-      ) : (
-        <div className="bg-muted/20 px-4 py-3 border-b">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">No product selected</p>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onRemoveItem(item.id)}
-              data-testid={`button-remove-item-${index}`}
-              className="shrink-0"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Bottom Section - Product Selection Controls */}
-      <div className="p-4 space-y-3">
-        <div className="flex gap-3">
-          <div className="flex-1">
-            <Label className="text-xs text-muted-foreground mb-2 block">Product</Label>
-            <Popover open={isOpen} onOpenChange={setIsOpen}>
-              <PopoverTrigger asChild>
-                <div className="relative">
-                  <Input
-                    value={searchQuery || (item.productName || '')}
-                    onChange={(e) => {
-                      setSearchQuery(e.target.value);
-                      setIsOpen(true);
-                    }}
-                    onFocus={() => setIsOpen(true)}
-                    placeholder="Search products..."
-                    className={`pr-10 ${errors[`item_${item.id}`] ? 'border-destructive' : ''}`}
-                    data-testid={`input-search-product-${index}`}
-                  />
-                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                </div>
-              </PopoverTrigger>
-              <PopoverContent className="w-[400px] p-0" align="start">
-                <Command>
-                  <CommandInput 
-                    placeholder="Type to search products..." 
-                    value={searchQuery}
-                    onValueChange={setSearchQuery}
-                    className="hidden"
-                  />
-                  <CommandEmpty>No products found.</CommandEmpty>
-                  <CommandGroup className="max-h-64 overflow-auto">
-                    {filteredProducts.map((product) => (
-                      <CommandItem
-                        key={product.id}
-                        value={product.id}
-                        onSelect={() => {
-                          onItemChange(item.id, 'productId', product.id);
-                          setIsOpen(false);
-                          setSearchQuery('');
-                        }}
-                        data-testid={`product-option-${product.id}`}
-                      >
-                        <Check
-                          className={`mr-2 h-4 w-4 ${
-                            item.productId === product.id ? "opacity-100" : "opacity-0"
-                          }`}
-                        />
-                        <div className="flex-1 flex items-center justify-between">
-                          <span>{product.name}</span>
-                          <span className="text-xs text-muted-foreground ml-2">
-                            {product.sku}
-                          </span>
-                        </div>
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </Command>
-              </PopoverContent>
-            </Popover>
-            {errors[`item_${item.id}`] && (
-              <p className="text-xs text-destructive mt-1">{errors[`item_${item.id}`]}</p>
-            )}
-          </div>
-
-          <div className="w-24">
-            <Label className="text-xs text-muted-foreground mb-2 block">Quantity</Label>
-            <Input
-              type="number"
-              min="1"
-              value={item.quantity}
-              onChange={(e) => 
-                onItemChange(item.id, 'quantity', parseInt(e.target.value) || 1)
-              }
-              className={errors[`quantity_${item.id}`] ? 'border-destructive' : ''}
-              data-testid={`input-quantity-${index}`}
-            />
-          </div>
-        </div>
-
-        {item.productId && variantsCache[item.productId]?.length > 0 && (
-          <div>
-            <Label className="text-xs text-muted-foreground mb-2 block">Variants (Optional)</Label>
-            <VariantSelector
-              variants={variantsCache[item.productId]}
-              selectedIds={item.variantIds || []}
-              onChange={(ids) => onItemChange(item.id, 'variantIds', ids)}
-            />
-          </div>
-        )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
