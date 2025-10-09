@@ -5,13 +5,13 @@ import { relations, sql } from 'drizzle-orm';
 
 // Users table
 export const users = pgTable('users', {
-  id: serial('id').primaryKey(),
-  email: text('email').notNull().unique(),
-  username: text('username').notNull().unique(),
-  passwordHash: text('password_hash').notNull(),
-  role: text('role').notNull().default('user'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow()
+  id: varchar('id').primaryKey(),
+  email: varchar('email'),
+  firstName: varchar('first_name'),
+  lastName: varchar('last_name'),
+  profileImageUrl: varchar('profile_image_url'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow()
 });
 
 // Categories table
@@ -365,7 +365,6 @@ export const products = pgTable('products', {
   importCostUsd: decimal('import_cost_usd'),
   importCostCzk: decimal('import_cost_czk'),
   importCostEur: decimal('import_cost_eur'),
-  supplierLink: text('supplier_link'),
   imageUrl: varchar('image_url'),
   images: jsonb('images'), // Array of {url: string, purpose: string, isPrimary: boolean}
   barcode: varchar('barcode'),
@@ -427,12 +426,13 @@ export const productBundles = pgTable('product_bundles', {
 export const bundleItems = pgTable('bundle_items', {
   id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
   bundleId: varchar('bundle_id').notNull().references(() => productBundles.id, { onDelete: 'cascade' }),
-  productId: varchar('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
+  productId: varchar('product_id').references(() => products.id, { onDelete: 'cascade' }),
   variantId: varchar('variant_id'), // Optional - can be null if no variant selected
   quantity: integer('quantity').notNull().default(1),
+  productName: varchar('product_name'),
+  variantName: varchar('variant_name'),
   notes: text('notes'),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow()
+  createdAt: timestamp('created_at').defaultNow()
 });
 
 // Daily sequences table for order ID generation
@@ -490,16 +490,18 @@ export const orders = pgTable('orders', {
 
 // Product Files table for document management
 export const productFiles = pgTable('product_files', {
-  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
-  productId: varchar('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
-  fileType: varchar('file_type').notNull(), // 'sds', 'cpnp', 'flyer', 'certificate', 'manual', 'other'
+  id: text('id').primaryKey(),
+  productId: text('product_id').references(() => products.id, { onDelete: 'cascade' }),
   fileName: text('file_name').notNull(),
-  filePath: text('file_path').notNull(),
-  language: varchar('language').notNull().default('en'), // 'en', 'cs', 'de', 'fr', 'es', 'zh'
-  displayName: text('display_name').notNull(),
-  uploadedAt: timestamp('uploaded_at').notNull().defaultNow(),
-  fileSize: integer('file_size').notNull(),
-  mimeType: varchar('mime_type').notNull()
+  fileType: text('file_type').notNull(), // 'sds', 'cpnp', 'flyer', 'certificate', 'manual', 'other'
+  fileUrl: text('file_url').notNull(),
+  fileSize: integer('file_size'),
+  mimeType: text('mime_type'),
+  description: text('description'),
+  uploadedBy: text('uploaded_by'),
+  uploadedAt: timestamp('uploaded_at').notNull(),
+  isActive: boolean('is_active'),
+  tags: text('tags').array()
 });
 
 export const orderItems = pgTable('order_items', {

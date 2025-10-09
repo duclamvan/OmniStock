@@ -89,7 +89,6 @@ const addProductSchema = z.object({
   importCostUsd: z.coerce.number().min(0).optional(),
   importCostCzk: z.coerce.number().min(0).optional(),
   importCostEur: z.coerce.number().min(0).optional(),
-  supplierLink: z.string().url().optional().or(z.literal("")),
   barcode: z.string().optional(),
 });
 
@@ -640,7 +639,6 @@ export default function AddProduct() {
       supplierId: data.supplierId || undefined,
       packingInstructionsText: packingInstructionsText,
       packingInstructionsImage: packingInstructionsImage,
-      supplierLink: data.supplierLink || undefined,
       barcode: data.barcode || undefined,
     };
 
@@ -1179,18 +1177,6 @@ export default function AddProduct() {
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                       Enter cost in one currency, others auto-convert
                     </p>
-                  </div>
-
-                  {/* Supplier Link */}
-                  <div>
-                    <Label htmlFor="supplierLink" className="text-sm font-medium">Supplier Link</Label>
-                    <Input
-                      type="url"
-                      {...form.register('supplierLink')}
-                      placeholder="https://supplier-website.com/product"
-                      data-testid="input-supplier-link"
-                      className="mt-1"
-                    />
                   </div>
                 </div>
               </AccordionContent>

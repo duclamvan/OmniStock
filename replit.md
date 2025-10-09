@@ -19,7 +19,7 @@ The application supports multiple authentication methods:
 - Sessions are managed with HTTP-only cookies for security.
 
 ## Database Design
-The database schema, managed with PostgreSQL, Neon serverless driver, and Drizzle ORM, supports a comprehensive e-commerce workflow. It includes core entities for users, products, orders, customers, warehouses, suppliers, and returns. The design facilitates complete order lifecycle management, inventory tracking (including variants and stock), multi-currency financial tracking, and an audit trail for user activities.
+The database schema, managed with PostgreSQL, Neon serverless driver, and Drizzle ORM, supports a comprehensive e-commerce workflow. It includes core entities for users, products, orders, customers, warehouses, suppliers, and returns. The design facilitates complete order lifecycle management, inventory tracking (including variants and stock), multi-currency financial tracking, and an audit trail for user activities. **Database normalization**: Supplier information (including supplier links) is centralized exclusively in the suppliers table - products reference suppliers via `supplierId` foreign key only.
 
 ## Core Features
 - **Product Management**: Comprehensive product details, pricing, location tracking, barcode scanning, document management, and packing instructions. Includes tiered pricing, supplier integration, and **multi-purpose product images** (Main WMS Image, In Hand for Pick & Pack, Detail Shot, Packaging, Label/Barcode) with primary image designation and automatic compression.

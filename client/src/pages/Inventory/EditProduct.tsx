@@ -56,7 +56,6 @@ const editProductSchema = z.object({
   importCostUsd: z.coerce.number().min(0).optional(),
   importCostCzk: z.coerce.number().min(0).optional(),
   importCostEur: z.coerce.number().min(0).optional(),
-  supplierLink: z.string().url().optional().or(z.literal("")),
   barcode: z.string().optional(),
   length: z.coerce.number().min(0).optional(),
   width: z.coerce.number().min(0).optional(),
@@ -163,7 +162,6 @@ export default function EditProduct() {
         importCostUsd: product.importCostUsd ? parseFloat(product.importCostUsd) : undefined,
         importCostCzk: product.importCostCzk ? parseFloat(product.importCostCzk) : undefined,
         importCostEur: product.importCostEur ? parseFloat(product.importCostEur) : undefined,
-        supplierLink: product.supplierLink || '',
         barcode: product.barcode || '',
         length: product.length ? parseFloat(product.length) : undefined,
         width: product.width ? parseFloat(product.width) : undefined,
@@ -349,7 +347,6 @@ export default function EditProduct() {
       categoryId: data.categoryId || undefined,
       warehouseId: data.warehouseId || undefined,
       supplierId: data.supplierId || undefined,
-      supplierLink: data.supplierLink || undefined,
       barcode: data.barcode || undefined,
       warehouseLocation: data.warehouseLocation || undefined,
       packingMaterialId: data.packingMaterialId || undefined,
@@ -783,15 +780,6 @@ export default function EditProduct() {
                       </div>
                     </div>
                   )}
-                </div>
-
-                <div>
-                  <Label htmlFor="supplierLink">Supplier Link</Label>
-                  <Input
-                    {...form.register('supplierLink')}
-                    placeholder="https://..."
-                    data-testid="input-supplier-link"
-                  />
                 </div>
               </CardContent>
             </Card>
