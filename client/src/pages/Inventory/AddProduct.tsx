@@ -48,7 +48,8 @@ import {
   PackageOpen,
   FileType,
   Star,
-  X
+  X,
+  MapPin
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -980,12 +981,20 @@ export default function AddProduct() {
                     <Label htmlFor="warehouseLocation" className="text-sm font-medium">Warehouse Location Code</Label>
                     <Input
                       {...form.register('warehouseLocation')}
-                      placeholder="e.g., A1-B2-C3 or RACK-01-SHELF-05"
+                      placeholder="WH1-A01-R02-L03"
                       data-testid="input-location"
-                      className="mt-1"
+                      className="mt-1 font-mono"
+                      onBlur={(e) => {
+                        // Convert to uppercase for consistency
+                        const value = e.target.value.trim().toUpperCase();
+                        if (value) {
+                          form.setValue('warehouseLocation', value);
+                        }
+                      }}
                     />
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      Exact location within warehouse
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      Format: Warehouse-Aisle-Rack-Level (e.g., WH1-A01-R02-L03)
                     </p>
                   </div>
 
