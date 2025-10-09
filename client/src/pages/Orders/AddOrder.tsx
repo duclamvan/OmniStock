@@ -405,8 +405,8 @@ export default function AddOrder() {
         setShowProductDropdown(true);
       }
       
-      // Ctrl/Cmd + F: Focus customer search
-      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+      // Alt + C: Focus customer search
+      if (e.altKey && e.key === 'c') {
         e.preventDefault();
         customerSearchRef.current?.focus();
         setShowCustomerDropdown(true);
@@ -1943,7 +1943,7 @@ export default function AddOrder() {
             <Alert className="bg-blue-50 border-blue-200">
               <AlertCircle className="h-4 w-4 text-blue-600" />
               <AlertDescription className="text-sm text-blue-800">
-                <strong>Quick Keys:</strong> Ctrl+K (Product search) • Ctrl+F (Customer search) • Enter (Add first product) • Esc (Close)
+                <strong>Quick Keys:</strong> Ctrl+K (Product search) • Alt+C (Customer search) • Enter (Add first product) • Esc (Close)
               </AlertDescription>
             </Alert>
 
