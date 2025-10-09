@@ -367,6 +367,7 @@ export const products = pgTable('products', {
   importCostEur: decimal('import_cost_eur'),
   supplierLink: text('supplier_link'),
   imageUrl: varchar('image_url'),
+  images: jsonb('images'), // Array of {url: string, purpose: string, isPrimary: boolean}
   barcode: varchar('barcode'),
   length: decimal('length'),
   width: decimal('width'),

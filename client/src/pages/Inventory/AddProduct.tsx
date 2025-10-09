@@ -42,7 +42,13 @@ import {
   Box,
   DollarSign,
   Warehouse,
-  Info
+  Info,
+  Image as ImageIcon,
+  Hand,
+  PackageOpen,
+  FileType,
+  Star,
+  X
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -86,9 +92,52 @@ const addProductSchema = z.object({
   barcode: z.string().optional(),
 });
 
+type ImagePurpose = 'main' | 'in_hand' | 'detail' | 'packaging' | 'label';
+
+interface ProductImage {
+  file: File;
+  preview: string;
+  purpose: ImagePurpose;
+  isPrimary: boolean;
+}
+
+const IMAGE_PURPOSE_CONFIG = {
+  main: {
+    label: 'Main WMS Image',
+    description: 'Primary product image for warehouse management',
+    icon: ImageIcon,
+    color: 'text-blue-600 bg-blue-100 border-blue-300',
+  },
+  in_hand: {
+    label: 'In Hand (Pick & Pack)',
+    description: 'Product held in hand for picking/packing reference',
+    icon: Hand,
+    color: 'text-emerald-600 bg-emerald-100 border-emerald-300',
+  },
+  detail: {
+    label: 'Detail Shot',
+    description: 'Close-up details, texture, or features',
+    icon: PackageOpen,
+    color: 'text-purple-600 bg-purple-100 border-purple-300',
+  },
+  packaging: {
+    label: 'Packaging',
+    description: 'Product packaging and box',
+    icon: Package,
+    color: 'text-amber-600 bg-amber-100 border-amber-300',
+  },
+  label: {
+    label: 'Label/Barcode',
+    description: 'Product label, barcode, or SKU tag',
+    icon: FileType,
+    color: 'text-slate-600 bg-slate-100 border-slate-300',
+  },
+};
+
 export default function AddProduct() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [productImages, setProductImages] = useState<ProductImage[]>([]);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [variants, setVariants] = useState<Array<{
     id: string;
@@ -270,8 +319,61 @@ export default function AddProduct() {
 
   const createProductMutation = useMutation({
     mutationFn: async (data: any) => {
-      // Upload image first if one was selected
-      if (imageFile) {
+      // Upload all product images
+      if (productImages.length > 0) {
+        const uploadedImages = [];
+        let totalOriginalSize = 0;
+        let totalCompressedSize = 0;
+        
+        for (const img of productImages) {
+          const formData = new FormData();
+          formData.append('image', img.file);
+          
+          const uploadResponse = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData,
+          });
+          
+          if (!uploadResponse.ok) {
+            throw new Error('Failed to upload image');
+          }
+          
+          const uploadResult = await uploadResponse.json();
+          
+          uploadedImages.push({
+            url: uploadResult.imageUrl,
+            purpose: img.purpose,
+            isPrimary: img.isPrimary,
+          });
+          
+          if (uploadResult.compressionInfo) {
+            totalOriginalSize += uploadResult.compressionInfo.originalSize;
+            totalCompressedSize += uploadResult.compressionInfo.compressedSize;
+          }
+          
+          // Set primary image as imageUrl for backward compatibility
+          if (img.isPrimary) {
+            data.imageUrl = uploadResult.imageUrl;
+          }
+        }
+        
+        data.images = uploadedImages;
+        
+        // Show compression summary
+        if (totalOriginalSize > 0) {
+          const originalKB = (totalOriginalSize / 1024).toFixed(2);
+          const compressedKB = (totalCompressedSize / 1024).toFixed(2);
+          const savedPercent = Math.round(((totalOriginalSize - totalCompressedSize) / totalOriginalSize) * 100);
+          
+          toast({
+            title: `${productImages.length} Images Compressed`,
+            description: `${originalKB} KB → ${compressedKB} KB (${savedPercent}% saved)`,
+          });
+        }
+      }
+      
+      // Handle legacy single image upload
+      if (imageFile && productImages.length === 0) {
         const formData = new FormData();
         formData.append('image', imageFile);
         
@@ -286,18 +388,6 @@ export default function AddProduct() {
         
         const uploadResult = await uploadResponse.json();
         data.imageUrl = uploadResult.imageUrl;
-        
-        // Show compression info if available
-        if (uploadResult.compressionInfo) {
-          const { originalSize, compressedSize, compressionRatio } = uploadResult.compressionInfo;
-          const originalKB = (originalSize / 1024).toFixed(2);
-          const compressedKB = (compressedSize / 1024).toFixed(2);
-          
-          toast({
-            title: "Image Compressed",
-            description: `Original: ${originalKB} KB → Compressed: ${compressedKB} KB (${compressionRatio} saved)`,
-          });
-        }
       }
       
       await apiRequest('POST', '/api/products', data);
@@ -319,6 +409,60 @@ export default function AddProduct() {
       });
     },
   });
+
+  // Image handling functions
+  const handleAddImage = (files: FileList | null, purpose: ImagePurpose = 'main') => {
+    if (!files || files.length === 0) return;
+    
+    const file = files[0];
+    const preview = URL.createObjectURL(file);
+    
+    const newImage: ProductImage = {
+      file,
+      preview,
+      purpose,
+      isPrimary: productImages.length === 0, // First image is primary by default
+    };
+    
+    setProductImages([...productImages, newImage]);
+    
+    toast({
+      title: "Image Added",
+      description: `Added ${IMAGE_PURPOSE_CONFIG[purpose].label}`,
+    });
+  };
+
+  const handleRemoveImage = (index: number) => {
+    const newImages = [...productImages];
+    URL.revokeObjectURL(newImages[index].preview); // Clean up preview URL
+    newImages.splice(index, 1);
+    
+    // If we removed the primary image, make the first one primary
+    if (newImages.length > 0 && !newImages.some(img => img.isPrimary)) {
+      newImages[0].isPrimary = true;
+    }
+    
+    setProductImages(newImages);
+  };
+
+  const handleSetPrimary = (index: number) => {
+    const newImages = productImages.map((img, i) => ({
+      ...img,
+      isPrimary: i === index,
+    }));
+    setProductImages(newImages);
+    
+    toast({
+      title: "Primary Image Set",
+      description: "This image will be used as the main product image",
+    });
+  };
+
+  const handleChangePurpose = (index: number, purpose: ImagePurpose) => {
+    const newImages = [...productImages];
+    newImages[index] = { ...newImages[index], purpose };
+    setProductImages(newImages);
+  };
 
   const generateSKU = () => {
     const categoryName = categories?.find((c: any) => c.id === form.watch('categoryId'))?.name || 'PRODUCT';
@@ -594,43 +738,156 @@ export default function AddProduct() {
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-4">
                 <div className="space-y-4 pt-2">
-                  {/* Product Image Upload */}
+                  {/* Multi-Image Upload with Purpose */}
                   <div>
-                    <Label htmlFor="image" className="text-sm font-medium">Product Image</Label>
-                    <div className="mt-2 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                      <div className="w-20 h-20 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl flex items-center justify-center bg-slate-50 dark:bg-slate-900">
-                        {imageFile ? (
-                          <img
-                            src={URL.createObjectURL(imageFile)}
-                            alt="Preview"
-                            className="w-full h-full object-cover rounded-xl"
-                          />
-                        ) : (
-                          <Upload className="h-6 w-6 text-slate-400" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-                          className="hidden"
-                          id="image-upload"
-                          data-testid="input-image"
-                        />
-                        <label htmlFor="image-upload">
-                          <Button type="button" variant="outline" size="sm" asChild data-testid="button-upload-image">
-                            <span>
-                              <Upload className="h-4 w-4 mr-2" />
-                              Choose Image
-                            </span>
-                          </Button>
-                        </label>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                          Auto-compressed on upload
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <Label className="text-sm font-medium">Product Images</Label>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                          Upload images with specific purposes for different uses
                         </p>
                       </div>
+                      <Badge variant="secondary" className="text-xs">
+                        {productImages.length} image{productImages.length !== 1 ? 's' : ''}
+                      </Badge>
                     </div>
+
+                    {/* Image Grid */}
+                    {productImages.length > 0 && (
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
+                        {productImages.map((img, index) => {
+                          const config = IMAGE_PURPOSE_CONFIG[img.purpose];
+                          const Icon = config.icon;
+                          
+                          return (
+                            <Card key={index} className="relative group overflow-hidden" data-testid={`card-image-${index}`}>
+                              <div className="aspect-square relative">
+                                <img
+                                  src={img.preview}
+                                  alt={config.label}
+                                  className="w-full h-full object-cover"
+                                />
+                                
+                                {/* Primary Badge */}
+                                {img.isPrimary && (
+                                  <div className="absolute top-2 left-2">
+                                    <Badge className="bg-yellow-500 text-white border-0 shadow-lg">
+                                      <Star className="h-3 w-3 mr-1 fill-white" />
+                                      Primary
+                                    </Badge>
+                                  </div>
+                                )}
+                                
+                                {/* Remove Button */}
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  size="icon"
+                                  className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={() => handleRemoveImage(index)}
+                                  data-testid={`button-remove-image-${index}`}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                                
+                                {/* Overlay with actions on hover */}
+                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 p-2">
+                                  {!img.isPrimary && (
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="secondary"
+                                      onClick={() => handleSetPrimary(index)}
+                                      className="text-xs h-7"
+                                      data-testid={`button-set-primary-${index}`}
+                                    >
+                                      <Star className="h-3 w-3 mr-1" />
+                                      Set Primary
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              {/* Purpose Badge & Selector */}
+                              <div className="p-2 bg-slate-50 dark:bg-slate-900">
+                                <Select value={img.purpose} onValueChange={(value) => handleChangePurpose(index, value as ImagePurpose)}>
+                                  <SelectTrigger className="h-8 text-xs border-0" data-testid={`select-purpose-${index}`}>
+                                    <div className="flex items-center gap-1.5">
+                                      <Icon className="h-3.5 w-3.5" />
+                                      <SelectValue />
+                                    </div>
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {Object.entries(IMAGE_PURPOSE_CONFIG).map(([key, cfg]) => {
+                                      const PurposeIcon = cfg.icon;
+                                      return (
+                                        <SelectItem key={key} value={key}>
+                                          <div className="flex items-center gap-2">
+                                            <PurposeIcon className="h-4 w-4" />
+                                            <div>
+                                              <div className="font-medium">{cfg.label}</div>
+                                              <div className="text-xs text-slate-500">{cfg.description}</div>
+                                            </div>
+                                          </div>
+                                        </SelectItem>
+                                      );
+                                    })}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </Card>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Upload Options */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+                      {Object.entries(IMAGE_PURPOSE_CONFIG).map(([key, config]) => {
+                        const Icon = config.icon;
+                        return (
+                          <div key={key}>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleAddImage(e.target.files, key as ImagePurpose)}
+                              className="hidden"
+                              id={`image-upload-${key}`}
+                              data-testid={`input-image-${key}`}
+                            />
+                            <label htmlFor={`image-upload-${key}`}>
+                              <Card className={`cursor-pointer hover:shadow-md transition-all border-2 ${config.color} hover:scale-105`}>
+                                <CardContent className="p-3">
+                                  <div className="flex flex-col items-center text-center gap-2">
+                                    <div className="p-2 bg-white dark:bg-slate-800 rounded-lg">
+                                      <Icon className="h-5 w-5" />
+                                    </div>
+                                    <div>
+                                      <div className="font-medium text-xs leading-tight">{config.label}</div>
+                                      <div className="text-[10px] text-slate-600 dark:text-slate-400 mt-0.5 line-clamp-2">{config.description}</div>
+                                    </div>
+                                    <Upload className="h-3 w-3 opacity-60" />
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </label>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {productImages.length === 0 && (
+                      <div className="text-center py-6 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl bg-slate-50/50 dark:bg-slate-900/50">
+                        <ImageIcon className="h-10 w-10 mx-auto mb-2 text-slate-400" />
+                        <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">No images added yet</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">Upload images by clicking the cards above</p>
+                      </div>
+                    )}
+
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 flex items-center gap-1">
+                      <Info className="h-3 w-3" />
+                      Images are automatically compressed on upload. First image is primary by default.
+                    </p>
                   </div>
 
                   {/* Product Name & SKU */}
