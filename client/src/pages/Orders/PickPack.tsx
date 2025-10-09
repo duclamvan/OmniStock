@@ -180,6 +180,8 @@ interface PickPackOrder {
   pickedBy?: string;
   packedBy?: string;
   notes?: string;
+  selectedDocumentIds?: string[];
+  currency?: string;
   // Modification tracking
   modifiedAfterPacking?: boolean;
   modificationNotes?: string;
