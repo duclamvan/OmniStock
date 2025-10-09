@@ -111,7 +111,7 @@ export type FileType = any;
 
 export interface IStorage {
   // Users
-  getUser(id: number): Promise<User | undefined>;
+  getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   
@@ -382,13 +382,13 @@ export interface IStorage {
 
 export class DatabaseStorage implements IStorage {
   // Users
-  async getUser(id: number): Promise<User | undefined> {
+  async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
+    const [user] = await db.select().from(users).where(eq(users.email, username));
     return user || undefined;
   }
 
@@ -1413,7 +1413,7 @@ export class DatabaseStorage implements IStorage {
         .select()
         .from(productFiles)
         .where(eq(productFiles.productId, productId))
-        .orderBy(productFiles.fileType, productFiles.language);
+        .orderBy(productFiles.fileType);
       return files;
     } catch (error) {
       console.error('Error fetching product files:', error);

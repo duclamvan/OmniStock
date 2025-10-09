@@ -1,9 +1,10 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { FixedSizeList as List } from "react-window";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -115,6 +116,10 @@ export default function AddOrder() {
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [showProductDropdown, setShowProductDropdown] = useState(false);
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+  
+  const productSearchRef = useRef<HTMLInputElement>(null);
+  const customerSearchRef = useRef<HTMLInputElement>(null);
+  const [barcodeScanMode, setBarcodeScanMode] = useState(false);
   const [debouncedProductSearch, setDebouncedProductSearch] = useState("");
   const [debouncedCustomerSearch, setDebouncedCustomerSearch] = useState("");
   const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
@@ -383,19 +388,57 @@ export default function AddOrder() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Auto-focus product search on page load
+  useEffect(() => {
+    if (productSearchRef.current) {
+      productSearchRef.current.focus();
+    }
+  }, []);
+
+  // Keyboard shortcuts for quick navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + K: Focus product search
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        productSearchRef.current?.focus();
+        setShowProductDropdown(true);
+      }
+      
+      // Ctrl/Cmd + F: Focus customer search
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        customerSearchRef.current?.focus();
+        setShowCustomerDropdown(true);
+      }
+      
+      // Escape: Close all dropdowns
+      if (e.key === 'Escape') {
+        setShowProductDropdown(false);
+        setShowCustomerDropdown(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // Fetch all products for real-time filtering
   const { data: allProducts } = useQuery({
     queryKey: ['/api/products'],
+    staleTime: 5 * 60 * 1000, // 5 minutes - products don't change frequently
   });
 
   // Fetch all customers for real-time filtering
   const { data: allCustomers } = useQuery({
     queryKey: ['/api/customers'],
+    staleTime: 5 * 60 * 1000, // 5 minutes - customers don't change frequently
   });
 
   // Fetch all orders to calculate product frequency
   const { data: allOrders } = useQuery({
     queryKey: ['/api/orders'],
+    staleTime: 2 * 60 * 1000, // 2 minutes - orders change more frequently
   });
 
   // Fetch shipping addresses for selected customer
@@ -1373,6 +1416,7 @@ export default function AddOrder() {
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                 <Input
+                  ref={customerSearchRef}
                   placeholder="Type to search customers (Vietnamese diacritics supported)..."
                   value={customerSearch}
                   onChange={(e) => setCustomerSearch(e.target.value)}
@@ -1383,6 +1427,7 @@ export default function AddOrder() {
                       setShowCustomerDropdown(false);
                     }
                   }}
+                  data-testid="input-customer-search"
                 />
                 {selectedCustomer && (
                   <Button
@@ -1894,11 +1939,40 @@ export default function AddOrder() {
             <CardDescription className="text-xs sm:text-sm mt-1">Search and add products to order</CardDescription>
           </CardHeader>
           <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-4">
+            {/* Keyboard Shortcuts Helper */}
+            <Alert className="bg-blue-50 border-blue-200">
+              <AlertCircle className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-sm text-blue-800">
+                <strong>Quick Keys:</strong> Ctrl+K (Product search) • Ctrl+F (Customer search) • Enter (Add first product) • Esc (Close)
+              </AlertDescription>
+            </Alert>
+
             <div className="relative product-search-container">
-              <Label htmlFor="product">Search Products</Label>
+              <div className="flex items-center justify-between mb-2">
+                <Label htmlFor="product">Search Products</Label>
+                <div className="flex items-center gap-2">
+                  <Badge 
+                    variant={barcodeScanMode ? "default" : "outline"} 
+                    className="cursor-pointer"
+                    onClick={() => {
+                      setBarcodeScanMode(!barcodeScanMode);
+                      toast({
+                        title: barcodeScanMode ? "Barcode scan mode OFF" : "Barcode scan mode ON",
+                        description: barcodeScanMode 
+                          ? "Normal mode: Products clear after adding" 
+                          : "Rapid mode: Keep scanning without clearing",
+                      });
+                    }}
+                  >
+                    <Package className="h-3 w-3 mr-1" />
+                    {barcodeScanMode ? "Scan Mode: ON" : "Scan Mode: OFF"}
+                  </Badge>
+                </div>
+              </div>
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                 <Input
+                  ref={productSearchRef}
                   placeholder="Click to see all products (Vietnamese diacritics supported)..."
                   value={productSearch}
                   onChange={(e) => setProductSearch(e.target.value)}
@@ -1908,7 +1982,20 @@ export default function AddOrder() {
                     if (e.key === 'Escape') {
                       setShowProductDropdown(false);
                     }
+                    // Enter: Add first product from dropdown
+                    if (e.key === 'Enter' && filteredProducts.length > 0) {
+                      e.preventDefault();
+                      const firstProduct = filteredProducts[0]?.products?.[0];
+                      if (firstProduct) {
+                        addProductToOrder(firstProduct);
+                        if (!barcodeScanMode) {
+                          setProductSearch('');
+                          setShowProductDropdown(false);
+                        }
+                      }
+                    }
                   }}
+                  data-testid="input-product-search"
                 />
                 {productSearch && (
                   <Button
