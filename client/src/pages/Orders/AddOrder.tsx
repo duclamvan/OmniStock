@@ -356,9 +356,11 @@ export default function AddOrder() {
     return () => clearTimeout(timer);
   }, [customerSearch]);
 
-  // Show/hide dropdowns based on search input
+  // Show/hide dropdowns based on search input - Removed length check to show on focus
+  // The dropdown will now show all products grouped by category when focused
   useEffect(() => {
-    setShowProductDropdown(productSearch.length >= 2);
+    // Don't auto-show dropdown when typing, only when explicitly focused
+    // This is now controlled by the onFocus handler
   }, [productSearch]);
 
   useEffect(() => {
@@ -389,6 +391,11 @@ export default function AddOrder() {
   // Fetch all customers for real-time filtering
   const { data: allCustomers } = useQuery({
     queryKey: ['/api/customers'],
+  });
+
+  // Fetch all orders to calculate product frequency
+  const { data: allOrders } = useQuery({
+    queryKey: ['/api/orders'],
   });
 
   // Fetch shipping addresses for selected customer
@@ -844,21 +851,93 @@ export default function AddOrder() {
     createOrderMutation.mutate(orderData);
   };
 
-  // Filter products with Vietnamese search (memoized for performance)
+  // Calculate product frequency from order history
+  const productFrequency = useMemo(() => {
+    if (!Array.isArray(allOrders)) return {};
+    
+    const frequency: Record<string, number> = {};
+    
+    allOrders.forEach((order: any) => {
+      if (order.items && Array.isArray(order.items)) {
+        order.items.forEach((item: any) => {
+          if (item.productId) {
+            frequency[item.productId] = (frequency[item.productId] || 0) + (item.quantity || 1);
+          }
+        });
+      }
+    });
+    
+    return frequency;
+  }, [allOrders]);
+
+  // Filter products with Vietnamese search, grouped by category, ordered by frequency (memoized for performance)
   const filteredProducts = useMemo(() => {
-    if (!Array.isArray(allProducts) || !debouncedProductSearch || debouncedProductSearch.length < 2) return [];
+    if (!Array.isArray(allProducts)) return [];
 
-    const matcher = createVietnameseSearchMatcher(debouncedProductSearch);
-
-    return allProducts
-      .filter((product: any) => {
+    // If there's a search query, filter products
+    let products = allProducts;
+    if (debouncedProductSearch && debouncedProductSearch.length >= 2) {
+      const matcher = createVietnameseSearchMatcher(debouncedProductSearch);
+      products = allProducts.filter((product: any) => {
         return matcher(product.name) || 
                matcher(product.sku) || 
                matcher(product.description || '') ||
                matcher(product.categoryName || '');
-      })
-      .slice(0, 8); // Limit to 8 results for better UX
-  }, [allProducts, debouncedProductSearch]);
+      });
+    }
+
+    // Group products by category
+    const groupedByCategory: Record<string, any[]> = {};
+    products.forEach((product: any) => {
+      const categoryName = product.categoryName || 'Uncategorized';
+      if (!groupedByCategory[categoryName]) {
+        groupedByCategory[categoryName] = [];
+      }
+      groupedByCategory[categoryName].push(product);
+    });
+
+    // Sort products within each category by frequency (descending), then alphabetically by name
+    Object.keys(groupedByCategory).forEach(categoryName => {
+      groupedByCategory[categoryName].sort((a, b) => {
+        const freqA = productFrequency[a.id] || 0;
+        const freqB = productFrequency[b.id] || 0;
+        
+        if (freqB !== freqA) {
+          return freqB - freqA; // Higher frequency first
+        }
+        
+        // If same frequency, sort alphabetically
+        return a.name.localeCompare(b.name);
+      });
+    });
+
+    // Convert to array of { category, products } and limit total products
+    const categorizedProducts: Array<{ category: string; products: any[] }> = [];
+    let totalProductsCount = 0;
+    const maxTotalProducts = 20; // Limit total products shown
+
+    // Sort categories alphabetically
+    const sortedCategories = Object.keys(groupedByCategory).sort();
+
+    for (const categoryName of sortedCategories) {
+      const categoryProducts = groupedByCategory[categoryName];
+      const remainingSlots = maxTotalProducts - totalProductsCount;
+      
+      if (remainingSlots <= 0) break;
+
+      const productsToShow = categoryProducts.slice(0, Math.min(categoryProducts.length, remainingSlots));
+      
+      if (productsToShow.length > 0) {
+        categorizedProducts.push({
+          category: categoryName,
+          products: productsToShow
+        });
+        totalProductsCount += productsToShow.length;
+      }
+    }
+
+    return categorizedProducts;
+  }, [allProducts, debouncedProductSearch, productFrequency]);
 
   // Filter customers with Vietnamese search (memoized for performance)
   const filteredCustomers = useMemo(() => {
@@ -1820,11 +1899,11 @@ export default function AddOrder() {
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                 <Input
-                  placeholder="Type to search products (Vietnamese diacritics supported)..."
+                  placeholder="Click to see all products (Vietnamese diacritics supported)..."
                   value={productSearch}
                   onChange={(e) => setProductSearch(e.target.value)}
                   className="pl-10"
-                  onFocus={() => setShowProductDropdown(productSearch.length >= 2)}
+                  onFocus={() => setShowProductDropdown(true)}
                   onKeyDown={(e) => {
                     if (e.key === 'Escape') {
                       setShowProductDropdown(false);
@@ -1847,55 +1926,74 @@ export default function AddOrder() {
                 )}
               </div>
 
-              {/* Real-time dropdown for products */}
+              {/* Real-time dropdown for products - Grouped by Category */}
               {showProductDropdown && filteredProducts && filteredProducts.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-72 overflow-y-auto z-50">
-                  <div className="p-2 bg-slate-50 border-b text-xs text-slate-600">
-                    {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found - Click to add
+                <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-96 overflow-y-auto z-50">
+                  <div className="p-2 bg-slate-50 border-b text-xs text-slate-600 sticky top-0 z-10">
+                    {(() => {
+                      const totalProducts = filteredProducts.reduce((sum, cat) => sum + cat.products.length, 0);
+                      return `${totalProducts} product${totalProducts !== 1 ? 's' : ''} found - Click to add`;
+                    })()}
                   </div>
-                  {filteredProducts.map((product: any) => (
-                    <button
-                      type="button"
-                      key={product.id}
-                      className="w-full p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0 transition-colors text-left"
-                      onClick={() => {
-                        addProductToOrder(product);
-                      }}
-                      data-testid={`product-item-${product.id}`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-medium text-slate-900">{product.name}</div>
-                          <div className="text-sm text-slate-500">SKU: {product.sku}</div>
-                          {product.categoryName && (
-                            <div className="text-xs text-blue-600">{product.categoryName}</div>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <div className="font-medium text-slate-900">
-                            {(() => {
-                              const selectedCurrency = form.watch('currency') || 'EUR';
-                              let price = 0;
-                              if (selectedCurrency === 'CZK' && product.priceCzk) {
-                                price = parseFloat(product.priceCzk);
-                              } else if (selectedCurrency === 'EUR' && product.priceEur) {
-                                price = parseFloat(product.priceEur);
-                              } else {
-                                // Fallback to any available price
-                                price = parseFloat(product.priceEur || product.priceCzk || '0');
-                              }
-                              return formatCurrency(price, selectedCurrency);
-                            })()}
-                          </div>
-                          <div className="text-sm text-slate-500">
-                            Stock: {product.stockQuantity || 0}
-                          </div>
-                          {product.warehouseName && (
-                            <div className="text-xs text-slate-400">{product.warehouseName}</div>
-                          )}
-                        </div>
+                  {filteredProducts.map((categoryGroup) => (
+                    <div key={categoryGroup.category} className="border-b last:border-b-0">
+                      {/* Category Header */}
+                      <div className="bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700 sticky top-8 z-10 border-b border-slate-200">
+                        {categoryGroup.category}
                       </div>
-                    </button>
+                      {/* Products in Category */}
+                      {categoryGroup.products.map((product: any) => {
+                        const frequency = productFrequency[product.id] || 0;
+                        return (
+                          <button
+                            type="button"
+                            key={product.id}
+                            className="w-full p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0 transition-colors text-left"
+                            onClick={() => {
+                              addProductToOrder(product);
+                            }}
+                            data-testid={`product-item-${product.id}`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <div className="font-medium text-slate-900">{product.name}</div>
+                                  {frequency > 0 && (
+                                    <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                                      {frequency}x
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="text-sm text-slate-500">SKU: {product.sku}</div>
+                              </div>
+                              <div className="text-right ml-4">
+                                <div className="font-medium text-slate-900">
+                                  {(() => {
+                                    const selectedCurrency = form.watch('currency') || 'EUR';
+                                    let price = 0;
+                                    if (selectedCurrency === 'CZK' && product.priceCzk) {
+                                      price = parseFloat(product.priceCzk);
+                                    } else if (selectedCurrency === 'EUR' && product.priceEur) {
+                                      price = parseFloat(product.priceEur);
+                                    } else {
+                                      // Fallback to any available price
+                                      price = parseFloat(product.priceEur || product.priceCzk || '0');
+                                    }
+                                    return formatCurrency(price, selectedCurrency);
+                                  })()}
+                                </div>
+                                <div className="text-sm text-slate-500">
+                                  Stock: {product.stockQuantity || 0}
+                                </div>
+                                {product.warehouseName && (
+                                  <div className="text-xs text-slate-400">{product.warehouseName}</div>
+                                )}
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
                   ))}
                 </div>
               )}
