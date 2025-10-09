@@ -485,7 +485,8 @@ export const orders = pgTable('orders', {
   previousPackStatus: varchar('previous_pack_status'),
   selectedDocumentIds: text('selected_document_ids').array(), // Array of product_file IDs to print
   trackingNumber: text('tracking_number'),
-  orderType: varchar('order_type').notNull().default('ord') // 'pos', 'ord', 'web', 'tel'
+  orderType: varchar('order_type').notNull().default('ord'), // 'pos', 'ord', 'web', 'tel'
+  includedDocuments: jsonb('included_documents') // {invoicePrint: boolean, custom: boolean, fileIds: string[], uploadedFiles: {name: string, url: string}[]}
 });
 
 // Product Files table for document management
@@ -958,7 +959,7 @@ export const insertWarehouseFileSchema = createInsertSchema(warehouseFiles).omit
 export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProductTieredPricingSchema = createInsertSchema(productTieredPricing).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProductBundleSchema = createInsertSchema(productBundles).omit({ id: true, bundleId: true, createdAt: true, updatedAt: true });
-export const insertBundleItemSchema = createInsertSchema(bundleItems).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertBundleItemSchema = createInsertSchema(bundleItems).omit({ id: true, createdAt: true });
 export const insertProductFileSchema = createInsertSchema(productFiles).omit({ id: true, uploadedAt: true });
 export const insertDailySequenceSchema = createInsertSchema(dailySequences).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertOrderSchema = createInsertSchema(orders).omit({ id: true, createdAt: true });

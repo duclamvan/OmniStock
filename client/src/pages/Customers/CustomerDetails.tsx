@@ -27,7 +27,10 @@ import {
   Building,
   ShoppingCart,
   DollarSign,
-  Activity
+  Activity,
+  FileText,
+  CheckCircle,
+  File
 } from "lucide-react";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { CustomerPrices } from "./CustomerPrices";
@@ -409,6 +412,90 @@ export default function CustomerDetails() {
                 </CardContent>
               </Card>
             )}
+
+            {/* Files & Documents History */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
+                  <FileText className="h-5 w-5 text-blue-600" />
+                  Files & Documents Sent
+                </CardTitle>
+                <p className="text-xs text-slate-500 mt-1">
+                  History of all documents sent with orders
+                </p>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  const ordersWithDocs = orders.filter((order: any) => 
+                    order.includedDocuments && (
+                      order.includedDocuments.invoicePrint || 
+                      order.includedDocuments.custom || 
+                      (order.includedDocuments.uploadedFiles && order.includedDocuments.uploadedFiles.length > 0)
+                    )
+                  );
+
+                  if (ordersWithDocs.length === 0) {
+                    return (
+                      <div className="text-center py-6 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
+                        <File className="mx-auto h-10 w-10 mb-2 text-slate-400" />
+                        <p className="text-sm font-medium text-slate-700">No documents sent yet</p>
+                        <p className="text-xs text-slate-500 mt-1">Documents will appear here when sent with orders</p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                      {ordersWithDocs.map((order: any) => (
+                        <div key={order.id} className="border border-slate-200 rounded-lg p-3 bg-slate-50/50">
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <Link href={`/orders/${order.id}`}>
+                                <p className="text-sm font-medium text-blue-600 hover:underline cursor-pointer">
+                                  Order #{order.orderId || order.id}
+                                </p>
+                              </Link>
+                              <p className="text-xs text-slate-500">
+                                {new Date(order.createdAt).toLocaleDateString('en-GB', { 
+                                  day: '2-digit', 
+                                  month: 'short', 
+                                  year: 'numeric' 
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            {order.includedDocuments?.invoicePrint && (
+                              <div className="flex items-center gap-2 text-xs">
+                                <CheckCircle className="h-3 w-3 text-green-600" />
+                                <span className="text-slate-700">Invoice (Print Copy)</span>
+                              </div>
+                            )}
+                            {order.includedDocuments?.custom && (
+                              <div className="flex items-center gap-2 text-xs">
+                                <CheckCircle className="h-3 w-3 text-green-600" />
+                                <span className="text-slate-700">Custom Documents</span>
+                              </div>
+                            )}
+                            {order.includedDocuments?.uploadedFiles?.map((file: any, idx: number) => (
+                              <div key={idx} className="flex items-center gap-2 text-xs">
+                                <FileText className="h-3 w-3 text-blue-600" />
+                                <span className="text-slate-700 truncate">{file.name}</span>
+                                {file.size && (
+                                  <span className="text-slate-400">
+                                    ({(file.size / 1024).toFixed(1)} KB)
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="orders" className="space-y-4">

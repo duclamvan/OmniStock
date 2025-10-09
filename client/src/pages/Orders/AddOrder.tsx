@@ -834,6 +834,11 @@ export default function AddOrder() {
         tax: item.tax.toFixed(2),
         total: item.total.toFixed(2),
       })),
+      includedDocuments: {
+        invoicePrint: includeInvoice,
+        custom: includeCustom,
+        uploadedFiles: uploadedFiles.map(f => ({ name: f.name, size: f.size })),
+      },
     };
 
     createOrderMutation.mutate(orderData);
