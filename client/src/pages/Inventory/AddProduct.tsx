@@ -49,7 +49,8 @@ import {
   FileType,
   Star,
   X,
-  MapPin
+  MapPin,
+  CheckCircle
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -106,31 +107,41 @@ const IMAGE_PURPOSE_CONFIG = {
     label: 'Main WMS Image',
     description: 'Primary product image for warehouse management',
     icon: ImageIcon,
-    color: 'text-blue-600 bg-blue-100 border-blue-300',
+    color: 'text-blue-600 bg-blue-50 border-blue-300',
+    uploadedColor: 'text-blue-700 bg-blue-100 border-blue-500',
+    bgGradient: 'from-blue-50 to-blue-100',
   },
   in_hand: {
     label: 'In Hand (Pick & Pack)',
     description: 'Product held in hand for picking/packing reference',
     icon: Hand,
-    color: 'text-emerald-600 bg-emerald-100 border-emerald-300',
+    color: 'text-emerald-600 bg-emerald-50 border-emerald-300',
+    uploadedColor: 'text-emerald-700 bg-emerald-100 border-emerald-500',
+    bgGradient: 'from-emerald-50 to-emerald-100',
   },
   detail: {
     label: 'Detail Shot',
     description: 'Close-up details, texture, or features',
     icon: PackageOpen,
-    color: 'text-purple-600 bg-purple-100 border-purple-300',
+    color: 'text-indigo-600 bg-indigo-50 border-indigo-300',
+    uploadedColor: 'text-indigo-700 bg-indigo-100 border-indigo-500',
+    bgGradient: 'from-indigo-50 to-indigo-100',
   },
   packaging: {
     label: 'Packaging',
     description: 'Product packaging and box',
     icon: Package,
-    color: 'text-amber-600 bg-amber-100 border-amber-300',
+    color: 'text-orange-600 bg-orange-50 border-orange-300',
+    uploadedColor: 'text-orange-700 bg-orange-100 border-orange-500',
+    bgGradient: 'from-orange-50 to-orange-100',
   },
   label: {
     label: 'Label/Barcode',
     description: 'Product label, barcode, or SKU tag',
     icon: FileType,
-    color: 'text-slate-600 bg-slate-100 border-slate-300',
+    color: 'text-cyan-600 bg-cyan-50 border-cyan-300',
+    uploadedColor: 'text-cyan-700 bg-cyan-100 border-cyan-500',
+    bgGradient: 'from-cyan-50 to-cyan-100',
   },
 };
 
@@ -844,8 +855,11 @@ export default function AddProduct() {
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
                       {Object.entries(IMAGE_PURPOSE_CONFIG).map(([key, config]) => {
                         const Icon = config.icon;
+                        const hasUploaded = productImages.some(img => img.purpose === key);
+                        const uploadedCount = productImages.filter(img => img.purpose === key).length;
+                        
                         return (
-                          <div key={key}>
+                          <div key={key} className="relative">
                             <input
                               type="file"
                               accept="image/*"
@@ -855,17 +869,36 @@ export default function AddProduct() {
                               data-testid={`input-image-${key}`}
                             />
                             <label htmlFor={`image-upload-${key}`}>
-                              <Card className={`cursor-pointer hover:shadow-md transition-all border-2 ${config.color} hover:scale-105`}>
-                                <CardContent className="p-3">
+                              <Card className={`cursor-pointer hover:shadow-lg transition-all border-2 ${hasUploaded ? config.uploadedColor : config.color} ${hasUploaded ? 'shadow-md' : ''} hover:scale-[1.02] relative overflow-hidden`}>
+                                {/* Gradient Background */}
+                                {hasUploaded && (
+                                  <div className={`absolute inset-0 bg-gradient-to-br ${config.bgGradient} opacity-30`}></div>
+                                )}
+                                
+                                {/* Success Badge */}
+                                {hasUploaded && (
+                                  <div className="absolute top-1.5 right-1.5 z-10">
+                                    <Badge className="h-5 px-1.5 bg-green-500 text-white border-0 shadow-sm text-[10px]">
+                                      <CheckCircle className="h-2.5 w-2.5 mr-0.5" />
+                                      {uploadedCount}
+                                    </Badge>
+                                  </div>
+                                )}
+                                
+                                <CardContent className="p-3 relative z-10">
                                   <div className="flex flex-col items-center text-center gap-2">
-                                    <div className="p-2 bg-white dark:bg-slate-800 rounded-lg">
+                                    <div className={`p-2 ${hasUploaded ? 'bg-white/90' : 'bg-white'} dark:bg-slate-800 rounded-lg shadow-sm`}>
                                       <Icon className="h-5 w-5" />
                                     </div>
                                     <div>
                                       <div className="font-medium text-xs leading-tight">{config.label}</div>
                                       <div className="text-[10px] text-slate-600 dark:text-slate-400 mt-0.5 line-clamp-2">{config.description}</div>
                                     </div>
-                                    <Upload className="h-3 w-3 opacity-60" />
+                                    {hasUploaded ? (
+                                      <Plus className="h-3 w-3 opacity-60" />
+                                    ) : (
+                                      <Upload className="h-3 w-3 opacity-60" />
+                                    )}
                                   </div>
                                 </CardContent>
                               </Card>
