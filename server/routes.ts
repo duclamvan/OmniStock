@@ -5945,25 +5945,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const pictureResponse = await fetch(pictureApiUrl);
       
+      let pictureUrl = null;
+      let isSilhouette = false;
+      
       if (!pictureResponse.ok) {
         const errorText = await pictureResponse.text();
         console.error('Facebook API error:', errorText);
-        throw new Error(`Failed to fetch profile picture from Graph API: ${pictureResponse.status} ${pictureResponse.statusText}`);
+        // Don't throw - continue to return extracted name even if picture fails
+      } else {
+        const pictureData = await pictureResponse.json();
+        // Check if we got a valid picture URL (not a silhouette)
+        pictureUrl = pictureData?.data?.url || null;
+        isSilhouette = pictureData?.data?.is_silhouette || false;
       }
-      
-      const pictureData = await pictureResponse.json();
-      
-      // Check if we got a valid picture URL (not a silhouette)
-      const pictureUrl = pictureData?.data?.url;
-      const isSilhouette = pictureData?.data?.is_silhouette;
       
       // Determine if it's a numeric ID
       const isNumericId = /^\d+$/.test(facebookId);
       
+      // Try to fetch the user's actual name from Graph API
+      let userName = extractedName; // Start with extracted name from username
+      
+      // For numeric IDs or when we need the real name, try to fetch from Graph API
+      try {
+        const nameUrl = `https://graph.facebook.com/${facebookId}?fields=name&access_token=${accessToken}`;
+        const nameResponse = await fetch(nameUrl);
+        
+        if (nameResponse.ok) {
+          const nameData = await nameResponse.json();
+          if (nameData.name) {
+            console.log(`Fetched Facebook name for ID ${facebookId}: ${nameData.name}`);
+            userName = nameData.name;
+          }
+        } else {
+          console.log(`Could not fetch name for ID ${facebookId} (status ${nameResponse.status}), using extracted name if available`);
+        }
+      } catch (nameError) {
+        console.log(`Error fetching name for ID ${facebookId}:`, nameError);
+        // Continue with extractedName or null
+      }
+      
       res.json({
         pictureUrl: pictureUrl || null,
         facebookId,
-        facebookName: extractedName || null,
+        facebookName: userName || null,
         isNumericId,
         isSilhouette: isSilhouette || false,
         message: pictureUrl && !isSilhouette 
