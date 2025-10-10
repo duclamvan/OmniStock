@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -50,7 +50,11 @@ import {
   Star,
   X,
   MapPin,
-  CheckCircle
+  CheckCircle,
+  Mail,
+  Phone,
+  Globe,
+  ExternalLink
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -956,8 +960,8 @@ export default function AddProduct() {
                     </div>
                   </div>
 
-                  {/* Category, Warehouse, Supplier */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {/* Category and Warehouse */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <Label htmlFor="categoryId" className="text-sm font-medium">Category</Label>
                       <Select value={form.watch('categoryId')} onValueChange={(value) => form.setValue('categoryId', value)}>
@@ -984,22 +988,6 @@ export default function AddProduct() {
                           {warehouses?.map((warehouse: any) => (
                             <SelectItem key={warehouse.id} value={warehouse.id}>
                               {warehouse.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="supplierId" className="text-sm font-medium">Supplier</Label>
-                      <Select value={form.watch('supplierId')} onValueChange={(value) => form.setValue('supplierId', value)}>
-                        <SelectTrigger data-testid="select-supplier" className="mt-1">
-                          <SelectValue placeholder="Select" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {suppliers?.map((supplier: any) => (
-                            <SelectItem key={supplier.id} value={supplier.id}>
-                              {supplier.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -1210,6 +1198,202 @@ export default function AddProduct() {
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                       Enter cost in one currency, others auto-convert
                     </p>
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* Supplier Information */}
+            <AccordionItem value="supplier" className="bg-white dark:bg-slate-800 rounded-xl border shadow-sm overflow-hidden">
+              <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                <div className="flex items-center gap-3 text-left">
+                  <div className="p-2 bg-emerald-100 dark:bg-emerald-900 rounded-lg">
+                    <Building className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">Supplier Information</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Supplier details and contact</p>
+                  </div>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-4 pb-4">
+                <div className="space-y-4 pt-2">
+                  {/* Supplier Selector */}
+                  <div>
+                    <Label htmlFor="supplierId" className="text-sm font-medium">Select Supplier</Label>
+                    <Select value={form.watch('supplierId')} onValueChange={(value) => form.setValue('supplierId', value)}>
+                      <SelectTrigger data-testid="select-supplier" className="mt-1">
+                        <SelectValue placeholder="Select a supplier" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {suppliers?.map((supplier: any) => (
+                          <SelectItem key={supplier.id} value={supplier.id}>
+                            {supplier.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Selected Supplier Details */}
+                  {(() => {
+                    const selectedSupplier = suppliers.find((s: any) => s.id === form.watch('supplierId'));
+                    
+                    if (!selectedSupplier) {
+                      return (
+                        <div className="text-center py-8 bg-slate-50 dark:bg-slate-900 rounded-lg border border-dashed border-slate-300 dark:border-slate-700">
+                          <Building className="h-8 w-8 text-slate-400 mx-auto mb-2" />
+                          <p className="text-sm text-slate-500 dark:text-slate-400">No supplier selected</p>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="bg-emerald-50 dark:bg-emerald-950 rounded-lg p-4 border border-emerald-200 dark:border-emerald-800">
+                        <div className="space-y-3">
+                          {/* Supplier Name */}
+                          <div>
+                            <h4 className="text-lg font-bold text-slate-900 dark:text-slate-100" data-testid="text-supplier-name">
+                              {selectedSupplier.name}
+                            </h4>
+                          </div>
+
+                          {/* Details Grid */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                            {/* Contact Person */}
+                            {selectedSupplier.contactPerson && (
+                              <div className="flex items-start gap-2">
+                                <Users className="h-4 w-4 text-slate-600 dark:text-slate-400 mt-0.5 shrink-0" />
+                                <div className="min-w-0">
+                                  <p className="text-xs text-slate-600 dark:text-slate-400">Contact Person</p>
+                                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100" data-testid="text-contact-person">
+                                    {selectedSupplier.contactPerson}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Email */}
+                            {selectedSupplier.email && (
+                              <div className="flex items-start gap-2">
+                                <Mail className="h-4 w-4 text-slate-600 dark:text-slate-400 mt-0.5 shrink-0" />
+                                <div className="min-w-0">
+                                  <p className="text-xs text-slate-600 dark:text-slate-400">Email</p>
+                                  <a 
+                                    href={`mailto:${selectedSupplier.email}`}
+                                    className="text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:underline"
+                                    data-testid="link-supplier-email"
+                                  >
+                                    {selectedSupplier.email}
+                                  </a>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Phone */}
+                            {selectedSupplier.phone && (
+                              <div className="flex items-start gap-2">
+                                <Phone className="h-4 w-4 text-slate-600 dark:text-slate-400 mt-0.5 shrink-0" />
+                                <div className="min-w-0">
+                                  <p className="text-xs text-slate-600 dark:text-slate-400">Phone</p>
+                                  <a 
+                                    href={`tel:${selectedSupplier.phone}`}
+                                    className="text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:underline"
+                                    data-testid="link-supplier-phone"
+                                  >
+                                    {selectedSupplier.phone}
+                                  </a>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Country */}
+                            {selectedSupplier.country && (
+                              <div className="flex items-start gap-2">
+                                <Globe className="h-4 w-4 text-slate-600 dark:text-slate-400 mt-0.5 shrink-0" />
+                                <div className="min-w-0">
+                                  <p className="text-xs text-slate-600 dark:text-slate-400">Country</p>
+                                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100" data-testid="text-supplier-country">
+                                    {selectedSupplier.country}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Website */}
+                            {selectedSupplier.website && (
+                              <div className="flex items-start gap-2">
+                                <LinkIcon className="h-4 w-4 text-slate-600 dark:text-slate-400 mt-0.5 shrink-0" />
+                                <div className="min-w-0">
+                                  <p className="text-xs text-slate-600 dark:text-slate-400">Website</p>
+                                  <a 
+                                    href={selectedSupplier.website}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                                    data-testid="link-supplier-website"
+                                  >
+                                    {selectedSupplier.website}
+                                    <ExternalLink className="h-3 w-3" />
+                                  </a>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Supplier Link */}
+                            {selectedSupplier.supplierLink && (
+                              <div className="flex items-start gap-2">
+                                <LinkIcon className="h-4 w-4 text-slate-600 dark:text-slate-400 mt-0.5 shrink-0" />
+                                <div className="min-w-0">
+                                  <p className="text-xs text-slate-600 dark:text-slate-400">Supplier Link</p>
+                                  <a 
+                                    href={selectedSupplier.supplierLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                                    data-testid="link-supplier-link"
+                                  >
+                                    View Link
+                                    <ExternalLink className="h-3 w-3" />
+                                  </a>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Address */}
+                            {selectedSupplier.address && (
+                              <div className="flex items-start gap-2 md:col-span-2">
+                                <MapPin className="h-4 w-4 text-slate-600 dark:text-slate-400 mt-0.5 shrink-0" />
+                                <div className="min-w-0">
+                                  <p className="text-xs text-slate-600 dark:text-slate-400">Address</p>
+                                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100" data-testid="text-supplier-address">
+                                    {selectedSupplier.address}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Quick Actions */}
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    {form.watch('supplierId') && (
+                      <Link href={`/suppliers/${form.watch('supplierId')}`}>
+                        <Button type="button" variant="outline" size="sm" data-testid="button-view-supplier">
+                          <Building className="h-4 w-4 mr-2" />
+                          View Supplier Details
+                        </Button>
+                      </Link>
+                    )}
+                    <Link href="/suppliers/add">
+                      <Button type="button" variant="outline" size="sm" data-testid="button-add-supplier">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add New Supplier
+                      </Button>
+                    </Link>
                   </div>
                 </div>
               </AccordionContent>
