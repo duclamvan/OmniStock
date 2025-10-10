@@ -18,6 +18,14 @@ Davie Supply is a full-stack web application designed for comprehensive warehous
 - **Barcode Scan Mode**: Toggle for rapid consecutive product additions
 - **Image Upload UI**: Enhanced color psychology and visual feedback for uploaded states
 
+## Add Product Page - Supplier Information Section (October 2025)
+- **Dedicated Supplier Section**: Created emerald-themed accordion section grouping all supplier information
+- **Supplier Selection**: Moved supplier dropdown from basic info to dedicated section for better organization
+- **Comprehensive Details Display**: Shows contact person, email (mailto link), phone (tel link), website, supplier link, country, and address when supplier selected
+- **Quick Actions**: Added "View Supplier Details" and "Add New Supplier" buttons with wouter Link navigation
+- **Improved Layout**: Changed Category/Warehouse grid from 3 to 2 columns for cleaner basic info section
+- **Conditional UI**: Shows supplier details only when selected, with "No supplier selected" placeholder otherwise
+
 # User Preferences
 Preferred communication style: Simple, everyday language.
 
