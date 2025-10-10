@@ -2,6 +2,16 @@
 Davie Supply is a full-stack web application designed for comprehensive warehouse and order management. Its purpose is to streamline supply chain operations by managing the entire order lifecycle, tracking inventory, customer management, and providing multi-currency financial reporting. Key capabilities include real-time Vietnamese diacritics search, customer-specific pricing, and integration with external shipping APIs. The project's ambition is to offer a robust and efficient platform for supply chain management, incorporating advanced warehouse mapping and a comprehensive Pick & Pack workflow.
 
 # Recent Changes
+## Facebook ID Auto-Extraction Field (October 2025)
+- **Automatic ID Extraction**: New read-only Facebook ID field automatically extracts numeric IDs and usernames from pasted Facebook URLs
+- **Domain Validation**: Uses URL API to validate Facebook domains (facebook.com, www, m, mbasic subdomains) and rejects non-Facebook URLs
+- **Profile.php Support**: Properly extracts numeric IDs from profile.php?id= format using URL.searchParams
+- **Username Extraction**: Validates username patterns (letters, numbers, dots, underscores, hyphens, minimum 2 characters)
+- **System Page Filtering**: Excludes Facebook reserved pages (help, about, settings, marketplace, etc.)
+- **Error Handling**: Try-catch wrapper returns empty string for malformed URLs instead of throwing errors
+- **Edit Mode Support**: Automatically populates extracted ID when editing existing customers
+- **UI Design**: Positioned between Facebook URL and Facebook Name fields with gray background to indicate read-only status
+
 ## Add Order Page Layout Redesign (October 2025)
 - **2-Column Responsive Layout**: Desktop uses lg:grid-cols-3 (left 2 cols for workflow, right col sticky sidebar), mobile stacks vertically
 - **Order Location Field**: New optional text field at top of page for specifying order location (e.g., "Prague Warehouse", "Main Office")
