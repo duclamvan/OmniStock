@@ -5839,8 +5839,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Facebook Profile Picture Endpoint
-  app.get('/api/facebook/profile-picture', async (req, res) => {
+  // Facebook Name Fetching Endpoint
+  app.get('/api/facebook/name', async (req, res) => {
     try {
       const facebookUrl = req.query.url as string;
       
@@ -5893,8 +5893,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // If the ID is not numeric, try to convert username to numeric ID
-      // Note: We use the access token for username-to-ID conversion, but if it fails
-      // we continue with the username - the picture endpoint works better without a token
       if (!/^\d+$/.test(facebookId)) {
         try {
           const userInfoUrl = `https://graph.facebook.com/${facebookId}?fields=id&access_token=${accessToken}`;
@@ -5907,44 +5905,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
               facebookId = userInfo.id; // Update to use numeric ID
             }
           } else {
-            // If username lookup fails, continue with the username (will likely fail, but let it try)
             console.warn(`Could not convert username '${facebookId}' to numeric ID`);
           }
         } catch (conversionError) {
           console.warn(`Error converting username to ID:`, conversionError);
-          // Continue anyway - the picture endpoint works better without authentication
         }
       }
 
-      // Use the public /picture endpoint WITHOUT access token
-      // App access tokens cause error 100 - public endpoint works better without auth
-      const pictureApiUrl = `https://graph.facebook.com/${facebookId}/picture?type=large&redirect=false`;
-      
-      console.log(`Fetching profile picture for ID: ${facebookId}`);
-      
-      const pictureResponse = await fetch(pictureApiUrl);
-      
-      let pictureUrl = null;
-      let isSilhouette = false;
-      
-      if (!pictureResponse.ok) {
-        const errorText = await pictureResponse.text();
-        console.error('Facebook API error:', errorText);
-        // Don't throw - continue to return extracted name even if picture fails
-      } else {
-        const pictureData = await pictureResponse.json();
-        // Check if we got a valid picture URL (not a silhouette)
-        pictureUrl = pictureData?.data?.url || null;
-        isSilhouette = pictureData?.data?.is_silhouette || false;
-      }
-      
-      // Determine if it's a numeric ID
-      const isNumericId = /^\d+$/.test(facebookId);
-      
       // Try to fetch the user's actual name from Graph API
       let userName = extractedName; // Start with extracted name from username
       
-      // For numeric IDs or when we need the real name, try to fetch from Graph API
       try {
         const nameUrl = `https://graph.facebook.com/${facebookId}?fields=name&access_token=${accessToken}`;
         const nameResponse = await fetch(nameUrl);
@@ -5964,76 +5934,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json({
-        pictureUrl: pictureUrl || null,
         facebookId,
         facebookName: userName || null,
-        isNumericId,
-        isSilhouette: isSilhouette || false,
-        message: pictureUrl && !isSilhouette 
-          ? undefined 
-          : 'Could not fetch profile picture. The profile may be private or the URL may be incorrect.'
+        message: userName ? undefined : 'Could not fetch Facebook name. Using extracted name from URL.'
       });
     } catch (error) {
-      console.error('Error fetching Facebook profile picture:', error);
-      res.status(500).json({ message: 'Failed to fetch Facebook profile picture' });
+      console.error('Error fetching Facebook name:', error);
+      res.status(500).json({ message: 'Failed to fetch Facebook name' });
     }
   });
 
-  // New endpoint to download and store Facebook profile pictures
-  app.post('/api/facebook/download-profile-picture', async (req, res) => {
-    try {
-      const { customerId, facebookUrl, pictureUrl } = req.body;
-      
-      if (!pictureUrl) {
-        return res.status(400).json({ message: 'pictureUrl is required' });
-      }
-
-      // Download the image from Facebook CDN
-      const response = await fetch(pictureUrl);
-      if (!response.ok) {
-        throw new Error('Failed to download image from Facebook');
-      }
-
-      const buffer = await response.arrayBuffer();
-      const imageBuffer = Buffer.from(buffer);
-
-      // Generate a unique filename - use customerId if available, otherwise use timestamp
-      const extension = 'jpg'; // Facebook profile pictures are typically JPG
-      const identifier = customerId || `temp_${Date.now()}`;
-      const filename = `${identifier}_${Date.now()}.${extension}`;
-      const filepath = path.join('uploads', 'profile-pictures', filename);
-      
-      // Ensure the directory exists
-      await fs.mkdir(path.join('uploads', 'profile-pictures'), { recursive: true });
-      
-      // Save the image to disk
-      await fs.writeFile(filepath, imageBuffer);
-      
-      // Generate the local URL
-      const localUrl = `/uploads/profile-pictures/${filename}`;
-      
-      // Update the customer record with the profile picture URL if customerId is provided
-      if (customerId) {
-        const customer = await storage.getCustomer(customerId);
-        if (customer) {
-          await storage.updateCustomer(customerId, {
-            ...customer,
-            profilePictureUrl: localUrl,
-            facebookUrl: facebookUrl || customer.facebookUrl
-          });
-        }
-      }
-      
-      res.json({
-        success: true,
-        profilePictureUrl: localUrl,
-        message: 'Profile picture downloaded and saved successfully'
-      });
-    } catch (error) {
-      console.error('Error downloading Facebook profile picture:', error);
-      res.status(500).json({ message: 'Failed to download and save profile picture' });
-    }
-  });
 
   // Facebook OAuth endpoints
   app.get('/api/auth/facebook', (req, res) => {

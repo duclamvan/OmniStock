@@ -122,8 +122,7 @@ export default function AddCustomer() {
   const [isValidatingVat, setIsValidatingVat] = useState(false);
   const [vatValidationResult, setVatValidationResult] = useState<VatValidationResult | null>(null);
 
-  const [facebookProfilePicture, setFacebookProfilePicture] = useState<string | null>(null);
-  const [isLoadingProfilePicture, setIsLoadingProfilePicture] = useState(false);
+  const [isLoadingFacebookName, setIsLoadingFacebookName] = useState(false);
 
   const [shippingAddresses, setShippingAddresses] = useState<ShippingAddressFormData[]>([]);
   const [isAddingShipping, setIsAddingShipping] = useState(false);
@@ -222,15 +221,6 @@ export default function AddCustomer() {
           companyName: existingCustomer.vatCompanyName || undefined,
           companyAddress: existingCustomer.vatCompanyAddress || undefined,
         });
-      }
-      // Use profilePictureUrl if available, otherwise fall back to facebookId
-      if (existingCustomer.profilePictureUrl) {
-        setFacebookProfilePicture(existingCustomer.profilePictureUrl);
-      } else if (existingCustomer.facebookId) {
-        setFacebookProfilePicture(existingCustomer.facebookId);
-      }
-      if (existingCustomer.name !== existingCustomer.facebookName) {
-        setFacebookNameManuallyChanged(true);
       }
     }
   }, [existingCustomer, isEditMode, form]);
@@ -378,21 +368,19 @@ export default function AddCustomer() {
     }
   };
 
-  const fetchFacebookProfilePicture = useCallback(
+  const fetchFacebookName = useCallback(
     debounce(async (facebookUrl: string) => {
       if (!facebookUrl || facebookUrl.length < 10) {
-        setFacebookProfilePicture(null);
-        form.setValue('profilePictureUrl', '');
         return;
       }
       
       try {
-        setIsLoadingProfilePicture(true);
+        setIsLoadingFacebookName(true);
         
-        // First, call the profile picture API to get Facebook data
-        const response = await fetch(`/api/facebook/profile-picture?url=${encodeURIComponent(facebookUrl)}`);
+        // Call the Facebook name API to get the user's name
+        const response = await fetch(`/api/facebook/name?url=${encodeURIComponent(facebookUrl)}`);
         if (!response.ok) {
-          throw new Error('Failed to fetch profile picture');
+          throw new Error('Failed to fetch Facebook name');
         }
         const data = await response.json();
         
@@ -403,43 +391,7 @@ export default function AddCustomer() {
           form.setValue('name', data.facebookName);
         }
         
-        // If it's a numeric ID and we have a picture URL, download it locally
-        if (data.isNumericId && data.pictureUrl) {
-          try {
-            const downloadResponse = await fetch('/api/facebook/download-profile-picture', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                pictureUrl: data.pictureUrl,
-                facebookUrl: facebookUrl
-              })
-            });
-            if (downloadResponse.ok) {
-              const downloadData = await downloadResponse.json();
-              if (downloadData.profilePictureUrl) {
-                // Use the locally downloaded image
-                setFacebookProfilePicture(downloadData.profilePictureUrl);
-                form.setValue('profilePictureUrl', downloadData.profilePictureUrl);
-                return;
-              }
-            }
-          } catch (downloadError) {
-            console.error('Error downloading profile picture:', downloadError);
-            // Fall back to the external URL if download fails
-          }
-        }
-        
-        // Fall back to the external URL if not numeric ID or download failed
-        if (data.pictureUrl) {
-          setFacebookProfilePicture(data.pictureUrl);
-          // Don't store external URL in profilePictureUrl field
-          form.setValue('profilePictureUrl', '');
-        } else {
-          setFacebookProfilePicture(null);
-          form.setValue('profilePictureUrl', '');
-        }
-        
-        // Show toast message if there was an error
+        // Show toast message if there was an error or notice
         if (data.message) {
           toast({
             title: "Notice",
@@ -448,11 +400,9 @@ export default function AddCustomer() {
           });
         }
       } catch (error) {
-        console.error('Error fetching Facebook profile picture:', error);
-        setFacebookProfilePicture(null);
-        form.setValue('profilePictureUrl', '');
+        console.error('Error fetching Facebook name:', error);
       } finally {
-        setIsLoadingProfilePicture(false);
+        setIsLoadingFacebookName(false);
       }
     }, 500),
     [form, toast]
@@ -639,30 +589,7 @@ export default function AddCustomer() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-6">
-              {/* Profile Picture - Left Side */}
-              <div className="flex-shrink-0">
-                <div className="w-32 h-32 rounded-2xl border-2 border-slate-200 overflow-hidden bg-slate-100 flex items-center justify-center">
-                  {isLoadingProfilePicture ? (
-                    <Loader2 className="h-10 w-10 animate-spin text-slate-400" />
-                  ) : facebookProfilePicture ? (
-                    <img 
-                      src={facebookProfilePicture} 
-                      alt="Facebook Profile" 
-                      className="w-full h-full object-cover"
-                      data-testid="img-facebook-profile"
-                    />
-                  ) : (
-                    <div className="text-center p-4">
-                      <Globe className="h-10 w-10 text-slate-300 mx-auto mb-2" />
-                      <p className="text-xs text-slate-400">Add FB URL for photo</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Form Fields - Right Side */}
-              <div className="flex-1 space-y-4">
+            <div className="space-y-4">
                 <div>
                   <Label htmlFor="facebookUrl" className="text-base font-semibold">Facebook URL</Label>
                   <Input
@@ -673,10 +600,10 @@ export default function AddCustomer() {
                     data-testid="input-facebookUrl"
                     onChange={(e) => {
                       form.register('facebookUrl').onChange(e);
-                      fetchFacebookProfilePicture(e.target.value);
+                      fetchFacebookName(e.target.value);
                     }}
                   />
-                  <p className="text-xs text-slate-500 mt-1">Paste Facebook profile URL to fetch photo & name</p>
+                  <p className="text-xs text-slate-500 mt-1">Paste Facebook profile URL to auto-fill name</p>
                 </div>
 
                 <div>
@@ -837,7 +764,6 @@ export default function AddCustomer() {
                   )}
                 </div>
               </div>
-            </div>
           </CardContent>
         </Card>
 
