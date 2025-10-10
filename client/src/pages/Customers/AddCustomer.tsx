@@ -123,6 +123,7 @@ export default function AddCustomer() {
   const [vatValidationResult, setVatValidationResult] = useState<VatValidationResult | null>(null);
 
   const [isLoadingFacebookName, setIsLoadingFacebookName] = useState(false);
+  const [extractedFacebookId, setExtractedFacebookId] = useState<string>('');
 
   const [shippingAddresses, setShippingAddresses] = useState<ShippingAddressFormData[]>([]);
   const [isAddingShipping, setIsAddingShipping] = useState(false);
@@ -221,6 +222,11 @@ export default function AddCustomer() {
           companyName: existingCustomer.vatCompanyName || undefined,
           companyAddress: existingCustomer.vatCompanyAddress || undefined,
         });
+      }
+      // Extract Facebook ID from existing customer's URL
+      if (existingCustomer.facebookUrl) {
+        const extractedId = extractFacebookId(existingCustomer.facebookUrl);
+        setExtractedFacebookId(extractedId);
       }
     }
   }, [existingCustomer, isEditMode, form]);
@@ -365,6 +371,63 @@ export default function AddCustomer() {
       console.error('Error fetching ARES data:', error);
     } finally {
       setIsLoadingAres(false);
+    }
+  };
+
+  const extractFacebookId = (url: string): string => {
+    if (!url) return '';
+    
+    try {
+      // Parse the URL to validate domain
+      const parsedUrl = new URL(url);
+      
+      // Validate that it's actually a Facebook domain
+      const allowedDomains = ['facebook.com', 'www.facebook.com', 'm.facebook.com', 'mbasic.facebook.com'];
+      if (!allowedDomains.includes(parsedUrl.hostname.toLowerCase())) {
+        return '';
+      }
+      
+      // Pattern 1: profile.php?id=NUMERIC_ID
+      // Only accept numeric IDs
+      if (parsedUrl.pathname === '/profile.php') {
+        const id = parsedUrl.searchParams.get('id');
+        if (id && /^\d+$/.test(id)) {
+          return id;
+        }
+        return '';
+      }
+      
+      // Pattern 2: facebook.com/username
+      // Extract username from pathname
+      const pathname = parsedUrl.pathname;
+      const usernameMatch = pathname.match(/^\/([^/?#]+)/);
+      
+      if (usernameMatch) {
+        const username = usernameMatch[1];
+        
+        // List of Facebook system/reserved pages to exclude
+        const systemPages = [
+          'profile.php', 'help', 'about', 'privacy', 'terms', 'settings', 
+          'pages', 'groups', 'events', 'marketplace', 'watch', 'gaming',
+          'messages', 'notifications', 'login', 'logout', 'recover', 'home'
+        ];
+        
+        // Check if it's a system page
+        if (systemPages.includes(username.toLowerCase())) {
+          return '';
+        }
+        
+        // Validate username pattern (letters, numbers, dots, underscores, hyphens)
+        // Must be at least 2 characters long
+        if (/^[a-zA-Z0-9._-]{2,}$/.test(username)) {
+          return username;
+        }
+      }
+      
+      return '';
+    } catch (error) {
+      // Invalid URL format
+      return '';
     }
   };
 
@@ -600,10 +663,25 @@ export default function AddCustomer() {
                     data-testid="input-facebookUrl"
                     onChange={(e) => {
                       form.register('facebookUrl').onChange(e);
+                      const extractedId = extractFacebookId(e.target.value);
+                      setExtractedFacebookId(extractedId);
                       fetchFacebookName(e.target.value);
                     }}
                   />
-                  <p className="text-xs text-slate-500 mt-1">Paste Facebook profile URL to auto-fill name</p>
+                  <p className="text-xs text-slate-500 mt-1">Paste Facebook profile URL to auto-fill name and ID</p>
+                </div>
+
+                <div>
+                  <Label htmlFor="facebookId" className="text-base font-semibold">Facebook ID</Label>
+                  <Input
+                    id="facebookId"
+                    value={extractedFacebookId || ''}
+                    readOnly
+                    placeholder="Auto-extracted from URL"
+                    className="text-base bg-slate-50"
+                    data-testid="input-facebookId"
+                  />
+                  <p className="text-xs text-slate-500 mt-1">Auto-extracted: Numeric ID or username from URL</p>
                 </div>
 
                 <div>
