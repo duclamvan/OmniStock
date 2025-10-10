@@ -2,6 +2,24 @@
 Davie Supply is a full-stack web application designed for comprehensive warehouse and order management. Its purpose is to streamline supply chain operations by managing the entire order lifecycle, tracking inventory, customer management, and providing multi-currency financial reporting. Key capabilities include real-time Vietnamese diacritics search, customer-specific pricing, and integration with external shipping APIs. The project's ambition is to offer a robust and efficient platform for supply chain management, incorporating advanced warehouse mapping and a comprehensive Pick & Pack workflow.
 
 # Recent Changes
+## Add Order Page Layout Redesign (October 2025)
+- **2-Column Responsive Layout**: Desktop uses lg:grid-cols-3 (left 2 cols for workflow, right col sticky sidebar), mobile stacks vertically
+- **Order Location Field**: New optional text field at top of page for specifying order location (e.g., "Prague Warehouse", "Main Office")
+- **Sticky Sidebar (Desktop)**: Right column contains Order Location, Quick Settings, and Order Summary with sticky positioning
+- **Quick Settings Panel**: Extracted and reorganized Currency, Priority, Order Status, Shipping Method, and Payment Method into compact, accessible card
+- **Order Summary Card**: Enhanced with subtotal, tax, shipping, discount, total, margin pill, and action buttons (Create Order, Save Draft)
+- **Mobile Optimization**: Clean vertical stacking with proper spacing, Order Location at top, summary at bottom
+- **Improved Workflow**: Reduced scrolling, better visual hierarchy, settings always visible on desktop
+
+## Facebook Profile Picture Integration (October 2025)
+- **Public Graph API**: Uses Facebook's public `/picture` endpoint without requiring access tokens
+- **Smart URL Parsing**: Extracts Facebook ID from various URL formats (facebook.com/username, m.facebook.com/username, profile.php?id=123)
+- **Mobile URL Support**: Fully supports mobile Facebook URLs (m.facebook.com)
+- **Profile Picture Fetching**: Returns JSON with picture URL, silhouette flag, height, width via `redirect=false` parameter
+- **Name Extraction**: Intelligently extracts and formats name from username (removes prefixes, converts to proper case)
+- **Local Storage**: Downloads and saves profile pictures locally for consistent access
+- **No Configuration**: Works without environment variables or access tokens using public API
+
 ## Pick & Pack Page Optimization (October 2025)
 - **Keyboard Shortcuts**: Added rapid navigation shortcuts (Ctrl+K for barcode search, Ctrl+S to start picking, Alt+N/P for item navigation, Esc to cancel)
 - **Auto-focus**: Barcode input auto-focuses when entering picking/packing modes for faster workflow
@@ -10,7 +28,7 @@ Davie Supply is a full-stack web application designed for comprehensive warehous
 - **Loading States**: Added professional skeleton loaders across all tabs, carton selection, and weight calculation
 - **UI Refinements**: Improved spacing (p-4 sm:p-6), semantic color badges, touch-friendly buttons (min-h-44px), better typography and contrast
 
-## Add Order Page Optimization (October 2025)
+## Add Order Page Search Optimization (October 2025)
 - **Enhanced Product Search**: Category grouping with frequency-based ordering (most-ordered products first)
 - **Keyboard Shortcuts**: Ctrl+K (product search), Alt+C (customer search), Enter (add product), Esc (close dropdowns)
 - **API Optimization**: Added staleTime configuration (5min for products/customers, 2min for orders)
@@ -91,4 +109,4 @@ The database schema, managed with PostgreSQL, Neon serverless driver, and Drizzl
 ## Other APIs
 - **OpenStreetMap Nominatim API**: For address geocoding.
 - **Fawaz Ahmed's free currency API**: For real-time exchange rates.
-- **Facebook Graph API**: For fetching customer profile pictures using secure access token stored in environment variables.
+- **Facebook Graph API**: Public `/picture` endpoint for fetching customer profile pictures without authentication (supports www and mobile URLs).
