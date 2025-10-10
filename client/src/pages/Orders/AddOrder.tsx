@@ -91,6 +91,7 @@ const addOrderSchema = z.object({
   shippingCost: z.coerce.number().min(0).default(0),
   actualShippingCost: z.coerce.number().min(0).default(0),
   notes: z.string().optional(),
+  orderLocation: z.string().optional(),
 });
 
 interface OrderItem {
@@ -343,6 +344,7 @@ export default function AddOrder() {
       taxRate: 0,
       shippingCost: 0,
       actualShippingCost: 0,
+      orderLocation: '',
     },
   });
 
@@ -1043,169 +1045,30 @@ export default function AddOrder() {
         </div>
 
         <form onSubmit={form.handleSubmit(onSubmit)}>
-          <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
-            {/* Main Column - Mobile First */}
-            <div className="w-full lg:flex-1 space-y-4 lg:space-y-6">
-            {/* Order Information - Mobile Optimized */}
-            <Card className="shadow-sm">
-              <CardHeader className="p-4 sm:p-6">
-                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                  <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
-                  Order Information
+          <div className="space-y-4 sm:space-y-6">
+            {/* Order Location - Mobile Only (at top) */}
+            <Card className="lg:hidden shadow-sm">
+              <CardHeader className="p-4">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <MapPin className="h-4 w-4 text-blue-600" />
+                  Order Location
                 </CardTitle>
-                <CardDescription className="text-xs sm:text-sm mt-1">Configure status, payment, and shipping</CardDescription>
               </CardHeader>
-              <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  <div>
-                    <Label htmlFor="currency">Currency *</Label>
-                    <Select value={form.watch('currency')} onValueChange={(value) => form.setValue('currency', value as any)}>
-                      <SelectTrigger className="mt-1" data-testid="select-currency">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="CZK">CZK - Czech Koruna</SelectItem>
-                        <SelectItem value="EUR">EUR - Euro</SelectItem>
-                        <SelectItem value="USD">USD - US Dollar</SelectItem>
-                        <SelectItem value="VND">VND - Vietnamese Dong</SelectItem>
-                        <SelectItem value="CNY">CNY - Chinese Yuan</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="priority">Priority Level</Label>
-                    <Select value={form.watch('priority')} onValueChange={(value) => form.setValue('priority', value as any)}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="low">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 bg-gray-500 rounded-full" />
-                            Low Priority
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="medium">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 bg-yellow-500 rounded-full" />
-                            Medium Priority
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="high">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 bg-red-500 rounded-full" />
-                            High Priority
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  <div>
-                    <Label htmlFor="orderStatus" className="text-sm">Order Status</Label>
-                    <Select value={form.watch('orderStatus')} onValueChange={(value) => form.setValue('orderStatus', value as any)}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pending">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 bg-orange-500 rounded-full" />
-                            Pending
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="to_fulfill">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 bg-blue-500 rounded-full" />
-                            To Fulfill
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="shipped">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 bg-green-500 rounded-full" />
-                            Shipped
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="paymentStatus" className="text-sm">Payment Status</Label>
-                    <Select value={form.watch('paymentStatus')} onValueChange={(value) => form.setValue('paymentStatus', value as any)}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pending">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 bg-yellow-500 rounded-full" />
-                            Pending
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="paid">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 bg-green-500 rounded-full" />
-                            Paid
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="pay_later">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 bg-blue-500 rounded-full" />
-                            Pay Later
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  <div>
-                    <Label htmlFor="shippingMethod" className="text-sm">Shipping Method</Label>
-                    <div className="relative mt-1">
-                      <Truck className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                      <Select value={form.watch('shippingMethod')} onValueChange={(value) => form.setValue('shippingMethod', value as any)}>
-                        <SelectTrigger className="pl-10">
-                          <SelectValue placeholder="Select shipping method" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="GLS">GLS Express</SelectItem>
-                          <SelectItem value="PPL">PPL Standard</SelectItem>
-                          <SelectItem value="DHL">DHL International</SelectItem>
-                          <SelectItem value="DPD">DPD Europe</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="paymentMethod" className="text-sm">Payment Method</Label>
-                    <div className="relative mt-1">
-                      <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                      <Select value={form.watch('paymentMethod')} onValueChange={(value) => form.setValue('paymentMethod', value as any)}>
-                        <SelectTrigger className="pl-10">
-                          <SelectValue placeholder="Select payment method" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
-                          <SelectItem value="PayPal">PayPal</SelectItem>
-                          <SelectItem value="COD">Cash on Delivery</SelectItem>
-                          <SelectItem value="Cash">Cash Payment</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
+              <CardContent className="p-4 pt-0">
+                <Input
+                  placeholder="e.g., Prague Warehouse, Main Office, Customer Pickup"
+                  value={form.watch('orderLocation') || ''}
+                  onChange={(e) => form.setValue('orderLocation', e.target.value)}
+                  data-testid="input-order-location"
+                />
               </CardContent>
             </Card>
+
+            {/* 2-Column Grid for Desktop */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+              
+              {/* Left Column - Main Workflow */}
+              <div className="lg:col-span-2 space-y-4 sm:space-y-6">
 
             {/* Customer Selection - Mobile Optimized */}
             <Card className="shadow-sm">
@@ -2992,21 +2855,155 @@ export default function AddOrder() {
             </CardContent>
           </Card>
         )}
-            </div>
-            {/* End of Main Column */}
+              </div>
+              {/* End of Left Column */}
 
-            {/* Right Column - Mobile First (Bottom on Mobile, Sticky Sidebar on Desktop) */}
-            <div className="w-full lg:w-96 order-first lg:order-last">
-              <div className="lg:sticky lg:top-20 space-y-4 lg:space-y-6">
-                {/* Order Summary */}
-                <Card className="shadow-lg overflow-hidden">
-                  <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-lg">
-                    <CardTitle className="flex items-center gap-2">
-                      <Calculator className="h-5 w-5 text-blue-600" />
-                      Order Summary
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3 pt-6">
+              {/* Right Column - Sticky Sidebar (Desktop only) */}
+              <div className="hidden lg:block space-y-4">
+                <div className="sticky top-4 space-y-4">
+                  
+                  {/* Order Location - Desktop Only */}
+                  <Card className="shadow-sm">
+                    <CardHeader className="p-4">
+                      <CardTitle className="flex items-center gap-2 text-sm">
+                        <MapPin className="h-4 w-4 text-blue-600" />
+                        Order Location
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
+                      <Input
+                        placeholder="e.g., Prague Warehouse, Main Office"
+                        value={form.watch('orderLocation') || ''}
+                        onChange={(e) => form.setValue('orderLocation', e.target.value)}
+                        data-testid="input-order-location"
+                      />
+                    </CardContent>
+                  </Card>
+
+                  {/* Quick Settings Card */}
+                  <Card className="shadow-sm">
+                    <CardHeader className="p-4">
+                      <CardTitle className="flex items-center gap-2 text-sm">
+                        <Package className="h-4 w-4 text-blue-600" />
+                        Order Settings
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0 space-y-3">
+                      <div>
+                        <Label htmlFor="currency" className="text-xs">Currency</Label>
+                        <Select value={form.watch('currency')} onValueChange={(value) => form.setValue('currency', value as any)}>
+                          <SelectTrigger className="mt-1 h-9" data-testid="select-currency">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="CZK">CZK</SelectItem>
+                            <SelectItem value="EUR">EUR</SelectItem>
+                            <SelectItem value="USD">USD</SelectItem>
+                            <SelectItem value="VND">VND</SelectItem>
+                            <SelectItem value="CNY">CNY</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="priority" className="text-xs">Priority</Label>
+                        <Select value={form.watch('priority')} onValueChange={(value) => form.setValue('priority', value as any)}>
+                          <SelectTrigger className="mt-1 h-9">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="low">
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 bg-gray-500 rounded-full" />
+                                Low
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="medium">
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 bg-yellow-500 rounded-full" />
+                                Medium
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="high">
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 bg-red-500 rounded-full" />
+                                High
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="orderStatus" className="text-xs">Order Status</Label>
+                        <Select value={form.watch('orderStatus')} onValueChange={(value) => form.setValue('orderStatus', value as any)}>
+                          <SelectTrigger className="mt-1 h-9">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 bg-orange-500 rounded-full" />
+                                Pending
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="to_fulfill">
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 bg-blue-500 rounded-full" />
+                                To Fulfill
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="shipped">
+                              <div className="flex items-center gap-2">
+                                <div className="h-2 w-2 bg-green-500 rounded-full" />
+                                Shipped
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="shippingMethod" className="text-xs">Shipping Method</Label>
+                        <Select value={form.watch('shippingMethod')} onValueChange={(value) => form.setValue('shippingMethod', value as any)}>
+                          <SelectTrigger className="mt-1 h-9">
+                            <SelectValue placeholder="Select shipping" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="GLS">GLS</SelectItem>
+                            <SelectItem value="PPL">PPL</SelectItem>
+                            <SelectItem value="DHL">DHL</SelectItem>
+                            <SelectItem value="DPD">DPD</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="paymentMethod" className="text-xs">Payment Method</Label>
+                        <Select value={form.watch('paymentMethod')} onValueChange={(value) => form.setValue('paymentMethod', value as any)}>
+                          <SelectTrigger className="mt-1 h-9">
+                            <SelectValue placeholder="Select payment" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                            <SelectItem value="PayPal">PayPal</SelectItem>
+                            <SelectItem value="COD">COD</SelectItem>
+                            <SelectItem value="Cash">Cash</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Order Summary - Sticky */}
+                  <Card className="shadow-sm">
+                    <CardHeader className="p-4">
+                      <CardTitle className="flex items-center gap-2 text-sm">
+                        <Calculator className="h-4 w-4 text-blue-600" />
+                        Order Summary
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0 space-y-3">
                     {/* Margin Analysis Section */}
                     {orderItems.length > 0 && (() => {
                       const totalLandingCost = orderItems.reduce((sum, item) => 
@@ -3087,7 +3084,7 @@ export default function AddOrder() {
                       </div>
                     </div>
 
-                    <div className="pt-4 space-y-3">
+                    <div className="pt-3 space-y-2">
                       {orderId ? (
                         <>
                           <Button 
@@ -3110,41 +3107,16 @@ export default function AddOrder() {
                         </>
                       ) : (
                         <>
-                          <Button type="submit" className="w-full" size="lg" disabled={createOrderMutation.isPending || orderItems.length === 0}>
+                          <Button type="submit" className="w-full" size="lg" disabled={createOrderMutation.isPending || orderItems.length === 0} data-testid="button-create-order">
                             <ShoppingCart className="h-4 w-4 mr-2" />
                             {createOrderMutation.isPending ? 'Creating...' : 'Create Order'}
                           </Button>
-                          <Button type="button" variant="outline" className="w-full" onClick={() => setLocation('/orders')}>
-                            Cancel
+                          <Button type="button" variant="outline" className="w-full" onClick={() => setLocation('/orders')} data-testid="button-save-draft">
+                            <Save className="h-4 w-4 mr-2" />
+                            Save Draft
                           </Button>
                         </>
                       )}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Quick Stats */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-sm font-medium text-gray-600">Quick Info</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Package className="h-4 w-4 text-blue-500" />
-                      <span className="text-gray-600">Items:</span>
-                      <span className="font-medium">{orderItems.length}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <User className="h-4 w-4 text-green-500" />
-                      <span className="text-gray-600">Customer:</span>
-                      <span className="font-medium flex items-center gap-1">
-                        {selectedCustomer ? selectedCustomer.name : 'Not selected'}
-                        {selectedCustomer?.hasPayLaterBadge && (
-                          <Badge variant="outline" className="text-xs bg-yellow-50 border-yellow-300 text-yellow-700 ml-1">
-                            Pay Later
-                          </Badge>
-                        )}
-                      </span>
                     </div>
                   </CardContent>
                 </Card>
@@ -3152,6 +3124,116 @@ export default function AddOrder() {
             </div>
             {/* End of Right Column */}
           </div>
+          {/* End of Grid */}
+
+          {/* Mobile Order Summary (bottom on mobile) */}
+          <Card className="lg:hidden shadow-sm">
+            <CardHeader className="p-4">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Calculator className="h-4 w-4 text-blue-600" />
+                Order Summary
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 pt-0 space-y-3">
+              {/* Margin Analysis Section - Mobile */}
+              {orderItems.length > 0 && (() => {
+                const totalLandingCost = orderItems.reduce((sum, item) => 
+                  sum + (item.landingCost || 0) * item.quantity, 0);
+                const totalSellingPrice = orderItems.reduce((sum, item) => 
+                  sum + item.price * item.quantity, 0);
+                const totalProfit = totalSellingPrice - totalLandingCost;
+                const avgMargin = totalLandingCost > 0 
+                  ? ((totalProfit / totalSellingPrice) * 100).toFixed(1) 
+                  : null;
+
+                return avgMargin !== null ? (
+                  <div className="pb-3 mb-3 border-b">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Margin</span>
+                      <MarginPill
+                        sellingPrice={totalSellingPrice}
+                        landingCost={totalLandingCost}
+                        currency={form.watch('currency')}
+                        showIcon={false}
+                        showProfit={true}
+                      />
+                    </div>
+                  </div>
+                ) : null;
+              })()}
+
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Subtotal:</span>
+                  <span className="font-medium">{formatCurrency(calculateSubtotal(), form.watch('currency'))}</span>
+                </div>
+                {showTaxInvoice && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Tax ({form.watch('taxRate') || 0}%):</span>
+                    <span className="font-medium">{formatCurrency(calculateTax(), form.watch('currency'))}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Shipping:</span>
+                  <span className="font-medium">{formatCurrency(Number(form.watch('shippingCost')) || 0, form.watch('currency'))}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">
+                    Discount{form.watch('discountType') === 'rate' && ` (${form.watch('discountValue') || 0}%)`}:
+                  </span>
+                  <span className="font-medium text-green-600">
+                    -{formatCurrency(
+                      form.watch('discountType') === 'rate' 
+                        ? (calculateSubtotal() * (Number(form.watch('discountValue')) || 0)) / 100
+                        : Number(form.watch('discountValue')) || 0, 
+                      form.watch('currency')
+                    )}
+                  </span>
+                </div>
+              </div>
+              <Separator />
+              <div className="flex justify-between">
+                <span className="text-lg font-semibold">Total:</span>
+                <span className="text-lg font-bold text-blue-600">{formatCurrency(calculateGrandTotal(), form.watch('currency'))}</span>
+              </div>
+
+              <div className="pt-3 space-y-2">
+                {orderId ? (
+                  <>
+                    <Button 
+                      type="button" 
+                      className="w-full" 
+                      size="lg" 
+                      onClick={() => setLocation(`/orders/${orderId}`)}
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      View Order
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      className="w-full" 
+                      onClick={() => setLocation('/orders')}
+                    >
+                      Back to Orders
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button type="submit" className="w-full" size="lg" disabled={createOrderMutation.isPending || orderItems.length === 0} data-testid="button-create-order-mobile">
+                      <ShoppingCart className="h-4 w-4 mr-2" />
+                      {createOrderMutation.isPending ? 'Creating...' : 'Create Order'}
+                    </Button>
+                    <Button type="button" variant="outline" className="w-full" onClick={() => setLocation('/orders')} data-testid="button-save-draft-mobile">
+                      <Save className="h-4 w-4 mr-2" />
+                      Save Draft
+                    </Button>
+                  </>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
         </form>
       </div>
     </div>
