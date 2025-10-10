@@ -590,85 +590,6 @@ export default function PickPack() {
     }
   }, [activePackingOrder?.id, selectedCarton, useNonCompanyCarton]);
 
-  // Keyboard shortcuts for quick navigation and actions
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger shortcuts when typing in input/textarea/select (except our barcode input)
-      const target = e.target as HTMLElement;
-      const isFormInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
-      const isBarcodeInput = target === barcodeInputRef.current;
-      
-      // Ctrl/Cmd + K: Focus barcode input (when in picking/packing mode)
-      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-        e.preventDefault();
-        if (activePickingOrder || activePackingOrder) {
-          barcodeInputRef.current?.focus();
-        }
-      }
-      
-      // Ctrl/Cmd + S: Start/Resume picking for first pending order
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        if (!activePickingOrder && !activePackingOrder) {
-          // Find first pending order
-          const pendingOrders = transformedOrders.filter(o => 
-            o.pickStatus === 'not_started' && o.status === 'to_fulfill'
-          );
-          if (pendingOrders.length > 0) {
-            const order = pendingOrders[0];
-            setActivePickingOrder(order);
-            setSelectedTab('picking');
-            const firstUnpickedIndex = order.items.findIndex(item => item.pickedQuantity < item.quantity);
-            setManualItemIndex(firstUnpickedIndex >= 0 ? firstUnpickedIndex : 0);
-            setIsTimerRunning(true);
-          }
-        }
-      }
-      
-      // Alt + N: Navigate to next item (when picking)
-      if (e.altKey && e.key === 'n') {
-        e.preventDefault();
-        if (activePickingOrder && !isFormInput) {
-          const currentItemIndex = manualItemIndex;
-          setManualItemIndex(Math.min(activePickingOrder.items.length - 1, currentItemIndex + 1));
-        }
-      }
-      
-      // Alt + P: Navigate to previous item (when picking)
-      if (e.altKey && e.key === 'p') {
-        e.preventDefault();
-        if (activePickingOrder && !isFormInput) {
-          const currentItemIndex = manualItemIndex;
-          setManualItemIndex(Math.max(0, currentItemIndex - 1));
-        }
-      }
-      
-      // Enter: Confirm current action in barcode input
-      if (e.key === 'Enter' && isBarcodeInput) {
-        // Let the existing onKeyPress handler handle this
-      }
-      
-      // Escape: Cancel/Close current modal or return to overview
-      if (e.key === 'Escape') {
-        if (showPickingCompletionModal) {
-          setShowPickingCompletionModal(false);
-        } else if (activePickingOrder) {
-          // Optionally exit picking mode - user might want this
-          // Uncomment if desired: setActivePickingOrder(null);
-        } else if (activePackingOrder) {
-          // Optionally exit packing mode
-          // Uncomment if desired: setActivePackingOrder(null);
-        } else {
-          // Return to overview tab
-          setSelectedTab('overview');
-        }
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [activePickingOrder, activePackingOrder, showPickingCompletionModal, selectedTab, manualItemIndex, transformedOrders]);
-
   // Auto-focus barcode input when entering picking mode
   useEffect(() => {
     if (activePickingOrder && barcodeInputRef.current) {
@@ -762,6 +683,85 @@ export default function PickPack() {
       }
     },
   });
+
+  // Keyboard shortcuts for quick navigation and actions
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger shortcuts when typing in input/textarea/select (except our barcode input)
+      const target = e.target as HTMLElement;
+      const isFormInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
+      const isBarcodeInput = target === barcodeInputRef.current;
+      
+      // Ctrl/Cmd + K: Focus barcode input (when in picking/packing mode)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        if (activePickingOrder || activePackingOrder) {
+          barcodeInputRef.current?.focus();
+        }
+      }
+      
+      // Ctrl/Cmd + S: Start/Resume picking for first pending order
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        if (!activePickingOrder && !activePackingOrder && allOrders.length > 0) {
+          // Find first pending order
+          const pendingOrders = allOrders.filter((o: any) => 
+            o.pickStatus === 'not_started' && o.orderStatus === 'to_fulfill'
+          );
+          if (pendingOrders.length > 0) {
+            const order = pendingOrders[0];
+            setActivePickingOrder(order);
+            setSelectedTab('picking');
+            const firstUnpickedIndex = order.items.findIndex((item: any) => item.pickedQuantity < item.quantity);
+            setManualItemIndex(firstUnpickedIndex >= 0 ? firstUnpickedIndex : 0);
+            setIsTimerRunning(true);
+          }
+        }
+      }
+      
+      // Alt + N: Navigate to next item (when picking)
+      if (e.altKey && e.key === 'n') {
+        e.preventDefault();
+        if (activePickingOrder && !isFormInput) {
+          const currentItemIndex = manualItemIndex;
+          setManualItemIndex(Math.min(activePickingOrder.items.length - 1, currentItemIndex + 1));
+        }
+      }
+      
+      // Alt + P: Navigate to previous item (when picking)
+      if (e.altKey && e.key === 'p') {
+        e.preventDefault();
+        if (activePickingOrder && !isFormInput) {
+          const currentItemIndex = manualItemIndex;
+          setManualItemIndex(Math.max(0, currentItemIndex - 1));
+        }
+      }
+      
+      // Enter: Confirm current action in barcode input
+      if (e.key === 'Enter' && isBarcodeInput) {
+        // Let the existing onKeyPress handler handle this
+      }
+      
+      // Escape: Cancel/Close current modal or return to overview
+      if (e.key === 'Escape') {
+        if (showPickingCompletionModal) {
+          setShowPickingCompletionModal(false);
+        } else if (activePickingOrder) {
+          // Optionally exit picking mode - user might want this
+          // Uncomment if desired: setActivePickingOrder(null);
+        } else if (activePackingOrder) {
+          // Optionally exit packing mode
+          // Uncomment if desired: setActivePackingOrder(null);
+        } else {
+          // Return to overview tab
+          setSelectedTab('overview');
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [activePickingOrder, activePackingOrder, showPickingCompletionModal, selectedTab, manualItemIndex, allOrders]);
 
   // Mock location generator for demo
   const generateMockLocation = () => {
