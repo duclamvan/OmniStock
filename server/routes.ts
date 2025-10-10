@@ -2669,36 +2669,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Pick & Pack endpoints
+  // Pick & Pack endpoints (OPTIMIZED - eliminates N+1 queries)
   app.get('/api/orders/pick-pack', async (req, res) => {
     try {
       const status = req.query.status as string; // pending, picking, packing, ready
       const orders = await storage.getPickPackOrders(status);
       
-      // Fetch order items for each order with bundle details
-      const ordersWithItems = await Promise.all(orders.map(async (order) => {
-        const items = await storage.getOrderItems(order.id);
+      // OPTIMIZATION 1: Fetch bundles ONCE for all orders (not inside loops)
+      const allBundles = await storage.getBundles();
+      const bundleMap = new Map(allBundles.map(b => [b.name, b]));
+      
+      // OPTIMIZATION 2: Batch fetch all order items
+      const allOrderItemsArrays = await Promise.all(
+        orders.map(order => storage.getOrderItems(order.id))
+      );
+      
+      // OPTIMIZATION 3: Identify all bundles needed and collect product/variant IDs
+      const bundleIds = new Set<string>();
+      const productIds = new Set<string>();
+      const variantRequests = new Map<string, Set<string>>(); // productId -> variantIds
+      
+      // First pass: identify bundles in use
+      for (const items of allOrderItemsArrays) {
+        for (const item of items) {
+          for (const [bundleName, bundle] of Array.from(bundleMap.entries())) {
+            if (item.productName && item.productName.includes(bundleName)) {
+              bundleIds.add(bundle.id);
+              break;
+            }
+          }
+        }
+      }
+      
+      // OPTIMIZATION 4: Batch fetch all bundle items
+      const bundleItemsMap = new Map<string, any[]>();
+      if (bundleIds.size > 0) {
+        const bundleItemsResults = await Promise.all(
+          Array.from(bundleIds).map(bundleId => 
+            storage.getBundleItems(bundleId).then(items => ({ bundleId, items }))
+          )
+        );
         
-        // For each item, check if it's part of a bundle and fetch bundle items
-        const itemsWithBundleDetails = await Promise.all(items.map(async (item) => {
-          // Check if this product is a bundle
-          const bundles = await storage.getBundles();
-          const bundle = bundles.find(b => item.productName.includes(b.name));
+        for (const { bundleId, items } of bundleItemsResults) {
+          bundleItemsMap.set(bundleId, items);
           
-          if (bundle) {
-            // Fetch bundle items
-            const bundleItems = await storage.getBundleItems(bundle.id);
-            const bundleItemsWithDetails = await Promise.all(bundleItems.map(async (bundleItem) => {
+          // Collect product and variant IDs from bundle items
+          for (const bundleItem of items) {
+            if (bundleItem.productId) {
+              productIds.add(bundleItem.productId);
+              
+              if (bundleItem.variantId) {
+                if (!variantRequests.has(bundleItem.productId)) {
+                  variantRequests.set(bundleItem.productId, new Set());
+                }
+                variantRequests.get(bundleItem.productId)!.add(bundleItem.variantId);
+              }
+            }
+          }
+        }
+      }
+      
+      // OPTIMIZATION 5: Batch fetch all products
+      const productsMap = new Map<string, any>();
+      if (productIds.size > 0) {
+        const productsResults = await Promise.all(
+          Array.from(productIds).map(productId => 
+            storage.getProductById(productId).then(product => ({ productId, product }))
+          )
+        );
+        
+        for (const { productId, product } of productsResults) {
+          if (product) {
+            productsMap.set(productId, product);
+          }
+        }
+      }
+      
+      // OPTIMIZATION 6: Batch fetch all variants
+      const variantsMap = new Map<string, Map<string, any>>();
+      if (variantRequests.size > 0) {
+        const variantsResults = await Promise.all(
+          Array.from(variantRequests.keys()).map(productId => 
+            storage.getProductVariants(productId).then(variants => ({ productId, variants }))
+          )
+        );
+        
+        for (const { productId, variants } of variantsResults) {
+          variantsMap.set(productId, new Map(variants.map(v => [v.id, v])));
+        }
+      }
+      
+      // OPTIMIZATION 7: Assemble response using lookup maps (O(1) access)
+      const ordersWithItems = orders.map((order, orderIndex) => {
+        const items = allOrderItemsArrays[orderIndex];
+        
+        const itemsWithBundleDetails = items.map(item => {
+          // Check if this product is a bundle (using pre-fetched bundle map)
+          let matchedBundle = null;
+          for (const [bundleName, bundle] of Array.from(bundleMap.entries())) {
+            if (item.productName && item.productName.includes(bundleName)) {
+              matchedBundle = bundle;
+              break;
+            }
+          }
+          
+          if (matchedBundle && bundleItemsMap.has(matchedBundle.id)) {
+            const bundleItems = bundleItemsMap.get(matchedBundle.id) || [];
+            const bundleItemsWithDetails = bundleItems.map(bundleItem => {
               let productName = '';
+              
               if (bundleItem.productId) {
-                const product = await storage.getProductById(bundleItem.productId);
+                const product = productsMap.get(bundleItem.productId);
                 productName = product?.name || '';
                 
                 if (bundleItem.variantId) {
-                  const variants = await storage.getProductVariants(bundleItem.productId);
-                  const variant = variants.find(v => v.id === bundleItem.variantId);
-                  if (variant) {
-                    productName = `${productName} - ${variant.name}`;
+                  const productVariants = variantsMap.get(bundleItem.productId);
+                  if (productVariants) {
+                    const variant = productVariants.get(bundleItem.variantId);
+                    if (variant) {
+                      productName = `${productName} - ${variant.name}`;
+                    }
                   }
                 }
               }
@@ -2710,7 +2800,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 picked: false,
                 location: item.warehouseLocation || 'A1-R1-S1'
               };
-            }));
+            });
             
             return {
               ...item,
@@ -2720,14 +2810,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           return item;
-        }));
+        });
         
         return {
           ...order,
           status: order.orderStatus, // Map orderStatus to status for client compatibility
           items: itemsWithBundleDetails
         };
-      }));
+      });
       
       res.json(ordersWithItems);
     } catch (error) {

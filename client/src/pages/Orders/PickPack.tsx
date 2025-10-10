@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Select, 
   SelectContent, 
@@ -324,6 +325,7 @@ export default function PickPack() {
   const [manualItemIndex, setManualItemIndex] = useState(0);
   const [modificationDialog, setModificationDialog] = useState<PickPackOrder | null>(null);
   const barcodeInputRef = useRef<HTMLInputElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Navigation structure
   const navigation = [
@@ -588,24 +590,126 @@ export default function PickPack() {
     }
   }, [activePackingOrder?.id, selectedCarton, useNonCompanyCarton]);
 
+  // Keyboard shortcuts for quick navigation and actions
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger shortcuts when typing in input/textarea/select (except our barcode input)
+      const target = e.target as HTMLElement;
+      const isFormInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName);
+      const isBarcodeInput = target === barcodeInputRef.current;
+      
+      // Ctrl/Cmd + K: Focus barcode input (when in picking/packing mode)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        if (activePickingOrder || activePackingOrder) {
+          barcodeInputRef.current?.focus();
+        }
+      }
+      
+      // Ctrl/Cmd + S: Start/Resume picking for first pending order
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        if (!activePickingOrder && !activePackingOrder) {
+          // Find first pending order
+          const pendingOrders = transformedOrders.filter(o => 
+            o.pickStatus === 'not_started' && o.status === 'to_fulfill'
+          );
+          if (pendingOrders.length > 0) {
+            const order = pendingOrders[0];
+            setActivePickingOrder(order);
+            setSelectedTab('picking');
+            const firstUnpickedIndex = order.items.findIndex(item => item.pickedQuantity < item.quantity);
+            setManualItemIndex(firstUnpickedIndex >= 0 ? firstUnpickedIndex : 0);
+            setIsTimerRunning(true);
+          }
+        }
+      }
+      
+      // Alt + N: Navigate to next item (when picking)
+      if (e.altKey && e.key === 'n') {
+        e.preventDefault();
+        if (activePickingOrder && !isFormInput) {
+          const currentItemIndex = manualItemIndex;
+          setManualItemIndex(Math.min(activePickingOrder.items.length - 1, currentItemIndex + 1));
+        }
+      }
+      
+      // Alt + P: Navigate to previous item (when picking)
+      if (e.altKey && e.key === 'p') {
+        e.preventDefault();
+        if (activePickingOrder && !isFormInput) {
+          const currentItemIndex = manualItemIndex;
+          setManualItemIndex(Math.max(0, currentItemIndex - 1));
+        }
+      }
+      
+      // Enter: Confirm current action in barcode input
+      if (e.key === 'Enter' && isBarcodeInput) {
+        // Let the existing onKeyPress handler handle this
+      }
+      
+      // Escape: Cancel/Close current modal or return to overview
+      if (e.key === 'Escape') {
+        if (showPickingCompletionModal) {
+          setShowPickingCompletionModal(false);
+        } else if (activePickingOrder) {
+          // Optionally exit picking mode - user might want this
+          // Uncomment if desired: setActivePickingOrder(null);
+        } else if (activePackingOrder) {
+          // Optionally exit packing mode
+          // Uncomment if desired: setActivePackingOrder(null);
+        } else {
+          // Return to overview tab
+          setSelectedTab('overview');
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [activePickingOrder, activePackingOrder, showPickingCompletionModal, selectedTab, manualItemIndex, transformedOrders]);
+
+  // Auto-focus barcode input when entering picking mode
+  useEffect(() => {
+    if (activePickingOrder && barcodeInputRef.current) {
+      setTimeout(() => {
+        barcodeInputRef.current?.focus();
+      }, 100);
+    }
+  }, [activePickingOrder?.id]);
+
+  // Auto-focus barcode input when entering packing mode
+  useEffect(() => {
+    if (activePackingOrder && barcodeInputRef.current) {
+      setTimeout(() => {
+        barcodeInputRef.current?.focus();
+      }, 100);
+    }
+  }, [activePackingOrder?.id]);
+
+  // Auto-focus search field when on overview tab
+  useEffect(() => {
+    if (selectedTab === 'overview' && searchInputRef.current && !activePickingOrder && !activePackingOrder) {
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 100);
+    }
+  }, [selectedTab, activePickingOrder, activePackingOrder]);
+
   // Fetch real orders from the API with items and bundle details
   const { data: allOrders = [], isLoading, isSuccess } = useQuery({
     queryKey: ['/api/orders/pick-pack'],
-    refetchInterval: activePickingOrder ? 0 : 10000, // Use 0 to completely disable during picking
-    refetchOnWindowFocus: activePickingOrder ? false : true,
-    refetchOnMount: activePickingOrder ? false : true,
-    refetchOnReconnect: activePickingOrder ? false : true,
-    staleTime: activePickingOrder ? Infinity : 0, // Never consider data stale during picking
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    refetchInterval: 30000, // 30 seconds instead of 10
+    refetchOnWindowFocus: !activePickingOrder,
   });
 
   // Query for available cartons
-  const { data: availableCartons = [] } = useQuery<any[]>({
+  const { data: availableCartons = [], isLoading: isLoadingCartons } = useQuery<any[]>({
     queryKey: ['/api/cartons/available'],
-    refetchInterval: activePickingOrder ? 0 : 30000, // Use 0 to completely disable during picking
-    refetchOnWindowFocus: activePickingOrder ? false : true,
-    refetchOnMount: activePickingOrder ? false : true,
-    refetchOnReconnect: activePickingOrder ? false : true,
-    staleTime: activePickingOrder ? Infinity : 0,
+    staleTime: 10 * 60 * 1000, // 10 minutes (cartons rarely change)
+    refetchInterval: false, // Disable interval refetch
+    refetchOnWindowFocus: false,
   });
 
   // Filter cartons based on search
@@ -624,7 +728,8 @@ export default function PickPack() {
   const { data: recommendedCarton } = useQuery({
     queryKey: ['/api/orders', activePackingOrder?.id, 'recommend-carton'],
     enabled: !!activePackingOrder?.id,
-    refetchInterval: false, // Disable automatic refetch
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchInterval: false,
     refetchOnWindowFocus: false,
   });
 
@@ -2729,9 +2834,9 @@ export default function PickPack() {
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'high': return 'destructive';  // Keep red for high
-      case 'medium': return 'warning';     // Orange for medium
-      case 'low': return 'info';           // Blue for low
+      case 'high': return 'destructive';  // Red for high priority
+      case 'medium': return 'warning';     // Yellow for medium priority
+      case 'low': return 'outline';        // Gray for low priority
       default: return 'outline';
     }
   };
@@ -2739,13 +2844,19 @@ export default function PickPack() {
   const getOrderStatusDisplay = (order: PickPackOrder) => {
     // Check the pickStatus and packStatus fields for actual status
     if (order.pickStatus === 'in_progress') {
-      return { label: 'Currently Picking', color: 'bg-blue-100 text-blue-700 border-blue-200' };
+      return { label: 'Picking', color: 'bg-blue-100 text-blue-700 border-blue-300' };
     }
     if (order.packStatus === 'in_progress') {
-      return { label: 'Currently Packing', color: 'bg-purple-100 text-purple-700 border-purple-200' };
+      return { label: 'Packing', color: 'bg-purple-100 text-purple-700 border-purple-300' };
+    }
+    if (order.status === 'ready_to_ship' && order.packStatus === 'completed') {
+      return { label: 'Ready', color: 'bg-green-100 text-green-700 border-green-300' };
     }
     if (order.status === 'shipped') {
-      return { label: 'Shipped', color: 'bg-blue-100 text-blue-700 border-blue-200' };
+      return { label: 'Shipped', color: 'bg-emerald-100 text-emerald-700 border-emerald-300' };
+    }
+    if (order.pickStatus === 'not_started' || !order.pickStatus) {
+      return { label: 'Pending', color: 'bg-gray-100 text-gray-700 border-gray-300' };
     }
     if (order.packStatus === 'completed' && order.status === 'ready_to_ship') {
       return { label: 'Ready to Ship', color: 'bg-green-100 text-green-700 border-green-200' };
@@ -2773,15 +2884,22 @@ export default function PickPack() {
 
   // Skeleton loader component for order cards
   const OrderCardSkeleton = () => (
-    <Card className="animate-pulse">
+    <Card className="transition-all duration-300">
       <CardContent className="p-3 sm:p-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <div className="flex-1 space-y-2">
-            <div className="skeleton skeleton-title w-32"></div>
-            <div className="skeleton skeleton-text w-48"></div>
-            <div className="skeleton skeleton-text w-24"></div>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex-1 space-y-3">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-5 w-24" />
+              <Skeleton className="h-5 w-16" />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-4 w-24" />
+            </div>
           </div>
-          <div className="skeleton skeleton-button"></div>
+          <Skeleton className="h-10 w-full sm:w-32" />
         </div>
       </CardContent>
     </Card>
@@ -3014,10 +3132,28 @@ export default function PickPack() {
           </div>
         </div>
 
+        {/* Keyboard Shortcuts Indicator - Desktop only - More subtle */}
+        <div className="hidden lg:block bg-gray-50/50 border-b border-gray-200/50">
+          <div className="px-6 py-2">
+            <div className="flex items-center justify-center gap-8 text-xs text-gray-500">
+              <div className="flex items-center gap-2">
+                <kbd className="px-2 py-0.5 bg-white rounded shadow-sm border border-gray-200 font-mono text-gray-700">
+                  {navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}+K
+                </kbd>
+                <span>Focus Barcode</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <kbd className="px-2 py-0.5 bg-white rounded shadow-sm border border-gray-200 font-mono text-gray-700">Esc</kbd>
+                <span>Exit/Close</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Main Content */}
         <div className="flex-1 overflow-y-auto">
-          <div className="p-2 sm:p-4 max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+          <div className="p-4 sm:p-6 max-w-6xl mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               {/* Left Column - Items Verification */}
               <Card className="shadow-xl border-0 bg-white">
                 <CardHeader className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white">
@@ -3054,6 +3190,7 @@ export default function PickPack() {
                               playSound('error');
                             }
                             setBarcodeInput('');
+                            barcodeInputRef.current?.focus();
                           }
                         }}
                         className="text-lg font-mono cursor-default"
@@ -3427,7 +3564,14 @@ export default function PickPack() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-4">
-                    {availableCartons.length > 0 ? (
+                    {isLoadingCartons ? (
+                      <div className="space-y-3">
+                        <Skeleton className="h-16 w-full" />
+                        <Skeleton className="h-12 w-full" />
+                        <Skeleton className="h-12 w-full" />
+                        <Skeleton className="h-12 w-full" />
+                      </div>
+                    ) : availableCartons.length > 0 ? (
                       <div className="space-y-4">
                         {/* AI Recommendation */}
                         {packingRecommendation && packingRecommendation.cartons.length > 0 && (
@@ -3691,7 +3835,13 @@ export default function PickPack() {
                         />
                         <span className="flex items-center px-3 text-sm font-medium">kg</span>
                       </div>
-                      {!isWeightManuallyModified && aiWeightCalculation && (
+                      {calculateWeightMutation.isPending && (
+                        <div className="flex items-center gap-2 text-xs text-blue-600">
+                          <div className="animate-spin h-3 w-3 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+                          Calculating weight...
+                        </div>
+                      )}
+                      {!calculateWeightMutation.isPending && !isWeightManuallyModified && aiWeightCalculation && (
                         <div className="text-xs text-gray-500">
                           Weight automatically calculated by AI
                         </div>
@@ -3701,7 +3851,7 @@ export default function PickPack() {
                           Manual weight entered
                         </div>
                       )}
-                      {!aiWeightCalculation && !isWeightManuallyModified && (
+                      {!calculateWeightMutation.isPending && !aiWeightCalculation && !isWeightManuallyModified && (
                         <div className="text-xs text-gray-500">
                           Weight will be calculated automatically
                         </div>
@@ -4304,6 +4454,32 @@ export default function PickPack() {
                     style={{ width: `${progress}%` }}
                   />
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Keyboard Shortcuts Indicator - Desktop only */}
+        <div className="hidden lg:block bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border-b border-blue-200/30">
+          <div className="px-4 py-2">
+            <div className="flex items-center justify-center gap-6 text-xs text-gray-600">
+              <div className="flex items-center gap-1.5">
+                <kbd className="px-2 py-1 bg-white rounded shadow-sm border border-gray-300 font-mono">
+                  {navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'}+K
+                </kbd>
+                <span>Focus Barcode</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <kbd className="px-2 py-1 bg-white rounded shadow-sm border border-gray-300 font-mono">Alt+N</kbd>
+                <span>Next Item</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <kbd className="px-2 py-1 bg-white rounded shadow-sm border border-gray-300 font-mono">Alt+P</kbd>
+                <span>Previous</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <kbd className="px-2 py-1 bg-white rounded shadow-sm border border-gray-300 font-mono">Esc</kbd>
+                <span>Exit/Close</span>
               </div>
             </div>
           </div>
@@ -5223,55 +5399,66 @@ export default function PickPack() {
                   <CardTitle className="text-base sm:text-lg">Quick Actions</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 sm:space-y-3">
-                  {
-                    (() => {
-                      // Count orders to pick (not started + in progress)
-                      const ordersToPickCount = transformedOrders.filter(o => 
-                        o.pickStatus === 'not_started' || o.pickStatus === 'in_progress'
-                      ).length;
-                      const hasOrders = ordersToPickCount > 0;
-                      
-                      return (
-                        <Button 
-                          className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base" 
-                          size="lg"
-                          variant={hasOrders ? "default" : "secondary"}
-                          onClick={startNextPriorityOrder}
-                          disabled={!hasOrders}
-                        >
-                          <PlayCircle className="h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3" />
-                          Start Next Priority Order {hasOrders && `(${ordersToPickCount})`}
-                        </Button>
-                      );
-                    })()
-                  }
-                  <Button 
-                    className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base" 
-                    variant={batchPickingMode ? "default" : "outline"} 
-                    size="lg"
-                    onClick={toggleBatchPickingMode}
-                  >
-                    <Users className="h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3" />
-                    {batchPickingMode ? "Disable Batch Mode" : "Batch Picking Mode"}
-                  </Button>
-                  <Button 
-                    className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base" 
-                    variant="outline" 
-                    size="lg"
-                    onClick={optimizePickRoute}
-                  >
-                    <Route className="h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3" />
-                    Optimize Pick Route
-                  </Button>
-                  <Button 
-                    className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base" 
-                    variant={showPerformanceStats ? "default" : "outline"} 
-                    size="lg"
-                    onClick={togglePerformanceStats}
-                  >
-                    <BarChart3 className="h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3" />
-                    {showPerformanceStats ? "Hide Stats" : "View Performance Stats"}
-                  </Button>
+                  {isLoading ? (
+                    <>
+                      <Skeleton className="h-10 sm:h-12 w-full" />
+                      <Skeleton className="h-10 sm:h-12 w-full" />
+                      <Skeleton className="h-10 sm:h-12 w-full" />
+                      <Skeleton className="h-10 sm:h-12 w-full" />
+                    </>
+                  ) : (
+                    <>
+                      {
+                        (() => {
+                          // Count orders to pick (not started + in progress)
+                          const ordersToPickCount = transformedOrders.filter(o => 
+                            o.pickStatus === 'not_started' || o.pickStatus === 'in_progress'
+                          ).length;
+                          const hasOrders = ordersToPickCount > 0;
+                          
+                          return (
+                            <Button 
+                              className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base" 
+                              size="lg"
+                              variant={hasOrders ? "default" : "secondary"}
+                              onClick={startNextPriorityOrder}
+                              disabled={!hasOrders}
+                            >
+                              <PlayCircle className="h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3" />
+                              Start Next Priority Order {hasOrders && `(${ordersToPickCount})`}
+                            </Button>
+                          );
+                        })()
+                      }
+                      <Button 
+                        className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base" 
+                        variant={batchPickingMode ? "default" : "outline"} 
+                        size="lg"
+                        onClick={toggleBatchPickingMode}
+                      >
+                        <Users className="h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3" />
+                        {batchPickingMode ? "Disable Batch Mode" : "Batch Picking Mode"}
+                      </Button>
+                      <Button 
+                        className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base" 
+                        variant="outline" 
+                        size="lg"
+                        onClick={optimizePickRoute}
+                      >
+                        <Route className="h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3" />
+                        Optimize Pick Route
+                      </Button>
+                      <Button 
+                        className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base" 
+                        variant={showPerformanceStats ? "default" : "outline"} 
+                        size="lg"
+                        onClick={togglePerformanceStats}
+                      >
+                        <BarChart3 className="h-4 sm:h-5 w-4 sm:w-5 mr-2 sm:mr-3" />
+                        {showPerformanceStats ? "Hide Stats" : "View Performance Stats"}
+                      </Button>
+                    </>
+                  )}
                 </CardContent>
               </Card>
 
@@ -5286,7 +5473,21 @@ export default function PickPack() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <RecentActivityList orders={transformedOrders} />
+                  {isLoading ? (
+                    <div className="space-y-3">
+                      {[1, 2, 3, 4].map(i => (
+                        <div key={i} className="flex items-center gap-3">
+                          <Skeleton className="h-4 w-4 rounded-full" />
+                          <div className="flex-1 space-y-2">
+                            <Skeleton className="h-3 w-full" />
+                            <Skeleton className="h-3 w-20" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <RecentActivityList orders={transformedOrders} />
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -5345,19 +5546,19 @@ export default function PickPack() {
               </Card>
             )}
             
-            <Card>
-              <CardHeader className="pb-3 sm:pb-6">
-                <CardTitle className="text-base sm:text-lg">Orders Ready to Pick</CardTitle>
-                <CardDescription className="text-xs sm:text-sm">
+            <Card className="shadow-sm">
+              <CardHeader className="pb-4 sm:pb-6">
+                <CardTitle className="text-lg sm:text-xl font-bold">Orders Ready to Pick</CardTitle>
+                <CardDescription className="text-sm mt-1">
                   {batchPickingMode ? "Select multiple orders for batch picking" : "Select an order to start the picking process"}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="px-3 sm:px-6">
-                <div className="space-y-2 sm:space-y-3">
+              <CardContent className="px-4 sm:px-6">
+                <div className="space-y-3 sm:space-y-4">
                   {getOrdersByStatus('pending').map(order => (
                     <Card 
                       key={order.id} 
-                      className={`${
+                      className={`fade-in ${
                         batchPickingMode ? 'cursor-pointer hover:shadow-md' : ''
                       } transition-all ${
                         batchPickingMode && selectedBatchItems.has(order.id) ? 'border-2 border-purple-500 bg-purple-50' : ''
@@ -5374,65 +5575,65 @@ export default function PickPack() {
                         }
                       }}
                     >
-                      <CardContent className="p-3 sm:p-4">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <CardContent className="p-4 sm:p-6">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                           <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1 sm:mb-2">
+                            <div className="flex items-center gap-2 mb-3">
                               {batchPickingMode && (
                                 <input
                                   type="checkbox"
                                   checked={selectedBatchItems.has(order.id)}
-                                  className="h-4 w-4 text-purple-600 rounded"
+                                  className="h-5 w-5 text-purple-600 rounded"
                                   onClick={(e) => e.stopPropagation()}
                                   onChange={() => {}}
                                 />
                               )}
-                              <h3 className="font-semibold text-sm sm:text-base">{order.orderId}</h3>
-                              <Badge variant={getPriorityColor(order.priority)} className="text-xs">
+                              <h3 className="text-lg sm:text-xl font-bold text-gray-900">{order.orderId}</h3>
+                              <Badge variant={getPriorityColor(order.priority)} className="text-xs font-semibold">
                                 {order.priority.toUpperCase()}
                               </Badge>
                               {order.priority === 'high' && (
-                                <Zap className="h-3 sm:h-4 w-3 sm:w-4 text-red-500" />
+                                <Zap className="h-4 w-4 text-red-500 fill-red-500" />
                               )}
                               {/* Status indicator */}
                               {(() => {
                                 const status = getOrderStatusDisplay(order);
                                 return (
-                                  <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${status.color}`}>
+                                  <span className={`text-xs px-2.5 py-1 rounded-full border font-semibold ${status.color}`}>
                                     {status.label}
                                   </span>
                                 );
                               })()}
                             </div>
-                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:text-sm text-gray-600">
-                              <div className="flex items-center gap-1">
-                                <User className="h-3 sm:h-4 w-3 sm:w-4" />
-                                <span className="truncate">{order.customerName}</span>
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm text-gray-600">
+                              <div className="flex items-center gap-2">
+                                <User className="h-4 w-4 text-gray-400" />
+                                <span className="truncate font-medium">{order.customerName}</span>
                               </div>
-                              <div className="flex items-center gap-1">
-                                <Globe className="h-3 sm:h-4 w-3 sm:w-4" />
-                                <span className="font-semibold">{getOrderCountryCode(order)}</span>
+                              <div className="flex items-center gap-2">
+                                <Globe className="h-4 w-4 text-gray-400" />
+                                <span className="font-semibold text-gray-900">{getOrderCountryCode(order)}</span>
                               </div>
-                              <div className="flex items-center gap-1">
-                                <Package className="h-3 sm:h-4 w-3 sm:w-4" />
-                                <span>{order.totalItems} items</span>
+                              <div className="flex items-center gap-2">
+                                <Package className="h-4 w-4 text-gray-400" />
+                                <span className="font-medium">{order.totalItems} items</span>
                               </div>
-                              <div className="flex items-center gap-1">
-                                <Truck className="h-3 sm:h-4 w-3 sm:w-4" />
-                                <span className="truncate">{order.shippingMethod}</span>
+                              <div className="flex items-center gap-2">
+                                <Truck className="h-4 w-4 text-gray-400" />
+                                <span className="truncate font-medium">{order.shippingMethod}</span>
                               </div>
                             </div>
                           </div>
                           {!batchPickingMode && (
                             <Button
                               size="sm"
-                              className="w-full sm:w-auto sm:h-10"
+                              className="w-full sm:w-auto min-h-[44px] font-semibold"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 startPicking(order);
                               }}
                             >
-                              <PlayCircle className="h-4 sm:h-5 w-4 sm:w-5 mr-1 sm:mr-2" />
+                              <PlayCircle className="h-5 w-5 mr-2" />
                               Start Picking
                             </Button>
                           )}
@@ -5461,11 +5662,11 @@ export default function PickPack() {
 
           {/* Other tabs - Mobile Optimized */}
           <TabsContent value="picking" className="mt-4 sm:mt-6">
-            <Card>
-              <CardHeader className="pb-3 sm:pb-6">
-                <CardTitle className="text-base sm:text-lg">Orders Being Picked</CardTitle>
+            <Card className="shadow-sm">
+              <CardHeader className="pb-4 sm:pb-6">
+                <CardTitle className="text-lg sm:text-xl font-bold">Orders Being Picked</CardTitle>
               </CardHeader>
-              <CardContent className="px-3 sm:px-6">
+              <CardContent className="px-4 sm:px-6">
                 {isLoading ? (
                   <div className="space-y-3">
                     {[1, 2].map(i => (
@@ -5478,38 +5679,38 @@ export default function PickPack() {
                     <p className="text-sm sm:text-base text-gray-500">No orders currently being picked</p>
                   </div>
                 ) : (
-                  <div className="space-y-2 sm:space-y-3 stagger-animation">
+                  <div className="space-y-3 sm:space-y-4 stagger-animation">
                     {getOrdersByStatus('picking').map(order => (
-                      <Card key={order.id} className="transition-shadow">
-                        <CardContent className="p-3 sm:p-4">
-                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <Card key={order.id} className="fade-in transition-shadow hover:shadow-md">
+                        <CardContent className="p-4 sm:p-6">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                             <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h3 className="font-semibold text-sm sm:text-base">{order.orderId}</h3>
+                              <div className="flex items-center gap-2 mb-3">
+                                <h3 className="text-lg sm:text-xl font-bold text-gray-900">{order.orderId}</h3>
                                 {/* Status indicator */}
                                 {(() => {
                                   const status = getOrderStatusDisplay(order);
                                   return (
-                                    <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${status.color}`}>
+                                    <span className={`text-xs px-2.5 py-1 rounded-full border font-semibold ${status.color}`}>
                                       {status.label}
                                     </span>
                                   );
                                 })()}
                               </div>
-                              <div className="flex items-center gap-3 text-xs sm:text-sm text-gray-600">
-                                <div className="flex items-center gap-1">
-                                  <Globe className="h-3 sm:h-4 w-3 sm:w-4" />
-                                  <span className="font-semibold">{getOrderCountryCode(order)}</span>
+                              <div className="flex items-center gap-4 text-sm text-gray-600">
+                                <div className="flex items-center gap-2">
+                                  <Globe className="h-4 w-4 text-gray-400" />
+                                  <span className="font-semibold text-gray-900">{getOrderCountryCode(order)}</span>
                                 </div>
-                                <div className="flex items-center gap-1">
-                                  <User className="h-3 sm:h-4 w-3 sm:w-4" />
-                                  <span>Picked by: {order.pickedBy}</span>
+                                <div className="flex items-center gap-2">
+                                  <User className="h-4 w-4 text-gray-400" />
+                                  <span className="font-medium">Picked by: {order.pickedBy}</span>
                                 </div>
                               </div>
                             </div>
                             <Button 
                               size="sm" 
-                              className="min-w-[100px] max-w-[140px] bg-amber-500 hover:bg-amber-600 text-white font-semibold"
+                              className="w-full sm:w-auto min-h-[44px] bg-amber-500 hover:bg-amber-600 text-white font-semibold"
                               onClick={() => {
                                 // Resume picking by setting the active order and switching to picking view
                                 setActivePickingOrder(order);
@@ -5535,12 +5736,12 @@ export default function PickPack() {
           </TabsContent>
 
           <TabsContent value="packing" className="mt-4 sm:mt-6">
-            <Card>
-              <CardHeader className="pb-3 sm:pb-6">
-                <CardTitle className="text-base sm:text-lg">Ready for Packing</CardTitle>
-                <CardDescription className="text-xs sm:text-sm">Orders that have been picked and ready to pack</CardDescription>
+            <Card className="shadow-sm">
+              <CardHeader className="pb-4 sm:pb-6">
+                <CardTitle className="text-lg sm:text-xl font-bold">Ready for Packing</CardTitle>
+                <CardDescription className="text-sm mt-1">Orders that have been picked and ready to pack</CardDescription>
               </CardHeader>
-              <CardContent className="px-3 sm:px-6">
+              <CardContent className="px-4 sm:px-6">
                 {isLoading ? (
                   <div className="space-y-3">
                     {[1, 2, 3].map(i => (
@@ -5553,42 +5754,42 @@ export default function PickPack() {
                     <p className="text-sm sm:text-base text-gray-500">No orders ready for packing</p>
                   </div>
                 ) : (
-                  <div className="space-y-2 sm:space-y-3 stagger-animation">
+                  <div className="space-y-3 sm:space-y-4 stagger-animation">
                     {getOrdersByStatus('packing')
                       .filter(order => !ordersSentBack.has(order.id)) // Filter out orders being sent back
                       .map(order => (
-                      <Card key={order.id} className="transition-shadow">
-                        <CardContent className="p-3 sm:p-4">
-                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <Card key={order.id} className="fade-in transition-shadow hover:shadow-md">
+                        <CardContent className="p-4 sm:p-6">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                             <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1 sm:mb-2">
-                                <h3 className="font-semibold text-sm sm:text-base">{order.orderId}</h3>
+                              <div className="flex items-center gap-2 mb-3">
+                                <h3 className="text-lg sm:text-xl font-bold text-gray-900">{order.orderId}</h3>
                                 {/* Status indicator */}
                                 {(() => {
                                   const status = getOrderStatusDisplay(order);
                                   return (
-                                    <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${status.color}`}>
+                                    <span className={`text-xs px-2.5 py-1 rounded-full border font-semibold ${status.color}`}>
                                       {status.label}
                                     </span>
                                   );
                                 })()}
                               </div>
-                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
-                                <div className="flex items-center gap-1">
-                                  <User className="h-3 sm:h-4 w-3 sm:w-4" />
-                                  <span className="truncate">{order.customerName}</span>
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm text-gray-600">
+                                <div className="flex items-center gap-2">
+                                  <User className="h-4 w-4 text-gray-400" />
+                                  <span className="truncate font-medium">{order.customerName}</span>
                                 </div>
-                                <div className="flex items-center gap-1">
-                                  <Globe className="h-3 sm:h-4 w-3 sm:w-4" />
-                                  <span className="font-semibold">{getOrderCountryCode(order)}</span>
+                                <div className="flex items-center gap-2">
+                                  <Globe className="h-4 w-4 text-gray-400" />
+                                  <span className="font-semibold text-gray-900">{getOrderCountryCode(order)}</span>
                                 </div>
-                                <div className="flex items-center gap-1">
-                                  <Package className="h-3 sm:h-4 w-3 sm:w-4" />
-                                  <span>{order.totalItems} items</span>
+                                <div className="flex items-center gap-2">
+                                  <Package className="h-4 w-4 text-gray-400" />
+                                  <span className="font-medium">{order.totalItems} items</span>
                                 </div>
-                                <div className="flex items-center gap-1">
-                                  <CheckCircle className="h-3 sm:h-4 w-3 sm:w-4 text-green-500" />
-                                  <span className="text-green-600">Picked by {order.pickedBy}</span>
+                                <div className="flex items-center gap-2">
+                                  <CheckCircle className="h-4 w-4 text-green-500" />
+                                  <span className="text-green-600 font-medium">Picked by {order.pickedBy}</span>
                                 </div>
                               </div>
                             </div>
@@ -5597,29 +5798,29 @@ export default function PickPack() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-8 w-8"
+                                className="h-11 w-11"
                                 onClick={() => setPreviewOrder(order)}
                                 title="View Order Details"
                               >
-                                <Eye className="h-4 w-4" />
+                                <Eye className="h-5 w-5" />
                               </Button>
                               <Button
                                 size="sm"
-                                className="min-w-[100px] max-w-[140px] bg-purple-600 hover:bg-purple-700"
+                                className="w-full sm:w-auto min-h-[44px] bg-purple-600 hover:bg-purple-700 font-semibold"
                                 onClick={() => startPacking(order)}
                               >
-                                <Box className="h-4 w-4 mr-1" />
+                                <Box className="h-5 w-5 mr-2" />
                                 Start Packing
                               </Button>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button 
                                     variant="ghost" 
-                                    size="sm" 
-                                    className="h-10 w-10 p-0"
+                                    size="icon" 
+                                    className="h-11 w-11"
                                     onClick={(e) => e.stopPropagation()}
                                   >
-                                    <MoreVertical className="h-4 w-4" />
+                                    <MoreVertical className="h-5 w-5" />
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
@@ -5646,29 +5847,29 @@ export default function PickPack() {
           </TabsContent>
 
           <TabsContent value="ready" className="mt-4 sm:mt-6">
-            <Card>
-              <CardHeader className="pb-3 sm:pb-6">
-                <div className="flex items-start justify-between gap-3">
+            <Card className="shadow-sm">
+              <CardHeader className="pb-4 sm:pb-6">
+                <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
-                    <CardTitle className="text-base sm:text-lg">
+                    <CardTitle className="text-lg sm:text-xl font-bold">
                       Ready to Ship {getOrdersByStatus('ready').length > 0 && `(${getOrdersByStatus('ready').length})`}
                     </CardTitle>
-                    <CardDescription className="text-xs sm:text-sm">Orders organized by shipping destination</CardDescription>
+                    <CardDescription className="text-sm mt-1">Orders organized by shipping destination</CardDescription>
                   </div>
                   {getOrdersByStatus('ready').length > 0 && (
                     <Button
                       size="sm"
-                      className="bg-green-600 hover:bg-green-700 text-xs sm:text-sm whitespace-nowrap"
+                      className="bg-green-600 hover:bg-green-700 min-h-[44px] font-semibold whitespace-nowrap"
                       onClick={() => setShowShipAllConfirm(true)}
                     >
-                      <Check className="h-3 sm:h-4 w-3 sm:w-4 mr-1" />
+                      <Check className="h-5 w-5 mr-2" />
                       <span className="hidden sm:inline">Mark all as shipped</span>
                       <span className="sm:hidden">Ship All</span>
                     </Button>
                   )}
                 </div>
               </CardHeader>
-              <CardContent className="px-3 sm:px-6">
+              <CardContent className="px-4 sm:px-6">
                 {isLoading ? (
                   <div className="space-y-3">
                     {[1, 2, 3].map(i => (
