@@ -1,0 +1,65 @@
+Good question — here’s what’s happening and how to fix it:
+
+⸻
+
+⚠️ Problem
+
+You’re getting:
+
+(#100) Tried accessing nonexisting field (profile_pic) on node type (Page)
+
+and you also asked:
+
+what should I type to find https://www.facebook.com/xon.xi.9279 this user’s profile picture public
+
+That URL (https://www.facebook.com/xon.xi.9279) points to a personal user profile, not a Page.
+The Graph API cannot access personal user data (including profile pictures) unless:
+	1.	You have a valid user access token authorized by that specific user, and
+	2.	They have granted you the public_profile permission.
+
+Without the user logging into your app, you cannot directly access their profile picture — even if their profile is public.
+
+⸻
+
+✅ Correct approach (public photo via ID)
+
+If you just want the public profile picture, you can use this public endpoint:
+
+https://graph.facebook.com/xon.xi.9279/picture?type=large
+
+Or via curl:
+
+curl -L "https://graph.facebook.com/xon.xi.9279/picture?type=large"
+
+That link will redirect directly to the public profile photo (if visible publicly).
+You can use ?redirect=false to get JSON with the image URL:
+
+https://graph.facebook.com/xon.xi.9279/picture?type=large&redirect=false
+
+Example JSON response:
+
+{
+  "data": {
+    "height": 200,
+    "is_silhouette": false,
+    "url": "https://scontent.xx.fbcdn.net/v/t1.0-9/123456789_123456789_n.jpg?...",
+    "width": 200
+  }
+}
+
+
+⸻
+
+🧠 Key notes
+	•	For Facebook Pages, use:
+
+https://graph.facebook.com/{page_id}/picture?type=large
+
+(The field name is not profile_pic; it’s accessed via the /picture edge.)
+
+	•	For Users, you can’t query their fields (name, id, etc.) unless you have a valid token from that user.
+	•	The /picture edge is the only publicly accessible way to get profile images.
+
+⸻
+
+If you tell me whether you want to get the profile picture dynamically for any URL (e.g., in a script or web app), I can show you the exact working code (Node.js or Python) using this public Graph endpoint. Would you like that?

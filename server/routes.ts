@@ -5850,37 +5850,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Extract Facebook username/ID from URL
       let facebookId = '';
-      let facebookName = '';
-      let isNumericId = false;
+      let extractedName = '';
       
-      // Handle various Facebook URL formats
-      // Pattern 1: profile.php?id=NUMERIC_ID
-      const profilePhpMatch = facebookUrl.match(/facebook\.com\/profile\.php\?id=(\d+)/);
+      // Handle various Facebook URL formats including mobile (m.facebook.com)
+      // Pattern 1: profile.php?id=NUMERIC_ID (works for both www and mobile)
+      const profilePhpMatch = facebookUrl.match(/(?:www\.|m\.)?facebook\.com\/profile\.php\?id=(\d+)/);
       if (profilePhpMatch) {
         facebookId = profilePhpMatch[1];
-        isNumericId = true;
       } else {
-        // Pattern 2: facebook.com/username or facebook.com/username.with.dots
-        const usernameMatch = facebookUrl.match(/facebook\.com\/([^/?#]+)/);
+        // Pattern 2: facebook.com/username or m.facebook.com/username
+        const usernameMatch = facebookUrl.match(/(?:www\.|m\.)?facebook\.com\/([^/?#]+)/);
         if (usernameMatch) {
           facebookId = usernameMatch[1];
-          // Check if it's numeric
-          if (facebookId.match(/^\d+$/)) {
-            isNumericId = true;
-          } else {
-            // Extract name from username - try to find meaningful name parts
-            // Remove common prefixes like "itz", "its", "im", "i.am", etc.
-            let cleanedUsername = facebookId
-              .replace(/^(itz|its|im|i\.am|the|mr|mrs|ms|dr)[-.]?/i, '')
-              .replace(/[-._]/g, ' ')
-              .split(' ')
-              .filter(word => word.length > 0)
-              .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-              .join(' ')
-              .trim();
-            
-            facebookName = cleanedUsername || facebookId;
-          }
+          
+          // Try to extract a meaningful name from username
+          // Remove common prefixes and convert to proper case
+          const cleanedUsername = facebookId
+            .replace(/^(itz|its|im|i\.am|the|mr|mrs|ms|dr)[-.]?/i, '')
+            .replace(/[-._]/g, ' ')
+            .split(' ')
+            .filter(word => word.length > 0)
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ')
+            .trim();
+          
+          extractedName = cleanedUsername || facebookId;
         }
       }
 
@@ -5888,72 +5882,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Unable to extract Facebook ID from URL' });
       }
 
-      // Try multiple access token strategies
-      const appId = process.env.FACEBOOK_APP_ID;
-      const appSecret = process.env.FACEBOOK_APP_SECRET;
-      const legacyToken = process.env.FACEBOOK_ACCESS_TOKEN;
+      // Use the public /picture endpoint (no access token required)
+      const pictureApiUrl = `https://graph.facebook.com/${facebookId}/picture?type=large&redirect=false`;
       
-      // Try to fetch profile data from Facebook Graph API
-      let pictureUrl = null;
-      let extractedName = facebookName;
+      console.log(`Fetching profile picture for ID: ${facebookId}`);
       
-      // Tokens to try (in order)
-      const tokensToTry = [];
+      const pictureResponse = await fetch(pictureApiUrl);
       
-      // 1. App Access Token (for public pages/profiles)
-      if (appId && appSecret) {
-        tokensToTry.push({ token: `${appId}|${appSecret}`, type: 'App' });
+      if (!pictureResponse.ok) {
+        throw new Error('Failed to fetch profile picture from Graph API');
       }
       
-      // 2. Legacy token (might be Page or User token)
-      if (legacyToken) {
-        tokensToTry.push({ token: legacyToken, type: 'Legacy' });
-      }
+      const pictureData = await pictureResponse.json();
       
-      if (tokensToTry.length === 0) {
-        return res.status(500).json({ message: 'No Facebook access tokens configured' });
-      }
-
-      // Try each token until one works
-      let lastError = null;
-      for (const { token, type } of tokensToTry) {
-        try {
-          const profileUrl = `https://graph.facebook.com/v18.0/${facebookId}?fields=name,picture.type(large)&access_token=${token}`;
-          console.log(`Fetching profile with ${type} token for ${isNumericId ? 'numeric' : 'username'} ID:`, facebookId);
-          
-          const profileResponse = await fetch(profileUrl);
-          const profileText = await profileResponse.text();
-          
-          if (profileResponse.ok) {
-            const profileData = JSON.parse(profileText);
-            
-            if (profileData.name) {
-              extractedName = profileData.name;
-            }
-            if (profileData.picture?.data?.url) {
-              pictureUrl = profileData.picture.data.url;
-            }
-            console.log('Successfully fetched profile with', type, 'token:', { name: extractedName, hasPicture: !!pictureUrl });
-            break; // Success, stop trying other tokens
-          } else {
-            lastError = profileText;
-            console.log(`${type} token failed:`, profileText);
-          }
-        } catch (error) {
-          lastError = error;
-          console.log(`${type} token error:`, error);
-        }
-      }
+      // Check if we got a valid picture URL (not a silhouette)
+      const pictureUrl = pictureData?.data?.url;
+      const isSilhouette = pictureData?.data?.is_silhouette;
       
-      // Ensure we always return a name - either from API or extracted from URL
-      const finalName = extractedName || facebookName || null;
+      // Determine if it's a numeric ID
+      const isNumericId = /^\d+$/.test(facebookId);
       
       res.json({
-        pictureUrl,
+        pictureUrl: pictureUrl || null,
         facebookId,
-        facebookName: finalName,
+        facebookName: extractedName || null,
         isNumericId,
-        message: pictureUrl ? undefined : 'Could not fetch profile picture. Please check the Facebook URL and try again.'
+        isSilhouette: isSilhouette || false,
+        message: pictureUrl && !isSilhouette 
+          ? undefined 
+          : 'Could not fetch profile picture. The profile may be private or the URL may be incorrect.'
       });
     } catch (error) {
       console.error('Error fetching Facebook profile picture:', error);
