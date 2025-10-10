@@ -64,6 +64,26 @@ const upload = multer({
   }
 });
 
+// Helper to get Facebook app access token
+async function getFacebookAppAccessToken(): Promise<string> {
+  const appId = process.env.FACEBOOK_APP_ID;
+  const appSecret = process.env.FACEBOOK_APP_SECRET;
+  
+  if (!appId || !appSecret) {
+    throw new Error('Facebook App credentials not configured');
+  }
+  
+  const tokenUrl = `https://graph.facebook.com/oauth/access_token?client_id=${appId}&client_secret=${appSecret}&grant_type=client_credentials`;
+  const response = await fetch(tokenUrl);
+  
+  if (!response.ok) {
+    throw new Error('Failed to get Facebook app access token');
+  }
+  
+  const data = await response.json();
+  return data.access_token;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware (disabled for testing)
   // await setupAuth(app);
@@ -5882,7 +5902,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Unable to extract Facebook ID from URL' });
       }
 
-      // Use the public /picture endpoint (no access token required)
+      // Get app access token
+      let accessToken: string;
+      try {
+        accessToken = await getFacebookAppAccessToken();
+      } catch (tokenError) {
+        console.error('Error getting Facebook app access token:', tokenError);
+        return res.status(500).json({ 
+          message: 'Failed to authenticate with Facebook. Please check Facebook App credentials.' 
+        });
+      }
+
+      // If the ID is not numeric, try to convert username to numeric ID
+      // Note: We use the access token for username-to-ID conversion, but if it fails
+      // we continue with the username - the picture endpoint works better without a token
+      if (!/^\d+$/.test(facebookId)) {
+        try {
+          const userInfoUrl = `https://graph.facebook.com/${facebookId}?fields=id&access_token=${accessToken}`;
+          const userInfoResponse = await fetch(userInfoUrl);
+          
+          if (userInfoResponse.ok) {
+            const userInfo = await userInfoResponse.json();
+            if (userInfo.id) {
+              console.log(`Converted username '${facebookId}' to numeric ID: ${userInfo.id}`);
+              facebookId = userInfo.id; // Update to use numeric ID
+            }
+          } else {
+            // If username lookup fails, continue with the username (will likely fail, but let it try)
+            console.warn(`Could not convert username '${facebookId}' to numeric ID`);
+          }
+        } catch (conversionError) {
+          console.warn(`Error converting username to ID:`, conversionError);
+          // Continue anyway - the picture endpoint works better without authentication
+        }
+      }
+
+      // Use the public /picture endpoint WITHOUT access token
+      // App access tokens cause error 100 - public endpoint works better without auth
       const pictureApiUrl = `https://graph.facebook.com/${facebookId}/picture?type=large&redirect=false`;
       
       console.log(`Fetching profile picture for ID: ${facebookId}`);
@@ -5890,7 +5946,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const pictureResponse = await fetch(pictureApiUrl);
       
       if (!pictureResponse.ok) {
-        throw new Error('Failed to fetch profile picture from Graph API');
+        const errorText = await pictureResponse.text();
+        console.error('Facebook API error:', errorText);
+        throw new Error(`Failed to fetch profile picture from Graph API: ${pictureResponse.status} ${pictureResponse.statusText}`);
       }
       
       const pictureData = await pictureResponse.json();
