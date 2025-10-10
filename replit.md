@@ -11,16 +11,15 @@ Davie Supply is a full-stack web application designed for comprehensive warehous
 - **Mobile Optimization**: Clean vertical stacking with proper spacing, Order Location at top, summary at bottom
 - **Improved Workflow**: Reduced scrolling, better visual hierarchy, settings always visible on desktop
 
-## Facebook Profile Picture Integration (October 2025)
+## Facebook Name Auto-fill Integration (October 2025)
 - **User Access Token**: Uses Facebook user access token (FACEBOOK_ACCESS_TOKEN) for authenticated API requests
 - **Smart URL Parsing**: Extracts Facebook ID from various URL formats (facebook.com/username, m.facebook.com/username, profile.php?id=123)
 - **Mobile URL Support**: Fully supports mobile Facebook URLs (m.facebook.com)
-- **Profile Picture Fetching**: Uses public `/picture` endpoint to retrieve profile pictures (works without token)
 - **Name Fetching**: Retrieves actual Facebook name via Graph API for accessible profiles (token owner, friends, public pages)
 - **Name Extraction Fallback**: Intelligently extracts and formats name from username when API fetch fails (removes prefixes, converts to proper case)
-- **Auto-fill Integration**: Automatically populates Facebook Name and Name fields in customer forms
-- **Local Storage**: Downloads and saves profile pictures locally for consistent access
+- **Auto-fill Integration**: Automatically populates Facebook Name and Name fields in customer forms when Facebook URL is pasted
 - **Graceful Degradation**: Falls back to extracted names when Graph API access is restricted
+- **API Endpoint**: `/api/facebook/name` returns JSON with facebookId and facebookName
 
 ## Pick & Pack Page Optimization (October 2025)
 - **Keyboard Shortcuts**: Added rapid navigation shortcuts (Ctrl+K for barcode search, Ctrl+S to start picking, Alt+N/P for item navigation, Esc to cancel)
