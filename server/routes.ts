@@ -5839,7 +5839,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Facebook Name Fetching Endpoint
+  // Facebook Name Extraction Endpoint (Username-based only, no Graph API)
   app.get('/api/facebook/name', async (req, res) => {
     try {
       const facebookUrl = req.query.url as string;
@@ -5857,6 +5857,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const profilePhpMatch = facebookUrl.match(/(?:www\.|m\.)?facebook\.com\/profile\.php\?id=(\d+)/);
       if (profilePhpMatch) {
         facebookId = profilePhpMatch[1];
+        // For numeric IDs, we can't extract a meaningful name
+        extractedName = '';
       } else {
         // Pattern 2: facebook.com/username or m.facebook.com/username
         const usernameMatch = facebookUrl.match(/(?:www\.|m\.)?facebook\.com\/([^/?#]+)/);
@@ -5882,65 +5884,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Unable to extract Facebook ID from URL' });
       }
 
-      // Get Facebook access token from environment
-      const accessToken = process.env.FACEBOOK_ACCESS_TOKEN;
-
-      if (!accessToken) {
-        console.error('FACEBOOK_ACCESS_TOKEN not configured');
-        return res.status(500).json({ 
-          message: 'Facebook access token not configured. Please add FACEBOOK_ACCESS_TOKEN to your secrets.' 
-        });
-      }
-
-      // If the ID is not numeric, try to convert username to numeric ID
-      if (!/^\d+$/.test(facebookId)) {
-        try {
-          const userInfoUrl = `https://graph.facebook.com/${facebookId}?fields=id&access_token=${accessToken}`;
-          const userInfoResponse = await fetch(userInfoUrl);
-          
-          if (userInfoResponse.ok) {
-            const userInfo = await userInfoResponse.json();
-            if (userInfo.id) {
-              console.log(`Converted username '${facebookId}' to numeric ID: ${userInfo.id}`);
-              facebookId = userInfo.id; // Update to use numeric ID
-            }
-          } else {
-            console.warn(`Could not convert username '${facebookId}' to numeric ID`);
-          }
-        } catch (conversionError) {
-          console.warn(`Error converting username to ID:`, conversionError);
-        }
-      }
-
-      // Try to fetch the user's actual name from Graph API
-      let userName = extractedName; // Start with extracted name from username
-      
-      try {
-        const nameUrl = `https://graph.facebook.com/${facebookId}?fields=name&access_token=${accessToken}`;
-        const nameResponse = await fetch(nameUrl);
-        
-        if (nameResponse.ok) {
-          const nameData = await nameResponse.json();
-          if (nameData.name) {
-            console.log(`Fetched Facebook name for ID ${facebookId}: ${nameData.name}`);
-            userName = nameData.name;
-          }
-        } else {
-          console.log(`Could not fetch name for ID ${facebookId} (status ${nameResponse.status}), using extracted name if available`);
-        }
-      } catch (nameError) {
-        console.log(`Error fetching name for ID ${facebookId}:`, nameError);
-        // Continue with extractedName or null
-      }
-      
       res.json({
         facebookId,
-        facebookName: userName || null,
-        message: userName ? undefined : 'Could not fetch Facebook name. Using extracted name from URL.'
+        facebookName: extractedName || null,
+        message: extractedName ? 'Name extracted from username' : 'Numeric ID - no name available'
       });
     } catch (error) {
-      console.error('Error fetching Facebook name:', error);
-      res.status(500).json({ message: 'Failed to fetch Facebook name' });
+      console.error('Error extracting Facebook name:', error);
+      res.status(500).json({ message: 'Failed to extract Facebook name' });
     }
   });
 

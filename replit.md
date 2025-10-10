@@ -12,14 +12,13 @@ Davie Supply is a full-stack web application designed for comprehensive warehous
 - **Improved Workflow**: Reduced scrolling, better visual hierarchy, settings always visible on desktop
 
 ## Facebook Name Auto-fill Integration (October 2025)
-- **User Access Token**: Uses Facebook user access token (FACEBOOK_ACCESS_TOKEN) for authenticated API requests
-- **Smart URL Parsing**: Extracts Facebook ID from various URL formats (facebook.com/username, m.facebook.com/username, profile.php?id=123)
+- **Username-Based Extraction**: Extracts and formats names directly from Facebook usernames (no Graph API required)
+- **Smart URL Parsing**: Extracts Facebook ID/username from various URL formats (facebook.com/username, m.facebook.com/username, profile.php?id=123)
 - **Mobile URL Support**: Fully supports mobile Facebook URLs (m.facebook.com)
-- **Name Fetching**: Retrieves actual Facebook name via Graph API for accessible profiles (token owner, friends, public pages)
-- **Name Extraction Fallback**: Intelligently extracts and formats name from username when API fetch fails (removes prefixes, converts to proper case)
+- **Intelligent Name Extraction**: Automatically cleans usernames and converts to proper case (e.g., "davie.lam.3" → "Davie Lam 3")
 - **Auto-fill Integration**: Automatically populates Facebook Name and Name fields in customer forms when Facebook URL is pasted
-- **Graceful Degradation**: Falls back to extracted names when Graph API access is restricted
-- **API Endpoint**: `/api/facebook/name` returns JSON with facebookId and facebookName
+- **Prefix Removal**: Removes common prefixes (itz, its, im, i.am, the, mr, mrs, ms, dr) for cleaner names
+- **API Endpoint**: `/api/facebook/name` returns JSON with facebookId and facebookName (extracted from username)
 
 ## Pick & Pack Page Optimization (October 2025)
 - **Keyboard Shortcuts**: Added rapid navigation shortcuts (Ctrl+K for barcode search, Ctrl+S to start picking, Alt+N/P for item navigation, Esc to cancel)
