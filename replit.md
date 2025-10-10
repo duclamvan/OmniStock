@@ -12,13 +12,15 @@ Davie Supply is a full-stack web application designed for comprehensive warehous
 - **Improved Workflow**: Reduced scrolling, better visual hierarchy, settings always visible on desktop
 
 ## Facebook Profile Picture Integration (October 2025)
-- **Public Graph API**: Uses Facebook's public `/picture` endpoint without requiring access tokens
+- **User Access Token**: Uses Facebook user access token (FACEBOOK_ACCESS_TOKEN) for authenticated API requests
 - **Smart URL Parsing**: Extracts Facebook ID from various URL formats (facebook.com/username, m.facebook.com/username, profile.php?id=123)
 - **Mobile URL Support**: Fully supports mobile Facebook URLs (m.facebook.com)
-- **Profile Picture Fetching**: Returns JSON with picture URL, silhouette flag, height, width via `redirect=false` parameter
-- **Name Extraction**: Intelligently extracts and formats name from username (removes prefixes, converts to proper case)
+- **Profile Picture Fetching**: Uses public `/picture` endpoint to retrieve profile pictures (works without token)
+- **Name Fetching**: Retrieves actual Facebook name via Graph API for accessible profiles (token owner, friends, public pages)
+- **Name Extraction Fallback**: Intelligently extracts and formats name from username when API fetch fails (removes prefixes, converts to proper case)
+- **Auto-fill Integration**: Automatically populates Facebook Name and Name fields in customer forms
 - **Local Storage**: Downloads and saves profile pictures locally for consistent access
-- **No Configuration**: Works without environment variables or access tokens using public API
+- **Graceful Degradation**: Falls back to extracted names when Graph API access is restricted
 
 ## Pick & Pack Page Optimization (October 2025)
 - **Keyboard Shortcuts**: Added rapid navigation shortcuts (Ctrl+K for barcode search, Ctrl+S to start picking, Alt+N/P for item navigation, Esc to cancel)
@@ -109,4 +111,4 @@ The database schema, managed with PostgreSQL, Neon serverless driver, and Drizzl
 ## Other APIs
 - **OpenStreetMap Nominatim API**: For address geocoding.
 - **Fawaz Ahmed's free currency API**: For real-time exchange rates.
-- **Facebook Graph API**: Public `/picture` endpoint for fetching customer profile pictures without authentication (supports www and mobile URLs).
+- **Facebook Graph API**: For fetching customer profile pictures and names using user access token (FACEBOOK_ACCESS_TOKEN stored in environment variables). Supports www and mobile URLs, fetches actual names for accessible profiles (token owner, friends, public pages), and falls back to username extraction.

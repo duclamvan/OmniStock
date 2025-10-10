@@ -64,26 +64,6 @@ const upload = multer({
   }
 });
 
-// Helper to get Facebook app access token
-async function getFacebookAppAccessToken(): Promise<string> {
-  const appId = process.env.FACEBOOK_APP_ID;
-  const appSecret = process.env.FACEBOOK_APP_SECRET;
-  
-  if (!appId || !appSecret) {
-    throw new Error('Facebook App credentials not configured');
-  }
-  
-  const tokenUrl = `https://graph.facebook.com/oauth/access_token?client_id=${appId}&client_secret=${appSecret}&grant_type=client_credentials`;
-  const response = await fetch(tokenUrl);
-  
-  if (!response.ok) {
-    throw new Error('Failed to get Facebook app access token');
-  }
-  
-  const data = await response.json();
-  return data.access_token;
-}
-
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware (disabled for testing)
   // await setupAuth(app);
@@ -5902,14 +5882,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Unable to extract Facebook ID from URL' });
       }
 
-      // Get app access token
-      let accessToken: string;
-      try {
-        accessToken = await getFacebookAppAccessToken();
-      } catch (tokenError) {
-        console.error('Error getting Facebook app access token:', tokenError);
+      // Get Facebook access token from environment
+      const accessToken = process.env.FACEBOOK_ACCESS_TOKEN;
+
+      if (!accessToken) {
+        console.error('FACEBOOK_ACCESS_TOKEN not configured');
         return res.status(500).json({ 
-          message: 'Failed to authenticate with Facebook. Please check Facebook App credentials.' 
+          message: 'Facebook access token not configured. Please add FACEBOOK_ACCESS_TOKEN to your secrets.' 
         });
       }
 
