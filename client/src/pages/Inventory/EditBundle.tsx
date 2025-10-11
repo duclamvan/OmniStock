@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useParams } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { ArrowLeft, Plus, X, Package, Save, AlertCircle, Check, Loader2, Search, CheckSquare, Square, Hash, ChevronDown, ChevronUp, Image as ImageIcon, Upload, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, X, Package, Save, AlertCircle, Check, Loader2, Search, CheckSquare, Square, Hash, ChevronDown, ChevronUp, Image as ImageIcon, Upload, Trash2, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
@@ -266,7 +271,7 @@ export default function EditBundle() {
   const [, setLocation] = useLocation();
   const { id } = useParams() as { id: string };
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState('details');
+  const [expandedSections, setExpandedSections] = useState<string[]>(['details', 'items', 'pricing']);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoadingVariants, setIsLoadingVariants] = useState<Record<string, boolean>>({});
   const [variantsCache, setVariantsCache] = useState<Record<string, ProductVariant[]>>({});
@@ -516,15 +521,6 @@ export default function EditBundle() {
 
   const handleSubmit = async () => {
     if (!validateForm()) {
-      // Switch to the first tab with errors
-      if (errors.name || errors.description) {
-        setActiveTab('details');
-      } else if (errors.items || Object.keys(errors).some(key => key.startsWith('item_') || key.startsWith('quantity_'))) {
-        setActiveTab('items');
-      } else if (errors.priceCzk || errors.priceEur) {
-        setActiveTab('pricing');
-      }
-      
       toast({
         title: 'Validation Error',
         description: 'Please fix the errors before submitting',
@@ -803,26 +799,24 @@ export default function EditBundle() {
         </div>
       </div>
 
-      {/* Form Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="details">Bundle Details</TabsTrigger>
-          <TabsTrigger value="items">
-            Products ({formData.items.length})
-            {errors.items && <span className="ml-1 text-destructive">•</span>}
-          </TabsTrigger>
-          <TabsTrigger value="pricing">Pricing</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="details" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Basic Information</CardTitle>
-              <CardDescription>
-                Define the bundle name, description, and other details
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+      {/* Form Sections */}
+      <Accordion type="multiple" value={expandedSections} onValueChange={setExpandedSections} className="space-y-3">
+        {/* Basic Information Section */}
+        <AccordionItem value="details" className="bg-white rounded-xl border shadow-sm overflow-hidden">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50">
+            <div className="flex items-center gap-3 text-left">
+              <div className="p-2 bg-emerald-100 rounded-lg">
+                <Package className="h-4 w-4 text-emerald-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-900">Bundle Details</h3>
+                <p className="text-xs text-slate-500">Name, description, SKU, and image</p>
+              </div>
+              {errors.name && <AlertCircle className="h-4 w-4 text-destructive ml-2" />}
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <div className="space-y-4 pt-2">
               <div>
                 <Label htmlFor="name">
                   Bundle Name <span className="text-destructive">*</span>
@@ -944,27 +938,34 @@ export default function EditBundle() {
                   )}
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
 
-        <TabsContent value="items" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <div>
-                  <CardTitle>Bundle Products</CardTitle>
-                  <CardDescription>
-                    Select products and quantities to include in this bundle
-                  </CardDescription>
-                </div>
+        {/* Products Section */}
+        <AccordionItem value="items" className="bg-white rounded-xl border shadow-sm overflow-hidden">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50">
+            <div className="flex items-center gap-3 text-left">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Plus className="h-4 w-4 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-900">
+                  Bundle Products ({formData.items.length})
+                </h3>
+                <p className="text-xs text-slate-500">Select products and quantities to include</p>
+              </div>
+              {errors.items && <AlertCircle className="h-4 w-4 text-destructive ml-2" />}
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <div className="space-y-4 pt-2">
+              <div className="flex justify-end">
                 <Button onClick={handleAddItem} size="sm">
                   <Plus className="mr-2 h-4 w-4" />
                   Add Product
                 </Button>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
               {errors.items && (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
@@ -1138,19 +1139,26 @@ export default function EditBundle() {
                   </CardContent>
                 </Card>
               )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
 
-        <TabsContent value="pricing" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Bundle Pricing</CardTitle>
-              <CardDescription>
-                Configure how the bundle should be priced
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+        {/* Pricing Section */}
+        <AccordionItem value="pricing" className="bg-white rounded-xl border shadow-sm overflow-hidden">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50">
+            <div className="flex items-center gap-3 text-left">
+              <div className="p-2 bg-amber-100 rounded-lg">
+                <DollarSign className="h-4 w-4 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-900">Bundle Pricing</h3>
+                <p className="text-xs text-slate-500">Configure how the bundle should be priced</p>
+              </div>
+              {(errors.priceCzk || errors.priceEur) && <AlertCircle className="h-4 w-4 text-destructive ml-2" />}
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <div className="space-y-4 pt-2">
               <div>
                 <Label>Pricing Mode</Label>
                 <Select
@@ -1357,10 +1365,10 @@ export default function EditBundle() {
                   );
                 })()}
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 }
