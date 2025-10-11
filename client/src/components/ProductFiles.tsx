@@ -71,6 +71,7 @@ interface ProductFile {
   fileName: string;
   fileUrl: string;
   description: string | null;
+  language: string | null;
   uploadedAt: string;
   fileSize: number;
   mimeType: string;
@@ -122,6 +123,16 @@ function formatFileSize(bytes: number): string {
   return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
 }
 
+function decodeFileName(fileName: string): string {
+  try {
+    // Try to decode URI component to fix encoding issues
+    return decodeURIComponent(fileName);
+  } catch {
+    // If decoding fails, return original filename
+    return fileName;
+  }
+}
+
 export default function ProductFiles({ productId }: ProductFilesProps) {
   const { toast } = useToast();
   const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -129,6 +140,7 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
   const [uploadData, setUploadData] = useState({
     fileType: 'other',
     description: '',
+    language: '',
     file: null as File | null,
   });
   const [isDragging, setIsDragging] = useState(false);
@@ -155,6 +167,9 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
       formData.append('file', uploadData.file);
       formData.append('fileType', uploadData.fileType);
       formData.append('description', uploadData.description || uploadData.file.name);
+      if (uploadData.language) {
+        formData.append('language', uploadData.language);
+      }
       
       const response = await fetch(`/api/products/${productId}/files`, {
         method: 'POST',
@@ -178,6 +193,7 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
       setUploadData({
         fileType: 'other',
         description: '',
+        language: '',
         file: null,
       });
     },
@@ -192,7 +208,7 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
 
   // Update file mutation
   const updateMutation = useMutation({
-    mutationFn: async ({ fileId, data }: { fileId: string; data: { fileType: string; description: string } }) => {
+    mutationFn: async ({ fileId, data }: { fileId: string; data: { fileType: string; description: string; language?: string } }) => {
       await apiRequest('PATCH', `/api/product-files/${fileId}`, data);
     },
     onSuccess: () => {
@@ -206,6 +222,7 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
       setUploadData({
         fileType: 'other',
         description: '',
+        language: '',
         file: null,
       });
     },
@@ -285,6 +302,7 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
     setUploadData({
       fileType: file.fileType,
       description: file.description || file.fileName,
+      language: file.language || '',
       file: null,
     });
     setIsUploadOpen(true);
@@ -298,6 +316,7 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
         data: {
           fileType: uploadData.fileType,
           description: uploadData.description,
+          language: uploadData.language,
         },
       });
     } else {
@@ -312,6 +331,7 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
     setUploadData({
       fileType: 'other',
       description: '',
+      language: '',
       file: null,
     });
   };
@@ -398,6 +418,28 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
                     onChange={(e) => setUploadData(prev => ({ ...prev, description: e.target.value }))}
                     placeholder="Enter a description for this document"
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="language">Language (optional)</Label>
+                  <Select
+                    value={uploadData.language}
+                    onValueChange={(value) => setUploadData(prev => ({ ...prev, language: value }))}
+                  >
+                    <SelectTrigger data-testid="select-language">
+                      <SelectValue placeholder="Select language" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LANGUAGES.map(lang => (
+                        <SelectItem key={lang.value} value={lang.value}>
+                          <div className="flex items-center gap-2">
+                            <span>{lang.flag}</span>
+                            <span>{lang.label}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {!editingFile && (
@@ -521,6 +563,7 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Name</TableHead>
+                        <TableHead>Language</TableHead>
                         <TableHead>Size</TableHead>
                         <TableHead>Uploaded</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
@@ -531,11 +574,20 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
                         <TableRow key={file.id}>
                           <TableCell data-testid={`text-file-name-${file.id}`}>
                             <div>
-                              <div className="font-medium">{file.description || file.fileName}</div>
+                              <div className="font-medium">{decodeFileName(file.description || file.fileName)}</div>
                               {file.description && file.description !== file.fileName && (
-                                <div className="text-xs text-muted-foreground">{file.fileName}</div>
+                                <div className="text-xs text-muted-foreground">{decodeFileName(file.fileName)}</div>
                               )}
                             </div>
+                          </TableCell>
+                          <TableCell>
+                            {file.language ? (
+                              <div className="text-sm">
+                                {getLanguageDisplay(file.language)}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">-</span>
+                            )}
                           </TableCell>
                           <TableCell>
                             <Badge variant="secondary">

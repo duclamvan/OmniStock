@@ -516,6 +516,7 @@ export const productFiles = pgTable('product_files', {
   fileSize: integer('file_size'),
   mimeType: text('mime_type'),
   description: text('description'),
+  language: text('language'), // 'en', 'cs', 'de', 'fr', 'es', 'zh', 'vn'
   uploadedBy: text('uploaded_by'),
   uploadedAt: timestamp('uploaded_at').notNull(),
   isActive: boolean('is_active'),
