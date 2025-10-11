@@ -291,42 +291,6 @@ export default function ProductDetails() {
                   </Badge>
                 )}
               </div>
-
-              {/* Quick Stats Grid */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-3 border border-blue-200">
-                  <div className="text-xs font-medium text-blue-700 mb-1">Images</div>
-                  <div className="text-2xl font-bold text-blue-900" data-testid="text-images-count">
-                    {productImages.length}
-                  </div>
-                </div>
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-3 border border-purple-200">
-                  <div className="text-xs font-medium text-purple-700 mb-1">Variants</div>
-                  {variantsLoading ? (
-                    <Skeleton className="h-8 w-12" />
-                  ) : (
-                    <div className="text-2xl font-bold text-purple-900" data-testid="text-variants-count">
-                      {variants.length}
-                    </div>
-                  )}
-                </div>
-                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-3 border border-green-200">
-                  <div className="text-xs font-medium text-green-700 mb-1">In Stock</div>
-                  <div className="text-2xl font-bold text-green-900" data-testid="text-stock-quantity">
-                    {product.quantity}
-                  </div>
-                </div>
-                <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-3 border border-orange-200">
-                  <div className="text-xs font-medium text-orange-700 mb-1">Tiered Prices</div>
-                  {tieredPricingLoading ? (
-                    <Skeleton className="h-8 w-12" />
-                  ) : (
-                    <div className="text-2xl font-bold text-orange-900" data-testid="text-tiered-prices-count">
-                      {tieredPricing.length}
-                    </div>
-                  )}
-                </div>
-              </div>
             </div>
           </div>
         </CardContent>
