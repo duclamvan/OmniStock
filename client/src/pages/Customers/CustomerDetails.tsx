@@ -64,16 +64,6 @@ export default function CustomerDetails() {
     );
   }
 
-  if (!customer) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <p className="text-slate-600">Customer not found</p>
-        </div>
-      </div>
-    );
-  }
-
   // Calculate statistics
   const totalSpent = customer.totalSpent || orders.reduce((sum, order) => sum + (Number(order.grandTotal) || 0), 0);
   const customerCurrency = orders[0]?.currency || 'EUR';
