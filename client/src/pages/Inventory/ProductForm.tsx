@@ -1614,45 +1614,6 @@ export default function ProductForm() {
                     </div>
                   </div>
 
-                  {/* Warehouse & Location */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <Label htmlFor="warehouseId" className="text-sm font-medium">Warehouse</Label>
-                      <Select value={warehouseId} onValueChange={(value) => form.setValue('warehouseId', value)}>
-                        <SelectTrigger data-testid="select-warehouse" className="mt-1">
-                          <SelectValue placeholder="Select" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {warehouses?.map((warehouse: any) => (
-                            <SelectItem key={warehouse.id} value={warehouse.id}>
-                              {warehouse.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="warehouseLocation" className="text-sm font-medium">Warehouse Location Code</Label>
-                      <Input
-                        {...form.register('warehouseLocation')}
-                        placeholder="WH1-A01-R02-L03"
-                        data-testid="input-location"
-                        className="mt-1 font-mono"
-                        onBlur={(e) => {
-                          const value = e.target.value.trim().toUpperCase();
-                          if (value) {
-                            form.setValue('warehouseLocation', value);
-                          }
-                        }}
-                      />
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        Format: Warehouse-Aisle-Rack-Level
-                      </p>
-                    </div>
-                  </div>
-
                   {/* Description */}
                   <div>
                     <Label htmlFor="description" className="text-sm font-medium">Description</Label>
