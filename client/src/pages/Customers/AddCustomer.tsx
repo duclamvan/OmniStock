@@ -568,6 +568,12 @@ export default function AddCustomer() {
     setShippingAddresses(updated);
   };
 
+  const capitalizeWords = (str: string) => {
+    return str.split(' ').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    ).join(' ');
+  };
+
   const parseShippingAddressMutation = useMutation({
     mutationFn: async (rawAddress: string) => {
       const res = await apiRequest('POST', '/api/addresses/parse', { rawAddress });
@@ -575,14 +581,18 @@ export default function AddCustomer() {
     },
     onSuccess: (data: { fields: any; confidence: string }) => {
       const { fields } = data;
-      if (fields.firstName) shippingForm.setValue('firstName', fields.firstName);
-      if (fields.lastName) shippingForm.setValue('lastName', fields.lastName);
+      
+      // Capitalize names
+      if (fields.firstName) shippingForm.setValue('firstName', capitalizeWords(fields.firstName));
+      if (fields.lastName) shippingForm.setValue('lastName', capitalizeWords(fields.lastName));
       if (fields.company) shippingForm.setValue('company', fields.company);
       if (fields.email) shippingForm.setValue('email', fields.email);
       if (fields.phone) shippingForm.setValue('tel', fields.phone);
-      if (fields.street) shippingForm.setValue('street', fields.street);
+      
+      // Use Nominatim-corrected address values (already corrected by backend)
+      if (fields.street) shippingForm.setValue('street', capitalizeWords(fields.street));
       if (fields.streetNumber) shippingForm.setValue('streetNumber', fields.streetNumber);
-      if (fields.city) shippingForm.setValue('city', fields.city);
+      if (fields.city) shippingForm.setValue('city', capitalizeWords(fields.city));
       if (fields.zipCode) shippingForm.setValue('zipCode', fields.zipCode);
       if (fields.country) shippingForm.setValue('country', fields.country);
       if (fields.state) shippingForm.setValue('state', fields.state);
@@ -609,14 +619,24 @@ export default function AddCustomer() {
     },
     onSuccess: (data: { fields: any; confidence: string }) => {
       const { fields } = data;
-      if (fields.firstName) form.setValue('billingFirstName', fields.firstName);
-      if (fields.lastName) form.setValue('billingLastName', fields.lastName);
-      if (fields.company) form.setValue('billingCompany', fields.company);
+      
+      // Capitalize names
+      if (fields.firstName) form.setValue('billingFirstName', capitalizeWords(fields.firstName));
+      if (fields.lastName) form.setValue('billingLastName', capitalizeWords(fields.lastName));
+      if (fields.company) {
+        form.setValue('billingCompany', fields.company);
+        // If business name exists, also use it as the customer name
+        if (!form.getValues('name')) {
+          form.setValue('name', fields.company);
+        }
+      }
       if (fields.email) form.setValue('billingEmail', fields.email);
       if (fields.phone) form.setValue('billingTel', fields.phone);
-      if (fields.street) form.setValue('billingStreet', fields.street);
+      
+      // Use Nominatim-corrected address values (already corrected by backend)
+      if (fields.street) form.setValue('billingStreet', capitalizeWords(fields.street));
       if (fields.streetNumber) form.setValue('billingStreetNumber', fields.streetNumber);
-      if (fields.city) form.setValue('billingCity', fields.city);
+      if (fields.city) form.setValue('billingCity', capitalizeWords(fields.city));
       if (fields.zipCode) form.setValue('billingZipCode', fields.zipCode);
       if (fields.country) form.setValue('billingCountry', fields.country);
       if (fields.state) form.setValue('billingState', fields.state);
