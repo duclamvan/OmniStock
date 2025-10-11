@@ -387,7 +387,7 @@ export default function ProductDetails() {
 
             <div>
               <div className="text-sm text-slate-500">Supplier</div>
-              <div className="mt-1 font-medium">{product.supplier || "No supplier assigned"}</div>
+              <div className="mt-1 font-medium">{product.supplier?.name || "No supplier assigned"}</div>
             </div>
 
             <div>
