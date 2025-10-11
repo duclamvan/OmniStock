@@ -22,7 +22,7 @@ The application uses PostgreSQL with Neon serverless driver and Drizzle ORM. The
 - **Product Management**: Comprehensive product details, pricing, location tracking, barcode scanning, document management, and packing instructions. Supports tiered pricing, supplier integration, multi-purpose product images, and automatic image compression.
 - **Order Management**: Creation, shipping/payment selection, automatic shipping cost calculation, CRUD operations, detailed views, real-time synchronization, and a custom order ID format. Includes "Pay Later" and editable priority.
 - **Inventory Management**: Soft product deletion, bulk variant operations, and comprehensive category management.
-- **Customer Management**: Enhanced tables with order statistics, forms with address lookup, "Pay Later" functionality, and comprehensive Facebook integration with real-time name syncing and profile picture fetching. Includes AI-powered Smart Paste for address parsing and Nominatim auto-correction.
+- **Customer Management**: Enhanced tables with order statistics, forms with address lookup, "Pay Later" functionality, and comprehensive Facebook integration with real-time name syncing and profile picture fetching. Includes AI-powered Smart Paste for address parsing and Nominatim auto-correction. Shipping address labels auto-generate from form fields (company/name + street + city) and remain editable with smart regeneration on data changes.
 - **Discount Management**: Advanced system supporting various types (percentage, fixed, Buy X Get Y) with flexible scopes.
 - **Customer-Specific Pricing**: Custom pricing per customer-product with validity periods.
 - **Supplier Management**: CRUD operations, file upload, and purchase history, with centralized supplier information.

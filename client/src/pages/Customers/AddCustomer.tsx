@@ -140,6 +140,7 @@ export default function AddCustomer() {
 
   const [rawShippingAddress, setRawShippingAddress] = useState("");
   const [rawBillingAddress, setRawBillingAddress] = useState("");
+  const [isLabelManuallyEdited, setIsLabelManuallyEdited] = useState(false);
 
   const form = useForm<CustomerFormData>({
     resolver: zodResolver(customerFormSchema),
@@ -271,6 +272,55 @@ export default function AddCustomer() {
     }
   }, [selectedCountry, isEditMode, form]);
 
+  // Auto-generate shipping address label
+  const shippingFirstName = shippingForm.watch('firstName');
+  const shippingLastName = shippingForm.watch('lastName');
+  const shippingCompany = shippingForm.watch('company');
+  const shippingStreet = shippingForm.watch('street');
+  const shippingStreetNumber = shippingForm.watch('streetNumber');
+  const shippingCity = shippingForm.watch('city');
+  
+  useEffect(() => {
+    // Only auto-generate if label hasn't been manually edited
+    if (isLabelManuallyEdited) return;
+    
+    const parts: string[] = [];
+    
+    // Add name or company
+    if (shippingCompany?.trim()) {
+      parts.push(shippingCompany.trim());
+    } else if (shippingFirstName?.trim() || shippingLastName?.trim()) {
+      const fullName = [shippingFirstName?.trim(), shippingLastName?.trim()].filter(Boolean).join(' ');
+      if (fullName) parts.push(fullName);
+    }
+    
+    // Add street address if available
+    if (shippingStreet?.trim()) {
+      const streetPart = [shippingStreet.trim(), shippingStreetNumber?.trim()].filter(Boolean).join(' ');
+      if (streetPart) parts.push(streetPart);
+    }
+    
+    // Add city
+    if (shippingCity?.trim()) {
+      parts.push(shippingCity.trim());
+    }
+    
+    // Generate label
+    const generatedLabel = parts.join(', ');
+    if (generatedLabel) {
+      shippingForm.setValue('label', generatedLabel);
+    }
+  }, [
+    shippingFirstName, 
+    shippingLastName, 
+    shippingCompany, 
+    shippingStreet, 
+    shippingStreetNumber, 
+    shippingCity,
+    isLabelManuallyEdited,
+    shippingForm
+  ]);
+
   const debounce = <T extends (...args: any[]) => any>(
     func: T,
     delay: number
@@ -338,6 +388,9 @@ export default function AddCustomer() {
   };
 
   const selectShippingAddress = (suggestion: AddressAutocompleteResult) => {
+    // Reset manual edit flag so label auto-generates from autocomplete data
+    setIsLabelManuallyEdited(false);
+    
     shippingForm.setValue('street', suggestion.street);
     shippingForm.setValue('streetNumber', suggestion.streetNumber);
     shippingForm.setValue('city', suggestion.city);
@@ -516,6 +569,7 @@ export default function AddCustomer() {
 
   const handleAddShippingAddress = () => {
     setIsAddingShipping(true);
+    setIsLabelManuallyEdited(false); // Reset manual edit flag for new address
     shippingForm.reset({
       label: "",
       firstName: form.getValues('billingFirstName') || "",
@@ -543,11 +597,13 @@ export default function AddCustomer() {
       setShippingAddresses([...shippingAddresses, data]);
     }
     setIsAddingShipping(false);
+    setIsLabelManuallyEdited(false); // Reset for next address
     shippingForm.reset();
   };
 
   const handleEditShippingAddress = (index: number) => {
     setEditingShippingIndex(index);
+    setIsLabelManuallyEdited(true); // Preserve existing label when editing
     shippingForm.reset(shippingAddresses[index]);
     setIsAddingShipping(true);
   };
@@ -581,6 +637,9 @@ export default function AddCustomer() {
     },
     onSuccess: (data: { fields: any; confidence: string }) => {
       const { fields } = data;
+      
+      // Reset manual edit flag so label auto-generates from Smart Paste data
+      setIsLabelManuallyEdited(false);
       
       // Capitalize names
       if (fields.firstName) shippingForm.setValue('firstName', capitalizeWords(fields.firstName));
@@ -1058,10 +1117,15 @@ export default function AddCustomer() {
                     <Label htmlFor="shippingLabel">Label / Name *</Label>
                     <Input
                       id="shippingLabel"
-                      {...shippingForm.register('label')}
+                      {...shippingForm.register('label', {
+                        onChange: () => setIsLabelManuallyEdited(true)
+                      })}
                       placeholder="e.g., Main Office, Warehouse"
                       data-testid="input-shippingLabel"
                     />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Auto-generated from address fields (editable)
+                    </p>
                   </div>
 
                   <div className="space-y-2">
@@ -1262,6 +1326,7 @@ export default function AddCustomer() {
                       onClick={() => {
                         setIsAddingShipping(false);
                         setEditingShippingIndex(null);
+                        setIsLabelManuallyEdited(false);
                         shippingForm.reset();
                       }}
                       data-testid="button-cancelShipping"
