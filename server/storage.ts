@@ -2279,10 +2279,22 @@ export class DatabaseStorage implements IStorage {
   async getCategories(): Promise<AppCategory[]> {
     try {
       // Using raw SQL for now to avoid schema mismatch issues
+      // Include product count - cast category.id to text to match products.categoryId (varchar)
       const result = await db.execute(sql`
-        SELECT id::integer as id, name, name_en, name_cz, name_vn, description, created_at, updated_at 
-        FROM categories 
-        ORDER BY name
+        SELECT 
+          c.id::integer as id, 
+          c.name, 
+          c.name_en, 
+          c.name_cz, 
+          c.name_vn, 
+          c.description, 
+          c.created_at, 
+          c.updated_at,
+          COALESCE(COUNT(p.id), 0)::integer as "productCount"
+        FROM categories c
+        LEFT JOIN products p ON p."categoryId" = c.id::text
+        GROUP BY c.id, c.name, c.name_en, c.name_cz, c.name_vn, c.description, c.created_at, c.updated_at
+        ORDER BY c.name
       `);
       return result.rows as AppCategory[];
     } catch (error) {

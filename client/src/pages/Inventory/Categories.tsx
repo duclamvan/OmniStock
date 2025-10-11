@@ -183,7 +183,7 @@ export default function Categories() {
             size="sm"
             variant="ghost"
             onClick={() => handleDelete(item.id)}
-            disabled={item.productCount && item.productCount > 0}
+            disabled={(item.productCount ?? 0) > 0}
             data-testid={`delete-category-${item.id}`}
           >
             <Trash2 className="h-4 w-4" />

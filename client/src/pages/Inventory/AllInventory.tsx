@@ -952,6 +952,8 @@ export default function AllInventory() {
                       </h2>
                       {selectedRows.size > 0 && (
                         <>
+                          <div className="h-6 w-px bg-gray-300 mx-1" />
+                          <span className="text-sm text-gray-600 font-medium">Selected</span>
                           <Badge variant="secondary" className="text-xs h-6 px-2">
                             {selectedRows.size}
                           </Badge>
