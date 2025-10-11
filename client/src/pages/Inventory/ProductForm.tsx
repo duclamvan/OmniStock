@@ -302,6 +302,12 @@ export default function ProductForm() {
     enabled: isEditMode,
   });
 
+  // Fetch product variants if in edit mode
+  const { data: productVariants = [], isSuccess: variantsLoaded } = useQuery<any[]>({
+    queryKey: [`/api/products/${id}/variants`],
+    enabled: isEditMode && !!id,
+  });
+
   // Fetch common data
   const { data: categories = [] } = useQuery<any[]>({
     queryKey: ['/api/categories'],
@@ -661,6 +667,23 @@ export default function ProductForm() {
       }
     }
   }, [product, form, isEditMode]);
+
+  // Load variants when fetched (edit mode)
+  useEffect(() => {
+    if (isEditMode && variantsLoaded && productVariants && productVariants.length > 0) {
+      const mappedVariants = productVariants.map((v: any) => ({
+        id: v.id,
+        name: v.name,
+        barcode: v.barcode || '',
+        quantity: v.quantity || 0,
+        importCostUsd: v.importCostUsd ? String(v.importCostUsd) : '',
+        importCostCzk: v.importCostCzk ? String(v.importCostCzk) : '',
+        importCostEur: v.importCostEur ? String(v.importCostEur) : '',
+        imageUrl: v.imageUrl || undefined,
+      }));
+      setVariants(mappedVariants);
+    }
+  }, [productVariants, variantsLoaded, isEditMode]);
 
   // Auto-sync quantity with warehouse locations
   useEffect(() => {
