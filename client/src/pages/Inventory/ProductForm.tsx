@@ -744,13 +744,19 @@ export default function ProductForm() {
       
       await apiRequest('POST', '/api/products', data);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+    onSuccess: async () => {
+      // Wait for queries to invalidate and refetch before navigating
+      await queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      
       toast({
         title: "Success",
         description: "Product created successfully",
       });
-      setLocation('/inventory');
+      
+      // Small delay to ensure refetch completes
+      setTimeout(() => {
+        setLocation('/inventory');
+      }, 100);
     },
     onError: (error) => {
       console.error("Product creation error:", error);
@@ -828,14 +834,22 @@ export default function ProductForm() {
       
       await apiRequest('PATCH', `/api/products/${id}`, data);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/products', id] });
+    onSuccess: async () => {
+      // Wait for queries to invalidate and refetch before navigating
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['/api/products'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/products', id] }),
+      ]);
+      
       toast({
         title: "Success",
         description: "Product updated successfully",
       });
-      setLocation('/inventory');
+      
+      // Small delay to ensure refetch completes
+      setTimeout(() => {
+        setLocation('/inventory');
+      }, 100);
     },
     onError: (error) => {
       console.error("Product update error:", error);
