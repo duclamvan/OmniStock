@@ -57,7 +57,8 @@ import {
   ExternalLink,
   TrendingUp,
   Pencil,
-  Euro
+  Euro,
+  Ruler
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -1861,96 +1862,6 @@ export default function ProductForm() {
               </AccordionContent>
             </AccordionItem>
 
-            {/* Edit mode: Dimensions & Packing Material */}
-            {isEditMode && (
-              <AccordionItem value="dimensions" className="bg-white dark:bg-slate-800 rounded-xl border shadow-sm overflow-hidden">
-                <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                  <div className="flex items-center gap-3 text-left">
-                    <div className="p-2 bg-indigo-100 dark:bg-indigo-900 rounded-lg">
-                      <Package className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-slate-900 dark:text-slate-100">Dimensions & Packing</h3>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">Physical dimensions and packing material</p>
-                    </div>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="px-4 pb-4">
-                  <div className="space-y-4 pt-2">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      <div>
-                        <Label htmlFor="length" className="text-sm font-medium">Length (cm)</Label>
-                        <Input
-                          type="number"
-                          step="0.1"
-                          min="0"
-                          {...form.register('length')}
-                          placeholder="0.0"
-                          data-testid="input-length"
-                          className="mt-1"
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="width" className="text-sm font-medium">Width (cm)</Label>
-                        <Input
-                          type="number"
-                          step="0.1"
-                          min="0"
-                          {...form.register('width')}
-                          placeholder="0.0"
-                          data-testid="input-width"
-                          className="mt-1"
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="height" className="text-sm font-medium">Height (cm)</Label>
-                        <Input
-                          type="number"
-                          step="0.1"
-                          min="0"
-                          {...form.register('height')}
-                          placeholder="0.0"
-                          data-testid="input-height"
-                          className="mt-1"
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="weight" className="text-sm font-medium">Weight (kg)</Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          {...form.register('weight')}
-                          placeholder="0.00"
-                          data-testid="input-weight"
-                          className="mt-1"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="packingMaterialId" className="text-sm font-medium">Packing Material</Label>
-                      <Select value={form.watch('packingMaterialId')} onValueChange={(value) => form.setValue('packingMaterialId', value)}>
-                        <SelectTrigger data-testid="select-packing-material" className="mt-1">
-                          <SelectValue placeholder="Select packing material" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {packingMaterials?.map((material: any) => (
-                            <SelectItem key={material.id} value={material.id}>
-                              {material.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            )}
-
             {/* Supplier Information */}
             <AccordionItem value="supplier" className="bg-white dark:bg-slate-800 rounded-xl border shadow-sm overflow-hidden">
               <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50 dark:hover:bg-slate-700/50">
@@ -2318,7 +2229,7 @@ export default function ProductForm() {
               </AccordionContent>
             </AccordionItem>
 
-            {/* Packing Instructions */}
+            {/* Packing & Shipping Details */}
             <AccordionItem value="packing" className="bg-white dark:bg-slate-800 rounded-xl border shadow-sm overflow-hidden">
               <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50 dark:hover:bg-slate-700/50">
                 <div className="flex items-center gap-3 text-left">
@@ -2326,19 +2237,75 @@ export default function ProductForm() {
                     <PackageOpen className="h-4 w-4 text-orange-600 dark:text-orange-400" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">Packing Instructions</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Assembly and packing guides</p>
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">Packing & Shipping Details</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Dimensions, materials, and handling instructions</p>
                   </div>
                 </div>
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-4">
-                <div className="pt-2">
-                  <PackingInstructionsUploader
-                    packingInstructionsTexts={packingInstructionsTexts}
-                    setPackingInstructionsTexts={setPackingInstructionsTexts}
-                    packingInstructionsImages={packingInstructionsImages}
-                    setPackingInstructionsImages={setPackingInstructionsImages}
-                  />
+                <div className="space-y-6 pt-2">
+                  {/* Physical Specifications */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Ruler className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                      <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Physical Specifications</h4>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div>
+                        <Label htmlFor="length" className="text-sm font-medium">Length (cm)</Label>
+                        <Input type="number" step="0.1" min="0" {...form.register('length')} placeholder="0.0" data-testid="input-length" className="mt-1" />
+                      </div>
+                      <div>
+                        <Label htmlFor="width" className="text-sm font-medium">Width (cm)</Label>
+                        <Input type="number" step="0.1" min="0" {...form.register('width')} placeholder="0.0" data-testid="input-width" className="mt-1" />
+                      </div>
+                      <div>
+                        <Label htmlFor="height" className="text-sm font-medium">Height (cm)</Label>
+                        <Input type="number" step="0.1" min="0" {...form.register('height')} placeholder="0.0" data-testid="input-height" className="mt-1" />
+                      </div>
+                      <div>
+                        <Label htmlFor="weight" className="text-sm font-medium">Weight (kg)</Label>
+                        <Input type="number" step="0.01" min="0" {...form.register('weight')} placeholder="0.00" data-testid="input-weight" className="mt-1" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Packing Material */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Package className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                      <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Packing Material</h4>
+                    </div>
+                    <Select value={form.watch('packingMaterialId')} onValueChange={(value) => form.setValue('packingMaterialId', value)}>
+                      <SelectTrigger data-testid="select-packing-material">
+                        <SelectValue placeholder="Select packing material" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {packingMaterials?.map((material: any) => (
+                          <SelectItem key={material.id} value={material.id}>
+                            {material.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Separator */}
+                  <Separator />
+
+                  {/* Handling Instructions */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <PackageOpen className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                      <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Handling Instructions</h4>
+                    </div>
+                    <PackingInstructionsUploader
+                      packingInstructionsTexts={packingInstructionsTexts}
+                      setPackingInstructionsTexts={setPackingInstructionsTexts}
+                      packingInstructionsImages={packingInstructionsImages}
+                      setPackingInstructionsImages={setPackingInstructionsImages}
+                    />
+                  </div>
                 </div>
               </AccordionContent>
             </AccordionItem>
