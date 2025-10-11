@@ -1249,7 +1249,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Ensure upload directory exists
-      const uploadDir = 'server/uploads/product-files';
+      const uploadDir = 'uploads/product-files';
       await fs.mkdir(uploadDir, { recursive: true });
       
       // Generate unique filename
@@ -1261,16 +1261,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Save the file
       await fs.writeFile(filepath, req.file.buffer);
       
+      // Generate file URL (accessible via /uploads/product-files/filename)
+      const fileUrl = `/uploads/product-files/${filename}`;
+      
       // Create database record
       const fileData = {
+        id: nanoid(),
         productId,
         fileType: req.body.fileType || 'other',
         fileName: req.file.originalname,
-        filePath: filepath,
-        language: req.body.language || 'en',
-        displayName: req.body.displayName || req.file.originalname,
+        fileUrl: fileUrl,
         fileSize: req.file.size,
-        mimeType: req.file.mimetype
+        mimeType: req.file.mimetype,
+        description: req.body.displayName || null,
+        uploadedAt: new Date(),
+        isActive: true
       };
       
       const newFile = await storage.createProductFile(fileData);
@@ -1291,8 +1296,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Delete physical file
+      // Convert fileUrl (/uploads/product-files/filename) to actual file path
+      const filename = file.fileUrl.split('/').pop();
+      const filepath = path.join('uploads/product-files', filename!);
+      
       try {
-        await fs.unlink(file.filePath);
+        await fs.unlink(filepath);
       } catch (error) {
         console.error("Error deleting physical file:", error);
         // Continue even if physical file deletion fails
@@ -1320,19 +1329,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "File not found" });
       }
       
+      // Convert fileUrl (/uploads/product-files/filename) to actual file path
+      const filename = file.fileUrl.split('/').pop();
+      const filepath = path.join('uploads/product-files', filename!);
+      
       // Check if file exists
       try {
-        await fs.access(file.filePath);
+        await fs.access(filepath);
       } catch (error) {
         return res.status(404).json({ message: "File not found on disk" });
       }
       
       // Set appropriate headers
-      res.setHeader('Content-Type', file.mimeType);
+      res.setHeader('Content-Type', file.mimeType || 'application/octet-stream');
       res.setHeader('Content-Disposition', `attachment; filename="${file.fileName}"`);
       
       // Stream the file
-      const fileBuffer = await fs.readFile(file.filePath);
+      const fileBuffer = await fs.readFile(filepath);
       res.send(fileBuffer);
     } catch (error) {
       console.error("Error downloading product file:", error);
