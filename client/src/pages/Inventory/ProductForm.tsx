@@ -420,6 +420,17 @@ export default function ProductForm() {
     };
   }, [seriesImportCostUsd, seriesImportCostCzk, seriesImportCostEur]);
 
+  // Auto-set low stock alert to 50% of quantity in add mode
+  useEffect(() => {
+    if (!isEditMode) {
+      const quantity = parseInt(productQuantity) || 0;
+      if (quantity > 0) {
+        const lowStockValue = Math.floor(quantity * 0.5);
+        form.setValue('lowStockAlert', lowStockValue);
+      }
+    }
+  }, [productQuantity, isEditMode, form]);
+
   // Prefill form when product data is loaded (edit mode)
   useEffect(() => {
     if (isEditMode && product) {
