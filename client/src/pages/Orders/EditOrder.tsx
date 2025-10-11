@@ -172,7 +172,7 @@ export default function EditOrder() {
 
   // Column visibility toggles
   const [showVatColumn, setShowVatColumn] = useState(false);
-  const [showDiscountColumn, setShowDiscountColumn] = useState(true);
+  const [showDiscountColumn, setShowDiscountColumn] = useState(false);
 
   // Fetch real addresses from geocoding API
   const fetchRealAddresses = async (query: string): Promise<any[]> => {

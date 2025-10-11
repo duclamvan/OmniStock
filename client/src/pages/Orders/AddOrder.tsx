@@ -173,7 +173,7 @@ export default function AddOrder() {
 
   // Column visibility toggles
   const [showVatColumn, setShowVatColumn] = useState(false);
-  const [showDiscountColumn, setShowDiscountColumn] = useState(true);
+  const [showDiscountColumn, setShowDiscountColumn] = useState(false);
 
   // Fetch real addresses from geocoding API
   const fetchRealAddresses = async (query: string): Promise<any[]> => {
@@ -955,8 +955,6 @@ export default function AddOrder() {
         sku: item.sku,
         quantity: item.quantity,
         price: item.price.toFixed(2),
-        discount: item.discount.toFixed(2),
-        tax: item.tax.toFixed(2),
         total: item.total.toFixed(2),
       })),
       includedDocuments: {
