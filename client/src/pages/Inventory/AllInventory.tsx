@@ -946,33 +946,37 @@ export default function AllInventory() {
               renderBulkActions={({ selectedRows, selectedItems, bulkActions: actions }) => (
                 <div className="px-4 sm:px-0 pb-3">
                   <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-3 flex-wrap">
                       <h2 className="text-mobile-lg font-semibold">
                         {showArchive ? `Archived Products (${filteredProducts?.length || 0})` : `Products (${filteredProducts?.length || 0})`}
                       </h2>
                       {selectedRows.size > 0 && (
                         <>
-                          <div className="h-6 w-px bg-gray-300 mx-1" />
-                          <span className="text-sm text-gray-600 font-medium">Selected</span>
-                          <Badge variant="secondary" className="text-xs h-6 px-2">
-                            {selectedRows.size}
-                          </Badge>
-                          {actions.map((action, index) => {
-                            if (action.type === "button") {
-                              return (
-                                <Button
-                                  key={index}
-                                  size="sm"
-                                  variant={action.variant || "ghost"}
-                                  onClick={() => action.action(selectedItems)}
-                                  className="h-6 px-2 text-xs"
-                                >
-                                  {action.label}
-                                </Button>
-                              );
-                            }
-                            return null;
-                          })}
+                          <div className="h-6 w-px bg-gray-300" />
+                          <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-950/20 px-3 py-1 rounded-md border border-blue-200 dark:border-blue-800">
+                            <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">Selected</span>
+                            <Badge variant="secondary" className="text-xs h-5 px-2 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
+                              {selectedRows.size}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            {actions.map((action, index) => {
+                              if (action.type === "button") {
+                                return (
+                                  <Button
+                                    key={index}
+                                    size="sm"
+                                    variant={action.variant || "ghost"}
+                                    onClick={() => action.action(selectedItems)}
+                                    className="h-7 px-3 text-xs"
+                                  >
+                                    {action.label}
+                                  </Button>
+                                );
+                              }
+                              return null;
+                            })}
+                          </div>
                         </>
                       )}
                     </div>
