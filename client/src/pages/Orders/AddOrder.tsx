@@ -1543,7 +1543,7 @@ export default function AddOrder() {
                                 </div>
                               )}
                               <div className="text-sm text-slate-600 mt-1">
-                                {address.street}{address.streetNumber ? ` ${address.streetNumber}` : ''}, {address.city}, {address.zipCode}, {address.country}
+                                {address.street}, {address.city}, {address.zipCode}, {address.country}
                               </div>
                               {address.email && (
                                 <div className="text-sm text-slate-500 mt-1">
