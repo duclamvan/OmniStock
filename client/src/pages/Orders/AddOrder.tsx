@@ -409,34 +409,6 @@ export default function AddOrder() {
     }
   }, []);
 
-  // Keyboard shortcuts for quick navigation
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl/Cmd + K: Focus product search
-      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-        e.preventDefault();
-        productSearchRef.current?.focus();
-        setShowProductDropdown(true);
-      }
-      
-      // Alt + C: Focus customer search
-      if (e.altKey && e.key === 'c') {
-        e.preventDefault();
-        customerSearchRef.current?.focus();
-        setShowCustomerDropdown(true);
-      }
-      
-      // Escape: Close all dropdowns
-      if (e.key === 'Escape') {
-        setShowProductDropdown(false);
-        setShowCustomerDropdown(false);
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
   // Fetch all products for real-time filtering
   const { data: allProducts } = useQuery({
     queryKey: ['/api/products'],
@@ -1902,14 +1874,6 @@ export default function AddOrder() {
             <CardDescription className="text-xs sm:text-sm mt-1">Search and add products to order</CardDescription>
           </CardHeader>
           <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-4">
-            {/* Keyboard Shortcuts Helper */}
-            <Alert className="bg-blue-50 border-blue-200">
-              <AlertCircle className="h-4 w-4 text-blue-600" />
-              <AlertDescription className="text-sm text-blue-800">
-                <strong>Quick Keys:</strong> Ctrl+K (Product search) • Alt+C (Customer search) • Enter (Add first product) • Esc (Close)
-              </AlertDescription>
-            </Alert>
-
             <div className="relative product-search-container">
               <div className="flex items-center justify-between mb-2">
                 <Label htmlFor="product">Search Products</Label>
@@ -2152,6 +2116,13 @@ export default function AddOrder() {
                                 onChange={(e) => updateOrderItem(item.id, 'quantity', parseInt(e.target.value) || 1)}
                                 className="w-16 h-9 text-center"
                                 data-testid={`input-quantity-${item.id}`}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === 'Tab') {
+                                    e.preventDefault();
+                                    const priceInput = document.querySelector(`[data-testid="input-price-${item.id}"]`) as HTMLInputElement;
+                                    priceInput?.focus();
+                                  }
+                                }}
                               />
                             </TableCell>
                             <TableCell className="text-right">
@@ -2162,6 +2133,28 @@ export default function AddOrder() {
                                 onChange={(e) => updateOrderItem(item.id, 'price', parseFloat(e.target.value) || 0)}
                                 className="w-24 h-9 text-right"
                                 data-testid={`input-price-${item.id}`}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === 'Tab') {
+                                    e.preventDefault();
+                                    const nextInput = showDiscountColumn
+                                      ? document.querySelector(`[data-testid="input-discount-${item.id}"]`)
+                                      : showVatColumn
+                                      ? document.querySelector(`[data-testid="input-vat-${item.id}"]`)
+                                      : null;
+                                    
+                                    if (nextInput) {
+                                      (nextInput as HTMLInputElement).focus();
+                                    } else {
+                                      // Move to next row's quantity input
+                                      const currentIndex = orderItems.findIndex(i => i.id === item.id);
+                                      if (currentIndex < orderItems.length - 1) {
+                                        const nextItem = orderItems[currentIndex + 1];
+                                        const nextRowInput = document.querySelector(`[data-testid="input-quantity-${nextItem.id}"]`) as HTMLInputElement;
+                                        nextRowInput?.focus();
+                                      }
+                                    }
+                                  }
+                                }}
                               />
                             </TableCell>
                             {showDiscountColumn && (
@@ -2173,6 +2166,26 @@ export default function AddOrder() {
                                   onChange={(e) => updateOrderItem(item.id, 'discount', parseFloat(e.target.value) || 0)}
                                   className="w-24 h-9 text-right"
                                   data-testid={`input-discount-${item.id}`}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === 'Tab') {
+                                      e.preventDefault();
+                                      const nextInput = showVatColumn
+                                        ? document.querySelector(`[data-testid="input-vat-${item.id}"]`)
+                                        : null;
+                                      
+                                      if (nextInput) {
+                                        (nextInput as HTMLInputElement).focus();
+                                      } else {
+                                        // Move to next row's quantity input
+                                        const currentIndex = orderItems.findIndex(i => i.id === item.id);
+                                        if (currentIndex < orderItems.length - 1) {
+                                          const nextItem = orderItems[currentIndex + 1];
+                                          const nextRowInput = document.querySelector(`[data-testid="input-quantity-${nextItem.id}"]`) as HTMLInputElement;
+                                          nextRowInput?.focus();
+                                        }
+                                      }
+                                    }
+                                  }}
                                 />
                               </TableCell>
                             )}
@@ -2185,6 +2198,18 @@ export default function AddOrder() {
                                   onChange={(e) => updateOrderItem(item.id, 'tax', parseFloat(e.target.value) || 0)}
                                   className="w-24 h-9 text-right"
                                   data-testid={`input-vat-${item.id}`}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === 'Tab') {
+                                      e.preventDefault();
+                                      // Move to next row's quantity input
+                                      const currentIndex = orderItems.findIndex(i => i.id === item.id);
+                                      if (currentIndex < orderItems.length - 1) {
+                                        const nextItem = orderItems[currentIndex + 1];
+                                        const nextRowInput = document.querySelector(`[data-testid="input-quantity-${nextItem.id}"]`) as HTMLInputElement;
+                                        nextRowInput?.focus();
+                                      }
+                                    }
+                                  }}
                                 />
                               </TableCell>
                             )}
