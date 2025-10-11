@@ -69,9 +69,8 @@ interface ProductFile {
   productId: string;
   fileType: string;
   fileName: string;
-  filePath: string;
-  language: string;
-  displayName: string;
+  fileUrl: string;
+  description: string | null;
   uploadedAt: string;
   fileSize: number;
   mimeType: string;
@@ -129,8 +128,7 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
   const [editingFile, setEditingFile] = useState<ProductFile | null>(null);
   const [uploadData, setUploadData] = useState({
     fileType: 'other',
-    language: 'en',
-    displayName: '',
+    description: '',
     file: null as File | null,
   });
   const [isDragging, setIsDragging] = useState(false);
@@ -156,8 +154,7 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
       const formData = new FormData();
       formData.append('file', uploadData.file);
       formData.append('fileType', uploadData.fileType);
-      formData.append('language', uploadData.language);
-      formData.append('displayName', uploadData.displayName || uploadData.file.name);
+      formData.append('description', uploadData.description || uploadData.file.name);
       
       const response = await fetch(`/api/products/${productId}/files`, {
         method: 'POST',
@@ -180,8 +177,7 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
       setIsUploadOpen(false);
       setUploadData({
         fileType: 'other',
-        language: 'en',
-        displayName: '',
+        description: '',
         file: null,
       });
     },
@@ -196,7 +192,7 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
 
   // Update file mutation
   const updateMutation = useMutation({
-    mutationFn: async ({ fileId, data }: { fileId: string; data: { fileType: string; language: string; description: string } }) => {
+    mutationFn: async ({ fileId, data }: { fileId: string; data: { fileType: string; description: string } }) => {
       await apiRequest('PATCH', `/api/product-files/${fileId}`, data);
     },
     onSuccess: () => {
@@ -209,8 +205,7 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
       setIsUploadOpen(false);
       setUploadData({
         fileType: 'other',
-        language: 'en',
-        displayName: '',
+        description: '',
         file: null,
       });
     },
@@ -289,8 +284,7 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
     setEditingFile(file);
     setUploadData({
       fileType: file.fileType,
-      language: file.language || 'en',
-      displayName: file.displayName || file.fileName,
+      description: file.description || file.fileName,
       file: null,
     });
     setIsUploadOpen(true);
@@ -303,8 +297,7 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
         fileId: editingFile.id,
         data: {
           fileType: uploadData.fileType,
-          language: uploadData.language,
-          description: uploadData.displayName,
+          description: uploadData.description,
         },
       });
     } else {
@@ -318,8 +311,7 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
     setEditingFile(null);
     setUploadData({
       fileType: 'other',
-      language: 'en',
-      displayName: '',
+      description: '',
       file: null,
     });
   };
@@ -359,7 +351,7 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
           </div>
           <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
             <DialogTrigger asChild>
-              <Button data-testid="button-upload-document">
+              <Button type="button" data-testid="button-upload-document">
                 <Plus className="h-4 w-4 mr-2" />
                 Upload Document
               </Button>
@@ -398,32 +390,13 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="language">Language</Label>
-                  <Select
-                    value={uploadData.language}
-                    onValueChange={(value) => setUploadData(prev => ({ ...prev, language: value }))}
-                  >
-                    <SelectTrigger data-testid="select-language">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {LANGUAGES.map(lang => (
-                        <SelectItem key={lang.value} value={lang.value}>
-                          <span>{lang.flag} {lang.label}</span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="displayName">Display Name (optional)</Label>
+                  <Label htmlFor="description">Description (optional)</Label>
                   <Input
-                    id="displayName"
-                    data-testid="input-display-name"
-                    value={uploadData.displayName}
-                    onChange={(e) => setUploadData(prev => ({ ...prev, displayName: e.target.value }))}
-                    placeholder="Enter a friendly name for this document"
+                    id="description"
+                    data-testid="input-description"
+                    value={uploadData.description}
+                    onChange={(e) => setUploadData(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Enter a description for this document"
                   />
                 </div>
 
@@ -448,6 +421,7 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
                           </Badge>
                         </div>
                         <Button
+                          type="button"
                           variant="ghost"
                           size="sm"
                           onClick={() => setUploadData(prev => ({ ...prev, file: null }))}
@@ -501,6 +475,7 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
               </div>
               <DialogFooter>
                 <Button
+                  type="button"
                   variant="outline"
                   onClick={handleCloseDialog}
                   disabled={uploadMutation.isPending || updateMutation.isPending}
@@ -508,6 +483,7 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
                   Cancel
                 </Button>
                 <Button
+                  type="button"
                   onClick={handleSave}
                   disabled={((!uploadData.file && !editingFile) || uploadMutation.isPending || updateMutation.isPending)}
                   data-testid="button-upload"
@@ -545,7 +521,6 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Name</TableHead>
-                        <TableHead>Language</TableHead>
                         <TableHead>Size</TableHead>
                         <TableHead>Uploaded</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
@@ -555,10 +530,12 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
                       {typeFiles.map((file) => (
                         <TableRow key={file.id}>
                           <TableCell data-testid={`text-file-name-${file.id}`}>
-                            {file.displayName}
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-sm">{getLanguageDisplay(file.language)}</span>
+                            <div>
+                              <div className="font-medium">{file.description || file.fileName}</div>
+                              {file.description && file.description !== file.fileName && (
+                                <div className="text-xs text-muted-foreground">{file.fileName}</div>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell>
                             <Badge variant="secondary">
@@ -571,6 +548,7 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
                               <Button
+                                type="button"
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleEdit(file)}
@@ -579,6 +557,7 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
                                 <Edit className="h-4 w-4" />
                               </Button>
                               <Button
+                                type="button"
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleDownload(file)}
@@ -589,6 +568,7 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button
+                                    type="button"
                                     variant="ghost"
                                     size="sm"
                                     data-testid={`button-delete-${file.id}`}
@@ -600,7 +580,7 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>Delete Document</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      Are you sure you want to delete "{file.displayName}"? This action cannot be undone.
+                                      Are you sure you want to delete "{file.description || file.fileName}"? This action cannot be undone.
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>

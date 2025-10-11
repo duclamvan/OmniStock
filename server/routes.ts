@@ -1273,7 +1273,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fileUrl: fileUrl,
         fileSize: req.file.size,
         mimeType: req.file.mimetype,
-        description: req.body.displayName || null,
+        description: req.body.description || null,
         uploadedAt: new Date(),
         isActive: true
       };
@@ -1290,7 +1290,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/product-files/:fileId', async (req, res) => {
     try {
       const fileId = req.params.fileId;
-      const { fileType, language, description } = req.body;
+      const { fileType, description } = req.body;
       
       const file = await storage.getProductFile(fileId);
       
@@ -1300,7 +1300,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const updatedFile = await storage.updateProductFile(fileId, {
         fileType,
-        language,
         description,
       });
       
