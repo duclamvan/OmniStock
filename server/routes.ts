@@ -5824,9 +5824,17 @@ Text: ${rawAddress}`;
         confidence = 'low';
       }
 
+      // Store original values for debugging
+      const originalStreet = parsedFields.street;
+      const originalCity = parsedFields.city;
+      
       // Try to validate/enhance address with Nominatim if we have any address components
       if (parsedFields.street || parsedFields.city || parsedFields.zipCode) {
         try {
+          parsedFields._nominatimCalled = true;
+          parsedFields._originalStreet = originalStreet;
+          parsedFields._originalCity = originalCity;
+          
           const searchQuery = [
             parsedFields.streetNumber,
             parsedFields.street,
@@ -5834,8 +5842,6 @@ Text: ${rawAddress}`;
             parsedFields.zipCode,
             parsedFields.country || 'Czech Republic' // Default to Czech Republic if country not detected
           ].filter(Boolean).join(' ');
-
-          console.log('Querying Nominatim with:', searchQuery);
           
           const nominatimUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQuery)}&format=json&addressdetails=1&limit=1`;
           const nominatimResponse = await fetch(nominatimUrl, {
@@ -5846,23 +5852,19 @@ Text: ${rawAddress}`;
 
           if (nominatimResponse.ok) {
             const nominatimData = await nominatimResponse.json();
-            console.log('Nominatim response:', JSON.stringify(nominatimData[0]?.address, null, 2));
             
             if (nominatimData.length > 0) {
               const nominatimAddress = nominatimData[0].address;
               
               // Always prioritize Nominatim data for accurate local formatting with diacritics
               if (nominatimAddress?.road) {
-                console.log('Setting street from Nominatim:', nominatimAddress.road);
                 parsedFields.street = nominatimAddress.road;
               }
               if (nominatimAddress?.house_number) {
                 parsedFields.streetNumber = nominatimAddress.house_number;
               }
               if (nominatimAddress?.city || nominatimAddress?.town || nominatimAddress?.village) {
-                const cityValue = nominatimAddress.city || nominatimAddress.town || nominatimAddress.village;
-                console.log('Setting city from Nominatim:', cityValue);
-                parsedFields.city = cityValue;
+                parsedFields.city = nominatimAddress.city || nominatimAddress.town || nominatimAddress.village;
               }
               if (nominatimAddress?.postcode) {
                 // Format Czech postal codes with space (e.g., "431 91")
@@ -5880,8 +5882,6 @@ Text: ${rawAddress}`;
                 parsedFields.state = nominatimAddress.state;
               }
               
-              console.log('Final parsed fields:', JSON.stringify(parsedFields, null, 2));
-              
               // Increase confidence if Nominatim validated the address
               if (confidence === 'low') confidence = 'medium';
               else if (confidence === 'medium') confidence = 'high';
@@ -5892,6 +5892,11 @@ Text: ${rawAddress}`;
         }
       }
 
+      // Remove internal debug fields before sending to client
+      delete parsedFields._nominatimCalled;
+      delete parsedFields._originalStreet;
+      delete parsedFields._originalCity;
+      
       res.json({
         fields: parsedFields,
         confidence

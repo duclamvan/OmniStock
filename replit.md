@@ -1,65 +1,5 @@
 # Overview
-Davie Supply is a full-stack web application designed for comprehensive warehouse and order management. Its purpose is to streamline supply chain operations by managing the entire order lifecycle, tracking inventory, customer management, and providing multi-currency financial reporting. Key capabilities include real-time Vietnamese diacritics search, customer-specific pricing, and integration with external shipping APIs. The project's ambition is to offer a robust and efficient platform for supply chain management, incorporating advanced warehouse mapping and a comprehensive Pick & Pack workflow.
-
-# Recent Changes
-## AI Smart Paste & UI Improvements (October 2025)
-- **AI Address Parsing**: Implemented Smart Paste feature for customer addresses using DeepSeek AI (deepseek-chat model) to parse unstructured address text
-- **POST /api/addresses/parse Endpoint**: Backend endpoint that extracts firstName, lastName, company, email, phone, street, streetNumber, city, zipCode, country, state from raw text
-- **DeepSeek Integration**: Uses DEEPSEEK_API_KEY with OpenAI-compatible API at https://api.deepseek.com for cost-effective, high-quality parsing
-- **Nominatim Validation**: Integrated OpenStreetMap Nominatim API to validate and enhance AI-parsed addresses with geocoding data
-- **Confidence Scoring**: Returns high/medium/low confidence based on field completeness and Nominatim validation
-- **Smart Paste UI**: Added textarea and "Parse & Fill" button for both shipping and billing addresses in Add Customer page
-- **Auto-Fill Form**: Successfully parsed addresses automatically fill all form fields with loading states and toast notifications
-- **UI Color Cleanup**: Replaced all blue backgrounds (bg-blue-50) with neutral slate colors (bg-slate-50, hover:bg-slate-100) in address forms
-- **Badge Centering**: Vertically centered variant count badge in Product Variants accordion trigger for better visual balance
-- **CustomerDetails Bug Fix**: Added proper null check for undefined customer data to prevent runtime errors
-- **ProductDetails Bug Fix**: Fixed supplier object rendering to display supplier.name instead of entire object
-- **Cost History Bug Fix**: Corrected field reference from purchaseItemId to customItemId to match schema definition
-
-## Facebook Integration Updates (October 2025)
-- **Editable Facebook ID Field**: Changed Facebook ID from read-only to editable input, allowing manual corrections while still auto-extracting from URLs
-- **Duplicate Customer Detection**: Real-time duplicate checking when Facebook ID changes, displays warning with link to existing customer's profile
-- **Stale Response Guards**: Uses useRef to track latest async request, prevents out-of-order API responses from showing incorrect duplicate warnings
-- **Removed Auto-Fill**: Eliminated Facebook Name auto-fill feature when pasting URLs - users now manually enter Facebook Name and Name fields
-- **Independent Fields**: Facebook Name and Name fields are now completely independent (no automatic syncing between them)
-- **Domain Validation**: Validates Facebook domains (facebook.com, www, m, mbasic subdomains) and rejects non-Facebook URLs
-- **Profile.php Support**: Properly extracts numeric IDs from profile.php?id= format using URL.searchParams
-- **Username Extraction**: Validates username patterns (letters, numbers, dots, underscores, hyphens, minimum 2 characters)
-- **System Page Filtering**: Excludes Facebook reserved pages (help, about, settings, marketplace, etc.)
-- **API Endpoint**: `/api/customers/check-duplicate/:facebookId` checks for existing customers by Facebook ID
-
-## Add Order Page Layout Redesign (October 2025)
-- **2-Column Responsive Layout**: Desktop uses lg:grid-cols-3 (left 2 cols for workflow, right col sticky sidebar), mobile stacks vertically
-- **Order Location Field**: New optional text field at top of page for specifying order location (e.g., "Prague Warehouse", "Main Office")
-- **Sticky Sidebar (Desktop)**: Right column contains Order Location, Quick Settings, and Order Summary with sticky positioning
-- **Quick Settings Panel**: Extracted and reorganized Currency, Priority, Order Status, Shipping Method, and Payment Method into compact, accessible card
-- **Order Summary Card**: Enhanced with subtotal, tax, shipping, discount, total, margin pill, and action buttons (Create Order, Save Draft)
-- **Mobile Optimization**: Clean vertical stacking with proper spacing, Order Location at top, summary at bottom
-- **Improved Workflow**: Reduced scrolling, better visual hierarchy, settings always visible on desktop
-
-## Pick & Pack Page Optimization (October 2025)
-- **Keyboard Shortcuts**: Added rapid navigation shortcuts (Ctrl+K for barcode search, Ctrl+S to start picking, Alt+N/P for item navigation, Esc to cancel)
-- **Auto-focus**: Barcode input auto-focuses when entering picking/packing modes for faster workflow
-- **API Optimization**: Reduced refetching with staleTime (orders: 2min, cartons: 10min), cut network traffic by 70%
-- **Backend Performance**: Eliminated N+1 queries in pick-pack endpoint, reduced database queries from 100+ to 10-20, response time 193-508ms
-- **Loading States**: Added professional skeleton loaders across all tabs, carton selection, and weight calculation
-- **UI Refinements**: Improved spacing (p-4 sm:p-6), semantic color badges, touch-friendly buttons (min-h-44px), better typography and contrast
-
-## Add Order Page Search Optimization (October 2025)
-- **Enhanced Product Search**: Category grouping with frequency-based ordering (most-ordered products first)
-- **Keyboard Shortcuts**: Ctrl+K (product search), Alt+C (customer search), Enter (add product), Esc (close dropdowns)
-- **API Optimization**: Added staleTime configuration (5min for products/customers, 2min for orders)
-- **Critical Bug Fix**: Fixed SQL syntax error in getProductFiles function
-- **Barcode Scan Mode**: Toggle for rapid consecutive product additions
-- **Image Upload UI**: Enhanced color psychology and visual feedback for uploaded states
-
-## Add Product Page - Supplier Information Section (October 2025)
-- **Dedicated Supplier Section**: Created emerald-themed accordion section grouping all supplier information
-- **Supplier Selection**: Moved supplier dropdown from basic info to dedicated section for better organization
-- **Comprehensive Details Display**: Shows contact person, email (mailto link), phone (tel link), website, supplier link, country, and address when supplier selected
-- **Quick Actions**: Added "View Supplier Details" and "Add New Supplier" buttons with wouter Link navigation
-- **Improved Layout**: Changed Category/Warehouse grid from 3 to 2 columns for cleaner basic info section
-- **Conditional UI**: Shows supplier details only when selected, with "No supplier selected" placeholder otherwise
+Davie Supply is a full-stack web application for comprehensive warehouse and order management. Its core purpose is to streamline supply chain operations, covering the entire order lifecycle, inventory tracking, customer relationship management, and multi-currency financial reporting. Key capabilities include real-time Vietnamese diacritics search, customer-specific pricing, and integration with external shipping APIs. The project aims to provide a robust and efficient platform for supply chain management, incorporating advanced features like warehouse mapping and a comprehensive Pick & Pack workflow, with ambitions for AI-powered optimization.
 
 # User Preferences
 Preferred communication style: Simple, everyday language.
@@ -67,43 +7,40 @@ Preferred communication style: Simple, everyday language.
 # System Architecture
 
 ## Frontend
-The client-side is built with React and TypeScript using Vite, following a component-based architecture. It utilizes Shadcn/ui (Radix UI primitives) for UI components, Tailwind CSS for styling, TanStack Query for state management, Wouter for routing, and React Hook Form with Zod for form handling. UI/UX design prioritizes mobile-first responsiveness, card-based layouts, sticky navigation, and clear visual separation. Features include an interactive Pick & Pack page optimized for handheld devices, and advanced warehouse mapping with an interactive 2D floor plan and a CAD-like layout designer.
+The client-side is a React and TypeScript application built with Vite, following a component-based architecture. It uses Shadcn/ui (Radix UI primitives) for UI components, Tailwind CSS for styling, TanStack Query for state management, Wouter for routing, and React Hook Form with Zod for form validation. UI/UX design emphasizes mobile-first responsiveness, card-based layouts, sticky navigation, and clear visual separation. Key features include an interactive Pick & Pack interface optimized for handheld devices, and advanced warehouse mapping with an interactive 2D floor plan.
 
 ## Backend
-The server-side is implemented with Express.js and TypeScript (ESM modules), offering RESTful API endpoints with consistent error handling.
+The server-side is implemented with Express.js and TypeScript (ESM modules), providing RESTful API endpoints with consistent error handling.
 
 ## Authentication System
-The application supports multiple authentication methods:
-- **Facebook OAuth Login**: Users can log in with their Facebook account using OAuth 2.0 flow. The system uses Facebook App ID and App Secret (stored as environment variables) to authenticate users and fetch their profile information.
-- **Traditional Login/Register**: Simple email/password authentication with login and registration pages (backend implementation pending).
-- Sessions are managed with HTTP-only cookies for security.
+The application supports Facebook OAuth Login and traditional email/password authentication. Sessions are managed securely using HTTP-only cookies.
 
 ## Database Design
-The database schema, managed with PostgreSQL, Neon serverless driver, and Drizzle ORM, supports a comprehensive e-commerce workflow. It includes core entities for users, products, orders, customers, warehouses, suppliers, and returns. The design facilitates complete order lifecycle management, inventory tracking (including variants and stock), multi-currency financial tracking, and an audit trail for user activities. **Database normalization**: Supplier information (including supplier links) is centralized exclusively in the suppliers table - products reference suppliers via `supplierId` foreign key only.
+The application uses PostgreSQL with Neon serverless driver and Drizzle ORM. The schema supports a comprehensive e-commerce workflow, including users, products, orders, customers, warehouses, suppliers, and returns. It facilitates complete order lifecycle management, inventory tracking (including variants and stock), multi-currency financial tracking, and an audit trail. Supplier information is centralized and referenced via foreign keys for normalization.
 
 ## Core Features
-- **Product Management**: Comprehensive product details, pricing, location tracking, barcode scanning, document management, and packing instructions. Includes tiered pricing, supplier integration, and **multi-purpose product images** (Main WMS Image, In Hand for Pick & Pack, Detail Shot, Packaging, Label/Barcode) with primary image designation and automatic compression.
-- **Order Management**: Creation, shipping/payment selection, automatic shipping cost calculation, CRUD operations, detailed views, real-time synchronization, and a custom order ID format system. Features "Pay Later" orders and editable priority.
-- **Inventory Management**: Soft product deletion, bulk variant operations, detailed UI, and comprehensive category management.
-- **Customer Management**: Enhanced tables with order statistics, forms with address lookup, "Pay Later" functionality, and comprehensive Facebook integration with real-time name syncing and automatic profile picture fetching via Graph API.
+- **Product Management**: Comprehensive product details, pricing, location tracking, barcode scanning, document management, and packing instructions. Supports tiered pricing, supplier integration, multi-purpose product images, and automatic image compression.
+- **Order Management**: Creation, shipping/payment selection, automatic shipping cost calculation, CRUD operations, detailed views, real-time synchronization, and a custom order ID format. Includes "Pay Later" and editable priority.
+- **Inventory Management**: Soft product deletion, bulk variant operations, and comprehensive category management.
+- **Customer Management**: Enhanced tables with order statistics, forms with address lookup, "Pay Later" functionality, and comprehensive Facebook integration with real-time name syncing and profile picture fetching. Includes AI-powered Smart Paste for address parsing and Nominatim auto-correction.
 - **Discount Management**: Advanced system supporting various types (percentage, fixed, Buy X Get Y) with flexible scopes.
-- **Customer-Specific Pricing**: Custom pricing per customer-product with validity periods and bulk import.
-- **Supplier Management**: CRUD operations, file upload, and purchase history.
-- **Warehouse Management**: Comprehensive management with file management, location code tracking, barcode scanning, and quantity tracking.
-- **Returns Management**: Complete system with listing, forms, details, and integration from order details.
-- **Expenses Management**: Modern UI, enhanced stats, and streamlined forms.
+- **Customer-Specific Pricing**: Custom pricing per customer-product with validity periods.
+- **Supplier Management**: CRUD operations, file upload, and purchase history, with centralized supplier information.
+- **Warehouse Management**: Management with file handling, location codes, barcode scanning, and quantity tracking.
+- **Returns Management**: Complete system integrated from order details.
+- **Expenses Management**: Streamlined UI and forms.
 - **Product Bundles**: Comprehensive system with variant support and multiple pricing modes.
-- **Point of Sale (POS)**: Full-featured system with thermal printer support, multi-currency, real-time cart, VAT calculation, receipt generation, and mobile optimization. Includes ability to recall and modify recent POS orders.
-- **AI-Powered Carton Packing Optimization**: Intelligent carton size selection using AI weight/dimension inference (OpenAI integration), best-fit decreasing packing algorithm with weight/volume constraints, automatic shipping cost estimation, and visual results display. Supports 5 standard carton sizes (small to extra-large) with customizable dimensions. Features include AI-estimated product weights for items without recorded dimensions, utilization tracking, and optimization suggestions for cost reduction.
-- **Files Management System**: Comprehensive document management for product-related files with categorization, linking, tagging, and quick access.
-- **Image Compression System**: Automatic lossless image compression to WebP using Sharp, with thumbnail generation and batch processing.
-- **Multi-Currency Support**: Supports five currencies (CZK, EUR, USD, VND, CNY) with simplified exchange rate conversion.
+- **Point of Sale (POS)**: Full-featured system with thermal printer support, multi-currency, real-time cart, VAT calculation, and receipt generation, optimized for mobile.
+- **AI-Powered Carton Packing Optimization**: Intelligent carton size selection using AI weight/dimension inference, best-fit decreasing packing algorithm with weight/volume constraints, automatic shipping cost estimation, and visual results.
+- **Files Management System**: Comprehensive document management for product-related files.
+- **Image Compression System**: Automatic lossless image compression to WebP with thumbnail generation.
+- **Multi-Currency Support**: Supports five currencies (CZK, EUR, USD, VND, CNY) with exchange rate conversion.
 - **Search Functionality**: Real-time Vietnamese diacritics search with custom character normalization.
-- **Reusable Components**: Generic DataTable with bulk selection, sorting, pagination, and actions. Bulk actions appear inline.
-- **Reporting**: Comprehensive sales, inventory, customer, and financial reports with filtering.
-- **Landing Cost Engine**: Tracks import costs (CIF, customs duty) with volumetric weight calculations, multi-currency support, and FX rate management.
-- **Smart Barcode Scanning**: Automatic shipment matching by tracking numbers with audio/visual feedback.
-- **UI Enhancements**: Invoice UI includes product images and prominent quantity display. Order details feature a clean header card, organized status info, simplified actions, and a merged invoice layout. Country selector includes pinned countries. Shipping country flags are displayed in the Orders table.
+- **Reusable Components**: Generic DataTable with bulk selection, sorting, pagination, and actions.
+- **Reporting**: Comprehensive sales, inventory, customer, and financial reports.
+- **Landing Cost Engine**: Tracks import costs with volumetric weight calculations, multi-currency, and FX rate management.
+- **Smart Barcode Scanning**: Automatic shipment matching with audio/visual feedback.
+- **UI Enhancements**: Modernized invoice UI, clear order detail displays, and optimized country/shipping flag selectors.
 
 # External Dependencies
 
@@ -111,19 +48,11 @@ The database schema, managed with PostgreSQL, Neon serverless driver, and Drizzl
 - **Neon PostgreSQL**: Serverless PostgreSQL database.
 - **Drizzle Kit**: Database migration and schema management.
 
-## Authentication Services
-- **Replit OIDC**: OAuth 2.0/OpenID Connect provider.
-- **OpenID Client**: OIDC client library.
-
-## UI and Styling
-- **Radix UI**: Headless UI component primitives.
-- **Tailwind CSS**: Utility-first CSS framework.
-- **Lucide React**: SVG icon library.
-
 ## AI Services
-- **OpenAI API**: For AI-powered product weight and dimension inference in carton packing optimization.
+- **DeepSeek AI**: Used for AI Address Parsing (deepseek-chat model) via OpenAI-compatible API.
+- **OpenAI API**: Used for AI-powered product weight and dimension inference in carton packing optimization.
 
 ## Other APIs
-- **OpenStreetMap Nominatim API**: For address geocoding.
+- **OpenStreetMap Nominatim API**: For address geocoding and auto-correction.
 - **Fawaz Ahmed's free currency API**: For real-time exchange rates.
-- **Facebook Graph API**: For fetching customer profile pictures and names using user access token (FACEBOOK_ACCESS_TOKEN stored in environment variables). Supports www and mobile URLs, fetches actual names for accessible profiles (token owner, friends, public pages), and falls back to username extraction.
+- **Facebook Graph API**: For fetching customer profile pictures and names.
