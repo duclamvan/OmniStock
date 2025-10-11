@@ -717,6 +717,211 @@ export default function ProductDetails() {
           </AccordionContent>
         </AccordionItem>
 
+        {/* Supplier Information */}
+        {supplier && (
+          <AccordionItem value="supplier" className="border-slate-200 rounded-xl bg-white shadow-sm">
+            <AccordionTrigger className="px-4 py-3 hover:no-underline" data-testid="accordion-supplier">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-50 rounded-lg">
+                  <Users className="h-5 w-5 text-orange-600" />
+                </div>
+                <span className="text-lg font-semibold text-slate-900">Supplier Information</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="px-4 pb-4">
+              <div className="space-y-6 pt-2">
+                <div className="flex items-start gap-4">
+                  <div className="w-20 h-20 bg-gradient-to-br from-slate-100 to-slate-200 rounded-xl flex items-center justify-center border border-slate-200">
+                    <Building className="h-10 w-10 text-slate-400" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-slate-900" data-testid="text-supplier-name">{supplier.name}</h3>
+                    {supplier.contactPerson && (
+                      <p className="text-sm text-slate-600 mt-1" data-testid="text-supplier-contact">
+                        Contact: {supplier.contactPerson}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <Separator />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {supplier.email && (
+                    <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                      <Mail className="h-5 w-5 text-slate-400" />
+                      <a href={`mailto:${supplier.email}`} className="text-sm text-blue-600 hover:underline font-medium" data-testid="link-supplier-email">
+                        {supplier.email}
+                      </a>
+                    </div>
+                  )}
+                  {supplier.phone && (
+                    <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                      <Phone className="h-5 w-5 text-slate-400" />
+                      <a href={`tel:${supplier.phone}`} className="text-sm text-blue-600 hover:underline font-medium" data-testid="link-supplier-phone">
+                        {supplier.phone}
+                      </a>
+                    </div>
+                  )}
+                  {supplier.website && (
+                    <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                      <Globe className="h-5 w-5 text-slate-400" />
+                      <a href={supplier.website} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline font-medium" data-testid="link-supplier-website">
+                        {supplier.website}
+                      </a>
+                    </div>
+                  )}
+                  {supplier.address && (
+                    <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                      <MapPin className="h-5 w-5 text-slate-400" />
+                      <span className="text-sm text-slate-700 font-medium" data-testid="text-supplier-address">{supplier.address}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        )}
+
+        {/* Variants */}
+        <AccordionItem value="variants" className="border-slate-200 rounded-xl bg-white shadow-sm">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline" data-testid="accordion-variants">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-cyan-50 rounded-lg">
+                <Box className="h-5 w-5 text-cyan-600" />
+              </div>
+              <span className="text-lg font-semibold text-slate-900">Product Variants</span>
+              {variantsLoading && <Skeleton className="h-5 w-16 ml-2" />}
+              {!variantsLoading && variants.length > 0 && (
+                <Badge variant="secondary" className="ml-2">{variants.length} variants</Badge>
+              )}
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            {variantsLoading ? (
+              <div className="space-y-2 pt-2">
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-32 w-full" />
+              </div>
+            ) : variants.length > 0 ? (
+              <div className="pt-2">
+                <ProductVariants variants={variants} productId={id!} readOnly={true} />
+              </div>
+            ) : (
+              <div className="text-center py-12 text-slate-500">
+                <Box className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p className="font-medium">No variants configured</p>
+              </div>
+            )}
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Packing & Shipping Details */}
+        <AccordionItem value="packing" className="border-slate-200 rounded-xl bg-white shadow-sm">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline" data-testid="accordion-packing">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-pink-50 rounded-lg">
+                <Package className="h-5 w-5 text-pink-600" />
+              </div>
+              <span className="text-lg font-semibold text-slate-900">Packing & Shipping Details</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <div className="space-y-6 pt-2">
+              {/* Packing Material */}
+              {packingMaterial && (
+                <>
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-4">Packing Material</h3>
+                    <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-semibold text-slate-900" data-testid="text-packing-material">{packingMaterial.name}</span>
+                        <Badge variant="outline" className="text-xs">
+                          {packingMaterial.sizeLength}×{packingMaterial.sizeWidth}×{packingMaterial.sizeHeight} cm
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-sm mt-3">
+                        <div>
+                          <span className="text-slate-600">Type:</span>
+                          <span className="ml-2 font-medium text-slate-900">{packingMaterial.materialType}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-600">Cost:</span>
+                          <span className="ml-2 font-medium text-slate-900">{formatCurrency(Number(packingMaterial.costPerUnit || 0), 'EUR')}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <Separator />
+                </>
+              )}
+
+              {/* Packing Instructions */}
+              <div>
+                <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-4">Packing Instructions</h3>
+                {(() => {
+                  const hasGroupedInstructions = product.groupedPackingInstructions && 
+                    Array.isArray(product.groupedPackingInstructions) && 
+                    product.groupedPackingInstructions.length > 0;
+                  const hasLegacyInstructions = product.packingInstructionsText || product.packingInstructionsImage;
+
+                  if (hasGroupedInstructions) {
+                    return (
+                      <div className="space-y-4">
+                        {product.groupedPackingInstructions.map((instruction: any, idx: number) => (
+                          <div key={idx} className="bg-slate-50 rounded-lg p-4 border-2 border-slate-200">
+                            <div className="flex items-center gap-2 mb-3">
+                              <Badge variant="outline" className="font-bold">Step {idx + 1}</Badge>
+                            </div>
+                            {instruction.text && (
+                              <p className="text-sm text-slate-700 mb-3 whitespace-pre-wrap leading-relaxed" data-testid={`text-packing-instruction-${idx}`}>
+                                {instruction.text}
+                              </p>
+                            )}
+                            {instruction.image && (
+                              <img
+                                src={instruction.image}
+                                alt={`Step ${idx + 1}`}
+                                className="max-w-md rounded-lg border-2 border-slate-200 shadow-sm"
+                                data-testid={`img-packing-instruction-${idx}`}
+                              />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  } else if (hasLegacyInstructions) {
+                    return (
+                      <div className="space-y-4 bg-slate-50 rounded-lg p-4 border-2 border-slate-200">
+                        {product.packingInstructionsText && (
+                          <div>
+                            <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed" data-testid="text-packing-instructions-legacy">
+                              {product.packingInstructionsText}
+                            </p>
+                          </div>
+                        )}
+                        {product.packingInstructionsImage && (
+                          <img
+                            src={product.packingInstructionsImage}
+                            alt="Packing instructions"
+                            className="max-w-md rounded-lg border-2 border-slate-200 shadow-sm"
+                            data-testid="img-packing-instructions"
+                          />
+                        )}
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <div className="text-center py-8 text-slate-500">
+                        <Package className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                        <p className="font-medium">No packing instructions available</p>
+                      </div>
+                    );
+                  }
+                })()}
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
         {/* Import Costs & Analytics */}
         <AccordionItem value="analytics" className="border-slate-200 rounded-xl bg-white shadow-sm">
           <AccordionTrigger className="px-4 py-3 hover:no-underline" data-testid="accordion-analytics">
@@ -815,214 +1020,6 @@ export default function ProductDetails() {
                 <p className="font-medium">No tiered pricing configured</p>
               </div>
             )}
-          </AccordionContent>
-        </AccordionItem>
-
-        {/* Supplier Information */}
-        {supplier && (
-          <AccordionItem value="supplier" className="border-slate-200 rounded-xl bg-white shadow-sm">
-            <AccordionTrigger className="px-4 py-3 hover:no-underline" data-testid="accordion-supplier">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-orange-50 rounded-lg">
-                  <Users className="h-5 w-5 text-orange-600" />
-                </div>
-                <span className="text-lg font-semibold text-slate-900">Supplier Information</span>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="px-4 pb-4">
-              <div className="space-y-6 pt-2">
-                <div className="flex items-start gap-4">
-                  <div className="w-20 h-20 bg-gradient-to-br from-slate-100 to-slate-200 rounded-xl flex items-center justify-center border border-slate-200">
-                    <Building className="h-10 w-10 text-slate-400" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold text-slate-900" data-testid="text-supplier-name">{supplier.name}</h3>
-                    {supplier.contactPerson && (
-                      <p className="text-sm text-slate-600 mt-1" data-testid="text-supplier-contact">
-                        Contact: {supplier.contactPerson}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <Separator />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {supplier.email && (
-                    <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
-                      <Mail className="h-5 w-5 text-slate-400" />
-                      <a href={`mailto:${supplier.email}`} className="text-sm text-blue-600 hover:underline font-medium" data-testid="link-supplier-email">
-                        {supplier.email}
-                      </a>
-                    </div>
-                  )}
-                  {supplier.phone && (
-                    <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
-                      <Phone className="h-5 w-5 text-slate-400" />
-                      <a href={`tel:${supplier.phone}`} className="text-sm text-blue-600 hover:underline font-medium" data-testid="link-supplier-phone">
-                        {supplier.phone}
-                      </a>
-                    </div>
-                  )}
-                  {supplier.website && (
-                    <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
-                      <Globe className="h-5 w-5 text-slate-400" />
-                      <a href={supplier.website} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline font-medium" data-testid="link-supplier-website">
-                        {supplier.website}
-                      </a>
-                    </div>
-                  )}
-                  {supplier.address && (
-                    <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
-                      <MapPin className="h-5 w-5 text-slate-400" />
-                      <span className="text-sm text-slate-700 font-medium" data-testid="text-supplier-address">{supplier.address}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        )}
-
-        {/* Variants */}
-        <AccordionItem value="variants" className="border-slate-200 rounded-xl bg-white shadow-sm">
-          <AccordionTrigger className="px-4 py-3 hover:no-underline" data-testid="accordion-variants">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-cyan-50 rounded-lg">
-                <Box className="h-5 w-5 text-cyan-600" />
-              </div>
-              <span className="text-lg font-semibold text-slate-900">Product Variants</span>
-              {variantsLoading && <Skeleton className="h-5 w-16 ml-2" />}
-              {!variantsLoading && variants.length > 0 && (
-                <Badge variant="secondary" className="ml-2">{variants.length} variants</Badge>
-              )}
-            </div>
-          </AccordionTrigger>
-          <AccordionContent className="px-4 pb-4">
-            {variantsLoading ? (
-              <div className="space-y-2 pt-2">
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-32 w-full" />
-              </div>
-            ) : variants.length > 0 ? (
-              <div className="pt-2">
-                <ProductVariants productId={id!} />
-              </div>
-            ) : (
-              <div className="text-center py-12 text-slate-500">
-                <Box className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p className="font-medium">No variants configured</p>
-              </div>
-            )}
-          </AccordionContent>
-        </AccordionItem>
-
-        {/* Packing & Shipping Details */}
-        <AccordionItem value="packing" className="border-slate-200 rounded-xl bg-white shadow-sm">
-          <AccordionTrigger className="px-4 py-3 hover:no-underline" data-testid="accordion-packing">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-pink-50 rounded-lg">
-                <Package className="h-5 w-5 text-pink-600" />
-              </div>
-              <span className="text-lg font-semibold text-slate-900">Packing & Shipping Details</span>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent className="px-4 pb-4">
-            <div className="space-y-6 pt-2">
-              {/* Packing Material */}
-              {packingMaterial && (
-                <>
-                  <div>
-                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Packing Material</label>
-                    <div className="mt-2 bg-slate-50 rounded-lg p-4 border border-slate-200">
-                      <p className="text-lg font-semibold text-slate-900" data-testid="text-packing-material-name">{packingMaterial.name}</p>
-                      {packingMaterial.dimensions && (
-                        <p className="text-sm text-slate-600 mt-1" data-testid="text-packing-material-dimensions">{packingMaterial.dimensions}</p>
-                      )}
-                    </div>
-                  </div>
-                  <Separator />
-                </>
-              )}
-
-              {/* Grouped Packing Instructions */}
-              {(() => {
-                const packingTexts = product.packingInstructionsTexts ? 
-                  (typeof product.packingInstructionsTexts === 'string' ? 
-                    JSON.parse(product.packingInstructionsTexts) : 
-                    product.packingInstructionsTexts) : [];
-                const packingImages = product.packingInstructionsImages ? 
-                  (typeof product.packingInstructionsImages === 'string' ? 
-                    JSON.parse(product.packingInstructionsImages) : 
-                    product.packingInstructionsImages) : [];
-                
-                const hasGroupedInstructions = packingTexts.length > 0 || packingImages.length > 0;
-                const hasLegacyInstructions = product.packingInstructionsText || product.packingInstructionsImage;
-                
-                if (hasGroupedInstructions) {
-                  // Show new grouped format
-                  const maxSteps = Math.max(packingTexts.length, packingImages.length);
-                  return (
-                    <div>
-                      <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-4">Packing Instructions</h3>
-                      <div className="space-y-4">
-                        {Array.from({ length: maxSteps }).map((_, index) => (
-                          <div key={index} className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                            <div className="flex items-center gap-2 mb-3">
-                              <Badge variant="secondary" className="font-semibold">Step {index + 1}</Badge>
-                            </div>
-                            <div className="space-y-3">
-                              {packingImages[index] && (
-                                <img
-                                  src={packingImages[index]}
-                                  alt={`Packing step ${index + 1}`}
-                                  className="w-full max-w-md rounded-lg border border-slate-200"
-                                  data-testid={`img-packing-step-${index}`}
-                                />
-                              )}
-                              {packingTexts[index] && (
-                                <p className="text-base text-slate-700 leading-relaxed whitespace-pre-wrap" data-testid={`text-packing-step-${index}`}>
-                                  {packingTexts[index]}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                } else if (hasLegacyInstructions) {
-                  // Show legacy format
-                  return (
-                    <div>
-                      <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-4">Packing Instructions (Legacy)</h3>
-                      <div className="space-y-4">
-                        {product.packingInstructionsText && (
-                          <div>
-                            <p className="text-base text-slate-700 leading-relaxed whitespace-pre-wrap" data-testid="text-packing-instructions">
-                              {product.packingInstructionsText}
-                            </p>
-                          </div>
-                        )}
-                        {product.packingInstructionsImage && (
-                          <img
-                            src={product.packingInstructionsImage}
-                            alt="Packing instructions"
-                            className="max-w-md rounded-lg border-2 border-slate-200 shadow-sm"
-                            data-testid="img-packing-instructions"
-                          />
-                        )}
-                      </div>
-                    </div>
-                  );
-                } else {
-                  return (
-                    <div className="text-center py-8 text-slate-500">
-                      <Package className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                      <p className="font-medium">No packing instructions available</p>
-                    </div>
-                  );
-                }
-              })()}
-            </div>
           </AccordionContent>
         </AccordionItem>
 
