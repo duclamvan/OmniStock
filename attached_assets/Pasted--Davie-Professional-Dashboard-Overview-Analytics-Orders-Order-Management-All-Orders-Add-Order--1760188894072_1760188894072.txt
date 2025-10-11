@@ -1,0 +1,217 @@
+
+Davie Professional
+
+Dashboard
+Overview & Analytics
+
+Orders
+Order Management
+
+All Orders
+
+Add Order
+
+Pick & Pack
+
+To Fulfill
+
+Shipped
+
+Pay Later
+
+Pre-Orders
+
+Inventory
+Product Management
+
+All Products
+
+Categories
+
+Product Bundles
+
+Packing Materials
+
+Add Product
+
+Warehouses
+Storage Facilities
+
+Discounts
+Pricing & Offers
+
+Customers
+Client Management
+
+Suppliers
+Vendor Network
+
+Returns
+Return Processing
+
+Expenses
+Cost Tracking
+
+Services
+Repairs & Services
+
+POS
+Point of Sale
+
+Imports
+International Orders
+
+Receiving
+Incoming Shipments
+
+Items To Store
+Storage Queue
+
+Shipping
+Outbound Logistics
+
+Reports
+Analytics & Reports
+Inventory
+Search...
+
+
+
+
+Back
+Add New Product
+Create a new product with details
+
+Add Mode
+
+Basic Information
+Product name, SKU, category, images
+
+Product Images
+Upload images with specific purposes for different uses
+
+0 images
+Main WMS Image
+Primary product image for warehouse management
+In Hand (Pick & Pack)
+Product held in hand for picking/packing reference
+Detail Shot
+Close-up details, texture, or features
+Packaging
+Product packaging and box
+Label/Barcode
+Product label, barcode, or SKU tag
+No images added yet
+
+Upload images by clicking the cards above
+
+Images are automatically compressed on upload. First image is primary by default.
+
+Product Name *
+Enter product name
+English Name
+Enter English name (optional)
+SKU *
+Auto-generate or enter SKU
+
+Category
+Select
+
+Warehouse
+Select
+
+Warehouse Location Code
+WH1-A01-R02-L03
+Format: Warehouse-Aisle-Rack-Level
+
+Description
+Product description...
+
+Stock & Inventory
+Quantity, alerts, barcode
+
+Quantity
+100
+Low Stock Alert
+5
+Barcode (EAN-13)
+Enter or scan barcode
+
+Warehouse Locations
+Multiple warehouse locations can be assigned after creating the product. This allows you to track inventory across different storage areas.
+
+
+Pricing & Costs
+Sales prices, import costs
+
+
+Supplier Information
+Supplier details and contact
+
+
+Product Variants
+Manage product variations and barcodes
+
+0
+
+Packing & Shipping Details
+Dimensions, materials, and handling instructions
+
+Physical Specifications
+Length (cm)
+0.0
+Width (cm)
+0.0
+Height (cm)
+0.0
+Weight (kg)
+0.00
+Packing Material
+
+Select packing material
+
+Handling Instructions
+Packing Instructions
+Add visual or written instructions to help packers handle this product correctly
+Visual Instructions
+1 image
+Packing instruction 1
+Drag and drop an image here, or click to browse
+
+JPG, PNG, GIF, WebP (max 5MB)
+
+Add Image
+Written Instructions
+1 instruction
+Bubble wrap
+
+
+
+Add Instruction
+Packing instructions will be prominently displayed in the Pick & Pack workflow to ensure proper handling of this product.
+
+Product Files & Documents
+Attached files and documentation
+
+Create Product
+Cancel
+2020
+Add Instruction
+Provide clear instructions for handling, wrapping, or special care requirements
+
+Instruction Text
+Bubble wrap
+Cancel
+Add Instruction
+Close
+[plugin:runtime-error-plugin] onTextsChange is not a function
+/home/runner/workspace/client/src/components/PackingInstructionsUploader.tsx:228:5
+226|  
+227|      setTexts(updatedTexts);
+228|      onTextsChange(updatedTexts);
+   |      ^
+229|      setIsTextDialogOpen(false);
+230|      setCurrentTextValue("");
+    at handleSaveText /home/runner/workspace/client/src/components/PackingInstructionsUploader.tsx:228:5
+Click outside, press Esc key, or fix the code to dismiss.
+You can also disable this overlay by setting server.hmr.overlay to false in vite.config.js.

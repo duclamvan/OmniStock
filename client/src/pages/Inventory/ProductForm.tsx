@@ -2402,9 +2402,9 @@ export default function ProductForm() {
                     </div>
                     <PackingInstructionsUploader
                       packingInstructionsTexts={packingInstructionsTexts}
-                      setPackingInstructionsTexts={setPackingInstructionsTexts}
+                      onTextsChange={setPackingInstructionsTexts}
                       packingInstructionsImages={packingInstructionsImages}
-                      setPackingInstructionsImages={setPackingInstructionsImages}
+                      onImagesChange={setPackingInstructionsImages}
                     />
                   </div>
                 </div>
