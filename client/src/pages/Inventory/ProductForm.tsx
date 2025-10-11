@@ -18,6 +18,14 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCurrency, convertCurrency, type Currency } from "@/lib/currencyUtils";
 import { Separator } from "@/components/ui/separator";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
 import { 
   Upload, 
   Package, 
@@ -58,7 +66,9 @@ import {
   TrendingUp,
   Pencil,
   Euro,
-  Ruler
+  Ruler,
+  Check,
+  ChevronsUpDown
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -235,6 +245,9 @@ export default function ProductForm() {
   // Edit mode specific state
   const [tieredPricingDialogOpen, setTieredPricingDialogOpen] = useState(false);
   const [editingTier, setEditingTier] = useState<any>(null);
+  
+  // Supplier autocomplete state
+  const [supplierPopoverOpen, setSupplierPopoverOpen] = useState(false);
   
   // Auto-conversion refs
   const conversionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -500,7 +513,7 @@ export default function ProductForm() {
   // Auto-set low stock alert to 50% of quantity in add mode
   useEffect(() => {
     if (!isEditMode) {
-      const quantity = parseInt(productQuantity) || 0;
+      const quantity = parseInt(String(productQuantity)) || 0;
       if (quantity > 0) {
         const lowStockValue = Math.floor(quantity * 0.5);
         form.setValue('lowStockAlert', lowStockValue);
@@ -565,7 +578,7 @@ export default function ProductForm() {
   useEffect(() => {
     if (!isEditMode || !id || !productLoaded || !locationsLoaded || !productLocations) return;
     
-    const quantity = parseInt(productQuantity) || 0;
+    const quantity = parseInt(String(productQuantity)) || 0;
     
     // Calculate total from non-TBA locations
     const nonTbaLocations = productLocations.filter(loc => loc.locationCode !== 'TBA');
@@ -1209,7 +1222,7 @@ export default function ProductForm() {
     };
     
     const cleanData = Object.fromEntries(
-      Object.entries(tierData).filter(([_, v]) => v !== undefined && v !== null && v !== '')
+      Object.entries(tierData).filter(([_, v]) => v !== undefined && v !== null)
     );
     
     createTieredPricingMutation.mutate(cleanData);
@@ -1228,7 +1241,7 @@ export default function ProductForm() {
     };
     
     const cleanData = Object.fromEntries(
-      Object.entries(tierData).filter(([_, v]) => v !== undefined && v !== null && v !== '')
+      Object.entries(tierData).filter(([_, v]) => v !== undefined && v !== null)
     );
     
     updateTieredPricingMutation.mutate({ tierId, data: cleanData });
@@ -1868,7 +1881,7 @@ export default function ProductForm() {
                         <TrendingUp className="h-4 w-4 text-amber-600" />
                         Cost History
                       </Label>
-                      <CostHistoryChart costHistory={costHistory} />
+                      <CostHistoryChart data={costHistory} />
                     </div>
                   )}
                   
@@ -2069,18 +2082,64 @@ export default function ProductForm() {
                   {/* Supplier Selector */}
                   <div>
                     <Label htmlFor="supplierId" className="text-sm font-medium">Select Supplier</Label>
-                    <Select value={supplierId} onValueChange={(value) => form.setValue('supplierId', value)}>
-                      <SelectTrigger data-testid="select-supplier" className="mt-1">
-                        <SelectValue placeholder="Select a supplier" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {suppliers?.map((supplier: any) => (
-                          <SelectItem key={supplier.id} value={supplier.id}>
-                            {supplier.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Popover open={supplierPopoverOpen} onOpenChange={setSupplierPopoverOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={supplierPopoverOpen}
+                          className="w-full justify-between mt-1"
+                          data-testid="select-supplier"
+                        >
+                          {supplierId
+                            ? suppliers?.find((supplier: any) => supplier.id === supplierId)?.name
+                            : "Select a supplier"}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0" align="start">
+                        <Command>
+                          <CommandInput placeholder="Search suppliers..." />
+                          <CommandEmpty>
+                            <div className="p-4 text-center space-y-2">
+                              <p className="text-sm text-slate-500">No supplier found.</p>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSupplierPopoverOpen(false);
+                                  window.open('/suppliers/add', '_blank');
+                                }}
+                                data-testid="button-add-supplier"
+                              >
+                                <Plus className="h-4 w-4 mr-1" />
+                                Add New Supplier
+                              </Button>
+                            </div>
+                          </CommandEmpty>
+                          <CommandGroup className="max-h-64 overflow-auto">
+                            {suppliers?.map((supplier: any) => (
+                              <CommandItem
+                                key={supplier.id}
+                                value={supplier.name}
+                                onSelect={() => {
+                                  form.setValue('supplierId', supplier.id);
+                                  setSupplierPopoverOpen(false);
+                                }}
+                                data-testid={`supplier-option-${supplier.id}`}
+                              >
+                                <Check
+                                  className={`mr-2 h-4 w-4 ${
+                                    supplierId === supplier.id ? "opacity-100" : "opacity-0"
+                                  }`}
+                                />
+                                {supplier.name}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                   </div>
 
                   {/* Selected Supplier Details */}
