@@ -2,15 +2,17 @@
 Davie Supply is a full-stack web application designed for comprehensive warehouse and order management. Its purpose is to streamline supply chain operations by managing the entire order lifecycle, tracking inventory, customer management, and providing multi-currency financial reporting. Key capabilities include real-time Vietnamese diacritics search, customer-specific pricing, and integration with external shipping APIs. The project's ambition is to offer a robust and efficient platform for supply chain management, incorporating advanced warehouse mapping and a comprehensive Pick & Pack workflow.
 
 # Recent Changes
-## Facebook ID Auto-Extraction Field (October 2025)
-- **Automatic ID Extraction**: New read-only Facebook ID field automatically extracts numeric IDs and usernames from pasted Facebook URLs
-- **Domain Validation**: Uses URL API to validate Facebook domains (facebook.com, www, m, mbasic subdomains) and rejects non-Facebook URLs
+## Facebook Integration Updates (October 2025)
+- **Editable Facebook ID Field**: Changed Facebook ID from read-only to editable input, allowing manual corrections while still auto-extracting from URLs
+- **Duplicate Customer Detection**: Real-time duplicate checking when Facebook ID changes, displays warning with link to existing customer's profile
+- **Stale Response Guards**: Uses useRef to track latest async request, prevents out-of-order API responses from showing incorrect duplicate warnings
+- **Removed Auto-Fill**: Eliminated Facebook Name auto-fill feature when pasting URLs - users now manually enter Facebook Name and Name fields
+- **Independent Fields**: Facebook Name and Name fields are now completely independent (no automatic syncing between them)
+- **Domain Validation**: Validates Facebook domains (facebook.com, www, m, mbasic subdomains) and rejects non-Facebook URLs
 - **Profile.php Support**: Properly extracts numeric IDs from profile.php?id= format using URL.searchParams
 - **Username Extraction**: Validates username patterns (letters, numbers, dots, underscores, hyphens, minimum 2 characters)
 - **System Page Filtering**: Excludes Facebook reserved pages (help, about, settings, marketplace, etc.)
-- **Error Handling**: Try-catch wrapper returns empty string for malformed URLs instead of throwing errors
-- **Edit Mode Support**: Automatically populates extracted ID when editing existing customers
-- **UI Design**: Positioned between Facebook URL and Facebook Name fields with gray background to indicate read-only status
+- **API Endpoint**: `/api/customers/check-duplicate/:facebookId` checks for existing customers by Facebook ID
 
 ## Add Order Page Layout Redesign (October 2025)
 - **2-Column Responsive Layout**: Desktop uses lg:grid-cols-3 (left 2 cols for workflow, right col sticky sidebar), mobile stacks vertically
@@ -20,15 +22,6 @@ Davie Supply is a full-stack web application designed for comprehensive warehous
 - **Order Summary Card**: Enhanced with subtotal, tax, shipping, discount, total, margin pill, and action buttons (Create Order, Save Draft)
 - **Mobile Optimization**: Clean vertical stacking with proper spacing, Order Location at top, summary at bottom
 - **Improved Workflow**: Reduced scrolling, better visual hierarchy, settings always visible on desktop
-
-## Facebook Name Auto-fill Integration (October 2025)
-- **Username-Based Extraction**: Extracts and formats names directly from Facebook usernames (no Graph API required)
-- **Smart URL Parsing**: Extracts Facebook ID/username from various URL formats (facebook.com/username, m.facebook.com/username, profile.php?id=123)
-- **Mobile URL Support**: Fully supports mobile Facebook URLs (m.facebook.com)
-- **Intelligent Name Extraction**: Automatically cleans usernames and converts to proper case (e.g., "davie.lam.3" → "Davie Lam 3")
-- **Auto-fill Integration**: Automatically populates Facebook Name and Name fields in customer forms when Facebook URL is pasted
-- **Prefix Removal**: Removes common prefixes (itz, its, im, i.am, the, mr, mrs, ms, dr) for cleaner names
-- **API Endpoint**: `/api/facebook/name` returns JSON with facebookId and facebookName (extracted from username)
 
 ## Pick & Pack Page Optimization (October 2025)
 - **Keyboard Shortcuts**: Added rapid navigation shortcuts (Ctrl+K for barcode search, Ctrl+S to start picking, Alt+N/P for item navigation, Esc to cancel)
