@@ -110,6 +110,7 @@ interface OrderItem {
 export default function AddOrder() {
   const [, setLocation] = useLocation();
   const [showTaxInvoice, setShowTaxInvoice] = useState(false);
+  const [showDiscount, setShowDiscount] = useState(false);
   const { toast } = useToast();
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [productSearch, setProductSearch] = useState("");
@@ -408,6 +409,14 @@ export default function AddOrder() {
       productSearchRef.current.focus();
     }
   }, []);
+
+  // Auto-show discount section when discount value > 0
+  useEffect(() => {
+    const discountValue = form.watch('discountValue');
+    if (discountValue > 0 && !showDiscount) {
+      setShowDiscount(true);
+    }
+  }, [form.watch('discountValue'), showDiscount]);
 
   // Fetch all products for real-time filtering
   const { data: allProducts } = useQuery({
@@ -2481,81 +2490,103 @@ export default function AddOrder() {
             <CardDescription className="text-xs sm:text-sm mt-1">Configure pricing and notes</CardDescription>
           </CardHeader>
           <CardContent className="p-4 sm:p-6 pt-0 sm:pt-0 space-y-4">
-            <div className="space-y-4">
-              {/* Enhanced Discount Section */}
-              <div>
-                <Label className="text-sm font-medium">Discount</Label>
-                <div className="flex gap-2 mt-1">
-                  <Select 
-                    value={form.watch('discountType')} 
-                    onValueChange={(value) => form.setValue('discountType', value as 'flat' | 'rate')}
-                  >
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="flat">Amount</SelectItem>
-                      <SelectItem value="rate">Percentage</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder={form.watch('discountType') === 'rate' ? '0-100' : '0'}
-                    {...form.register('discountValue', { valueAsNumber: true })}
-                    className="flex-1"
-                  />
-                  {form.watch('discountType') === 'rate' && (
-                    <div className="flex items-center px-3 text-gray-500">
-                      <Percent className="h-4 w-4" />
-                    </div>
-                  )}
-                </div>
+            {/* Discount Toggle Button */}
+            <div>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full h-12 border-2 border-dashed border-blue-200 hover:border-blue-300 bg-blue-50 hover:bg-blue-100 text-blue-600 transition-all duration-300"
+                onClick={() => {
+                  setShowDiscount(!showDiscount);
+                }}
+              >
+                <Percent className="h-5 w-5 mr-2" />
+                Add Discount
+                {showDiscount ? <ChevronUp className="h-4 w-4 ml-2" /> : <ChevronDown className="h-4 w-4 ml-2" />}
+              </Button>
+            </div>
 
-                {/* Quick discount buttons */}
-                <div className="mt-2">
-                  <div className="text-xs text-gray-500 mb-1">Quick select:</div>
-                  <div className="flex flex-wrap gap-1">
-                    {form.watch('discountType') === 'rate' && [5, 10, 15, 20, 25].map(amount => (
-                      <Button
-                        key={amount}
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="h-7 px-2 text-xs"
-                        onClick={() => form.setValue('discountValue', amount)}
+            {/* Discount Section with smooth transition */}
+            <div className={`overflow-hidden transition-all duration-500 ease-in-out ${
+              showDiscount ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+            }`}>
+              {showDiscount && (
+                <div className="space-y-4 p-4 border-2 border-blue-100 rounded-lg bg-blue-50/30">
+                  <div>
+                    <Label className="text-sm font-medium">Discount</Label>
+                    <div className="flex gap-2 mt-1">
+                      <Select 
+                        value={form.watch('discountType')} 
+                        onValueChange={(value) => form.setValue('discountType', value as 'flat' | 'rate')}
                       >
-                        {amount}%
-                      </Button>
-                    ))}
-                    {form.watch('discountType') === 'flat' && form.watch('currency') === 'CZK' && [50, 100, 200, 500].map(amount => (
-                      <Button
-                        key={amount}
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="h-7 px-2 text-xs"
-                        onClick={() => form.setValue('discountValue', amount)}
-                      >
-                        {amount} CZK
-                      </Button>
-                    ))}
-                    {form.watch('discountType') === 'flat' && form.watch('currency') === 'EUR' && [5, 10, 20, 50].map(amount => (
-                      <Button
-                        key={amount}
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="h-7 px-2 text-xs"
-                        onClick={() => form.setValue('discountValue', amount)}
-                      >
-                        {amount} EUR
-                      </Button>
-                    ))}
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="flat">Amount</SelectItem>
+                          <SelectItem value="rate">Percentage</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder={form.watch('discountType') === 'rate' ? '0-100' : '0'}
+                        {...form.register('discountValue', { valueAsNumber: true })}
+                        className="flex-1"
+                      />
+                      {form.watch('discountType') === 'rate' && (
+                        <div className="flex items-center px-3 text-gray-500">
+                          <Percent className="h-4 w-4" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Quick discount buttons */}
+                    <div className="mt-2">
+                      <div className="text-xs text-gray-500 mb-1">Quick select:</div>
+                      <div className="flex flex-wrap gap-1">
+                        {form.watch('discountType') === 'rate' && [5, 10, 15, 20, 25].map(amount => (
+                          <Button
+                            key={amount}
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-7 px-2 text-xs"
+                            onClick={() => form.setValue('discountValue', amount)}
+                          >
+                            {amount}%
+                          </Button>
+                        ))}
+                        {form.watch('discountType') === 'flat' && form.watch('currency') === 'CZK' && [50, 100, 200, 500].map(amount => (
+                          <Button
+                            key={amount}
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-7 px-2 text-xs"
+                            onClick={() => form.setValue('discountValue', amount)}
+                          >
+                            {amount} CZK
+                          </Button>
+                        ))}
+                        {form.watch('discountType') === 'flat' && form.watch('currency') === 'EUR' && [5, 10, 20, 50].map(amount => (
+                          <Button
+                            key={amount}
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-7 px-2 text-xs"
+                            onClick={() => form.setValue('discountValue', amount)}
+                          >
+                            {amount} EUR
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
 
             <Separator className="my-4" />
