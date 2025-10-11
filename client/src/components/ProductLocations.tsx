@@ -116,17 +116,17 @@ export default function ProductLocations({
 
   // Fetch product locations
   const { data: locations = [], isLoading } = useQuery<ProductLocation[]>({
-    queryKey: ['/api/product-locations', productId],
+    queryKey: [`/api/products/${productId}/locations`],
     enabled: !!productId,
   });
 
   // Add location mutation
   const addLocationMutation = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest('POST', '/api/product-locations', data);
+      return await apiRequest('POST', `/api/products/${productId}/locations`, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/product-locations', productId] });
+      queryClient.invalidateQueries({ queryKey: [`/api/products/${productId}/locations`] });
       toast({
         title: "Success",
         description: "Location added successfully",
@@ -146,10 +146,10 @@ export default function ProductLocations({
   // Update location mutation
   const updateLocationMutation = useMutation({
     mutationFn: async (data: { id: string; updates: any }) => {
-      return await apiRequest('PATCH', `/api/product-locations/${data.id}`, data.updates);
+      return await apiRequest('PATCH', `/api/products/${productId}/locations/${data.id}`, data.updates);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/product-locations', productId] });
+      queryClient.invalidateQueries({ queryKey: [`/api/products/${productId}/locations`] });
       toast({
         title: "Success",
         description: "Location updated successfully",
@@ -169,10 +169,10 @@ export default function ProductLocations({
   // Delete location mutation
   const deleteLocationMutation = useMutation({
     mutationFn: async (id: string) => {
-      return await apiRequest('DELETE', `/api/product-locations/${id}`);
+      return await apiRequest('DELETE', `/api/products/${productId}/locations/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/product-locations', productId] });
+      queryClient.invalidateQueries({ queryKey: [`/api/products/${productId}/locations`] });
       toast({
         title: "Success",
         description: "Location deleted successfully",
@@ -191,10 +191,10 @@ export default function ProductLocations({
   // Set primary location mutation
   const setPrimaryMutation = useMutation({
     mutationFn: async (locationId: string) => {
-      return await apiRequest('POST', `/api/product-locations/${locationId}/set-primary`);
+      return await apiRequest('PATCH', `/api/products/${productId}/locations/${locationId}`, { isPrimary: true });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/product-locations', productId] });
+      queryClient.invalidateQueries({ queryKey: [`/api/products/${productId}/locations`] });
       toast({
         title: "Success",
         description: "Primary location updated",
@@ -212,10 +212,10 @@ export default function ProductLocations({
   // Move inventory mutation
   const moveInventoryMutation = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest('POST', '/api/product-locations/move', data);
+      return await apiRequest('POST', `/api/products/${productId}/locations/move`, data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/product-locations', productId] });
+      queryClient.invalidateQueries({ queryKey: [`/api/products/${productId}/locations`] });
       toast({
         title: "Success",
         description: "Inventory moved successfully",
