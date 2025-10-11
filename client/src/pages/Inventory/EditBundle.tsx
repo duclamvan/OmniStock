@@ -817,60 +817,7 @@ export default function EditBundle() {
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-4">
             <div className="space-y-4 pt-2">
-              <div>
-                <Label htmlFor="name">
-                  Bundle Name <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => {
-                    setFormData(prev => ({ ...prev, name: e.target.value }));
-                    if (errors.name) {
-                      setErrors(prev => ({ ...prev, name: '' }));
-                    }
-                  }}
-                  placeholder="e.g., Starter Beauty Kit"
-                  className={errors.name ? 'border-destructive' : ''}
-                />
-                {errors.name && (
-                  <p className="text-sm text-destructive mt-1">{errors.name}</p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="sku">SKU (Optional)</Label>
-                <Input
-                  id="sku"
-                  value={formData.sku}
-                  onChange={(e) => setFormData(prev => ({ ...prev, sku: e.target.value }))}
-                  placeholder="e.g., BDL-001"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Describe what this bundle includes and its benefits"
-                  rows={4}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="notes">Internal Notes (Optional)</Label>
-                <Textarea
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                  placeholder="Notes for internal use only"
-                  rows={3}
-                />
-              </div>
-
-              {/* Bundle Image Upload */}
+              {/* Bundle Image Upload - First and Most Important */}
               <div>
                 <Label>Bundle Image (Optional)</Label>
                 <div className="mt-2">
@@ -937,6 +884,59 @@ export default function EditBundle() {
                     </label>
                   )}
                 </div>
+              </div>
+
+              <div>
+                <Label htmlFor="name">
+                  Bundle Name <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => {
+                    setFormData(prev => ({ ...prev, name: e.target.value }));
+                    if (errors.name) {
+                      setErrors(prev => ({ ...prev, name: '' }));
+                    }
+                  }}
+                  placeholder="e.g., Starter Beauty Kit"
+                  className={errors.name ? 'border-destructive' : ''}
+                />
+                {errors.name && (
+                  <p className="text-sm text-destructive mt-1">{errors.name}</p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="sku">SKU (Optional)</Label>
+                <Input
+                  id="sku"
+                  value={formData.sku}
+                  onChange={(e) => setFormData(prev => ({ ...prev, sku: e.target.value }))}
+                  placeholder="e.g., BDL-001"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Describe what this bundle includes and its benefits"
+                  rows={4}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="notes">Internal Notes (Optional)</Label>
+                <Textarea
+                  id="notes"
+                  value={formData.notes}
+                  onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                  placeholder="Notes for internal use only"
+                  rows={3}
+                />
               </div>
             </div>
           </AccordionContent>
