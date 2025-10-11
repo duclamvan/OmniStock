@@ -1169,10 +1169,10 @@ export default function EditProduct() {
 
                     {/* Upload Options */}
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-                      {Object.entries(IMAGE_PURPOSE_CONFIG).map(([key, config]) => {
+                      {Object.entries(IMAGE_PURPOSE_CONFIG)
+                        .filter(([key]) => !productImages.some(img => img.purpose === key))
+                        .map(([key, config]) => {
                         const Icon = config.icon;
-                        const hasUploaded = productImages.some(img => img.purpose === key);
-                        const uploadedCount = productImages.filter(img => img.purpose === key).length;
                         
                         return (
                           <div key={key} className="relative">
@@ -1185,34 +1185,17 @@ export default function EditProduct() {
                               data-testid={`input-image-${key}`}
                             />
                             <label htmlFor={`image-upload-${key}`}>
-                              <Card className={`cursor-pointer hover:shadow-lg transition-all border-2 ${hasUploaded ? config.uploadedColor : config.color} ${hasUploaded ? 'shadow-md' : ''} hover:scale-[1.02] relative overflow-hidden`}>
-                                {hasUploaded && (
-                                  <div className={`absolute inset-0 bg-gradient-to-br ${config.bgGradient} opacity-30`}></div>
-                                )}
-                                
-                                {hasUploaded && (
-                                  <div className="absolute top-1.5 right-1.5 z-10">
-                                    <Badge className="h-5 px-1.5 bg-green-500 text-white border-0 shadow-sm text-[10px]">
-                                      <CheckCircle className="h-2.5 w-2.5 mr-0.5" />
-                                      {uploadedCount}
-                                    </Badge>
-                                  </div>
-                                )}
-                                
-                                <CardContent className="p-3 relative z-10">
-                                  <div className="flex flex-col items-center text-center gap-2">
-                                    <div className={`p-2 ${hasUploaded ? 'bg-white/90' : 'bg-white'} dark:bg-slate-800 rounded-lg shadow-sm`}>
+                              <Card className={`h-32 cursor-pointer hover:shadow-lg transition-all border-2 ${config.color} hover:scale-[1.02] relative overflow-hidden`}>
+                                <CardContent className="p-3 relative z-10 h-full">
+                                  <div className="flex flex-col items-center text-center gap-2 h-full justify-center">
+                                    <div className="p-2 bg-white dark:bg-slate-800 rounded-lg shadow-sm">
                                       <Icon className="h-5 w-5" />
                                     </div>
                                     <div>
                                       <div className="font-medium text-xs leading-tight">{config.label}</div>
                                       <div className="text-[10px] text-slate-600 dark:text-slate-400 mt-0.5 line-clamp-2">{config.description}</div>
                                     </div>
-                                    {hasUploaded ? (
-                                      <Plus className="h-3 w-3 opacity-60" />
-                                    ) : (
-                                      <Upload className="h-3 w-3 opacity-60" />
-                                    )}
+                                    <Upload className="h-3 w-3 opacity-60" />
                                   </div>
                                 </CardContent>
                               </Card>
