@@ -435,19 +435,11 @@ export default function ProductDetails() {
                     <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">SKU</label>
                     <p className="text-lg font-mono text-slate-900 mt-1" data-testid="text-sku">{product.sku}</p>
                   </div>
-                  <div>
-                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Category</label>
-                    <p className="text-lg text-slate-900 mt-1" data-testid="text-category">{category?.name || "Uncategorized"}</p>
-                  </div>
                 </div>
                 <div className="space-y-4">
                   <div>
-                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Warehouse</label>
-                    <p className="text-lg text-slate-900 mt-1" data-testid="text-warehouse">{warehouse?.name || "Not assigned"}</p>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Location</label>
-                    <p className="text-lg text-slate-900 mt-1" data-testid="text-location">{product.warehouseLocation || "Not specified"}</p>
+                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Category</label>
+                    <p className="text-lg text-slate-900 mt-1" data-testid="text-category">{category?.name || "Uncategorized"}</p>
                   </div>
                 </div>
               </div>
@@ -476,7 +468,7 @@ export default function ProductDetails() {
             </div>
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
               <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Current Quantity</label>
                 <p className="text-2xl font-bold text-slate-900 mt-2" data-testid="text-quantity">{product.quantity}</p>
@@ -492,6 +484,14 @@ export default function ProductDetails() {
               <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Barcode</label>
                 <p className="text-lg font-mono text-slate-900 mt-2" data-testid="text-barcode-detail">{product.barcode || "Not set"}</p>
+              </div>
+              <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Warehouse</label>
+                <p className="text-lg text-slate-900 mt-2" data-testid="text-warehouse">{warehouse?.name || "Not assigned"}</p>
+              </div>
+              <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Warehouse Location</label>
+                <p className="text-lg font-mono text-slate-900 mt-2" data-testid="text-location">{product.warehouseLocation || "Not specified"}</p>
               </div>
             </div>
           </AccordionContent>
