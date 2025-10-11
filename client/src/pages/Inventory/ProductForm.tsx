@@ -239,6 +239,7 @@ export default function ProductForm() {
   // Auto-conversion refs
   const conversionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const seriesConversionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const salesPriceConversionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Get categoryId from URL query parameters (for add mode)
   const searchParams = new URLSearchParams(window.location.search);
@@ -305,6 +306,13 @@ export default function ProductForm() {
   const importCostUsd = form.watch('importCostUsd');
   const importCostCzk = form.watch('importCostCzk');
   const importCostEur = form.watch('importCostEur');
+  
+  // Watch sales price fields for auto-conversion
+  const priceCzk = form.watch('priceCzk');
+  const priceEur = form.watch('priceEur');
+  const priceUsd = form.watch('priceUsd');
+  const priceVnd = form.watch('priceVnd');
+  const priceCny = form.watch('priceCny');
   
   // Watch select field values to prevent freezing
   const categoryId = form.watch('categoryId');
@@ -419,6 +427,75 @@ export default function ProductForm() {
       }
     };
   }, [seriesImportCostUsd, seriesImportCostCzk, seriesImportCostEur]);
+
+  // Auto-convert sales prices after 1 second
+  useEffect(() => {
+    if (salesPriceConversionTimeoutRef.current) {
+      clearTimeout(salesPriceConversionTimeoutRef.current);
+    }
+
+    salesPriceConversionTimeoutRef.current = setTimeout(() => {
+      const filledFields = [
+        priceCzk ? 'CZK' : null,
+        priceEur ? 'EUR' : null,
+        priceUsd ? 'USD' : null,
+        priceVnd ? 'VND' : null,
+        priceCny ? 'CNY' : null,
+      ].filter(Boolean);
+
+      if (filledFields.length === 1) {
+        const sourceCurrency = filledFields[0] as Currency;
+        let sourceValue = 0;
+
+        switch (sourceCurrency) {
+          case 'CZK':
+            sourceValue = parseFloat(String(priceCzk)) || 0;
+            break;
+          case 'EUR':
+            sourceValue = parseFloat(String(priceEur)) || 0;
+            break;
+          case 'USD':
+            sourceValue = parseFloat(String(priceUsd)) || 0;
+            break;
+          case 'VND':
+            sourceValue = parseFloat(String(priceVnd)) || 0;
+            break;
+          case 'CNY':
+            sourceValue = parseFloat(String(priceCny)) || 0;
+            break;
+        }
+
+        if (sourceValue > 0) {
+          if (sourceCurrency !== 'CZK' && !priceCzk) {
+            const czkValue = convertCurrency(sourceValue, sourceCurrency, 'CZK');
+            form.setValue('priceCzk', parseFloat(czkValue.toFixed(2)));
+          }
+          if (sourceCurrency !== 'EUR' && !priceEur) {
+            const eurValue = convertCurrency(sourceValue, sourceCurrency, 'EUR');
+            form.setValue('priceEur', parseFloat(eurValue.toFixed(2)));
+          }
+          if (sourceCurrency !== 'USD' && !priceUsd) {
+            const usdValue = convertCurrency(sourceValue, sourceCurrency, 'USD');
+            form.setValue('priceUsd', parseFloat(usdValue.toFixed(2)));
+          }
+          if (sourceCurrency !== 'VND' && !priceVnd) {
+            const vndValue = convertCurrency(sourceValue, sourceCurrency, 'VND');
+            form.setValue('priceVnd', Math.round(vndValue));
+          }
+          if (sourceCurrency !== 'CNY' && !priceCny) {
+            const cnyValue = convertCurrency(sourceValue, sourceCurrency, 'CNY');
+            form.setValue('priceCny', parseFloat(cnyValue.toFixed(2)));
+          }
+        }
+      }
+    }, 1000);
+
+    return () => {
+      if (salesPriceConversionTimeoutRef.current) {
+        clearTimeout(salesPriceConversionTimeoutRef.current);
+      }
+    };
+  }, [priceCzk, priceEur, priceUsd, priceVnd, priceCny, form]);
 
   // Auto-set low stock alert to 50% of quantity in add mode
   useEffect(() => {
