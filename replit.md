@@ -9,6 +9,8 @@ Preferred communication style: Simple, everyday language.
 ## Frontend
 The client-side is a React and TypeScript application built with Vite, following a component-based architecture. It uses Shadcn/ui (Radix UI primitives) for UI components, Tailwind CSS for styling, TanStack Query for state management, Wouter for routing, and React Hook Form with Zod for form validation. UI/UX design emphasizes mobile-first responsiveness, card-based layouts, sticky navigation, and clear visual separation. Key features include an interactive Pick & Pack interface optimized for handheld devices, and advanced warehouse mapping with an interactive 2D floor plan.
 
+**Architecture Pattern**: The application uses unified form components that handle both create and edit modes (e.g., ProductForm for both adding and editing products). This ensures consistency and reduces code duplication - any changes to the form automatically apply to both add and edit workflows.
+
 ## Backend
 The server-side is implemented with Express.js and TypeScript (ESM modules), providing RESTful API endpoints with consistent error handling.
 
@@ -19,7 +21,7 @@ The application supports Facebook OAuth Login and traditional email/password aut
 The application uses PostgreSQL with Neon serverless driver and Drizzle ORM. The schema supports a comprehensive e-commerce workflow, including users, products, orders, customers, warehouses, suppliers, and returns. It facilitates complete order lifecycle management, inventory tracking (including variants and stock), multi-currency financial tracking, and an audit trail. Supplier information is centralized and referenced via foreign keys for normalization.
 
 ## Core Features
-- **Product Management**: Comprehensive product details, pricing, location tracking, barcode scanning, document management, and packing instructions. Supports tiered pricing, supplier integration, multi-purpose product images, automatic image compression, and product variant photo support with smart fallback to main product images.
+- **Product Management**: Comprehensive product details, pricing, location tracking, barcode scanning, document management, and multiple packing instructions (arrays of images and text entries). Supports tiered pricing, supplier integration, multi-purpose product images, automatic image compression, and product variant photo support with smart fallback to main product images.
 - **Order Management**: Creation, shipping/payment selection, automatic shipping cost calculation, CRUD operations, detailed views, real-time synchronization, and a custom order ID format. Includes "Pay Later" and editable priority.
 - **Inventory Management**: Soft product deletion, bulk variant operations, and comprehensive category management.
 - **Customer Management**: Enhanced tables with order statistics, forms with address lookup, "Pay Later" functionality, and comprehensive Facebook integration with real-time name syncing and profile picture fetching. Includes AI-powered Smart Paste for address parsing (available in both Add Customer and Add Order pages) with DeepSeek AI and Nominatim auto-correction. Shipping address labels auto-generate from form fields (company/name + street + city) and remain editable with smart regeneration on data changes. Add Order page's "New Customer Details" form features consistent slate color scheme and separate street/streetNumber fields for better address structure.
