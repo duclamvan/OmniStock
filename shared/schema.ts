@@ -390,6 +390,21 @@ export const products = pgTable('products', {
   unitHeightCm: decimal('unit_height_cm', { precision: 10, scale: 2 })
 });
 
+// Product Variants table
+export const productVariants = pgTable('product_variants', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  productId: varchar('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
+  name: varchar('name').notNull(),
+  barcode: varchar('barcode'),
+  quantity: integer('quantity').default(0),
+  importCostUsd: decimal('import_cost_usd', { precision: 10, scale: 2 }),
+  importCostCzk: decimal('import_cost_czk', { precision: 10, scale: 2 }),
+  importCostEur: decimal('import_cost_eur', { precision: 10, scale: 2 }),
+  imageUrl: varchar('image_url'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow()
+});
+
 // Product tiered pricing table
 export const productTieredPricing = pgTable('product_tiered_pricing', {
   id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
@@ -957,6 +972,7 @@ export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: tru
 export const insertWarehouseSchema = createInsertSchema(warehouses).omit({ createdAt: true });
 export const insertWarehouseFileSchema = createInsertSchema(warehouseFiles).omit({ id: true, createdAt: true });
 export const insertProductSchema = createInsertSchema(products).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertProductVariantSchema = createInsertSchema(productVariants).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProductTieredPricingSchema = createInsertSchema(productTieredPricing).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertProductBundleSchema = createInsertSchema(productBundles).omit({ id: true, bundleId: true, createdAt: true, updatedAt: true });
 export const insertBundleItemSchema = createInsertSchema(bundleItems).omit({ id: true, createdAt: true });
@@ -1033,6 +1049,8 @@ export type WarehouseFile = typeof warehouseFiles.$inferSelect;
 export type InsertWarehouseFile = z.infer<typeof insertWarehouseFileSchema>;
 export type Product = typeof products.$inferSelect;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
+export type ProductVariant = typeof productVariants.$inferSelect;
+export type InsertProductVariant = z.infer<typeof insertProductVariantSchema>;
 export type ProductTieredPricing = typeof productTieredPricing.$inferSelect;
 export type InsertProductTieredPricing = z.infer<typeof insertProductTieredPricingSchema>;
 export type ProductBundle = typeof productBundles.$inferSelect;
