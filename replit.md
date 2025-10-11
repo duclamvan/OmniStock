@@ -3,8 +3,9 @@ Davie Supply is a full-stack web application designed for comprehensive warehous
 
 # Recent Changes
 ## AI Smart Paste & UI Improvements (October 2025)
-- **AI Address Parsing**: Implemented Smart Paste feature for customer addresses using OpenAI gpt-4o-mini to parse unstructured address text
+- **AI Address Parsing**: Implemented Smart Paste feature for customer addresses using DeepSeek AI (deepseek-chat model) to parse unstructured address text
 - **POST /api/addresses/parse Endpoint**: Backend endpoint that extracts firstName, lastName, company, email, phone, street, streetNumber, city, zipCode, country, state from raw text
+- **DeepSeek Integration**: Uses DEEPSEEK_API_KEY with OpenAI-compatible API at https://api.deepseek.com for cost-effective, high-quality parsing
 - **Nominatim Validation**: Integrated OpenStreetMap Nominatim API to validate and enhance AI-parsed addresses with geocoding data
 - **Confidence Scoring**: Returns high/medium/low confidence based on field completeness and Nominatim validation
 - **Smart Paste UI**: Added textarea and "Parse & Fill" button for both shipping and billing addresses in Add Customer page
@@ -12,6 +13,8 @@ Davie Supply is a full-stack web application designed for comprehensive warehous
 - **UI Color Cleanup**: Replaced all blue backgrounds (bg-blue-50) with neutral slate colors (bg-slate-50, hover:bg-slate-100) in address forms
 - **Badge Centering**: Vertically centered variant count badge in Product Variants accordion trigger for better visual balance
 - **CustomerDetails Bug Fix**: Added proper null check for undefined customer data to prevent runtime errors
+- **ProductDetails Bug Fix**: Fixed supplier object rendering to display supplier.name instead of entire object
+- **Cost History Bug Fix**: Corrected field reference from purchaseItemId to customItemId to match schema definition
 
 ## Facebook Integration Updates (October 2025)
 - **Editable Facebook ID Field**: Changed Facebook ID from read-only to editable input, allowing manual corrections while still auto-extracting from URLs

@@ -1442,7 +1442,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           method: productCostHistory.method,
           computedAt: productCostHistory.computedAt,
           createdAt: productCostHistory.createdAt,
-          purchaseItemId: productCostHistory.purchaseItemId,
+          customItemId: productCostHistory.customItemId,
         })
         .from(productCostHistory)
         .where(eq(productCostHistory.productId, productId))
@@ -1452,14 +1452,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const costHistoryWithDetails = await Promise.all(
         costHistory.map(async (history) => {
           let source = history.method;
-          if (history.purchaseItemId) {
+          if (history.customItemId) {
             const [purchaseItem] = await db
               .select({
                 name: purchaseItems.name,
                 purchaseId: purchaseItems.purchaseId,
               })
               .from(purchaseItems)
-              .where(eq(purchaseItems.id, history.purchaseItemId));
+              .where(eq(purchaseItems.id, history.customItemId));
             
             if (purchaseItem) {
               source = `PO-${purchaseItem.purchaseId}: ${purchaseItem.name}`;
@@ -5755,20 +5755,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'rawAddress is required and must be a string' });
       }
 
-      const apiKey = process.env.OPENAI_API_KEY;
+      const apiKey = process.env.DEEPSEEK_API_KEY;
       if (!apiKey) {
-        return res.status(500).json({ message: 'OpenAI API key not configured' });
+        return res.status(500).json({ message: 'DeepSeek API key not configured' });
       }
 
       const OpenAI = (await import('openai')).default;
-      const openai = new OpenAI({ apiKey });
+      const openai = new OpenAI({ 
+        apiKey,
+        baseURL: 'https://api.deepseek.com'
+      });
 
       const prompt = `You are an address parsing engine. Extract first name, last name, company, email, phone, and address components from the text below. Return ONLY valid JSON with these exact fields: firstName, lastName, company, email, phone, street, streetNumber, city, zipCode, country, state. Use null for missing fields. Ensure street and streetNumber are separate (street is the street name, streetNumber is the house number).
 
 Text: ${rawAddress}`;
 
       const completion = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: 'deepseek-chat',
         messages: [
           {
             role: 'system',
