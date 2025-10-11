@@ -122,7 +122,6 @@ export default function AddCustomer() {
   const [isValidatingVat, setIsValidatingVat] = useState(false);
   const [vatValidationResult, setVatValidationResult] = useState<VatValidationResult | null>(null);
 
-  const [isLoadingFacebookName, setIsLoadingFacebookName] = useState(false);
   const [extractedFacebookId, setExtractedFacebookId] = useState<string>('');
   const [duplicateCustomer, setDuplicateCustomer] = useState<Customer | null>(null);
   const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
@@ -436,46 +435,6 @@ export default function AddCustomer() {
     }
   };
 
-  const fetchFacebookName = useCallback(
-    debounce(async (facebookUrl: string) => {
-      if (!facebookUrl || facebookUrl.length < 10) {
-        return;
-      }
-      
-      try {
-        setIsLoadingFacebookName(true);
-        
-        // Call the Facebook name API to get the user's name
-        const response = await fetch(`/api/facebook/name?url=${encodeURIComponent(facebookUrl)}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch Facebook name');
-        }
-        const data = await response.json();
-        
-        // Auto-fill Facebook Name (which will automatically sync to Name via onChange handler)
-        if (data.facebookName) {
-          form.setValue('facebookName', data.facebookName);
-          // Also sync to Name field
-          form.setValue('name', data.facebookName);
-        }
-        
-        // Show toast message if there was an error or notice
-        if (data.message) {
-          toast({
-            title: "Notice",
-            description: data.message,
-            duration: 5000,
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching Facebook name:', error);
-      } finally {
-        setIsLoadingFacebookName(false);
-      }
-    }, 500),
-    [form, toast]
-  );
-
   const checkDuplicateCustomer = useCallback(
     debounce(async (facebookId: string) => {
       // Update the latest request ID
@@ -717,10 +676,9 @@ export default function AddCustomer() {
                       form.register('facebookUrl').onChange(e);
                       const extractedId = extractFacebookId(e.target.value);
                       setExtractedFacebookId(extractedId);
-                      fetchFacebookName(e.target.value);
                     }}
                   />
-                  <p className="text-xs text-slate-500 mt-1">Paste Facebook profile URL to auto-fill name and ID</p>
+                  <p className="text-xs text-slate-500 mt-1">Paste Facebook profile URL to auto-fill ID</p>
                 </div>
 
                 <div>
@@ -776,13 +734,8 @@ export default function AddCustomer() {
                     placeholder="Customer's Facebook display name"
                     className="text-base"
                     data-testid="input-facebookName"
-                    onChange={(e) => {
-                      form.register('facebookName').onChange(e);
-                      // Sync Facebook Name to Name field when typing
-                      form.setValue('name', e.target.value);
-                    }}
                   />
-                  <p className="text-xs text-slate-500 mt-1">Auto-filled from URL. Syncs to Name field when you type.</p>
+                  <p className="text-xs text-slate-500 mt-1">Optional: Customer's name as shown on Facebook</p>
                 </div>
 
                 <div>
@@ -794,7 +747,6 @@ export default function AddCustomer() {
                     className="text-base"
                     data-testid="input-name"
                   />
-                  <p className="text-xs text-slate-500 mt-1">Edit independently without affecting Facebook Name</p>
                   {form.formState.errors.name && (
                     <p className="text-sm text-red-500 mt-1">{form.formState.errors.name.message}</p>
                   )}
