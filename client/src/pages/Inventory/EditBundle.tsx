@@ -1086,57 +1086,11 @@ export default function EditBundle() {
                               {item.productId && variantsCache[item.productId]?.length > 0 && (
                                 <div>
                                   <Label>Variants (Optional)</Label>
-                                  <div className="space-y-2">
-                                    <VariantSelector
-                                      variants={variantsCache[item.productId]}
-                                      selectedIds={item.variantIds || []}
-                                      onChange={(ids) => handleItemChange(item.id, 'variantIds', ids)}
-                                    />
-                                    
-                                    {/* Show selected variants */}
-                                    {item.variantIds && item.variantIds.length > 0 && (
-                                      <div className="mt-2">
-                                        <Button
-                                          type="button"
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => toggleItemExpanded(item.id)}
-                                          className="w-full justify-between"
-                                        >
-                                          <span className="text-sm">
-                                            {item.variantIds.length} variant{item.variantIds.length !== 1 ? 's' : ''} selected
-                                          </span>
-                                          {expandedItems.has(item.id) ? (
-                                            <ChevronUp className="h-4 w-4" />
-                                          ) : (
-                                            <ChevronDown className="h-4 w-4" />
-                                          )}
-                                        </Button>
-                                        
-                                        {expandedItems.has(item.id) && (
-                                          <div className="mt-2 p-3 bg-muted rounded-lg max-h-48 overflow-y-auto">
-                                            <div className="flex flex-wrap gap-2">
-                                              {item.variantNames?.map((name, idx) => (
-                                                <Badge 
-                                                  key={idx} 
-                                                  variant="secondary"
-                                                  className="cursor-pointer hover:bg-destructive hover:text-destructive-foreground"
-                                                  onClick={() => {
-                                                    const newIds = [...(item.variantIds || [])];
-                                                    newIds.splice(idx, 1);
-                                                    handleItemChange(item.id, 'variantIds', newIds);
-                                                  }}
-                                                >
-                                                  {name}
-                                                  <X className="ml-1 h-3 w-3" />
-                                                </Badge>
-                                              ))}
-                                            </div>
-                                          </div>
-                                        )}
-                                      </div>
-                                    )}
-                                  </div>
+                                  <VariantSelector
+                                    variants={variantsCache[item.productId]}
+                                    selectedIds={item.variantIds || []}
+                                    onChange={(ids) => handleItemChange(item.id, 'variantIds', ids)}
+                                  />
                                 </div>
                               )}
 
