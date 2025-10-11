@@ -1330,12 +1330,23 @@ export default function AddOrder() {
                   ref={customerSearchRef}
                   placeholder="Type to search customers (Vietnamese diacritics supported)..."
                   value={customerSearch}
-                  onChange={(e) => setCustomerSearch(e.target.value)}
+                  onChange={(e) => {
+                    setCustomerSearch(e.target.value);
+                    // Clear selected customer when user starts typing to search for a new one
+                    if (selectedCustomer) {
+                      setSelectedCustomer(null);
+                    }
+                  }}
                   className="pl-10"
                   onFocus={() => setShowCustomerDropdown(customerSearch.length >= 2 && !selectedCustomer)}
                   onKeyDown={(e) => {
                     if (e.key === 'Escape') {
                       setShowCustomerDropdown(false);
+                    }
+                    // Backspace or Delete: Clear selected customer to allow new search
+                    if ((e.key === 'Backspace' || e.key === 'Delete') && selectedCustomer) {
+                      setSelectedCustomer(null);
+                      setShowCustomerDropdown(true);
                     }
                     // Enter: Select first customer from dropdown
                     if (e.key === 'Enter' && filteredCustomers && filteredCustomers.length > 0) {
@@ -1914,9 +1925,11 @@ export default function AddOrder() {
               <div className="flex items-center justify-between mb-2">
                 <Label htmlFor="product">Search Products</Label>
                 <div className="flex items-center gap-2">
-                  <Badge 
-                    variant={barcodeScanMode ? "default" : "outline"} 
-                    className="cursor-pointer"
+                  <Button
+                    type="button"
+                    variant={barcodeScanMode ? "default" : "outline"}
+                    size="sm"
+                    className="h-6 text-xs px-2"
                     onClick={() => {
                       setBarcodeScanMode(!barcodeScanMode);
                       toast({
@@ -1929,7 +1942,7 @@ export default function AddOrder() {
                   >
                     <Package className="h-3 w-3 mr-1" />
                     {barcodeScanMode ? "Scan Mode: ON" : "Scan Mode: OFF"}
-                  </Badge>
+                  </Button>
                 </div>
               </div>
               <div className="relative">
