@@ -238,7 +238,20 @@ export default function ProductForm() {
   });
   const [packingInstructionsTexts, setPackingInstructionsTexts] = useState<string[]>([]);
   const [packingInstructionsImages, setPackingInstructionsImages] = useState<string[]>([]);
-  const [expandedSections, setExpandedSections] = useState<string[]>(["basic"]);
+  
+  // All available sections
+  const ALL_SECTIONS = ["basic", "stock", "pricing", "supplier", "variants", "packing", "files"];
+  
+  // Load expanded sections from localStorage or default to all expanded
+  const [expandedSections, setExpandedSections] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('productForm_expandedSections');
+      return saved ? JSON.parse(saved) : ALL_SECTIONS;
+    } catch {
+      return ALL_SECTIONS;
+    }
+  });
+  
   const [imageViewerOpen, setImageViewerOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<{ preview: string; purpose: string } | null>(null);
   
@@ -520,6 +533,15 @@ export default function ProductForm() {
       }
     }
   }, [productQuantity, isEditMode, form]);
+
+  // Save expanded sections to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('productForm_expandedSections', JSON.stringify(expandedSections));
+    } catch (error) {
+      console.error('Failed to save expanded sections:', error);
+    }
+  }, [expandedSections]);
 
   // Prefill form when product data is loaded (edit mode)
   useEffect(() => {
