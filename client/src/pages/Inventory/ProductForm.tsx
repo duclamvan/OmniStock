@@ -2085,25 +2085,102 @@ export default function ProductForm() {
                               <div className="grid grid-cols-2 gap-2">
                                 <div>
                                   <Label className="text-xs">CZK</Label>
-                                  <Input type="number" step="0.01" {...tierForm.register('priceCzk')} placeholder="0.00" data-testid="input-tier-czk" />
+                                  <Input 
+                                    type="number" 
+                                    step="0.01" 
+                                    {...tierForm.register('priceCzk')} 
+                                    placeholder="0.00" 
+                                    data-testid="input-tier-czk"
+                                    onBlur={(e) => {
+                                      const value = parseFloat(e.target.value);
+                                      if (value && value > 0) {
+                                        tierForm.setValue('priceEur', parseFloat(convertCurrency(value, 'CZK', 'EUR').toFixed(2)));
+                                        tierForm.setValue('priceUsd', parseFloat(convertCurrency(value, 'CZK', 'USD').toFixed(2)));
+                                        tierForm.setValue('priceVnd', Math.round(convertCurrency(value, 'CZK', 'VND')));
+                                        tierForm.setValue('priceCny', parseFloat(convertCurrency(value, 'CZK', 'CNY').toFixed(2)));
+                                      }
+                                    }}
+                                  />
                                 </div>
                                 <div>
                                   <Label className="text-xs">EUR</Label>
-                                  <Input type="number" step="0.01" {...tierForm.register('priceEur')} placeholder="0.00" data-testid="input-tier-eur" />
+                                  <Input 
+                                    type="number" 
+                                    step="0.01" 
+                                    {...tierForm.register('priceEur')} 
+                                    placeholder="0.00" 
+                                    data-testid="input-tier-eur"
+                                    onBlur={(e) => {
+                                      const value = parseFloat(e.target.value);
+                                      if (value && value > 0) {
+                                        tierForm.setValue('priceCzk', parseFloat(convertCurrency(value, 'EUR', 'CZK').toFixed(2)));
+                                        tierForm.setValue('priceUsd', parseFloat(convertCurrency(value, 'EUR', 'USD').toFixed(2)));
+                                        tierForm.setValue('priceVnd', Math.round(convertCurrency(value, 'EUR', 'VND')));
+                                        tierForm.setValue('priceCny', parseFloat(convertCurrency(value, 'EUR', 'CNY').toFixed(2)));
+                                      }
+                                    }}
+                                  />
                                 </div>
                                 <div>
                                   <Label className="text-xs">USD</Label>
-                                  <Input type="number" step="0.01" {...tierForm.register('priceUsd')} placeholder="0.00" data-testid="input-tier-usd" />
+                                  <Input 
+                                    type="number" 
+                                    step="0.01" 
+                                    {...tierForm.register('priceUsd')} 
+                                    placeholder="0.00" 
+                                    data-testid="input-tier-usd"
+                                    onBlur={(e) => {
+                                      const value = parseFloat(e.target.value);
+                                      if (value && value > 0) {
+                                        tierForm.setValue('priceCzk', parseFloat(convertCurrency(value, 'USD', 'CZK').toFixed(2)));
+                                        tierForm.setValue('priceEur', parseFloat(convertCurrency(value, 'USD', 'EUR').toFixed(2)));
+                                        tierForm.setValue('priceVnd', Math.round(convertCurrency(value, 'USD', 'VND')));
+                                        tierForm.setValue('priceCny', parseFloat(convertCurrency(value, 'USD', 'CNY').toFixed(2)));
+                                      }
+                                    }}
+                                  />
                                 </div>
                                 <div>
                                   <Label className="text-xs">VND</Label>
-                                  <Input type="number" {...tierForm.register('priceVnd')} placeholder="0" data-testid="input-tier-vnd" />
+                                  <Input 
+                                    type="number" 
+                                    {...tierForm.register('priceVnd')} 
+                                    placeholder="0" 
+                                    data-testid="input-tier-vnd"
+                                    onBlur={(e) => {
+                                      const value = parseFloat(e.target.value);
+                                      if (value && value > 0) {
+                                        tierForm.setValue('priceCzk', parseFloat(convertCurrency(value, 'VND', 'CZK').toFixed(2)));
+                                        tierForm.setValue('priceEur', parseFloat(convertCurrency(value, 'VND', 'EUR').toFixed(2)));
+                                        tierForm.setValue('priceUsd', parseFloat(convertCurrency(value, 'VND', 'USD').toFixed(2)));
+                                        tierForm.setValue('priceCny', parseFloat(convertCurrency(value, 'VND', 'CNY').toFixed(2)));
+                                      }
+                                    }}
+                                  />
                                 </div>
                                 <div>
                                   <Label className="text-xs">CNY</Label>
-                                  <Input type="number" step="0.01" {...tierForm.register('priceCny')} placeholder="0.00" data-testid="input-tier-cny" />
+                                  <Input 
+                                    type="number" 
+                                    step="0.01" 
+                                    {...tierForm.register('priceCny')} 
+                                    placeholder="0.00" 
+                                    data-testid="input-tier-cny"
+                                    onBlur={(e) => {
+                                      const value = parseFloat(e.target.value);
+                                      if (value && value > 0) {
+                                        tierForm.setValue('priceCzk', parseFloat(convertCurrency(value, 'CNY', 'CZK').toFixed(2)));
+                                        tierForm.setValue('priceEur', parseFloat(convertCurrency(value, 'CNY', 'EUR').toFixed(2)));
+                                        tierForm.setValue('priceUsd', parseFloat(convertCurrency(value, 'CNY', 'USD').toFixed(2)));
+                                        tierForm.setValue('priceVnd', Math.round(convertCurrency(value, 'CNY', 'VND')));
+                                      }
+                                    }}
+                                  />
                                 </div>
                               </div>
+                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                Enter price in one currency, others will auto-convert when you finish typing
+                              </p>
                               
                               <DialogFooter>
                                 <Button type="button" variant="outline" onClick={() => setTieredPricingDialogOpen(false)} data-testid="button-cancel-tier">
