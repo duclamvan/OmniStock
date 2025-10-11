@@ -310,6 +310,12 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
 
   const handleSave = () => {
     if (editingFile) {
+      console.log('Updating file:', editingFile.id);
+      console.log('Update data:', {
+        fileType: uploadData.fileType,
+        description: uploadData.description,
+        language: uploadData.language,
+      });
       // Update existing file
       updateMutation.mutate({
         fileId: editingFile.id,

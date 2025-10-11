@@ -210,7 +210,7 @@ export default function AllInventory() {
     }
 
     // Category filter
-    if (categoryFilter !== "all" && product.categoryId !== parseInt(categoryFilter)) {
+    if (categoryFilter !== "all" && product.categoryId !== categoryFilter) {
       return false;
     }
 
@@ -275,7 +275,7 @@ export default function AllInventory() {
       header: "Category",
       sortable: true,
       cell: (product) => {
-        const category = (categories as any[])?.find((c: any) => c.id === product.categoryId);
+        const category = (categories as any[])?.find((c: any) => String(c.id) === product.categoryId);
         return category?.name || '-';
       },
     },
@@ -904,7 +904,7 @@ export default function AllInventory() {
                     <div>
                       <p className="text-gray-500">Category</p>
                       <p className="font-medium text-gray-900">
-                        {(categories as any[])?.find((c: any) => c.id === product.categoryId)?.name || 'N/A'}
+                        {(categories as any[])?.find((c: any) => String(c.id) === product.categoryId)?.name || 'N/A'}
                       </p>
                     </div>
                     <div>
