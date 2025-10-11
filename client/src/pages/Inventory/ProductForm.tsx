@@ -2516,7 +2516,7 @@ export default function ProductForm() {
                       </div>
                       <div>
                         <Label htmlFor="weight" className="text-sm font-medium">Weight (kg)</Label>
-                        <Input type="number" step="0.01" min="0" {...form.register('weight')} placeholder="0.00" data-testid="input-weight" className="mt-1" />
+                        <Input type="number" step="0.001" min="0" {...form.register('weight')} placeholder="0.000" data-testid="input-weight" className="mt-1" />
                       </div>
                     </div>
                   </div>
