@@ -82,9 +82,7 @@ export default function ProductDetails() {
   };
   
   const getMarginBadgeVariant = (margin: number): "default" | "destructive" | "outline" => {
-    if (margin > 30) return 'default';
-    if (margin > 15) return 'outline';
-    return 'destructive';
+    return 'outline';
   };
 
   return (
