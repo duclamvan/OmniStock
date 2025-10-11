@@ -1,16 +1,90 @@
-import { useParams, useLocation, Link } from "wouter";
+import { useState } from "react";
+import { useParams, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Package, Banknote, BarChart3, Calendar, MapPin, Edit, ShoppingCart, TrendingUp, AlertCircle, Euro } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { 
+  ArrowLeft, 
+  Package, 
+  Edit, 
+  ShoppingCart, 
+  TrendingUp, 
+  Image as ImageIcon,
+  Hand,
+  PackageOpen,
+  FileType,
+  Star,
+  BarChart3,
+  DollarSign,
+  Building,
+  MapPin,
+  Users,
+  Barcode,
+  Hash,
+  Box,
+  Euro,
+  Warehouse,
+  Info,
+  Mail,
+  Phone,
+  Globe
+} from "lucide-react";
 import { formatCurrency } from "@/lib/currencyUtils";
-import { format } from "date-fns";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import CostHistoryChart from "@/components/products/CostHistoryChart";
+import ProductFiles from "@/components/ProductFiles";
+import ProductLocations from "@/components/ProductLocations";
+import ProductVariants from "@/components/ProductVariants";
+
+const IMAGE_PURPOSE_CONFIG = {
+  main: {
+    label: 'Main WMS Image',
+    icon: ImageIcon,
+    color: 'text-blue-600 bg-blue-50 border-blue-300',
+  },
+  in_hand: {
+    label: 'In Hand',
+    icon: Hand,
+    color: 'text-emerald-600 bg-emerald-50 border-emerald-300',
+  },
+  detail: {
+    label: 'Detail Shot',
+    icon: PackageOpen,
+    color: 'text-indigo-600 bg-indigo-50 border-indigo-300',
+  },
+  packaging: {
+    label: 'Packaging',
+    icon: Package,
+    color: 'text-orange-600 bg-orange-50 border-orange-300',
+  },
+  label: {
+    label: 'Label/Barcode',
+    icon: FileType,
+    color: 'text-cyan-600 bg-cyan-50 border-cyan-300',
+  },
+};
 
 export default function ProductDetails() {
   const { id } = useParams();
   const [, navigate] = useLocation();
+  const [expandedSections, setExpandedSections] = useState<string[]>(["basic", "pricing"]);
 
   const { data: product, isLoading } = useQuery<any>({
     queryKey: ['/api/products', id],
@@ -21,23 +95,39 @@ export default function ProductDetails() {
     queryKey: ['/api/orders'],
   });
 
-  const { data: purchases } = useQuery<any[]>({
-    queryKey: ['/api/purchases'],
-  });
-
   const { data: warehouses } = useQuery<any[]>({
     queryKey: ['/api/warehouses'],
   });
 
-  const { data: variants } = useQuery<any[]>({
+  const { data: categories } = useQuery<any[]>({
+    queryKey: ['/api/categories'],
+  });
+
+  const { data: suppliers } = useQuery<any[]>({
+    queryKey: ['/api/suppliers'],
+  });
+
+  const { data: variants = [], isLoading: variantsLoading } = useQuery<any[]>({
     queryKey: [`/api/products/${id}/variants`],
+    enabled: !!id,
+  });
+
+  const { data: tieredPricing = [], isLoading: tieredPricingLoading, isError: tieredPricingError } = useQuery<any[]>({
+    queryKey: ['/api/products', id, 'tiered-pricing'],
+    enabled: !!id,
+  });
+
+  const { data: costHistory = [], isLoading: costHistoryLoading, isError: costHistoryError } = useQuery<any[]>({
+    queryKey: ['/api/products', id, 'cost-history'],
     enabled: !!id,
   });
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Loading product details...</div>
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+        <Skeleton className="h-10 w-48" />
+        <Skeleton className="h-64 w-full" />
+        <Skeleton className="h-96 w-full" />
       </div>
     );
   }
@@ -46,13 +136,8 @@ export default function ProductDetails() {
     return null;
   }
 
-  // Calculate product statistics
   const productOrders = orders?.filter(order => 
     order.items?.some(item => item.productId === product.id)
-  ) || [];
-
-  const productPurchases = purchases?.filter(purchase => 
-    purchase.items?.some(item => item.productId === product.id)
   ) || [];
 
   const totalSold = productOrders.reduce((sum, order) => {
@@ -66,40 +151,79 @@ export default function ProductDetails() {
   }, 0);
 
   const warehouse = warehouses?.find((w: any) => w.id === product.warehouseId);
+  const category = categories?.find((c: any) => c.id === product.categoryId);
+  const supplier = suppliers?.find((s: any) => s.id === product.supplierId);
+  
   const stockStatus = product.quantity <= 5 ? "critical" : product.quantity <= 20 ? "low" : "healthy";
   const stockBadgeVariant = stockStatus === "critical" ? "destructive" : stockStatus === "low" ? "outline" : "default";
 
-  // Calculate profit margin based on landing cost
-  const avgSellingPrice = parseFloat(product.priceEur) || parseFloat(product.priceCzk) || 0;
-  const landingCost = parseFloat(product.latest_landing_cost) || parseFloat(product.importCostEur) || parseFloat(product.importCostCzk) || 0;
-  const profitMargin = avgSellingPrice > 0 && landingCost > 0 ? ((avgSellingPrice - landingCost) / avgSellingPrice * 100).toFixed(1) : 0;
+  // Parse product images with error handling and fallback
+  let productImages: any[] = [];
+  try {
+    if (product.images) {
+      const parsed = JSON.parse(product.images);
+      productImages = Array.isArray(parsed) ? parsed : [];
+    }
+  } catch (error) {
+    console.error('Failed to parse product images:', error);
+    productImages = [];
+  }
   
-  // Determine margin color based on percentage
+  // Fallback to single imageUrl if images array is empty
+  if (productImages.length === 0 && product.imageUrl) {
+    productImages = [{
+      url: product.imageUrl,
+      purpose: 'main',
+      isPrimary: true
+    }];
+  }
+  
+  const primaryImage = productImages.find((img: any) => img.isPrimary) || productImages[0];
+  const displayImage = primaryImage?.url || product.imageUrl;
+
+  // Calculate profit margins for each currency
+  const calculateMargin = (sellingPrice: number, cost: number) => {
+    if (sellingPrice > 0 && cost > 0) {
+      return ((sellingPrice - cost) / sellingPrice * 100).toFixed(1);
+    }
+    return null;
+  };
+
   const getMarginColor = (margin: number) => {
     if (margin > 30) return 'text-green-600';
     if (margin > 15) return 'text-yellow-600';
     return 'text-red-600';
   };
-  
-  const getMarginBadgeVariant = (margin: number): "default" | "destructive" | "outline" => {
-    return 'outline';
-  };
+
+  // Landing cost (prefer latest_landing_cost, fallback to import costs)
+  const landingCostEur = parseFloat(product.latest_landing_cost) || parseFloat(product.importCostEur) || 0;
+  const landingCostCzk = parseFloat(product.importCostCzk) || 0;
+  const landingCostUsd = parseFloat(product.importCostUsd) || 0;
+
+  // Calculate margins for each currency
+  const marginEur = product.priceEur && landingCostEur ? calculateMargin(parseFloat(product.priceEur), landingCostEur) : null;
+  const marginCzk = product.priceCzk && landingCostCzk ? calculateMargin(parseFloat(product.priceCzk), landingCostCzk) : null;
+  const marginUsd = product.priceUsd && landingCostUsd ? calculateMargin(parseFloat(product.priceUsd), landingCostUsd) : null;
+  const marginVnd = product.priceVnd && landingCostEur ? calculateMargin(parseFloat(product.priceVnd), landingCostEur * 27000) : null;
+  const marginCny = product.priceCny && landingCostEur ? calculateMargin(parseFloat(product.priceCny), landingCostEur * 7.8) : null;
+
+  // Primary margin for display (use first available)
+  const primaryMargin = marginEur || marginCzk || marginUsd || marginVnd || marginCny || '0';
 
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/inventory/products")}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Products
-          </Button>
-        </div>
-        <Button onClick={() => navigate(`/inventory/products/edit/${id}`)}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate("/inventory/products")}
+          data-testid="button-back"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Products
+        </Button>
+        <Button onClick={() => navigate(`/inventory/products/edit/${id}`)} data-testid="button-edit">
           <Edit className="h-4 w-4 mr-2" />
           Edit Product
         </Button>
@@ -107,40 +231,99 @@ export default function ProductDetails() {
 
       {/* Product Header Card */}
       <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-            <div className="flex items-start gap-4">
-              {product.imageUrl ? (
+        <CardContent className="pt-6">
+          <div className="flex flex-col md:flex-row gap-6">
+            {/* Product Image */}
+            <div className="flex-shrink-0">
+              {displayImage ? (
                 <img
-                  src={product.imageUrl}
+                  src={displayImage}
                   alt={product.name}
-                  className="w-24 h-24 object-cover rounded-lg"
+                  className="w-32 h-32 object-cover rounded-lg border-2 border-slate-200"
+                  data-testid="img-product-primary"
                 />
               ) : (
-                <div className="w-24 h-24 bg-slate-100 rounded-lg flex items-center justify-center">
-                  <Package className="h-12 w-12 text-slate-400" />
+                <div className="w-32 h-32 bg-slate-100 rounded-lg flex items-center justify-center border-2 border-slate-200">
+                  <Package className="h-16 w-16 text-slate-400" />
                 </div>
               )}
+            </div>
+
+            {/* Product Info */}
+            <div className="flex-1 space-y-4">
               <div>
-                <CardTitle className="text-2xl mb-1">{product.name}</CardTitle>
+                <h1 className="text-3xl font-bold text-slate-900" data-testid="text-product-name">
+                  {product.name}
+                </h1>
                 {product.englishName && (
-                  <div className="text-lg text-slate-600 mb-2">{product.englishName}</div>
+                  <p className="text-lg text-slate-600 mt-1" data-testid="text-english-name">
+                    {product.englishName}
+                  </p>
                 )}
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="outline">SKU: {product.sku}</Badge>
-                  {product.barcode && <Badge variant="outline">Barcode: {product.barcode}</Badge>}
-                  <Badge variant={stockBadgeVariant}>
-                    Stock: {product.quantity} {product.unit || 'pcs'}
+              </div>
+
+              {/* Badges */}
+              <div className="flex flex-wrap gap-2">
+                <Badge variant="outline" data-testid="badge-sku">
+                  <Hash className="h-3 w-3 mr-1" />
+                  SKU: {product.sku}
+                </Badge>
+                <Badge variant={stockBadgeVariant} data-testid="badge-stock-status">
+                  <Package className="h-3 w-3 mr-1" />
+                  {product.quantity} {product.unit || 'units'}
+                </Badge>
+                {category && (
+                  <Badge variant="secondary" data-testid="badge-category">
+                    <Box className="h-3 w-3 mr-1" />
+                    {category.name}
                   </Badge>
+                )}
+                {product.barcode && (
+                  <Badge variant="outline" data-testid="badge-barcode">
+                    <Barcode className="h-3 w-3 mr-1" />
+                    {product.barcode}
+                  </Badge>
+                )}
+              </div>
+
+              {/* Summary Statistics */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="bg-slate-50 rounded-lg p-3">
+                  <div className="text-xs text-slate-600 mb-1">Images</div>
+                  <div className="text-lg font-bold" data-testid="text-images-count">
+                    {productImages.length}
+                  </div>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-3">
+                  <div className="text-xs text-slate-600 mb-1">Variants</div>
+                  {variantsLoading ? (
+                    <Skeleton className="h-6 w-8" />
+                  ) : (
+                    <div className="text-lg font-bold" data-testid="text-variants-count">
+                      {variants.length}
+                    </div>
+                  )}
+                </div>
+                <div className="bg-slate-50 rounded-lg p-3">
+                  <div className="text-xs text-slate-600 mb-1">Stock</div>
+                  <div className="text-lg font-bold" data-testid="text-stock-quantity">
+                    {product.quantity}
+                  </div>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-3">
+                  <div className="text-xs text-slate-600 mb-1">Tiered Prices</div>
+                  {tieredPricingLoading ? (
+                    <Skeleton className="h-6 w-8" />
+                  ) : (
+                    <div className="text-lg font-bold" data-testid="text-tiered-prices-count">
+                      {tieredPricing.length}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
-            <div className="text-right">
-              <div className="text-sm text-slate-500">Category</div>
-              <div className="font-medium">{product.category || "Uncategorized"}</div>
-            </div>
           </div>
-        </CardHeader>
+        </CardContent>
       </Card>
 
       {/* Key Metrics */}
@@ -150,7 +333,7 @@ export default function ProductDetails() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-sm text-slate-500">Current Stock</div>
-                <div className="text-2xl font-bold">{product.quantity}</div>
+                <div className="text-2xl font-bold" data-testid="text-metric-stock">{product.quantity}</div>
                 <div className="text-xs text-slate-500">{product.unit}</div>
               </div>
               <Package className="h-8 w-8 text-slate-400" />
@@ -163,7 +346,7 @@ export default function ProductDetails() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-sm text-slate-500">Total Sold</div>
-                <div className="text-2xl font-bold">{totalSold}</div>
+                <div className="text-2xl font-bold" data-testid="text-metric-sold">{totalSold}</div>
                 <div className="text-xs text-slate-500">All time</div>
               </div>
               <ShoppingCart className="h-8 w-8 text-slate-400" />
@@ -176,10 +359,10 @@ export default function ProductDetails() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-sm text-slate-500">Total Revenue</div>
-                <div className="text-2xl font-bold">{formatCurrency(totalRevenue, "CZK")}</div>
+                <div className="text-2xl font-bold" data-testid="text-metric-revenue">{formatCurrency(totalRevenue, "CZK")}</div>
                 <div className="text-xs text-slate-500">All time</div>
               </div>
-              <Banknote className="h-8 w-8 text-slate-400" />
+              <DollarSign className="h-8 w-8 text-slate-400" />
             </div>
           </CardContent>
         </Card>
@@ -189,7 +372,9 @@ export default function ProductDetails() {
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-sm text-slate-500">Profit Margin</div>
-                <div className="text-2xl font-bold">{profitMargin}%</div>
+                <div className={`text-2xl font-bold ${getMarginColor(Number(primaryMargin))}`} data-testid="text-metric-margin">
+                  {primaryMargin}%
+                </div>
                 <div className="text-xs text-slate-500">Per unit</div>
               </div>
               <TrendingUp className="h-8 w-8 text-slate-400" />
@@ -198,302 +383,585 @@ export default function ProductDetails() {
         </Card>
       </div>
 
-      {/* Pricing Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Pricing & Costs</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Selling Prices */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Selling Prices</h3>
-              <div className="space-y-2 text-sm">
-                {product.priceCzk && (
-                  <div className="flex justify-between items-center py-1">
-                    <span className="text-slate-600 dark:text-slate-400">Czech Republic</span>
-                    <span className="font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(product.priceCzk, "CZK")}</span>
-                  </div>
-                )}
-                {product.priceEur && (
-                  <div className="flex justify-between items-center py-1">
-                    <span className="text-slate-600 dark:text-slate-400">Europe</span>
-                    <span className="font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(product.priceEur, "EUR")}</span>
-                  </div>
-                )}
-              </div>
+      {/* Accordion Sections */}
+      <Accordion
+        type="multiple"
+        value={expandedSections}
+        onValueChange={setExpandedSections}
+        className="space-y-4"
+      >
+        {/* Basic Information */}
+        <AccordionItem value="basic" className="border rounded-lg bg-white">
+          <AccordionTrigger className="px-6 hover:no-underline" data-testid="accordion-basic">
+            <div className="flex items-center gap-2">
+              <Info className="h-5 w-5 text-slate-600" />
+              <span className="font-semibold">Basic Information</span>
             </div>
-
-            {/* Landing Cost */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Landing Cost</h3>
-              {product.latest_landing_cost ? (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 cursor-help hover:border-slate-300 dark:hover:border-slate-600 transition-colors" data-testid="landing-cost-display">
-                        <div className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                          €{parseFloat(product.latest_landing_cost).toFixed(2)}
-                        </div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                          per unit, all-in
-                        </div>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <div className="text-sm">
-                        <p className="font-semibold mb-1">Landing Cost Breakdown</p>
-                        <p>Includes: Product cost, freight, duties, and fees</p>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              ) : (
-                <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3" data-testid="landing-cost-pending">
-                  <div className="text-sm text-slate-600 dark:text-slate-400">
-                    Not calculated yet
-                  </div>
-                  <div className="text-xs text-slate-500 dark:text-slate-500 mt-1">
-                    Available after receiving shipments
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Margin Analysis */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Margin</h3>
-              {product.latest_landing_cost && product.priceEur ? (
+          </AccordionTrigger>
+          <AccordionContent className="px-6 pb-6">
+            <div className="space-y-6">
+              {/* Multi-Purpose Image Gallery */}
+              {productImages.length > 0 ? (
                 <div className="space-y-3">
-                  <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-slate-600 dark:text-slate-400">Profit Margin</span>
-                      <Badge 
-                        variant={getMarginBadgeVariant(Number(profitMargin))}
-                        className={`font-bold ${getMarginColor(Number(profitMargin))}`}
-                        data-testid="margin-badge"
-                      >
-                        {profitMargin}%
-                      </Badge>
-                    </div>
-                    <div className="space-y-1.5 text-sm border-t border-slate-100 dark:border-slate-800 pt-2">
-                      <div className="flex justify-between">
-                        <span className="text-slate-500 dark:text-slate-400">Sell Price</span>
-                        <span className="font-medium">€{parseFloat(product.priceEur).toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500 dark:text-slate-400">Cost</span>
-                        <span className="font-medium">€{parseFloat(product.latest_landing_cost).toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between pt-1.5 border-t border-slate-100 dark:border-slate-800" data-testid="profit-per-unit">
-                        <span className="text-slate-700 dark:text-slate-300 font-semibold">Profit</span>
-                        <span className={`font-bold ${getMarginColor(Number(profitMargin))}`}>
-                          €{(parseFloat(product.priceEur) - parseFloat(product.latest_landing_cost)).toFixed(2)}
-                        </span>
-                      </div>
-                    </div>
+                  <h3 className="text-sm font-semibold text-slate-700">Product Images</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {productImages.map((img: any, idx: number) => {
+                      const config = IMAGE_PURPOSE_CONFIG[img.purpose as keyof typeof IMAGE_PURPOSE_CONFIG];
+                      const Icon = config?.icon || ImageIcon;
+                      return (
+                        <div key={idx} className="relative group">
+                          <div className={`border-2 rounded-lg overflow-hidden ${img.isPrimary ? 'border-blue-500' : 'border-slate-200'}`}>
+                            <img
+                              src={img.url}
+                              alt={config?.label || img.purpose}
+                              className="w-full h-32 object-cover"
+                              data-testid={`img-gallery-${idx}`}
+                            />
+                          </div>
+                          <div className="mt-2 flex items-center gap-2">
+                            <Badge variant="outline" className={config?.color}>
+                              <Icon className="h-3 w-3 mr-1" />
+                              {config?.label || img.purpose}
+                            </Badge>
+                            {img.isPrimary && (
+                              <Badge variant="default" className="bg-blue-600">
+                                <Star className="h-3 w-3 mr-1" />
+                                Primary
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
-              ) : (
-                <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3">
-                  <div className="text-sm text-slate-500 dark:text-slate-400">
-                    Requires landing cost data
-                  </div>
+              ) : product.imageUrl && (
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-slate-700">Product Image</h3>
+                  <img
+                    src={product.imageUrl}
+                    alt={product.name}
+                    className="w-48 h-48 object-cover rounded-lg border-2 border-slate-200"
+                    data-testid="img-single"
+                  />
                 </div>
               )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Product Details */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Product Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <div className="text-sm text-slate-500">Description</div>
-              <div className="mt-1">{product.description || "No description available"}</div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <div className="text-sm text-slate-500">Unit Type</div>
-                <div className="mt-1 font-medium">{product.unit}</div>
-              </div>
-              <div>
-                <div className="text-sm text-slate-500">Tax Rate</div>
-                <div className="mt-1 font-medium">{product.taxRate || 0}%</div>
-              </div>
-            </div>
+              <Separator />
 
-            <div className="grid grid-cols-2 gap-4">
+              {/* Product Details */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium text-slate-600">Product Name</label>
+                    <p className="text-base font-semibold text-slate-900" data-testid="text-name">{product.name}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-600">SKU</label>
+                    <p className="text-base font-mono text-slate-900" data-testid="text-sku">{product.sku}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-600">Category</label>
+                    <p className="text-base text-slate-900" data-testid="text-category">{category?.name || "Uncategorized"}</p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium text-slate-600">Warehouse</label>
+                    <p className="text-base text-slate-900" data-testid="text-warehouse">{warehouse?.name || "Not assigned"}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-600">Location</label>
+                    <p className="text-base text-slate-900" data-testid="text-location">{product.warehouseLocation || "Not specified"}</p>
+                  </div>
+                </div>
+              </div>
+
+              {product.description && (
+                <>
+                  <Separator />
+                  <div>
+                    <label className="text-sm font-medium text-slate-600">Description</label>
+                    <p className="text-base text-slate-700 mt-1" data-testid="text-description">{product.description}</p>
+                  </div>
+                </>
+              )}
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Stock & Inventory */}
+        <AccordionItem value="stock" className="border rounded-lg bg-white">
+          <AccordionTrigger className="px-6 hover:no-underline" data-testid="accordion-stock">
+            <div className="flex items-center gap-2">
+              <Package className="h-5 w-5 text-slate-600" />
+              <span className="font-semibold">Stock & Inventory</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-6 pb-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <div className="text-sm text-slate-500">Min Stock Level</div>
-                <div className="mt-1 font-medium">{product.minStock || 0}</div>
+                <label className="text-sm font-medium text-slate-600">Current Quantity</label>
+                <p className="text-2xl font-bold text-slate-900 mt-1" data-testid="text-quantity">{product.quantity}</p>
               </div>
               <div>
-                <div className="text-sm text-slate-500">Reorder Quantity</div>
-                <div className="mt-1 font-medium">{product.reorderQuantity || 0}</div>
+                <label className="text-sm font-medium text-slate-600">Low Stock Alert</label>
+                <p className="text-2xl font-bold text-slate-900 mt-1" data-testid="text-low-stock">{product.lowStockAlert || 5}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-600">Barcode</label>
+                <p className="text-lg font-mono text-slate-900 mt-1" data-testid="text-barcode-detail">{product.barcode || "Not set"}</p>
               </div>
             </div>
+          </AccordionContent>
+        </AccordionItem>
 
-            {/* Dimensions & Weight */}
-            {(product.length || product.width || product.height || product.weight) && (
+        {/* Pricing & Costs */}
+        <AccordionItem value="pricing" className="border rounded-lg bg-white">
+          <AccordionTrigger className="px-6 hover:no-underline" data-testid="accordion-pricing">
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5 text-slate-600" />
+              <span className="font-semibold">Pricing & Costs</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-6 pb-6">
+            <div className="space-y-6">
+              {/* Selling Prices */}
               <div>
-                <div className="text-sm text-slate-500 mb-2">Dimensions & Weight</div>
-                <div className="grid grid-cols-2 gap-4">
-                  {(product.length || product.width || product.height) && (
-                    <div>
-                      <div className="text-xs text-slate-500">Dimensions (L×W×H)</div>
-                      <div className="mt-1 font-medium">
-                        {product.length || 0} × {product.width || 0} × {product.height || 0} cm
-                      </div>
+                <h3 className="text-sm font-semibold text-slate-700 mb-3">Selling Prices</h3>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                  {product.priceCzk && (
+                    <div className="bg-slate-50 rounded-lg p-3">
+                      <div className="text-xs text-slate-600">Czech Republic (CZK)</div>
+                      <div className="text-lg font-bold" data-testid="text-price-czk">{formatCurrency(product.priceCzk, "CZK")}</div>
                     </div>
                   )}
-                  {product.weight && (
-                    <div>
-                      <div className="text-xs text-slate-500">Weight</div>
-                      <div className="mt-1 font-medium">{product.weight} kg</div>
+                  {product.priceEur && (
+                    <div className="bg-slate-50 rounded-lg p-3">
+                      <div className="text-xs text-slate-600">Europe (EUR)</div>
+                      <div className="text-lg font-bold" data-testid="text-price-eur">{formatCurrency(product.priceEur, "EUR")}</div>
+                    </div>
+                  )}
+                  {product.priceUsd && (
+                    <div className="bg-slate-50 rounded-lg p-3">
+                      <div className="text-xs text-slate-600">USA (USD)</div>
+                      <div className="text-lg font-bold" data-testid="text-price-usd">{formatCurrency(product.priceUsd, "USD")}</div>
+                    </div>
+                  )}
+                  {product.priceVnd && (
+                    <div className="bg-slate-50 rounded-lg p-3">
+                      <div className="text-xs text-slate-600">Vietnam (VND)</div>
+                      <div className="text-lg font-bold" data-testid="text-price-vnd">{formatCurrency(product.priceVnd, "VND")}</div>
+                    </div>
+                  )}
+                  {product.priceCny && (
+                    <div className="bg-slate-50 rounded-lg p-3">
+                      <div className="text-xs text-slate-600">China (CNY)</div>
+                      <div className="text-lg font-bold" data-testid="text-price-cny">{formatCurrency(product.priceCny, "CNY")}</div>
                     </div>
                   )}
                 </div>
+              </div>
+
+              <Separator />
+
+              {/* Import Costs */}
+              <div>
+                <h3 className="text-sm font-semibold text-slate-700 mb-3">Import Costs</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {product.importCostUsd && (
+                    <div className="bg-orange-50 rounded-lg p-3">
+                      <div className="text-xs text-orange-600">USD</div>
+                      <div className="text-lg font-bold text-orange-900" data-testid="text-import-usd">{formatCurrency(product.importCostUsd, "USD")}</div>
+                    </div>
+                  )}
+                  {product.importCostCzk && (
+                    <div className="bg-orange-50 rounded-lg p-3">
+                      <div className="text-xs text-orange-600">CZK</div>
+                      <div className="text-lg font-bold text-orange-900" data-testid="text-import-czk">{formatCurrency(product.importCostCzk, "CZK")}</div>
+                    </div>
+                  )}
+                  {product.importCostEur && (
+                    <div className="bg-orange-50 rounded-lg p-3">
+                      <div className="text-xs text-orange-600">EUR</div>
+                      <div className="text-lg font-bold text-orange-900" data-testid="text-import-eur">{formatCurrency(product.importCostEur, "EUR")}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Profit Margin - Multi-Currency */}
+              <div>
+                <h3 className="text-sm font-semibold text-slate-700 mb-3">Profit Analysis (by Currency)</h3>
+                {(marginEur || marginCzk || marginUsd || marginVnd || marginCny) ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {marginEur && (
+                      <div className="border rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-medium text-slate-600">EUR</span>
+                          <Badge variant="outline" className={getMarginColor(Number(marginEur))}>
+                            {marginEur}%
+                          </Badge>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-slate-600">Cost:</span>
+                            <span className="font-semibold">{formatCurrency(landingCostEur, "EUR")}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-slate-600">Price:</span>
+                            <span className="font-semibold">{formatCurrency(product.priceEur, "EUR")}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {marginCzk && (
+                      <div className="border rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-medium text-slate-600">CZK</span>
+                          <Badge variant="outline" className={getMarginColor(Number(marginCzk))}>
+                            {marginCzk}%
+                          </Badge>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-slate-600">Cost:</span>
+                            <span className="font-semibold">{formatCurrency(landingCostCzk, "CZK")}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-slate-600">Price:</span>
+                            <span className="font-semibold">{formatCurrency(product.priceCzk, "CZK")}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {marginUsd && (
+                      <div className="border rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-medium text-slate-600">USD</span>
+                          <Badge variant="outline" className={getMarginColor(Number(marginUsd))}>
+                            {marginUsd}%
+                          </Badge>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-slate-600">Cost:</span>
+                            <span className="font-semibold">{formatCurrency(landingCostUsd, "USD")}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-slate-600">Price:</span>
+                            <span className="font-semibold">{formatCurrency(product.priceUsd, "USD")}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {marginVnd && (
+                      <div className="border rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-medium text-slate-600">VND</span>
+                          <Badge variant="outline" className={getMarginColor(Number(marginVnd))}>
+                            {marginVnd}%
+                          </Badge>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-slate-600">Price:</span>
+                            <span className="font-semibold">{formatCurrency(product.priceVnd, "VND")}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {marginCny && (
+                      <div className="border rounded-lg p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-medium text-slate-600">CNY</span>
+                          <Badge variant="outline" className={getMarginColor(Number(marginCny))}>
+                            {marginCny}%
+                          </Badge>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-slate-600">Price:</span>
+                            <span className="font-semibold">{formatCurrency(product.priceCny, "CNY")}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-500">No pricing data available for margin calculation</p>
+                )}
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Import Costs & Analytics */}
+        <AccordionItem value="analytics" className="border rounded-lg bg-white">
+          <AccordionTrigger className="px-6 hover:no-underline" data-testid="accordion-analytics">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-slate-600" />
+              <span className="font-semibold">Import Costs & Analytics</span>
+              {costHistoryLoading && <Skeleton className="h-4 w-16 ml-2" />}
+              {!costHistoryLoading && costHistory.length > 0 && (
+                <Badge variant="secondary" className="ml-2">{costHistory.length}</Badge>
+              )}
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-6 pb-6">
+            {costHistoryLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-48 w-full" />
+              </div>
+            ) : costHistoryError ? (
+              <div className="text-center py-8 text-red-600">
+                <p>Failed to load cost history data</p>
+              </div>
+            ) : costHistory.length > 0 ? (
+              <CostHistoryChart data={costHistory} currency="€" />
+            ) : (
+              <div className="text-center py-8 text-slate-500">
+                <p>No cost history available</p>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </AccordionContent>
+        </AccordionItem>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Location & Supplier</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <div className="text-sm text-slate-500">Warehouse</div>
-              <div className="mt-1 flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-slate-400" />
-                <span className="font-medium">{warehouse?.name || "No warehouse assigned"}</span>
-              </div>
-              {warehouse && (
-                <div className="text-sm text-slate-500 mt-1">
-                  {warehouse.address}, {warehouse.city}
-                </div>
+        {/* Tiered Pricing */}
+        <AccordionItem value="tiered" className="border rounded-lg bg-white">
+          <AccordionTrigger className="px-6 hover:no-underline" data-testid="accordion-tiered">
+            <div className="flex items-center gap-2">
+              <Euro className="h-5 w-5 text-slate-600" />
+              <span className="font-semibold">Tiered Pricing</span>
+              {tieredPricingLoading && <Skeleton className="h-4 w-16 ml-2" />}
+              {!tieredPricingLoading && tieredPricing.length > 0 && (
+                <Badge variant="secondary" className="ml-2">{tieredPricing.length}</Badge>
               )}
             </div>
-
-            <div>
-              <div className="text-sm text-slate-500">Supplier</div>
-              <div className="mt-1 font-medium">{product.supplier?.name || "No supplier assigned"}</div>
-            </div>
-
-            <div>
-              <div className="text-sm text-slate-500">Created</div>
-              <div className="mt-1 flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-slate-400" />
-                <span>{product.createdAt ? format(new Date(product.createdAt), "PPP") : "N/A"}</span>
+          </AccordionTrigger>
+          <AccordionContent className="px-6 pb-6">
+            {tieredPricingLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-32 w-full" />
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            ) : tieredPricingError ? (
+              <div className="text-center py-8 text-red-600">
+                <p>Failed to load tiered pricing data</p>
+              </div>
+            ) : tieredPricing.length > 0 ? (
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Min Quantity</TableHead>
+                      <TableHead>Max Quantity</TableHead>
+                      <TableHead>Price (CZK)</TableHead>
+                      <TableHead>Price (EUR)</TableHead>
+                      <TableHead>Price (USD)</TableHead>
+                      <TableHead>Type</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {tieredPricing.map((tier: any, idx: number) => (
+                      <TableRow key={tier.id || idx} data-testid={`row-tier-${idx}`}>
+                        <TableCell data-testid={`text-tier-min-${idx}`}>{tier.minQuantity}</TableCell>
+                        <TableCell data-testid={`text-tier-max-${idx}`}>{tier.maxQuantity || '∞'}</TableCell>
+                        <TableCell>{tier.priceCzk ? formatCurrency(tier.priceCzk, "CZK") : '-'}</TableCell>
+                        <TableCell>{tier.priceEur ? formatCurrency(tier.priceEur, "EUR") : '-'}</TableCell>
+                        <TableCell>{tier.priceUsd ? formatCurrency(tier.priceUsd, "USD") : '-'}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{tier.priceType || 'tiered'}</Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-slate-500">
+                <p>No tiered pricing configured</p>
+              </div>
+            )}
+          </AccordionContent>
+        </AccordionItem>
 
-      {/* Product Variants */}
-      {variants && variants.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Product Variants</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-2 px-4 text-sm font-medium text-slate-600">Variant Name</th>
-                    <th className="text-left py-2 px-4 text-sm font-medium text-slate-600">Barcode</th>
-                    <th className="text-right py-2 px-4 text-sm font-medium text-slate-600">Quantity</th>
-                    <th className="text-right py-2 px-4 text-sm font-medium text-slate-600">Import Cost (USD)</th>
-                    <th className="text-right py-2 px-4 text-sm font-medium text-slate-600">Import Cost (CZK)</th>
-                    <th className="text-right py-2 px-4 text-sm font-medium text-slate-600">Import Cost (EUR)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {variants.map((variant) => (
-                    <tr key={variant.id} className="border-b hover:bg-slate-50">
-                      <td className="py-2 px-4 text-sm">{variant.name}</td>
-                      <td className="py-2 px-4 text-sm">{variant.barcode || "-"}</td>
-                      <td className="py-2 px-4 text-sm text-right">{variant.quantity}</td>
-                      <td className="py-2 px-4 text-sm text-right">
-                        {variant.importCostUsd ? formatCurrency(variant.importCostUsd, "USD") : "-"}
-                      </td>
-                      <td className="py-2 px-4 text-sm text-right">
-                        {variant.importCostCzk ? formatCurrency(variant.importCostCzk, "CZK") : "-"}
-                      </td>
-                      <td className="py-2 px-4 text-sm text-right">
-                        {variant.importCostEur ? formatCurrency(variant.importCostEur, "EUR") : "-"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Recent Orders */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Orders</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {productOrders.length === 0 ? (
-            <div className="text-center py-8 text-slate-500">
-              No orders found for this product
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {productOrders.slice(0, 5).map((order) => {
-                const orderItems = order.items?.filter(item => item.productId === product.id) || [];
-                return (
-                  <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50">
-                    <div className="flex-1">
-                      <div className="font-medium text-base">
-                        Order #{order.orderId} - {order.customer?.name || "Unknown Customer"}
-                      </div>
-                      <div className="text-sm text-slate-500">
-                        {order.createdAt ? format(new Date(order.createdAt), "PPP") : "N/A"}
-                      </div>
-                      <div className="text-sm text-slate-500 mt-1">
-                        Status: <Badge variant={order.orderStatus === 'delivered' ? 'default' : 'outline'}>{order.orderStatus}</Badge>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-medium">
-                        {orderItems.reduce((sum, item) => sum + (item.quantity || 0), 0)} units
-                      </div>
-                      <div className="text-sm text-slate-500">
-                        {formatCurrency(
-                          orderItems.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 0)), 0),
-                          order.currency
-                        )}
-                      </div>
-                    </div>
+        {/* Supplier Information */}
+        {supplier && (
+          <AccordionItem value="supplier" className="border rounded-lg bg-white">
+            <AccordionTrigger className="px-6 hover:no-underline" data-testid="accordion-supplier">
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-slate-600" />
+                <span className="font-semibold">Supplier Information</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="px-6 pb-6">
+              <div className="space-y-4">
+                <div className="flex items-start gap-4">
+                  <div className="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center">
+                    <Building className="h-8 w-8 text-slate-400" />
                   </div>
-                );
-              })}
-              {productOrders.length > 5 && (
-                <div className="text-center pt-4">
-                  <Button variant="outline" size="sm" onClick={() => navigate(`/orders?product=${product.id}`)}>
-                    View all {productOrders.length} orders
-                  </Button>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-slate-900" data-testid="text-supplier-name">{supplier.name}</h3>
+                    {supplier.contactPerson && (
+                      <p className="text-sm text-slate-600" data-testid="text-supplier-contact">
+                        Contact: {supplier.contactPerson}
+                      </p>
+                    )}
+                  </div>
                 </div>
+                <Separator />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {supplier.email && (
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-slate-400" />
+                      <a href={`mailto:${supplier.email}`} className="text-sm text-blue-600 hover:underline" data-testid="link-supplier-email">
+                        {supplier.email}
+                      </a>
+                    </div>
+                  )}
+                  {supplier.phone && (
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-slate-400" />
+                      <a href={`tel:${supplier.phone}`} className="text-sm text-blue-600 hover:underline" data-testid="link-supplier-phone">
+                        {supplier.phone}
+                      </a>
+                    </div>
+                  )}
+                  {supplier.website && (
+                    <div className="flex items-center gap-2">
+                      <Globe className="h-4 w-4 text-slate-400" />
+                      <a href={supplier.website} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline" data-testid="link-supplier-website">
+                        {supplier.website}
+                      </a>
+                    </div>
+                  )}
+                  {supplier.address && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-slate-400" />
+                      <span className="text-sm text-slate-700" data-testid="text-supplier-address">{supplier.address}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        )}
+
+        {/* Variants */}
+        <AccordionItem value="variants" className="border rounded-lg bg-white">
+          <AccordionTrigger className="px-6 hover:no-underline" data-testid="accordion-variants">
+            <div className="flex items-center gap-2">
+              <Box className="h-5 w-5 text-slate-600" />
+              <span className="font-semibold">Product Variants</span>
+              {variantsLoading && <Skeleton className="h-4 w-16 ml-2" />}
+              {!variantsLoading && variants.length > 0 && (
+                <Badge variant="secondary" className="ml-2">{variants.length}</Badge>
               )}
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </AccordionTrigger>
+          <AccordionContent className="px-6 pb-6">
+            {variantsLoading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-32 w-full" />
+              </div>
+            ) : variants.length > 0 ? (
+              <ProductVariants productId={id!} />
+            ) : (
+              <div className="text-center py-8 text-slate-500">
+                <p>No variants configured</p>
+              </div>
+            )}
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Packing Instructions */}
+        {(product.packingInstructionsText || product.packingInstructionsImage) && (
+          <AccordionItem value="packing" className="border rounded-lg bg-white">
+            <AccordionTrigger className="px-6 hover:no-underline" data-testid="accordion-packing">
+              <div className="flex items-center gap-2">
+                <Package className="h-5 w-5 text-slate-600" />
+                <span className="font-semibold">Packing Instructions</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="px-6 pb-6">
+              <div className="space-y-4">
+                {product.packingInstructionsText && (
+                  <div>
+                    <label className="text-sm font-medium text-slate-600">Instructions</label>
+                    <p className="text-base text-slate-700 mt-2 whitespace-pre-wrap" data-testid="text-packing-instructions">
+                      {product.packingInstructionsText}
+                    </p>
+                  </div>
+                )}
+                {product.packingInstructionsImage && (
+                  <div>
+                    <label className="text-sm font-medium text-slate-600">Reference Image</label>
+                    <img
+                      src={product.packingInstructionsImage}
+                      alt="Packing instructions"
+                      className="mt-2 max-w-md rounded-lg border-2 border-slate-200"
+                      data-testid="img-packing-instructions"
+                    />
+                  </div>
+                )}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        )}
+
+        {/* Advanced Settings */}
+        <AccordionItem value="advanced" className="border rounded-lg bg-white">
+          <AccordionTrigger className="px-6 hover:no-underline" data-testid="accordion-advanced">
+            <div className="flex items-center gap-2">
+              <Warehouse className="h-5 w-5 text-slate-600" />
+              <span className="font-semibold">Advanced Settings</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-6 pb-6 space-y-6">
+            {/* Product Files */}
+            <div>
+              <ProductFiles productId={id!} />
+            </div>
+
+            <Separator />
+
+            {/* Product Locations */}
+            <div>
+              <ProductLocations productId={id!} productName={product.name} readOnly={true} />
+            </div>
+
+            <Separator />
+
+            {/* Dimensions & Weight */}
+            <div>
+              <h3 className="text-sm font-semibold text-slate-700 mb-3">Dimensions & Weight</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-slate-50 rounded-lg p-3">
+                  <div className="text-xs text-slate-600">Length</div>
+                  <div className="text-lg font-bold" data-testid="text-length">{product.length || '-'} cm</div>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-3">
+                  <div className="text-xs text-slate-600">Width</div>
+                  <div className="text-lg font-bold" data-testid="text-width">{product.width || '-'} cm</div>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-3">
+                  <div className="text-xs text-slate-600">Height</div>
+                  <div className="text-lg font-bold" data-testid="text-height">{product.height || '-'} cm</div>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-3">
+                  <div className="text-xs text-slate-600">Weight</div>
+                  <div className="text-lg font-bold" data-testid="text-weight">{product.weight || '-'} kg</div>
+                </div>
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 }
