@@ -434,6 +434,7 @@ export const productBundles = pgTable('product_bundles', {
   priceEur: decimal('price_eur', { precision: 10, scale: 2 }),
   discountPercentage: decimal('discount_percentage', { precision: 5, scale: 2 }).default('0'),
   notes: text('notes'),
+  imageUrl: varchar('image_url'),
   isActive: boolean('is_active').default(true),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow()

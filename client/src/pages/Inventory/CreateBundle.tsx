@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { ArrowLeft, Plus, X, Package, Save, AlertCircle, Check, Loader2, Search, CheckSquare, Square, Hash, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Plus, X, Package, Save, AlertCircle, Check, Loader2, Search, CheckSquare, Square, Hash, ChevronDown, ChevronUp, Image as ImageIcon, Upload, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -492,6 +492,8 @@ export default function CreateBundle() {
   const [variantsCache, setVariantsCache] = useState<Record<string, ProductVariant[]>>({});
   const [loadingVariants, setLoadingVariants] = useState<Record<string, boolean>>({});
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   
   const [formData, setFormData] = useState<BundleFormData>({
     name: '',
@@ -572,7 +574,7 @@ export default function CreateBundle() {
 
   // Create bundle mutation
   const createBundleMutation = useMutation({
-    mutationFn: async (data: BundleFormData) => {
+    mutationFn: async (data: BundleFormData & { imageUrl?: string | null }) => {
       // Calculate final prices based on pricing mode
       const discountedPrices = calculateDiscountedPrice(
         calculateTotalPrice().totalCzk, 
@@ -594,6 +596,7 @@ export default function CreateBundle() {
           ? parseFloat(data.discountPercentage || '0') 
           : 0,
         notes: data.notes || null,
+        imageUrl: data.imageUrl || null,
         isActive: true
       };
       
@@ -674,7 +677,7 @@ export default function CreateBundle() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validateForm()) {
       toast({
         title: 'Validation Error',
@@ -684,7 +687,34 @@ export default function CreateBundle() {
       return;
     }
     
-    createBundleMutation.mutate(formData);
+    // Upload image if there's one
+    let imageUrl = null;
+    if (imageFile) {
+      try {
+        const formData = new FormData();
+        formData.append('image', imageFile);
+        
+        const uploadResponse = await fetch('/api/upload/image', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        if (!uploadResponse.ok) {
+          throw new Error('Failed to upload image');
+        }
+        
+        const uploadData = await uploadResponse.json();
+        imageUrl = uploadData.url;
+      } catch (error) {
+        toast({
+          title: 'Image Upload Error',
+          description: 'Failed to upload image. Bundle will be created without image.',
+          variant: 'destructive',
+        });
+      }
+    }
+    
+    createBundleMutation.mutate({ ...formData, imageUrl });
   };
 
   const handleAddItem = () => {
@@ -1007,6 +1037,74 @@ export default function CreateBundle() {
                   placeholder="Notes for internal use only"
                   rows={3}
                 />
+              </div>
+
+              {/* Bundle Image Upload */}
+              <div>
+                <Label>Bundle Image (Optional)</Label>
+                <div className="mt-2">
+                  {imagePreview ? (
+                    <div className="relative w-48 h-48 rounded-lg border bg-slate-50 overflow-hidden group">
+                      <img
+                        src={imagePreview}
+                        alt="Bundle preview"
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                        <label className="cursor-pointer">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                setImageFile(file);
+                                setImagePreview(URL.createObjectURL(file));
+                              }
+                            }}
+                          />
+                          <div className="p-2 bg-white rounded-full hover:bg-slate-100 transition-colors">
+                            <Upload className="h-4 w-4 text-slate-700" />
+                          </div>
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (imagePreview) {
+                              URL.revokeObjectURL(imagePreview);
+                            }
+                            setImageFile(null);
+                            setImagePreview(null);
+                          }}
+                          className="p-2 bg-white rounded-full hover:bg-red-50 transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4 text-red-600" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center w-48 h-48 border-2 border-dashed border-slate-300 rounded-lg cursor-pointer hover:border-slate-400 hover:bg-slate-50 transition-colors">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setImageFile(file);
+                            setImagePreview(URL.createObjectURL(file));
+                          }
+                        }}
+                      />
+                      <div className="text-center">
+                        <ImageIcon className="h-12 w-12 mx-auto text-slate-400 mb-2" />
+                        <p className="text-sm text-slate-600 font-medium">Upload Image</p>
+                        <p className="text-xs text-slate-500 mt-1">Click to browse</p>
+                      </div>
+                    </label>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>

@@ -31,7 +31,7 @@ The application uses PostgreSQL with Neon serverless driver and Drizzle ORM. The
 - **Warehouse Management**: Management with file handling, location codes, barcode scanning, and quantity tracking.
 - **Returns Management**: Complete system integrated from order details.
 - **Expenses Management**: Streamlined UI and forms.
-- **Product Bundles**: Comprehensive system with variant support and multiple pricing modes.
+- **Product Bundles**: Comprehensive system with variant support, multiple pricing modes, and image upload with visual card display.
 - **Point of Sale (POS)**: Full-featured system with thermal printer support, multi-currency, real-time cart, VAT calculation, and receipt generation, optimized for mobile.
 - **AI-Powered Carton Packing Optimization**: Intelligent carton size selection using AI weight/dimension inference, best-fit decreasing packing algorithm with weight/volume constraints, automatic shipping cost estimation, and visual results.
 - **Files Management System**: Comprehensive document management for product-related files.

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Plus, Search, Edit, Trash2, Package, Eye, Grid, List } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Package, Eye, Grid, List, ImageOff } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -132,7 +132,22 @@ export default function SimpleBundles() {
       ) : viewMode === 'grid' ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredBundles.map(bundle => (
-            <Card key={bundle.id} className="hover:shadow-lg transition-shadow flex flex-col h-full">
+            <Card key={bundle.id} className="hover:shadow-lg transition-shadow flex flex-col h-full overflow-hidden">
+              {/* Bundle Image */}
+              {bundle.imageUrl ? (
+                <div className="w-full h-48 bg-slate-100">
+                  <img 
+                    src={bundle.imageUrl} 
+                    alt={bundle.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="w-full h-48 bg-slate-100 flex items-center justify-center">
+                  <ImageOff className="h-16 w-16 text-slate-300" />
+                </div>
+              )}
+              
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
