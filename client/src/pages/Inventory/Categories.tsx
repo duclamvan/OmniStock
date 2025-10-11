@@ -143,14 +143,20 @@ export default function Categories() {
       key: "productCount",
       header: "Products",
       sortable: true,
-      cell: (item) => (
-        <div className="flex items-center gap-2">
-          <Package className="h-4 w-4 text-muted-foreground" />
-          <Badge variant="secondary">
-            {item.productCount || 0} products
-          </Badge>
-        </div>
-      ),
+      cell: (item) => {
+        const count = item.productCount || 0;
+        return (
+          <div className="flex items-center gap-2">
+            <Package className={`h-4 w-4 ${count > 0 ? 'text-green-500' : 'text-gray-400'}`} />
+            <span className={`font-medium ${count > 0 ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400'}`}>
+              {count}
+            </span>
+            <span className="text-sm text-muted-foreground">
+              {count === 1 ? 'product' : 'products'}
+            </span>
+          </div>
+        );
+      },
     },
     {
       key: "created_at",
@@ -272,35 +278,50 @@ export default function Categories() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Categories
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{categories.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Categories with Products
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {categoriesWithCount.filter(c => c.productCount > 0).length}
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Total Categories
+                </p>
+                <p className="text-3xl font-bold mt-2">{categories.length}</p>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-950 flex items-center justify-center">
+                <FolderOpen className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+              </div>
             </div>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Products
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{products.length}</div>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  With Products
+                </p>
+                <p className="text-3xl font-bold mt-2">
+                  {categoriesWithCount.filter(c => c.productCount > 0).length}
+                </p>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-950 flex items-center justify-center">
+                <Package className="h-6 w-6 text-green-600 dark:text-green-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Total Products
+                </p>
+                <p className="text-3xl font-bold mt-2">{products.length}</p>
+              </div>
+              <div className="h-12 w-12 rounded-full bg-purple-100 dark:bg-purple-950 flex items-center justify-center">
+                <Package className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
