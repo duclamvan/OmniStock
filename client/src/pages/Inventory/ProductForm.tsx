@@ -1631,7 +1631,7 @@ export default function ProductForm() {
                         </SelectTrigger>
                         <SelectContent>
                           {categories?.map((category: any) => (
-                            <SelectItem key={category.id} value={category.id}>
+                            <SelectItem key={category.id} value={String(category.id)}>
                               {category.name}
                             </SelectItem>
                           ))}
