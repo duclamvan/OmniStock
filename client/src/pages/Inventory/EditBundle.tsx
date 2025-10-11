@@ -561,7 +561,7 @@ export default function EditBundle() {
         const formData = new FormData();
         formData.append('image', imageFile);
         
-        const uploadResponse = await fetch('/api/upload/image', {
+        const uploadResponse = await fetch('/api/upload', {
           method: 'POST',
           body: formData,
         });
@@ -571,7 +571,7 @@ export default function EditBundle() {
         }
         
         const uploadData = await uploadResponse.json();
-        imageUrl = uploadData.url;
+        imageUrl = uploadData.imageUrl;
       } catch (error) {
         toast({
           title: 'Image Upload Error',
