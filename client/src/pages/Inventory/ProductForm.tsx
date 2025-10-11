@@ -2366,13 +2366,31 @@ export default function ProductForm() {
                           
                           <div>
                             <Label htmlFor="variant-barcode">Barcode</Label>
-                            <Input
-                              id="variant-barcode"
-                              value={newVariant.barcode}
-                              onChange={(e) => setNewVariant((prev) => ({ ...prev, barcode: e.target.value }))}
-                              placeholder="123456789012"
-                              data-testid="input-variant-barcode"
-                            />
+                            <div className="relative">
+                              <Input
+                                id="variant-barcode"
+                                value={newVariant.barcode}
+                                onChange={(e) => setNewVariant((prev) => ({ ...prev, barcode: e.target.value }))}
+                                placeholder="123456789012"
+                                className="pr-10"
+                                data-testid="input-variant-barcode"
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="absolute right-0 top-0 h-full"
+                                onClick={() => {
+                                  const input = document.getElementById('variant-barcode') as HTMLInputElement;
+                                  if (input) {
+                                    input.focus();
+                                  }
+                                }}
+                                data-testid="button-scan-variant-barcode"
+                              >
+                                <Barcode className="h-4 w-4 text-slate-500" />
+                              </Button>
+                            </div>
                           </div>
                           
                           <div>
