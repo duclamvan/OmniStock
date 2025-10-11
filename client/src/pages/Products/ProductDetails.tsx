@@ -165,12 +165,17 @@ export default function ProductDetails() {
   // Parse product images with error handling and fallback
   let productImages: any[] = [];
   try {
-    if (product.images) {
+    if (product.images && typeof product.images === 'string') {
       const parsed = JSON.parse(product.images);
       productImages = Array.isArray(parsed) ? parsed : [];
+    } else if (product.images && typeof product.images === 'object' && !Array.isArray(product.images)) {
+      // If images is an object (not string), check if it's already an array
+      if (Array.isArray(product.images)) {
+        productImages = product.images;
+      }
     }
   } catch (error) {
-    console.error('Failed to parse product images:', error);
+    // Silent fail - images field is likely empty or invalid, will use fallback
     productImages = [];
   }
   
@@ -774,7 +779,7 @@ export default function ProductDetails() {
               </div>
             ) : variants.length > 0 ? (
               <div className="pt-2">
-                <ProductVariants variants={variants} productId={id!} readOnly={true} />
+                <ProductVariants productId={id!} />
               </div>
             ) : (
               <div className="text-center py-12 text-slate-500">

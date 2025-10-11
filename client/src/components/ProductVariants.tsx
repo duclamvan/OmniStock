@@ -35,6 +35,7 @@ interface ProductVariant {
   importCostUsd?: string;
   importCostCzk?: string;
   importCostEur?: string;
+  imageUrl?: string;
   createdAt: string;
 }
 
@@ -427,9 +428,17 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
                   </TableCell>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
-                      <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center">
-                        <Upload className="h-5 w-5 text-gray-400" />
-                      </div>
+                      {variant.imageUrl ? (
+                        <img 
+                          src={variant.imageUrl} 
+                          alt={variant.name}
+                          className="w-10 h-10 rounded object-cover border border-slate-200"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center">
+                          <Upload className="h-5 w-5 text-gray-400" />
+                        </div>
+                      )}
                       {variant.name}
                     </div>
                   </TableCell>
