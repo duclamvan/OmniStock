@@ -453,14 +453,14 @@ export default function ProductDetails() {
           </AccordionContent>
         </AccordionItem>
 
-        {/* Stock, Locations & Physical Details */}
+        {/* Stock & Warehouse Locations */}
         <AccordionItem value="stock" className="border-slate-200 rounded-xl bg-white shadow-sm">
           <AccordionTrigger className="px-4 py-3 hover:no-underline" data-testid="accordion-stock">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-50 rounded-lg">
                 <Package className="h-5 w-5 text-green-600" />
               </div>
-              <span className="text-lg font-semibold text-slate-900">Stock, Locations & Physical Details</span>
+              <span className="text-lg font-semibold text-slate-900">Stock & Warehouse Locations</span>
             </div>
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-4 space-y-8 pt-2">
@@ -500,31 +500,6 @@ export default function ProductDetails() {
             {/* Warehouse Locations */}
             <div>
               <ProductLocations productId={id!} productName={product.name} readOnly={true} />
-            </div>
-
-            <Separator />
-
-            {/* Physical Dimensions */}
-            <div>
-              <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-4">Physical Dimensions & Weight</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg p-4 border border-slate-200">
-                  <div className="text-xs font-medium text-slate-600">Length</div>
-                  <div className="text-2xl font-bold text-slate-900 mt-1" data-testid="text-length">{product.length || '-'} cm</div>
-                </div>
-                <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg p-4 border border-slate-200">
-                  <div className="text-xs font-medium text-slate-600">Width</div>
-                  <div className="text-2xl font-bold text-slate-900 mt-1" data-testid="text-width">{product.width || '-'} cm</div>
-                </div>
-                <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg p-4 border border-slate-200">
-                  <div className="text-xs font-medium text-slate-600">Height</div>
-                  <div className="text-2xl font-bold text-slate-900 mt-1" data-testid="text-height">{product.height || '-'} cm</div>
-                </div>
-                <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg p-4 border border-slate-200">
-                  <div className="text-xs font-medium text-slate-600">Weight</div>
-                  <div className="text-2xl font-bold text-slate-900 mt-1" data-testid="text-weight">{product.weight || '-'} kg</div>
-                </div>
-              </div>
             </div>
           </AccordionContent>
         </AccordionItem>
@@ -822,6 +797,31 @@ export default function ProductDetails() {
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-4">
             <div className="space-y-6 pt-2">
+              {/* Physical Dimensions & Weight */}
+              <div>
+                <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-4">Physical Dimensions & Weight</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg p-4 border border-slate-200">
+                    <div className="text-xs font-medium text-slate-600">Length</div>
+                    <div className="text-2xl font-bold text-slate-900 mt-1" data-testid="text-length">{product.length || '-'} cm</div>
+                  </div>
+                  <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg p-4 border border-slate-200">
+                    <div className="text-xs font-medium text-slate-600">Width</div>
+                    <div className="text-2xl font-bold text-slate-900 mt-1" data-testid="text-width">{product.width || '-'} cm</div>
+                  </div>
+                  <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg p-4 border border-slate-200">
+                    <div className="text-xs font-medium text-slate-600">Height</div>
+                    <div className="text-2xl font-bold text-slate-900 mt-1" data-testid="text-height">{product.height || '-'} cm</div>
+                  </div>
+                  <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg p-4 border border-slate-200">
+                    <div className="text-xs font-medium text-slate-600">Weight</div>
+                    <div className="text-2xl font-bold text-slate-900 mt-1" data-testid="text-weight">{product.weight || '-'} kg</div>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
               {/* Packing Material */}
               {packingMaterial && (
                 <>
