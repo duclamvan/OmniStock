@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,6 +48,7 @@ interface Category {
 
 export default function Categories() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -111,6 +112,11 @@ export default function Categories() {
     if (categoryToDelete) {
       deleteMutation.mutate(categoryToDelete);
     }
+  };
+
+  // Handle row click to navigate to filtered products
+  const handleRowClick = (category: Category) => {
+    setLocation(`/inventory?category=${category.id}`);
   };
 
   const columns: DataTableColumn<Category>[] = [
@@ -297,7 +303,7 @@ export default function Categories() {
                   With Products
                 </p>
                 <p className="text-3xl font-bold mt-2">
-                  {categoriesWithCount.filter(c => c.productCount > 0).length}
+                  {categoriesWithCount.filter(c => (c.productCount ?? 0) > 0).length}
                 </p>
               </div>
               <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-950 flex items-center justify-center">
@@ -364,6 +370,7 @@ export default function Categories() {
               data={filteredCategories}
               columns={columns}
               getRowKey={(row) => row.id.toString()}
+              onRowClick={handleRowClick}
             />
           )}
         </CardContent>

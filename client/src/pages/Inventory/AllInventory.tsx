@@ -13,7 +13,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { Plus, Search, Edit, Trash2, Package, AlertTriangle, MoreVertical, Archive, SlidersHorizontal } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Package, AlertTriangle, MoreVertical, Archive, SlidersHorizontal, X } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,7 +39,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 export default function AllInventory() {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("all");
+  
+  // Read category from URL parameter
+  const urlParams = new URLSearchParams(window.location.search);
+  const categoryParam = urlParams.get('category');
+  const [categoryFilter, setCategoryFilter] = useState(categoryParam || "all");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
   const [orderCounts, setOrderCounts] = useState<{ [productId: string]: number }>({});
@@ -690,19 +694,32 @@ export default function AllInventory() {
                 data-testid="input-search-products"
               />
             </div>
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-full sm:w-48 touch-target" data-testid="select-category-filter">
-                <SelectValue placeholder="Filter by category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {(categories as any[])?.map((category: any) => (
-                  <SelectItem key={category.id} value={String(category.id)}>
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex gap-2">
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-full sm:w-48 touch-target" data-testid="select-category-filter">
+                  <SelectValue placeholder="Filter by category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {(categories as any[])?.map((category: any) => (
+                    <SelectItem key={category.id} value={String(category.id)}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {categoryFilter !== "all" && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setCategoryFilter("all")}
+                  className="touch-target"
+                  data-testid="button-clear-category-filter"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
             
             {/* Column Selector */}
             <DropdownMenu>
