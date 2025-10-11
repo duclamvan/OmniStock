@@ -205,6 +205,7 @@ export interface IStorage {
   getProductFiles(productId: string): Promise<ProductFile[]>;
   getProductFile(id: string): Promise<ProductFile | undefined>;
   createProductFile(file: InsertProductFile): Promise<ProductFile>;
+  updateProductFile(id: string, data: Partial<InsertProductFile>): Promise<ProductFile | undefined>;
   deleteProductFile(id: string): Promise<boolean>;
   
   // Product Tiered Pricing
@@ -1483,6 +1484,20 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error creating product file:', error);
       throw error;
+    }
+  }
+
+  async updateProductFile(id: string, data: Partial<InsertProductFile>): Promise<ProductFile | undefined> {
+    try {
+      const [updatedFile] = await db
+        .update(productFiles)
+        .set(data)
+        .where(eq(productFiles.id, id))
+        .returning();
+      return updatedFile || undefined;
+    } catch (error) {
+      console.error('Error updating product file:', error);
+      return undefined;
     }
   }
 

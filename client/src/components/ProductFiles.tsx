@@ -61,6 +61,7 @@ import {
   Trash2,
   Plus,
   X,
+  Edit,
 } from 'lucide-react';
 
 interface ProductFile {
@@ -125,6 +126,7 @@ function formatFileSize(bytes: number): string {
 export default function ProductFiles({ productId }: ProductFilesProps) {
   const { toast } = useToast();
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [editingFile, setEditingFile] = useState<ProductFile | null>(null);
   const [uploadData, setUploadData] = useState({
     fileType: 'other',
     language: 'en',
@@ -175,6 +177,35 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
         title: 'Success',
         description: 'File uploaded successfully',
       });
+      setIsUploadOpen(false);
+      setUploadData({
+        fileType: 'other',
+        language: 'en',
+        displayName: '',
+        file: null,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Update file mutation
+  const updateMutation = useMutation({
+    mutationFn: async ({ fileId, data }: { fileId: string; data: { fileType: string; language: string; description: string } }) => {
+      await apiRequest('PATCH', `/api/product-files/${fileId}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/products', productId, 'files'] });
+      toast({
+        title: 'Success',
+        description: 'File updated successfully',
+      });
+      setEditingFile(null);
       setIsUploadOpen(false);
       setUploadData({
         fileType: 'other',
@@ -254,6 +285,45 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
     }
   };
 
+  const handleEdit = (file: ProductFile) => {
+    setEditingFile(file);
+    setUploadData({
+      fileType: file.fileType,
+      language: file.language || 'en',
+      displayName: file.displayName || file.fileName,
+      file: null,
+    });
+    setIsUploadOpen(true);
+  };
+
+  const handleSave = () => {
+    if (editingFile) {
+      // Update existing file
+      updateMutation.mutate({
+        fileId: editingFile.id,
+        data: {
+          fileType: uploadData.fileType,
+          language: uploadData.language,
+          description: uploadData.displayName,
+        },
+      });
+    } else {
+      // Upload new file
+      uploadMutation.mutate();
+    }
+  };
+
+  const handleCloseDialog = () => {
+    setIsUploadOpen(false);
+    setEditingFile(null);
+    setUploadData({
+      fileType: 'other',
+      language: 'en',
+      displayName: '',
+      file: null,
+    });
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -296,9 +366,9 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px]">
               <DialogHeader>
-                <DialogTitle>Upload Product Document</DialogTitle>
+                <DialogTitle>{editingFile ? 'Edit Document' : 'Upload Product Document'}</DialogTitle>
                 <DialogDescription>
-                  Add a new document or certificate for this product
+                  {editingFile ? 'Update document metadata' : 'Add a new document or certificate for this product'}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
@@ -357,17 +427,18 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label>File</Label>
-                  <div
-                    className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                      isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'
-                    }`}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                  >
-                    {uploadData.file ? (
+                {!editingFile && (
+                  <div className="space-y-2">
+                    <Label>File</Label>
+                    <div
+                      className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                        isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'
+                      }`}
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                    >
+                      {uploadData.file ? (
                       <div className="flex items-center justify-between">
                         <div className="flex items-center">
                           <FileText className="h-4 w-4 mr-2" />
@@ -407,24 +478,43 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
                           PDF, DOC, DOCX, JPG, PNG (max 10MB)
                         </p>
                       </>
-                    )}
+                      )}
+                    </div>
                   </div>
-                </div>
+                )}
+                
+                {editingFile && (
+                  <div className="space-y-2">
+                    <Label>Current File</Label>
+                    <div className="flex items-center p-3 bg-muted rounded-lg">
+                      <FileText className="h-4 w-4 mr-2" />
+                      <span className="text-sm flex-1">{editingFile.fileName}</span>
+                      <Badge variant="secondary">
+                        {formatFileSize(editingFile.fileSize)}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Note: File cannot be changed. Upload a new document to replace it.
+                    </p>
+                  </div>
+                )}
               </div>
               <DialogFooter>
                 <Button
                   variant="outline"
-                  onClick={() => setIsUploadOpen(false)}
-                  disabled={uploadMutation.isPending}
+                  onClick={handleCloseDialog}
+                  disabled={uploadMutation.isPending || updateMutation.isPending}
                 >
                   Cancel
                 </Button>
                 <Button
-                  onClick={() => uploadMutation.mutate()}
-                  disabled={!uploadData.file || uploadMutation.isPending}
+                  onClick={handleSave}
+                  disabled={((!uploadData.file && !editingFile) || uploadMutation.isPending || updateMutation.isPending)}
                   data-testid="button-upload"
                 >
-                  {uploadMutation.isPending ? 'Uploading...' : 'Upload'}
+                  {uploadMutation.isPending || updateMutation.isPending 
+                    ? (editingFile ? 'Updating...' : 'Uploading...') 
+                    : (editingFile ? 'Update' : 'Upload')}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -480,6 +570,14 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEdit(file)}
+                                data-testid={`button-edit-${file.id}`}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
                               <Button
                                 variant="ghost"
                                 size="sm"

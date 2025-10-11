@@ -1287,6 +1287,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch('/api/product-files/:fileId', async (req, res) => {
+    try {
+      const fileId = req.params.fileId;
+      const { fileType, language, description } = req.body;
+      
+      const file = await storage.getProductFile(fileId);
+      
+      if (!file) {
+        return res.status(404).json({ message: "File not found" });
+      }
+      
+      const updatedFile = await storage.updateProductFile(fileId, {
+        fileType,
+        language,
+        description,
+      });
+      
+      res.json(updatedFile);
+    } catch (error) {
+      console.error("Error updating product file:", error);
+      res.status(500).json({ message: "Failed to update product file" });
+    }
+  });
+
   app.delete('/api/product-files/:fileId', async (req, res) => {
     try {
       const file = await storage.getProductFile(req.params.fileId);
