@@ -229,6 +229,8 @@ export default function ProductForm() {
   const [packingInstructionsTexts, setPackingInstructionsTexts] = useState<string[]>([]);
   const [packingInstructionsImages, setPackingInstructionsImages] = useState<string[]>([]);
   const [expandedSections, setExpandedSections] = useState<string[]>(["basic"]);
+  const [imageViewerOpen, setImageViewerOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<{ preview: string; purpose: string } | null>(null);
   
   // Edit mode specific state
   const [tieredPricingDialogOpen, setTieredPricingDialogOpen] = useState(false);
@@ -1283,7 +1285,7 @@ export default function ProductForm() {
 
                     {/* Image Grid */}
                     {productImages.length > 0 && (
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
+                      <div className="grid grid-cols-3 md:grid-cols-4 gap-3 mb-3">
                         {productImages.map((img, index) => {
                           const config = IMAGE_PURPOSE_CONFIG[img.purpose];
                           const Icon = config.icon;
@@ -1294,7 +1296,11 @@ export default function ProductForm() {
                                 <img
                                   src={img.preview}
                                   alt={config.label}
-                                  className="w-full h-full object-cover"
+                                  className="w-full h-full object-cover cursor-pointer"
+                                  onClick={() => {
+                                    setSelectedImage({ preview: img.preview, purpose: img.purpose });
+                                    setImageViewerOpen(true);
+                                  }}
                                 />
                                 
                                 {img.isPrimary && (
@@ -1334,7 +1340,7 @@ export default function ProductForm() {
                                 </div>
                               </div>
                               
-                              <div className="p-2 bg-slate-50 dark:bg-slate-900">
+                              <div className="p-3 bg-slate-50 dark:bg-slate-900 min-h-[80px]">
                                 <Select value={img.purpose} onValueChange={(value) => handleChangePurpose(index, value as ImagePurpose)}>
                                   <SelectTrigger className="h-8 text-xs border-0" data-testid={`select-purpose-${index}`}>
                                     <SelectValue />
@@ -2498,6 +2504,62 @@ export default function ProductForm() {
                   data-testid="button-assign-barcodes"
                 >
                   Assign Barcodes
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Image Viewer Dialog */}
+          <Dialog open={imageViewerOpen} onOpenChange={setImageViewerOpen}>
+            <DialogContent className="max-w-4xl">
+              <DialogHeader>
+                <DialogTitle>
+                  {selectedImage && IMAGE_PURPOSE_CONFIG[selectedImage.purpose as ImagePurpose]?.label}
+                </DialogTitle>
+                <DialogDescription>
+                  {selectedImage && IMAGE_PURPOSE_CONFIG[selectedImage.purpose as ImagePurpose]?.description}
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="flex items-center justify-center bg-slate-100 dark:bg-slate-900 rounded-lg p-4">
+                {selectedImage && (
+                  <img
+                    src={selectedImage.preview}
+                    alt="Product image"
+                    className="max-h-[60vh] max-w-full object-contain rounded"
+                  />
+                )}
+              </div>
+              
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setImageViewerOpen(false)}
+                  data-testid="button-close-viewer"
+                >
+                  Close
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    if (selectedImage) {
+                      const link = document.createElement('a');
+                      link.href = selectedImage.preview;
+                      link.download = `product-${selectedImage.purpose}-image.jpg`;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                      toast({
+                        title: "Download Started",
+                        description: "Your image is being downloaded.",
+                      });
+                    }
+                  }}
+                  data-testid="button-download-image"
+                >
+                  <Upload className="h-4 w-4 mr-2 rotate-180" />
+                  Download
                 </Button>
               </DialogFooter>
             </DialogContent>
