@@ -13,13 +13,16 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { Plus, Search, Edit, Trash2, Package, AlertTriangle, MoreVertical, Archive } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Package, AlertTriangle, MoreVertical, Archive, SlidersHorizontal } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +34,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function AllInventory() {
   const { toast } = useToast();
@@ -40,6 +44,38 @@ export default function AllInventory() {
   const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
   const [orderCounts, setOrderCounts] = useState<{ [productId: string]: number }>({});
   const [showArchive, setShowArchive] = useState(false);
+
+  // Column visibility state with localStorage
+  const [columnVisibility, setColumnVisibility] = useState<{ [key: string]: boolean }>(() => {
+    const saved = localStorage.getItem('inventory-visible-columns');
+    if (saved) {
+      return JSON.parse(saved);
+    }
+    // Default visible columns
+    return {
+      name: true,
+      categoryId: true,
+      quantity: true,
+      priceEur: true,
+      status: true,
+      actions: true,
+      // Default hidden columns
+      lowStockAlert: false,
+      priceCzk: false,
+      importCostUsd: false,
+      importCostCzk: false,
+      importCostEur: false,
+      sku: false,
+      barcode: false,
+      supplierId: false,
+      warehouseId: false,
+    };
+  });
+
+  // Save to localStorage whenever visibility changes
+  useEffect(() => {
+    localStorage.setItem('inventory-visible-columns', JSON.stringify(columnVisibility));
+  }, [columnVisibility]);
 
   const { data: products = [], isLoading, error } = useQuery({
     queryKey: showArchive ? ['/api/products', 'archive'] : ['/api/products'],
@@ -55,8 +91,12 @@ export default function AllInventory() {
     },
   });
 
-  const { data: categories } = useQuery({
+  const { data: categories = [] } = useQuery({
     queryKey: ['/api/categories'],
+  });
+
+  const { data: warehouses = [] } = useQuery({
+    queryKey: ['/api/warehouses'],
   });
 
 
@@ -234,7 +274,7 @@ export default function AllInventory() {
       header: "Category",
       sortable: true,
       cell: (product) => {
-        const category = categories?.find((c: any) => c.id === product.categoryId);
+        const category = (categories as any[])?.find((c: any) => c.id === product.categoryId);
         return category?.name || '-';
       },
     },
@@ -263,6 +303,54 @@ export default function AllInventory() {
       sortable: true,
       cell: (product) => formatCurrency(parseFloat(product.priceCzk || '0'), 'CZK'),
       className: "text-right",
+    },
+    {
+      key: "importCostUsd",
+      header: "Import Cost USD",
+      sortable: true,
+      cell: (product) => formatCurrency(parseFloat(product.importCostUsd || '0'), 'USD'),
+      className: "text-right",
+    },
+    {
+      key: "importCostCzk",
+      header: "Import Cost CZK",
+      sortable: true,
+      cell: (product) => formatCurrency(parseFloat(product.importCostCzk || '0'), 'CZK'),
+      className: "text-right",
+    },
+    {
+      key: "importCostEur",
+      header: "Import Cost EUR",
+      sortable: true,
+      cell: (product) => formatCurrency(parseFloat(product.importCostEur || '0'), 'EUR'),
+      className: "text-right",
+    },
+    {
+      key: "sku",
+      header: "SKU",
+      sortable: true,
+      cell: (product) => product.sku || '-',
+    },
+    {
+      key: "barcode",
+      header: "Barcode",
+      sortable: true,
+      cell: (product) => product.barcode || '-',
+    },
+    {
+      key: "supplierId",
+      header: "Supplier",
+      sortable: true,
+      cell: (product) => product.supplier?.name || '-',
+    },
+    {
+      key: "warehouseId",
+      header: "Warehouse",
+      sortable: true,
+      cell: (product) => {
+        const warehouse = (warehouses as any[])?.find((w: any) => w.id === product.warehouseId);
+        return warehouse?.name || '-';
+      },
     },
     {
       key: "status",
@@ -326,6 +414,21 @@ export default function AllInventory() {
       ),
     },
   ];
+
+  // Filter columns based on visibility
+  const visibleColumns = columns.filter(col => columnVisibility[col.key] !== false);
+
+  // Toggle column visibility
+  const toggleColumnVisibility = (key: string) => {
+    // Prevent hiding Product and Actions columns
+    if (key === 'name' || key === 'actions') {
+      return;
+    }
+    setColumnVisibility(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
 
   // Bulk actions
   const bulkActions = showArchive ? [
@@ -415,7 +518,7 @@ export default function AllInventory() {
         // Fetch order counts for selected products
         try {
           const productIds = products.map(p => p.id);
-          const response = await apiRequest('POST', '/api/products/order-counts', { productIds });
+          const response = await apiRequest('POST', '/api/products/order-counts', { productIds }) as unknown as { [productId: string]: number };
           setOrderCounts(response);
         } catch (error) {
           console.error("Failed to fetch order counts:", error);
@@ -583,10 +686,11 @@ export default function AllInventory() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 touch-target"
+                data-testid="input-search-products"
               />
             </div>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-full sm:w-48 touch-target">
+              <SelectTrigger className="w-full sm:w-48 touch-target" data-testid="select-category-filter">
                 <SelectValue placeholder="Filter by category" />
               </SelectTrigger>
               <SelectContent>
@@ -598,6 +702,120 @@ export default function AllInventory() {
                 ))}
               </SelectContent>
             </Select>
+            
+            {/* Column Selector */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="w-full sm:w-auto touch-target" data-testid="button-columns-selector">
+                  <SlidersHorizontal className="mr-2 h-4 w-4" />
+                  Columns
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Toggle Columns</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <ScrollArea className="h-[400px]">
+                  {/* Basic Info */}
+                  <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">Basic Info</div>
+                  {[
+                    { key: 'name', label: 'Product' },
+                    { key: 'sku', label: 'SKU' },
+                    { key: 'barcode', label: 'Barcode' },
+                    { key: 'categoryId', label: 'Category' },
+                  ].map(col => (
+                    <DropdownMenuItem
+                      key={col.key}
+                      className="flex items-center gap-2 cursor-pointer"
+                      onSelect={(e) => e.preventDefault()}
+                      data-testid={`menuitem-column-${col.key}`}
+                    >
+                      <Checkbox
+                        checked={columnVisibility[col.key] !== false}
+                        onCheckedChange={() => toggleColumnVisibility(col.key)}
+                        disabled={col.key === 'name'}
+                        data-testid={`checkbox-column-${col.key}`}
+                      />
+                      <span className={col.key === 'name' ? 'text-muted-foreground' : ''}>{col.label}</span>
+                    </DropdownMenuItem>
+                  ))}
+                  
+                  <DropdownMenuSeparator />
+                  
+                  {/* Stock */}
+                  <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">Stock</div>
+                  {[
+                    { key: 'quantity', label: 'Qty' },
+                    { key: 'lowStockAlert', label: 'Low Stock Alert' },
+                    { key: 'status', label: 'Status' },
+                    { key: 'warehouseId', label: 'Warehouse' },
+                  ].map(col => (
+                    <DropdownMenuItem
+                      key={col.key}
+                      className="flex items-center gap-2 cursor-pointer"
+                      onSelect={(e) => e.preventDefault()}
+                      data-testid={`menuitem-column-${col.key}`}
+                    >
+                      <Checkbox
+                        checked={columnVisibility[col.key] !== false}
+                        onCheckedChange={() => toggleColumnVisibility(col.key)}
+                        data-testid={`checkbox-column-${col.key}`}
+                      />
+                      <span>{col.label}</span>
+                    </DropdownMenuItem>
+                  ))}
+                  
+                  <DropdownMenuSeparator />
+                  
+                  {/* Pricing */}
+                  <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">Pricing</div>
+                  {[
+                    { key: 'priceEur', label: 'Price EUR' },
+                    { key: 'priceCzk', label: 'Price CZK' },
+                    { key: 'importCostUsd', label: 'Import Cost USD' },
+                    { key: 'importCostEur', label: 'Import Cost EUR' },
+                    { key: 'importCostCzk', label: 'Import Cost CZK' },
+                  ].map(col => (
+                    <DropdownMenuItem
+                      key={col.key}
+                      className="flex items-center gap-2 cursor-pointer"
+                      onSelect={(e) => e.preventDefault()}
+                      data-testid={`menuitem-column-${col.key}`}
+                    >
+                      <Checkbox
+                        checked={columnVisibility[col.key] !== false}
+                        onCheckedChange={() => toggleColumnVisibility(col.key)}
+                        data-testid={`checkbox-column-${col.key}`}
+                      />
+                      <span>{col.label}</span>
+                    </DropdownMenuItem>
+                  ))}
+                  
+                  <DropdownMenuSeparator />
+                  
+                  {/* Other */}
+                  <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">Other</div>
+                  {[
+                    { key: 'supplierId', label: 'Supplier' },
+                    { key: 'actions', label: 'Actions' },
+                  ].map(col => (
+                    <DropdownMenuItem
+                      key={col.key}
+                      className="flex items-center gap-2 cursor-pointer"
+                      onSelect={(e) => e.preventDefault()}
+                      data-testid={`menuitem-column-${col.key}`}
+                    >
+                      <Checkbox
+                        checked={columnVisibility[col.key] !== false}
+                        onCheckedChange={() => toggleColumnVisibility(col.key)}
+                        disabled={col.key === 'actions'}
+                        data-testid={`checkbox-column-${col.key}`}
+                      />
+                      <span className={col.key === 'actions' ? 'text-muted-foreground' : ''}>{col.label}</span>
+                    </DropdownMenuItem>
+                  ))}
+                </ScrollArea>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </CardContent>
       </Card>
@@ -719,7 +937,7 @@ export default function AllInventory() {
           <div className="hidden sm:block">
             <DataTable
               data={filteredProducts}
-              columns={columns}
+              columns={visibleColumns}
               bulkActions={bulkActions}
               getRowKey={(product) => product.id}
               itemsPerPageOptions={[10, 20, 50, 100]}
