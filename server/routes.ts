@@ -5746,6 +5746,127 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // AI Smart Paste - Parse Address Endpoint
+  app.post('/api/addresses/parse', async (req, res) => {
+    try {
+      const { rawAddress } = req.body;
+      
+      if (!rawAddress || typeof rawAddress !== 'string') {
+        return res.status(400).json({ message: 'rawAddress is required and must be a string' });
+      }
+
+      const apiKey = process.env.OPENAI_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ message: 'OpenAI API key not configured' });
+      }
+
+      const OpenAI = (await import('openai')).default;
+      const openai = new OpenAI({ apiKey });
+
+      const prompt = `You are an address parsing engine. Extract first name, last name, company, email, phone, and address components from the text below. Return ONLY valid JSON with these exact fields: firstName, lastName, company, email, phone, street, streetNumber, city, zipCode, country, state. Use null for missing fields. Ensure street and streetNumber are separate (street is the street name, streetNumber is the house number).
+
+Text: ${rawAddress}`;
+
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an address parsing engine. Always respond with valid JSON only containing the requested fields.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0,
+        max_tokens: 500,
+        response_format: { type: 'json_object' }
+      });
+
+      const responseText = completion.choices[0]?.message?.content;
+      if (!responseText) {
+        return res.status(500).json({ message: 'Failed to parse address - empty response from AI' });
+      }
+
+      const parsedFields = JSON.parse(responseText);
+
+      // Validate and optionally enhance with Nominatim
+      let confidence: 'high' | 'medium' | 'low' = 'medium';
+      
+      // Determine confidence based on how many fields were extracted
+      const fieldCount = Object.values(parsedFields).filter(v => v !== null && v !== '').length;
+      if (fieldCount >= 8) {
+        confidence = 'high';
+      } else if (fieldCount >= 5) {
+        confidence = 'medium';
+      } else {
+        confidence = 'low';
+      }
+
+      // Try to validate/enhance address with Nominatim if we have city and country
+      if (parsedFields.city && parsedFields.country) {
+        try {
+          const searchQuery = [
+            parsedFields.streetNumber,
+            parsedFields.street,
+            parsedFields.city,
+            parsedFields.zipCode,
+            parsedFields.country
+          ].filter(Boolean).join(' ');
+
+          const nominatimUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQuery)}&format=json&addressdetails=1&limit=1`;
+          const nominatimResponse = await fetch(nominatimUrl, {
+            headers: {
+              'User-Agent': 'DavieSupply/1.0 (Warehouse Management System)'
+            }
+          });
+
+          if (nominatimResponse.ok) {
+            const nominatimData = await nominatimResponse.json();
+            if (nominatimData.length > 0) {
+              const nominatimAddress = nominatimData[0].address;
+              
+              // Fill in missing fields from Nominatim
+              if (!parsedFields.street && nominatimAddress?.road) {
+                parsedFields.street = nominatimAddress.road;
+              }
+              if (!parsedFields.streetNumber && nominatimAddress?.house_number) {
+                parsedFields.streetNumber = nominatimAddress.house_number;
+              }
+              if (!parsedFields.city && (nominatimAddress?.city || nominatimAddress?.town || nominatimAddress?.village)) {
+                parsedFields.city = nominatimAddress.city || nominatimAddress.town || nominatimAddress.village;
+              }
+              if (!parsedFields.zipCode && nominatimAddress?.postcode) {
+                parsedFields.zipCode = nominatimAddress.postcode;
+              }
+              if (!parsedFields.country && nominatimAddress?.country) {
+                parsedFields.country = nominatimAddress.country;
+              }
+              if (!parsedFields.state && nominatimAddress?.state) {
+                parsedFields.state = nominatimAddress.state;
+              }
+              
+              // Increase confidence if Nominatim validated the address
+              if (confidence === 'low') confidence = 'medium';
+              else if (confidence === 'medium') confidence = 'high';
+            }
+          }
+        } catch (nominatimError) {
+          console.error('Nominatim validation error:', nominatimError);
+        }
+      }
+
+      res.json({
+        fields: parsedFields,
+        confidence
+      });
+    } catch (error) {
+      console.error('Error parsing address:', error);
+      res.status(500).json({ message: 'Failed to parse address' });
+    }
+  });
+
   // ARES Lookup Endpoint (Czech company registry)
   app.get('/api/tax/ares-lookup', async (req, res) => {
     try {

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useToast } from "@/hooks/use-toast";
@@ -136,6 +137,9 @@ export default function AddCustomer() {
   const [shippingAddressSuggestions, setShippingAddressSuggestions] = useState<AddressAutocompleteResult[]>([]);
   const [showShippingDropdown, setShowShippingDropdown] = useState(false);
   const [isLoadingShippingAutocomplete, setIsLoadingShippingAutocomplete] = useState(false);
+
+  const [rawShippingAddress, setRawShippingAddress] = useState("");
+  const [rawBillingAddress, setRawBillingAddress] = useState("");
 
   const form = useForm<CustomerFormData>({
     resolver: zodResolver(customerFormSchema),
@@ -564,6 +568,72 @@ export default function AddCustomer() {
     setShippingAddresses(updated);
   };
 
+  const parseShippingAddressMutation = useMutation({
+    mutationFn: async (rawAddress: string) => {
+      return apiRequest('POST', '/api/addresses/parse', { rawAddress });
+    },
+    onSuccess: (data: { fields: any; confidence: string }) => {
+      const { fields } = data;
+      if (fields.firstName) shippingForm.setValue('firstName', fields.firstName);
+      if (fields.lastName) shippingForm.setValue('lastName', fields.lastName);
+      if (fields.company) shippingForm.setValue('company', fields.company);
+      if (fields.email) shippingForm.setValue('email', fields.email);
+      if (fields.phone) shippingForm.setValue('tel', fields.phone);
+      if (fields.street) shippingForm.setValue('street', fields.street);
+      if (fields.streetNumber) shippingForm.setValue('streetNumber', fields.streetNumber);
+      if (fields.city) shippingForm.setValue('city', fields.city);
+      if (fields.zipCode) shippingForm.setValue('zipCode', fields.zipCode);
+      if (fields.country) shippingForm.setValue('country', fields.country);
+      if (fields.state) shippingForm.setValue('state', fields.state);
+      
+      toast({
+        title: "Address Parsed",
+        description: `Successfully parsed address with ${data.confidence} confidence`,
+      });
+      setRawShippingAddress("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Parse Failed",
+        description: error.message || "Failed to parse address",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const parseBillingAddressMutation = useMutation({
+    mutationFn: async (rawAddress: string) => {
+      return apiRequest('POST', '/api/addresses/parse', { rawAddress });
+    },
+    onSuccess: (data: { fields: any; confidence: string }) => {
+      const { fields } = data;
+      if (fields.firstName) form.setValue('billingFirstName', fields.firstName);
+      if (fields.lastName) form.setValue('billingLastName', fields.lastName);
+      if (fields.company) form.setValue('billingCompany', fields.company);
+      if (fields.email) form.setValue('billingEmail', fields.email);
+      if (fields.phone) form.setValue('billingTel', fields.phone);
+      if (fields.street) form.setValue('billingStreet', fields.street);
+      if (fields.streetNumber) form.setValue('billingStreetNumber', fields.streetNumber);
+      if (fields.city) form.setValue('billingCity', fields.city);
+      if (fields.zipCode) form.setValue('billingZipCode', fields.zipCode);
+      if (fields.country) form.setValue('billingCountry', fields.country);
+      if (fields.state) form.setValue('billingState', fields.state);
+      
+      toast({
+        title: "Address Parsed",
+        description: `Successfully parsed address with ${data.confidence} confidence`,
+      });
+      setRawBillingAddress("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Parse Failed",
+        description: error.message || "Failed to parse address",
+        variant: "destructive",
+      });
+    },
+  });
+
   const createOrUpdateCustomerMutation = useMutation({
     mutationFn: async (data: CustomerFormData) => {
       if (isEditMode) {
@@ -957,7 +1027,7 @@ export default function AddCustomer() {
             ))}
 
             {isAddingShipping && (
-              <div className="p-4 border rounded-lg bg-blue-50">
+              <div className="p-4 border rounded-lg bg-slate-50">
                 <h4 className="font-semibold mb-4">
                   {editingShippingIndex !== null ? 'Edit' : 'Add'} Shipping Address
                 </h4>
@@ -970,6 +1040,39 @@ export default function AddCustomer() {
                       placeholder="e.g., Main Office, Warehouse"
                       data-testid="input-shippingLabel"
                     />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="rawShippingAddress">Smart Paste</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Paste any address info (name, company, email, phone, address) and we'll split it automatically
+                    </p>
+                    <div className="flex gap-2">
+                      <Textarea
+                        id="rawShippingAddress"
+                        value={rawShippingAddress}
+                        onChange={(e) => setRawShippingAddress(e.target.value)}
+                        placeholder="e.g., John Doe, ABC Company, john@example.com, +420123456789, Main Street 123, Prague 110 00, Czech Republic"
+                        className="min-h-[100px]"
+                        data-testid="textarea-rawShippingAddress"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={() => parseShippingAddressMutation.mutate(rawShippingAddress)}
+                      disabled={!rawShippingAddress.trim() || parseShippingAddressMutation.isPending}
+                      className="w-full"
+                      data-testid="button-parseShippingAddress"
+                    >
+                      {parseShippingAddressMutation.isPending ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Parsing...
+                        </>
+                      ) : (
+                        'Parse & Fill'
+                      )}
+                    </Button>
                   </div>
 
                   <div className="space-y-2">
@@ -1011,7 +1114,7 @@ export default function AddCustomer() {
                             shippingAddressSuggestions.map((suggestion, index) => (
                               <div
                                 key={index}
-                                className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0"
+                                className="p-3 hover:bg-slate-100 cursor-pointer border-b last:border-b-0 transition-colors"
                                 onClick={() => selectShippingAddress(suggestion)}
                                 data-testid={`button-shippingAddressSuggestion-${index}`}
                               >
@@ -1277,6 +1380,39 @@ export default function AddCustomer() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
+              <Label htmlFor="rawBillingAddress">Smart Paste</Label>
+              <p className="text-sm text-muted-foreground">
+                Paste any address info (name, company, email, phone, address) and we'll split it automatically
+              </p>
+              <div className="flex gap-2">
+                <Textarea
+                  id="rawBillingAddress"
+                  value={rawBillingAddress}
+                  onChange={(e) => setRawBillingAddress(e.target.value)}
+                  placeholder="e.g., John Doe, ABC Company, john@example.com, +420123456789, Main Street 123, Prague 110 00, Czech Republic"
+                  className="min-h-[100px]"
+                  data-testid="textarea-rawBillingAddress"
+                />
+              </div>
+              <Button
+                type="button"
+                onClick={() => parseBillingAddressMutation.mutate(rawBillingAddress)}
+                disabled={!rawBillingAddress.trim() || parseBillingAddressMutation.isPending}
+                className="w-full"
+                data-testid="button-parseBillingAddress"
+              >
+                {parseBillingAddressMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Parsing...
+                  </>
+                ) : (
+                  'Parse & Fill'
+                )}
+              </Button>
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="billingAddressAutocomplete" className="text-base font-semibold">Quick Address Lookup</Label>
               <p className="text-sm text-slate-500 mb-2">Start typing to search and autocomplete address</p>
               <div className="relative">
@@ -1317,7 +1453,7 @@ export default function AddCustomer() {
                       billingAddressSuggestions.map((suggestion, index) => (
                         <div
                           key={index}
-                          className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0"
+                          className="p-3 hover:bg-slate-100 cursor-pointer border-b last:border-b-0 transition-colors"
                           onClick={() => selectBillingAddress(suggestion)}
                           data-testid={`button-billingAddressSuggestion-${index}`}
                         >
