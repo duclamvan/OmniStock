@@ -1577,8 +1577,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/products/:id', async (req: any, res) => {
     try {
-      const updates = req.body;
-      const product = await storage.updateProduct(req.params.id, updates);
+      const updates = { ...req.body };
+      const productId = req.params.id;
+      
+      // Extract variants from updates
+      const newVariants = updates.variants || [];
+      delete updates.variants;
+      
+      // Update the main product
+      const product = await storage.updateProduct(productId, updates);
+      
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+      
+      // Handle variants if provided
+      if (newVariants.length > 0 || req.body.hasOwnProperty('variants')) {
+        // Get existing variants
+        const existingVariants = await storage.getProductVariants(productId);
+        const existingVariantIds = existingVariants.map(v => v.id);
+        const newVariantIds = newVariants
+          .filter((v: any) => v.id && !v.id.startsWith('temp-'))
+          .map((v: any) => v.id);
+        
+        // Delete variants that are no longer in the list
+        const variantsToDelete = existingVariantIds.filter(id => !newVariantIds.includes(id));
+        for (const variantId of variantsToDelete) {
+          await storage.deleteProductVariant(variantId);
+        }
+        
+        // Create or update variants
+        for (const variant of newVariants) {
+          const variantData = {
+            productId,
+            name: variant.name,
+            barcode: variant.barcode || null,
+            quantity: variant.quantity || 0,
+            importCostUsd: variant.importCostUsd || null,
+            importCostCzk: variant.importCostCzk || null,
+            importCostEur: variant.importCostEur || null,
+            imageUrl: variant.imageUrl || null,
+          };
+          
+          // Create new variant if ID starts with "temp-" or doesn't exist
+          if (!variant.id || variant.id.startsWith('temp-')) {
+            await storage.createProductVariant(variantData);
+          } else {
+            // Update existing variant
+            await storage.updateProductVariant(variant.id, variantData);
+          }
+        }
+      }
       
       await storage.createUserActivity({
         userId: "test-user",
