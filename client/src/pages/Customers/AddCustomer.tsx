@@ -589,10 +589,10 @@ export default function AddCustomer() {
       if (fields.email) shippingForm.setValue('email', fields.email);
       if (fields.phone) shippingForm.setValue('tel', fields.phone);
       
-      // Use Nominatim-corrected address values (already corrected by backend)
-      if (fields.street) shippingForm.setValue('street', capitalizeWords(fields.street));
+      // Use Nominatim-corrected address values (already properly formatted by backend with diacritics)
+      if (fields.street) shippingForm.setValue('street', fields.street);
       if (fields.streetNumber) shippingForm.setValue('streetNumber', fields.streetNumber);
-      if (fields.city) shippingForm.setValue('city', capitalizeWords(fields.city));
+      if (fields.city) shippingForm.setValue('city', fields.city);
       if (fields.zipCode) shippingForm.setValue('zipCode', fields.zipCode);
       if (fields.country) shippingForm.setValue('country', fields.country);
       if (fields.state) shippingForm.setValue('state', fields.state);
@@ -633,10 +633,10 @@ export default function AddCustomer() {
       if (fields.email) form.setValue('billingEmail', fields.email);
       if (fields.phone) form.setValue('billingTel', fields.phone);
       
-      // Use Nominatim-corrected address values (already corrected by backend)
-      if (fields.street) form.setValue('billingStreet', capitalizeWords(fields.street));
+      // Use Nominatim-corrected address values (already properly formatted by backend with diacritics)
+      if (fields.street) form.setValue('billingStreet', fields.street);
       if (fields.streetNumber) form.setValue('billingStreetNumber', fields.streetNumber);
-      if (fields.city) form.setValue('billingCity', capitalizeWords(fields.city));
+      if (fields.city) form.setValue('billingCity', fields.city);
       if (fields.zipCode) form.setValue('billingZipCode', fields.zipCode);
       if (fields.country) form.setValue('billingCountry', fields.country);
       if (fields.state) form.setValue('billingState', fields.state);

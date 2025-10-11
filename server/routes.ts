@@ -5766,7 +5766,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         baseURL: 'https://api.deepseek.com'
       });
 
-      const prompt = `You are an address parsing engine. Extract first name, last name, company, email, phone, and address components from the text below. Return ONLY valid JSON with these exact fields: firstName, lastName, company, email, phone, street, streetNumber, city, zipCode, country, state. Use null for missing fields. Ensure street and streetNumber are separate (street is the street name, streetNumber is the house number).
+      const prompt = `You are an address parsing engine. Extract contact and address information from the text below.
+
+IMPORTANT NAME PARSING RULES:
+- For Vietnamese names (e.g., "Nguyen anh van"): Take the LAST word as lastName, all other words as firstName
+  Example: "Nguyen anh van" → firstName: "Nguyen anh", lastName: "van"
+- For Western names: First word is firstName, remaining words are lastName
+- Always preserve name capitalization as given
+
+PHONE NUMBER RULES:
+- Extract phone numbers regardless of prefix (Sdt, Tel, Phone, etc.)
+- Remove prefixes and return only the number
+
+ADDRESS RULES:
+- Extract street name and house number separately
+- Keep original spelling for street names (including diacritics if present)
+- Extract city, postal code, and country
+
+Return ONLY valid JSON with these exact fields: firstName, lastName, company, email, phone, street, streetNumber, city, zipCode, country, state. Use null for missing fields.
 
 Text: ${rawAddress}`;
 
@@ -5830,23 +5847,29 @@ Text: ${rawAddress}`;
             if (nominatimData.length > 0) {
               const nominatimAddress = nominatimData[0].address;
               
-              // Fill in missing fields from Nominatim
-              if (!parsedFields.street && nominatimAddress?.road) {
+              // Always prioritize Nominatim data for accurate local formatting with diacritics
+              if (nominatimAddress?.road) {
                 parsedFields.street = nominatimAddress.road;
               }
-              if (!parsedFields.streetNumber && nominatimAddress?.house_number) {
+              if (nominatimAddress?.house_number) {
                 parsedFields.streetNumber = nominatimAddress.house_number;
               }
-              if (!parsedFields.city && (nominatimAddress?.city || nominatimAddress?.town || nominatimAddress?.village)) {
+              if (nominatimAddress?.city || nominatimAddress?.town || nominatimAddress?.village) {
                 parsedFields.city = nominatimAddress.city || nominatimAddress.town || nominatimAddress.village;
               }
-              if (!parsedFields.zipCode && nominatimAddress?.postcode) {
-                parsedFields.zipCode = nominatimAddress.postcode;
+              if (nominatimAddress?.postcode) {
+                // Format Czech postal codes with space (e.g., "431 91")
+                let postcode = nominatimAddress.postcode;
+                if (nominatimAddress?.country_code === 'cz' && postcode.length === 5) {
+                  postcode = postcode.slice(0, 3) + ' ' + postcode.slice(3);
+                }
+                parsedFields.zipCode = postcode;
               }
-              if (!parsedFields.country && nominatimAddress?.country) {
+              // Use local country name (e.g., "Česko" instead of "Czech Republic")
+              if (nominatimAddress?.country) {
                 parsedFields.country = nominatimAddress.country;
               }
-              if (!parsedFields.state && nominatimAddress?.state) {
+              if (nominatimAddress?.state) {
                 parsedFields.state = nominatimAddress.state;
               }
               
