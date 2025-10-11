@@ -12,6 +12,7 @@ import {
   insertCustomerSchema,
   insertSupplierSchema,
   insertProductSchema,
+  insertProductVariantSchema,
   insertProductLocationSchema,
   insertProductTieredPricingSchema,
   insertOrderSchema,

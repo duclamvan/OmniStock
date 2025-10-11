@@ -11,6 +11,7 @@ import {
   customerShippingAddresses,
   suppliers,
   products,
+  productVariants,
   productFiles,
   productLocations,
   productTieredPricing,
@@ -54,6 +55,8 @@ import {
   type InsertSupplier,
   type Product,
   type InsertProduct,
+  type ProductVariant,
+  type InsertProductVariant,
   type ProductFile,
   type InsertProductFile,
   type ProductLocation,
@@ -95,7 +98,6 @@ import { db } from "./db";
 import { eq, desc, and, or, like, sql, gte, lte, inArray, ne, asc, isNull, notInArray } from "drizzle-orm";
 
 // Define types for missing entities (these should match what the app expects)
-export type ProductVariant = any;
 export type Discount = any;
 export type Return = any;
 export type ReturnItem = any;
@@ -1294,19 +1296,56 @@ export class DatabaseStorage implements IStorage {
 
   // Product Variants
   async getProductVariants(productId: string): Promise<ProductVariant[]> {
-    return [];
+    try {
+      const variants = await db
+        .select()
+        .from(productVariants)
+        .where(eq(productVariants.productId, productId))
+        .orderBy(asc(productVariants.name));
+      return variants;
+    } catch (error) {
+      console.error('Error fetching product variants:', error);
+      return [];
+    }
   }
 
   async createProductVariant(variant: any): Promise<ProductVariant> {
-    return { id: Date.now().toString(), ...variant };
+    try {
+      const [newVariant] = await db
+        .insert(productVariants)
+        .values(variant)
+        .returning();
+      return newVariant;
+    } catch (error) {
+      console.error('Error creating product variant:', error);
+      throw error;
+    }
   }
 
   async updateProductVariant(id: string, variant: any): Promise<ProductVariant | undefined> {
-    return { id, ...variant };
+    try {
+      const [updated] = await db
+        .update(productVariants)
+        .set({ ...variant, updatedAt: new Date() })
+        .where(eq(productVariants.id, id))
+        .returning();
+      return updated || undefined;
+    } catch (error) {
+      console.error('Error updating product variant:', error);
+      return undefined;
+    }
   }
 
   async deleteProductVariant(id: string): Promise<boolean> {
-    return true;
+    try {
+      const result = await db
+        .delete(productVariants)
+        .where(eq(productVariants.id, id));
+      return (result.rowCount ?? 0) > 0;
+    } catch (error) {
+      console.error('Error deleting product variant:', error);
+      return false;
+    }
   }
 
   // Product Locations
