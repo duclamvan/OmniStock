@@ -59,6 +59,7 @@ import {
   Package,
   MoveRight,
   ArrowUpDown,
+  AlertTriangle,
 } from "lucide-react";
 import {
   getLocationTypeIcon,
@@ -113,6 +114,12 @@ export default function ProductLocations({
   // Move inventory states
   const [moveToLocation, setMoveToLocation] = useState<string>("");
   const [moveQuantity, setMoveQuantity] = useState(0);
+
+  // Fetch product data to get main quantity
+  const { data: product } = useQuery<any>({
+    queryKey: [`/api/products`, productId],
+    enabled: !!productId,
+  });
 
   // Fetch product locations
   const { data: locations = [], isLoading } = useQuery<ProductLocation[]>({
@@ -316,6 +323,10 @@ export default function ProductLocations({
   const totalQuantity = calculateTotalQuantity(locations);
   const primaryLocation = locations.find((loc) => loc.isPrimary);
   const locationSummary = getLocationSummary(locations);
+  
+  // Calculate difference between product quantity and warehouse total
+  const productQuantity = product?.quantity || 0;
+  const stockDifference = productQuantity - totalQuantity;
 
   // Handle missing productId (new product creation)
   if (!productId) {
@@ -490,8 +501,50 @@ export default function ProductLocations({
             <p className="text-2xl font-bold" data-testid="text-location-count">{locations.length}</p>
           </div>
 
+          <div className={`rounded-lg p-3 ${
+            stockDifference === 0 
+              ? 'bg-green-50' 
+              : stockDifference > 0 
+              ? 'bg-amber-50' 
+              : 'bg-red-50'
+          }`}>
+            <div className={`flex items-center space-x-2 mb-1 ${
+              stockDifference === 0 
+                ? 'text-green-700' 
+                : stockDifference > 0 
+                ? 'text-amber-700' 
+                : 'text-red-700'
+            }`}>
+              <ArrowUpDown className="h-4 w-4" />
+              <span className="text-xs font-medium">Stock Difference</span>
+            </div>
+            <div className="flex items-baseline space-x-2">
+              <p className={`text-2xl font-bold ${
+                stockDifference === 0 
+                  ? 'text-green-700' 
+                  : stockDifference > 0 
+                  ? 'text-amber-700' 
+                  : 'text-red-700'
+              }`} data-testid="text-stock-difference">
+                {stockDifference > 0 ? '+' : ''}{stockDifference}
+              </p>
+              {stockDifference !== 0 && (
+                <AlertTriangle className="h-4 w-4 text-amber-600" />
+              )}
+            </div>
+            <p className={`text-xs mt-1 ${
+              stockDifference === 0 
+                ? 'text-green-600' 
+                : 'text-slate-600'
+            }`}>
+              {stockDifference === 0 
+                ? 'Quantity matches' 
+                : `Product: ${productQuantity}`}
+            </p>
+          </div>
+
           {primaryLocation && (
-            <div className="bg-blue-50 rounded-lg p-3 md:col-span-2">
+            <div className="bg-blue-50 rounded-lg p-3">
               <div className="flex items-center space-x-2 text-blue-600 mb-1">
                 <Star className="h-4 w-4" />
                 <span className="text-xs font-medium">Primary Location</span>
