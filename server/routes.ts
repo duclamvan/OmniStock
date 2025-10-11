@@ -5824,17 +5824,19 @@ Text: ${rawAddress}`;
         confidence = 'low';
       }
 
-      // Try to validate/enhance address with Nominatim if we have city and country
-      if (parsedFields.city && parsedFields.country) {
+      // Try to validate/enhance address with Nominatim if we have any address components
+      if (parsedFields.street || parsedFields.city || parsedFields.zipCode) {
         try {
           const searchQuery = [
             parsedFields.streetNumber,
             parsedFields.street,
             parsedFields.city,
             parsedFields.zipCode,
-            parsedFields.country
+            parsedFields.country || 'Czech Republic' // Default to Czech Republic if country not detected
           ].filter(Boolean).join(' ');
 
+          console.log('Querying Nominatim with:', searchQuery);
+          
           const nominatimUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQuery)}&format=json&addressdetails=1&limit=1`;
           const nominatimResponse = await fetch(nominatimUrl, {
             headers: {
@@ -5844,18 +5846,23 @@ Text: ${rawAddress}`;
 
           if (nominatimResponse.ok) {
             const nominatimData = await nominatimResponse.json();
+            console.log('Nominatim response:', JSON.stringify(nominatimData[0]?.address, null, 2));
+            
             if (nominatimData.length > 0) {
               const nominatimAddress = nominatimData[0].address;
               
               // Always prioritize Nominatim data for accurate local formatting with diacritics
               if (nominatimAddress?.road) {
+                console.log('Setting street from Nominatim:', nominatimAddress.road);
                 parsedFields.street = nominatimAddress.road;
               }
               if (nominatimAddress?.house_number) {
                 parsedFields.streetNumber = nominatimAddress.house_number;
               }
               if (nominatimAddress?.city || nominatimAddress?.town || nominatimAddress?.village) {
-                parsedFields.city = nominatimAddress.city || nominatimAddress.town || nominatimAddress.village;
+                const cityValue = nominatimAddress.city || nominatimAddress.town || nominatimAddress.village;
+                console.log('Setting city from Nominatim:', cityValue);
+                parsedFields.city = cityValue;
               }
               if (nominatimAddress?.postcode) {
                 // Format Czech postal codes with space (e.g., "431 91")
@@ -5872,6 +5879,8 @@ Text: ${rawAddress}`;
               if (nominatimAddress?.state) {
                 parsedFields.state = nominatimAddress.state;
               }
+              
+              console.log('Final parsed fields:', JSON.stringify(parsedFields, null, 2));
               
               // Increase confidence if Nominatim validated the address
               if (confidence === 'low') confidence = 'medium';
