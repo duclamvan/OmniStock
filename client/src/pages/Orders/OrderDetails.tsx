@@ -59,7 +59,8 @@ import {
   RotateCcw,
   ChevronDown,
   TrendingUp,
-  BarChart3
+  BarChart3,
+  MessageCircle
 } from "lucide-react";
 import MarginPill from "@/components/orders/MarginPill";
 import { cn } from "@/lib/utils";
@@ -1153,6 +1154,19 @@ export default function OrderDetails() {
                       <Phone className="h-4 w-4 text-slate-400" />
                       <a href={`tel:${order.customer.phone}`} className="text-blue-600 hover:underline">
                         {order.customer.phone}
+                      </a>
+                    </div>
+                  )}
+                  {order.customer.facebookId && (
+                    <div className="flex items-center gap-2">
+                      <MessageCircle className="h-4 w-4 text-slate-400" />
+                      <a 
+                        href={`https://messenger.com/t/${order.customer.facebookId}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-blue-600 hover:underline"
+                      >
+                        Message
                       </a>
                     </div>
                   )}
