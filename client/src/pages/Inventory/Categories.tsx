@@ -60,16 +60,13 @@ export default function Categories() {
     retryDelay: 1000
   });
 
-  // Fetch products to count products per category
+  // Fetch products for the total count in stats
   const { data: products = [] } = useQuery<any[]>({
     queryKey: ['/api/products']
   });
 
-  // Count products per category
-  const categoriesWithCount = categories.map(category => ({
-    ...category,
-    productCount: products.filter(p => p.categoryId === category.id).length
-  }));
+  // Use categories directly - productCount already comes from the API
+  const categoriesWithCount = categories;
 
   // Filter categories based on search
   const filteredCategories = categoriesWithCount.filter(category => 
