@@ -570,7 +570,8 @@ export default function AddCustomer() {
 
   const parseShippingAddressMutation = useMutation({
     mutationFn: async (rawAddress: string) => {
-      return apiRequest('POST', '/api/addresses/parse', { rawAddress });
+      const res = await apiRequest('POST', '/api/addresses/parse', { rawAddress });
+      return res.json();
     },
     onSuccess: (data: { fields: any; confidence: string }) => {
       const { fields } = data;
@@ -603,7 +604,8 @@ export default function AddCustomer() {
 
   const parseBillingAddressMutation = useMutation({
     mutationFn: async (rawAddress: string) => {
-      return apiRequest('POST', '/api/addresses/parse', { rawAddress });
+      const res = await apiRequest('POST', '/api/addresses/parse', { rawAddress });
+      return res.json();
     },
     onSuccess: (data: { fields: any; confidence: string }) => {
       const { fields } = data;
