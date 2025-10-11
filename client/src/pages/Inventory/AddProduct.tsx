@@ -1402,16 +1402,16 @@ export default function AddProduct() {
             {/* Product Variants */}
             <AccordionItem value="variants" className="bg-white dark:bg-slate-800 rounded-xl border shadow-sm overflow-hidden">
               <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                <div className="flex items-center gap-3 text-left flex-1">
+                <div className="flex items-center gap-4 text-left w-full">
                   <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
                     <Tag className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                   </div>
                   <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold text-slate-900 dark:text-slate-100">Product Variants</h3>
-                      <Badge variant="secondary" className="ml-2">{variants.length}</Badge>
-                    </div>
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">Product Variants</h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400">Manage product variations</p>
+                  </div>
+                  <div className="flex items-center justify-center">
+                    <Badge variant="secondary">{variants.length}</Badge>
                   </div>
                 </div>
               </AccordionTrigger>
