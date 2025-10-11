@@ -2,6 +2,17 @@
 Davie Supply is a full-stack web application designed for comprehensive warehouse and order management. Its purpose is to streamline supply chain operations by managing the entire order lifecycle, tracking inventory, customer management, and providing multi-currency financial reporting. Key capabilities include real-time Vietnamese diacritics search, customer-specific pricing, and integration with external shipping APIs. The project's ambition is to offer a robust and efficient platform for supply chain management, incorporating advanced warehouse mapping and a comprehensive Pick & Pack workflow.
 
 # Recent Changes
+## AI Smart Paste & UI Improvements (October 2025)
+- **AI Address Parsing**: Implemented Smart Paste feature for customer addresses using OpenAI gpt-4o-mini to parse unstructured address text
+- **POST /api/addresses/parse Endpoint**: Backend endpoint that extracts firstName, lastName, company, email, phone, street, streetNumber, city, zipCode, country, state from raw text
+- **Nominatim Validation**: Integrated OpenStreetMap Nominatim API to validate and enhance AI-parsed addresses with geocoding data
+- **Confidence Scoring**: Returns high/medium/low confidence based on field completeness and Nominatim validation
+- **Smart Paste UI**: Added textarea and "Parse & Fill" button for both shipping and billing addresses in Add Customer page
+- **Auto-Fill Form**: Successfully parsed addresses automatically fill all form fields with loading states and toast notifications
+- **UI Color Cleanup**: Replaced all blue backgrounds (bg-blue-50) with neutral slate colors (bg-slate-50, hover:bg-slate-100) in address forms
+- **Badge Centering**: Vertically centered variant count badge in Product Variants accordion trigger for better visual balance
+- **CustomerDetails Bug Fix**: Added proper null check for undefined customer data to prevent runtime errors
+
 ## Facebook Integration Updates (October 2025)
 - **Editable Facebook ID Field**: Changed Facebook ID from read-only to editable input, allowing manual corrections while still auto-extracting from URLs
 - **Duplicate Customer Detection**: Real-time duplicate checking when Facebook ID changes, displays warning with link to existing customer's profile
