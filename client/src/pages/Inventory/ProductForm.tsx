@@ -239,6 +239,9 @@ export default function ProductForm() {
     importCostCzk: "",
     importCostEur: "",
   });
+  const [newVariantImageFile, setNewVariantImageFile] = useState<File | null>(null);
+  const [newVariantImagePreview, setNewVariantImagePreview] = useState<string | null>(null);
+  const [newVariantImageUploading, setNewVariantImageUploading] = useState(false);
   const [packingInstructionsTexts, setPackingInstructionsTexts] = useState<string[]>([]);
   const [packingInstructionsImages, setPackingInstructionsImages] = useState<string[]>([]);
   
@@ -1080,13 +1083,47 @@ export default function ProductForm() {
   };
 
   // Variant functions
-  const addVariant = () => {
+  const addVariant = async () => {
     if (newVariant.name.trim()) {
+      setNewVariantImageUploading(true);
+      
+      let imageUrl: string | undefined = undefined;
+      
+      // Upload image if one is selected
+      if (newVariantImageFile) {
+        try {
+          const formData = new FormData();
+          formData.append('image', newVariantImageFile);
+          
+          const uploadResponse = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData,
+            credentials: 'include',
+          });
+          
+          if (!uploadResponse.ok) {
+            throw new Error('Failed to upload image');
+          }
+          
+          const uploadResult = await uploadResponse.json();
+          imageUrl = uploadResult.imageUrl;
+        } catch (error) {
+          console.error('Variant image upload error:', error);
+          toast({
+            title: "Warning",
+            description: "Variant added but image upload failed",
+            variant: "destructive",
+          });
+        }
+      }
+      
       const variantWithId = {
         ...newVariant,
         id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         name: newVariant.name.trim(),
+        imageUrl,
       };
+      
       setVariants([...variants, variantWithId]);
       setNewVariant({
         name: "",
@@ -1096,6 +1133,9 @@ export default function ProductForm() {
         importCostCzk: "",
         importCostEur: "",
       });
+      setNewVariantImageFile(null);
+      setNewVariantImagePreview(null);
+      setNewVariantImageUploading(false);
       setIsAddDialogOpen(false);
       toast({
         title: "Success",
@@ -2418,6 +2458,73 @@ export default function ProductForm() {
                             />
                           </div>
                           
+                          {/* Image Upload */}
+                          <div>
+                            <Label>Variant Image</Label>
+                            <div className="mt-2">
+                              {newVariantImagePreview ? (
+                                <div className="relative w-32 h-32 rounded border bg-slate-50 dark:bg-slate-800 overflow-hidden group">
+                                  <img
+                                    src={newVariantImagePreview}
+                                    alt="Variant preview"
+                                    className="w-full h-full object-cover"
+                                  />
+                                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                    <label className="cursor-pointer">
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                          const file = e.target.files?.[0];
+                                          if (file) {
+                                            setNewVariantImageFile(file);
+                                            setNewVariantImagePreview(URL.createObjectURL(file));
+                                          }
+                                        }}
+                                        data-testid="input-variant-image-dialog"
+                                      />
+                                      <Edit className="h-4 w-4 text-white" />
+                                    </label>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (newVariantImagePreview) {
+                                          URL.revokeObjectURL(newVariantImagePreview);
+                                        }
+                                        setNewVariantImageFile(null);
+                                        setNewVariantImagePreview(null);
+                                      }}
+                                      className="text-white"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <label className="flex items-center justify-center w-32 h-32 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg cursor-pointer hover:border-slate-400 dark:hover:border-slate-500 transition-colors">
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        setNewVariantImageFile(file);
+                                        setNewVariantImagePreview(URL.createObjectURL(file));
+                                      }
+                                    }}
+                                    data-testid="input-variant-image-dialog"
+                                  />
+                                  <div className="text-center">
+                                    <ImageIcon className="h-8 w-8 mx-auto text-slate-400" />
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Upload Image</p>
+                                  </div>
+                                </label>
+                              )}
+                            </div>
+                          </div>
+                          
                           <div>
                             <Label htmlFor="variant-barcode">Barcode</Label>
                             <div className="relative">
@@ -2502,8 +2609,13 @@ export default function ProductForm() {
                             </div>
                           </div>
                           
-                          <Button onClick={addVariant} disabled={!newVariant.name.trim()} className="w-full" data-testid="button-save-variant">
-                            Add Variant
+                          <Button 
+                            onClick={addVariant} 
+                            disabled={!newVariant.name.trim() || newVariantImageUploading} 
+                            className="w-full" 
+                            data-testid="button-save-variant"
+                          >
+                            {newVariantImageUploading ? "Uploading..." : "Add Variant"}
                           </Button>
                         </div>
                       </DialogContent>
