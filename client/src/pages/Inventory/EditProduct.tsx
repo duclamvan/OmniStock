@@ -1336,16 +1336,16 @@ export default function EditProduct() {
               </AccordionContent>
             </AccordionItem>
 
-            {/* Stock Information */}
+            {/* Stock, Inventory & Locations */}
             <AccordionItem value="stock" className="bg-white dark:bg-slate-800 rounded-xl border shadow-sm overflow-hidden">
               <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50 dark:hover:bg-slate-700/50">
                 <div className="flex items-center gap-3 text-left">
                   <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                    <BarChart className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    <Warehouse className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">Stock & Inventory</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Quantity, alerts, barcode</p>
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">Stock, Inventory & Locations</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Quantity, alerts, barcode, warehouse locations</p>
                   </div>
                 </div>
               </AccordionTrigger>
@@ -1405,6 +1405,11 @@ export default function EditProduct() {
                       </Button>
                     </div>
                   </div>
+
+                  <Separator className="my-4" />
+
+                  {/* Product Locations - Embedded */}
+                  <ProductLocations productId={id || ''} productName={product?.name} embedded={true} />
                 </div>
               </AccordionContent>
             </AccordionItem>
@@ -2358,16 +2363,6 @@ export default function EditProduct() {
                     <div>
                       <Label className="text-sm font-medium mb-2 block">Product Files</Label>
                       <ProductFiles productId={id} />
-                    </div>
-                  )}
-
-                  <Separator />
-
-                  {/* Product Locations */}
-                  {id && (
-                    <div>
-                      <Label className="text-sm font-medium mb-2 block">Product Locations</Label>
-                      <ProductLocations productId={id} productName={product?.name} />
                     </div>
                   )}
                 </div>

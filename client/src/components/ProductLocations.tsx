@@ -87,12 +87,14 @@ interface ProductLocationsProps {
   productId: string;
   productName?: string;
   readOnly?: boolean;
+  embedded?: boolean;
 }
 
 export default function ProductLocations({
   productId,
   productName = "Product",
   readOnly = false,
+  embedded = false,
 }: ProductLocationsProps) {
   const { toast } = useToast();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -315,7 +317,49 @@ export default function ProductLocations({
   const primaryLocation = locations.find((loc) => loc.isPrimary);
   const locationSummary = getLocationSummary(locations);
 
+  // Handle missing productId (new product creation)
+  if (!productId) {
+    if (embedded) {
+      return (
+        <div className="pt-6">
+          <div className="border border-slate-200 rounded-lg bg-slate-50 p-6">
+            <div className="flex items-start space-x-3">
+              <div className="flex-shrink-0">
+                <MapPin className="h-5 w-5 text-slate-400" />
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-slate-700 mb-1">Warehouse Locations</h4>
+                <p className="text-sm text-slate-500">
+                  Save the product first to manage warehouse locations and stock distribution
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center text-slate-500">
+            <MapPin className="h-12 w-12 mx-auto mb-3 text-slate-300" />
+            <p>Save the product first to manage warehouse locations</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (isLoading) {
+    if (embedded) {
+      return (
+        <div className="pt-6">
+          <div className="border border-slate-200 rounded-lg bg-slate-50 p-6">
+            <div className="text-center text-slate-500">Loading locations...</div>
+          </div>
+        </div>
+      );
+    }
     return (
       <Card>
         <CardContent className="p-6">
@@ -325,22 +369,22 @@ export default function ProductLocations({
     );
   }
 
-  return (
-    <Card>
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-lg">Product Locations</CardTitle>
-            <p className="text-sm text-slate-600 mt-1">{locationSummary}</p>
-          </div>
-          {!readOnly && (
-            <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm" data-testid="button-add-location">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Location
-                </Button>
-              </DialogTrigger>
+  // Render header section (title + add button)
+  const headerSection = (
+    <div className="flex items-center justify-between mb-4">
+      <div>
+        {!embedded && <h4 className="text-base font-semibold">Warehouse Locations</h4>}
+        {embedded && <h4 className="text-sm font-semibold text-slate-700">Warehouse Locations</h4>}
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{locationSummary}</p>
+      </div>
+      {!readOnly && (
+        <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm" data-testid="button-add-location">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Location
+            </Button>
+          </DialogTrigger>
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>Add Product Location</DialogTitle>
@@ -422,12 +466,14 @@ export default function ProductLocations({
               </DialogContent>
             </Dialog>
           )}
-        </div>
-      </CardHeader>
+      </div>
+    );
 
-      <CardContent>
-        {/* Summary Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+  // Main content section
+  const contentSection = (
+    <>
+      {/* Summary Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-slate-50 rounded-lg p-3">
             <div className="flex items-center space-x-2 text-slate-600 mb-1">
               <Package className="h-4 w-4" />
@@ -586,8 +632,12 @@ export default function ProductLocations({
             )}
           </div>
         )}
-      </CardContent>
+    </>
+  );
 
+  // Dialogs section (always rendered outside of content)
+  const dialogsSection = (
+    <>
       {/* Edit Location Dialog */}
       <Dialog open={!!editLocation} onOpenChange={(open) => !open && setEditLocation(null)}>
         <DialogContent className="max-w-2xl">
@@ -779,6 +829,32 @@ export default function ProductLocations({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </>
+  );
+
+  // Render based on embedded mode
+  if (embedded) {
+    return (
+      <div className="pt-6">
+        <div className="border border-slate-200 rounded-lg bg-slate-50 p-6 space-y-4">
+          {headerSection}
+          {contentSection}
+        </div>
+        {dialogsSection}
+      </div>
+    );
+  }
+
+  // Default Card layout
+  return (
+    <Card>
+      <CardHeader className="pb-4">
+        {headerSection}
+      </CardHeader>
+      <CardContent>
+        {contentSection}
+      </CardContent>
+      {dialogsSection}
     </Card>
   );
 }
