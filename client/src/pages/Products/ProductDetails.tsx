@@ -281,7 +281,7 @@ export default function ProductDetails() {
                 </Badge>
                 <Badge variant={stockBadgeVariant} className="px-3 py-1 text-sm font-medium" data-testid="badge-stock-status">
                   <Package className="h-3.5 w-3.5 mr-1.5" />
-                  {product.quantity} {product.unit || 'units'}
+                  {product.quantity}
                 </Badge>
                 {category && (
                   <Badge variant="secondary" className="px-3 py-1 text-sm font-medium" data-testid="badge-category">
