@@ -2157,36 +2157,39 @@ export default function AddOrder() {
                                 </span>
                               </div>
                             </TableCell>
-                            <TableCell className="text-center">
-                              <Input
-                                type="number"
-                                min="1"
-                                value={item.quantity}
-                                onChange={(e) => updateOrderItem(item.id, 'quantity', parseInt(e.target.value) || 1)}
-                                className="w-16 h-9 text-center"
-                                data-testid={`input-quantity-${item.id}`}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                    // Enter: Save and go back to product search for next item
-                                    productSearchRef.current?.focus();
-                                  } else if (e.key === 'Tab') {
-                                    e.preventDefault();
-                                    // Tab: Go to shipping cost
-                                    const shippingCostInput = document.querySelector('[data-testid="input-shipping-cost"]') as HTMLInputElement;
-                                    shippingCostInput?.focus();
-                                  }
-                                }}
-                              />
+                            <TableCell className="text-center align-middle">
+                              <div className="flex justify-center">
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  value={item.quantity}
+                                  onChange={(e) => updateOrderItem(item.id, 'quantity', parseInt(e.target.value) || 1)}
+                                  className="w-20 h-10 text-center"
+                                  data-testid={`input-quantity-${item.id}`}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      // Enter: Save and go back to product search for next item
+                                      productSearchRef.current?.focus();
+                                    } else if (e.key === 'Tab') {
+                                      e.preventDefault();
+                                      // Tab: Go to shipping cost
+                                      const shippingCostInput = document.querySelector('[data-testid="input-shipping-cost"]') as HTMLInputElement;
+                                      shippingCostInput?.focus();
+                                    }
+                                  }}
+                                />
+                              </div>
                             </TableCell>
-                            <TableCell className="text-right">
-                              <Input
-                                type="number"
-                                step="0.01"
-                                value={item.price}
-                                onChange={(e) => updateOrderItem(item.id, 'price', parseFloat(e.target.value) || 0)}
-                                className="w-24 h-9 text-right"
-                                data-testid={`input-price-${item.id}`}
+                            <TableCell className="text-right align-middle">
+                              <div className="flex justify-end">
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  value={item.price}
+                                  onChange={(e) => updateOrderItem(item.id, 'price', parseFloat(e.target.value) || 0)}
+                                  className="w-28 h-10 text-right"
+                                  data-testid={`input-price-${item.id}`}
                                 onKeyDown={(e) => {
                                   if (e.key === 'Enter' || e.key === 'Tab') {
                                     e.preventDefault();
@@ -2210,16 +2213,18 @@ export default function AddOrder() {
                                   }
                                 }}
                               />
+                              </div>
                             </TableCell>
                             {showDiscountColumn && (
-                              <TableCell className="text-right">
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  value={item.discount}
-                                  onChange={(e) => updateOrderItem(item.id, 'discount', parseFloat(e.target.value) || 0)}
-                                  className="w-24 h-9 text-right"
-                                  data-testid={`input-discount-${item.id}`}
+                              <TableCell className="text-right align-middle">
+                                <div className="flex justify-end">
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    value={item.discount}
+                                    onChange={(e) => updateOrderItem(item.id, 'discount', parseFloat(e.target.value) || 0)}
+                                    className="w-28 h-10 text-right"
+                                    data-testid={`input-discount-${item.id}`}
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter' || e.key === 'Tab') {
                                       e.preventDefault();
@@ -2240,18 +2245,20 @@ export default function AddOrder() {
                                       }
                                     }
                                   }}
-                                />
+                                  />
+                                </div>
                               </TableCell>
                             )}
                             {showVatColumn && (
-                              <TableCell className="text-right">
-                                <Input
-                                  type="number"
-                                  step="0.01"
-                                  value={item.tax}
-                                  onChange={(e) => updateOrderItem(item.id, 'tax', parseFloat(e.target.value) || 0)}
-                                  className="w-24 h-9 text-right"
-                                  data-testid={`input-vat-${item.id}`}
+                              <TableCell className="text-right align-middle">
+                                <div className="flex justify-end">
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    value={item.tax}
+                                    onChange={(e) => updateOrderItem(item.id, 'tax', parseFloat(e.target.value) || 0)}
+                                    className="w-28 h-10 text-right"
+                                    data-testid={`input-vat-${item.id}`}
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter' || e.key === 'Tab') {
                                       e.preventDefault();
@@ -2265,9 +2272,10 @@ export default function AddOrder() {
                                     }
                                   }}
                                 />
+                                </div>
                               </TableCell>
                             )}
-                            <TableCell className="text-right font-semibold text-slate-900 dark:text-slate-100">
+                            <TableCell className="text-right font-semibold text-slate-900 dark:text-slate-100 align-middle">
                               {formatCurrency(item.total, form.watch('currency'))}
                             </TableCell>
                             <TableCell className="text-center">
