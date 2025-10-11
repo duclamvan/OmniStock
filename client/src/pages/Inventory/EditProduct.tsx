@@ -202,8 +202,10 @@ export default function EditProduct() {
     importCostUsd: string;
     importCostCzk: string;
     importCostEur: string;
+    imageUrl?: string;
   }>>([]);
   const [selectedVariants, setSelectedVariants] = useState<string[]>([]);
+  const [variantImageLoading, setVariantImageLoading] = useState<Record<string, boolean>>({});
   const [seriesInput, setSeriesInput] = useState("");
   const [seriesQuantity, setSeriesQuantity] = useState(0);
   const [seriesImportCostUsd, setSeriesImportCostUsd] = useState("");
@@ -653,6 +655,105 @@ export default function EditProduct() {
     setVariants(variants.map(v => 
       v.id === id ? { ...v, [field]: value } : v
     ));
+  };
+
+  const getPrimaryProductImage = () => {
+    const primaryImage = productImages.find(img => img.isPrimary);
+    if (primaryImage) return primaryImage.preview || primaryImage.url;
+    if (product?.images && Array.isArray(product.images)) {
+      const dbPrimaryImage = product.images.find((img: any) => img.isPrimary);
+      if (dbPrimaryImage) return dbPrimaryImage.url;
+    }
+    return product?.imageUrl || null;
+  };
+
+  const handleVariantImageUpload = async (variantId: string, file: File) => {
+    setVariantImageLoading(prev => ({ ...prev, [variantId]: true }));
+    
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      
+      const uploadResponse = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+      
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload image');
+      }
+      
+      const uploadResult = await uploadResponse.json();
+      
+      const updateResponse = await fetch(`/api/products/${id}/variants/${variantId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ imageUrl: uploadResult.imageUrl }),
+        credentials: 'include',
+      });
+      
+      if (!updateResponse.ok) {
+        throw new Error('Failed to update variant');
+      }
+      
+      setVariants(prev => prev.map(v => 
+        v.id === variantId ? { ...v, imageUrl: uploadResult.imageUrl } : v
+      ));
+      
+      toast({
+        title: "Success",
+        description: "Variant image uploaded successfully",
+      });
+    } catch (error) {
+      console.error('Variant image upload error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to upload variant image",
+        variant: "destructive",
+      });
+    } finally {
+      setVariantImageLoading(prev => ({ ...prev, [variantId]: false }));
+    }
+  };
+
+  const handleVariantImageRemove = async (variantId: string) => {
+    setVariantImageLoading(prev => ({ ...prev, [variantId]: true }));
+    
+    try {
+      const updateResponse = await fetch(`/api/products/${id}/variants/${variantId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ imageUrl: null }),
+        credentials: 'include',
+      });
+      
+      if (!updateResponse.ok) {
+        throw new Error('Failed to update variant');
+      }
+      
+      setVariants(prev => prev.map(v => 
+        v.id === variantId ? { ...v, imageUrl: undefined } : v
+      ));
+      
+      toast({
+        title: "Success",
+        description: "Variant image removed successfully",
+      });
+    } catch (error) {
+      console.error('Variant image remove error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove variant image",
+        variant: "destructive",
+      });
+    } finally {
+      setVariantImageLoading(prev => ({ ...prev, [variantId]: false }));
+    }
   };
 
   const updateProductMutation = useMutation({
@@ -2069,6 +2170,7 @@ export default function EditProduct() {
                                   data-testid="checkbox-select-all-header"
                                 />
                               </TableHead>
+                              <TableHead className="w-24">Image</TableHead>
                               <TableHead className="min-w-[200px]">Product Name</TableHead>
                               <TableHead>Barcode</TableHead>
                               <TableHead>Quantity</TableHead>
@@ -2093,6 +2195,58 @@ export default function EditProduct() {
                                     }}
                                     data-testid={`checkbox-variant-${variant.id}`}
                                   />
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    <div className="relative group">
+                                      <img
+                                        src={variant.imageUrl || getPrimaryProductImage() || '/placeholder.png'}
+                                        alt={variant.name}
+                                        className="w-10 h-10 object-cover rounded border"
+                                        data-testid={`img-variant-${variant.id}`}
+                                      />
+                                      {variant.imageUrl && (
+                                        <button
+                                          onClick={() => handleVariantImageRemove(variant.id)}
+                                          disabled={variantImageLoading[variant.id]}
+                                          className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                                          data-testid={`button-remove-variant-image-${variant.id}`}
+                                        >
+                                          <X className="w-3 h-3" />
+                                        </button>
+                                      )}
+                                    </div>
+                                    <label className="cursor-pointer">
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                          const file = e.target.files?.[0];
+                                          if (file) handleVariantImageUpload(variant.id, file);
+                                        }}
+                                        disabled={variantImageLoading[variant.id]}
+                                        data-testid={`input-variant-image-${variant.id}`}
+                                      />
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-8 w-8 p-0"
+                                        disabled={variantImageLoading[variant.id]}
+                                        data-testid={`button-upload-variant-image-${variant.id}`}
+                                        asChild
+                                      >
+                                        <span>
+                                          {variantImageLoading[variant.id] ? (
+                                            <RotateCcw className="h-4 w-4 animate-spin" />
+                                          ) : (
+                                            <ImageIcon className="h-4 w-4" />
+                                          )}
+                                        </span>
+                                      </Button>
+                                    </label>
+                                  </div>
                                 </TableCell>
                                 <TableCell className="min-w-[200px]">
                                   <Input
@@ -2189,6 +2343,44 @@ export default function EditProduct() {
                                 className="mt-1"
                                 data-testid={`checkbox-variant-mobile-${variant.id}`}
                               />
+                              <div className="relative group">
+                                <img
+                                  src={variant.imageUrl || getPrimaryProductImage() || '/placeholder.png'}
+                                  alt={variant.name}
+                                  className="w-12 h-12 object-cover rounded border"
+                                  data-testid={`img-variant-mobile-${variant.id}`}
+                                />
+                                {variant.imageUrl && (
+                                  <button
+                                    onClick={() => handleVariantImageRemove(variant.id)}
+                                    disabled={variantImageLoading[variant.id]}
+                                    className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    data-testid={`button-remove-variant-image-mobile-${variant.id}`}
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                )}
+                                <label className="absolute -bottom-1 -right-1 bg-white dark:bg-slate-800 rounded-full border cursor-pointer">
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) handleVariantImageUpload(variant.id, file);
+                                    }}
+                                    disabled={variantImageLoading[variant.id]}
+                                    data-testid={`input-variant-image-mobile-${variant.id}`}
+                                  />
+                                  <div className="p-1">
+                                    {variantImageLoading[variant.id] ? (
+                                      <RotateCcw className="w-3 h-3 animate-spin" />
+                                    ) : (
+                                      <ImageIcon className="w-3 h-3" />
+                                    )}
+                                  </div>
+                                </label>
+                              </div>
                               <div className="flex-1 space-y-2">
                                 <Input
                                   value={variant.name}
