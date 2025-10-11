@@ -210,7 +210,7 @@ export default function AllInventory() {
     }
 
     // Category filter
-    if (categoryFilter !== "all" && product.categoryId !== categoryFilter) {
+    if (categoryFilter !== "all" && product.categoryId !== parseInt(categoryFilter)) {
       return false;
     }
 
@@ -696,7 +696,7 @@ export default function AllInventory() {
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
                 {(categories as any[])?.map((category: any) => (
-                  <SelectItem key={category.id} value={category.id}>
+                  <SelectItem key={category.id} value={String(category.id)}>
                     {category.name}
                   </SelectItem>
                 ))}
