@@ -243,6 +243,7 @@ export default function SimpleBundles() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-20">Image</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Bundle ID / SKU</TableHead>
                 <TableHead>Description</TableHead>
@@ -254,6 +255,21 @@ export default function SimpleBundles() {
             <TableBody>
               {filteredBundles.map(bundle => (
                 <TableRow key={bundle.id}>
+                  <TableCell>
+                    {bundle.imageUrl ? (
+                      <div className="w-12 h-12 bg-slate-100 rounded flex items-center justify-center overflow-hidden">
+                        <img 
+                          src={bundle.imageUrl}
+                          alt={bundle.name}
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-12 h-12 bg-slate-100 rounded flex items-center justify-center">
+                        <ImageOff className="h-6 w-6 text-slate-300" />
+                      </div>
+                    )}
+                  </TableCell>
                   <TableCell className="font-medium">{bundle.name}</TableCell>
                   <TableCell>
                     <div>
