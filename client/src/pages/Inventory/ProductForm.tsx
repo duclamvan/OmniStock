@@ -2799,11 +2799,11 @@ export default function ProductForm() {
                             </TableHead>
                             <TableHead className="w-20">Image</TableHead>
                             <TableHead>Name</TableHead>
-                            <TableHead>Barcode</TableHead>
-                            <TableHead className="w-24">Quantity</TableHead>
-                            <TableHead className="w-28">Cost USD</TableHead>
-                            <TableHead className="w-28">Cost CZK</TableHead>
-                            <TableHead className="w-28">Cost EUR</TableHead>
+                            <TableHead className="text-right">Barcode</TableHead>
+                            <TableHead className="w-24 text-right">Quantity</TableHead>
+                            <TableHead className="w-28 text-right">Cost USD</TableHead>
+                            <TableHead className="w-28 text-right">Cost CZK</TableHead>
+                            <TableHead className="w-28 text-right">Cost EUR</TableHead>
                             <TableHead className="w-12"></TableHead>
                           </TableRow>
                         </TableHeader>
@@ -2884,57 +2884,61 @@ export default function ProductForm() {
                                   data-testid={`input-variant-name-${variant.id}`}
                                 />
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="text-right">
                                 <Input
                                   value={variant.barcode}
                                   onChange={(e) => updateVariant(variant.id, 'barcode', e.target.value)}
-                                  className="h-8 font-mono min-w-[120px]"
+                                  className="h-8 font-mono min-w-[120px] text-right"
                                   placeholder="Scan or enter"
                                   data-testid={`input-variant-barcode-${variant.id}`}
                                 />
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="text-right">
                                 <Input
                                   type="number"
                                   min="0"
                                   value={variant.quantity}
                                   onChange={(e) => updateVariant(variant.id, 'quantity', parseInt(e.target.value) || 0)}
-                                  className="h-8"
+                                  className="h-8 text-right [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                                  style={{ MozAppearance: 'textfield' } as any}
                                   data-testid={`input-variant-quantity-${variant.id}`}
                                 />
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="text-right">
                                 <Input
                                   type="number"
                                   step="0.01"
                                   min="0"
                                   value={variant.importCostUsd}
                                   onChange={(e) => updateVariant(variant.id, 'importCostUsd', e.target.value)}
-                                  className="h-8"
+                                  className="h-8 text-right [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                                  style={{ MozAppearance: 'textfield' } as any}
                                   placeholder="0.00"
                                   data-testid={`input-variant-cost-usd-${variant.id}`}
                                 />
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="text-right">
                                 <Input
                                   type="number"
                                   step="0.01"
                                   min="0"
                                   value={variant.importCostCzk}
                                   onChange={(e) => updateVariant(variant.id, 'importCostCzk', e.target.value)}
-                                  className="h-8"
+                                  className="h-8 text-right [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                                  style={{ MozAppearance: 'textfield' } as any}
                                   placeholder="0.00"
                                   data-testid={`input-variant-cost-czk-${variant.id}`}
                                 />
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="text-right">
                                 <Input
                                   type="number"
                                   step="0.01"
                                   min="0"
                                   value={variant.importCostEur}
                                   onChange={(e) => updateVariant(variant.id, 'importCostEur', e.target.value)}
-                                  className="h-8"
+                                  className="h-8 text-right [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                                  style={{ MozAppearance: 'textfield' } as any}
                                   placeholder="0.00"
                                   data-testid={`input-variant-cost-eur-${variant.id}`}
                                 />
