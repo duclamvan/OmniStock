@@ -273,6 +273,7 @@ export default function ProductForm() {
   const conversionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const seriesConversionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const salesPriceConversionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const variantConversionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Get categoryId from URL query parameters (for add mode)
   const searchParams = new URLSearchParams(window.location.search);
@@ -529,6 +530,59 @@ export default function ProductForm() {
       }
     };
   }, [priceCzk, priceEur, priceUsd, priceVnd, priceCny, form]);
+
+  // Auto-convert variant import costs after 1 second
+  useEffect(() => {
+    if (variantConversionTimeoutRef.current) {
+      clearTimeout(variantConversionTimeoutRef.current);
+    }
+
+    variantConversionTimeoutRef.current = setTimeout(() => {
+      const filledFields = [
+        newVariant.importCostUsd ? 'USD' : null,
+        newVariant.importCostCzk ? 'CZK' : null,
+        newVariant.importCostEur ? 'EUR' : null,
+      ].filter(Boolean);
+
+      if (filledFields.length === 1) {
+        const sourceCurrency = filledFields[0] as Currency;
+        let sourceValue = 0;
+
+        switch (sourceCurrency) {
+          case 'USD':
+            sourceValue = parseFloat(newVariant.importCostUsd) || 0;
+            break;
+          case 'CZK':
+            sourceValue = parseFloat(newVariant.importCostCzk) || 0;
+            break;
+          case 'EUR':
+            sourceValue = parseFloat(newVariant.importCostEur) || 0;
+            break;
+        }
+
+        if (sourceValue > 0) {
+          if (sourceCurrency !== 'USD' && !newVariant.importCostUsd) {
+            const usdValue = convertCurrency(sourceValue, sourceCurrency, 'USD');
+            setNewVariant((prev) => ({ ...prev, importCostUsd: usdValue.toFixed(2) }));
+          }
+          if (sourceCurrency !== 'CZK' && !newVariant.importCostCzk) {
+            const czkValue = convertCurrency(sourceValue, sourceCurrency, 'CZK');
+            setNewVariant((prev) => ({ ...prev, importCostCzk: czkValue.toFixed(2) }));
+          }
+          if (sourceCurrency !== 'EUR' && !newVariant.importCostEur) {
+            const eurValue = convertCurrency(sourceValue, sourceCurrency, 'EUR');
+            setNewVariant((prev) => ({ ...prev, importCostEur: eurValue.toFixed(2) }));
+          }
+        }
+      }
+    }, 1000);
+
+    return () => {
+      if (variantConversionTimeoutRef.current) {
+        clearTimeout(variantConversionTimeoutRef.current);
+      }
+    };
+  }, [newVariant.importCostUsd, newVariant.importCostCzk, newVariant.importCostEur]);
 
   // Auto-set low stock alert to 50% of quantity in add mode
   useEffect(() => {
