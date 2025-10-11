@@ -133,7 +133,8 @@ export default function AddOrder() {
     facebookUrl: "",
     email: "",
     phone: "",
-    address: "",
+    street: "",
+    streetNumber: "",
     city: "",
     state: "",
     zipCode: "",
@@ -141,6 +142,8 @@ export default function AddOrder() {
     company: "",
     type: "regular"
   });
+  
+  const [rawNewCustomerAddress, setRawNewCustomerAddress] = useState("");
 
   const [addressAutocomplete, setAddressAutocomplete] = useState("");
   const [addressSuggestions, setAddressSuggestions] = useState<any[]>([]);
@@ -319,9 +322,18 @@ export default function AddOrder() {
 
   // Function to select an address from suggestions
   const selectAddress = (suggestion: any) => {
+    // Split street into street name and number
+    const streetParts = suggestion.street.trim().split(/\s+/);
+    const lastPart = streetParts[streetParts.length - 1];
+    const hasNumber = /\d/.test(lastPart);
+    
+    const streetName = hasNumber ? streetParts.slice(0, -1).join(' ') : suggestion.street;
+    const streetNumber = hasNumber ? lastPart : '';
+    
     setNewCustomer(prev => ({
       ...prev,
-      address: suggestion.street,
+      street: streetName,
+      streetNumber: streetNumber,
       city: suggestion.city,
       state: suggestion.state,
       zipCode: suggestion.zipCode,
@@ -503,6 +515,49 @@ export default function AddOrder() {
     },
   });
 
+  // Smart Paste mutation for new customer address
+  const parseNewCustomerAddressMutation = useMutation({
+    mutationFn: async (rawAddress: string) => {
+      const res = await apiRequest('POST', '/api/addresses/parse', { rawAddress });
+      return res.json();
+    },
+    onSuccess: (data: { fields: any; confidence: string }) => {
+      const { fields } = data;
+      
+      // Capitalize names
+      const capitalizeWords = (str: string) => str.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+      
+      if (fields.firstName || fields.lastName) {
+        const fullName = [fields.firstName, fields.lastName].filter(Boolean).map(capitalizeWords).join(' ');
+        setNewCustomer(prev => ({ ...prev, name: fullName }));
+      }
+      if (fields.company) setNewCustomer(prev => ({ ...prev, company: fields.company }));
+      if (fields.email) setNewCustomer(prev => ({ ...prev, email: fields.email }));
+      if (fields.phone) setNewCustomer(prev => ({ ...prev, phone: fields.phone }));
+      
+      // Use Nominatim-corrected address values
+      if (fields.street) setNewCustomer(prev => ({ ...prev, street: fields.street }));
+      if (fields.streetNumber) setNewCustomer(prev => ({ ...prev, streetNumber: fields.streetNumber }));
+      if (fields.city) setNewCustomer(prev => ({ ...prev, city: fields.city }));
+      if (fields.zipCode) setNewCustomer(prev => ({ ...prev, zipCode: fields.zipCode }));
+      if (fields.country) setNewCustomer(prev => ({ ...prev, country: fields.country }));
+      if (fields.state) setNewCustomer(prev => ({ ...prev, state: fields.state }));
+      
+      toast({
+        title: "Address Parsed",
+        description: `Successfully parsed address with ${data.confidence} confidence`,
+      });
+      setRawNewCustomerAddress("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Parse Failed",
+        description: error.message || "Failed to parse address",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Update product prices when currency changes
   const selectedCurrency = form.watch('currency');
   useEffect(() => {
@@ -594,13 +649,19 @@ export default function AddOrder() {
       } else if (selectedCustomer && !selectedCustomer.id) {
         // Handle regular new customer creation (from the full customer form)
         console.log('Creating new customer:', selectedCustomer);
+        
+        // Combine street and streetNumber for legacy address field
+        const fullAddress = [selectedCustomer.street, selectedCustomer.streetNumber]
+          .filter(Boolean)
+          .join(' ');
+        
         const customerData = {
           name: selectedCustomer.name,
           facebookName: selectedCustomer.facebookName || undefined,
           facebookUrl: selectedCustomer.facebookUrl || undefined,
           email: selectedCustomer.email || undefined,
           phone: selectedCustomer.phone || undefined,
-          address: selectedCustomer.address || undefined,
+          address: fullAddress || undefined,
           city: selectedCustomer.city || undefined,
           state: selectedCustomer.state || undefined,
           zipCode: selectedCustomer.zipCode || undefined,
@@ -1545,9 +1606,9 @@ export default function AddOrder() {
 
             {/* New customer form */}
             {showNewCustomerForm && (
-              <div className="space-y-4 border border-blue-200 bg-blue-50 p-4 rounded-lg">
+              <div className="space-y-4 border border-slate-200 bg-slate-50 p-4 rounded-lg">
                 <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-medium text-blue-900">New Customer Details</h4>
+                  <h4 className="font-medium text-slate-900">New Customer Details</h4>
                   <Button
                     type="button"
                     variant="ghost"
@@ -1555,13 +1616,15 @@ export default function AddOrder() {
                     onClick={() => {
                       setShowNewCustomerForm(false);
                       setAddressAutocomplete("");
+                      setRawNewCustomerAddress("");
                       setNewCustomer({
                         name: "",
                         facebookName: "",
                         facebookUrl: "",
                         email: "",
                         phone: "",
-                        address: "",
+                        street: "",
+                        streetNumber: "",
                         city: "",
                         state: "",
                         zipCode: "",
@@ -1651,6 +1714,36 @@ export default function AddOrder() {
                   </div>
                 </div>
 
+                {/* Smart Paste */}
+                <div className="space-y-2">
+                  <Label htmlFor="rawNewCustomerAddress">Smart Paste</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Paste any address info and we'll split it automatically
+                  </p>
+                  <Textarea
+                    id="rawNewCustomerAddress"
+                    value={rawNewCustomerAddress}
+                    onChange={(e) => setRawNewCustomerAddress(e.target.value)}
+                    placeholder="e.g., Nguyen anh van, Potocni 1299 vejprty, Bưu điện 43191 vejprty, Sdt 607638460"
+                    className="min-h-[80px]"
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => parseNewCustomerAddressMutation.mutate(rawNewCustomerAddress)}
+                    disabled={!rawNewCustomerAddress.trim() || parseNewCustomerAddressMutation.isPending}
+                    className="w-full"
+                  >
+                    {parseNewCustomerAddressMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Parsing...
+                      </>
+                    ) : (
+                      'Parse & Fill'
+                    )}
+                  </Button>
+                </div>
+
                 {/* Address Autocomplete */}
                 <div className="space-y-2">
                   <Label htmlFor="addressAutocomplete">Address Search (optional)</Label>
@@ -1707,7 +1800,7 @@ export default function AddOrder() {
                             {addressSuggestions.map((suggestion, index) => (
                               <div
                                 key={index}
-                                className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0 transition-colors"
+                                className="p-3 hover:bg-slate-100 cursor-pointer border-b last:border-b-0 transition-colors"
                                 onClick={() => selectAddress(suggestion)}
                               >
                                 <div className="font-medium text-slate-900">
@@ -1732,13 +1825,21 @@ export default function AddOrder() {
                 {/* Address Information */}
                 <div className="space-y-2">
                   <Label>Shipping Address</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="md:col-span-2">
                       <Input
-                        id="address"
-                        value={newCustomer.address}
-                        onChange={(e) => setNewCustomer({ ...newCustomer, address: e.target.value })}
-                        placeholder="Full address"
+                        id="street"
+                        value={newCustomer.street}
+                        onChange={(e) => setNewCustomer({ ...newCustomer, street: e.target.value })}
+                        placeholder="Street name"
+                      />
+                    </div>
+                    <div>
+                      <Input
+                        id="streetNumber"
+                        value={newCustomer.streetNumber}
+                        onChange={(e) => setNewCustomer({ ...newCustomer, streetNumber: e.target.value })}
+                        placeholder="Number"
                       />
                     </div>
                     <div>
@@ -1754,10 +1855,9 @@ export default function AddOrder() {
                         id="zipCode"
                         value={newCustomer.zipCode}
                         onChange={(e) => setNewCustomer({ ...newCustomer, zipCode: e.target.value })}
-                        placeholder="ZIP Code"
+                        placeholder="Postal Code"
                       />
                     </div>
-
                     <div>
                       <Input
                         id="country"
