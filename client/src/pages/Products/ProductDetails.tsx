@@ -107,6 +107,10 @@ export default function ProductDetails() {
     queryKey: ['/api/suppliers'],
   });
 
+  const { data: packingMaterials } = useQuery<any[]>({
+    queryKey: ['/api/packing-materials'],
+  });
+
   const { data: variants = [], isLoading: variantsLoading } = useQuery<any[]>({
     queryKey: [`/api/products/${id}/variants`],
     enabled: !!id,
@@ -153,6 +157,7 @@ export default function ProductDetails() {
   const warehouse = warehouses?.find((w: any) => w.id === product.warehouseId);
   const category = categories?.find((c: any) => c.id === product.categoryId);
   const supplier = suppliers?.find((s: any) => s.id === product.supplierId);
+  const packingMaterial = packingMaterials?.find((pm: any) => pm.id === product.packingMaterialId);
   
   const stockStatus = product.quantity <= 5 ? "critical" : product.quantity <= 20 ? "low" : "healthy";
   const stockBadgeVariant = stockStatus === "critical" ? "destructive" : stockStatus === "low" ? "outline" : "default";
@@ -471,10 +476,14 @@ export default function ProductDetails() {
             </div>
           </AccordionTrigger>
           <AccordionContent className="px-4 pb-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2">
               <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Current Quantity</label>
                 <p className="text-2xl font-bold text-slate-900 mt-2" data-testid="text-quantity">{product.quantity}</p>
+              </div>
+              <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Unit</label>
+                <p className="text-2xl font-bold text-slate-900 mt-2" data-testid="text-unit">{product.unit || 'units'}</p>
               </div>
               <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Low Stock Alert</label>
@@ -870,42 +879,116 @@ export default function ProductDetails() {
           </AccordionContent>
         </AccordionItem>
 
-        {/* Packing Instructions */}
-        {(product.packingInstructionsText || product.packingInstructionsImage) && (
-          <AccordionItem value="packing" className="border-slate-200 rounded-xl bg-white shadow-sm">
-            <AccordionTrigger className="px-4 py-3 hover:no-underline" data-testid="accordion-packing">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-pink-50 rounded-lg">
-                  <Package className="h-5 w-5 text-pink-600" />
-                </div>
-                <span className="text-lg font-semibold text-slate-900">Packing Instructions</span>
+        {/* Packing & Shipping Details */}
+        <AccordionItem value="packing" className="border-slate-200 rounded-xl bg-white shadow-sm">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline" data-testid="accordion-packing">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-pink-50 rounded-lg">
+                <Package className="h-5 w-5 text-pink-600" />
               </div>
-            </AccordionTrigger>
-            <AccordionContent className="px-4 pb-4">
-              <div className="space-y-6 pt-2">
-                {product.packingInstructionsText && (
+              <span className="text-lg font-semibold text-slate-900">Packing & Shipping Details</span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            <div className="space-y-6 pt-2">
+              {/* Packing Material */}
+              {packingMaterial && (
+                <>
                   <div>
-                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Instructions</label>
-                    <p className="text-base text-slate-700 mt-2 whitespace-pre-wrap leading-relaxed" data-testid="text-packing-instructions">
-                      {product.packingInstructionsText}
-                    </p>
+                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Packing Material</label>
+                    <div className="mt-2 bg-slate-50 rounded-lg p-4 border border-slate-200">
+                      <p className="text-lg font-semibold text-slate-900" data-testid="text-packing-material-name">{packingMaterial.name}</p>
+                      {packingMaterial.dimensions && (
+                        <p className="text-sm text-slate-600 mt-1" data-testid="text-packing-material-dimensions">{packingMaterial.dimensions}</p>
+                      )}
+                    </div>
                   </div>
-                )}
-                {product.packingInstructionsImage && (
-                  <div>
-                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Reference Image</label>
-                    <img
-                      src={product.packingInstructionsImage}
-                      alt="Packing instructions"
-                      className="mt-3 max-w-md rounded-lg border-2 border-slate-200 shadow-sm"
-                      data-testid="img-packing-instructions"
-                    />
-                  </div>
-                )}
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        )}
+                  <Separator />
+                </>
+              )}
+
+              {/* Grouped Packing Instructions */}
+              {(() => {
+                const packingTexts = product.packingInstructionsTexts ? 
+                  (typeof product.packingInstructionsTexts === 'string' ? 
+                    JSON.parse(product.packingInstructionsTexts) : 
+                    product.packingInstructionsTexts) : [];
+                const packingImages = product.packingInstructionsImages ? 
+                  (typeof product.packingInstructionsImages === 'string' ? 
+                    JSON.parse(product.packingInstructionsImages) : 
+                    product.packingInstructionsImages) : [];
+                
+                const hasGroupedInstructions = packingTexts.length > 0 || packingImages.length > 0;
+                const hasLegacyInstructions = product.packingInstructionsText || product.packingInstructionsImage;
+                
+                if (hasGroupedInstructions) {
+                  // Show new grouped format
+                  const maxSteps = Math.max(packingTexts.length, packingImages.length);
+                  return (
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-4">Packing Instructions</h3>
+                      <div className="space-y-4">
+                        {Array.from({ length: maxSteps }).map((_, index) => (
+                          <div key={index} className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                            <div className="flex items-center gap-2 mb-3">
+                              <Badge variant="secondary" className="font-semibold">Step {index + 1}</Badge>
+                            </div>
+                            <div className="space-y-3">
+                              {packingImages[index] && (
+                                <img
+                                  src={packingImages[index]}
+                                  alt={`Packing step ${index + 1}`}
+                                  className="w-full max-w-md rounded-lg border border-slate-200"
+                                  data-testid={`img-packing-step-${index}`}
+                                />
+                              )}
+                              {packingTexts[index] && (
+                                <p className="text-base text-slate-700 leading-relaxed whitespace-pre-wrap" data-testid={`text-packing-step-${index}`}>
+                                  {packingTexts[index]}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                } else if (hasLegacyInstructions) {
+                  // Show legacy format
+                  return (
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-4">Packing Instructions (Legacy)</h3>
+                      <div className="space-y-4">
+                        {product.packingInstructionsText && (
+                          <div>
+                            <p className="text-base text-slate-700 leading-relaxed whitespace-pre-wrap" data-testid="text-packing-instructions">
+                              {product.packingInstructionsText}
+                            </p>
+                          </div>
+                        )}
+                        {product.packingInstructionsImage && (
+                          <img
+                            src={product.packingInstructionsImage}
+                            alt="Packing instructions"
+                            className="max-w-md rounded-lg border-2 border-slate-200 shadow-sm"
+                            data-testid="img-packing-instructions"
+                          />
+                        )}
+                      </div>
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div className="text-center py-8 text-slate-500">
+                      <Package className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                      <p className="font-medium">No packing instructions available</p>
+                    </div>
+                  );
+                }
+              })()}
+            </div>
+          </AccordionContent>
+        </AccordionItem>
 
         {/* Advanced Settings */}
         <AccordionItem value="advanced" className="border-slate-200 rounded-xl bg-white shadow-sm">
