@@ -1831,11 +1831,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/products/:id/locations/:locationId', async (req: any, res) => {
     try {
-      const { locationId } = req.params;
+      const { id: productId, locationId } = req.params;
       
       // Validate update data (partial schema)
       const updateData = insertProductLocationSchema.partial().parse(req.body);
       
+      // Handle legacy locations (from old warehouseLocation field)
+      if (locationId === 'legacy') {
+        // Get the product to verify it exists
+        const product = await storage.getProductById(productId);
+        if (!product) {
+          return res.status(404).json({ message: "Product not found" });
+        }
+        
+        // Create a new real location with the updated data
+        const newLocation = await storage.createProductLocation({
+          productId: productId,
+          locationType: updateData.locationType || 'warehouse',
+          locationCode: updateData.locationCode || product.warehouseLocation || 'WH1-A01-R01-L01',
+          quantity: updateData.quantity ?? product.quantity ?? 0,
+          notes: updateData.notes || 'Migrated from legacy location',
+          isPrimary: updateData.isPrimary ?? true,
+        });
+        
+        // Clear the old warehouseLocation field
+        await storage.updateProduct(productId, { warehouseLocation: null });
+        
+        await storage.createUserActivity({
+          userId: "test-user",
+          action: 'created',
+          entityType: 'product_location',
+          entityId: newLocation.id,
+          description: `Migrated legacy location ${newLocation.locationCode}`,
+        });
+        
+        return res.json(newLocation);
+      }
+      
+      // Normal update for existing locations
       const location = await storage.updateProductLocation(locationId, updateData);
       
       if (!location) {
@@ -1865,8 +1898,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete('/api/products/:id/locations/:locationId', async (req: any, res) => {
     try {
-      const { locationId } = req.params;
+      const { id: productId, locationId } = req.params;
       
+      // Handle legacy locations (from old warehouseLocation field)
+      if (locationId === 'legacy') {
+        // Just clear the old warehouseLocation field
+        await storage.updateProduct(productId, { warehouseLocation: null });
+        
+        await storage.createUserActivity({
+          userId: "test-user",
+          action: 'deleted',
+          entityType: 'product_location',
+          entityId: locationId,
+          description: `Removed legacy location`,
+        });
+        
+        return res.status(204).send();
+      }
+      
+      // Normal delete for existing locations
       const success = await storage.deleteProductLocation(locationId);
       
       if (!success) {
