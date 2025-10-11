@@ -183,8 +183,8 @@ export default function AddProduct() {
     importCostCzk: "",
     importCostEur: "",
   });
-  const [packingInstructionsText, setPackingInstructionsText] = useState<string>("");
-  const [packingInstructionsImage, setPackingInstructionsImage] = useState<string | null>(null);
+  const [packingInstructionsTexts, setPackingInstructionsTexts] = useState<string[]>([]);
+  const [packingInstructionsImages, setPackingInstructionsImages] = useState<string[]>([]);
   const [expandedSections, setExpandedSections] = useState<string[]>(["basic"]);
   
   // Auto-conversion state
@@ -709,8 +709,8 @@ export default function AddProduct() {
       categoryId: data.categoryId || undefined,
       warehouseId: data.warehouseId || undefined,
       supplierId: data.supplierId || undefined,
-      packingInstructionsText: packingInstructionsText,
-      packingInstructionsImage: packingInstructionsImage,
+      packingInstructionsTexts: packingInstructionsTexts,
+      packingInstructionsImages: packingInstructionsImages,
       barcode: data.barcode || undefined,
     };
 
@@ -1978,10 +1978,10 @@ export default function AddProduct() {
               <AccordionContent className="px-4 pb-4">
                 <div className="pt-2">
                   <PackingInstructionsUploader
-                    packingInstructionsText={packingInstructionsText}
-                    packingInstructionsImage={packingInstructionsImage || ""}
-                    onTextChange={setPackingInstructionsText}
-                    onImageChange={setPackingInstructionsImage}
+                    packingInstructionsTexts={packingInstructionsTexts}
+                    packingInstructionsImages={packingInstructionsImages}
+                    onTextsChange={setPackingInstructionsTexts}
+                    onImagesChange={setPackingInstructionsImages}
                   />
                 </div>
               </AccordionContent>

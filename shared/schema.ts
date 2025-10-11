@@ -381,6 +381,8 @@ export const products = pgTable('products', {
   // Packing instructions fields
   packingInstructionsText: text('packing_instructions_text'),
   packingInstructionsImage: text('packing_instructions_image'),
+  packingInstructionsImages: jsonb('packing_instructions_images'),
+  packingInstructionsTexts: jsonb('packing_instructions_texts'),
   // Latest landing cost tracking
   latestLandingCost: decimal('latest_landing_cost', { precision: 12, scale: 4 }),
   // AI-powered packing dimensions and weight

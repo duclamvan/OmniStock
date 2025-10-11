@@ -6,42 +6,49 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Upload, 
-  Image, 
+  Image as ImageIcon, 
   Trash2, 
   Package, 
   FileText,
   Info,
   X,
   Loader2,
-  AlertCircle,
-  CheckCircle2
+  Plus,
+  Edit
 } from "lucide-react";
 
 interface PackingInstructionsUploaderProps {
-  packingInstructionsText?: string;
-  packingInstructionsImage?: string;
-  onTextChange: (text: string) => void;
-  onImageChange: (imageUrl: string | null) => void;
+  packingInstructionsImages?: string[];
+  packingInstructionsTexts?: string[];
+  onImagesChange: (images: string[]) => void;
+  onTextsChange: (texts: string[]) => void;
   productId?: string;
 }
 
 export default function PackingInstructionsUploader({
-  packingInstructionsText = "",
-  packingInstructionsImage = "",
-  onTextChange,
-  onImageChange,
+  packingInstructionsImages = [],
+  packingInstructionsTexts = [],
+  onImagesChange,
+  onTextsChange,
   productId
 }: PackingInstructionsUploaderProps) {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const [images, setImages] = useState<string[]>(packingInstructionsImages);
+  const [texts, setTexts] = useState<string[]>(packingInstructionsTexts);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [dragActive, setDragActive] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string>(packingInstructionsImage || "");
-  const [fileInfo, setFileInfo] = useState<{ name: string; size: string; format: string } | null>(null);
+  
+  const [isTextDialogOpen, setIsTextDialogOpen] = useState(false);
+  const [editingTextIndex, setEditingTextIndex] = useState<number | null>(null);
+  const [currentTextValue, setCurrentTextValue] = useState("");
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
@@ -49,11 +56,6 @@ export default function PackingInstructionsUploader({
     const sizes = ['Bytes', 'KB', 'MB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-  };
-
-  const getFileExtension = (filename: string): string => {
-    const parts = filename.split('.');
-    return parts[parts.length - 1].toLowerCase();
   };
 
   const validateFile = (file: File): boolean => {
@@ -88,11 +90,9 @@ export default function PackingInstructionsUploader({
     setUploadProgress(0);
 
     try {
-      // Create FormData
       const formData = new FormData();
       formData.append('image', file);
 
-      // Simulate progress updates
       const progressInterval = setInterval(() => {
         setUploadProgress((prev) => {
           if (prev >= 90) {
@@ -103,7 +103,6 @@ export default function PackingInstructionsUploader({
         });
       }, 100);
 
-      // Upload image
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
@@ -118,20 +117,13 @@ export default function PackingInstructionsUploader({
 
       const data = await response.json();
       
-      // Set file info
-      setFileInfo({
-        name: file.name,
-        size: formatFileSize(file.size),
-        format: getFileExtension(file.name).toUpperCase()
-      });
-
-      // Update preview and notify parent
-      setPreviewUrl(data.imageUrl);
-      onImageChange(data.imageUrl);
+      const updatedImages = [...images, data.imageUrl];
+      setImages(updatedImages);
+      onImagesChange(updatedImages);
 
       toast({
         title: "Upload successful",
-        description: "Packing instructions image uploaded successfully",
+        description: "Packing instruction image uploaded successfully",
       });
     } catch (error) {
       console.error('Upload error:', error);
@@ -172,17 +164,78 @@ export default function PackingInstructionsUploader({
     }
   };
 
-  const handleRemoveImage = () => {
-    setPreviewUrl("");
-    setFileInfo(null);
-    onImageChange(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+  const handleRemoveImage = (index: number) => {
+    const updatedImages = images.filter((_, i) => i !== index);
+    setImages(updatedImages);
+    onImagesChange(updatedImages);
+    
     toast({
       title: "Image removed",
-      description: "Packing instructions image has been removed",
+      description: "Packing instruction image has been removed",
     });
+  };
+
+  const handleAddText = () => {
+    setEditingTextIndex(null);
+    setCurrentTextValue("");
+    setIsTextDialogOpen(true);
+  };
+
+  const handleEditText = (index: number) => {
+    setEditingTextIndex(index);
+    setCurrentTextValue(texts[index]);
+    setIsTextDialogOpen(true);
+  };
+
+  const handleSaveText = () => {
+    if (!currentTextValue.trim()) {
+      toast({
+        title: "Empty instruction",
+        description: "Please enter some text for the instruction",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    let updatedTexts: string[];
+    
+    if (editingTextIndex !== null) {
+      updatedTexts = texts.map((text, i) => 
+        i === editingTextIndex ? currentTextValue : text
+      );
+      toast({
+        title: "Instruction updated",
+        description: "Packing instruction has been updated",
+      });
+    } else {
+      updatedTexts = [...texts, currentTextValue];
+      toast({
+        title: "Instruction added",
+        description: "New packing instruction has been added",
+      });
+    }
+
+    setTexts(updatedTexts);
+    onTextsChange(updatedTexts);
+    setIsTextDialogOpen(false);
+    setCurrentTextValue("");
+    setEditingTextIndex(null);
+  };
+
+  const handleRemoveText = (index: number) => {
+    const updatedTexts = texts.filter((_, i) => i !== index);
+    setTexts(updatedTexts);
+    onTextsChange(updatedTexts);
+    
+    toast({
+      title: "Instruction removed",
+      description: "Packing instruction has been removed",
+    });
+  };
+
+  const truncateText = (text: string, maxLength: number = 50): string => {
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + "...";
   };
 
   return (
@@ -197,129 +250,152 @@ export default function PackingInstructionsUploader({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Image Upload Section */}
+        {/* Visual Instructions Section */}
         <div className="space-y-4">
-          <Label>Visual Instructions (Image/GIF)</Label>
+          <div className="flex items-center justify-between">
+            <Label className="text-base font-semibold">Visual Instructions</Label>
+            <Badge variant="secondary">{images.length} image{images.length !== 1 ? 's' : ''}</Badge>
+          </div>
           
-          {!previewUrl ? (
-            <div
-              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                dragActive ? 'border-primary bg-primary/5' : 'border-gray-300 hover:border-gray-400'
-              }`}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-              data-testid="packing-instructions-dropzone"
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
-                onChange={handleFileSelect}
-                className="hidden"
-                id="packing-image-upload"
-                data-testid="input-packing-image"
-              />
-              
-              {isUploading ? (
-                <div className="space-y-4">
-                  <Loader2 className="h-12 w-12 mx-auto text-gray-400 animate-spin" />
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-600">Uploading image...</p>
-                    <Progress value={uploadProgress} className="w-full max-w-xs mx-auto" />
+          {/* Images Grid */}
+          {images.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {images.map((imageUrl, index) => (
+                <div key={index} className="relative group">
+                  <div className="relative bg-gray-50 dark:bg-gray-800 rounded-lg p-2 border border-gray-200 dark:border-gray-700">
+                    <img
+                      src={imageUrl}
+                      alt={`Packing instruction ${index + 1}`}
+                      className="w-full h-40 object-cover rounded-md"
+                      data-testid={`img-packing-preview-${index}`}
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-1 right-1 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => handleRemoveImage(index)}
+                      data-testid={`button-remove-image-${index}`}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
-              ) : (
-                <>
-                  <Upload className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                  <p className="text-sm text-gray-600 mb-2">
-                    Drag and drop an image here, or click to browse
-                  </p>
-                  <p className="text-xs text-gray-500 mb-4">
-                    Supported formats: JPG, PNG, GIF, WebP (max 5MB)
-                  </p>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => fileInputRef.current?.click()}
-                    data-testid="button-upload-packing-image"
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    Choose Image
-                  </Button>
-                </>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="relative bg-gray-50 rounded-lg p-4">
-                <img
-                  src={previewUrl}
-                  alt="Packing instructions"
-                  className="w-full max-w-md mx-auto rounded-md"
-                  data-testid="img-packing-preview"
-                />
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="icon"
-                  className="absolute top-2 right-2"
-                  onClick={handleRemoveImage}
-                  data-testid="button-remove-packing-image"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-              
-              {fileInfo && (
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Image className="h-4 w-4" />
-                  <span>{fileInfo.name}</span>
-                  <Badge variant="secondary">{fileInfo.format}</Badge>
-                  <Badge variant="outline">{fileInfo.size}</Badge>
-                </div>
-              )}
-              
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => fileInputRef.current?.click()}
-                  data-testid="button-replace-packing-image"
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Replace Image
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleRemoveImage}
-                  data-testid="button-delete-packing-image"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Remove
-                </Button>
-              </div>
+              ))}
             </div>
           )}
+
+          {/* Upload Area */}
+          <div
+            className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+              dragActive ? 'border-primary bg-primary/5' : 'border-gray-300 dark:border-gray-600 hover:border-gray-400'
+            }`}
+            onDragEnter={handleDrag}
+            onDragLeave={handleDrag}
+            onDragOver={handleDrag}
+            onDrop={handleDrop}
+            data-testid="packing-instructions-dropzone"
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+              onChange={handleFileSelect}
+              className="hidden"
+              id="packing-image-upload"
+              data-testid="input-packing-image"
+            />
+            
+            {isUploading ? (
+              <div className="space-y-4">
+                <Loader2 className="h-10 w-10 mx-auto text-gray-400 animate-spin" />
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Uploading image...</p>
+                  <Progress value={uploadProgress} className="w-full max-w-xs mx-auto" />
+                </div>
+              </div>
+            ) : (
+              <>
+                <Upload className="h-10 w-10 mx-auto text-gray-400 mb-3" />
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                  Drag and drop an image here, or click to browse
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-500 mb-3">
+                  JPG, PNG, GIF, WebP (max 5MB)
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  data-testid="button-upload-packing-image"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Image
+                </Button>
+              </>
+            )}
+          </div>
         </div>
 
-        {/* Text Instructions Section */}
-        <div className="space-y-2">
-          <Label htmlFor="packing-text">Written Instructions</Label>
-          <Textarea
-            id="packing-text"
-            placeholder="Enter detailed packing instructions here...&#10;&#10;Example:&#10;• Wrap in bubble wrap before placing in box&#10;• Mark as FRAGILE&#10;• Include protective padding on all sides&#10;• Do not stack heavy items on top"
-            value={packingInstructionsText}
-            onChange={(e) => onTextChange(e.target.value)}
-            rows={6}
-            className="resize-none"
-            data-testid="textarea-packing-instructions"
-          />
-          <p className="text-xs text-gray-500">
-            Provide clear instructions for handling, wrapping, or special care requirements
-          </p>
+        <Separator />
+
+        {/* Written Instructions Section */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <Label className="text-base font-semibold">Written Instructions</Label>
+            <Badge variant="secondary">{texts.length} instruction{texts.length !== 1 ? 's' : ''}</Badge>
+          </div>
+
+          {/* Text Instructions List */}
+          {texts.length > 0 && (
+            <div className="space-y-2">
+              {texts.map((text, index) => (
+                <div 
+                  key={index} 
+                  className="flex items-start gap-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+                  data-testid={`text-instruction-${index}`}
+                >
+                  <FileText className="h-4 w-4 mt-0.5 text-gray-500 flex-shrink-0" />
+                  <p className="flex-1 text-sm text-gray-700 dark:text-gray-300">
+                    {truncateText(text)}
+                  </p>
+                  <div className="flex gap-1 flex-shrink-0">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditText(index)}
+                      data-testid={`button-edit-text-${index}`}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemoveText(index)}
+                      data-testid={`button-remove-text-${index}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Add Instruction Button */}
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={handleAddText}
+            data-testid="button-add-instruction"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Instruction
+          </Button>
         </div>
 
         {/* Info Alert */}
@@ -330,6 +406,55 @@ export default function PackingInstructionsUploader({
           </AlertDescription>
         </Alert>
       </CardContent>
+
+      {/* Text Dialog */}
+      <Dialog open={isTextDialogOpen} onOpenChange={setIsTextDialogOpen}>
+        <DialogContent data-testid="dialog-text-instruction">
+          <DialogHeader>
+            <DialogTitle>
+              {editingTextIndex !== null ? 'Edit Instruction' : 'Add Instruction'}
+            </DialogTitle>
+            <DialogDescription>
+              Provide clear instructions for handling, wrapping, or special care requirements
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-2">
+            <Label htmlFor="instruction-text">Instruction Text</Label>
+            <Textarea
+              id="instruction-text"
+              placeholder="Enter detailed packing instructions...&#10;&#10;Example:&#10;• Wrap in bubble wrap before placing in box&#10;• Mark as FRAGILE&#10;• Include protective padding on all sides"
+              value={currentTextValue}
+              onChange={(e) => setCurrentTextValue(e.target.value)}
+              rows={8}
+              className="resize-none"
+              data-testid="textarea-instruction-text"
+            />
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsTextDialogOpen(false);
+                setCurrentTextValue("");
+                setEditingTextIndex(null);
+              }}
+              data-testid="button-cancel-text"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSaveText}
+              data-testid="button-save-text"
+            >
+              {editingTextIndex !== null ? 'Update' : 'Add'} Instruction
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

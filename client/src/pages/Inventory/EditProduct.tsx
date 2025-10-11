@@ -223,8 +223,8 @@ export default function EditProduct() {
     importCostCzk: "",
     importCostEur: "",
   });
-  const [packingInstructionsText, setPackingInstructionsText] = useState<string>("");
-  const [packingInstructionsImage, setPackingInstructionsImage] = useState<string | null>(null);
+  const [packingInstructionsTexts, setPackingInstructionsTexts] = useState<string[]>([]);
+  const [packingInstructionsImages, setPackingInstructionsImages] = useState<string[]>([]);
   const [expandedSections, setExpandedSections] = useState<string[]>(["basic"]);
   
   // Edit-specific state
@@ -426,8 +426,8 @@ export default function EditProduct() {
         packingMaterialId: product.packingMaterialId || '',
       });
       
-      setPackingInstructionsText(product.packingInstructionsText || "");
-      setPackingInstructionsImage(product.packingInstructionsImage || null);
+      setPackingInstructionsTexts(product.packingInstructionsTexts || []);
+      setPackingInstructionsImages(product.packingInstructionsImages || []);
       
       // Map existing product images to productImages state
       if (product.images && Array.isArray(product.images)) {
@@ -823,8 +823,8 @@ export default function EditProduct() {
         }
       }
       
-      data.packingInstructionsText = packingInstructionsText;
-      data.packingInstructionsImage = packingInstructionsImage;
+      data.packingInstructionsTexts = packingInstructionsTexts;
+      data.packingInstructionsImages = packingInstructionsImages;
       
       await apiRequest('PATCH', `/api/products/${id}`, data);
     },
@@ -2448,10 +2448,10 @@ export default function EditProduct() {
               <AccordionContent className="px-4 pb-4">
                 <div className="pt-2">
                   <PackingInstructionsUploader
-                    packingInstructionsText={packingInstructionsText}
-                    packingInstructionsImage={packingInstructionsImage || ""}
-                    onTextChange={setPackingInstructionsText}
-                    onImageChange={setPackingInstructionsImage}
+                    packingInstructionsTexts={packingInstructionsTexts}
+                    packingInstructionsImages={packingInstructionsImages}
+                    onTextsChange={setPackingInstructionsTexts}
+                    onImagesChange={setPackingInstructionsImages}
                     productId={id}
                   />
                 </div>
