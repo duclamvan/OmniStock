@@ -1580,9 +1580,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updates = { ...req.body };
       const productId = req.params.id;
       
+      console.log('PATCH /api/products/:id - variants received:', updates.variants);
+      
       // Extract variants from updates
       const newVariants = updates.variants || [];
       delete updates.variants;
+      
+      console.log('PATCH - extracted variants count:', newVariants.length);
       
       // Update the main product
       const product = await storage.updateProduct(productId, updates);

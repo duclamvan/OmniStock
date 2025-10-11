@@ -922,6 +922,7 @@ export default function ProductForm() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['/api/products'] }),
         queryClient.invalidateQueries({ queryKey: ['/api/products', id] }),
+        queryClient.invalidateQueries({ queryKey: [`/api/products/${id}/variants`] }),
       ]);
       
       toast({
@@ -1013,6 +1014,7 @@ export default function ProductForm() {
   const onSubmit = async (data: z.infer<typeof productSchema>) => {
     console.log('Form submitted with data:', data);
     console.log('Category ID:', data.categoryId);
+    console.log('Current variants state:', variants);
     
     const productData = {
       ...data,
@@ -1033,6 +1035,7 @@ export default function ProductForm() {
     };
 
     console.log('Product data to send:', productData);
+    console.log('Variants being sent:', productData.variants);
 
     if (isEditMode) {
       updateProductMutation.mutate(productData);
