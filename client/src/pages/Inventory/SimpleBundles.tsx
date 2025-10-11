@@ -135,11 +135,11 @@ export default function SimpleBundles() {
             <Card key={bundle.id} className="hover:shadow-lg transition-shadow flex flex-col h-full overflow-hidden">
               {/* Bundle Image */}
               {bundle.imageUrl ? (
-                <div className="w-full h-48 bg-slate-100">
+                <div className="w-full h-48 bg-slate-100 flex items-center justify-center">
                   <img 
                     src={bundle.imageUrl} 
                     alt={bundle.name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain"
                   />
                 </div>
               ) : (
