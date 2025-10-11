@@ -29,6 +29,9 @@ import {
   purchaseItems,
   receipts,
   receiptItems,
+  orderItems,
+  orders,
+  customers,
 } from "@shared/schema";
 import { z } from "zod";
 import { nanoid } from "nanoid";
@@ -1516,6 +1519,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching product cost history:", error);
       res.status(500).json({ message: "Failed to fetch product cost history" });
+    }
+  });
+
+  // Product Order History endpoint
+  app.get('/api/products/:id/order-history', async (req, res) => {
+    try {
+      const productId = req.params.id;
+      
+      // Get the product to access its cost
+      const [product] = await db
+        .select()
+        .from(products)
+        .where(eq(products.id, productId));
+      
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+      
+      // Fetch order items for this product with order and customer details
+      const orderHistory = await db
+        .select({
+          orderId: orders.id,
+          orderNumber: orders.orderId,
+          orderDate: orders.orderDate,
+          customerId: customers.id,
+          customerName: customers.name,
+          customerEmail: customers.email,
+          quantity: orderItems.quantity,
+          price: orderItems.price,
+          appliedPrice: orderItems.appliedPrice,
+          currency: orderItems.currency,
+          orderStatus: orders.orderStatus,
+          paymentStatus: orders.paymentStatus,
+        })
+        .from(orderItems)
+        .innerJoin(orders, eq(orderItems.orderId, orders.id))
+        .leftJoin(customers, eq(orders.customerId, customers.id))
+        .where(eq(orderItems.productId, productId))
+        .orderBy(desc(orders.orderDate));
+      
+      // Calculate profit and profit margin for each order
+      const orderHistoryWithProfit = orderHistory.map((order) => {
+        const price = parseFloat(order.appliedPrice || order.price || '0');
+        const quantity = order.quantity || 0;
+        
+        // Use landing cost based on currency
+        let costPerUnit = 0;
+        if (order.currency === 'EUR') {
+          costPerUnit = parseFloat(product.landingCostEur || product.importCostEur || '0');
+        } else if (order.currency === 'USD') {
+          costPerUnit = parseFloat(product.landingCostUsd || product.importCostUsd || '0');
+        } else if (order.currency === 'VND') {
+          costPerUnit = parseFloat(product.landingCostVnd || product.importCostVnd || '0');
+        } else if (order.currency === 'CNY') {
+          costPerUnit = parseFloat(product.landingCostCny || product.importCostCny || '0');
+        } else {
+          // Default to CZK
+          costPerUnit = parseFloat(product.landingCostCzk || product.importCostCzk || '0');
+        }
+        
+        const totalRevenue = price * quantity;
+        const totalCost = costPerUnit * quantity;
+        const profit = totalRevenue - totalCost;
+        const profitMargin = totalRevenue > 0 ? (profit / totalRevenue * 100) : 0;
+        
+        return {
+          ...order,
+          pricePerUnit: price,
+          totalRevenue,
+          costPerUnit,
+          totalCost,
+          profit,
+          profitMargin: profitMargin.toFixed(2),
+        };
+      });
+      
+      res.json(orderHistoryWithProfit);
+    } catch (error) {
+      console.error("Error fetching product order history:", error);
+      res.status(500).json({ message: "Failed to fetch product order history" });
     }
   });
 

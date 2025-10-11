@@ -126,6 +126,11 @@ export default function ProductDetails() {
     enabled: !!id,
   });
 
+  const { data: orderHistory = [], isLoading: orderHistoryLoading, isError: orderHistoryError } = useQuery<any[]>({
+    queryKey: ['/api/products', id, 'order-history'],
+    enabled: !!id,
+  });
+
   if (isLoading) {
     return (
       <div className="max-w-7xl mx-auto p-6 lg:p-8 space-y-6">
@@ -1019,6 +1024,132 @@ export default function ProductDetails() {
               <div className="text-center py-12 text-slate-500">
                 <Euro className="h-12 w-12 mx-auto mb-3 opacity-50" />
                 <p className="font-medium">No tiered pricing configured</p>
+              </div>
+            )}
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* Order History */}
+        <AccordionItem value="order-history" className="border-slate-200 rounded-xl bg-white shadow-sm">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline" data-testid="accordion-order-history">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-50 rounded-lg">
+                <ShoppingCart className="h-5 w-5 text-purple-600" />
+              </div>
+              <span className="text-lg font-semibold text-slate-900">Order History</span>
+              {orderHistoryLoading && <Skeleton className="h-5 w-16 ml-2" />}
+              {!orderHistoryLoading && orderHistory.length > 0 && (
+                <Badge variant="secondary" className="ml-2">{orderHistory.length} orders</Badge>
+              )}
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="px-4 pb-4">
+            {orderHistoryLoading ? (
+              <div className="space-y-2 pt-2">
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-32 w-full" />
+              </div>
+            ) : orderHistoryError ? (
+              <div className="text-center py-12 text-red-600">
+                <ShoppingCart className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p className="font-medium">Failed to load order history</p>
+              </div>
+            ) : orderHistory.length > 0 ? (
+              <div className="rounded-lg border border-slate-200 overflow-hidden mt-2">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-slate-50">
+                      <TableHead className="font-semibold">Order</TableHead>
+                      <TableHead className="font-semibold">Customer</TableHead>
+                      <TableHead className="font-semibold">Date</TableHead>
+                      <TableHead className="font-semibold text-right">Quantity</TableHead>
+                      <TableHead className="font-semibold text-right">Price/Unit</TableHead>
+                      <TableHead className="font-semibold text-right">Revenue</TableHead>
+                      <TableHead className="font-semibold text-right">Profit</TableHead>
+                      <TableHead className="font-semibold text-right">Margin</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {orderHistory.map((order: any, idx: number) => {
+                      const profitMargin = parseFloat(order.profitMargin);
+                      const profitColor = profitMargin >= 30 ? 'text-green-600' : profitMargin >= 15 ? 'text-blue-600' : profitMargin >= 0 ? 'text-amber-600' : 'text-red-600';
+                      
+                      return (
+                        <TableRow key={order.orderId || idx} data-testid={`row-order-${idx}`}>
+                          <TableCell className="font-medium" data-testid={`text-order-number-${idx}`}>
+                            {order.orderNumber}
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium text-sm">{order.customerName || 'Unknown'}</p>
+                              {order.customerEmail && (
+                                <p className="text-xs text-muted-foreground">{order.customerEmail}</p>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {order.orderDate ? new Date(order.orderDate).toLocaleDateString() : '-'}
+                          </TableCell>
+                          <TableCell className="text-right font-medium">{order.quantity}</TableCell>
+                          <TableCell className="text-right">
+                            {formatCurrency(order.pricePerUnit, order.currency || 'CZK')}
+                          </TableCell>
+                          <TableCell className="text-right font-semibold">
+                            {formatCurrency(order.totalRevenue, order.currency || 'CZK')}
+                          </TableCell>
+                          <TableCell className={`text-right font-semibold ${order.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {formatCurrency(order.profit, order.currency || 'CZK')}
+                          </TableCell>
+                          <TableCell className={`text-right font-bold ${profitColor}`}>
+                            {order.profitMargin}%
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+                
+                {/* Summary */}
+                {orderHistory.length > 0 && (
+                  <div className="bg-slate-50 px-4 py-3 border-t">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">Total Orders</p>
+                        <p className="font-bold text-lg">{orderHistory.length}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Total Quantity</p>
+                        <p className="font-bold text-lg">
+                          {orderHistory.reduce((sum: number, order: any) => sum + (order.quantity || 0), 0)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Total Revenue</p>
+                        <p className="font-bold text-lg text-green-600">
+                          {formatCurrency(
+                            orderHistory.reduce((sum: number, order: any) => sum + (order.totalRevenue || 0), 0),
+                            orderHistory[0]?.currency || 'CZK'
+                          )}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Total Profit</p>
+                        <p className="font-bold text-lg text-green-600">
+                          {formatCurrency(
+                            orderHistory.reduce((sum: number, order: any) => sum + (order.profit || 0), 0),
+                            orderHistory[0]?.currency || 'CZK'
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-12 text-slate-500">
+                <ShoppingCart className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p className="font-medium">No order history available</p>
+                <p className="text-sm mt-2">This product hasn't been included in any orders yet</p>
               </div>
             )}
           </AccordionContent>
