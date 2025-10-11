@@ -70,7 +70,8 @@ import {
   Ruler,
   Check,
   ChevronsUpDown,
-  Weight
+  Weight,
+  Edit
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -2347,21 +2348,22 @@ export default function ProductForm() {
                       </DialogTrigger>
                       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
-                          <DialogTitle>Add Product Variants</DialogTitle>
-                          <DialogDescription>Add a single variant or create a series</DialogDescription>
+                          <DialogTitle>Add Product Variant</DialogTitle>
+                          <DialogDescription>Add a new product variation with details</DialogDescription>
                         </DialogHeader>
                         
                         <div className="space-y-4">
                           <div>
-                            <Label htmlFor="variant-name">Variant Name</Label>
+                            <Label htmlFor="variant-name">Variant Name *</Label>
                             <Input
                               id="variant-name"
                               value={newVariant.name}
                               onChange={(e) => setNewVariant((prev) => ({ ...prev, name: e.target.value }))}
-                              placeholder="e.g., Size XL"
+                              placeholder="e.g., Size XL, Color Red"
                               data-testid="input-variant-name"
                             />
                           </div>
+                          
                           <div>
                             <Label htmlFor="variant-barcode">Barcode</Label>
                             <Input
@@ -2372,6 +2374,62 @@ export default function ProductForm() {
                               data-testid="input-variant-barcode"
                             />
                           </div>
+                          
+                          <div>
+                            <Label htmlFor="variant-quantity">Quantity</Label>
+                            <Input
+                              id="variant-quantity"
+                              type="number"
+                              min="0"
+                              value={newVariant.quantity}
+                              onChange={(e) => setNewVariant((prev) => ({ ...prev, quantity: parseInt(e.target.value) || 0 }))}
+                              placeholder="0"
+                              data-testid="input-variant-quantity"
+                            />
+                          </div>
+                          
+                          <div className="grid grid-cols-3 gap-3">
+                            <div>
+                              <Label htmlFor="variant-cost-usd">Cost USD</Label>
+                              <Input
+                                id="variant-cost-usd"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={newVariant.importCostUsd}
+                                onChange={(e) => setNewVariant((prev) => ({ ...prev, importCostUsd: e.target.value }))}
+                                placeholder="0.00"
+                                data-testid="input-variant-cost-usd"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="variant-cost-czk">Cost CZK</Label>
+                              <Input
+                                id="variant-cost-czk"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={newVariant.importCostCzk}
+                                onChange={(e) => setNewVariant((prev) => ({ ...prev, importCostCzk: e.target.value }))}
+                                placeholder="0.00"
+                                data-testid="input-variant-cost-czk"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="variant-cost-eur">Cost EUR</Label>
+                              <Input
+                                id="variant-cost-eur"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={newVariant.importCostEur}
+                                onChange={(e) => setNewVariant((prev) => ({ ...prev, importCostEur: e.target.value }))}
+                                placeholder="0.00"
+                                data-testid="input-variant-cost-eur"
+                              />
+                            </div>
+                          </div>
+                          
                           <Button onClick={addVariant} disabled={!newVariant.name.trim()} className="w-full" data-testid="button-save-variant">
                             Add Variant
                           </Button>
@@ -2417,7 +2475,7 @@ export default function ProductForm() {
 
                   {/* Variants Table */}
                   {variants.length > 0 ? (
-                    <div className="border rounded-lg overflow-hidden">
+                    <div className="border rounded-lg overflow-x-auto">
                       <Table>
                         <TableHeader>
                           <TableRow>
@@ -2428,8 +2486,13 @@ export default function ProductForm() {
                                 data-testid="checkbox-select-all"
                               />
                             </TableHead>
+                            <TableHead className="w-20">Image</TableHead>
                             <TableHead>Name</TableHead>
                             <TableHead>Barcode</TableHead>
+                            <TableHead className="w-24">Quantity</TableHead>
+                            <TableHead className="w-28">Cost USD</TableHead>
+                            <TableHead className="w-28">Cost CZK</TableHead>
+                            <TableHead className="w-28">Cost EUR</TableHead>
                             <TableHead className="w-12"></TableHead>
                           </TableRow>
                         </TableHeader>
@@ -2450,10 +2513,63 @@ export default function ProductForm() {
                                 />
                               </TableCell>
                               <TableCell>
+                                <div className="relative w-16 h-16 rounded border bg-slate-50 dark:bg-slate-800 flex items-center justify-center overflow-hidden group">
+                                  {variant.imageUrl ? (
+                                    <>
+                                      <img
+                                        src={variant.imageUrl}
+                                        alt={variant.name}
+                                        className="w-full h-full object-cover"
+                                      />
+                                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                                        <label className="cursor-pointer">
+                                          <input
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={(e) => {
+                                              const file = e.target.files?.[0];
+                                              if (file) handleVariantImageUpload(variant.id, file);
+                                            }}
+                                            data-testid={`input-variant-image-${variant.id}`}
+                                          />
+                                          <Edit className="h-4 w-4 text-white" />
+                                        </label>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleVariantImageRemove(variant.id)}
+                                          className="text-white"
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </button>
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <label className="cursor-pointer w-full h-full flex items-center justify-center">
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                          const file = e.target.files?.[0];
+                                          if (file) handleVariantImageUpload(variant.id, file);
+                                        }}
+                                        data-testid={`input-variant-image-${variant.id}`}
+                                      />
+                                      {variantImageLoading[variant.id] ? (
+                                        <div className="animate-spin">⏳</div>
+                                      ) : (
+                                        <ImageIcon className="h-6 w-6 text-slate-400" />
+                                      )}
+                                    </label>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell>
                                 <Input
                                   value={variant.name}
                                   onChange={(e) => updateVariant(variant.id, 'name', e.target.value)}
-                                  className="h-8"
+                                  className="h-8 min-w-[150px]"
                                   data-testid={`input-variant-name-${variant.id}`}
                                 />
                               </TableCell>
@@ -2461,9 +2577,55 @@ export default function ProductForm() {
                                 <Input
                                   value={variant.barcode}
                                   onChange={(e) => updateVariant(variant.id, 'barcode', e.target.value)}
-                                  className="h-8 font-mono"
+                                  className="h-8 font-mono min-w-[120px]"
                                   placeholder="Scan or enter"
                                   data-testid={`input-variant-barcode-${variant.id}`}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  value={variant.quantity}
+                                  onChange={(e) => updateVariant(variant.id, 'quantity', parseInt(e.target.value) || 0)}
+                                  className="h-8"
+                                  data-testid={`input-variant-quantity-${variant.id}`}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={variant.importCostUsd}
+                                  onChange={(e) => updateVariant(variant.id, 'importCostUsd', e.target.value)}
+                                  className="h-8"
+                                  placeholder="0.00"
+                                  data-testid={`input-variant-cost-usd-${variant.id}`}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={variant.importCostCzk}
+                                  onChange={(e) => updateVariant(variant.id, 'importCostCzk', e.target.value)}
+                                  className="h-8"
+                                  placeholder="0.00"
+                                  data-testid={`input-variant-cost-czk-${variant.id}`}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  value={variant.importCostEur}
+                                  onChange={(e) => updateVariant(variant.id, 'importCostEur', e.target.value)}
+                                  className="h-8"
+                                  placeholder="0.00"
+                                  data-testid={`input-variant-cost-eur-${variant.id}`}
                                 />
                               </TableCell>
                               <TableCell>

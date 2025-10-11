@@ -1327,7 +1327,7 @@ export class DatabaseStorage implements IStorage {
     try {
       const [updated] = await db
         .update(productVariants)
-        .set({ ...variant, updatedAt: new Date() })
+        .set(variant)
         .where(eq(productVariants.id, id))
         .returning();
       return updated || undefined;
