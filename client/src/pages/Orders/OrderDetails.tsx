@@ -596,12 +596,12 @@ export default function OrderDetails() {
                 )}
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-0">
               {/* Order Items - Professional Invoice Layout */}
-              <div className="space-y-2">
+              <div className="divide-y divide-slate-200 dark:divide-slate-700">
                 {order.items?.map((item: any, index: number) => (
-                  <div key={item.id || index}>
-                    <div className="flex items-start gap-3 p-3 -mx-3 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                  <div key={item.id || index} className="px-6 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                    <div className="flex items-start gap-3">
                       {showPickingMode && (
                         <Checkbox
                           checked={pickedItems.has(item.id)}
@@ -724,14 +724,13 @@ export default function OrderDetails() {
                         </div>
                       </div>
                     </div>
-                    {index < order.items.length - 1 && <Separator />}
                   </div>
                 ))}
               </div>
               
               {/* Picking Progress */}
               {showPickingMode && (
-                <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="mx-6 mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-sm font-medium text-blue-900">Picking Progress</p>
                     <span className="text-sm text-blue-700">
@@ -815,7 +814,7 @@ export default function OrderDetails() {
               )}
 
               {/* Pricing Breakdown - Integrated */}
-              <div className="mt-4 pt-4 border-t">
+              <div className="mt-4 pt-4 px-6 border-t">
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-600">Subtotal</span>
