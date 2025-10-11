@@ -890,71 +890,72 @@ export default function EditBundle() {
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
                                   <Label>Product</Label>
-                                  <Popover 
-                                    open={openPopovers[item.id] || false} 
-                                    onOpenChange={(open) => setOpenPopovers(prev => ({ ...prev, [item.id]: open }))}
-                                  >
-                                    <PopoverTrigger asChild>
-                                      <div className="relative">
-                                        <Input
-                                          value={searchQueries[item.id] || item.productName || ''}
-                                          onChange={(e) => {
-                                            setSearchQueries(prev => ({ ...prev, [item.id]: e.target.value }));
-                                            setOpenPopovers(prev => ({ ...prev, [item.id]: true }));
-                                          }}
-                                          onFocus={() => setOpenPopovers(prev => ({ ...prev, [item.id]: true }))}
-                                          placeholder="Search products..."
-                                          className={errors[`item_${item.id}`] ? 'border-destructive' : ''}
-                                          data-testid={`input-search-product-${index}`}
-                                        />
-                                        <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                                  <div className="relative">
+                                    <Input
+                                      value={searchQueries[item.id] || item.productName || ''}
+                                      onChange={(e) => {
+                                        setSearchQueries(prev => ({ ...prev, [item.id]: e.target.value }));
+                                        setOpenPopovers(prev => ({ ...prev, [item.id]: true }));
+                                      }}
+                                      onFocus={() => setOpenPopovers(prev => ({ ...prev, [item.id]: true }))}
+                                      onBlur={() => {
+                                        // Delay closing to allow click on dropdown
+                                        setTimeout(() => setOpenPopovers(prev => ({ ...prev, [item.id]: false })), 200);
+                                      }}
+                                      placeholder="Type to search products..."
+                                      className={errors[`item_${item.id}`] ? 'border-destructive' : ''}
+                                      data-testid={`input-search-product-${index}`}
+                                    />
+                                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                                    
+                                    {/* Dropdown results */}
+                                    {openPopovers[item.id] && (
+                                      <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg max-h-64 overflow-auto">
+                                        {(() => {
+                                          const query = searchQueries[item.id] || '';
+                                          const filteredProducts = products.filter(p => {
+                                            if (!query) return true;
+                                            return p.name.toLowerCase().includes(query.toLowerCase()) ||
+                                                   p.sku?.toLowerCase().includes(query.toLowerCase());
+                                          });
+                                          
+                                          if (filteredProducts.length === 0) {
+                                            return (
+                                              <div className="p-4 text-center text-sm text-muted-foreground">
+                                                No products found
+                                              </div>
+                                            );
+                                          }
+                                          
+                                          return filteredProducts.map((product) => (
+                                            <button
+                                              key={product.id}
+                                              type="button"
+                                              onClick={() => {
+                                                handleItemChange(item.id, 'productId', product.id);
+                                                setOpenPopovers(prev => ({ ...prev, [item.id]: false }));
+                                                setSearchQueries(prev => ({ ...prev, [item.id]: '' }));
+                                              }}
+                                              className={`w-full px-3 py-2 text-left text-sm hover:bg-accent transition-colors flex items-center justify-between ${
+                                                item.productId === product.id ? 'bg-accent' : ''
+                                              }`}
+                                              data-testid={`product-option-${product.id}`}
+                                            >
+                                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                {item.productId === product.id && (
+                                                  <Check className="h-4 w-4 text-primary flex-shrink-0" />
+                                                )}
+                                                <span className="truncate">{product.name}</span>
+                                              </div>
+                                              <span className="text-xs text-muted-foreground ml-2 flex-shrink-0">
+                                                {product.sku}
+                                              </span>
+                                            </button>
+                                          ));
+                                        })()}
                                       </div>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-[400px] p-0" align="start">
-                                      <Command>
-                                        <CommandInput 
-                                          placeholder="Type to search products..." 
-                                          value={searchQueries[item.id] || ''}
-                                          onValueChange={(value) => setSearchQueries(prev => ({ ...prev, [item.id]: value }))}
-                                          className="hidden"
-                                        />
-                                        <CommandEmpty>No products found.</CommandEmpty>
-                                        <CommandGroup className="max-h-64 overflow-auto">
-                                          {products
-                                            .filter(p => {
-                                              const query = searchQueries[item.id] || '';
-                                              if (query.length < 2) return true;
-                                              return p.name.toLowerCase().includes(query.toLowerCase()) ||
-                                                     p.sku?.toLowerCase().includes(query.toLowerCase());
-                                            })
-                                            .map((product) => (
-                                              <CommandItem
-                                                key={product.id}
-                                                value={product.id}
-                                                onSelect={() => {
-                                                  handleItemChange(item.id, 'productId', product.id);
-                                                  setOpenPopovers(prev => ({ ...prev, [item.id]: false }));
-                                                  setSearchQueries(prev => ({ ...prev, [item.id]: '' }));
-                                                }}
-                                                data-testid={`product-option-${product.id}`}
-                                              >
-                                                <Check
-                                                  className={`mr-2 h-4 w-4 ${
-                                                    item.productId === product.id ? "opacity-100" : "opacity-0"
-                                                  }`}
-                                                />
-                                                <div className="flex-1 flex items-center justify-between">
-                                                  <span>{product.name}</span>
-                                                  <span className="text-xs text-muted-foreground ml-2">
-                                                    {product.sku}
-                                                  </span>
-                                                </div>
-                                              </CommandItem>
-                                            ))}
-                                        </CommandGroup>
-                                      </Command>
-                                    </PopoverContent>
-                                  </Popover>
+                                    )}
+                                  </div>
                                   {errors[`item_${item.id}`] && (
                                     <p className="text-sm text-destructive mt-1">{errors[`item_${item.id}`]}</p>
                                   )}
@@ -968,6 +969,7 @@ export default function EditBundle() {
                                     value={item.quantity}
                                     onChange={(e) => handleItemChange(item.id, 'quantity', parseInt(e.target.value) || 1)}
                                     className={errors[`quantity_${item.id}`] ? 'border-destructive' : ''}
+                                    data-testid={`input-quantity-${index}`}
                                   />
                                   {errors[`quantity_${item.id}`] && (
                                     <p className="text-sm text-destructive mt-1">{errors[`quantity_${item.id}`]}</p>
