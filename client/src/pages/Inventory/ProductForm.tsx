@@ -928,6 +928,9 @@ export default function ProductForm() {
 
   // Form submission
   const onSubmit = async (data: z.infer<typeof productSchema>) => {
+    console.log('Form submitted with data:', data);
+    console.log('Category ID:', data.categoryId);
+    
     const productData = {
       ...data,
       packingInstructionsTexts,
@@ -945,6 +948,8 @@ export default function ProductForm() {
       warehouseLocation: data.warehouseLocation || undefined,
       packingMaterialId: data.packingMaterialId || undefined,
     };
+
+    console.log('Product data to send:', productData);
 
     if (isEditMode) {
       updateProductMutation.mutate(productData);
@@ -1355,7 +1360,9 @@ export default function ProductForm() {
           </div>
         </div>
 
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={form.handleSubmit(onSubmit, (errors) => {
+          console.log('Form validation errors:', errors);
+        })} className="space-y-4">
           {/* Summary Card (Edit mode only) */}
           {isEditMode && (
             <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 border-blue-200 dark:border-blue-800">
