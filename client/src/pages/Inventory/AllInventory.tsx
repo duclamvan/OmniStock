@@ -265,6 +265,7 @@ export default function AllInventory() {
                 {!product.isActive && <span className="text-amber-600 font-medium ml-2">(Inactive)</span>}
               </span>
             </Link>
+            <p className="text-xs text-gray-500 mt-0.5">SKU: {product.sku}</p>
           </div>
         </div>
       ),
