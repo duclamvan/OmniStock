@@ -137,7 +137,9 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
   const { data: files = [], isLoading } = useQuery<ProductFile[]>({
     queryKey: ['/api/products', productId, 'files'],
     queryFn: async () => {
-      const response = await fetch(`/api/products/${productId}/files`);
+      const response = await fetch(`/api/products/${productId}/files`, {
+        credentials: 'include',
+      });
       if (!response.ok) throw new Error('Failed to fetch product files');
       return response.json();
     },
@@ -158,9 +160,13 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
       const response = await fetch(`/api/products/${productId}/files`, {
         method: 'POST',
         body: formData,
+        credentials: 'include',
       });
       
-      if (!response.ok) throw new Error('Failed to upload file');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to upload file' }));
+        throw new Error(errorData.message || 'Failed to upload file');
+      }
       return response.json();
     },
     onSuccess: () => {
