@@ -124,7 +124,7 @@ export default function ProductDetails() {
 
   if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+      <div className="max-w-7xl mx-auto p-6 lg:p-8 space-y-6">
         <Skeleton className="h-10 w-48" />
         <Skeleton className="h-64 w-full" />
         <Skeleton className="h-96 w-full" />
@@ -137,17 +137,17 @@ export default function ProductDetails() {
   }
 
   const productOrders = orders?.filter(order => 
-    order.items?.some(item => item.productId === product.id)
+    order.items?.some((item: any) => item.productId === product.id)
   ) || [];
 
   const totalSold = productOrders.reduce((sum, order) => {
-    const items = order.items?.filter(item => item.productId === product.id) || [];
-    return sum + items.reduce((itemSum, item) => itemSum + (item.quantity || 0), 0);
+    const items = order.items?.filter((item: any) => item.productId === product.id) || [];
+    return sum + items.reduce((itemSum: number, item: any) => itemSum + (item.quantity || 0), 0);
   }, 0);
 
   const totalRevenue = productOrders.reduce((sum, order) => {
-    const items = order.items?.filter(item => item.productId === product.id) || [];
-    return sum + items.reduce((itemSum, item) => itemSum + ((item.price || 0) * (item.quantity || 0)), 0);
+    const items = order.items?.filter((item: any) => item.productId === product.id) || [];
+    return sum + items.reduce((itemSum: number, item: any) => itemSum + ((item.price || 0) * (item.quantity || 0)), 0);
   }, 0);
 
   const warehouse = warehouses?.find((w: any) => w.id === product.warehouseId);
@@ -211,111 +211,117 @@ export default function ProductDetails() {
   const primaryMargin = marginEur || marginCzk || marginUsd || marginVnd || marginCny || '0';
 
   return (
-    <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="max-w-7xl mx-auto p-6 lg:p-8 space-y-6">
+      {/* Header with Back Button and Edit */}
+      <div className="flex items-center justify-between">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => navigate("/inventory/products")}
+          className="text-slate-600 hover:text-slate-900"
           data-testid="button-back"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Products
         </Button>
-        <Button onClick={() => navigate(`/inventory/products/edit/${id}`)} data-testid="button-edit">
+        <Button 
+          onClick={() => navigate(`/inventory/products/edit/${id}`)} 
+          className="bg-blue-600 hover:bg-blue-700"
+          data-testid="button-edit"
+        >
           <Edit className="h-4 w-4 mr-2" />
           Edit Product
         </Button>
       </div>
 
-      {/* Product Header Card */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row gap-6">
+      {/* Product Hero Section */}
+      <Card className="border-slate-200 shadow-sm">
+        <CardContent className="p-8">
+          <div className="flex flex-col lg:flex-row gap-8">
             {/* Product Image */}
             <div className="flex-shrink-0">
               {displayImage ? (
                 <img
                   src={displayImage}
                   alt={product.name}
-                  className="w-32 h-32 object-cover rounded-lg border-2 border-slate-200"
+                  className="w-48 h-48 object-cover rounded-xl border-2 border-slate-200 shadow-sm"
                   data-testid="img-product-primary"
                 />
               ) : (
-                <div className="w-32 h-32 bg-slate-100 rounded-lg flex items-center justify-center border-2 border-slate-200">
-                  <Package className="h-16 w-16 text-slate-400" />
+                <div className="w-48 h-48 bg-gradient-to-br from-slate-100 to-slate-200 rounded-xl flex items-center justify-center border-2 border-slate-200">
+                  <Package className="h-20 w-20 text-slate-400" />
                 </div>
               )}
             </div>
 
             {/* Product Info */}
-            <div className="flex-1 space-y-4">
+            <div className="flex-1 space-y-6">
+              {/* Title & Subtitle */}
               <div>
-                <h1 className="text-3xl font-bold text-slate-900" data-testid="text-product-name">
+                <h1 className="text-4xl font-bold text-slate-900 mb-2" data-testid="text-product-name">
                   {product.name}
                 </h1>
                 {product.englishName && (
-                  <p className="text-lg text-slate-600 mt-1" data-testid="text-english-name">
+                  <p className="text-xl text-slate-500" data-testid="text-english-name">
                     {product.englishName}
                   </p>
                 )}
               </div>
 
-              {/* Badges */}
+              {/* Badges Row */}
               <div className="flex flex-wrap gap-2">
-                <Badge variant="outline" data-testid="badge-sku">
-                  <Hash className="h-3 w-3 mr-1" />
-                  SKU: {product.sku}
+                <Badge variant="outline" className="px-3 py-1 text-sm font-medium" data-testid="badge-sku">
+                  <Hash className="h-3.5 w-3.5 mr-1.5" />
+                  {product.sku}
                 </Badge>
-                <Badge variant={stockBadgeVariant} data-testid="badge-stock-status">
-                  <Package className="h-3 w-3 mr-1" />
+                <Badge variant={stockBadgeVariant} className="px-3 py-1 text-sm font-medium" data-testid="badge-stock-status">
+                  <Package className="h-3.5 w-3.5 mr-1.5" />
                   {product.quantity} {product.unit || 'units'}
                 </Badge>
                 {category && (
-                  <Badge variant="secondary" data-testid="badge-category">
-                    <Box className="h-3 w-3 mr-1" />
+                  <Badge variant="secondary" className="px-3 py-1 text-sm font-medium" data-testid="badge-category">
+                    <Box className="h-3.5 w-3.5 mr-1.5" />
                     {category.name}
                   </Badge>
                 )}
                 {product.barcode && (
-                  <Badge variant="outline" data-testid="badge-barcode">
-                    <Barcode className="h-3 w-3 mr-1" />
+                  <Badge variant="outline" className="px-3 py-1 text-sm font-medium" data-testid="badge-barcode">
+                    <Barcode className="h-3.5 w-3.5 mr-1.5" />
                     {product.barcode}
                   </Badge>
                 )}
               </div>
 
-              {/* Summary Statistics */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="bg-slate-50 rounded-lg p-3">
-                  <div className="text-xs text-slate-600 mb-1">Images</div>
-                  <div className="text-lg font-bold" data-testid="text-images-count">
+              {/* Quick Stats Grid */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+                  <div className="text-xs font-medium text-blue-700 mb-1">Images</div>
+                  <div className="text-2xl font-bold text-blue-900" data-testid="text-images-count">
                     {productImages.length}
                   </div>
                 </div>
-                <div className="bg-slate-50 rounded-lg p-3">
-                  <div className="text-xs text-slate-600 mb-1">Variants</div>
+                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
+                  <div className="text-xs font-medium text-purple-700 mb-1">Variants</div>
                   {variantsLoading ? (
-                    <Skeleton className="h-6 w-8" />
+                    <Skeleton className="h-8 w-12" />
                   ) : (
-                    <div className="text-lg font-bold" data-testid="text-variants-count">
+                    <div className="text-2xl font-bold text-purple-900" data-testid="text-variants-count">
                       {variants.length}
                     </div>
                   )}
                 </div>
-                <div className="bg-slate-50 rounded-lg p-3">
-                  <div className="text-xs text-slate-600 mb-1">Stock</div>
-                  <div className="text-lg font-bold" data-testid="text-stock-quantity">
+                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
+                  <div className="text-xs font-medium text-green-700 mb-1">In Stock</div>
+                  <div className="text-2xl font-bold text-green-900" data-testid="text-stock-quantity">
                     {product.quantity}
                   </div>
                 </div>
-                <div className="bg-slate-50 rounded-lg p-3">
-                  <div className="text-xs text-slate-600 mb-1">Tiered Prices</div>
+                <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4 border border-orange-200">
+                  <div className="text-xs font-medium text-orange-700 mb-1">Tiered Prices</div>
                   {tieredPricingLoading ? (
-                    <Skeleton className="h-6 w-8" />
+                    <Skeleton className="h-8 w-12" />
                   ) : (
-                    <div className="text-lg font-bold" data-testid="text-tiered-prices-count">
+                    <div className="text-2xl font-bold text-orange-900" data-testid="text-tiered-prices-count">
                       {tieredPricing.length}
                     </div>
                   )}
@@ -326,105 +332,115 @@ export default function ProductDetails() {
         </CardContent>
       </Card>
 
-      {/* Key Metrics */}
+      {/* Key Performance Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
+        <Card className="border-slate-200 hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
             <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm text-slate-500">Current Stock</div>
-                <div className="text-2xl font-bold" data-testid="text-metric-stock">{product.quantity}</div>
+              <div className="space-y-1">
+                <div className="text-sm font-medium text-slate-600">Current Stock</div>
+                <div className="text-3xl font-bold text-slate-900" data-testid="text-metric-stock">{product.quantity}</div>
                 <div className="text-xs text-slate-500">{product.unit}</div>
               </div>
-              <Package className="h-8 w-8 text-slate-400" />
+              <div className="p-3 bg-blue-50 rounded-lg">
+                <Package className="h-7 w-7 text-blue-600" />
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="pt-6">
+        <Card className="border-slate-200 hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
             <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm text-slate-500">Total Sold</div>
-                <div className="text-2xl font-bold" data-testid="text-metric-sold">{totalSold}</div>
+              <div className="space-y-1">
+                <div className="text-sm font-medium text-slate-600">Total Sold</div>
+                <div className="text-3xl font-bold text-slate-900" data-testid="text-metric-sold">{totalSold}</div>
                 <div className="text-xs text-slate-500">All time</div>
               </div>
-              <ShoppingCart className="h-8 w-8 text-slate-400" />
+              <div className="p-3 bg-green-50 rounded-lg">
+                <ShoppingCart className="h-7 w-7 text-green-600" />
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="pt-6">
+        <Card className="border-slate-200 hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
             <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm text-slate-500">Total Revenue</div>
-                <div className="text-2xl font-bold" data-testid="text-metric-revenue">{formatCurrency(totalRevenue, "CZK")}</div>
+              <div className="space-y-1">
+                <div className="text-sm font-medium text-slate-600">Total Revenue</div>
+                <div className="text-3xl font-bold text-slate-900" data-testid="text-metric-revenue">{formatCurrency(totalRevenue, "CZK")}</div>
                 <div className="text-xs text-slate-500">All time</div>
               </div>
-              <DollarSign className="h-8 w-8 text-slate-400" />
+              <div className="p-3 bg-purple-50 rounded-lg">
+                <DollarSign className="h-7 w-7 text-purple-600" />
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="pt-6">
+        <Card className="border-slate-200 hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
             <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm text-slate-500">Profit Margin</div>
-                <div className={`text-2xl font-bold ${getMarginColor(Number(primaryMargin))}`} data-testid="text-metric-margin">
+              <div className="space-y-1">
+                <div className="text-sm font-medium text-slate-600">Profit Margin</div>
+                <div className={`text-3xl font-bold ${getMarginColor(Number(primaryMargin))}`} data-testid="text-metric-margin">
                   {primaryMargin}%
                 </div>
                 <div className="text-xs text-slate-500">Per unit</div>
               </div>
-              <TrendingUp className="h-8 w-8 text-slate-400" />
+              <div className="p-3 bg-amber-50 rounded-lg">
+                <TrendingUp className="h-7 w-7 text-amber-600" />
+              </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Accordion Sections */}
+      {/* Detailed Information Sections */}
       <Accordion
         type="multiple"
         value={expandedSections}
         onValueChange={setExpandedSections}
-        className="space-y-4"
+        className="space-y-3"
       >
         {/* Basic Information */}
-        <AccordionItem value="basic" className="border rounded-lg bg-white">
-          <AccordionTrigger className="px-6 hover:no-underline" data-testid="accordion-basic">
-            <div className="flex items-center gap-2">
-              <Info className="h-5 w-5 text-slate-600" />
-              <span className="font-semibold">Basic Information</span>
+        <AccordionItem value="basic" className="border-slate-200 rounded-xl bg-white shadow-sm">
+          <AccordionTrigger className="px-6 py-4 hover:no-underline" data-testid="accordion-basic">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <Info className="h-5 w-5 text-blue-600" />
+              </div>
+              <span className="text-lg font-semibold text-slate-900">Basic Information</span>
             </div>
           </AccordionTrigger>
           <AccordionContent className="px-6 pb-6">
-            <div className="space-y-6">
+            <div className="space-y-6 pt-2">
               {/* Multi-Purpose Image Gallery */}
-              {productImages.length > 0 ? (
-                <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-slate-700">Product Images</h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {productImages.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Product Images</h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                     {productImages.map((img: any, idx: number) => {
                       const config = IMAGE_PURPOSE_CONFIG[img.purpose as keyof typeof IMAGE_PURPOSE_CONFIG];
                       const Icon = config?.icon || ImageIcon;
                       return (
-                        <div key={idx} className="relative group">
-                          <div className={`border-2 rounded-lg overflow-hidden ${img.isPrimary ? 'border-blue-500' : 'border-slate-200'}`}>
+                        <div key={idx} className="group">
+                          <div className={`border-2 rounded-lg overflow-hidden ${img.isPrimary ? 'ring-2 ring-blue-500 ring-offset-2' : 'border-slate-200'} transition-all hover:shadow-md`}>
                             <img
                               src={img.url}
                               alt={config?.label || img.purpose}
-                              className="w-full h-32 object-cover"
+                              className="w-full h-40 object-cover"
                               data-testid={`img-gallery-${idx}`}
                             />
                           </div>
                           <div className="mt-2 flex items-center gap-2">
-                            <Badge variant="outline" className={config?.color}>
+                            <Badge variant="outline" className={`text-xs ${config?.color}`}>
                               <Icon className="h-3 w-3 mr-1" />
                               {config?.label || img.purpose}
                             </Badge>
                             {img.isPrimary && (
-                              <Badge variant="default" className="bg-blue-600">
+                              <Badge className="text-xs bg-blue-600">
                                 <Star className="h-3 w-3 mr-1" />
                                 Primary
                               </Badge>
@@ -435,44 +451,34 @@ export default function ProductDetails() {
                     })}
                   </div>
                 </div>
-              ) : product.imageUrl && (
-                <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-slate-700">Product Image</h3>
-                  <img
-                    src={product.imageUrl}
-                    alt={product.name}
-                    className="w-48 h-48 object-cover rounded-lg border-2 border-slate-200"
-                    data-testid="img-single"
-                  />
-                </div>
               )}
 
-              <Separator />
+              {productImages.length > 0 && <Separator />}
 
               {/* Product Details */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium text-slate-600">Product Name</label>
-                    <p className="text-base font-semibold text-slate-900" data-testid="text-name">{product.name}</p>
+                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Product Name</label>
+                    <p className="text-lg font-semibold text-slate-900 mt-1" data-testid="text-name">{product.name}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-slate-600">SKU</label>
-                    <p className="text-base font-mono text-slate-900" data-testid="text-sku">{product.sku}</p>
+                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">SKU</label>
+                    <p className="text-lg font-mono text-slate-900 mt-1" data-testid="text-sku">{product.sku}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-slate-600">Category</label>
-                    <p className="text-base text-slate-900" data-testid="text-category">{category?.name || "Uncategorized"}</p>
+                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Category</label>
+                    <p className="text-lg text-slate-900 mt-1" data-testid="text-category">{category?.name || "Uncategorized"}</p>
                   </div>
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium text-slate-600">Warehouse</label>
-                    <p className="text-base text-slate-900" data-testid="text-warehouse">{warehouse?.name || "Not assigned"}</p>
+                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Warehouse</label>
+                    <p className="text-lg text-slate-900 mt-1" data-testid="text-warehouse">{warehouse?.name || "Not assigned"}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-slate-600">Location</label>
-                    <p className="text-base text-slate-900" data-testid="text-location">{product.warehouseLocation || "Not specified"}</p>
+                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Location</label>
+                    <p className="text-lg text-slate-900 mt-1" data-testid="text-location">{product.warehouseLocation || "Not specified"}</p>
                   </div>
                 </div>
               </div>
@@ -481,8 +487,8 @@ export default function ProductDetails() {
                 <>
                   <Separator />
                   <div>
-                    <label className="text-sm font-medium text-slate-600">Description</label>
-                    <p className="text-base text-slate-700 mt-1" data-testid="text-description">{product.description}</p>
+                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Description</label>
+                    <p className="text-base text-slate-700 mt-2 leading-relaxed" data-testid="text-description">{product.description}</p>
                   </div>
                 </>
               )}
@@ -491,73 +497,77 @@ export default function ProductDetails() {
         </AccordionItem>
 
         {/* Stock & Inventory */}
-        <AccordionItem value="stock" className="border rounded-lg bg-white">
-          <AccordionTrigger className="px-6 hover:no-underline" data-testid="accordion-stock">
-            <div className="flex items-center gap-2">
-              <Package className="h-5 w-5 text-slate-600" />
-              <span className="font-semibold">Stock & Inventory</span>
+        <AccordionItem value="stock" className="border-slate-200 rounded-xl bg-white shadow-sm">
+          <AccordionTrigger className="px-6 py-4 hover:no-underline" data-testid="accordion-stock">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-50 rounded-lg">
+                <Package className="h-5 w-5 text-green-600" />
+              </div>
+              <span className="text-lg font-semibold text-slate-900">Stock & Inventory</span>
             </div>
           </AccordionTrigger>
           <AccordionContent className="px-6 pb-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <label className="text-sm font-medium text-slate-600">Current Quantity</label>
-                <p className="text-2xl font-bold text-slate-900 mt-1" data-testid="text-quantity">{product.quantity}</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+              <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Current Quantity</label>
+                <p className="text-3xl font-bold text-slate-900 mt-2" data-testid="text-quantity">{product.quantity}</p>
               </div>
-              <div>
-                <label className="text-sm font-medium text-slate-600">Low Stock Alert</label>
-                <p className="text-2xl font-bold text-slate-900 mt-1" data-testid="text-low-stock">{product.lowStockAlert || 5}</p>
+              <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Low Stock Alert</label>
+                <p className="text-3xl font-bold text-slate-900 mt-2" data-testid="text-low-stock">{product.lowStockAlert || 5}</p>
               </div>
-              <div>
-                <label className="text-sm font-medium text-slate-600">Barcode</label>
-                <p className="text-lg font-mono text-slate-900 mt-1" data-testid="text-barcode-detail">{product.barcode || "Not set"}</p>
+              <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Barcode</label>
+                <p className="text-xl font-mono text-slate-900 mt-2" data-testid="text-barcode-detail">{product.barcode || "Not set"}</p>
               </div>
             </div>
           </AccordionContent>
         </AccordionItem>
 
         {/* Pricing & Costs */}
-        <AccordionItem value="pricing" className="border rounded-lg bg-white">
-          <AccordionTrigger className="px-6 hover:no-underline" data-testid="accordion-pricing">
-            <div className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-slate-600" />
-              <span className="font-semibold">Pricing & Costs</span>
+        <AccordionItem value="pricing" className="border-slate-200 rounded-xl bg-white shadow-sm">
+          <AccordionTrigger className="px-6 py-4 hover:no-underline" data-testid="accordion-pricing">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-50 rounded-lg">
+                <DollarSign className="h-5 w-5 text-purple-600" />
+              </div>
+              <span className="text-lg font-semibold text-slate-900">Pricing & Costs</span>
             </div>
           </AccordionTrigger>
           <AccordionContent className="px-6 pb-6">
-            <div className="space-y-6">
+            <div className="space-y-6 pt-2">
               {/* Selling Prices */}
               <div>
-                <h3 className="text-sm font-semibold text-slate-700 mb-3">Selling Prices</h3>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-4">Selling Prices</h3>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                   {product.priceCzk && (
-                    <div className="bg-slate-50 rounded-lg p-3">
-                      <div className="text-xs text-slate-600">Czech Republic (CZK)</div>
-                      <div className="text-lg font-bold" data-testid="text-price-czk">{formatCurrency(product.priceCzk, "CZK")}</div>
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+                      <div className="text-xs font-medium text-blue-700">CZK</div>
+                      <div className="text-xl font-bold text-blue-900 mt-1" data-testid="text-price-czk">{formatCurrency(product.priceCzk, "CZK")}</div>
                     </div>
                   )}
                   {product.priceEur && (
-                    <div className="bg-slate-50 rounded-lg p-3">
-                      <div className="text-xs text-slate-600">Europe (EUR)</div>
-                      <div className="text-lg font-bold" data-testid="text-price-eur">{formatCurrency(product.priceEur, "EUR")}</div>
+                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
+                      <div className="text-xs font-medium text-purple-700">EUR</div>
+                      <div className="text-xl font-bold text-purple-900 mt-1" data-testid="text-price-eur">{formatCurrency(product.priceEur, "EUR")}</div>
                     </div>
                   )}
                   {product.priceUsd && (
-                    <div className="bg-slate-50 rounded-lg p-3">
-                      <div className="text-xs text-slate-600">USA (USD)</div>
-                      <div className="text-lg font-bold" data-testid="text-price-usd">{formatCurrency(product.priceUsd, "USD")}</div>
+                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 border border-green-200">
+                      <div className="text-xs font-medium text-green-700">USD</div>
+                      <div className="text-xl font-bold text-green-900 mt-1" data-testid="text-price-usd">{formatCurrency(product.priceUsd, "USD")}</div>
                     </div>
                   )}
                   {product.priceVnd && (
-                    <div className="bg-slate-50 rounded-lg p-3">
-                      <div className="text-xs text-slate-600">Vietnam (VND)</div>
-                      <div className="text-lg font-bold" data-testid="text-price-vnd">{formatCurrency(product.priceVnd, "VND")}</div>
+                    <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4 border border-orange-200">
+                      <div className="text-xs font-medium text-orange-700">VND</div>
+                      <div className="text-xl font-bold text-orange-900 mt-1" data-testid="text-price-vnd">{formatCurrency(product.priceVnd, "VND")}</div>
                     </div>
                   )}
                   {product.priceCny && (
-                    <div className="bg-slate-50 rounded-lg p-3">
-                      <div className="text-xs text-slate-600">China (CNY)</div>
-                      <div className="text-lg font-bold" data-testid="text-price-cny">{formatCurrency(product.priceCny, "CNY")}</div>
+                    <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg p-4 border border-red-200">
+                      <div className="text-xs font-medium text-red-700">CNY</div>
+                      <div className="text-xl font-bold text-red-900 mt-1" data-testid="text-price-cny">{formatCurrency(product.priceCny, "CNY")}</div>
                     </div>
                   )}
                 </div>
@@ -567,24 +577,24 @@ export default function ProductDetails() {
 
               {/* Import Costs */}
               <div>
-                <h3 className="text-sm font-semibold text-slate-700 mb-3">Import Costs</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-4">Import Costs</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {product.importCostUsd && (
-                    <div className="bg-orange-50 rounded-lg p-3">
-                      <div className="text-xs text-orange-600">USD</div>
-                      <div className="text-lg font-bold text-orange-900" data-testid="text-import-usd">{formatCurrency(product.importCostUsd, "USD")}</div>
+                    <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
+                      <div className="text-xs font-medium text-amber-700">USD</div>
+                      <div className="text-xl font-bold text-amber-900 mt-1" data-testid="text-import-usd">{formatCurrency(product.importCostUsd, "USD")}</div>
                     </div>
                   )}
                   {product.importCostCzk && (
-                    <div className="bg-orange-50 rounded-lg p-3">
-                      <div className="text-xs text-orange-600">CZK</div>
-                      <div className="text-lg font-bold text-orange-900" data-testid="text-import-czk">{formatCurrency(product.importCostCzk, "CZK")}</div>
+                    <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
+                      <div className="text-xs font-medium text-amber-700">CZK</div>
+                      <div className="text-xl font-bold text-amber-900 mt-1" data-testid="text-import-czk">{formatCurrency(product.importCostCzk, "CZK")}</div>
                     </div>
                   )}
                   {product.importCostEur && (
-                    <div className="bg-orange-50 rounded-lg p-3">
-                      <div className="text-xs text-orange-600">EUR</div>
-                      <div className="text-lg font-bold text-orange-900" data-testid="text-import-eur">{formatCurrency(product.importCostEur, "EUR")}</div>
+                    <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
+                      <div className="text-xs font-medium text-amber-700">EUR</div>
+                      <div className="text-xl font-bold text-amber-900 mt-1" data-testid="text-import-eur">{formatCurrency(product.importCostEur, "EUR")}</div>
                     </div>
                   )}
                 </div>
@@ -594,18 +604,18 @@ export default function ProductDetails() {
 
               {/* Profit Margin - Multi-Currency */}
               <div>
-                <h3 className="text-sm font-semibold text-slate-700 mb-3">Profit Analysis (by Currency)</h3>
+                <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-4">Profit Analysis</h3>
                 {(marginEur || marginCzk || marginUsd || marginVnd || marginCny) ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {marginEur && (
-                      <div className="border rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-medium text-slate-600">EUR</span>
-                          <Badge variant="outline" className={getMarginColor(Number(marginEur))}>
+                      <div className="border-2 border-slate-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-sm font-bold text-slate-700">EUR</span>
+                          <Badge variant="outline" className={`font-bold ${getMarginColor(Number(marginEur))}`}>
                             {marginEur}%
                           </Badge>
                         </div>
-                        <div className="space-y-1">
+                        <div className="space-y-2">
                           <div className="flex justify-between text-sm">
                             <span className="text-slate-600">Cost:</span>
                             <span className="font-semibold">{formatCurrency(landingCostEur, "EUR")}</span>
@@ -618,14 +628,14 @@ export default function ProductDetails() {
                       </div>
                     )}
                     {marginCzk && (
-                      <div className="border rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-medium text-slate-600">CZK</span>
-                          <Badge variant="outline" className={getMarginColor(Number(marginCzk))}>
+                      <div className="border-2 border-slate-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-sm font-bold text-slate-700">CZK</span>
+                          <Badge variant="outline" className={`font-bold ${getMarginColor(Number(marginCzk))}`}>
                             {marginCzk}%
                           </Badge>
                         </div>
-                        <div className="space-y-1">
+                        <div className="space-y-2">
                           <div className="flex justify-between text-sm">
                             <span className="text-slate-600">Cost:</span>
                             <span className="font-semibold">{formatCurrency(landingCostCzk, "CZK")}</span>
@@ -638,14 +648,14 @@ export default function ProductDetails() {
                       </div>
                     )}
                     {marginUsd && (
-                      <div className="border rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-medium text-slate-600">USD</span>
-                          <Badge variant="outline" className={getMarginColor(Number(marginUsd))}>
+                      <div className="border-2 border-slate-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-sm font-bold text-slate-700">USD</span>
+                          <Badge variant="outline" className={`font-bold ${getMarginColor(Number(marginUsd))}`}>
                             {marginUsd}%
                           </Badge>
                         </div>
-                        <div className="space-y-1">
+                        <div className="space-y-2">
                           <div className="flex justify-between text-sm">
                             <span className="text-slate-600">Cost:</span>
                             <span className="font-semibold">{formatCurrency(landingCostUsd, "USD")}</span>
@@ -658,14 +668,14 @@ export default function ProductDetails() {
                       </div>
                     )}
                     {marginVnd && (
-                      <div className="border rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-medium text-slate-600">VND</span>
-                          <Badge variant="outline" className={getMarginColor(Number(marginVnd))}>
+                      <div className="border-2 border-slate-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-sm font-bold text-slate-700">VND</span>
+                          <Badge variant="outline" className={`font-bold ${getMarginColor(Number(marginVnd))}`}>
                             {marginVnd}%
                           </Badge>
                         </div>
-                        <div className="space-y-1">
+                        <div className="space-y-2">
                           <div className="flex justify-between text-sm">
                             <span className="text-slate-600">Price:</span>
                             <span className="font-semibold">{formatCurrency(product.priceVnd, "VND")}</span>
@@ -674,14 +684,14 @@ export default function ProductDetails() {
                       </div>
                     )}
                     {marginCny && (
-                      <div className="border rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-medium text-slate-600">CNY</span>
-                          <Badge variant="outline" className={getMarginColor(Number(marginCny))}>
+                      <div className="border-2 border-slate-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-sm font-bold text-slate-700">CNY</span>
+                          <Badge variant="outline" className={`font-bold ${getMarginColor(Number(marginCny))}`}>
                             {marginCny}%
                           </Badge>
                         </div>
-                        <div className="space-y-1">
+                        <div className="space-y-2">
                           <div className="flex justify-between text-sm">
                             <span className="text-slate-600">Price:</span>
                             <span className="font-semibold">{formatCurrency(product.priceCny, "CNY")}</span>
@@ -691,7 +701,7 @@ export default function ProductDetails() {
                     )}
                   </div>
                 ) : (
-                  <p className="text-sm text-slate-500">No pricing data available for margin calculation</p>
+                  <p className="text-sm text-slate-500 italic">No pricing data available for margin calculation</p>
                 )}
               </div>
             </div>
@@ -699,77 +709,86 @@ export default function ProductDetails() {
         </AccordionItem>
 
         {/* Import Costs & Analytics */}
-        <AccordionItem value="analytics" className="border rounded-lg bg-white">
-          <AccordionTrigger className="px-6 hover:no-underline" data-testid="accordion-analytics">
-            <div className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-slate-600" />
-              <span className="font-semibold">Import Costs & Analytics</span>
-              {costHistoryLoading && <Skeleton className="h-4 w-16 ml-2" />}
+        <AccordionItem value="analytics" className="border-slate-200 rounded-xl bg-white shadow-sm">
+          <AccordionTrigger className="px-6 py-4 hover:no-underline" data-testid="accordion-analytics">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-indigo-50 rounded-lg">
+                <BarChart3 className="h-5 w-5 text-indigo-600" />
+              </div>
+              <span className="text-lg font-semibold text-slate-900">Import Costs & Analytics</span>
+              {costHistoryLoading && <Skeleton className="h-5 w-16 ml-2" />}
               {!costHistoryLoading && costHistory.length > 0 && (
-                <Badge variant="secondary" className="ml-2">{costHistory.length}</Badge>
+                <Badge variant="secondary" className="ml-2">{costHistory.length} entries</Badge>
               )}
             </div>
           </AccordionTrigger>
           <AccordionContent className="px-6 pb-6">
             {costHistoryLoading ? (
-              <div className="space-y-2">
+              <div className="space-y-2 pt-2">
                 <Skeleton className="h-8 w-full" />
                 <Skeleton className="h-48 w-full" />
               </div>
             ) : costHistoryError ? (
-              <div className="text-center py-8 text-red-600">
-                <p>Failed to load cost history data</p>
+              <div className="text-center py-12 text-red-600">
+                <BarChart3 className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p className="font-medium">Failed to load cost history data</p>
               </div>
             ) : costHistory.length > 0 ? (
-              <CostHistoryChart data={costHistory} currency="€" />
+              <div className="pt-2">
+                <CostHistoryChart data={costHistory} currency="€" />
+              </div>
             ) : (
-              <div className="text-center py-8 text-slate-500">
-                <p>No cost history available</p>
+              <div className="text-center py-12 text-slate-500">
+                <BarChart3 className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p className="font-medium">No cost history available</p>
               </div>
             )}
           </AccordionContent>
         </AccordionItem>
 
         {/* Tiered Pricing */}
-        <AccordionItem value="tiered" className="border rounded-lg bg-white">
-          <AccordionTrigger className="px-6 hover:no-underline" data-testid="accordion-tiered">
-            <div className="flex items-center gap-2">
-              <Euro className="h-5 w-5 text-slate-600" />
-              <span className="font-semibold">Tiered Pricing</span>
-              {tieredPricingLoading && <Skeleton className="h-4 w-16 ml-2" />}
+        <AccordionItem value="tiered" className="border-slate-200 rounded-xl bg-white shadow-sm">
+          <AccordionTrigger className="px-6 py-4 hover:no-underline" data-testid="accordion-tiered">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-emerald-50 rounded-lg">
+                <Euro className="h-5 w-5 text-emerald-600" />
+              </div>
+              <span className="text-lg font-semibold text-slate-900">Tiered Pricing</span>
+              {tieredPricingLoading && <Skeleton className="h-5 w-16 ml-2" />}
               {!tieredPricingLoading && tieredPricing.length > 0 && (
-                <Badge variant="secondary" className="ml-2">{tieredPricing.length}</Badge>
+                <Badge variant="secondary" className="ml-2">{tieredPricing.length} tiers</Badge>
               )}
             </div>
           </AccordionTrigger>
           <AccordionContent className="px-6 pb-6">
             {tieredPricingLoading ? (
-              <div className="space-y-2">
+              <div className="space-y-2 pt-2">
                 <Skeleton className="h-8 w-full" />
                 <Skeleton className="h-32 w-full" />
               </div>
             ) : tieredPricingError ? (
-              <div className="text-center py-8 text-red-600">
-                <p>Failed to load tiered pricing data</p>
+              <div className="text-center py-12 text-red-600">
+                <Euro className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p className="font-medium">Failed to load tiered pricing data</p>
               </div>
             ) : tieredPricing.length > 0 ? (
-              <div className="rounded-md border">
+              <div className="rounded-lg border border-slate-200 overflow-hidden mt-2">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>Min Quantity</TableHead>
-                      <TableHead>Max Quantity</TableHead>
-                      <TableHead>Price (CZK)</TableHead>
-                      <TableHead>Price (EUR)</TableHead>
-                      <TableHead>Price (USD)</TableHead>
-                      <TableHead>Type</TableHead>
+                    <TableRow className="bg-slate-50">
+                      <TableHead className="font-semibold">Min Quantity</TableHead>
+                      <TableHead className="font-semibold">Max Quantity</TableHead>
+                      <TableHead className="font-semibold">Price (CZK)</TableHead>
+                      <TableHead className="font-semibold">Price (EUR)</TableHead>
+                      <TableHead className="font-semibold">Price (USD)</TableHead>
+                      <TableHead className="font-semibold">Type</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {tieredPricing.map((tier: any, idx: number) => (
                       <TableRow key={tier.id || idx} data-testid={`row-tier-${idx}`}>
-                        <TableCell data-testid={`text-tier-min-${idx}`}>{tier.minQuantity}</TableCell>
-                        <TableCell data-testid={`text-tier-max-${idx}`}>{tier.maxQuantity || '∞'}</TableCell>
+                        <TableCell className="font-medium" data-testid={`text-tier-min-${idx}`}>{tier.minQuantity}</TableCell>
+                        <TableCell className="font-medium" data-testid={`text-tier-max-${idx}`}>{tier.maxQuantity || '∞'}</TableCell>
                         <TableCell>{tier.priceCzk ? formatCurrency(tier.priceCzk, "CZK") : '-'}</TableCell>
                         <TableCell>{tier.priceEur ? formatCurrency(tier.priceEur, "EUR") : '-'}</TableCell>
                         <TableCell>{tier.priceUsd ? formatCurrency(tier.priceUsd, "USD") : '-'}</TableCell>
@@ -782,8 +801,9 @@ export default function ProductDetails() {
                 </Table>
               </div>
             ) : (
-              <div className="text-center py-8 text-slate-500">
-                <p>No tiered pricing configured</p>
+              <div className="text-center py-12 text-slate-500">
+                <Euro className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p className="font-medium">No tiered pricing configured</p>
               </div>
             )}
           </AccordionContent>
@@ -791,23 +811,25 @@ export default function ProductDetails() {
 
         {/* Supplier Information */}
         {supplier && (
-          <AccordionItem value="supplier" className="border rounded-lg bg-white">
-            <AccordionTrigger className="px-6 hover:no-underline" data-testid="accordion-supplier">
-              <div className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-slate-600" />
-                <span className="font-semibold">Supplier Information</span>
+          <AccordionItem value="supplier" className="border-slate-200 rounded-xl bg-white shadow-sm">
+            <AccordionTrigger className="px-6 py-4 hover:no-underline" data-testid="accordion-supplier">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-50 rounded-lg">
+                  <Users className="h-5 w-5 text-orange-600" />
+                </div>
+                <span className="text-lg font-semibold text-slate-900">Supplier Information</span>
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-6 pb-6">
-              <div className="space-y-4">
+              <div className="space-y-6 pt-2">
                 <div className="flex items-start gap-4">
-                  <div className="w-16 h-16 bg-slate-100 rounded-lg flex items-center justify-center">
-                    <Building className="h-8 w-8 text-slate-400" />
+                  <div className="w-20 h-20 bg-gradient-to-br from-slate-100 to-slate-200 rounded-xl flex items-center justify-center border border-slate-200">
+                    <Building className="h-10 w-10 text-slate-400" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-lg font-bold text-slate-900" data-testid="text-supplier-name">{supplier.name}</h3>
+                    <h3 className="text-xl font-bold text-slate-900" data-testid="text-supplier-name">{supplier.name}</h3>
                     {supplier.contactPerson && (
-                      <p className="text-sm text-slate-600" data-testid="text-supplier-contact">
+                      <p className="text-sm text-slate-600 mt-1" data-testid="text-supplier-contact">
                         Contact: {supplier.contactPerson}
                       </p>
                     )}
@@ -816,33 +838,33 @@ export default function ProductDetails() {
                 <Separator />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {supplier.email && (
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-slate-400" />
-                      <a href={`mailto:${supplier.email}`} className="text-sm text-blue-600 hover:underline" data-testid="link-supplier-email">
+                    <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                      <Mail className="h-5 w-5 text-slate-400" />
+                      <a href={`mailto:${supplier.email}`} className="text-sm text-blue-600 hover:underline font-medium" data-testid="link-supplier-email">
                         {supplier.email}
                       </a>
                     </div>
                   )}
                   {supplier.phone && (
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-slate-400" />
-                      <a href={`tel:${supplier.phone}`} className="text-sm text-blue-600 hover:underline" data-testid="link-supplier-phone">
+                    <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                      <Phone className="h-5 w-5 text-slate-400" />
+                      <a href={`tel:${supplier.phone}`} className="text-sm text-blue-600 hover:underline font-medium" data-testid="link-supplier-phone">
                         {supplier.phone}
                       </a>
                     </div>
                   )}
                   {supplier.website && (
-                    <div className="flex items-center gap-2">
-                      <Globe className="h-4 w-4 text-slate-400" />
-                      <a href={supplier.website} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline" data-testid="link-supplier-website">
+                    <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                      <Globe className="h-5 w-5 text-slate-400" />
+                      <a href={supplier.website} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline font-medium" data-testid="link-supplier-website">
                         {supplier.website}
                       </a>
                     </div>
                   )}
                   {supplier.address && (
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-slate-400" />
-                      <span className="text-sm text-slate-700" data-testid="text-supplier-address">{supplier.address}</span>
+                    <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                      <MapPin className="h-5 w-5 text-slate-400" />
+                      <span className="text-sm text-slate-700 font-medium" data-testid="text-supplier-address">{supplier.address}</span>
                     </div>
                   )}
                 </div>
@@ -852,28 +874,33 @@ export default function ProductDetails() {
         )}
 
         {/* Variants */}
-        <AccordionItem value="variants" className="border rounded-lg bg-white">
-          <AccordionTrigger className="px-6 hover:no-underline" data-testid="accordion-variants">
-            <div className="flex items-center gap-2">
-              <Box className="h-5 w-5 text-slate-600" />
-              <span className="font-semibold">Product Variants</span>
-              {variantsLoading && <Skeleton className="h-4 w-16 ml-2" />}
+        <AccordionItem value="variants" className="border-slate-200 rounded-xl bg-white shadow-sm">
+          <AccordionTrigger className="px-6 py-4 hover:no-underline" data-testid="accordion-variants">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-cyan-50 rounded-lg">
+                <Box className="h-5 w-5 text-cyan-600" />
+              </div>
+              <span className="text-lg font-semibold text-slate-900">Product Variants</span>
+              {variantsLoading && <Skeleton className="h-5 w-16 ml-2" />}
               {!variantsLoading && variants.length > 0 && (
-                <Badge variant="secondary" className="ml-2">{variants.length}</Badge>
+                <Badge variant="secondary" className="ml-2">{variants.length} variants</Badge>
               )}
             </div>
           </AccordionTrigger>
           <AccordionContent className="px-6 pb-6">
             {variantsLoading ? (
-              <div className="space-y-2">
+              <div className="space-y-2 pt-2">
                 <Skeleton className="h-8 w-full" />
                 <Skeleton className="h-32 w-full" />
               </div>
             ) : variants.length > 0 ? (
-              <ProductVariants productId={id!} />
+              <div className="pt-2">
+                <ProductVariants productId={id!} />
+              </div>
             ) : (
-              <div className="text-center py-8 text-slate-500">
-                <p>No variants configured</p>
+              <div className="text-center py-12 text-slate-500">
+                <Box className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p className="font-medium">No variants configured</p>
               </div>
             )}
           </AccordionContent>
@@ -881,30 +908,32 @@ export default function ProductDetails() {
 
         {/* Packing Instructions */}
         {(product.packingInstructionsText || product.packingInstructionsImage) && (
-          <AccordionItem value="packing" className="border rounded-lg bg-white">
-            <AccordionTrigger className="px-6 hover:no-underline" data-testid="accordion-packing">
-              <div className="flex items-center gap-2">
-                <Package className="h-5 w-5 text-slate-600" />
-                <span className="font-semibold">Packing Instructions</span>
+          <AccordionItem value="packing" className="border-slate-200 rounded-xl bg-white shadow-sm">
+            <AccordionTrigger className="px-6 py-4 hover:no-underline" data-testid="accordion-packing">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-pink-50 rounded-lg">
+                  <Package className="h-5 w-5 text-pink-600" />
+                </div>
+                <span className="text-lg font-semibold text-slate-900">Packing Instructions</span>
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-6 pb-6">
-              <div className="space-y-4">
+              <div className="space-y-6 pt-2">
                 {product.packingInstructionsText && (
                   <div>
-                    <label className="text-sm font-medium text-slate-600">Instructions</label>
-                    <p className="text-base text-slate-700 mt-2 whitespace-pre-wrap" data-testid="text-packing-instructions">
+                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Instructions</label>
+                    <p className="text-base text-slate-700 mt-2 whitespace-pre-wrap leading-relaxed" data-testid="text-packing-instructions">
                       {product.packingInstructionsText}
                     </p>
                   </div>
                 )}
                 {product.packingInstructionsImage && (
                   <div>
-                    <label className="text-sm font-medium text-slate-600">Reference Image</label>
+                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Reference Image</label>
                     <img
                       src={product.packingInstructionsImage}
                       alt="Packing instructions"
-                      className="mt-2 max-w-md rounded-lg border-2 border-slate-200"
+                      className="mt-3 max-w-md rounded-lg border-2 border-slate-200 shadow-sm"
                       data-testid="img-packing-instructions"
                     />
                   </div>
@@ -915,14 +944,16 @@ export default function ProductDetails() {
         )}
 
         {/* Advanced Settings */}
-        <AccordionItem value="advanced" className="border rounded-lg bg-white">
-          <AccordionTrigger className="px-6 hover:no-underline" data-testid="accordion-advanced">
-            <div className="flex items-center gap-2">
-              <Warehouse className="h-5 w-5 text-slate-600" />
-              <span className="font-semibold">Advanced Settings</span>
+        <AccordionItem value="advanced" className="border-slate-200 rounded-xl bg-white shadow-sm">
+          <AccordionTrigger className="px-6 py-4 hover:no-underline" data-testid="accordion-advanced">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-slate-100 rounded-lg">
+                <Warehouse className="h-5 w-5 text-slate-600" />
+              </div>
+              <span className="text-lg font-semibold text-slate-900">Advanced Settings</span>
             </div>
           </AccordionTrigger>
-          <AccordionContent className="px-6 pb-6 space-y-6">
+          <AccordionContent className="px-6 pb-6 space-y-8 pt-2">
             {/* Product Files */}
             <div>
               <ProductFiles productId={id!} />
@@ -939,23 +970,23 @@ export default function ProductDetails() {
 
             {/* Dimensions & Weight */}
             <div>
-              <h3 className="text-sm font-semibold text-slate-700 mb-3">Dimensions & Weight</h3>
+              <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-4">Dimensions & Weight</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-slate-50 rounded-lg p-3">
-                  <div className="text-xs text-slate-600">Length</div>
-                  <div className="text-lg font-bold" data-testid="text-length">{product.length || '-'} cm</div>
+                <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg p-4 border border-slate-200">
+                  <div className="text-xs font-medium text-slate-600">Length</div>
+                  <div className="text-2xl font-bold text-slate-900 mt-1" data-testid="text-length">{product.length || '-'} cm</div>
                 </div>
-                <div className="bg-slate-50 rounded-lg p-3">
-                  <div className="text-xs text-slate-600">Width</div>
-                  <div className="text-lg font-bold" data-testid="text-width">{product.width || '-'} cm</div>
+                <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg p-4 border border-slate-200">
+                  <div className="text-xs font-medium text-slate-600">Width</div>
+                  <div className="text-2xl font-bold text-slate-900 mt-1" data-testid="text-width">{product.width || '-'} cm</div>
                 </div>
-                <div className="bg-slate-50 rounded-lg p-3">
-                  <div className="text-xs text-slate-600">Height</div>
-                  <div className="text-lg font-bold" data-testid="text-height">{product.height || '-'} cm</div>
+                <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg p-4 border border-slate-200">
+                  <div className="text-xs font-medium text-slate-600">Height</div>
+                  <div className="text-2xl font-bold text-slate-900 mt-1" data-testid="text-height">{product.height || '-'} cm</div>
                 </div>
-                <div className="bg-slate-50 rounded-lg p-3">
-                  <div className="text-xs text-slate-600">Weight</div>
-                  <div className="text-lg font-bold" data-testid="text-weight">{product.weight || '-'} kg</div>
+                <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg p-4 border border-slate-200">
+                  <div className="text-xs font-medium text-slate-600">Weight</div>
+                  <div className="text-2xl font-bold text-slate-900 mt-1" data-testid="text-weight">{product.weight || '-'} kg</div>
                 </div>
               </div>
             </div>
