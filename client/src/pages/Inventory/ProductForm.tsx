@@ -1428,7 +1428,7 @@ export default function ProductForm() {
                     </p>
                   </div>
 
-                  {/* Product Name & English Name (if edit mode) */}
+                  {/* Product Name & English Name */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="name" className="text-sm font-medium">Product Name *</Label>
@@ -1443,17 +1443,15 @@ export default function ProductForm() {
                       )}
                     </div>
 
-                    {isEditMode && (
-                      <div>
-                        <Label htmlFor="englishName" className="text-sm font-medium">English Name</Label>
-                        <Input
-                          {...form.register('englishName')}
-                          placeholder="Enter English name (optional)"
-                          data-testid="input-english-name"
-                          className="mt-1"
-                        />
-                      </div>
-                    )}
+                    <div>
+                      <Label htmlFor="englishName" className="text-sm font-medium">English Name</Label>
+                      <Input
+                        {...form.register('englishName')}
+                        placeholder="Enter English name (optional)"
+                        data-testid="input-english-name"
+                        className="mt-1"
+                      />
+                    </div>
                   </div>
 
                   {/* SKU & Category */}
@@ -1617,12 +1615,26 @@ export default function ProductForm() {
                     </div>
                   </div>
                   
-                  {/* Edit mode: Product Locations */}
-                  {isEditMode && product && (
-                    <div className="pt-2">
+                  {/* Product Locations */}
+                  <div className="pt-2">
+                    {isEditMode && product ? (
                       <ProductLocations productId={id!} />
-                    </div>
-                  )}
+                    ) : (
+                      <div className="bg-blue-50 dark:bg-blue-950 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+                        <div className="flex items-start gap-3">
+                          <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                          <div>
+                            <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-1">
+                              Warehouse Locations
+                            </h4>
+                            <p className="text-xs text-blue-700 dark:text-blue-300">
+                              Multiple warehouse locations can be assigned after creating the product. This allows you to track inventory across different storage areas.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </AccordionContent>
             </AccordionItem>
@@ -1645,7 +1657,7 @@ export default function ProductForm() {
                   {/* Sales Prices */}
                   <div>
                     <Label className="text-sm font-medium mb-2 block">Sales Prices</Label>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                       <div>
                         <Label htmlFor="priceCzk" className="text-xs text-slate-500">CZK</Label>
                         <Input
@@ -1672,48 +1684,44 @@ export default function ProductForm() {
                         />
                       </div>
                       
-                      {isEditMode && (
-                        <>
-                          <div>
-                            <Label htmlFor="priceUsd" className="text-xs text-slate-500">USD</Label>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              {...form.register('priceUsd')}
-                              placeholder="0.00"
-                              data-testid="input-price-usd"
-                              className="mt-1"
-                            />
-                          </div>
-                          
-                          <div>
-                            <Label htmlFor="priceVnd" className="text-xs text-slate-500">VND</Label>
-                            <Input
-                              type="number"
-                              step="1"
-                              min="0"
-                              {...form.register('priceVnd')}
-                              placeholder="0"
-                              data-testid="input-price-vnd"
-                              className="mt-1"
-                            />
-                          </div>
-                          
-                          <div>
-                            <Label htmlFor="priceCny" className="text-xs text-slate-500">CNY</Label>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              {...form.register('priceCny')}
-                              placeholder="0.00"
-                              data-testid="input-price-cny"
-                              className="mt-1"
-                            />
-                          </div>
-                        </>
-                      )}
+                      <div>
+                        <Label htmlFor="priceUsd" className="text-xs text-slate-500">USD</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          {...form.register('priceUsd')}
+                          placeholder="0.00"
+                          data-testid="input-price-usd"
+                          className="mt-1"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="priceVnd" className="text-xs text-slate-500">VND</Label>
+                        <Input
+                          type="number"
+                          step="1"
+                          min="0"
+                          {...form.register('priceVnd')}
+                          placeholder="0"
+                          data-testid="input-price-vnd"
+                          className="mt-1"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="priceCny" className="text-xs text-slate-500">CNY</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          {...form.register('priceCny')}
+                          placeholder="0.00"
+                          data-testid="input-price-cny"
+                          className="mt-1"
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -1776,9 +1784,10 @@ export default function ProductForm() {
                     </div>
                   )}
                   
-                  {/* Edit mode: Tiered Pricing */}
-                  {isEditMode && (
-                    <div className="pt-2">
+                  {/* Tiered Pricing */}
+                  <div className="pt-2">
+                    {isEditMode ? (
+                      <>
                       <div className="flex items-center justify-between mb-3">
                         <Label className="text-sm font-medium flex items-center gap-2">
                           <DollarSign className="h-4 w-4 text-amber-600" />
@@ -1933,8 +1942,23 @@ export default function ProductForm() {
                       ) : (
                         <p className="text-xs text-slate-500 text-center py-4">No tiered pricing configured</p>
                       )}
-                    </div>
-                  )}
+                      </>
+                    ) : (
+                      <div className="bg-amber-50 dark:bg-amber-950 rounded-lg p-4 border border-amber-200 dark:border-amber-800">
+                        <div className="flex items-start gap-3">
+                          <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                          <div>
+                            <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-100 mb-1">
+                              Tiered Pricing
+                            </h4>
+                            <p className="text-xs text-amber-700 dark:text-amber-300">
+                              Set up volume-based pricing tiers after creating the product. This allows you to offer discounts for bulk purchases.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </AccordionContent>
             </AccordionItem>
@@ -2387,27 +2411,41 @@ export default function ProductForm() {
               </AccordionContent>
             </AccordionItem>
 
-            {/* Edit mode: Product Files */}
-            {isEditMode && product && (
-              <AccordionItem value="files" className="bg-white dark:bg-slate-800 rounded-xl border shadow-sm overflow-hidden">
-                <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                  <div className="flex items-center gap-3 text-left">
-                    <div className="p-2 bg-slate-100 dark:bg-slate-900 rounded-lg">
-                      <FileText className="h-4 w-4 text-slate-600 dark:text-slate-400" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-slate-900 dark:text-slate-100">Product Files & Documents</h3>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">Attached files and documentation</p>
-                    </div>
+            {/* Product Files & Documents */}
+            <AccordionItem value="files" className="bg-white dark:bg-slate-800 rounded-xl border shadow-sm overflow-hidden">
+              <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                <div className="flex items-center gap-3 text-left">
+                  <div className="p-2 bg-slate-100 dark:bg-slate-900 rounded-lg">
+                    <FileText className="h-4 w-4 text-slate-600 dark:text-slate-400" />
                   </div>
-                </AccordionTrigger>
-                <AccordionContent className="px-4 pb-4">
-                  <div className="pt-2">
+                  <div>
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100">Product Files & Documents</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Attached files and documentation</p>
+                  </div>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-4 pb-4">
+                <div className="pt-2">
+                  {isEditMode && product ? (
                     <ProductFiles productId={id!} />
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            )}
+                  ) : (
+                    <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
+                      <div className="flex items-start gap-3">
+                        <Info className="h-5 w-5 text-slate-600 dark:text-slate-400 shrink-0 mt-0.5" />
+                        <div>
+                          <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-1">
+                            Product Files
+                          </h4>
+                          <p className="text-xs text-slate-600 dark:text-slate-400">
+                            Documents and files can be attached after creating the product. This includes PDFs, images, specifications, and other documentation.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
           </Accordion>
 
           {/* Bottom Action Bar */}
