@@ -1,22 +1,22 @@
 import { useState, useEffect, useRef } from "react";
+import { useParams, useLocation, Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useLocation, Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { isUnauthorizedError } from "@/lib/authUtils";
 import { formatCurrency, convertCurrency, type Currency } from "@/lib/currencyUtils";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { 
   Upload, 
@@ -54,7 +54,10 @@ import {
   Mail,
   Phone,
   Globe,
-  ExternalLink
+  ExternalLink,
+  TrendingUp,
+  Pencil,
+  Euro
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -68,19 +71,28 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import PackingInstructionsUploader from "@/components/PackingInstructionsUploader";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import PackingInstructionsUploader from "@/components/PackingInstructionsUploader";
+import ProductFiles from "@/components/ProductFiles";
+import ProductLocations from "@/components/ProductLocations";
+import CostHistoryChart from "@/components/products/CostHistoryChart";
+import { Skeleton } from "@/components/ui/skeleton";
+import { format } from "date-fns";
 
-const addProductSchema = z.object({
+// Unified schema with all fields from both AddProduct and EditProduct
+const productSchema = z.object({
   name: z.string().min(1, "Product name is required"),
+  englishName: z.string().optional(),
   sku: z.string().min(1, "SKU is required"),
   categoryId: z.string().optional(),
   warehouseId: z.string().optional(),
@@ -91,17 +103,42 @@ const addProductSchema = z.object({
   lowStockAlert: z.coerce.number().min(0).default(5),
   priceCzk: z.coerce.number().min(0).optional(),
   priceEur: z.coerce.number().min(0).optional(),
+  priceUsd: z.coerce.number().min(0).optional(),
+  priceVnd: z.coerce.number().min(0).optional(),
+  priceCny: z.coerce.number().min(0).optional(),
   importCostUsd: z.coerce.number().min(0).optional(),
   importCostCzk: z.coerce.number().min(0).optional(),
   importCostEur: z.coerce.number().min(0).optional(),
   barcode: z.string().optional(),
+  length: z.coerce.number().min(0).optional(),
+  width: z.coerce.number().min(0).optional(),
+  height: z.coerce.number().min(0).optional(),
+  weight: z.coerce.number().min(0).optional(),
+  packingMaterialId: z.string().optional(),
+});
+
+const tieredPricingSchema = z.object({
+  minQuantity: z.coerce.number().min(1, "Minimum quantity is required"),
+  maxQuantity: z.coerce.number().optional(),
+  priceCzk: z.coerce.number().min(0).optional(),
+  priceEur: z.coerce.number().min(0).optional(),
+  priceUsd: z.coerce.number().min(0).optional(),
+  priceVnd: z.coerce.number().min(0).optional(),
+  priceCny: z.coerce.number().min(0).optional(),
+  priceType: z.enum(['tiered', 'wholesale']).default('tiered'),
+}).refine((data) => {
+  return data.priceCzk || data.priceEur || data.priceUsd || data.priceVnd || data.priceCny;
+}, {
+  message: "At least one price must be specified",
+  path: ["priceCzk"],
 });
 
 type ImagePurpose = 'main' | 'in_hand' | 'detail' | 'packaging' | 'label';
 
 interface ProductImage {
-  file: File;
+  file?: File;
   preview: string;
+  url?: string;
   purpose: ImagePurpose;
   isPrimary: boolean;
 }
@@ -149,9 +186,14 @@ const IMAGE_PURPOSE_CONFIG = {
   },
 };
 
-export default function AddProduct() {
+export default function ProductForm() {
+  const params = useParams();
+  const id = params.id;
+  const isEditMode = !!id;
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  
+  // State management
   const [productImages, setProductImages] = useState<ProductImage[]>([]);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [variants, setVariants] = useState<Array<{
@@ -187,20 +229,66 @@ export default function AddProduct() {
   const [packingInstructionsImages, setPackingInstructionsImages] = useState<string[]>([]);
   const [expandedSections, setExpandedSections] = useState<string[]>(["basic"]);
   
-  // Auto-conversion state
+  // Edit mode specific state
+  const [tieredPricingDialogOpen, setTieredPricingDialogOpen] = useState(false);
+  const [editingTier, setEditingTier] = useState<any>(null);
+  
+  // Auto-conversion refs
   const conversionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const seriesConversionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Get categoryId from URL query parameters
+  // Get categoryId from URL query parameters (for add mode)
   const searchParams = new URLSearchParams(window.location.search);
   const categoryIdFromUrl = searchParams.get('categoryId');
 
-  const form = useForm<z.infer<typeof addProductSchema>>({
-    resolver: zodResolver(addProductSchema),
+  // Fetch product data if in edit mode
+  const { data: product, isLoading: productLoading } = useQuery<any>({
+    queryKey: ['/api/products', id],
+    enabled: isEditMode,
+  });
+
+  // Fetch cost history if in edit mode
+  const { data: costHistory, isLoading: costHistoryLoading } = useQuery<any[]>({
+    queryKey: [`/api/products/${id}/cost-history`],
+    enabled: isEditMode,
+  });
+
+  // Fetch tiered pricing if in edit mode
+  const { data: tieredPricing = [], isLoading: tieredPricingLoading } = useQuery<any[]>({
+    queryKey: ['/api/products', id, 'tiered-pricing'],
+    enabled: isEditMode,
+  });
+
+  // Fetch common data
+  const { data: categories = [] } = useQuery<any[]>({
+    queryKey: ['/api/categories'],
+  });
+
+  const { data: warehouses = [] } = useQuery<any[]>({
+    queryKey: ['/api/warehouses'],
+  });
+
+  const { data: suppliers = [] } = useQuery<any[]>({
+    queryKey: ['/api/suppliers'],
+  });
+
+  const { data: packingMaterials = [] } = useQuery<any[]>({
+    queryKey: ['/api/packing-materials'],
+  });
+
+  const form = useForm<z.infer<typeof productSchema>>({
+    resolver: zodResolver(productSchema),
     defaultValues: {
       quantity: 0,
       lowStockAlert: 5,
-      categoryId: categoryIdFromUrl || undefined,
+      categoryId: isEditMode ? undefined : (categoryIdFromUrl || undefined),
+    },
+  });
+
+  const tierForm = useForm<z.infer<typeof tieredPricingSchema>>({
+    resolver: zodResolver(tieredPricingSchema),
+    defaultValues: {
+      priceType: 'tiered',
     },
   });
 
@@ -216,14 +304,12 @@ export default function AddProduct() {
     }
 
     conversionTimeoutRef.current = setTimeout(() => {
-      // Count how many fields have values
       const filledFields = [
         importCostUsd ? 'USD' : null,
         importCostCzk ? 'CZK' : null,
         importCostEur ? 'EUR' : null,
       ].filter(Boolean);
 
-      // Only convert if exactly one field has a value
       if (filledFields.length === 1) {
         const sourceCurrency = filledFields[0] as Currency;
         let sourceValue = 0;
@@ -241,7 +327,6 @@ export default function AddProduct() {
         }
 
         if (sourceValue > 0) {
-          // Convert to other currencies
           if (sourceCurrency !== 'USD' && !importCostUsd) {
             const usdValue = convertCurrency(sourceValue, sourceCurrency, 'USD');
             form.setValue('importCostUsd', parseFloat(usdValue.toFixed(2)));
@@ -272,14 +357,12 @@ export default function AddProduct() {
     }
 
     seriesConversionTimeoutRef.current = setTimeout(() => {
-      // Count how many fields have values
       const filledFields = [
         seriesImportCostUsd ? 'USD' : null,
         seriesImportCostCzk ? 'CZK' : null,
         seriesImportCostEur ? 'EUR' : null,
       ].filter(Boolean);
 
-      // Only convert if exactly one field has a value
       if (filledFields.length === 1) {
         const sourceCurrency = filledFields[0] as Currency;
         let sourceValue = 0;
@@ -297,7 +380,6 @@ export default function AddProduct() {
         }
 
         if (sourceValue > 0) {
-          // Convert to other currencies
           if (sourceCurrency !== 'USD' && !seriesImportCostUsd) {
             const usdValue = convertCurrency(sourceValue, sourceCurrency, 'USD');
             setSeriesImportCostUsd(usdValue.toFixed(2));
@@ -321,19 +403,60 @@ export default function AddProduct() {
     };
   }, [seriesImportCostUsd, seriesImportCostCzk, seriesImportCostEur]);
 
-  // Fetch categories, warehouses, and suppliers
-  const { data: categories = [] } = useQuery<any[]>({
-    queryKey: ['/api/categories'],
-  });
+  // Prefill form when product data is loaded (edit mode)
+  useEffect(() => {
+    if (isEditMode && product) {
+      form.reset({
+        name: product.name || '',
+        englishName: product.englishName || '',
+        sku: product.sku || '',
+        categoryId: product.categoryId || '',
+        warehouseId: product.warehouseId || '',
+        supplierId: product.supplierId || '',
+        description: product.description || '',
+        quantity: product.quantity || 0,
+        lowStockAlert: product.lowStockAlert || 5,
+        priceCzk: product.priceCzk ? parseFloat(product.priceCzk) : undefined,
+        priceEur: product.priceEur ? parseFloat(product.priceEur) : undefined,
+        priceUsd: product.priceUsd ? parseFloat(product.priceUsd) : undefined,
+        priceVnd: product.priceVnd ? parseFloat(product.priceVnd) : undefined,
+        priceCny: product.priceCny ? parseFloat(product.priceCny) : undefined,
+        importCostUsd: product.importCostUsd ? parseFloat(product.importCostUsd) : undefined,
+        importCostCzk: product.importCostCzk ? parseFloat(product.importCostCzk) : undefined,
+        importCostEur: product.importCostEur ? parseFloat(product.importCostEur) : undefined,
+        barcode: product.barcode || '',
+        length: product.length ? parseFloat(product.length) : undefined,
+        width: product.width ? parseFloat(product.width) : undefined,
+        height: product.height ? parseFloat(product.height) : undefined,
+        weight: product.weight ? parseFloat(product.weight) : undefined,
+        warehouseLocation: product.warehouseLocation || '',
+        packingMaterialId: product.packingMaterialId || '',
+      });
+      
+      setPackingInstructionsTexts(product.packingInstructionsTexts || []);
+      setPackingInstructionsImages(product.packingInstructionsImages || []);
+      
+      // Map existing product images
+      if (product.images && Array.isArray(product.images)) {
+        const mappedImages: ProductImage[] = product.images.map((img: any) => ({
+          preview: img.url,
+          url: img.url,
+          purpose: img.purpose || 'main',
+          isPrimary: img.isPrimary || false,
+        }));
+        setProductImages(mappedImages);
+      } else if (product.imageUrl) {
+        setProductImages([{
+          preview: product.imageUrl,
+          url: product.imageUrl,
+          purpose: 'main',
+          isPrimary: true,
+        }]);
+      }
+    }
+  }, [product, form, isEditMode]);
 
-  const { data: warehouses = [] } = useQuery<any[]>({
-    queryKey: ['/api/warehouses'],
-  });
-
-  const { data: suppliers = [] } = useQuery<any[]>({
-    queryKey: ['/api/suppliers'],
-  });
-
+  // Mutations
   const createProductMutation = useMutation({
     mutationFn: async (data: any) => {
       // Upload all product images
@@ -343,53 +466,62 @@ export default function AddProduct() {
         let totalCompressedSize = 0;
         
         for (const img of productImages) {
-          const formData = new FormData();
-          formData.append('image', img.file);
-          
-          const uploadResponse = await fetch('/api/upload', {
-            method: 'POST',
-            body: formData,
-          });
-          
-          if (!uploadResponse.ok) {
-            throw new Error('Failed to upload image');
-          }
-          
-          const uploadResult = await uploadResponse.json();
-          
-          uploadedImages.push({
-            url: uploadResult.imageUrl,
-            purpose: img.purpose,
-            isPrimary: img.isPrimary,
-          });
-          
-          if (uploadResult.compressionInfo) {
-            totalOriginalSize += uploadResult.compressionInfo.originalSize;
-            totalCompressedSize += uploadResult.compressionInfo.compressedSize;
-          }
-          
-          // Set primary image as imageUrl for backward compatibility
-          if (img.isPrimary) {
-            data.imageUrl = uploadResult.imageUrl;
+          if (img.file) {
+            const formData = new FormData();
+            formData.append('image', img.file);
+            
+            const uploadResponse = await fetch('/api/upload', {
+              method: 'POST',
+              body: formData,
+            });
+            
+            if (!uploadResponse.ok) {
+              throw new Error('Failed to upload image');
+            }
+            
+            const uploadResult = await uploadResponse.json();
+            
+            uploadedImages.push({
+              url: uploadResult.imageUrl,
+              purpose: img.purpose,
+              isPrimary: img.isPrimary,
+            });
+            
+            if (uploadResult.compressionInfo) {
+              totalOriginalSize += uploadResult.compressionInfo.originalSize;
+              totalCompressedSize += uploadResult.compressionInfo.compressedSize;
+            }
+            
+            if (img.isPrimary) {
+              data.imageUrl = uploadResult.imageUrl;
+            }
+          } else if (img.url) {
+            // Existing image from edit mode
+            uploadedImages.push({
+              url: img.url,
+              purpose: img.purpose,
+              isPrimary: img.isPrimary,
+            });
+            if (img.isPrimary) {
+              data.imageUrl = img.url;
+            }
           }
         }
         
         data.images = uploadedImages;
         
-        // Show compression summary
         if (totalOriginalSize > 0) {
           const originalKB = (totalOriginalSize / 1024).toFixed(2);
           const compressedKB = (totalCompressedSize / 1024).toFixed(2);
           const savedPercent = Math.round(((totalOriginalSize - totalCompressedSize) / totalOriginalSize) * 100);
           
           toast({
-            title: `${productImages.length} Images Compressed`,
+            title: `${productImages.filter(img => img.file).length} Images Compressed`,
             description: `${originalKB} KB → ${compressedKB} KB (${savedPercent}% saved)`,
           });
         }
       }
       
-      // Handle legacy single image upload
       if (imageFile && productImages.length === 0) {
         const formData = new FormData();
         formData.append('image', imageFile);
@@ -427,6 +559,183 @@ export default function AddProduct() {
     },
   });
 
+  const updateProductMutation = useMutation({
+    mutationFn: async (data: any) => {
+      // Upload all product images
+      if (productImages.length > 0) {
+        const uploadedImages = [];
+        let totalOriginalSize = 0;
+        let totalCompressedSize = 0;
+        
+        for (const img of productImages) {
+          if (img.file) {
+            const formData = new FormData();
+            formData.append('image', img.file);
+            
+            const uploadResponse = await fetch('/api/upload', {
+              method: 'POST',
+              body: formData,
+            });
+            
+            if (!uploadResponse.ok) {
+              throw new Error('Failed to upload image');
+            }
+            
+            const uploadResult = await uploadResponse.json();
+            
+            uploadedImages.push({
+              url: uploadResult.imageUrl,
+              purpose: img.purpose,
+              isPrimary: img.isPrimary,
+            });
+            
+            if (uploadResult.compressionInfo) {
+              totalOriginalSize += uploadResult.compressionInfo.originalSize;
+              totalCompressedSize += uploadResult.compressionInfo.compressedSize;
+            }
+            
+            if (img.isPrimary) {
+              data.imageUrl = uploadResult.imageUrl;
+            }
+          } else if (img.url) {
+            uploadedImages.push({
+              url: img.url,
+              purpose: img.purpose,
+              isPrimary: img.isPrimary,
+            });
+            if (img.isPrimary) {
+              data.imageUrl = img.url;
+            }
+          }
+        }
+        
+        data.images = uploadedImages;
+        
+        if (totalOriginalSize > 0) {
+          const originalKB = (totalOriginalSize / 1024).toFixed(2);
+          const compressedKB = (totalCompressedSize / 1024).toFixed(2);
+          const savedPercent = Math.round(((totalOriginalSize - totalCompressedSize) / totalOriginalSize) * 100);
+          
+          toast({
+            title: `${productImages.filter(img => img.file).length} New Images Compressed`,
+            description: `${originalKB} KB → ${compressedKB} KB (${savedPercent}% saved)`,
+          });
+        }
+      }
+      
+      await apiRequest('PATCH', `/api/products/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/products', id] });
+      toast({
+        title: "Success",
+        description: "Product updated successfully",
+      });
+      setLocation('/inventory');
+    },
+    onError: (error) => {
+      console.error("Product update error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update product",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Tiered pricing mutations (edit mode only)
+  const createTieredPricingMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest('POST', `/api/products/${id}/tiered-pricing`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/products', id, 'tiered-pricing'] });
+      toast({
+        title: "Success",
+        description: "Tiered pricing added successfully",
+      });
+      setTieredPricingDialogOpen(false);
+      tierForm.reset();
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to add tiered pricing",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateTieredPricingMutation = useMutation({
+    mutationFn: async ({ tierId, data }: { tierId: string; data: any }) => {
+      return await apiRequest('PATCH', `/api/products/${id}/tiered-pricing/${tierId}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/products', id, 'tiered-pricing'] });
+      toast({
+        title: "Success",
+        description: "Tiered pricing updated successfully",
+      });
+      setTieredPricingDialogOpen(false);
+      tierForm.reset();
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update tiered pricing",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteTieredPricingMutation = useMutation({
+    mutationFn: async (tierId: string) => {
+      return await apiRequest('DELETE', `/api/products/${id}/tiered-pricing/${tierId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/products', id, 'tiered-pricing'] });
+      toast({
+        title: "Success",
+        description: "Tiered pricing deleted successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete tiered pricing",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Form submission
+  const onSubmit = async (data: z.infer<typeof productSchema>) => {
+    const productData = {
+      ...data,
+      packingInstructionsTexts,
+      packingInstructionsImages,
+      variants: variants.map(v => ({
+        ...v,
+        importCostUsd: v.importCostUsd ? parseFloat(v.importCostUsd) : undefined,
+        importCostCzk: v.importCostCzk ? parseFloat(v.importCostCzk) : undefined,
+        importCostEur: v.importCostEur ? parseFloat(v.importCostEur) : undefined,
+      })),
+      categoryId: data.categoryId || undefined,
+      warehouseId: data.warehouseId || undefined,
+      supplierId: data.supplierId || undefined,
+      barcode: data.barcode || undefined,
+      warehouseLocation: data.warehouseLocation || undefined,
+      packingMaterialId: data.packingMaterialId || undefined,
+    };
+
+    if (isEditMode) {
+      updateProductMutation.mutate(productData);
+    } else {
+      createProductMutation.mutate(productData);
+    }
+  };
+
   // Image handling functions
   const handleAddImage = (files: FileList | null, purpose: ImagePurpose = 'main') => {
     if (!files || files.length === 0) return;
@@ -438,7 +747,7 @@ export default function AddProduct() {
       file,
       preview,
       purpose,
-      isPrimary: productImages.length === 0, // First image is primary by default
+      isPrimary: productImages.length === 0,
     };
     
     setProductImages([...productImages, newImage]);
@@ -451,10 +760,11 @@ export default function AddProduct() {
 
   const handleRemoveImage = (index: number) => {
     const newImages = [...productImages];
-    URL.revokeObjectURL(newImages[index].preview); // Clean up preview URL
+    if (newImages[index].preview && newImages[index].file) {
+      URL.revokeObjectURL(newImages[index].preview);
+    }
     newImages.splice(index, 1);
     
-    // If we removed the primary image, make the first one primary
     if (newImages.length > 0 && !newImages.some(img => img.isPrimary)) {
       newImages[0].isPrimary = true;
     }
@@ -485,7 +795,6 @@ export default function AddProduct() {
     const categoryName = categories?.find((c: any) => c.id === form.watch('categoryId'))?.name || 'PRODUCT';
     const productName = form.watch('name') || 'ITEM';
     
-    // Create SKU from category and product name
     const categoryPart = categoryName.slice(0, 3).toUpperCase();
     const productPart = productName.slice(0, 10).toUpperCase().replace(/[^A-Z0-9]/g, '');
     
@@ -493,6 +802,7 @@ export default function AddProduct() {
     form.setValue('sku', baseSKU);
   };
 
+  // Variant functions
   const addVariant = () => {
     if (newVariant.name.trim()) {
       const variantWithId = {
@@ -535,7 +845,6 @@ export default function AddProduct() {
     const updatedVariants = [...variants];
     const variantsWithoutBarcode = updatedVariants.filter(v => !v.barcode);
     
-    // Assign barcodes to variants without barcodes
     for (let i = 0; i < Math.min(barcodes.length, variantsWithoutBarcode.length); i++) {
       variantsWithoutBarcode[i].barcode = barcodes[i];
     }
@@ -573,7 +882,6 @@ export default function AddProduct() {
       return;
     }
 
-    // Check if input contains pattern like "Product Name <1-100>"
     const match = seriesInput.match(/<(\d+)-(\d+)>/);
     if (match) {
       const start = parseInt(match[1]);
@@ -603,7 +911,6 @@ export default function AddProduct() {
       }
       
       setVariants([...variants, ...newVariants]);
-      // Reset series fields
       setSeriesInput("");
       setSeriesQuantity(0);
       setSeriesImportCostUsd("");
@@ -649,7 +956,12 @@ export default function AddProduct() {
 
   const getPrimaryProductImage = () => {
     const primaryImage = productImages.find(img => img.isPrimary);
-    return primaryImage ? primaryImage.preview : null;
+    if (primaryImage) return primaryImage.preview || primaryImage.url;
+    if (product?.images && Array.isArray(product.images)) {
+      const dbPrimaryImage = product.images.find((img: any) => img.isPrimary);
+      if (dbPrimaryImage) return dbPrimaryImage.url;
+    }
+    return product?.imageUrl || null;
   };
 
   const handleVariantImageUpload = async (variantId: string, file: File) => {
@@ -695,32 +1007,107 @@ export default function AddProduct() {
     setVariants(prev => prev.map(v => 
       v.id === variantId ? { ...v, imageUrl: undefined } : v
     ));
-    
-    toast({
-      title: "Success",
-      description: "Variant image removed successfully",
+  };
+
+  // Tiered pricing functions (edit mode only)
+  const openAddTierDialog = () => {
+    setEditingTier(null);
+    tierForm.reset({
+      priceType: 'tiered',
     });
+    setTieredPricingDialogOpen(true);
   };
 
-  const onSubmit = (data: z.infer<typeof addProductSchema>) => {
-    const productData = {
-      ...data,
-      // Convert empty strings to undefined for optional fields
-      categoryId: data.categoryId || undefined,
-      warehouseId: data.warehouseId || undefined,
-      supplierId: data.supplierId || undefined,
-      packingInstructionsTexts: packingInstructionsTexts,
-      packingInstructionsImages: packingInstructionsImages,
-      barcode: data.barcode || undefined,
+  const openEditTierDialog = (tier: any) => {
+    setEditingTier(tier);
+    tierForm.reset({
+      minQuantity: tier.minQuantity,
+      maxQuantity: tier.maxQuantity || undefined,
+      priceCzk: tier.priceCzk ? parseFloat(tier.priceCzk) : undefined,
+      priceEur: tier.priceEur ? parseFloat(tier.priceEur) : undefined,
+      priceUsd: tier.priceUsd ? parseFloat(tier.priceUsd) : undefined,
+      priceVnd: tier.priceVnd ? parseFloat(tier.priceVnd) : undefined,
+      priceCny: tier.priceCny ? parseFloat(tier.priceCny) : undefined,
+      priceType: tier.priceType || 'tiered',
+    });
+    setTieredPricingDialogOpen(true);
+  };
+
+  const handleAddTier = (data: z.infer<typeof tieredPricingSchema>) => {
+    const tierData = {
+      productId: id,
+      minQuantity: Number(data.minQuantity),
+      maxQuantity: data.maxQuantity ? Number(data.maxQuantity) : undefined,
+      priceCzk: data.priceCzk ? parseFloat(data.priceCzk.toString()) : undefined,
+      priceEur: data.priceEur ? parseFloat(data.priceEur.toString()) : undefined,
+      priceUsd: data.priceUsd ? parseFloat(data.priceUsd.toString()) : undefined,
+      priceVnd: data.priceVnd ? parseFloat(data.priceVnd.toString()) : undefined,
+      priceCny: data.priceCny ? parseFloat(data.priceCny.toString()) : undefined,
+      priceType: data.priceType
     };
-
-    createProductMutation.mutate(productData);
+    
+    const cleanData = Object.fromEntries(
+      Object.entries(tierData).filter(([_, v]) => v !== undefined && v !== null && v !== '')
+    );
+    
+    createTieredPricingMutation.mutate(cleanData);
   };
+
+  const handleUpdateTier = (tierId: string, data: z.infer<typeof tieredPricingSchema>) => {
+    const tierData = {
+      minQuantity: Number(data.minQuantity),
+      maxQuantity: data.maxQuantity ? Number(data.maxQuantity) : undefined,
+      priceCzk: data.priceCzk ? parseFloat(data.priceCzk.toString()) : undefined,
+      priceEur: data.priceEur ? parseFloat(data.priceEur.toString()) : undefined,
+      priceUsd: data.priceUsd ? parseFloat(data.priceUsd.toString()) : undefined,
+      priceVnd: data.priceVnd ? parseFloat(data.priceVnd.toString()) : undefined,
+      priceCny: data.priceCny ? parseFloat(data.priceCny.toString()) : undefined,
+      priceType: data.priceType
+    };
+    
+    const cleanData = Object.fromEntries(
+      Object.entries(tierData).filter(([_, v]) => v !== undefined && v !== null && v !== '')
+    );
+    
+    updateTieredPricingMutation.mutate({ tierId, data: cleanData });
+  };
+
+  const onTierSubmit = (data: z.infer<typeof tieredPricingSchema>) => {
+    if (editingTier) {
+      handleUpdateTier(editingTier.id, data);
+    } else {
+      handleAddTier(data);
+    }
+  };
+
+  const selectedSupplier = suppliers?.find((s: any) => s.id === form.watch('supplierId'));
+
+  if (isEditMode && productLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Skeleton className="h-8 w-64" />
+      </div>
+    );
+  }
+
+  if (isEditMode && !product) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-slate-500">Product not found</div>
+      </div>
+    );
+  }
+
+  const pageTitle = isEditMode ? "Edit Product" : "Add New Product";
+  const pageDescription = isEditMode ? "Update product details and settings" : "Create a new product with details";
+  const submitButtonText = isEditMode ? "Update Product" : "Create Product";
+  const submitIcon = isEditMode ? Pencil : Plus;
+  const isPending = isEditMode ? updateProductMutation.isPending : createProductMutation.isPending;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
       <div className="container mx-auto px-4 py-4 md:py-6 max-w-7xl">
-        {/* Mobile-Optimized Header */}
+        {/* Header */}
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm mb-4 md:mb-6 p-3 md:p-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -737,62 +1124,68 @@ export default function AddProduct() {
               <Separator orientation="vertical" className="h-8 hidden sm:block" />
               <div>
                 <h1 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                  <Package className="h-5 w-5 md:h-6 md:w-6 text-emerald-600" />
-                  Add Product
+                  {isEditMode ? <Pencil className="h-5 w-5 md:h-6 md:w-6 text-blue-600" /> : <Plus className="h-5 w-5 md:h-6 md:w-6 text-emerald-600" />}
+                  {pageTitle}
                 </h1>
                 <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 mt-0.5">
-                  Create new product with details
+                  {pageDescription}
                 </p>
               </div>
             </div>
-            <Badge variant="outline" className="text-emerald-600 border-emerald-600 self-start sm:self-center">
-              <Plus className="h-3 w-3 mr-1" />
-              New
+            <Badge variant="outline" className={isEditMode ? "text-blue-600 border-blue-600" : "text-emerald-600 border-emerald-600"}>
+              {isEditMode ? <><Pencil className="h-3 w-3 mr-1" />Edit Mode</> : <><Plus className="h-3 w-3 mr-1" />Add Mode</>}
             </Badge>
           </div>
         </div>
 
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          {/* Product Summary Card - Mobile First */}
-          <Card className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950 dark:to-teal-950 border-emerald-200 dark:border-emerald-800">
-            <CardContent className="p-4">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-white dark:bg-slate-800 rounded-lg">
-                    <Tag className="h-4 w-4 text-emerald-600" />
+          {/* Summary Card (Edit mode only) */}
+          {isEditMode && (
+            <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 border-blue-200 dark:border-blue-800">
+              <CardContent className="p-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-white dark:bg-slate-800 rounded-lg">
+                      <ImageIcon className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">Images</p>
+                      <p className="text-lg font-bold text-slate-900 dark:text-slate-100" data-testid="text-image-count">{productImages.length}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">Variants</p>
-                    <p className="text-lg font-bold text-slate-900 dark:text-slate-100" data-testid="text-variant-count">{variants.length}</p>
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-white dark:bg-slate-800 rounded-lg">
+                      <Tag className="h-4 w-4 text-purple-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">Variants</p>
+                      <p className="text-lg font-bold text-slate-900 dark:text-slate-100" data-testid="text-variant-count">{variants.length}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-white dark:bg-slate-800 rounded-lg">
+                      <BarChart className="h-4 w-4 text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">Stock</p>
+                      <p className="text-lg font-bold text-slate-900 dark:text-slate-100" data-testid="text-stock">{product?.quantity || 0}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-white dark:bg-slate-800 rounded-lg">
+                      <DollarSign className="h-4 w-4 text-amber-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-600 dark:text-slate-400">Tiered Prices</p>
+                      <p className="text-lg font-bold text-slate-900 dark:text-slate-100" data-testid="text-tier-count">{tieredPricing.length}</p>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-white dark:bg-slate-800 rounded-lg">
-                    <BarChart className="h-4 w-4 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">Total Stock</p>
-                    <p className="text-lg font-bold text-slate-900 dark:text-slate-100" data-testid="text-total-stock">
-                      {variants.reduce((sum, v) => sum + Number(v.quantity || 0), 0)}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 col-span-2 md:col-span-2">
-                  <div className="p-2 bg-white dark:bg-slate-800 rounded-lg">
-                    <Info className="h-4 w-4 text-amber-600" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs text-slate-600 dark:text-slate-400">Status</p>
-                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                      {form.watch('name') ? 'Ready to save' : 'Enter product details'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
-          {/* Accordion-Based Sections for Mobile */}
+          {/* Accordion Sections */}
           <Accordion type="multiple" value={expandedSections} onValueChange={setExpandedSections} className="space-y-3">
             {/* Basic Information */}
             <AccordionItem value="basic" className="bg-white dark:bg-slate-800 rounded-xl border shadow-sm overflow-hidden">
@@ -803,7 +1196,7 @@ export default function AddProduct() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-slate-900 dark:text-slate-100">Basic Information</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Product name, SKU, category</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Product name, SKU, category, images</p>
                   </div>
                 </div>
               </AccordionTrigger>
@@ -839,7 +1232,6 @@ export default function AddProduct() {
                                   className="w-full h-full object-cover"
                                 />
                                 
-                                {/* Primary Badge */}
                                 {img.isPrimary && (
                                   <div className="absolute top-2 left-2">
                                     <Badge className="bg-yellow-500 text-white border-0 shadow-lg">
@@ -849,20 +1241,18 @@ export default function AddProduct() {
                                   </div>
                                 )}
                                 
-                                {/* Remove Button */}
                                 <Button
                                   type="button"
                                   variant="destructive"
                                   size="icon"
-                                  className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity z-10"
                                   onClick={() => handleRemoveImage(index)}
                                   data-testid={`button-remove-image-${index}`}
                                 >
                                   <X className="h-4 w-4" />
                                 </Button>
                                 
-                                {/* Overlay with actions on hover */}
-                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 p-2">
+                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 p-2 z-0">
                                   {!img.isPrimary && (
                                     <Button
                                       type="button"
@@ -879,14 +1269,10 @@ export default function AddProduct() {
                                 </div>
                               </div>
                               
-                              {/* Purpose Badge & Selector */}
                               <div className="p-2 bg-slate-50 dark:bg-slate-900">
                                 <Select value={img.purpose} onValueChange={(value) => handleChangePurpose(index, value as ImagePurpose)}>
                                   <SelectTrigger className="h-8 text-xs border-0" data-testid={`select-purpose-${index}`}>
-                                    <div className="flex items-center gap-1.5">
-                                      <Icon className="h-3.5 w-3.5" />
-                                      <SelectValue />
-                                    </div>
+                                    <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
                                     {Object.entries(IMAGE_PURPOSE_CONFIG).map(([key, cfg]) => {
@@ -964,7 +1350,7 @@ export default function AddProduct() {
                     </p>
                   </div>
 
-                  {/* Product Name & SKU */}
+                  {/* Product Name & English Name (if edit mode) */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="name" className="text-sm font-medium">Product Name *</Label>
@@ -979,6 +1365,21 @@ export default function AddProduct() {
                       )}
                     </div>
 
+                    {isEditMode && (
+                      <div>
+                        <Label htmlFor="englishName" className="text-sm font-medium">English Name</Label>
+                        <Input
+                          {...form.register('englishName')}
+                          placeholder="Enter English name (optional)"
+                          data-testid="input-english-name"
+                          className="mt-1"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* SKU & Category */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <Label htmlFor="sku" className="text-sm font-medium">SKU *</Label>
                       <div className="flex gap-2 mt-1">
@@ -996,10 +1397,7 @@ export default function AddProduct() {
                         <p className="text-xs text-red-600 mt-1">{form.formState.errors.sku.message}</p>
                       )}
                     </div>
-                  </div>
 
-                  {/* Category and Warehouse */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <Label htmlFor="categoryId" className="text-sm font-medium">Category</Label>
                       <Select value={form.watch('categoryId')} onValueChange={(value) => form.setValue('categoryId', value)}>
@@ -1015,7 +1413,10 @@ export default function AddProduct() {
                         </SelectContent>
                       </Select>
                     </div>
+                  </div>
 
+                  {/* Warehouse & Location */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <Label htmlFor="warehouseId" className="text-sm font-medium">Warehouse</Label>
                       <Select value={form.watch('warehouseId')} onValueChange={(value) => form.setValue('warehouseId', value)}>
@@ -1031,28 +1432,26 @@ export default function AddProduct() {
                         </SelectContent>
                       </Select>
                     </div>
-                  </div>
 
-                  {/* Warehouse Location */}
-                  <div>
-                    <Label htmlFor="warehouseLocation" className="text-sm font-medium">Warehouse Location Code</Label>
-                    <Input
-                      {...form.register('warehouseLocation')}
-                      placeholder="WH1-A01-R02-L03"
-                      data-testid="input-location"
-                      className="mt-1 font-mono"
-                      onBlur={(e) => {
-                        // Convert to uppercase for consistency
-                        const value = e.target.value.trim().toUpperCase();
-                        if (value) {
-                          form.setValue('warehouseLocation', value);
-                        }
-                      }}
-                    />
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
-                      <MapPin className="h-3 w-3" />
-                      Format: Warehouse-Aisle-Rack-Level (e.g., WH1-A01-R02-L03)
-                    </p>
+                    <div>
+                      <Label htmlFor="warehouseLocation" className="text-sm font-medium">Warehouse Location Code</Label>
+                      <Input
+                        {...form.register('warehouseLocation')}
+                        placeholder="WH1-A01-R02-L03"
+                        data-testid="input-location"
+                        className="mt-1 font-mono"
+                        onBlur={(e) => {
+                          const value = e.target.value.trim().toUpperCase();
+                          if (value) {
+                            form.setValue('warehouseLocation', value);
+                          }
+                        }}
+                      />
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        Format: Warehouse-Aisle-Rack-Level
+                      </p>
+                    </div>
                   </div>
 
                   {/* Description */}
@@ -1070,7 +1469,7 @@ export default function AddProduct() {
               </AccordionContent>
             </AccordionItem>
 
-            {/* Stock Information */}
+            {/* Stock & Inventory */}
             <AccordionItem value="stock" className="bg-white dark:bg-slate-800 rounded-xl border shadow-sm overflow-hidden">
               <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50 dark:hover:bg-slate-700/50">
                 <div className="flex items-center gap-3 text-left">
@@ -1139,11 +1538,18 @@ export default function AddProduct() {
                       </Button>
                     </div>
                   </div>
+                  
+                  {/* Edit mode: Product Locations */}
+                  {isEditMode && product && (
+                    <div className="pt-2">
+                      <ProductLocations productId={id!} />
+                    </div>
+                  )}
                 </div>
               </AccordionContent>
             </AccordionItem>
 
-            {/* Pricing */}
+            {/* Pricing & Costs */}
             <AccordionItem value="pricing" className="bg-white dark:bg-slate-800 rounded-xl border shadow-sm overflow-hidden">
               <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50 dark:hover:bg-slate-700/50">
                 <div className="flex items-center gap-3 text-left">
@@ -1152,7 +1558,7 @@ export default function AddProduct() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-slate-900 dark:text-slate-100">Pricing & Costs</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Sales price, import costs</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Sales prices, import costs</p>
                   </div>
                 </div>
               </AccordionTrigger>
@@ -1187,6 +1593,49 @@ export default function AddProduct() {
                           className="mt-1"
                         />
                       </div>
+                      
+                      {isEditMode && (
+                        <>
+                          <div>
+                            <Label htmlFor="priceUsd" className="text-xs text-slate-500">USD</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              {...form.register('priceUsd')}
+                              placeholder="0.00"
+                              data-testid="input-price-usd"
+                              className="mt-1"
+                            />
+                          </div>
+                          
+                          <div>
+                            <Label htmlFor="priceVnd" className="text-xs text-slate-500">VND</Label>
+                            <Input
+                              type="number"
+                              step="1"
+                              min="0"
+                              {...form.register('priceVnd')}
+                              placeholder="0"
+                              data-testid="input-price-vnd"
+                              className="mt-1"
+                            />
+                          </div>
+                          
+                          <div>
+                            <Label htmlFor="priceCny" className="text-xs text-slate-500">CNY</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              {...form.register('priceCny')}
+                              placeholder="0.00"
+                              data-testid="input-price-cny"
+                              className="mt-1"
+                            />
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -1237,9 +1686,270 @@ export default function AddProduct() {
                       Enter cost in one currency, others auto-convert
                     </p>
                   </div>
+                  
+                  {/* Edit mode: Cost History Chart */}
+                  {isEditMode && costHistory && costHistory.length > 0 && (
+                    <div className="pt-2">
+                      <Label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4 text-amber-600" />
+                        Cost History
+                      </Label>
+                      <CostHistoryChart costHistory={costHistory} />
+                    </div>
+                  )}
+                  
+                  {/* Edit mode: Tiered Pricing */}
+                  {isEditMode && (
+                    <div className="pt-2">
+                      <div className="flex items-center justify-between mb-3">
+                        <Label className="text-sm font-medium flex items-center gap-2">
+                          <DollarSign className="h-4 w-4 text-amber-600" />
+                          Tiered Pricing
+                        </Label>
+                        <Dialog open={tieredPricingDialogOpen} onOpenChange={setTieredPricingDialogOpen}>
+                          <DialogTrigger asChild>
+                            <Button type="button" size="sm" variant="outline" data-testid="button-add-tier">
+                              <Plus className="h-4 w-4 mr-1" />
+                              Add Tier
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-[500px]">
+                            <DialogHeader>
+                              <DialogTitle>{editingTier ? 'Edit' : 'Add'} Tiered Pricing</DialogTitle>
+                              <DialogDescription>
+                                Set prices for different quantity ranges
+                              </DialogDescription>
+                            </DialogHeader>
+                            <form onSubmit={tierForm.handleSubmit(onTierSubmit)} className="space-y-4">
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <Label htmlFor="minQuantity">Min Quantity *</Label>
+                                  <Input
+                                    type="number"
+                                    {...tierForm.register('minQuantity')}
+                                    placeholder="1"
+                                    data-testid="input-tier-min-qty"
+                                  />
+                                </div>
+                                <div>
+                                  <Label htmlFor="maxQuantity">Max Quantity</Label>
+                                  <Input
+                                    type="number"
+                                    {...tierForm.register('maxQuantity')}
+                                    placeholder="999"
+                                    data-testid="input-tier-max-qty"
+                                  />
+                                </div>
+                              </div>
+                              
+                              <div>
+                                <Label htmlFor="priceType">Price Type</Label>
+                                <Select value={tierForm.watch('priceType')} onValueChange={(value) => tierForm.setValue('priceType', value as 'tiered' | 'wholesale')}>
+                                  <SelectTrigger data-testid="select-tier-type">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="tiered">Tiered (per unit)</SelectItem>
+                                    <SelectItem value="wholesale">Wholesale (total)</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <Label className="text-xs">CZK</Label>
+                                  <Input type="number" step="0.01" {...tierForm.register('priceCzk')} placeholder="0.00" data-testid="input-tier-czk" />
+                                </div>
+                                <div>
+                                  <Label className="text-xs">EUR</Label>
+                                  <Input type="number" step="0.01" {...tierForm.register('priceEur')} placeholder="0.00" data-testid="input-tier-eur" />
+                                </div>
+                                <div>
+                                  <Label className="text-xs">USD</Label>
+                                  <Input type="number" step="0.01" {...tierForm.register('priceUsd')} placeholder="0.00" data-testid="input-tier-usd" />
+                                </div>
+                                <div>
+                                  <Label className="text-xs">VND</Label>
+                                  <Input type="number" {...tierForm.register('priceVnd')} placeholder="0" data-testid="input-tier-vnd" />
+                                </div>
+                                <div>
+                                  <Label className="text-xs">CNY</Label>
+                                  <Input type="number" step="0.01" {...tierForm.register('priceCny')} placeholder="0.00" data-testid="input-tier-cny" />
+                                </div>
+                              </div>
+                              
+                              <DialogFooter>
+                                <Button type="button" variant="outline" onClick={() => setTieredPricingDialogOpen(false)} data-testid="button-cancel-tier">
+                                  Cancel
+                                </Button>
+                                <Button type="submit" data-testid="button-save-tier">
+                                  {editingTier ? 'Update' : 'Add'} Tier
+                                </Button>
+                              </DialogFooter>
+                            </form>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                      
+                      {tieredPricing.length > 0 ? (
+                        <div className="space-y-2">
+                          {tieredPricing.map((tier: any) => (
+                            <Card key={tier.id} className="p-3">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="outline">{tier.priceType === 'wholesale' ? 'Wholesale' : 'Tiered'}</Badge>
+                                    <span className="text-sm font-medium">
+                                      {tier.minQuantity}{tier.maxQuantity ? ` - ${tier.maxQuantity}` : '+'} units
+                                    </span>
+                                  </div>
+                                  <div className="text-xs text-slate-600 dark:text-slate-400 mt-1 flex gap-2 flex-wrap">
+                                    {tier.priceCzk && <span>CZK {parseFloat(tier.priceCzk).toFixed(2)}</span>}
+                                    {tier.priceEur && <span>EUR {parseFloat(tier.priceEur).toFixed(2)}</span>}
+                                    {tier.priceUsd && <span>USD {parseFloat(tier.priceUsd).toFixed(2)}</span>}
+                                    {tier.priceVnd && <span>VND {parseFloat(tier.priceVnd).toFixed(0)}</span>}
+                                    {tier.priceCny && <span>CNY {parseFloat(tier.priceCny).toFixed(2)}</span>}
+                                  </div>
+                                </div>
+                                <div className="flex gap-1">
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => openEditTierDialog(tier)}
+                                    data-testid={`button-edit-tier-${tier.id}`}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        data-testid={`button-delete-tier-${tier.id}`}
+                                      >
+                                        <Trash2 className="h-4 w-4 text-red-600" />
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Delete Tiered Pricing</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Are you sure you want to delete this pricing tier?
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => deleteTieredPricingMutation.mutate(tier.id)}>
+                                          Delete
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                </div>
+                              </div>
+                            </Card>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-slate-500 text-center py-4">No tiered pricing configured</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </AccordionContent>
             </AccordionItem>
+
+            {/* Edit mode: Dimensions & Packing Material */}
+            {isEditMode && (
+              <AccordionItem value="dimensions" className="bg-white dark:bg-slate-800 rounded-xl border shadow-sm overflow-hidden">
+                <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                  <div className="flex items-center gap-3 text-left">
+                    <div className="p-2 bg-indigo-100 dark:bg-indigo-900 rounded-lg">
+                      <Package className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-slate-900 dark:text-slate-100">Dimensions & Packing</h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Physical dimensions and packing material</p>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-4 pb-4">
+                  <div className="space-y-4 pt-2">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div>
+                        <Label htmlFor="length" className="text-sm font-medium">Length (cm)</Label>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          {...form.register('length')}
+                          placeholder="0.0"
+                          data-testid="input-length"
+                          className="mt-1"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="width" className="text-sm font-medium">Width (cm)</Label>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          {...form.register('width')}
+                          placeholder="0.0"
+                          data-testid="input-width"
+                          className="mt-1"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="height" className="text-sm font-medium">Height (cm)</Label>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          {...form.register('height')}
+                          placeholder="0.0"
+                          data-testid="input-height"
+                          className="mt-1"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="weight" className="text-sm font-medium">Weight (kg)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          {...form.register('weight')}
+                          placeholder="0.00"
+                          data-testid="input-weight"
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="packingMaterialId" className="text-sm font-medium">Packing Material</Label>
+                      <Select value={form.watch('packingMaterialId')} onValueChange={(value) => form.setValue('packingMaterialId', value)}>
+                        <SelectTrigger data-testid="select-packing-material" className="mt-1">
+                          <SelectValue placeholder="Select packing material" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {packingMaterials?.map((material: any) => (
+                            <SelectItem key={material.id} value={material.id}>
+                              {material.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            )}
 
             {/* Supplier Information */}
             <AccordionItem value="supplier" className="bg-white dark:bg-slate-800 rounded-xl border shadow-sm overflow-hidden">
@@ -1275,8 +1985,6 @@ export default function AddProduct() {
 
                   {/* Selected Supplier Details */}
                   {(() => {
-                    const selectedSupplier = suppliers.find((s: any) => s.id === form.watch('supplierId'));
-                    
                     if (!selectedSupplier) {
                       return (
                         <div className="text-center py-8 bg-slate-50 dark:bg-slate-900 rounded-lg border border-dashed border-slate-300 dark:border-slate-700">
@@ -1426,7 +2134,7 @@ export default function AddProduct() {
                         </Button>
                       </Link>
                     )}
-                    <Link href="/suppliers/add">
+                    <Link href="/suppliers/new">
                       <Button type="button" variant="outline" size="sm" data-testid="button-add-supplier">
                         <Plus className="h-4 w-4 mr-2" />
                         Add New Supplier
@@ -1446,11 +2154,9 @@ export default function AddProduct() {
                   </div>
                   <div className="flex-1">
                     <h3 className="font-semibold text-slate-900 dark:text-slate-100">Product Variants</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Manage product variations</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Manage product variations and barcodes</p>
                   </div>
-                  <div className="flex items-center justify-center">
-                    <Badge variant="secondary">{variants.length}</Badge>
-                  </div>
+                  <Badge variant="secondary">{variants.length}</Badge>
                 </div>
               </AccordionTrigger>
               <AccordionContent className="px-4 pb-4">
@@ -1467,495 +2173,145 @@ export default function AddProduct() {
                       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
                           <DialogTitle>Add Product Variants</DialogTitle>
-                          <DialogDescription>
-                            Add a single variant or create a series of variants
-                          </DialogDescription>
+                          <DialogDescription>Add a single variant or create a series</DialogDescription>
                         </DialogHeader>
                         
-                        {/* Series Creation Section */}
-                        <div className="space-y-4 border-b pb-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="series-input">Create Series</Label>
-                            <div className="space-y-3">
-                              <Input
-                                id="series-input"
-                                value={seriesInput}
-                                onChange={(e) => setSeriesInput(e.target.value)}
-                                placeholder='e.g., "Gel Polish <1-100>"'
-                                data-testid="input-series"
-                              />
-                              <p className="text-xs text-slate-500">
-                                Use format like "Gel Polish &lt;1-100&gt;" to automatically create 100 variants
-                              </p>
-                              
-                              <div>
-                                <Label htmlFor="series-quantity">Quantity (each variant)</Label>
-                                <Input
-                                  id="series-quantity"
-                                  type="number"
-                                  value={seriesQuantity}
-                                  onChange={(e) => setSeriesQuantity(parseInt(e.target.value) || 0)}
-                                  placeholder="0"
-                                  data-testid="input-series-quantity"
-                                />
-                              </div>
-                              
-                              <div>
-                                <Label>Import Cost (each variant)</Label>
-                                <div className="grid grid-cols-3 gap-2 mt-2">
-                                  <div>
-                                    <Label htmlFor="series-cost-usd" className="text-xs text-slate-500">USD</Label>
-                                    <Input
-                                      id="series-cost-usd"
-                                      value={seriesImportCostUsd}
-                                      onChange={(e) => setSeriesImportCostUsd(e.target.value)}
-                                      placeholder="0.00"
-                                      data-testid="input-series-cost-usd"
-                                    />
-                                  </div>
-                                  <div>
-                                    <Label htmlFor="series-cost-czk" className="text-xs text-slate-500">CZK</Label>
-                                    <Input
-                                      id="series-cost-czk"
-                                      value={seriesImportCostCzk}
-                                      onChange={(e) => setSeriesImportCostCzk(e.target.value)}
-                                      placeholder="0.00"
-                                      data-testid="input-series-cost-czk"
-                                    />
-                                  </div>
-                                  <div>
-                                    <Label htmlFor="series-cost-eur" className="text-xs text-slate-500">EUR</Label>
-                                    <Input
-                                      id="series-cost-eur"
-                                      value={seriesImportCostEur}
-                                      onChange={(e) => setSeriesImportCostEur(e.target.value)}
-                                      placeholder="0.00"
-                                      data-testid="input-series-cost-eur"
-                                    />
-                                  </div>
-                                </div>
-                                <p className="text-xs text-slate-500 mt-1">
-                                  Enter cost in one currency, others will auto-convert
-                                </p>
-                              </div>
-                              
-                              <Button 
-                                onClick={addVariantSeries}
-                                disabled={!seriesInput}
-                                type="button"
-                                className="w-full"
-                                data-testid="button-add-series"
-                              >
-                                Add Series
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Single Variant Section */}
-                        <div className="space-y-4 pt-4">
-                          <div className="text-sm font-medium text-slate-600">Or add a single variant:</div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <Label htmlFor="variant-name">Variant Name</Label>
-                              <Input
-                                id="variant-name"
-                                value={newVariant.name}
-                                onChange={(e) =>
-                                  setNewVariant((prev) => ({ ...prev, name: e.target.value }))
-                                }
-                                placeholder="e.g., Size XL"
-                                data-testid="input-variant-name"
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="variant-barcode">Barcode</Label>
-                              <Input
-                                id="variant-barcode"
-                                value={newVariant.barcode}
-                                onChange={(e) =>
-                                  setNewVariant((prev) => ({ ...prev, barcode: e.target.value }))
-                                }
-                                placeholder="123456789012"
-                                data-testid="input-variant-barcode"
-                              />
-                            </div>
-                          </div>
+                        <div className="space-y-4">
                           <div>
-                            <Label htmlFor="variant-quantity">Quantity</Label>
+                            <Label htmlFor="variant-name">Variant Name</Label>
                             <Input
-                              id="variant-quantity"
-                              type="number"
-                              value={newVariant.quantity}
-                              onChange={(e) =>
-                                setNewVariant((prev) => ({ ...prev, quantity: parseInt(e.target.value) || 0 }))
-                              }
-                              placeholder="0"
-                              data-testid="input-variant-quantity"
+                              id="variant-name"
+                              value={newVariant.name}
+                              onChange={(e) => setNewVariant((prev) => ({ ...prev, name: e.target.value }))}
+                              placeholder="e.g., Size XL"
+                              data-testid="input-variant-name"
                             />
                           </div>
-                          <div className="grid grid-cols-3 gap-4">
-                            <div>
-                              <Label htmlFor="variant-cost-usd">Import Cost (USD)</Label>
-                              <Input
-                                id="variant-cost-usd"
-                                value={newVariant.importCostUsd}
-                                onChange={(e) =>
-                                  setNewVariant((prev) => ({ ...prev, importCostUsd: e.target.value }))
-                                }
-                                placeholder="0.00"
-                                data-testid="input-variant-cost-usd"
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="variant-cost-czk">Import Cost (CZK)</Label>
-                              <Input
-                                id="variant-cost-czk"
-                                value={newVariant.importCostCzk}
-                                onChange={(e) =>
-                                  setNewVariant((prev) => ({ ...prev, importCostCzk: e.target.value }))
-                                }
-                                placeholder="0.00"
-                                data-testid="input-variant-cost-czk"
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="variant-cost-eur">Import Cost (EUR)</Label>
-                              <Input
-                                id="variant-cost-eur"
-                                value={newVariant.importCostEur}
-                                onChange={(e) =>
-                                  setNewVariant((prev) => ({ ...prev, importCostEur: e.target.value }))
-                                }
-                                placeholder="0.00"
-                                data-testid="input-variant-cost-eur"
-                              />
-                            </div>
+                          <div>
+                            <Label htmlFor="variant-barcode">Barcode</Label>
+                            <Input
+                              id="variant-barcode"
+                              value={newVariant.barcode}
+                              onChange={(e) => setNewVariant((prev) => ({ ...prev, barcode: e.target.value }))}
+                              placeholder="123456789012"
+                              data-testid="input-variant-barcode"
+                            />
                           </div>
-                        </div>
-
-                        <DialogFooter>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => setIsAddDialogOpen(false)}
-                            data-testid="button-cancel-variant"
-                          >
-                            Cancel
-                          </Button>
-                          <Button
-                            type="button"
-                            onClick={addVariant}
-                            disabled={!newVariant.name.trim()}
-                            data-testid="button-save-variant"
-                          >
+                          <Button onClick={addVariant} disabled={!newVariant.name.trim()} className="w-full" data-testid="button-save-variant">
                             Add Variant
                           </Button>
-                        </DialogFooter>
+                        </div>
                       </DialogContent>
                     </Dialog>
-
+                    
                     <Button
                       type="button"
-                      size="sm"
                       variant="outline"
+                      size="sm"
                       onClick={() => setIsBulkScanDialogOpen(true)}
-                      disabled={variants.length === 0}
+                      disabled={variants.filter(v => !v.barcode).length === 0}
                       data-testid="button-bulk-scan"
                     >
                       <Barcode className="h-4 w-4 mr-2" />
-                      Bulk Scan
+                      Bulk Scan Barcodes
                     </Button>
-
+                    
                     {selectedVariants.length > 0 && (
-                      <Button type="button" variant="destructive" size="sm" onClick={bulkDeleteVariants} data-testid="button-delete-selected">
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete ({selectedVariants.length})
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button type="button" variant="destructive" size="sm" data-testid="button-delete-selected">
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete Selected ({selectedVariants.length})
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Variants</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete {selectedVariants.length} variant(s)?
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={bulkDeleteVariants}>Delete</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     )}
                   </div>
 
-                  {/* Variants Table/List */}
-                  {variants.length > 0 && (
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2">
-                          <Checkbox
-                            checked={selectedVariants.length === variants.length && variants.length > 0}
-                            onCheckedChange={toggleSelectAll}
-                            data-testid="checkbox-select-all"
-                          />
-                          <span className="text-slate-600 dark:text-slate-400">
-                            {selectedVariants.length > 0 ? `${selectedVariants.length} selected` : `${variants.length} variants`}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Mobile: Card View, Desktop: Table View */}
-                      <div className="hidden md:block border rounded-lg overflow-hidden overflow-x-auto">
-                        <Table className="min-w-full">
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead className="w-12">
-                                <Checkbox
-                                  checked={selectedVariants.length === variants.length && variants.length > 0}
-                                  onCheckedChange={toggleSelectAll}
-                                  data-testid="checkbox-select-all-header"
-                                />
-                              </TableHead>
-                              <TableHead className="w-16">Image</TableHead>
-                              <TableHead className="min-w-[200px]">Product Name</TableHead>
-                              <TableHead>Barcode</TableHead>
-                              <TableHead>Quantity</TableHead>
-                              <TableHead>Import Cost (USD)</TableHead>
-                              <TableHead>Import Cost (CZK)</TableHead>
-                              <TableHead>Import Cost (EUR)</TableHead>
-                              <TableHead className="w-12"></TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {variants.map((variant) => (
-                              <TableRow key={variant.id} data-testid={`row-variant-${variant.id}`}>
-                                <TableCell>
-                                  <Checkbox
-                                    checked={selectedVariants.includes(variant.id)}
-                                    onCheckedChange={(checked) => {
-                                      if (checked) {
-                                        setSelectedVariants([...selectedVariants, variant.id]);
-                                      } else {
-                                        setSelectedVariants(selectedVariants.filter(id => id !== variant.id));
-                                      }
-                                    }}
-                                    data-testid={`checkbox-variant-${variant.id}`}
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex items-center gap-2">
-                                    <div className="relative group">
-                                      <img 
-                                        src={variant.imageUrl || getPrimaryProductImage() || '/placeholder.png'} 
-                                        alt={variant.name}
-                                        className="w-10 h-10 object-cover rounded border"
-                                        data-testid={`img-variant-${variant.id}`}
-                                      />
-                                      {variant.imageUrl && (
-                                        <button
-                                          onClick={() => handleVariantImageRemove(variant.id)}
-                                          disabled={variantImageLoading[variant.id]}
-                                          className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                                          data-testid={`button-remove-variant-image-${variant.id}`}
-                                        >
-                                          <X className="w-3 h-3" />
-                                        </button>
-                                      )}
-                                    </div>
-                                    <label className="cursor-pointer">
-                                      <input
-                                        type="file"
-                                        accept="image/*"
-                                        className="hidden"
-                                        onChange={(e) => {
-                                          const file = e.target.files?.[0];
-                                          if (file) handleVariantImageUpload(variant.id, file);
-                                        }}
-                                        disabled={variantImageLoading[variant.id]}
-                                        data-testid={`input-variant-image-${variant.id}`}
-                                      />
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-8 w-8 p-0"
-                                        type="button"
-                                        disabled={variantImageLoading[variant.id]}
-                                        data-testid={`button-upload-variant-image-${variant.id}`}
-                                      >
-                                        {variantImageLoading[variant.id] ? (
-                                          <RotateCcw className="h-4 w-4 animate-spin" />
-                                        ) : (
-                                          <ImageIcon className="h-4 w-4" />
-                                        )}
-                                      </Button>
-                                    </label>
-                                  </div>
-                                </TableCell>
-                                <TableCell className="min-w-[200px]">
-                                  <Input
-                                    value={variant.name}
-                                    onChange={(e) => updateVariant(variant.id, 'name', e.target.value)}
-                                    className="border-0 bg-transparent p-0 focus-visible:ring-0 w-full"
-                                    data-testid={`input-variant-name-${variant.id}`}
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  <Input
-                                    value={variant.barcode}
-                                    onChange={(e) => updateVariant(variant.id, 'barcode', e.target.value)}
-                                    className="border-0 bg-transparent p-0 focus-visible:ring-0"
-                                    placeholder="-"
-                                    data-testid={`input-variant-barcode-${variant.id}`}
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  <Input
-                                    type="number"
-                                    value={variant.quantity}
-                                    onChange={(e) => updateVariant(variant.id, 'quantity', parseInt(e.target.value) || 0)}
-                                    className="border-0 bg-transparent p-0 focus-visible:ring-0"
-                                    data-testid={`input-variant-quantity-${variant.id}`}
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  <Input
-                                    value={variant.importCostUsd}
-                                    onChange={(e) => updateVariant(variant.id, 'importCostUsd', e.target.value)}
-                                    className="border-0 bg-transparent p-0 focus-visible:ring-0"
-                                    placeholder="$0.00"
-                                    data-testid={`input-variant-cost-usd-${variant.id}`}
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  <Input
-                                    value={variant.importCostCzk}
-                                    onChange={(e) => updateVariant(variant.id, 'importCostCzk', e.target.value)}
-                                    className="border-0 bg-transparent p-0 focus-visible:ring-0"
-                                    placeholder="0,00 Kč"
-                                    data-testid={`input-variant-cost-czk-${variant.id}`}
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  <Input
-                                    value={variant.importCostEur}
-                                    onChange={(e) => updateVariant(variant.id, 'importCostEur', e.target.value)}
-                                    className="border-0 bg-transparent p-0 focus-visible:ring-0"
-                                    placeholder="0,00 €"
-                                    data-testid={`input-variant-cost-eur-${variant.id}`}
-                                  />
-                                </TableCell>
-                                <TableCell>
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" size="sm" data-testid={`button-variant-menu-${variant.id}`}>
-                                        <MoreHorizontal className="h-4 w-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      <DropdownMenuItem
-                                        onClick={() => removeVariant(variant.id)}
-                                        className="text-red-600"
-                                        data-testid={`button-delete-variant-${variant.id}`}
-                                      >
-                                        <Trash2 className="h-4 w-4 mr-2" />
-                                        Delete
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-
-                      {/* Mobile Card View */}
-                      <div className="md:hidden space-y-2">
-                        {variants.map((variant) => (
-                          <Card key={variant.id} className="p-3" data-testid={`card-variant-${variant.id}`}>
-                            <div className="flex items-start gap-3">
+                  {/* Variants Table */}
+                  {variants.length > 0 ? (
+                    <div className="border rounded-lg overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-12">
                               <Checkbox
-                                checked={selectedVariants.includes(variant.id)}
-                                onCheckedChange={(checked) => {
-                                  if (checked) {
-                                    setSelectedVariants([...selectedVariants, variant.id]);
-                                  } else {
-                                    setSelectedVariants(selectedVariants.filter(id => id !== variant.id));
-                                  }
-                                }}
-                                className="mt-1"
-                                data-testid={`checkbox-variant-mobile-${variant.id}`}
+                                checked={selectedVariants.length === variants.length && variants.length > 0}
+                                onCheckedChange={toggleSelectAll}
+                                data-testid="checkbox-select-all"
                               />
-                              <div className="relative group">
-                                <img 
-                                  src={variant.imageUrl || getPrimaryProductImage() || '/placeholder.png'} 
-                                  alt={variant.name}
-                                  className="w-12 h-12 object-cover rounded border"
-                                  data-testid={`img-variant-mobile-${variant.id}`}
+                            </TableHead>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Barcode</TableHead>
+                            <TableHead className="w-12"></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {variants.map((variant) => (
+                            <TableRow key={variant.id}>
+                              <TableCell>
+                                <Checkbox
+                                  checked={selectedVariants.includes(variant.id)}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setSelectedVariants([...selectedVariants, variant.id]);
+                                    } else {
+                                      setSelectedVariants(selectedVariants.filter(id => id !== variant.id));
+                                    }
+                                  }}
+                                  data-testid={`checkbox-variant-${variant.id}`}
                                 />
-                                {variant.imageUrl && (
-                                  <button
-                                    onClick={() => handleVariantImageRemove(variant.id)}
-                                    disabled={variantImageLoading[variant.id]}
-                                    className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    data-testid={`button-remove-variant-image-mobile-${variant.id}`}
-                                  >
-                                    <X className="w-3 h-3" />
-                                  </button>
-                                )}
-                                <label className="absolute -bottom-1 -right-1 bg-white dark:bg-slate-800 rounded-full border cursor-pointer">
-                                  <input
-                                    type="file"
-                                    accept="image/*"
-                                    className="hidden"
-                                    onChange={(e) => {
-                                      const file = e.target.files?.[0];
-                                      if (file) handleVariantImageUpload(variant.id, file);
-                                    }}
-                                    disabled={variantImageLoading[variant.id]}
-                                    data-testid={`input-variant-image-mobile-${variant.id}`}
-                                  />
-                                  <div className="p-1">
-                                    {variantImageLoading[variant.id] ? (
-                                      <RotateCcw className="w-3 h-3 animate-spin" />
-                                    ) : (
-                                      <ImageIcon className="w-3 h-3" />
-                                    )}
-                                  </div>
-                                </label>
-                              </div>
-                              <div className="flex-1 space-y-2">
+                              </TableCell>
+                              <TableCell>
                                 <Input
                                   value={variant.name}
                                   onChange={(e) => updateVariant(variant.id, 'name', e.target.value)}
-                                  className="font-medium"
-                                  placeholder="Variant name"
-                                  data-testid={`input-variant-name-mobile-${variant.id}`}
+                                  className="h-8"
+                                  data-testid={`input-variant-name-${variant.id}`}
                                 />
-                                <div className="grid grid-cols-2 gap-2 text-xs">
-                                  <Input
-                                    value={variant.barcode}
-                                    onChange={(e) => updateVariant(variant.id, 'barcode', e.target.value)}
-                                    placeholder="Barcode"
-                                    data-testid={`input-variant-barcode-mobile-${variant.id}`}
-                                  />
-                                  <Input
-                                    type="number"
-                                    value={variant.quantity}
-                                    onChange={(e) => updateVariant(variant.id, 'quantity', parseInt(e.target.value) || 0)}
-                                    placeholder="Qty"
-                                    data-testid={`input-variant-quantity-mobile-${variant.id}`}
-                                  />
-                                </div>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removeVariant(variant.id)}
-                                className="shrink-0 text-red-600"
-                                data-testid={`button-delete-variant-mobile-${variant.id}`}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </Card>
-                        ))}
-                      </div>
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  value={variant.barcode}
+                                  onChange={(e) => updateVariant(variant.id, 'barcode', e.target.value)}
+                                  className="h-8 font-mono"
+                                  placeholder="Scan or enter"
+                                  data-testid={`input-variant-barcode-${variant.id}`}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeVariant(variant.id)}
+                                  data-testid={`button-delete-variant-${variant.id}`}
+                                >
+                                  <Trash2 className="h-4 w-4 text-red-600" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
                     </div>
-                  )}
-
-                  {variants.length === 0 && (
-                    <div className="text-center py-8 text-slate-500 dark:text-slate-400">
-                      <Tag className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                      <p className="text-sm">No variants added yet</p>
-                      <p className="text-xs mt-1">Click "Add Variant" to get started</p>
+                  ) : (
+                    <div className="text-center py-8 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50/50 dark:bg-slate-900/50">
+                      <Tag className="h-10 w-10 mx-auto mb-2 text-slate-400" />
+                      <p className="text-sm text-slate-600 dark:text-slate-400">No variants added yet</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">Click "Add Variant" to create product variations</p>
                     </div>
                   )}
                 </div>
@@ -1966,12 +2322,12 @@ export default function AddProduct() {
             <AccordionItem value="packing" className="bg-white dark:bg-slate-800 rounded-xl border shadow-sm overflow-hidden">
               <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50 dark:hover:bg-slate-700/50">
                 <div className="flex items-center gap-3 text-left">
-                  <div className="p-2 bg-indigo-100 dark:bg-indigo-900 rounded-lg">
-                    <FileText className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                  <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg">
+                    <PackageOpen className="h-4 w-4 text-orange-600 dark:text-orange-400" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-slate-900 dark:text-slate-100">Packing Instructions</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Special handling notes</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Assembly and packing guides</p>
                   </div>
                 </div>
               </AccordionTrigger>
@@ -1979,26 +2335,48 @@ export default function AddProduct() {
                 <div className="pt-2">
                   <PackingInstructionsUploader
                     packingInstructionsTexts={packingInstructionsTexts}
+                    setPackingInstructionsTexts={setPackingInstructionsTexts}
                     packingInstructionsImages={packingInstructionsImages}
-                    onTextsChange={setPackingInstructionsTexts}
-                    onImagesChange={setPackingInstructionsImages}
+                    setPackingInstructionsImages={setPackingInstructionsImages}
                   />
                 </div>
               </AccordionContent>
             </AccordionItem>
+
+            {/* Edit mode: Product Files */}
+            {isEditMode && product && (
+              <AccordionItem value="files" className="bg-white dark:bg-slate-800 rounded-xl border shadow-sm overflow-hidden">
+                <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                  <div className="flex items-center gap-3 text-left">
+                    <div className="p-2 bg-slate-100 dark:bg-slate-900 rounded-lg">
+                      <FileText className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-slate-900 dark:text-slate-100">Product Files & Documents</h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Attached files and documentation</p>
+                    </div>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-4 pb-4">
+                  <div className="pt-2">
+                    <ProductFiles productId={id!} />
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            )}
           </Accordion>
 
-          {/* Sticky Bottom Action Bar - Mobile Friendly */}
+          {/* Bottom Action Bar */}
           <div className="sticky bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t shadow-lg rounded-t-2xl p-4 z-10">
             <div className="max-w-7xl mx-auto flex flex-col sm:flex-row gap-3">
               <Button 
                 type="submit" 
                 className="flex-1 h-12" 
-                disabled={createProductMutation.isPending}
+                disabled={isPending}
                 data-testid="button-save-product"
               >
                 <Save className="h-4 w-4 mr-2" />
-                {createProductMutation.isPending ? 'Creating...' : 'Create Product'}
+                {isPending ? (isEditMode ? 'Updating...' : 'Creating...') : submitButtonText}
               </Button>
               <Button 
                 type="button" 

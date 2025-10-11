@@ -14,8 +14,7 @@ import AddOrder from "@/pages/Orders/AddOrder";
 import EditOrder from "@/pages/Orders/EditOrder";
 import OrderDetails from "@/pages/Orders/OrderDetails";
 import AllInventory from "@/pages/Inventory/AllInventory";
-import AddProduct from "@/pages/Inventory/AddProduct";
-import EditProduct from "@/pages/Inventory/EditProduct";
+import ProductForm from "@/pages/Inventory/ProductForm";
 import ProductDetails from "@/pages/Products/ProductDetails";
 import Bundles from "@/pages/Inventory/SimpleBundles";
 import CreateBundle from "@/pages/Inventory/CreateBundle";
@@ -127,9 +126,9 @@ function Router() {
         <Route path="/inventory/bundles/:id" component={BundleDetails} />
         <Route path="/inventory/products/:id" component={ProductDetails} />
         <Route path="/products/:id" component={ProductDetails} />
-        <Route path="/inventory/add" component={AddProduct} />
-        <Route path="/inventory/:id/edit" component={EditProduct} />
-        <Route path="/inventory/products/edit/:id" component={EditProduct} />
+        <Route path="/inventory/add" component={ProductForm} />
+        <Route path="/inventory/:id/edit" component={ProductForm} />
+        <Route path="/inventory/products/edit/:id" component={ProductForm} />
         <Route path="/packing-materials" component={PackingMaterials} />
         <Route path="/packing-materials/add" component={AddPackingMaterial} />
         <Route path="/packing-materials/edit/:id" component={EditPackingMaterial} />
