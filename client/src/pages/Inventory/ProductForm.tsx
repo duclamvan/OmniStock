@@ -305,6 +305,14 @@ export default function ProductForm() {
   const importCostUsd = form.watch('importCostUsd');
   const importCostCzk = form.watch('importCostCzk');
   const importCostEur = form.watch('importCostEur');
+  
+  // Watch select field values to prevent freezing
+  const categoryId = form.watch('categoryId');
+  const warehouseId = form.watch('warehouseId');
+  const supplierId = form.watch('supplierId');
+  const packingMaterialId = form.watch('packingMaterialId');
+  const productName = form.watch('name');
+  const productQuantity = form.watch('quantity');
 
   // Auto-convert import costs after 1 second
   useEffect(() => {
@@ -469,15 +477,14 @@ export default function ProductForm() {
   useEffect(() => {
     if (!isEditMode || !id || !productLoaded || !locationsLoaded || !productLocations) return;
     
-    const watchedQuantity = form.watch('quantity');
-    const productQuantity = parseInt(watchedQuantity) || 0;
+    const quantity = parseInt(productQuantity) || 0;
     
     // Calculate total from non-TBA locations
     const nonTbaLocations = productLocations.filter(loc => loc.locationCode !== 'TBA');
     const nonTbaTotal = nonTbaLocations.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
     
     // Calculate difference
-    const difference = productQuantity - nonTbaTotal;
+    const difference = quantity - nonTbaTotal;
     
     // Find existing TBA location
     const tbaLocation = productLocations.find(loc => loc.locationCode === 'TBA');
@@ -521,7 +528,7 @@ export default function ProductForm() {
     }, 1000);
     
     return () => clearTimeout(timer);
-  }, [form.watch('quantity'), productLocations, locationsLoaded, productLoaded, isEditMode, id, queryClient]);
+  }, [productQuantity, productLocations, locationsLoaded, productLoaded, isEditMode, id, queryClient]);
 
   // Mutations
   const createProductMutation = useMutation({
@@ -859,11 +866,11 @@ export default function ProductForm() {
   };
 
   const generateSKU = () => {
-    const categoryName = categories?.find((c: any) => c.id === form.watch('categoryId'))?.name || 'PRODUCT';
-    const productName = form.watch('name') || 'ITEM';
+    const categoryName = categories?.find((c: any) => c.id === categoryId)?.name || 'PRODUCT';
+    const name = productName || 'ITEM';
     
     const categoryPart = categoryName.slice(0, 3).toUpperCase();
-    const productPart = productName.slice(0, 10).toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const productPart = name.slice(0, 10).toUpperCase().replace(/[^A-Z0-9]/g, '');
     
     const baseSKU = `X-${categoryPart}-${productPart}`;
     form.setValue('sku', baseSKU);
@@ -1147,7 +1154,7 @@ export default function ProductForm() {
     }
   };
 
-  const selectedSupplier = suppliers?.find((s: any) => s.id === form.watch('supplierId'));
+  const selectedSupplier = suppliers?.find((s: any) => s.id === supplierId);
 
   if (isEditMode && productLoading) {
     return (
@@ -1471,7 +1478,7 @@ export default function ProductForm() {
 
                     <div>
                       <Label htmlFor="categoryId" className="text-sm font-medium">Category</Label>
-                      <Select value={form.watch('categoryId')} onValueChange={(value) => form.setValue('categoryId', value)}>
+                      <Select value={categoryId} onValueChange={(value) => form.setValue('categoryId', value)}>
                         <SelectTrigger data-testid="select-category" className="mt-1">
                           <SelectValue placeholder="Select" />
                         </SelectTrigger>
@@ -1490,7 +1497,7 @@ export default function ProductForm() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <Label htmlFor="warehouseId" className="text-sm font-medium">Warehouse</Label>
-                      <Select value={form.watch('warehouseId')} onValueChange={(value) => form.setValue('warehouseId', value)}>
+                      <Select value={warehouseId} onValueChange={(value) => form.setValue('warehouseId', value)}>
                         <SelectTrigger data-testid="select-warehouse" className="mt-1">
                           <SelectValue placeholder="Select" />
                         </SelectTrigger>
@@ -1950,7 +1957,7 @@ export default function ProductForm() {
                   {/* Supplier Selector */}
                   <div>
                     <Label htmlFor="supplierId" className="text-sm font-medium">Select Supplier</Label>
-                    <Select value={form.watch('supplierId')} onValueChange={(value) => form.setValue('supplierId', value)}>
+                    <Select value={supplierId} onValueChange={(value) => form.setValue('supplierId', value)}>
                       <SelectTrigger data-testid="select-supplier" className="mt-1">
                         <SelectValue placeholder="Select a supplier" />
                       </SelectTrigger>
@@ -2107,8 +2114,8 @@ export default function ProductForm() {
 
                   {/* Quick Actions */}
                   <div className="flex flex-wrap gap-2 pt-2">
-                    {form.watch('supplierId') && (
-                      <Link href={`/suppliers/${form.watch('supplierId')}`}>
+                    {supplierId && (
+                      <Link href={`/suppliers/${supplierId}`}>
                         <Button type="button" variant="outline" size="sm" data-testid="button-view-supplier">
                           <Building className="h-4 w-4 mr-2" />
                           View Supplier Details
@@ -2346,7 +2353,7 @@ export default function ProductForm() {
                       <Package className="h-4 w-4 text-slate-600 dark:text-slate-400" />
                       <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Packing Material</h4>
                     </div>
-                    <Select value={form.watch('packingMaterialId')} onValueChange={(value) => form.setValue('packingMaterialId', value)}>
+                    <Select value={packingMaterialId} onValueChange={(value) => form.setValue('packingMaterialId', value)}>
                       <SelectTrigger data-testid="select-packing-material">
                         <SelectValue placeholder="Select packing material" />
                       </SelectTrigger>
