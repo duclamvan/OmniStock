@@ -70,7 +70,7 @@ export function ShippingAddressForm({
 
       const suggestions = data.map((item: any) => ({
         formatted: item.formatted,
-        street: `${item.street} ${item.houseNumber}`.trim() || item.street,
+        street: item.street,
         streetNumber: item.houseNumber,
         city: item.city,
         state: item.state,

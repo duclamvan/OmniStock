@@ -56,7 +56,8 @@ import {
   Weight,
   Loader2,
   Upload,
-  Download
+  Download,
+  Pencil
 } from "lucide-react";
 import MarginPill from "@/components/orders/MarginPill";
 import {
@@ -129,6 +130,7 @@ export default function AddOrder() {
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
   const [selectedShippingAddress, setSelectedShippingAddress] = useState<any>(null);
   const [showNewAddressForm, setShowNewAddressForm] = useState(false);
+  const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
   const [newCustomer, setNewCustomer] = useState({
     name: "",
     facebookName: "",
@@ -492,6 +494,29 @@ export default function AddOrder() {
       toast({
         title: "Error",
         description: "Failed to create shipping address",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutation to update existing shipping address
+  const updateShippingAddressMutation = useMutation({
+    mutationFn: async ({ addressId, addressData }: { addressId: string; addressData: any }) => {
+      const response = await apiRequest('PATCH', `/api/shipping-addresses/${addressId}`, addressData);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/customers', selectedCustomer?.id, 'shipping-addresses'] });
+      setEditingAddressId(null);
+      toast({
+        title: "Success",
+        description: "Shipping address updated successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update shipping address",
         variant: "destructive",
       });
     },
@@ -1531,46 +1556,89 @@ export default function AddOrder() {
                       data-testid="radiogroup-shipping-addresses"
                     >
                       {shippingAddresses.map((address: any) => (
-                        <div
-                          key={address.id}
-                          className={`flex items-start space-x-3 p-4 rounded-lg border-2 transition-all cursor-pointer ${
-                            selectedShippingAddress?.id === address.id
-                              ? 'border-blue-500 bg-blue-50'
-                              : 'border-slate-200 hover:border-slate-300'
-                          }`}
-                          onClick={() => setSelectedShippingAddress(address)}
-                          data-testid={`card-address-${address.id}`}
-                        >
-                          <RadioGroupItem value={address.id} id={address.id} data-testid={`radio-address-${address.id}`} />
-                          <div className="flex-1">
-                            <Label htmlFor={address.id} className="cursor-pointer">
-                              <div className="font-medium text-slate-900">
-                                {address.firstName} {address.lastName}
-                              </div>
-                              {address.company && (
+                        editingAddressId === address.id ? (
+                          <ShippingAddressForm
+                            key={address.id}
+                            initialData={{
+                              firstName: address.firstName,
+                              lastName: address.lastName,
+                              company: address.company,
+                              email: address.email,
+                              street: address.street,
+                              streetNumber: address.streetNumber,
+                              city: address.city,
+                              zipCode: address.zipCode,
+                              country: address.country,
+                              tel: address.tel,
+                              label: address.label,
+                            }}
+                            onSave={(addressData) => {
+                              updateShippingAddressMutation.mutate({
+                                addressId: address.id,
+                                addressData
+                              });
+                            }}
+                            onCancel={() => setEditingAddressId(null)}
+                            isSaving={updateShippingAddressMutation.isPending}
+                            title="Edit Shipping Address"
+                          />
+                        ) : (
+                          <div
+                            key={address.id}
+                            className={`relative flex items-start space-x-3 p-4 rounded-lg border-2 transition-all cursor-pointer ${
+                              selectedShippingAddress?.id === address.id
+                                ? 'border-blue-500 bg-blue-50'
+                                : 'border-slate-200 hover:border-slate-300'
+                            }`}
+                            onClick={() => setSelectedShippingAddress(address)}
+                            data-testid={`card-address-${address.id}`}
+                          >
+                            <RadioGroupItem value={address.id} id={address.id} data-testid={`radio-address-${address.id}`} />
+                            <div className="flex-1">
+                              <Label htmlFor={address.id} className="cursor-pointer">
+                                <div className="font-medium text-slate-900">
+                                  {address.firstName} {address.lastName}
+                                </div>
+                                {address.company && (
+                                  <div className="text-sm text-slate-600 mt-1">
+                                    <Building className="h-3 w-3 inline mr-1" />
+                                    {address.company}
+                                  </div>
+                                )}
                                 <div className="text-sm text-slate-600 mt-1">
-                                  <Building className="h-3 w-3 inline mr-1" />
-                                  {address.company}
+                                  {address.street}, {address.city}, {address.zipCode}, {address.country}
                                 </div>
-                              )}
-                              <div className="text-sm text-slate-600 mt-1">
-                                {address.street}, {address.city}, {address.zipCode}, {address.country}
-                              </div>
-                              {address.email && (
-                                <div className="text-sm text-slate-500 mt-1">
-                                  <Mail className="h-3 w-3 inline mr-1" />
-                                  {address.email}
-                                </div>
-                              )}
-                              {address.tel && (
-                                <div className="text-sm text-slate-500 mt-1">
-                                  <Phone className="h-3 w-3 inline mr-1" />
-                                  {address.tel}
-                                </div>
-                              )}
-                            </Label>
+                                {address.email && (
+                                  <div className="text-sm text-slate-500 mt-1">
+                                    <Mail className="h-3 w-3 inline mr-1" />
+                                    {address.email}
+                                  </div>
+                                )}
+                                {address.tel && (
+                                  <div className="text-sm text-slate-500 mt-1">
+                                    <Phone className="h-3 w-3 inline mr-1" />
+                                    {address.tel}
+                                  </div>
+                                )}
+                              </Label>
+                            </div>
+                            {!address.isNew && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="absolute top-2 right-2 h-8 w-8 p-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingAddressId(address.id);
+                                }}
+                                data-testid={`button-edit-address-${address.id}`}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
-                        </div>
+                        )
                       ))}
                     </RadioGroup>
                   ) : (
