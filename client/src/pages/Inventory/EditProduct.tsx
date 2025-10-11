@@ -1111,14 +1111,14 @@ export default function EditProduct() {
                                   type="button"
                                   variant="destructive"
                                   size="icon"
-                                  className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  className="absolute top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity z-10"
                                   onClick={() => handleRemoveImage(index)}
                                   data-testid={`button-remove-image-${index}`}
                                 >
                                   <X className="h-4 w-4" />
                                 </Button>
                                 
-                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 p-2">
+                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 p-2 z-0">
                                   {!img.isPrimary && (
                                     <Button
                                       type="button"
@@ -1138,10 +1138,7 @@ export default function EditProduct() {
                               <div className="p-2 bg-slate-50 dark:bg-slate-900">
                                 <Select value={img.purpose} onValueChange={(value) => handleChangePurpose(index, value as ImagePurpose)}>
                                   <SelectTrigger className="h-8 text-xs border-0" data-testid={`select-purpose-${index}`}>
-                                    <div className="flex items-center gap-1.5">
-                                      <Icon className="h-3.5 w-3.5" />
-                                      <SelectValue />
-                                    </div>
+                                    <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
                                     {Object.entries(IMAGE_PURPOSE_CONFIG).map(([key, cfg]) => {
