@@ -457,6 +457,64 @@ export default function ProductForm() {
     }
   }, [product, form, isEditMode]);
 
+  // Auto-sync quantity with warehouse locations
+  useEffect(() => {
+    if (!isEditMode || !id) return;
+    
+    const watchedQuantity = form.watch('quantity');
+    const productQuantity = parseInt(watchedQuantity) || 0;
+    
+    // Fetch current locations
+    const locations = queryClient.getQueryData<any[]>([`/api/products/${id}/locations`]);
+    if (!locations) return;
+    
+    // Calculate total from non-TBA locations
+    const nonTbaLocations = locations.filter(loc => loc.locationCode !== 'TBA');
+    const nonTbaTotal = nonTbaLocations.reduce((sum, loc) => sum + (loc.quantity || 0), 0);
+    
+    // Calculate difference
+    const difference = productQuantity - nonTbaTotal;
+    
+    // Find existing TBA location
+    const tbaLocation = locations.find(loc => loc.locationCode === 'TBA');
+    
+    // Auto-manage TBA location
+    const manageTbaLocation = async () => {
+      if (difference > 0) {
+        // Need TBA location with difference quantity
+        if (tbaLocation) {
+          // Update existing TBA if quantity changed
+          if (tbaLocation.quantity !== difference) {
+            await apiRequest('PATCH', `/api/products/${id}/locations/${tbaLocation.id}`, {
+              quantity: difference
+            });
+            queryClient.invalidateQueries({ queryKey: [`/api/products/${id}/locations`] });
+          }
+        } else {
+          // Create new TBA location
+          await apiRequest('POST', `/api/products/${id}/locations`, {
+            locationCode: 'TBA',
+            locationType: 'warehouse',
+            quantity: difference,
+            notes: 'To Be Assigned - automatically created'
+          });
+          queryClient.invalidateQueries({ queryKey: [`/api/products/${id}/locations`] });
+        }
+      } else if (tbaLocation && difference <= 0) {
+        // Delete TBA if it exists and difference is 0 or negative
+        await apiRequest('DELETE', `/api/products/${id}/locations/${tbaLocation.id}`);
+        queryClient.invalidateQueries({ queryKey: [`/api/products/${id}/locations`] });
+      }
+    };
+    
+    // Debounce to avoid too many API calls
+    const timer = setTimeout(() => {
+      manageTbaLocation().catch(console.error);
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, [form.watch('quantity'), isEditMode, id, queryClient]);
+
   // Mutations
   const createProductMutation = useMutation({
     mutationFn: async (data: any) => {
