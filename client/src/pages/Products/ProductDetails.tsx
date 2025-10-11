@@ -457,41 +457,77 @@ export default function ProductDetails() {
           </AccordionContent>
         </AccordionItem>
 
-        {/* Stock & Inventory */}
+        {/* Stock, Locations & Physical Details */}
         <AccordionItem value="stock" className="border-slate-200 rounded-xl bg-white shadow-sm">
           <AccordionTrigger className="px-4 py-3 hover:no-underline" data-testid="accordion-stock">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-50 rounded-lg">
                 <Package className="h-5 w-5 text-green-600" />
               </div>
-              <span className="text-lg font-semibold text-slate-900">Stock & Inventory</span>
+              <span className="text-lg font-semibold text-slate-900">Stock, Locations & Physical Details</span>
             </div>
           </AccordionTrigger>
-          <AccordionContent className="px-4 pb-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
-              <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Current Quantity</label>
-                <p className="text-2xl font-bold text-slate-900 mt-2" data-testid="text-quantity">{product.quantity}</p>
+          <AccordionContent className="px-4 pb-4 space-y-8 pt-2">
+            {/* Stock Summary */}
+            <div>
+              <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-4">Stock Summary</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Current Quantity</label>
+                  <p className="text-2xl font-bold text-slate-900 mt-2" data-testid="text-quantity">{product.quantity}</p>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Unit</label>
+                  <p className="text-2xl font-bold text-slate-900 mt-2" data-testid="text-unit">{product.unit || 'units'}</p>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Low Stock Alert</label>
+                  <p className="text-2xl font-bold text-slate-900 mt-2" data-testid="text-low-stock">{product.lowStockAlert || 5}</p>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Barcode</label>
+                  <p className="text-lg font-mono text-slate-900 mt-2" data-testid="text-barcode-detail">{product.barcode || "Not set"}</p>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Warehouse</label>
+                  <p className="text-lg text-slate-900 mt-2" data-testid="text-warehouse">{warehouse?.name || "Not assigned"}</p>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Warehouse Location</label>
+                  <p className="text-lg font-mono text-slate-900 mt-2" data-testid="text-location">{product.warehouseLocation || "Not specified"}</p>
+                </div>
               </div>
-              <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Unit</label>
-                <p className="text-2xl font-bold text-slate-900 mt-2" data-testid="text-unit">{product.unit || 'units'}</p>
-              </div>
-              <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Low Stock Alert</label>
-                <p className="text-2xl font-bold text-slate-900 mt-2" data-testid="text-low-stock">{product.lowStockAlert || 5}</p>
-              </div>
-              <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Barcode</label>
-                <p className="text-lg font-mono text-slate-900 mt-2" data-testid="text-barcode-detail">{product.barcode || "Not set"}</p>
-              </div>
-              <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Warehouse</label>
-                <p className="text-lg text-slate-900 mt-2" data-testid="text-warehouse">{warehouse?.name || "Not assigned"}</p>
-              </div>
-              <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Warehouse Location</label>
-                <p className="text-lg font-mono text-slate-900 mt-2" data-testid="text-location">{product.warehouseLocation || "Not specified"}</p>
+            </div>
+
+            <Separator />
+
+            {/* Warehouse Locations */}
+            <div>
+              <ProductLocations productId={id!} productName={product.name} readOnly={true} />
+            </div>
+
+            <Separator />
+
+            {/* Physical Dimensions */}
+            <div>
+              <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-4">Physical Dimensions & Weight</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg p-4 border border-slate-200">
+                  <div className="text-xs font-medium text-slate-600">Length</div>
+                  <div className="text-2xl font-bold text-slate-900 mt-1" data-testid="text-length">{product.length || '-'} cm</div>
+                </div>
+                <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg p-4 border border-slate-200">
+                  <div className="text-xs font-medium text-slate-600">Width</div>
+                  <div className="text-2xl font-bold text-slate-900 mt-1" data-testid="text-width">{product.width || '-'} cm</div>
+                </div>
+                <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg p-4 border border-slate-200">
+                  <div className="text-xs font-medium text-slate-600">Height</div>
+                  <div className="text-2xl font-bold text-slate-900 mt-1" data-testid="text-height">{product.height || '-'} cm</div>
+                </div>
+                <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg p-4 border border-slate-200">
+                  <div className="text-xs font-medium text-slate-600">Weight</div>
+                  <div className="text-2xl font-bold text-slate-900 mt-1" data-testid="text-weight">{product.weight || '-'} kg</div>
+                </div>
               </div>
             </div>
           </AccordionContent>
@@ -990,53 +1026,18 @@ export default function ProductDetails() {
           </AccordionContent>
         </AccordionItem>
 
-        {/* Advanced Settings */}
+        {/* Product Documents */}
         <AccordionItem value="advanced" className="border-slate-200 rounded-xl bg-white shadow-sm">
           <AccordionTrigger className="px-4 py-3 hover:no-underline" data-testid="accordion-advanced">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-slate-100 rounded-lg">
                 <Warehouse className="h-5 w-5 text-slate-600" />
               </div>
-              <span className="text-lg font-semibold text-slate-900">Advanced Settings</span>
+              <span className="text-lg font-semibold text-slate-900">Product Documents</span>
             </div>
           </AccordionTrigger>
-          <AccordionContent className="px-4 pb-4 space-y-8 pt-2">
-            {/* Product Files */}
-            <div>
-              <ProductFiles productId={id!} />
-            </div>
-
-            <Separator />
-
-            {/* Product Locations */}
-            <div>
-              <ProductLocations productId={id!} productName={product.name} readOnly={true} />
-            </div>
-
-            <Separator />
-
-            {/* Dimensions & Weight */}
-            <div>
-              <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-4">Dimensions & Weight</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg p-4 border border-slate-200">
-                  <div className="text-xs font-medium text-slate-600">Length</div>
-                  <div className="text-2xl font-bold text-slate-900 mt-1" data-testid="text-length">{product.length || '-'} cm</div>
-                </div>
-                <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg p-4 border border-slate-200">
-                  <div className="text-xs font-medium text-slate-600">Width</div>
-                  <div className="text-2xl font-bold text-slate-900 mt-1" data-testid="text-width">{product.width || '-'} cm</div>
-                </div>
-                <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg p-4 border border-slate-200">
-                  <div className="text-xs font-medium text-slate-600">Height</div>
-                  <div className="text-2xl font-bold text-slate-900 mt-1" data-testid="text-height">{product.height || '-'} cm</div>
-                </div>
-                <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-lg p-4 border border-slate-200">
-                  <div className="text-xs font-medium text-slate-600">Weight</div>
-                  <div className="text-2xl font-bold text-slate-900 mt-1" data-testid="text-weight">{product.weight || '-'} kg</div>
-                </div>
-              </div>
-            </div>
+          <AccordionContent className="px-4 pb-4 pt-2">
+            <ProductFiles productId={id!} />
           </AccordionContent>
         </AccordionItem>
       </Accordion>
