@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -49,6 +49,15 @@ export default function PackingInstructionsUploader({
   const [isTextDialogOpen, setIsTextDialogOpen] = useState(false);
   const [editingTextIndex, setEditingTextIndex] = useState<number | null>(null);
   const [currentTextValue, setCurrentTextValue] = useState("");
+
+  // Sync local state with props when they change
+  useEffect(() => {
+    setImages(packingInstructionsImages || []);
+  }, [packingInstructionsImages]);
+
+  useEffect(() => {
+    setTexts(packingInstructionsTexts || []);
+  }, [packingInstructionsTexts]);
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
