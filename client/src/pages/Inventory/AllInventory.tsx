@@ -429,10 +429,14 @@ export default function AllInventory() {
     if (key === 'name' || key === 'actions') {
       return;
     }
-    setColumnVisibility(prev => ({
-      ...prev,
-      [key]: !prev[key]
-    }));
+    setColumnVisibility(prev => {
+      // Get current value (if undefined or true, column is shown)
+      const currentValue = prev[key] !== false;
+      return {
+        ...prev,
+        [key]: !currentValue // Toggle it
+      };
+    });
   };
 
   // Bulk actions
