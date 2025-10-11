@@ -71,7 +71,8 @@ import {
   Check,
   ChevronsUpDown,
   Weight,
-  Edit
+  Edit,
+  ListPlus
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -228,6 +229,7 @@ export default function ProductForm() {
   const [seriesImportCostCzk, setSeriesImportCostCzk] = useState("");
   const [seriesImportCostEur, setSeriesImportCostEur] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isSeriesDialogOpen, setIsSeriesDialogOpen] = useState(false);
   const [isBulkScanDialogOpen, setIsBulkScanDialogOpen] = useState(false);
   const [bulkBarcodes, setBulkBarcodes] = useState("");
   const [isScanning, setIsScanning] = useState(false);
@@ -1144,6 +1146,64 @@ export default function ProductForm() {
     }
   };
 
+  const addVariantSeries = () => {
+    if (!seriesInput.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a series pattern",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const match = seriesInput.match(/<(\d+)-(\d+)>/);
+    if (match) {
+      const start = parseInt(match[1]);
+      const end = parseInt(match[2]);
+      const baseName = seriesInput.replace(/<\d+-\d+>/, '').trim();
+      
+      if (end - start > 200) {
+        toast({
+          title: "Error",
+          description: "Series range too large. Maximum 200 variants at once.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      const newVariantsArray = [];
+      for (let i = start; i <= end; i++) {
+        newVariantsArray.push({
+          id: `temp-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 9)}`,
+          name: `${baseName} ${i}`,
+          barcode: "",
+          quantity: seriesQuantity,
+          importCostUsd: seriesImportCostUsd,
+          importCostCzk: seriesImportCostCzk,
+          importCostEur: seriesImportCostEur,
+        });
+      }
+      
+      setVariants([...variants, ...newVariantsArray]);
+      setSeriesInput("");
+      setSeriesQuantity(0);
+      setSeriesImportCostUsd("");
+      setSeriesImportCostCzk("");
+      setSeriesImportCostEur("");
+      setIsSeriesDialogOpen(false);
+      toast({
+        title: "Success",
+        description: `Added ${newVariantsArray.length} variants`,
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "Use format like 'Size <1-10>' to create series",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleBulkBarcodeAssign = () => {
     const barcodes = bulkBarcodes
       .split('\n')
@@ -1187,64 +1247,6 @@ export default function ProductForm() {
   const removeVariant = (id: string) => {
     setVariants(variants.filter(v => v.id !== id));
     setSelectedVariants(selectedVariants.filter(selectedId => selectedId !== id));
-  };
-
-  const addVariantSeries = () => {
-    if (!seriesInput.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter a series pattern",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const match = seriesInput.match(/<(\d+)-(\d+)>/);
-    if (match) {
-      const start = parseInt(match[1]);
-      const end = parseInt(match[2]);
-      const baseName = seriesInput.replace(/<\d+-\d+>/, '').trim();
-      
-      if (end - start > 200) {
-        toast({
-          title: "Error",
-          description: "Series range too large. Maximum 200 variants at once.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      const newVariants = [];
-      for (let i = start; i <= end; i++) {
-        newVariants.push({
-          id: `temp-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 9)}`,
-          name: `${baseName} ${i}`,
-          barcode: "",
-          quantity: seriesQuantity,
-          importCostUsd: seriesImportCostUsd,
-          importCostCzk: seriesImportCostCzk,
-          importCostEur: seriesImportCostEur,
-        });
-      }
-      
-      setVariants([...variants, ...newVariants]);
-      setSeriesInput("");
-      setSeriesQuantity(0);
-      setSeriesImportCostUsd("");
-      setSeriesImportCostCzk("");
-      setSeriesImportCostEur("");
-      setIsAddDialogOpen(false);
-      toast({
-        title: "Success",
-        description: `Added ${newVariants.length} variants`,
-      });
-    } else {
-      toast({
-        title: "Error",
-        description: "Use format like 'Gel Polish <1-100>' to create series",
-        variant: "destructive",
-      });
-    }
   };
 
   const bulkDeleteVariants = () => {
@@ -2616,6 +2618,105 @@ export default function ProductForm() {
                             data-testid="button-save-variant"
                           >
                             {newVariantImageUploading ? "Uploading..." : "Add Variant"}
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                    
+                    <Dialog open={isSeriesDialogOpen} onOpenChange={setIsSeriesDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button type="button" size="sm" variant="outline" data-testid="button-add-series">
+                          <ListPlus className="h-4 w-4 mr-2" />
+                          Add Series
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[500px]">
+                        <DialogHeader>
+                          <DialogTitle>Add Variant Series</DialogTitle>
+                          <DialogDescription>
+                            Create multiple variants using a pattern like "Size &lt;1-10&gt;"
+                          </DialogDescription>
+                        </DialogHeader>
+                        
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="series-pattern">Series Pattern *</Label>
+                            <Input
+                              id="series-pattern"
+                              value={seriesInput}
+                              onChange={(e) => setSeriesInput(e.target.value)}
+                              placeholder="e.g., Size <1-10> or Color <1-5>"
+                              data-testid="input-series-pattern"
+                            />
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                              Use &lt;start-end&gt; to generate a numbered series
+                            </p>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <Label htmlFor="series-quantity">Quantity per Variant</Label>
+                              <Input
+                                id="series-quantity"
+                                type="number"
+                                min="0"
+                                value={seriesQuantity}
+                                onChange={(e) => setSeriesQuantity(parseInt(e.target.value) || 0)}
+                                placeholder="0"
+                                data-testid="input-series-quantity"
+                              />
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-3 gap-3">
+                            <div>
+                              <Label htmlFor="series-cost-usd">Cost USD</Label>
+                              <Input
+                                id="series-cost-usd"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={seriesImportCostUsd}
+                                onChange={(e) => setSeriesImportCostUsd(e.target.value)}
+                                placeholder="0.00"
+                                data-testid="input-series-cost-usd"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="series-cost-czk">Cost CZK</Label>
+                              <Input
+                                id="series-cost-czk"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={seriesImportCostCzk}
+                                onChange={(e) => setSeriesImportCostCzk(e.target.value)}
+                                placeholder="0.00"
+                                data-testid="input-series-cost-czk"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="series-cost-eur">Cost EUR</Label>
+                              <Input
+                                id="series-cost-eur"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={seriesImportCostEur}
+                                onChange={(e) => setSeriesImportCostEur(e.target.value)}
+                                placeholder="0.00"
+                                data-testid="input-series-cost-eur"
+                              />
+                            </div>
+                          </div>
+                          
+                          <Button 
+                            onClick={addVariantSeries} 
+                            disabled={!seriesInput.trim()} 
+                            className="w-full"
+                            data-testid="button-save-series"
+                          >
+                            Add Variant Series
                           </Button>
                         </div>
                       </DialogContent>
