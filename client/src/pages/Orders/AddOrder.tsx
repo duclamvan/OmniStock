@@ -121,6 +121,7 @@ export default function AddOrder() {
   
   const productSearchRef = useRef<HTMLInputElement>(null);
   const customerSearchRef = useRef<HTMLInputElement>(null);
+  const submitButtonRef = useRef<HTMLButtonElement>(null);
   const [barcodeScanMode, setBarcodeScanMode] = useState(false);
   const [debouncedProductSearch, setDebouncedProductSearch] = useState("");
   const [debouncedCustomerSearch, setDebouncedCustomerSearch] = useState("");
@@ -403,10 +404,10 @@ export default function AddOrder() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Auto-focus product search on page load
+  // Auto-focus customer search on page load for fast keyboard navigation
   useEffect(() => {
-    if (productSearchRef.current) {
-      productSearchRef.current.focus();
+    if (customerSearchRef.current) {
+      customerSearchRef.current.focus();
     }
   }, []);
 
@@ -823,6 +824,11 @@ export default function AddOrder() {
         landingCost: product.landingCost || product.latestLandingCost || null,
       };
       setOrderItems(items => [...items, newItem]);
+      // Auto-focus quantity input for the newly added item
+      setTimeout(() => {
+        const quantityInput = document.querySelector(`[data-testid="input-quantity-${newItem.id}"]`) as HTMLInputElement;
+        quantityInput?.focus();
+      }, 100);
     }
     setProductSearch("");
     setShowProductDropdown(false);
@@ -1331,6 +1337,23 @@ export default function AddOrder() {
                     if (e.key === 'Escape') {
                       setShowCustomerDropdown(false);
                     }
+                    // Enter: Select first customer from dropdown
+                    if (e.key === 'Enter' && filteredCustomers && filteredCustomers.length > 0) {
+                      e.preventDefault();
+                      const firstCustomer = filteredCustomers[0];
+                      if (firstCustomer) {
+                        setSelectedCustomer(firstCustomer);
+                        setCustomerSearch(firstCustomer.name);
+                        setShowCustomerDropdown(false);
+                        if (firstCustomer.hasPayLaterBadge) {
+                          form.setValue('paymentStatus', 'pay_later');
+                        }
+                        // Auto-focus product search for fast keyboard navigation
+                        setTimeout(() => {
+                          productSearchRef.current?.focus();
+                        }, 100);
+                      }
+                    }
                   }}
                   data-testid="input-customer-search"
                 />
@@ -1368,6 +1391,10 @@ export default function AddOrder() {
                         if (customer.hasPayLaterBadge) {
                           form.setValue('paymentStatus', 'pay_later');
                         }
+                        // Auto-focus product search for fast keyboard navigation
+                        setTimeout(() => {
+                          productSearchRef.current?.focus();
+                        }, 100);
                       }}
                     >
                       <div className="flex items-center justify-between">
@@ -2126,10 +2153,15 @@ export default function AddOrder() {
                                 className="w-16 h-9 text-center"
                                 data-testid={`input-quantity-${item.id}`}
                                 onKeyDown={(e) => {
-                                  if (e.key === 'Enter' || e.key === 'Tab') {
+                                  if (e.key === 'Enter') {
                                     e.preventDefault();
-                                    const priceInput = document.querySelector(`[data-testid="input-price-${item.id}"]`) as HTMLInputElement;
-                                    priceInput?.focus();
+                                    // Enter: Save and go back to product search for next item
+                                    productSearchRef.current?.focus();
+                                  } else if (e.key === 'Tab') {
+                                    e.preventDefault();
+                                    // Tab: Go to shipping cost
+                                    const shippingCostInput = document.querySelector('[data-testid="input-shipping-cost"]') as HTMLInputElement;
+                                    shippingCostInput?.focus();
                                   }
                                 }}
                               />
@@ -2598,6 +2630,14 @@ export default function AddOrder() {
                   type="number"
                   step="0.01"
                   {...form.register('shippingCost', { valueAsNumber: true })}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === 'Tab') {
+                      e.preventDefault();
+                      // Enter/Tab: Submit the order
+                      submitButtonRef.current?.click();
+                    }
+                  }}
+                  data-testid="input-shipping-cost"
                 />
                 {/* Quick shipping cost buttons */}
                 <div className="mt-2">
@@ -3292,7 +3332,7 @@ export default function AddOrder() {
                         </>
                       ) : (
                         <>
-                          <Button type="submit" className="w-full" size="lg" disabled={createOrderMutation.isPending || orderItems.length === 0} data-testid="button-create-order">
+                          <Button ref={submitButtonRef} type="submit" className="w-full" size="lg" disabled={createOrderMutation.isPending || orderItems.length === 0} data-testid="button-create-order">
                             <ShoppingCart className="h-4 w-4 mr-2" />
                             {createOrderMutation.isPending ? 'Creating...' : 'Create Order'}
                           </Button>
