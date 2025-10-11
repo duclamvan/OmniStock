@@ -2151,6 +2151,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/customers/check-duplicate/:facebookId', async (req, res) => {
+    try {
+      const facebookId = req.params.facebookId;
+      
+      if (!facebookId) {
+        return res.status(400).json({ message: "Facebook ID is required" });
+      }
+      
+      // Get all customers and find one with matching Facebook ID
+      const customers = await storage.getCustomers();
+      const existingCustomer = customers.find(c => c.facebookId === facebookId);
+      
+      if (existingCustomer) {
+        res.json({
+          exists: true,
+          customer: existingCustomer
+        });
+      } else {
+        res.json({ exists: false });
+      }
+    } catch (error) {
+      console.error("Error checking duplicate customer:", error);
+      res.status(500).json({ message: "Failed to check duplicate" });
+    }
+  });
+
   app.post('/api/customers', async (req: any, res) => {
     try {
       const data = insertCustomerSchema.parse(req.body);

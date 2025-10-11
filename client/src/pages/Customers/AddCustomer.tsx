@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation, useParams } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,7 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ArrowLeft, Plus, Trash2, Edit2, Check, X, Loader2, CheckCircle, XCircle, Globe, Building, MapPin, FileText, Truck, ChevronsUpDown, Pin } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Edit2, Check, X, Loader2, CheckCircle, XCircle, Globe, Building, MapPin, FileText, Truck, ChevronsUpDown, Pin, AlertCircle } from "lucide-react";
 import { europeanCountries, euCountryCodes, getCountryFlag } from "@/lib/countries";
 import type { Customer, CustomerShippingAddress } from "@shared/schema";
 import { cn } from "@/lib/utils";
@@ -124,6 +124,11 @@ export default function AddCustomer() {
 
   const [isLoadingFacebookName, setIsLoadingFacebookName] = useState(false);
   const [extractedFacebookId, setExtractedFacebookId] = useState<string>('');
+  const [duplicateCustomer, setDuplicateCustomer] = useState<Customer | null>(null);
+  const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false);
+  
+  // Track the latest Facebook ID being checked for duplicates
+  const latestDuplicateCheckRef = useRef<string>('');
 
   const [shippingAddresses, setShippingAddresses] = useState<ShippingAddressFormData[]>([]);
   const [isAddingShipping, setIsAddingShipping] = useState(false);
@@ -471,6 +476,53 @@ export default function AddCustomer() {
     [form, toast]
   );
 
+  const checkDuplicateCustomer = useCallback(
+    debounce(async (facebookId: string) => {
+      // Update the latest request ID
+      latestDuplicateCheckRef.current = facebookId;
+      
+      if (!facebookId || facebookId.length < 2 || isEditMode) {
+        setDuplicateCustomer(null);
+        setIsCheckingDuplicate(false);
+        return;
+      }
+      
+      // Track the current request ID to guard against stale responses
+      const requestId = facebookId;
+      
+      try {
+        setIsCheckingDuplicate(true);
+        
+        const response = await fetch(`/api/customers/check-duplicate/${encodeURIComponent(facebookId)}`);
+        if (!response.ok) {
+          throw new Error('Failed to check duplicate');
+        }
+        const data = await response.json();
+        
+        // Only update state if this is still the latest request
+        if (requestId === latestDuplicateCheckRef.current) {
+          if (data.exists && data.customer) {
+            setDuplicateCustomer(data.customer);
+          } else {
+            setDuplicateCustomer(null);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking duplicate customer:', error);
+        // Only clear duplicate if this was the latest request
+        if (requestId === latestDuplicateCheckRef.current) {
+          setDuplicateCustomer(null);
+        }
+      } finally {
+        // Only clear loading if this was the latest request
+        if (requestId === latestDuplicateCheckRef.current) {
+          setIsCheckingDuplicate(false);
+        }
+      }
+    }, 500),
+    [isEditMode]
+  );
+
   const handleVatValidation = async (vatNumber: string, countryCode: string) => {
     if (!vatNumber || !countryCode) {
       setVatValidationResult(null);
@@ -673,15 +725,47 @@ export default function AddCustomer() {
 
                 <div>
                   <Label htmlFor="facebookId" className="text-base font-semibold">Facebook ID</Label>
-                  <Input
-                    id="facebookId"
-                    value={extractedFacebookId || ''}
-                    readOnly
-                    placeholder="Auto-extracted from URL"
-                    className="text-base bg-slate-50"
-                    data-testid="input-facebookId"
-                  />
-                  <p className="text-xs text-slate-500 mt-1">Auto-extracted: Numeric ID or username from URL</p>
+                  <div className="relative">
+                    <Input
+                      id="facebookId"
+                      value={extractedFacebookId || ''}
+                      onChange={(e) => {
+                        const newId = e.target.value;
+                        setExtractedFacebookId(newId);
+                        checkDuplicateCustomer(newId);
+                      }}
+                      placeholder="Numeric ID or username"
+                      className="text-base"
+                      data-testid="input-facebookId"
+                    />
+                    {isCheckingDuplicate && (
+                      <Loader2 className="absolute right-3 top-3 h-5 w-5 animate-spin text-slate-400" data-testid="loader-duplicate-check" />
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">Auto-extracted from URL or enter manually</p>
+                  
+                  {duplicateCustomer && !isEditMode && (
+                    <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-md" data-testid="alert-duplicate-customer">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-amber-900">Customer Already Exists</p>
+                          <p className="text-sm text-amber-700 mt-1">
+                            A customer with Facebook ID "{extractedFacebookId}" already exists: <strong>{duplicateCustomer.name}</strong>
+                          </p>
+                          <Button
+                            type="button"
+                            variant="link"
+                            className="h-auto p-0 text-amber-700 hover:text-amber-900 font-semibold mt-2"
+                            onClick={() => navigate(`/customers/${duplicateCustomer.id}/edit`)}
+                            data-testid="button-go-to-existing-customer"
+                          >
+                            Go to {duplicateCustomer.name}'s profile →
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div>
