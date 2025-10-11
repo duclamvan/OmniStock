@@ -601,7 +601,7 @@ export default function OrderDetails() {
               <div className="space-y-2">
                 {order.items?.map((item: any, index: number) => (
                   <div key={item.id || index}>
-                    <div className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-50 transition-colors">
+                    <div className="flex items-start gap-3 p-3 -mx-3 rounded-md hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
                       {showPickingMode && (
                         <Checkbox
                           checked={pickedItems.has(item.id)}
