@@ -72,13 +72,30 @@ export default function PackingMaterials() {
           {material.code && (
             <div className="text-sm text-muted-foreground mt-0.5">Code: {material.code}</div>
           )}
-          {material.category && (
-            <Badge variant="outline" className="mt-1 text-xs">
-              {material.category}
-            </Badge>
-          )}
         </div>
       ),
+    },
+    {
+      key: "category",
+      header: "Category",
+      className: "min-w-[140px]",
+      cell: (material) => {
+        const categoryLabels: Record<string, string> = {
+          cartons: "Cartons & Boxes",
+          filling: "Filling Materials",
+          protective: "Protective Materials",
+          supplies: "General Supplies",
+          packaging: "Product Packaging"
+        };
+        
+        return material.category ? (
+          <Badge variant="outline" className="text-xs">
+            {categoryLabels[material.category] || material.category}
+          </Badge>
+        ) : (
+          <span className="text-muted-foreground text-sm">-</span>
+        );
+      },
     },
     {
       key: "supplier",
