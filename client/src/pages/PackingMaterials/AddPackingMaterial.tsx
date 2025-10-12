@@ -24,7 +24,6 @@ const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
   code: z.string().min(1, "Code is required"),
   category: z.string().min(1, "Category is required"),
-  type: z.string().min(1, "Type is required"),
   size: z.string().optional(),
   // Separate dimension fields
   length: z.string().optional(),
@@ -59,44 +58,6 @@ const MATERIAL_CATEGORIES = [
   { value: "supplies", label: "General Supplies", icon: Package },
   { value: "packaging", label: "Product Packaging", icon: FlaskConical },
 ];
-
-// Type options
-const CATEGORY_TYPES: Record<string, { value: string; label: string }[]> = {
-  cartons: [
-    { value: "small", label: "Small (20×15×10 cm)" },
-    { value: "medium", label: "Medium (30×25×20 cm)" },
-    { value: "large", label: "Large (40×35×30 cm)" },
-    { value: "xlarge", label: "Extra Large (50×40×40 cm)" },
-  ],
-  filling: [
-    { value: "bubble_wrap", label: "Bubble Wrap" },
-    { value: "foam_sheets", label: "Foam Sheets" },
-    { value: "air_pillows", label: "Air Pillows" },
-    { value: "paper_fill", label: "Paper Fill" },
-  ],
-  protective: [
-    { value: "stretch_film", label: "Stretch Film" },
-    { value: "packing_tape", label: "Packing Tape" },
-    { value: "fragile_tape", label: "Fragile Tape" },
-    { value: "corner_protectors", label: "Corner Protectors" },
-  ],
-  supplies: [
-    { value: "shipping_labels", label: "Shipping Labels" },
-    { value: "markers", label: "Markers" },
-    { value: "gloves", label: "Gloves" },
-    { value: "tape_dispenser", label: "Tape Dispenser" },
-  ],
-  packaging: [
-    { value: "bottles", label: "Bottles" },
-    { value: "jars", label: "Jars" },
-    { value: "tubes", label: "Tubes" },
-    { value: "doses", label: "Doses/Vials" },
-    { value: "pumps", label: "Pumps & Dispensers" },
-    { value: "caps", label: "Caps & Lids" },
-    { value: "droppers", label: "Droppers" },
-    { value: "containers", label: "Containers" },
-  ],
-};
 
 interface PmSupplier {
   id: string;
@@ -140,7 +101,6 @@ export default function AddPackingMaterial() {
       name: "",
       code: "",
       category: "",
-      type: "",
       size: "",
       length: "",
       width: "",
@@ -163,14 +123,7 @@ export default function AddPackingMaterial() {
     },
   });
 
-  const selectedCategory = form.watch("category");
-  const typeOptions = selectedCategory ? CATEGORY_TYPES[selectedCategory] || [] : [];
   const supplierValue = form.watch("supplier");
-
-  const handleCategoryChange = (value: string) => {
-    form.setValue("category", value);
-    form.setValue("type", "");
-  };
 
   // Fetch PM suppliers
   const { data: pmSuppliers = [] } = useQuery<PmSupplier[]>({
@@ -387,69 +340,40 @@ export default function AddPackingMaterial() {
               <div className="space-y-4">
                 <div>
                   <h3 className="text-lg font-semibold">Material Classification</h3>
-                  <p className="text-sm text-muted-foreground">Select the category and type of packing material</p>
+                  <p className="text-sm text-muted-foreground">Select the category of packing material</p>
                 </div>
                 <Separator />
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="category"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Category *</FormLabel>
-                        <Select onValueChange={handleCategoryChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger data-testid="select-category">
-                              <SelectValue placeholder="Select category" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {MATERIAL_CATEGORIES.map((cat) => {
-                              const IconComponent = cat.icon;
-                              return (
-                                <SelectItem key={cat.value} value={cat.value}>
-                                  <div className="flex items-center gap-2">
-                                    <IconComponent className="h-4 w-4" />
-                                    <span>{cat.label}</span>
-                                  </div>
-                                </SelectItem>
-                              );
-                            })}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {selectedCategory && (
-                    <FormField
-                      control={form.control}
-                      name="type"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Type *</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger data-testid="select-type">
-                                <SelectValue placeholder="Select type" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {typeOptions.map((type) => (
-                                <SelectItem key={type.value} value={type.value}>
-                                  {type.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Category *</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-category">
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {MATERIAL_CATEGORIES.map((cat) => {
+                            const IconComponent = cat.icon;
+                            return (
+                              <SelectItem key={cat.value} value={cat.value}>
+                                <div className="flex items-center gap-2">
+                                  <IconComponent className="h-4 w-4" />
+                                  <span>{cat.label}</span>
+                                </div>
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                </div>
+                />
               </div>
 
               {/* Basic Information */}
