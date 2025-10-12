@@ -1620,14 +1620,14 @@ export default function ProductForm() {
                                 </div>
                               </div>
                               
-                              <div className="p-3 bg-slate-50 dark:bg-slate-900">
+                              <div className="p-3 bg-slate-50 dark:bg-slate-900 min-h-[76px]">
                                 <Select value={img.purpose} onValueChange={(value) => handleChangePurpose(index, value as ImagePurpose)}>
                                   <SelectTrigger className="h-auto py-2 text-xs border-0 bg-transparent" data-testid={`select-purpose-${index}`}>
                                     <div className="flex items-center gap-2 w-full">
                                       <Icon className="h-4 w-4 shrink-0 text-slate-600 dark:text-slate-400" />
                                       <div className="text-left flex-1 min-w-0">
                                         <div className="font-medium text-slate-900 dark:text-slate-100 leading-tight">{config.label}</div>
-                                        <div className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5">{config.description}</div>
+                                        <div className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight mt-0.5 line-clamp-2">{config.description}</div>
                                       </div>
                                     </div>
                                   </SelectTrigger>
