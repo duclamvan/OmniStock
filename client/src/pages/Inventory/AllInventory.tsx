@@ -36,6 +36,14 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function AllInventory() {
   const { toast } = useToast();
@@ -50,6 +58,8 @@ export default function AllInventory() {
   const [orderCounts, setOrderCounts] = useState<{ [productId: string]: number }>({});
   const [showArchive, setShowArchive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
 
   // Column visibility state with localStorage
   const [columnVisibility, setColumnVisibility] = useState<{ [key: string]: boolean }>(() => {
@@ -367,6 +377,9 @@ export default function AllInventory() {
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+
+      // Close dialog
+      setShowImportDialog(false);
 
       // Refresh products
       queryClient.invalidateQueries({ queryKey: ['/api/products'] });
@@ -826,7 +839,7 @@ export default function AllInventory() {
                 variant="outline" 
                 size="sm" 
                 className="flex-1 sm:flex-none touch-target"
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => setShowImportDialog(true)}
                 data-testid="button-import-xls"
               >
                 <FileUp className="mr-2 h-4 w-4" />
@@ -836,7 +849,7 @@ export default function AllInventory() {
                 variant="outline" 
                 size="sm" 
                 className="flex-1 sm:flex-none touch-target"
-                onClick={handleExport}
+                onClick={() => setShowExportDialog(true)}
                 data-testid="button-export-xls"
               >
                 <FileDown className="mr-2 h-4 w-4" />
@@ -1287,6 +1300,176 @@ export default function AllInventory() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Export Dialog */}
+      <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Export Inventory to Excel</DialogTitle>
+            <DialogDescription>
+              Export your current inventory data to an Excel file
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <h4 className="font-semibold text-sm mb-2">What will be exported:</h4>
+              <ul className="text-sm space-y-1 text-muted-foreground">
+                <li>• {filteredProducts?.length || 0} products (based on current filters)</li>
+                <li>• All product details including prices, stock, and suppliers</li>
+                <li>• Categories and warehouses will be included by name</li>
+              </ul>
+            </div>
+
+            <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-lg">
+              <h4 className="font-semibold text-sm mb-3">Exported Columns:</h4>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="space-y-1">
+                  <p className="text-muted-foreground">• Name</p>
+                  <p className="text-muted-foreground">• SKU</p>
+                  <p className="text-muted-foreground">• Barcode</p>
+                  <p className="text-muted-foreground">• Category</p>
+                  <p className="text-muted-foreground">• Quantity</p>
+                  <p className="text-muted-foreground">• Low Stock Alert</p>
+                  <p className="text-muted-foreground">• Price EUR</p>
+                  <p className="text-muted-foreground">• Price CZK</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-muted-foreground">• Import Cost USD</p>
+                  <p className="text-muted-foreground">• Import Cost EUR</p>
+                  <p className="text-muted-foreground">• Import Cost CZK</p>
+                  <p className="text-muted-foreground">• Supplier</p>
+                  <p className="text-muted-foreground">• Warehouse</p>
+                  <p className="text-muted-foreground">• Description</p>
+                  <p className="text-muted-foreground">• Status</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-xs text-muted-foreground">
+              The file will be saved as <code className="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded">inventory_YYYY-MM-DD.xlsx</code>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowExportDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                handleExport();
+                setShowExportDialog(false);
+              }}
+              data-testid="button-confirm-export"
+            >
+              <FileDown className="mr-2 h-4 w-4" />
+              Export Now
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import Dialog */}
+      <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Import Inventory from Excel</DialogTitle>
+            <DialogDescription>
+              Upload an Excel file to create or update products in bulk
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+              <h4 className="font-semibold text-sm mb-2">Important Notes:</h4>
+              <ul className="text-sm space-y-1 text-muted-foreground">
+                <li>• Products with existing SKU will be <strong>updated</strong></li>
+                <li>• Products with new SKU will be <strong>created</strong></li>
+                <li>• Name and SKU are required for each row</li>
+                <li>• Categories and Warehouses must match existing names (case-insensitive)</li>
+              </ul>
+            </div>
+
+            <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-lg">
+              <h4 className="font-semibold text-sm mb-3">Required Excel Format:</h4>
+              
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm font-medium mb-1">Required Columns:</p>
+                  <div className="flex flex-wrap gap-2">
+                    <code className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">Name</code>
+                    <code className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded">SKU</code>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-sm font-medium mb-1">Optional Columns:</p>
+                  <div className="flex flex-wrap gap-2">
+                    <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Barcode</code>
+                    <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Category</code>
+                    <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Quantity</code>
+                    <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Low Stock Alert</code>
+                    <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Price EUR</code>
+                    <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Price CZK</code>
+                    <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Import Cost USD</code>
+                    <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Import Cost EUR</code>
+                    <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Import Cost CZK</code>
+                    <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Warehouse</code>
+                    <code className="text-xs bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">Description</code>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <h4 className="font-semibold text-sm mb-2">Example Row:</h4>
+              <div className="overflow-x-auto">
+                <table className="text-xs w-full border-collapse">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-2">Name</th>
+                      <th className="text-left p-2">SKU</th>
+                      <th className="text-left p-2">Category</th>
+                      <th className="text-left p-2">Quantity</th>
+                      <th className="text-left p-2">Price EUR</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-b">
+                      <td className="p-2">Gel Polish Red</td>
+                      <td className="p-2">GP-RED-001</td>
+                      <td className="p-2">Gel Polish</td>
+                      <td className="p-2">50</td>
+                      <td className="p-2">8.50</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => fileInputRef.current?.click()}
+                data-testid="button-select-import-file"
+              >
+                <FileUp className="mr-2 h-4 w-4" />
+                Select Excel File (.xlsx, .xls)
+              </Button>
+              <p className="text-xs text-center text-muted-foreground">
+                Tip: Export your current inventory first to get the correct format
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowImportDialog(false)}>
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
