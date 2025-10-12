@@ -34,7 +34,7 @@ export default function PackingMaterials() {
             <img 
               src={material.imageUrl} 
               alt={material.name}
-              className="w-full h-full object-cover rounded-lg"
+              className="w-full h-full object-contain bg-slate-50 dark:bg-slate-900 rounded-lg"
             />
           ) : (
             <Package2 className="h-6 w-6 text-muted-foreground" />

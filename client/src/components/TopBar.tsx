@@ -96,7 +96,7 @@ export function TopBar() {
                 <AvatarImage 
                   src={user?.profileImageUrl} 
                   alt={user?.firstName || 'User'} 
-                  className="object-cover"
+                  className="object-contain bg-slate-50 dark:bg-slate-900"
                 />
                 <AvatarFallback>
                   {user?.firstName?.[0]}{user?.lastName?.[0]}

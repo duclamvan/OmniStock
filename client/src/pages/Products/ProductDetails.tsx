@@ -259,7 +259,7 @@ export default function ProductDetails() {
                 <img
                   src={displayImage}
                   alt={product.name}
-                  className="w-32 h-32 object-cover rounded-xl border-2 border-slate-200 shadow-sm"
+                  className="w-32 h-32 object-contain rounded-xl border-2 border-slate-200 shadow-sm bg-slate-50"
                   data-testid="img-product-primary"
                 />
               ) : (
@@ -401,11 +401,11 @@ export default function ProductDetails() {
                       const Icon = config?.icon || ImageIcon;
                       return (
                         <div key={idx} className="group">
-                          <div className={`border-2 rounded-lg overflow-hidden ${img.isPrimary ? 'ring-2 ring-blue-500 ring-offset-2' : 'border-slate-200'} transition-all hover:shadow-md`}>
+                          <div className={`aspect-square border-2 rounded-lg overflow-hidden ${img.isPrimary ? 'ring-2 ring-blue-500 ring-offset-2' : 'border-slate-200'} transition-all hover:shadow-md bg-slate-50 flex items-center justify-center`}>
                             <img
                               src={img.url}
                               alt={config?.label || img.purpose}
-                              className="w-full h-32 object-cover"
+                              className="w-full h-full object-contain p-2"
                               data-testid={`img-gallery-${idx}`}
                             />
                           </div>

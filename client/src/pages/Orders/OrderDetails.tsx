@@ -625,7 +625,7 @@ export default function OrderDetails() {
                           <img 
                             src={item.image} 
                             alt={item.productName}
-                            className="w-12 h-12 object-cover rounded border border-slate-200"
+                            className="w-12 h-12 object-contain rounded border border-slate-200 bg-slate-50"
                           />
                         ) : (
                           <div className="w-12 h-12 bg-slate-100 rounded border border-slate-200 flex items-center justify-center">

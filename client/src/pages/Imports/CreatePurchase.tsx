@@ -1539,7 +1539,7 @@ export default function CreatePurchase() {
                       <img
                         src={selectedProduct.imageUrl}
                         alt={selectedProduct.name}
-                        className="w-32 h-32 object-cover rounded-lg border-2 border-gray-200"
+                        className="w-32 h-32 object-contain rounded-lg border-2 border-gray-200 bg-slate-50"
                       />
                       <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                         <div className="text-center text-white">
@@ -1554,7 +1554,7 @@ export default function CreatePurchase() {
                       <img
                         src={productImagePreview}
                         alt="Product preview"
-                        className="w-32 h-32 object-cover rounded-lg border-2 border-primary"
+                        className="w-32 h-32 object-contain rounded-lg border-2 border-primary bg-slate-50"
                       />
                       <Button
                         type="button"

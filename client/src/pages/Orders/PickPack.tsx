@@ -3233,7 +3233,7 @@ export default function PickPack() {
                                     <img 
                                       src={item.image} 
                                       alt={item.productName}
-                                      className="w-full h-full object-cover"
+                                      className="w-full h-full object-contain bg-slate-50 dark:bg-slate-900"
                                     />
                                   ) : (
                                     <Package className="h-8 w-8 text-gray-400" />
@@ -3312,7 +3312,7 @@ export default function PickPack() {
                                               <img 
                                                 src={item.packingMaterial.imageUrl} 
                                                 alt={item.packingMaterial.name}
-                                                className="w-8 h-8 rounded object-cover border"
+                                                className="w-8 h-8 rounded object-contain border bg-slate-50"
                                               />
                                             )}
                                             <div className="text-xs">
@@ -6301,7 +6301,7 @@ export default function PickPack() {
                         <img 
                           src={item.image} 
                           alt={item.productName}
-                          className="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded flex-shrink-0"
+                          className="w-10 h-10 sm:w-12 sm:h-12 object-contain rounded flex-shrink-0 bg-slate-50 border border-slate-200"
                         />
                       )}
                       <div className="flex-1 min-w-0">

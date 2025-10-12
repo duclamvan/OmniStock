@@ -432,7 +432,7 @@ export default function ProductVariants({ productId }: ProductVariantsProps) {
                         <img 
                           src={variant.imageUrl} 
                           alt={variant.name}
-                          className="w-10 h-10 rounded object-cover border border-slate-200"
+                          className="w-10 h-10 rounded object-contain border border-slate-200 bg-slate-50"
                         />
                       ) : (
                         <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center">

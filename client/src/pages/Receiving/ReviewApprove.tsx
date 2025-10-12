@@ -425,7 +425,7 @@ export default function ReviewApprove() {
                                   <img 
                                     src={itemImage} 
                                     alt={itemName}
-                                    className="w-full h-full object-cover"
+                                    className="w-full h-full object-contain bg-slate-50 dark:bg-slate-900"
                                   />
                                 ) : (
                                   <span className="text-lg">{getPlaceholderIcon()}</span>

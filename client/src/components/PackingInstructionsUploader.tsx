@@ -302,7 +302,7 @@ export default function PackingInstructionsUploader({
                       <img
                         src={instruction.image}
                         alt={`Instruction ${index + 1}`}
-                        className="w-32 h-32 object-cover rounded-md border border-slate-300 dark:border-slate-600"
+                        className="w-32 h-32 object-contain rounded-md border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900"
                         data-testid={`img-instruction-${index}`}
                       />
                     </div>
@@ -415,7 +415,7 @@ export default function PackingInstructionsUploader({
                   <img
                     src={currentImageUrl}
                     alt="Instruction preview"
-                    className="w-full h-64 object-cover rounded-md border"
+                    className="w-full h-64 object-contain rounded-md border bg-slate-50 dark:bg-slate-900"
                   />
                   <Button
                     type="button"

@@ -1576,7 +1576,7 @@ export default function ProductForm() {
                                 <img
                                   src={img.preview}
                                   alt={config.label}
-                                  className="w-full h-full object-cover cursor-pointer"
+                                  className="w-full h-full object-contain bg-slate-50 dark:bg-slate-900 cursor-pointer"
                                   onClick={() => {
                                     setSelectedImage({ preview: img.preview, purpose: img.purpose });
                                     setImageViewerOpen(true);
@@ -2572,7 +2572,7 @@ export default function ProductForm() {
                                   <img
                                     src={newVariantImagePreview}
                                     alt="Variant preview"
-                                    className="w-full h-full object-cover"
+                                    className="w-full h-full object-contain bg-slate-50 dark:bg-slate-900"
                                   />
                                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                     <label className="cursor-pointer">
@@ -2907,7 +2907,7 @@ export default function ProductForm() {
                                       <img
                                         src={variant.imageUrl}
                                         alt={variant.name}
-                                        className="w-full h-full object-cover"
+                                        className="w-full h-full object-contain bg-slate-50 dark:bg-slate-900"
                                       />
                                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
                                         <label className="cursor-pointer">
@@ -3148,7 +3148,7 @@ export default function ProductForm() {
                                         <img
                                           src={material.imageUrl}
                                           alt={material.name}
-                                          className="w-full h-full object-cover"
+                                          className="w-full h-full object-contain bg-slate-50 dark:bg-slate-900"
                                         />
                                       ) : (
                                         <Package className="h-6 w-6 text-slate-400" />

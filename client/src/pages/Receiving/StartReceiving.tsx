@@ -2524,7 +2524,7 @@ export default function StartReceiving() {
                                 <LazyImage 
                                   thumbnailSrc={item.imageUrl}
                                   alt={item.name}
-                                  className="w-20 h-20 object-cover rounded-lg border-2 border-gray-300 dark:border-gray-600 shadow-lg bg-white dark:bg-gray-800"
+                                  className="w-20 h-20 object-contain rounded-lg border-2 border-gray-300 dark:border-gray-600 shadow-lg bg-white dark:bg-gray-800"
                                 />
                                 {/* Status Icon Overlay */}
                                 <div className={`absolute -top-1 -right-1 w-6 h-6 rounded-full bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center transition-transform duration-200 ${isComplete ? 'scale-110' : ''} z-10`}>

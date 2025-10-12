@@ -252,7 +252,7 @@ export default function AllInventory() {
             <img 
               src={product.imageUrl} 
               alt={product.name} 
-              className="w-10 h-10 object-cover rounded flex-shrink-0"
+              className="w-10 h-10 object-contain rounded flex-shrink-0 bg-slate-50 border border-slate-200"
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
               }}

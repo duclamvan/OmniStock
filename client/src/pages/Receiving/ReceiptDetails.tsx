@@ -649,7 +649,7 @@ export default function ReceiptDetails() {
                       <img
                         src={photoSrc}
                         alt={`Receipt photo ${index + 1}`}
-                        className="w-full h-full object-cover transition-transform group-hover:scale-110"
+                        className="w-full h-full object-contain bg-slate-50 dark:bg-slate-900 transition-transform group-hover:scale-110"
                         loading="lazy"
                         onError={(e) => {
                           console.error('Photo failed to load:', photoSrc?.substring(0, 50) + '...');

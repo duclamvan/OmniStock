@@ -1244,7 +1244,7 @@ export default function ItemsToStore() {
                         <img 
                           src={item.imageUrl} 
                           alt={item.productName}
-                          className="w-16 h-16 rounded-lg object-cover border"
+                          className="w-16 h-16 rounded-lg object-contain border bg-slate-50"
                         />
                       ) : (
                         <div className="w-16 h-16 rounded-lg bg-gray-100 flex items-center justify-center">
