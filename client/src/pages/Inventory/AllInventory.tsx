@@ -966,6 +966,7 @@ export default function AllInventory() {
           {/* Desktop Table View */}
           <div className="hidden sm:block">
             <DataTable
+              key={visibleColumns.map(col => col.key).join(',')}
               data={filteredProducts}
               columns={visibleColumns}
               bulkActions={bulkActions}
