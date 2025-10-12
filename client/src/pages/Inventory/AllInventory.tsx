@@ -13,7 +13,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { Plus, Search, Edit, Trash2, Package, AlertTriangle, MoreVertical, Archive, SlidersHorizontal, X, FileDown, FileUp } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Package, AlertTriangle, MoreVertical, Archive, SlidersHorizontal, X, FileDown, FileUp, ArrowLeft } from "lucide-react";
 import * as XLSX from 'xlsx';
 import {
   DropdownMenu,
@@ -801,6 +801,17 @@ export default function AllInventory() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
+          {showArchive && (
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => setShowArchive(false)}
+              className="h-9 w-9"
+              data-testid="button-back-to-inventory"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          )}
           <h1 className="text-mobile-2xl font-bold text-slate-900">
             {showArchive ? "Archive" : "Inventory"}
           </h1>
