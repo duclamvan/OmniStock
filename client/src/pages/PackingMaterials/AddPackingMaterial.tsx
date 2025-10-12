@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Save, Box, Layers, Shield, Package, Upload, X, Check, UserPlus } from "lucide-react";
+import { ArrowLeft, Save, Box, Layers, Shield, Package, Upload, X, Check, UserPlus, FlaskConical } from "lucide-react";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -57,6 +57,7 @@ const MATERIAL_CATEGORIES = [
   { value: "filling", label: "Filling Materials", icon: Layers },
   { value: "protective", label: "Protective Materials", icon: Shield },
   { value: "supplies", label: "General Supplies", icon: Package },
+  { value: "packaging", label: "Product Packaging", icon: FlaskConical },
 ];
 
 // Type options
@@ -84,6 +85,16 @@ const CATEGORY_TYPES: Record<string, { value: string; label: string }[]> = {
     { value: "markers", label: "Markers" },
     { value: "gloves", label: "Gloves" },
     { value: "tape_dispenser", label: "Tape Dispenser" },
+  ],
+  packaging: [
+    { value: "bottles", label: "Bottles" },
+    { value: "jars", label: "Jars" },
+    { value: "tubes", label: "Tubes" },
+    { value: "doses", label: "Doses/Vials" },
+    { value: "pumps", label: "Pumps & Dispensers" },
+    { value: "caps", label: "Caps & Lids" },
+    { value: "droppers", label: "Droppers" },
+    { value: "containers", label: "Containers" },
   ],
 };
 

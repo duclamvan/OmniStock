@@ -31,6 +31,7 @@ import {
   expenses,
   packingMaterials,
   packingMaterialUsage,
+  pmSuppliers,
   type User,
   type InsertUser,
   type Category,
@@ -92,7 +93,9 @@ import {
   type PackingMaterial,
   type InsertPackingMaterial,
   type PackingMaterialUsage,
-  type InsertPackingMaterialUsage
+  type InsertPackingMaterialUsage,
+  type PmSupplier,
+  type InsertPmSupplier
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, like, sql, gte, lte, inArray, ne, asc, isNull, notInArray } from "drizzle-orm";
