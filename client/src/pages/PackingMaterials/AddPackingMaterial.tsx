@@ -1,8 +1,8 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { z } from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -11,14 +11,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Save, Box, Layers, Shield, Package, Upload, X, Check, UserPlus, FlaskConical } from "lucide-react";
+import { ArrowLeft, Save, Box, Layers, Shield, Package, Upload, X, FlaskConical } from "lucide-react";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Separator } from "@/components/ui/separator";
 import { compressImage } from "@/lib/imageCompression";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -59,41 +57,12 @@ const MATERIAL_CATEGORIES = [
   { value: "packaging", label: "Product Packaging", icon: FlaskConical },
 ];
 
-interface PmSupplier {
-  id: string;
-  name: string;
-  contactPerson?: string | null;
-  email?: string | null;
-  phone?: string | null;
-  address?: string | null;
-  website?: string | null;
-  notes?: string | null;
-  isActive: boolean;
-}
-
 export default function AddPackingMaterial() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
   const [imageUploading, setImageUploading] = useState(false);
-  
-  // Supplier autocomplete state
-  const [supplierDropdownOpen, setSupplierDropdownOpen] = useState(false);
-  const [supplierId, setSupplierId] = useState<string | null>(null);
-  const supplierDropdownRef = useRef<HTMLDivElement>(null);
-  
-  // New supplier dialog state
-  const [newSupplierDialogOpen, setNewSupplierDialogOpen] = useState(false);
-  const [newSupplier, setNewSupplier] = useState({
-    name: "",
-    contactPerson: "",
-    email: "",
-    phone: "",
-    address: "",
-    website: "",
-    notes: "",
-  });
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -122,33 +91,6 @@ export default function AddPackingMaterial() {
       isActive: true,
     },
   });
-
-  const supplierValue = form.watch("supplier");
-
-  // Fetch PM suppliers
-  const { data: pmSuppliers = [] } = useQuery<PmSupplier[]>({
-    queryKey: ["/api/pm-suppliers"],
-  });
-
-  // Filter suppliers based on search
-  const filteredSuppliers = pmSuppliers.filter(s => {
-    if (!supplierValue) return false;
-    return s.name.toLowerCase().includes(supplierValue.toLowerCase());
-  });
-
-  // Click outside to close dropdown
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (supplierDropdownRef.current && !supplierDropdownRef.current.contains(event.target as Node)) {
-        setSupplierDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -188,53 +130,6 @@ export default function AddPackingMaterial() {
     setImageFile(null);
     setImagePreview("");
     form.setValue("imageUrl", "");
-  };
-
-  // Create new supplier mutation
-  const createSupplierMutation = useMutation({
-    mutationFn: async (supplierData: typeof newSupplier) => {
-      return apiRequest("POST", "/api/pm-suppliers", supplierData);
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/pm-suppliers"] });
-      toast({
-        title: "Success",
-        description: "PM supplier created successfully",
-      });
-      // Set the new supplier in the form
-      form.setValue("supplier", data.name);
-      setSupplierId(data.id);
-      setNewSupplierDialogOpen(false);
-      // Reset new supplier form
-      setNewSupplier({
-        name: "",
-        contactPerson: "",
-        email: "",
-        phone: "",
-        address: "",
-        website: "",
-        notes: "",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create PM supplier",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleCreateSupplier = () => {
-    if (!newSupplier.name) {
-      toast({
-        title: "Validation Error",
-        description: "Supplier name is required",
-        variant: "destructive",
-      });
-      return;
-    }
-    createSupplierMutation.mutate(newSupplier);
   };
 
   const createMutation = useMutation({
@@ -793,125 +688,6 @@ export default function AddPackingMaterial() {
           </Form>
         </CardContent>
       </Card>
-
-      {/* New Supplier Dialog */}
-      <Dialog open={newSupplierDialogOpen} onOpenChange={setNewSupplierDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Add New PM Supplier</DialogTitle>
-            <DialogDescription>
-              Create a new packing material supplier for future use
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Supplier Name *</label>
-                <Input
-                  value={newSupplier.name}
-                  onChange={(e) => setNewSupplier({ ...newSupplier, name: e.target.value })}
-                  placeholder="Enter supplier name"
-                  data-testid="input-new-supplier-name"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Contact Person</label>
-                <Input
-                  value={newSupplier.contactPerson}
-                  onChange={(e) => setNewSupplier({ ...newSupplier, contactPerson: e.target.value })}
-                  placeholder="Contact person name"
-                  data-testid="input-new-supplier-contact"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Email</label>
-                <Input
-                  type="email"
-                  value={newSupplier.email}
-                  onChange={(e) => setNewSupplier({ ...newSupplier, email: e.target.value })}
-                  placeholder="supplier@example.com"
-                  data-testid="input-new-supplier-email"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Phone</label>
-                <Input
-                  value={newSupplier.phone}
-                  onChange={(e) => setNewSupplier({ ...newSupplier, phone: e.target.value })}
-                  placeholder="+1234567890"
-                  data-testid="input-new-supplier-phone"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Address</label>
-              <Input
-                value={newSupplier.address}
-                onChange={(e) => setNewSupplier({ ...newSupplier, address: e.target.value })}
-                placeholder="Full address"
-                data-testid="input-new-supplier-address"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Website</label>
-              <Input
-                type="url"
-                value={newSupplier.website}
-                onChange={(e) => setNewSupplier({ ...newSupplier, website: e.target.value })}
-                placeholder="https://example.com"
-                data-testid="input-new-supplier-website"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Notes</label>
-              <Textarea
-                value={newSupplier.notes}
-                onChange={(e) => setNewSupplier({ ...newSupplier, notes: e.target.value })}
-                placeholder="Additional notes about this supplier"
-                rows={3}
-                data-testid="textarea-new-supplier-notes"
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setNewSupplierDialogOpen(false);
-                setNewSupplier({
-                  name: "",
-                  contactPerson: "",
-                  email: "",
-                  phone: "",
-                  address: "",
-                  website: "",
-                  notes: "",
-                });
-              }}
-              data-testid="button-cancel-supplier"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={handleCreateSupplier}
-              disabled={createSupplierMutation.isPending}
-              data-testid="button-save-supplier"
-            >
-              {createSupplierMutation.isPending ? "Creating..." : "Create Supplier"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
