@@ -598,74 +598,16 @@ export default function AddPackingMaterial() {
                     name="supplier"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Supplier</FormLabel>
+                        <FormLabel>Supplier Link</FormLabel>
                         <FormControl>
-                          <div className="relative" ref={supplierDropdownRef}>
-                            <Input 
-                              placeholder="Search or add supplier" 
-                              {...field} 
-                              value={field.value || ""} 
-                              data-testid="input-supplier"
-                              onChange={(e) => {
-                                field.onChange(e);
-                                setSupplierId(null);
-                                setSupplierDropdownOpen(true);
-                              }}
-                              onFocus={() => setSupplierDropdownOpen(true)}
-                            />
-                            
-                            {/* Supplier suggestions dropdown */}
-                            {supplierDropdownOpen && (
-                              <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-72 overflow-y-auto z-50">
-                                {filteredSuppliers.length > 0 ? (
-                                  filteredSuppliers.map((s) => (
-                                    <button
-                                      key={s.id}
-                                      type="button"
-                                      className="w-full px-3 py-2 text-left hover:bg-accent flex items-center"
-                                      onClick={() => {
-                                        field.onChange(s.name);
-                                        setSupplierId(s.id);
-                                        setSupplierDropdownOpen(false);
-                                      }}
-                                    >
-                                      <Check
-                                        className={cn(
-                                          "mr-2 h-4 w-4",
-                                          supplierId === s.id ? "opacity-100" : "opacity-0"
-                                        )}
-                                      />
-                                      {s.name}
-                                    </button>
-                                  ))
-                                ) : field.value ? (
-                                  <div className="p-2">
-                                    <p className="text-sm text-muted-foreground mb-2">No supplier found</p>
-                                    <Button
-                                      type="button"
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => {
-                                        setNewSupplier({ ...newSupplier, name: field.value || "" });
-                                        setNewSupplierDialogOpen(true);
-                                        setSupplierDropdownOpen(false);
-                                      }}
-                                      className="w-full"
-                                      data-testid="button-add-supplier"
-                                    >
-                                      <UserPlus className="mr-2 h-4 w-4" />
-                                      Add new supplier "{field.value}"
-                                    </Button>
-                                  </div>
-                                ) : (
-                                  <div className="p-4 text-center text-slate-500">
-                                    <div className="text-sm">Start typing to search suppliers</div>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
+                          <Input 
+                            placeholder="https://top-obaly.cz" 
+                            {...field} 
+                            value={field.value || ""} 
+                            data-testid="input-supplier"
+                          />
                         </FormControl>
+                        <FormDescription>Enter the supplier's website URL to quickly reorder this material</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}

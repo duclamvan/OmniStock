@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Plus, Search, Package2, Edit, Trash2, DollarSign, Layers, Archive } from "lucide-react";
+import { Plus, Search, Package2, Edit, Trash2, DollarSign, Layers, Archive, ExternalLink } from "lucide-react";
 import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,26 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { PackingMaterial } from "@shared/schema";
 import { formatCurrency } from "@/lib/currencyUtils";
+
+// Helper function to extract domain from URL
+function getDisplayUrl(url: string | null): { display: string; href: string } | null {
+  if (!url) return null;
+  
+  try {
+    // Try to parse as URL
+    const urlObj = new URL(url.startsWith('http') ? url : `https://${url}`);
+    return {
+      display: urlObj.hostname.replace('www.', ''),
+      href: urlObj.href
+    };
+  } catch {
+    // If not a valid URL, treat as plain text
+    return {
+      display: url,
+      href: url.startsWith('http') ? url : `https://${url}`
+    };
+  }
+}
 
 export default function PackingMaterials() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -64,15 +84,24 @@ export default function PackingMaterials() {
       key: "supplier",
       header: "Supplier",
       className: "min-w-[150px]",
-      cell: (material) => (
-        material.supplier ? (
-          <div className="text-sm">
-            <span className="font-medium">{material.supplier}</span>
-          </div>
+      cell: (material) => {
+        const urlInfo = getDisplayUrl(material.supplier);
+        
+        return urlInfo ? (
+          <a 
+            href={urlInfo.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 text-sm font-medium group"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {urlInfo.display}
+            <ExternalLink className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+          </a>
         ) : (
           <span className="text-muted-foreground text-sm">No supplier</span>
-        )
-      ),
+        );
+      },
     },
     {
       key: "actions",
@@ -94,7 +123,7 @@ export default function PackingMaterials() {
   const stats = {
     total: materials.length,
     lowStock: materials.filter(m => (m.stockQuantity || 0) <= (m.minStockLevel || 10)).length,
-    fragileProtection: materials.filter(m => m.isFragileProtection).length,
+    fragileProtection: materials.filter(m => m.isFragile).length,
     types: Array.from(new Set(materials.map(m => m.type).filter(Boolean))).length,
   };
 
@@ -169,7 +198,6 @@ export default function PackingMaterials() {
           columns={columns}
           data={materials}
           getRowKey={(material: PackingMaterial) => material.id}
-          emptyMessage="No packing materials found"
         />
       </div>
     </div>

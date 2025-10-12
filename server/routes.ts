@@ -2204,7 +2204,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/packing-materials/:id', async (req, res) => {
     try {
-      const material = await storage.getPackingMaterialById(req.params.id);
+      const material = await storage.getPackingMaterial(req.params.id);
       if (material) {
         res.json(material);
       } else {
@@ -2949,7 +2949,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (product) {
                 shipmentNotes = product.shipmentNotes;
                 if (product.packingMaterialId) {
-                  packingMaterial = await storage.getPackingMaterialById(product.packingMaterialId);
+                  packingMaterial = await storage.getPackingMaterial(product.packingMaterialId);
                 }
               }
             }
