@@ -234,7 +234,10 @@ export default function AddPackingMaterial() {
               {/* Material Classification */}
               <div className="space-y-4">
                 <div>
-                  <h3 className="text-lg font-semibold">Material Classification</h3>
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                    Material Classification
+                  </h3>
                   <p className="text-sm text-muted-foreground">Select the category of packing material</p>
                 </div>
                 <Separator />
@@ -274,7 +277,10 @@ export default function AddPackingMaterial() {
               {/* Basic Information */}
               <div className="space-y-4">
                 <div>
-                  <h3 className="text-lg font-semibold">Basic Information</h3>
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                    Basic Information
+                  </h3>
                   <p className="text-sm text-muted-foreground">Material identification and naming</p>
                 </div>
                 <Separator />
@@ -314,7 +320,10 @@ export default function AddPackingMaterial() {
               {/* Dimensions & Specifications */}
               <div className="space-y-4">
                 <div>
-                  <h3 className="text-lg font-semibold">Dimensions & Specifications</h3>
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+                    Dimensions & Specifications
+                  </h3>
                   <p className="text-sm text-muted-foreground">Physical measurements and weight</p>
                 </div>
                 <Separator />
@@ -445,7 +454,10 @@ export default function AddPackingMaterial() {
               {/* Cost & Inventory */}
               <div className="space-y-4">
                 <div>
-                  <h3 className="text-lg font-semibold">Cost & Inventory</h3>
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                    Cost & Inventory
+                  </h3>
                   <p className="text-sm text-muted-foreground">Pricing and stock management</p>
                 </div>
                 <Separator />
@@ -545,7 +557,10 @@ export default function AddPackingMaterial() {
               {/* Additional Details */}
               <div className="space-y-4">
                 <div>
-                  <h3 className="text-lg font-semibold">Additional Details</h3>
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-slate-500"></span>
+                    Additional Details
+                  </h3>
                   <p className="text-sm text-muted-foreground">Description and properties</p>
                 </div>
                 <Separator />
