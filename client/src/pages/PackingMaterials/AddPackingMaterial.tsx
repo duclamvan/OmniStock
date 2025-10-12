@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Save, Package, Box, Layers, Wrench, PaletteIcon as Pallet, Shield } from "lucide-react";
+import { ArrowLeft, Save } from "lucide-react";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -37,84 +37,41 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-// Material Categories for nail salon B2B warehouse
+// Simplified Material Categories
 const MATERIAL_CATEGORIES = [
-  { value: "cartons", label: "Cartons & Boxes", icon: Box },
-  { value: "filling", label: "Filling Materials", icon: Layers },
-  { value: "pallets", label: "Pallets & Platforms", icon: Pallet },
-  { value: "protective", label: "Protective Materials", icon: Shield },
-  { value: "tools", label: "Packing Tools", icon: Wrench },
-  { value: "supplies", label: "General Supplies", icon: Package },
+  { value: "cartons", label: "Cartons & Boxes" },
+  { value: "filling", label: "Filling Materials" },
+  { value: "protective", label: "Protective Materials" },
+  { value: "supplies", label: "General Supplies" },
 ];
 
-// Type options for each category
+// Simplified Type options
 const CATEGORY_TYPES: Record<string, { value: string; label: string }[]> = {
   cartons: [
-    { value: "small_carton", label: "Small Carton (20x15x10 cm)" },
-    { value: "medium_carton", label: "Medium Carton (30x25x20 cm)" },
-    { value: "large_carton", label: "Large Carton (40x35x30 cm)" },
-    { value: "xlarge_carton", label: "Extra Large Carton (50x40x40 cm)" },
-    { value: "display_box", label: "Display Box" },
-    { value: "mailer_box", label: "Mailer Box" },
-    { value: "shipping_carton", label: "Shipping Carton" },
-    { value: "gift_box", label: "Gift Box" },
+    { value: "small", label: "Small (20×15×10 cm)" },
+    { value: "medium", label: "Medium (30×25×20 cm)" },
+    { value: "large", label: "Large (40×35×30 cm)" },
+    { value: "xlarge", label: "Extra Large (50×40×40 cm)" },
   ],
   filling: [
     { value: "bubble_wrap", label: "Bubble Wrap" },
     { value: "foam_sheets", label: "Foam Sheets" },
     { value: "air_pillows", label: "Air Pillows" },
-    { value: "packing_peanuts", label: "Packing Peanuts" },
     { value: "paper_fill", label: "Paper Fill" },
-    { value: "shredded_paper", label: "Shredded Paper" },
-    { value: "foam_corners", label: "Foam Corner Protectors" },
-    { value: "void_fill", label: "Void Fill Material" },
-  ],
-  pallets: [
-    { value: "euro_pallet", label: "Euro Pallet (120x80 cm)" },
-    { value: "standard_pallet", label: "Standard Pallet (100x120 cm)" },
-    { value: "half_pallet", label: "Half Pallet" },
-    { value: "quarter_pallet", label: "Quarter Pallet" },
-    { value: "plastic_pallet", label: "Plastic Pallet" },
-    { value: "wooden_pallet", label: "Wooden Pallet" },
   ],
   protective: [
-    { value: "stretch_film", label: "Stretch Film / Wrap" },
-    { value: "shrink_wrap", label: "Shrink Wrap" },
+    { value: "stretch_film", label: "Stretch Film" },
     { value: "packing_tape", label: "Packing Tape" },
     { value: "fragile_tape", label: "Fragile Tape" },
-    { value: "edge_protectors", label: "Edge Protectors" },
-    { value: "corner_boards", label: "Corner Boards" },
-    { value: "moisture_barrier", label: "Moisture Barrier Bags" },
-  ],
-  tools: [
-    { value: "tape_dispenser", label: "Tape Dispenser" },
-    { value: "box_cutter", label: "Box Cutter / Knife" },
-    { value: "stretch_wrap_dispenser", label: "Stretch Wrap Dispenser" },
-    { value: "label_printer", label: "Label Printer" },
-    { value: "scale", label: "Packing Scale" },
-    { value: "stapler", label: "Heavy-Duty Stapler" },
-    { value: "strapping_tool", label: "Strapping Tool" },
+    { value: "corner_protectors", label: "Corner Protectors" },
   ],
   supplies: [
     { value: "shipping_labels", label: "Shipping Labels" },
-    { value: "barcode_labels", label: "Barcode Labels" },
-    { value: "fragile_stickers", label: "Fragile Stickers" },
-    { value: "packing_list_envelopes", label: "Packing List Envelopes" },
-    { value: "gloves", label: "Packing Gloves" },
-    { value: "markers", label: "Permanent Markers" },
-    { value: "strapping_bands", label: "Strapping Bands" },
+    { value: "markers", label: "Markers" },
+    { value: "gloves", label: "Gloves" },
+    { value: "tape_dispenser", label: "Tape Dispenser" },
   ],
 };
-
-const SIZE_OPTIONS = [
-  { value: "xs", label: "Extra Small (XS)" },
-  { value: "s", label: "Small (S)" },
-  { value: "m", label: "Medium (M)" },
-  { value: "l", label: "Large (L)" },
-  { value: "xl", label: "Extra Large (XL)" },
-  { value: "xxl", label: "Double XL (XXL)" },
-  { value: "custom", label: "Custom Size" },
-];
 
 export default function AddPackingMaterial() {
   const [, navigate] = useLocation();
@@ -146,10 +103,9 @@ export default function AddPackingMaterial() {
   const selectedCategory = form.watch("category");
   const typeOptions = selectedCategory ? CATEGORY_TYPES[selectedCategory] || [] : [];
 
-  // Reset type when category changes
   const handleCategoryChange = (value: string) => {
     form.setValue("category", value);
-    form.setValue("type", ""); // Reset type selection
+    form.setValue("type", "");
   };
 
   const createMutation = useMutation({
@@ -176,29 +132,29 @@ export default function AddPackingMaterial() {
   };
 
   return (
-    <div className="container mx-auto py-6 max-w-5xl">
+    <div className="container mx-auto py-6 max-w-4xl">
       <div className="mb-6">
         <Link href="/packing-materials">
           <Button variant="ghost" size="sm" data-testid="button-back">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Packing Materials
+            Back
           </Button>
         </Link>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">Add Packing Material</CardTitle>
+          <CardTitle>Add Packing Material</CardTitle>
           <CardDescription>
-            Add warehouse packing materials and supplies to your inventory
+            Add packing materials and supplies to your inventory
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              {/* Category Selection - Primary */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Material Category</h3>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              
+              {/* Category & Type */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="category"
@@ -208,33 +164,23 @@ export default function AddPackingMaterial() {
                       <Select onValueChange={handleCategoryChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger data-testid="select-category">
-                            <SelectValue placeholder="Select a material category" />
+                            <SelectValue placeholder="Select category" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {MATERIAL_CATEGORIES.map((cat) => {
-                            const IconComponent = cat.icon;
-                            return (
-                              <SelectItem key={cat.value} value={cat.value}>
-                                <div className="flex items-center gap-2">
-                                  <IconComponent className="h-4 w-4" />
-                                  <span>{cat.label}</span>
-                                </div>
-                              </SelectItem>
-                            );
-                          })}
+                          {MATERIAL_CATEGORIES.map((cat) => (
+                            <SelectItem key={cat.value} value={cat.value}>
+                              {cat.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              </div>
 
-              {/* Type Selection - Shows based on category */}
-              {selectedCategory && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Material Type</h3>
+                {selectedCategory && (
                   <FormField
                     control={form.control}
                     name="type"
@@ -244,7 +190,7 @@ export default function AddPackingMaterial() {
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger data-testid="select-type">
-                              <SelectValue placeholder="Select material type" />
+                              <SelectValue placeholder="Select type" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -259,308 +205,227 @@ export default function AddPackingMaterial() {
                       </FormItem>
                     )}
                   />
-                </div>
-              )}
-
-              {/* Basic Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Basic Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Material Name *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., Large Shipping Carton" {...field} data-testid="input-name" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="code"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Material Code *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., CART-L-001" {...field} data-testid="input-code" />
-                        </FormControl>
-                        <FormDescription>
-                          Unique identifier for warehouse tracking
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                )}
               </div>
 
-              {/* Dimensions & Specifications */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Dimensions & Specifications</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="size"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Size</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger data-testid="select-size">
-                              <SelectValue placeholder="Select size" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {SIZE_OPTIONS.map((size) => (
-                              <SelectItem key={size.value} value={size.value}>
-                                {size.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="dimensions"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Dimensions</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., 40x35x30 cm" {...field} value={field.value || ""} data-testid="input-dimensions" />
-                        </FormControl>
-                        <FormDescription>
-                          L × W × H format
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="weight"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Weight</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., 0.5 kg" {...field} value={field.value || ""} data-testid="input-weight" />
-                        </FormControl>
-                        <FormDescription>
-                          Per unit weight
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
-
-              {/* Cost & Inventory */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Cost & Inventory</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="cost"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Unit Cost</FormLabel>
-                          <FormControl>
-                            <Input type="number" step="0.01" placeholder="0.00" {...field} data-testid="input-cost" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="currency"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Currency</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger data-testid="select-currency">
-                                <SelectValue />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="EUR">EUR (€)</SelectItem>
-                              <SelectItem value="CZK">CZK (Kč)</SelectItem>
-                              <SelectItem value="USD">USD ($)</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <FormField
-                    control={form.control}
-                    name="supplier"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Supplier</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., Packaging Solutions Ltd." {...field} value={field.value || ""} data-testid="input-supplier" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="stockQuantity"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Current Stock</FormLabel>
-                        <FormControl>
-                          <Input type="number" min="0" {...field} data-testid="input-stock" />
-                        </FormControl>
-                        <FormDescription>
-                          Units currently in stock
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="minStockLevel"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Min Stock Alert</FormLabel>
-                        <FormControl>
-                          <Input type="number" min="0" {...field} data-testid="input-min-stock" />
-                        </FormControl>
-                        <FormDescription>
-                          Alert when stock falls below
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
-
-              {/* Description & Notes */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Additional Information</h3>
+              {/* Name & Code */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="description"
+                  name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Description</FormLabel>
+                      <FormLabel>Material Name *</FormLabel>
                       <FormControl>
-                        <Textarea 
-                          placeholder="Enter material description, specifications, or usage notes..." 
-                          rows={4}
-                          {...field} 
-                          value={field.value || ""}
-                          data-testid="textarea-description"
+                        <Input placeholder="e.g., Large Shipping Carton" {...field} data-testid="input-name" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="code"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Code *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., CART-L-001" {...field} data-testid="input-code" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Dimensions */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="dimensions"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Dimensions</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., 40×35×30 cm" {...field} value={field.value || ""} data-testid="input-dimensions" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="weight"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Weight</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., 0.5 kg" {...field} value={field.value || ""} data-testid="input-weight" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Cost & Supplier */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name="cost"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Unit Cost</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.01" placeholder="0.00" {...field} data-testid="input-cost" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="currency"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Currency</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-currency">
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="EUR">EUR (€)</SelectItem>
+                          <SelectItem value="CZK">CZK (Kč)</SelectItem>
+                          <SelectItem value="USD">USD ($)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="supplier"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Supplier</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Supplier name" {...field} value={field.value || ""} data-testid="input-supplier" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Stock */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="stockQuantity"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Current Stock</FormLabel>
+                      <FormControl>
+                        <Input type="number" min="0" {...field} data-testid="input-stock" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="minStockLevel"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Min Stock Alert</FormLabel>
+                      <FormControl>
+                        <Input type="number" min="0" {...field} data-testid="input-min-stock" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Description */}
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Material description or notes..." 
+                        rows={3}
+                        {...field} 
+                        value={field.value || ""}
+                        data-testid="textarea-description"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Properties */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="isReusable"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                      <div>
+                        <FormLabel className="text-sm font-medium">Reusable</FormLabel>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          data-testid="switch-reusable"
                         />
                       </FormControl>
-                      <FormMessage />
                     </FormItem>
                   )}
                 />
 
                 <FormField
                   control={form.control}
-                  name="imageUrl"
+                  name="isFragile"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Image URL</FormLabel>
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                      <div>
+                        <FormLabel className="text-sm font-medium">Fragile</FormLabel>
+                      </div>
                       <FormControl>
-                        <Input placeholder="https://example.com/image.jpg" {...field} value={field.value || ""} data-testid="input-image-url" />
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          data-testid="switch-fragile"
+                        />
                       </FormControl>
-                      <FormDescription>
-                        Optional image for visual reference
-                      </FormDescription>
-                      <FormMessage />
                     </FormItem>
                   )}
                 />
-              </div>
-
-              {/* Material Properties */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Material Properties</h3>
-                <div className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="isReusable"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">
-                            Reusable Material
-                          </FormLabel>
-                          <FormDescription>
-                            Can this material be reused multiple times?
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            data-testid="switch-reusable"
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="isFragile"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">
-                            Fragile / Delicate
-                          </FormLabel>
-                          <FormDescription>
-                            Requires careful handling or storage
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            data-testid="switch-fragile"
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex justify-end gap-4 pt-6 border-t">
+              <div className="flex justify-end gap-3 pt-4">
                 <Link href="/packing-materials">
                   <Button type="button" variant="outline" data-testid="button-cancel">
                     Cancel
                   </Button>
                 </Link>
                 <Button type="submit" disabled={createMutation.isPending} data-testid="button-submit">
-                  <Save className="h-4 w-4 mr-2" />
+                  <Save className="mr-2 h-4 w-4" />
                   {createMutation.isPending ? "Creating..." : "Create Material"}
                 </Button>
               </div>
