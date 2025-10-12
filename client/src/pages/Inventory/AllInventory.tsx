@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +13,8 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { Plus, Search, Edit, Trash2, Package, AlertTriangle, MoreVertical, Archive, SlidersHorizontal, X } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Package, AlertTriangle, MoreVertical, Archive, SlidersHorizontal, X, FileDown, FileUp } from "lucide-react";
+import * as XLSX from 'xlsx';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,6 +49,7 @@ export default function AllInventory() {
   const [selectedProducts, setSelectedProducts] = useState<any[]>([]);
   const [orderCounts, setOrderCounts] = useState<{ [productId: string]: number }>({});
   const [showArchive, setShowArchive] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Column visibility state with localStorage
   const [columnVisibility, setColumnVisibility] = useState<{ [key: string]: boolean }>(() => {
@@ -202,6 +204,201 @@ export default function AllInventory() {
       });
     },
   });
+
+  // Export to Excel
+  const handleExport = () => {
+    if (!filteredProducts || filteredProducts.length === 0) {
+      toast({
+        title: "No data to export",
+        description: "There are no products to export",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Prepare data for export
+    const exportData = filteredProducts.map((product: any) => ({
+      Name: product.name,
+      SKU: product.sku,
+      Barcode: product.barcode || '',
+      Category: (categories as any[])?.find((c: any) => String(c.id) === product.categoryId)?.name || '',
+      Quantity: product.quantity,
+      'Low Stock Alert': product.lowStockAlert,
+      'Price EUR': product.priceEur,
+      'Price CZK': product.priceCzk,
+      'Import Cost USD': product.importCostUsd || '',
+      'Import Cost EUR': product.importCostEur || '',
+      'Import Cost CZK': product.importCostCzk || '',
+      Supplier: product.supplier?.name || '',
+      Warehouse: (warehouses as any[])?.find((w: any) => w.id === product.warehouseId)?.name || '',
+      Description: product.description || '',
+      Status: product.isActive ? 'Active' : 'Inactive',
+    }));
+
+    // Create worksheet
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    
+    // Set column widths
+    ws['!cols'] = [
+      { wch: 30 }, // Name
+      { wch: 15 }, // SKU
+      { wch: 15 }, // Barcode
+      { wch: 20 }, // Category
+      { wch: 10 }, // Quantity
+      { wch: 15 }, // Low Stock Alert
+      { wch: 12 }, // Price EUR
+      { wch: 12 }, // Price CZK
+      { wch: 15 }, // Import Cost USD
+      { wch: 15 }, // Import Cost EUR
+      { wch: 15 }, // Import Cost CZK
+      { wch: 20 }, // Supplier
+      { wch: 20 }, // Warehouse
+      { wch: 40 }, // Description
+      { wch: 10 }, // Status
+    ];
+
+    // Create workbook
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Products');
+
+    // Generate filename with timestamp
+    const timestamp = new Date().toISOString().split('T')[0];
+    const filename = `inventory_${timestamp}.xlsx`;
+
+    // Save file
+    XLSX.writeFile(wb, filename);
+
+    toast({
+      title: "Export successful",
+      description: `Exported ${filteredProducts.length} products to ${filename}`,
+    });
+  };
+
+  // Import from Excel
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data);
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+      if (jsonData.length === 0) {
+        toast({
+          title: "No data found",
+          description: "The Excel file is empty",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Process and validate data
+      let successCount = 0;
+      let errorCount = 0;
+      const errors: string[] = [];
+
+      for (const row of jsonData as any[]) {
+        try {
+          // Map Excel columns to product data
+          const productData: any = {
+            name: row.Name || row.name,
+            sku: row.SKU || row.sku,
+            barcode: row.Barcode || row.barcode || null,
+            quantity: Number(row.Quantity || row.quantity || 0),
+            lowStockAlert: Number(row['Low Stock Alert'] || row.lowStockAlert || 0),
+            priceEur: row['Price EUR'] || row.priceEur || '0',
+            priceCzk: row['Price CZK'] || row.priceCzk || '0',
+            importCostUsd: row['Import Cost USD'] || row.importCostUsd || null,
+            importCostEur: row['Import Cost EUR'] || row.importCostEur || null,
+            importCostCzk: row['Import Cost CZK'] || row.importCostCzk || null,
+            description: row.Description || row.description || '',
+          };
+
+          // Validate required fields
+          if (!productData.name || !productData.sku) {
+            errors.push(`Row skipped: Missing name or SKU`);
+            errorCount++;
+            continue;
+          }
+
+          // Find category by name
+          const categoryName = row.Category || row.category;
+          if (categoryName) {
+            const category = (categories as any[])?.find(
+              (c: any) => c.name.toLowerCase() === categoryName.toLowerCase()
+            );
+            if (category) {
+              productData.categoryId = String(category.id);
+            }
+          }
+
+          // Find warehouse by name
+          const warehouseName = row.Warehouse || row.warehouse;
+          if (warehouseName) {
+            const warehouse = (warehouses as any[])?.find(
+              (w: any) => w.name.toLowerCase() === warehouseName.toLowerCase()
+            );
+            if (warehouse) {
+              productData.warehouseId = warehouse.id;
+            }
+          }
+
+          // Check if product exists by SKU
+          const existingProduct = products.find((p: any) => p.sku === productData.sku);
+
+          if (existingProduct) {
+            // Update existing product
+            await apiRequest('PATCH', `/api/products/${existingProduct.id}`, productData);
+          } else {
+            // Create new product
+            await apiRequest('POST', '/api/products', productData);
+          }
+
+          successCount++;
+        } catch (error: any) {
+          errorCount++;
+          errors.push(`${row.Name || row.name || 'Unknown'}: ${error.message}`);
+        }
+      }
+
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+
+      // Refresh products
+      queryClient.invalidateQueries({ queryKey: ['/api/products'] });
+
+      // Show result
+      if (errorCount > 0) {
+        toast({
+          title: "Import completed with errors",
+          description: `${successCount} products imported, ${errorCount} errors. Check console for details.`,
+          variant: "destructive",
+        });
+        console.error("Import errors:", errors);
+      } else {
+        toast({
+          title: "Import successful",
+          description: `Successfully imported ${successCount} products`,
+        });
+      }
+    } catch (error: any) {
+      console.error("Import error:", error);
+      toast({
+        title: "Import failed",
+        description: error.message || "Failed to import Excel file",
+        variant: "destructive",
+      });
+      
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
 
   // Filter products based on search query, category, and archive status
   const filteredProducts = products?.filter((product: any) => {
@@ -617,8 +814,33 @@ export default function AllInventory() {
           
           {!showArchive && (
             <>
-              <Button variant="outline" size="sm" className="flex-1 sm:flex-none touch-target">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleImport}
+                className="hidden"
+                data-testid="input-file-import"
+              />
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex-1 sm:flex-none touch-target"
+                onClick={() => fileInputRef.current?.click()}
+                data-testid="button-import-xls"
+              >
+                <FileUp className="mr-2 h-4 w-4" />
                 Import XLS
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex-1 sm:flex-none touch-target"
+                onClick={handleExport}
+                data-testid="button-export-xls"
+              >
+                <FileDown className="mr-2 h-4 w-4" />
+                Export XLS
               </Button>
               <Link href="/inventory/add" className="flex-1 sm:flex-none">
                 <Button className="w-full touch-target">
