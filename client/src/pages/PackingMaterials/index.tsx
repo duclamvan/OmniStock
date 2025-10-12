@@ -24,20 +24,21 @@ export default function PackingMaterials() {
     },
   });
 
-  const columns = [
+  const columns: DataTableColumn<PackingMaterial>[] = [
     {
       key: "imageUrl",
-      header: "",
-      render: (material: PackingMaterial) => (
-        <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
+      header: "Image",
+      className: "w-24",
+      cell: (material) => (
+        <div className="w-16 h-16 bg-slate-50 rounded-lg flex items-center justify-center overflow-hidden">
           {material.imageUrl ? (
             <img 
               src={material.imageUrl} 
               alt={material.name}
-              className="w-full h-full object-contain bg-slate-50 dark:bg-slate-900 rounded-lg"
+              className="w-full h-full object-cover"
             />
           ) : (
-            <Package2 className="h-6 w-6 text-muted-foreground" />
+            <Package2 className="h-8 w-8 text-muted-foreground" />
           )}
         </div>
       ),
@@ -45,70 +46,44 @@ export default function PackingMaterials() {
     {
       key: "name",
       header: "Name",
-      render: (material: PackingMaterial) => (
-        <div>
-          <div className="font-medium">{material.name}</div>
+      cell: (material) => (
+        <div className="min-w-[200px]">
+          <div className="font-semibold text-base">{material.name}</div>
           {material.code && (
-            <div className="text-sm text-muted-foreground">Code: {material.code}</div>
+            <div className="text-sm text-muted-foreground mt-0.5">Code: {material.code}</div>
+          )}
+          {material.category && (
+            <Badge variant="outline" className="mt-1 text-xs">
+              {material.category}
+            </Badge>
           )}
         </div>
       ),
     },
     {
-      key: "type",
-      header: "Type",
-      render: (material: PackingMaterial) => (
-        <Badge variant="secondary">
-          {material.type || "General"}
-        </Badge>
+      key: "supplier",
+      header: "Supplier",
+      className: "min-w-[150px]",
+      cell: (material) => (
+        material.supplier ? (
+          <div className="text-sm">
+            <span className="font-medium">{material.supplier}</span>
+          </div>
+        ) : (
+          <span className="text-muted-foreground text-sm">No supplier</span>
+        )
       ),
-    },
-    {
-      key: "size",
-      header: "Size",
-      render: (material: PackingMaterial) => material.size || "-",
-    },
-    {
-      key: "stockQuantity",
-      header: "Stock",
-      render: (material: PackingMaterial) => (
-        <div className="flex items-center gap-2">
-          <Archive className="h-4 w-4 text-muted-foreground" />
-          <span className={(material.stockQuantity || 0) <= (material.minStockLevel || 10) ? "text-red-600 font-medium" : ""}>
-            {material.stockQuantity || 0}
-          </span>
-          {(material.stockQuantity || 0) <= (material.minStockLevel || 10) && (
-            <Badge variant="destructive" className="text-xs">Low</Badge>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: "cost",
-      header: "Cost",
-      render: (material: PackingMaterial) => (
-        <div className="flex items-center gap-1">
-          <DollarSign className="h-3 w-3 text-muted-foreground" />
-          {formatCurrency(parseFloat(material.cost || "0"), material.currency || "CZK")}
-        </div>
-      ),
-    },
-    {
-      key: "isFragileProtection",
-      header: "Protection",
-      render: (material: PackingMaterial) => 
-        material.isFragileProtection ? (
-          <Badge variant="default">Fragile Protection</Badge>
-        ) : null,
     },
     {
       key: "actions",
       header: "Actions",
-      render: (material: PackingMaterial) => (
-        <div className="flex items-center gap-2">
+      className: "text-right",
+      cell: (material) => (
+        <div className="flex items-center justify-end gap-2">
           <Link href={`/packing-materials/edit/${material.id}`}>
-            <Button variant="ghost" size="icon">
-              <Edit className="h-4 w-4" />
+            <Button variant="outline" size="sm">
+              <Edit className="h-4 w-4 mr-1" />
+              Edit
             </Button>
           </Link>
         </div>
@@ -189,12 +164,14 @@ export default function PackingMaterials() {
         </div>
       </div>
 
-      <DataTable
-        columns={columns}
-        data={materials}
-        getRowKey={(material: PackingMaterial) => material.id}
-        emptyMessage="No packing materials found"
-      />
+      <div className="bg-white dark:bg-slate-900 rounded-lg border">
+        <DataTable
+          columns={columns}
+          data={materials}
+          getRowKey={(material: PackingMaterial) => material.id}
+          emptyMessage="No packing materials found"
+        />
+      </div>
     </div>
   );
 }
