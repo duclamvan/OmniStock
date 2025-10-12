@@ -2,6 +2,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { useState } from "react";
 import { z } from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -10,11 +11,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Save, Box, Layers, Shield, Package } from "lucide-react";
+import { ArrowLeft, Save, Box, Layers, Shield, Package, Upload, X } from "lucide-react";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Separator } from "@/components/ui/separator";
+import { compressImage } from "@/lib/imageCompression";
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -86,6 +88,9 @@ const CATEGORY_TYPES: Record<string, { value: string; label: string }[]> = {
 export default function AddPackingMaterial() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
+  const [imageUploading, setImageUploading] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -124,8 +129,48 @@ export default function AddPackingMaterial() {
     form.setValue("type", "");
   };
 
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file",
+        description: "Please select an image file",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please select an image smaller than 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setImageFile(file);
+    
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview("");
+    form.setValue("imageUrl", "");
+  };
+
   const createMutation = useMutation({
-    mutationFn: (data: FormData) => {
+    mutationFn: async (data: FormData) => {
       // Combine dimensions if separate fields are provided
       const processedData = { ...data };
       if (data.length || data.width || data.height) {
@@ -135,6 +180,49 @@ export default function AddPackingMaterial() {
       if (data.weightValue) {
         processedData.weight = `${data.weightValue} ${data.weightUnit}`;
       }
+
+      // Upload image if one is selected
+      if (imageFile) {
+        setImageUploading(true);
+        try {
+          const compressed = await compressImage(imageFile, {
+            maxWidth: 1920,
+            maxHeight: 1920,
+            quality: 0.8,
+            format: 'jpeg'
+          });
+
+          // Convert base64 to blob
+          const base64Response = await fetch(compressed);
+          const blob = await base64Response.blob();
+          
+          // Create FormData for upload
+          const formData = new FormData();
+          formData.append('image', blob, imageFile.name);
+          
+          const uploadResponse = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (!uploadResponse.ok) {
+            throw new Error('Image upload failed');
+          }
+
+          const uploadResult = await uploadResponse.json();
+          processedData.imageUrl = uploadResult.imageUrl;
+        } catch (error) {
+          console.error('Image upload error:', error);
+          toast({
+            title: "Image upload failed",
+            description: "The material will be created without an image",
+            variant: "destructive",
+          });
+        } finally {
+          setImageUploading(false);
+        }
+      }
+
       return apiRequest("POST", "/api/packing-materials", processedData);
     },
     onSuccess: () => {
@@ -542,6 +630,65 @@ export default function AddPackingMaterial() {
                   )}
                 />
 
+                {/* Image Upload */}
+                <div>
+                  <FormLabel>Material Image</FormLabel>
+                  <FormDescription className="mb-3">Upload a photo for visual reference (max 5MB)</FormDescription>
+                  
+                  {!imagePreview ? (
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        className="hidden"
+                        id="image-upload"
+                        data-testid="input-image-upload"
+                      />
+                      <label
+                        htmlFor="image-upload"
+                        className="cursor-pointer flex flex-col items-center gap-2"
+                      >
+                        <Upload className="h-10 w-10 text-gray-400" />
+                        <div className="text-sm text-gray-600">
+                          <span className="text-blue-600 font-medium">Click to upload</span> or drag and drop
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          PNG, JPG, WEBP up to 5MB
+                        </div>
+                      </label>
+                    </div>
+                  ) : (
+                    <div className="relative border rounded-lg p-4 bg-gray-50">
+                      <div className="flex items-start gap-4">
+                        <img
+                          src={imagePreview}
+                          alt="Material preview"
+                          className="w-32 h-32 object-cover rounded-lg"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {imageFile?.name}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {imageFile ? `${(imageFile.size / 1024 / 1024).toFixed(2)} MB` : ''}
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={removeImage}
+                          className="h-8 w-8"
+                          data-testid="button-remove-image"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -592,9 +739,9 @@ export default function AddPackingMaterial() {
                     Cancel
                   </Button>
                 </Link>
-                <Button type="submit" disabled={createMutation.isPending} data-testid="button-submit">
+                <Button type="submit" disabled={createMutation.isPending || imageUploading} data-testid="button-submit">
                   <Save className="mr-2 h-4 w-4" />
-                  {createMutation.isPending ? "Creating..." : "Create Material"}
+                  {imageUploading ? "Uploading image..." : createMutation.isPending ? "Creating..." : "Create Material"}
                 </Button>
               </div>
             </form>
