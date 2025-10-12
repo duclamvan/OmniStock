@@ -36,7 +36,7 @@ import {
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import { db } from "./db";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, sql, inArray } from "drizzle-orm";
 import {
   ObjectStorageService,
   ObjectNotFoundError,
@@ -1537,15 +1537,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Product not found" });
       }
       
-      // Fetch order items for this product with order and customer details
-      const orderHistory = await db
+      // Fetch order items for this product with order details
+      const orderItems_list = await db
         .select({
           orderId: orders.id,
           orderNumber: orders.orderId,
-          orderDate: orders.orderDate,
-          customerId: customers.id,
-          customerName: customers.name,
-          customerEmail: customers.email,
+          orderDate: orders.createdAt,
+          customerId: orders.customerId,
           quantity: orderItems.quantity,
           price: orderItems.price,
           appliedPrice: orderItems.appliedPrice,
@@ -1555,14 +1553,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
         .from(orderItems)
         .innerJoin(orders, eq(orderItems.orderId, orders.id))
-        .leftJoin(customers, eq(orders.customerId, customers.id))
         .where(eq(orderItems.productId, productId))
-        .orderBy(desc(orders.orderDate));
+        .orderBy(desc(orders.createdAt));
+      
+      // Get unique customer IDs
+      const customerIds = [...new Set(orderItems_list.map(item => item.customerId).filter(Boolean))];
+      
+      // Fetch customer details
+      const customersMap = new Map();
+      if (customerIds.length > 0) {
+        const customersList = await db
+          .select({
+            id: customers.id,
+            name: customers.name,
+            email: customers.email,
+          })
+          .from(customers)
+          .where(inArray(customers.id, customerIds));
+        
+        customersList.forEach(customer => {
+          customersMap.set(customer.id, customer);
+        });
+      }
       
       // Calculate profit and profit margin for each order
-      const orderHistoryWithProfit = orderHistory.map((order) => {
+      const orderHistoryWithProfit = orderItems_list.map((order) => {
         const price = parseFloat(order.appliedPrice || order.price || '0');
         const quantity = order.quantity || 0;
+        
+        // Get customer details
+        const customer = order.customerId ? customersMap.get(order.customerId) : null;
         
         // Use landing cost based on currency
         let costPerUnit = 0;
@@ -1585,7 +1605,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const profitMargin = totalRevenue > 0 ? (profit / totalRevenue * 100) : 0;
         
         return {
-          ...order,
+          orderId: order.orderId,
+          orderNumber: order.orderNumber,
+          orderDate: order.orderDate,
+          customerId: order.customerId,
+          customerName: customer?.name || null,
+          customerEmail: customer?.email || null,
+          quantity: order.quantity,
+          currency: order.currency,
+          orderStatus: order.orderStatus,
+          paymentStatus: order.paymentStatus,
           pricePerUnit: price,
           totalRevenue,
           costPerUnit,
