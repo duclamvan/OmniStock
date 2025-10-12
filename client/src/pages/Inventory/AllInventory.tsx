@@ -756,12 +756,16 @@ export default function AllInventory() {
                     <DropdownMenuItem
                       key={col.key}
                       className="flex items-center gap-2 cursor-pointer"
-                      onSelect={(e) => e.preventDefault()}
+                      onSelect={(e) => {
+                        e.preventDefault();
+                        if (col.key !== 'name') {
+                          toggleColumnVisibility(col.key);
+                        }
+                      }}
                       data-testid={`menuitem-column-${col.key}`}
                     >
                       <Checkbox
                         checked={columnVisibility[col.key] !== false}
-                        onCheckedChange={() => toggleColumnVisibility(col.key)}
                         disabled={col.key === 'name'}
                         data-testid={`checkbox-column-${col.key}`}
                       />
@@ -782,12 +786,14 @@ export default function AllInventory() {
                     <DropdownMenuItem
                       key={col.key}
                       className="flex items-center gap-2 cursor-pointer"
-                      onSelect={(e) => e.preventDefault()}
+                      onSelect={(e) => {
+                        e.preventDefault();
+                        toggleColumnVisibility(col.key);
+                      }}
                       data-testid={`menuitem-column-${col.key}`}
                     >
                       <Checkbox
                         checked={columnVisibility[col.key] !== false}
-                        onCheckedChange={() => toggleColumnVisibility(col.key)}
                         data-testid={`checkbox-column-${col.key}`}
                       />
                       <span>{col.label}</span>
@@ -808,12 +814,14 @@ export default function AllInventory() {
                     <DropdownMenuItem
                       key={col.key}
                       className="flex items-center gap-2 cursor-pointer"
-                      onSelect={(e) => e.preventDefault()}
+                      onSelect={(e) => {
+                        e.preventDefault();
+                        toggleColumnVisibility(col.key);
+                      }}
                       data-testid={`menuitem-column-${col.key}`}
                     >
                       <Checkbox
                         checked={columnVisibility[col.key] !== false}
-                        onCheckedChange={() => toggleColumnVisibility(col.key)}
                         data-testid={`checkbox-column-${col.key}`}
                       />
                       <span>{col.label}</span>
@@ -831,12 +839,16 @@ export default function AllInventory() {
                     <DropdownMenuItem
                       key={col.key}
                       className="flex items-center gap-2 cursor-pointer"
-                      onSelect={(e) => e.preventDefault()}
+                      onSelect={(e) => {
+                        e.preventDefault();
+                        if (col.key !== 'actions') {
+                          toggleColumnVisibility(col.key);
+                        }
+                      }}
                       data-testid={`menuitem-column-${col.key}`}
                     >
                       <Checkbox
                         checked={columnVisibility[col.key] !== false}
-                        onCheckedChange={() => toggleColumnVisibility(col.key)}
                         disabled={col.key === 'actions'}
                         data-testid={`checkbox-column-${col.key}`}
                       />
