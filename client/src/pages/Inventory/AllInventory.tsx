@@ -242,12 +242,12 @@ export default function AllInventory() {
   // Define table columns
   const columns: DataTableColumn<any>[] = [
     {
-      key: "name",
-      header: "Product",
-      sortable: true,
-      className: "min-w-[250px]",
+      key: "image",
+      header: "",
+      sortable: false,
+      className: "w-[60px]",
       cell: (product) => (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center justify-center">
           {product.imageUrl ? (
             <img 
               src={product.imageUrl} 
@@ -262,15 +262,23 @@ export default function AllInventory() {
               <Package className="h-5 w-5 text-gray-400" />
             </div>
           )}
-          <div className="flex-1">
-            <Link href={`/inventory/products/${product.id}`}>
-              <span className={`font-medium cursor-pointer block ${product.isActive ? 'text-blue-600 hover:text-blue-800' : 'text-gray-400 line-through'}`}>
-                {product.name}
-                {!product.isActive && <span className="text-amber-600 font-medium ml-2">(Inactive)</span>}
-              </span>
-            </Link>
-            <p className="text-xs text-gray-500 mt-0.5">SKU: {product.sku}</p>
-          </div>
+        </div>
+      ),
+    },
+    {
+      key: "name",
+      header: "Product",
+      sortable: true,
+      className: "min-w-[200px]",
+      cell: (product) => (
+        <div>
+          <Link href={`/inventory/products/${product.id}`}>
+            <span className={`font-medium cursor-pointer block ${product.isActive ? 'text-blue-600 hover:text-blue-800' : 'text-gray-400 line-through'}`}>
+              {product.name}
+              {!product.isActive && <span className="text-amber-600 font-medium ml-2">(Inactive)</span>}
+            </span>
+          </Link>
+          <p className="text-xs text-gray-500 mt-0.5">SKU: {product.sku}</p>
         </div>
       ),
     },
@@ -425,8 +433,8 @@ export default function AllInventory() {
 
   // Toggle column visibility
   const toggleColumnVisibility = (key: string) => {
-    // Prevent hiding Product and Actions columns
-    if (key === 'name' || key === 'actions') {
+    // Prevent hiding Image, Product and Actions columns
+    if (key === 'image' || key === 'name' || key === 'actions') {
       return;
     }
     setColumnVisibility(prev => {
