@@ -2275,6 +2275,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // PM Suppliers endpoints
+  app.get('/api/pm-suppliers', async (req, res) => {
+    try {
+      const search = req.query.search as string;
+      let suppliers;
+      
+      if (search) {
+        suppliers = await storage.searchPmSuppliers(search);
+      } else {
+        suppliers = await storage.getPmSuppliers();
+      }
+      
+      res.json(suppliers);
+    } catch (error) {
+      console.error("Error fetching PM suppliers:", error);
+      res.status(500).json({ message: "Failed to fetch PM suppliers" });
+    }
+  });
+
+  app.get('/api/pm-suppliers/:id', async (req, res) => {
+    try {
+      const supplier = await storage.getPmSupplier(req.params.id);
+      if (supplier) {
+        res.json(supplier);
+      } else {
+        res.status(404).json({ message: "PM supplier not found" });
+      }
+    } catch (error) {
+      console.error("Error fetching PM supplier:", error);
+      res.status(500).json({ message: "Failed to fetch PM supplier" });
+    }
+  });
+
+  app.post('/api/pm-suppliers', async (req: any, res) => {
+    try {
+      const supplierData = req.body;
+      const supplier = await storage.createPmSupplier(supplierData);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'created',
+        entityType: 'pm_supplier',
+        entityId: supplier.id,
+        description: `Created PM supplier: ${supplier.name}`,
+      });
+      
+      res.status(201).json(supplier);
+    } catch (error) {
+      console.error("Error creating PM supplier:", error);
+      res.status(500).json({ message: "Failed to create PM supplier" });
+    }
+  });
+
+  app.patch('/api/pm-suppliers/:id', async (req: any, res) => {
+    try {
+      const updates = req.body;
+      const supplier = await storage.updatePmSupplier(req.params.id, updates);
+      
+      if (supplier) {
+        await storage.createUserActivity({
+          userId: "test-user",
+          action: 'updated',
+          entityType: 'pm_supplier',
+          entityId: supplier.id,
+          description: `Updated PM supplier: ${supplier.name}`,
+        });
+        
+        res.json(supplier);
+      } else {
+        res.status(404).json({ message: "PM supplier not found" });
+      }
+    } catch (error) {
+      console.error("Error updating PM supplier:", error);
+      res.status(500).json({ message: "Failed to update PM supplier" });
+    }
+  });
+
+  app.delete('/api/pm-suppliers/:id', async (req: any, res) => {
+    try {
+      await storage.deletePmSupplier(req.params.id);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'deleted',
+        entityType: 'pm_supplier',
+        entityId: req.params.id,
+        description: `Deleted PM supplier`,
+      });
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting PM supplier:", error);
+      res.status(500).json({ message: "Failed to delete PM supplier" });
+    }
+  });
+
   // Batch compress existing images endpoint
   app.post('/api/compress-images', async (req, res) => {
     try {

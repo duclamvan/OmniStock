@@ -29,6 +29,7 @@ The application uses PostgreSQL with Neon serverless driver and Drizzle ORM. The
 - **Customer-Specific Pricing**: Custom pricing per customer-product with validity periods.
 - **Supplier Management**: CRUD operations, file upload, and purchase history, with centralized supplier information.
 - **Warehouse Management**: Management with file handling, location codes, barcode scanning, and quantity tracking.
+- **Packing Materials Management**: Complete system for tracking packing materials inventory including cartons, filling materials, protective materials, and general supplies. Features include image upload with compression, dimension and weight tracking, cost management, and PM supplier integration with autocomplete search and "add new" dialog functionality.
 - **Returns Management**: Complete system integrated from order details.
 - **Expenses Management**: Streamlined UI and forms.
 - **Product Bundles**: Comprehensive system with variant support, multiple pricing modes, and image upload with visual card display.

@@ -639,6 +639,21 @@ export const packingMaterialUsage = pgTable('packing_material_usage', {
   createdAt: timestamp('created_at').notNull().defaultNow()
 });
 
+// Packing Material Suppliers
+export const pmSuppliers = pgTable('pm_suppliers', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  name: text('name').notNull().unique(),
+  contactPerson: text('contact_person'),
+  email: text('email'),
+  phone: text('phone'),
+  address: text('address'),
+  website: text('website'),
+  notes: text('notes'),
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
 export const discounts = pgTable('discounts', {
   id: serial('id').primaryKey(),
   discountId: text('discount_id').notNull().unique(),
@@ -1002,6 +1017,7 @@ export const insertOrderCartonItemSchema = createInsertSchema(orderCartonItems).
 // Packing Materials schemas
 export const insertPackingMaterialSchema = createInsertSchema(packingMaterials).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertPackingMaterialUsageSchema = createInsertSchema(packingMaterialUsage).omit({ id: true, createdAt: true });
+export const insertPmSupplierSchema = createInsertSchema(pmSuppliers).omit({ id: true, createdAt: true, updatedAt: true });
 
 export const insertDiscountSchema = createInsertSchema(discounts).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertExpenseSchema = createInsertSchema(expenses).omit({ id: true, createdAt: true, updatedAt: true });
@@ -1085,6 +1101,8 @@ export type PackingMaterial = typeof packingMaterials.$inferSelect;
 export type InsertPackingMaterial = z.infer<typeof insertPackingMaterialSchema>;
 export type PackingMaterialUsage = typeof packingMaterialUsage.$inferSelect;
 export type InsertPackingMaterialUsage = z.infer<typeof insertPackingMaterialUsageSchema>;
+export type PmSupplier = typeof pmSuppliers.$inferSelect;
+export type InsertPmSupplier = z.infer<typeof insertPmSupplierSchema>;
 
 export type Discount = typeof discounts.$inferSelect;
 export type InsertDiscount = z.infer<typeof insertDiscountSchema>;

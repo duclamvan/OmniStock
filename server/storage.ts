@@ -359,6 +359,14 @@ export interface IStorage {
   getPackingMaterialUsage(orderId: string): Promise<PackingMaterialUsage[]>;
   createPackingMaterialUsage(usage: any): Promise<PackingMaterialUsage>;
   
+  // PM Suppliers
+  getPmSuppliers(): Promise<PmSupplier[]>;
+  getPmSupplier(id: string): Promise<PmSupplier | undefined>;
+  createPmSupplier(supplier: any): Promise<PmSupplier>;
+  updatePmSupplier(id: string, supplier: any): Promise<PmSupplier | undefined>;
+  deletePmSupplier(id: string): Promise<boolean>;
+  searchPmSuppliers(query: string): Promise<PmSupplier[]>;
+  
   // Files
   getAllFiles(): Promise<FileType[]>;
   getFilesByType(type: string): Promise<FileType[]>;
@@ -2489,6 +2497,89 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error creating packing material usage:', error);
       throw error;
+    }
+  }
+
+  async getPmSuppliers(): Promise<PmSupplier[]> {
+    try {
+      return await db
+        .select()
+        .from(pmSuppliers)
+        .where(eq(pmSuppliers.isActive, true))
+        .orderBy(asc(pmSuppliers.name));
+    } catch (error) {
+      console.error('Error fetching PM suppliers:', error);
+      return [];
+    }
+  }
+
+  async getPmSupplier(id: string): Promise<PmSupplier | undefined> {
+    try {
+      const [supplier] = await db
+        .select()
+        .from(pmSuppliers)
+        .where(eq(pmSuppliers.id, id));
+      return supplier || undefined;
+    } catch (error) {
+      console.error('Error fetching PM supplier:', error);
+      return undefined;
+    }
+  }
+
+  async createPmSupplier(supplier: InsertPmSupplier): Promise<PmSupplier> {
+    try {
+      const [newSupplier] = await db
+        .insert(pmSuppliers)
+        .values(supplier)
+        .returning();
+      return newSupplier;
+    } catch (error) {
+      console.error('Error creating PM supplier:', error);
+      throw error;
+    }
+  }
+
+  async updatePmSupplier(id: string, supplier: Partial<InsertPmSupplier>): Promise<PmSupplier | undefined> {
+    try {
+      const [updated] = await db
+        .update(pmSuppliers)
+        .set({ ...supplier, updatedAt: new Date() })
+        .where(eq(pmSuppliers.id, id))
+        .returning();
+      return updated || undefined;
+    } catch (error) {
+      console.error('Error updating PM supplier:', error);
+      return undefined;
+    }
+  }
+
+  async deletePmSupplier(id: string): Promise<boolean> {
+    try {
+      await db
+        .delete(pmSuppliers)
+        .where(eq(pmSuppliers.id, id));
+      return true;
+    } catch (error) {
+      console.error('Error deleting PM supplier:', error);
+      return false;
+    }
+  }
+
+  async searchPmSuppliers(query: string): Promise<PmSupplier[]> {
+    try {
+      return await db
+        .select()
+        .from(pmSuppliers)
+        .where(
+          and(
+            eq(pmSuppliers.isActive, true),
+            ilike(pmSuppliers.name, `%${query}%`)
+          )
+        )
+        .orderBy(asc(pmSuppliers.name));
+    } catch (error) {
+      console.error('Error searching PM suppliers:', error);
+      return [];
     }
   }
 
