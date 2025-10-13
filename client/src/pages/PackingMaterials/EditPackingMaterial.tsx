@@ -19,6 +19,23 @@ import { Separator } from "@/components/ui/separator";
 import { compressImage } from "@/lib/imageCompression";
 import type { PackingMaterial } from "@shared/schema";
 
+// Helper function to format supplier name from URL
+function formatSupplierName(url: string): string {
+  if (!url) return "";
+  
+  try {
+    const urlObj = new URL(url.startsWith('http') ? url : `https://${url}`);
+    const domain = urlObj.hostname.replace('www.', '');
+    
+    // Split by dots and hyphens, capitalize first letter of each part
+    return domain.split(/[.-]/).map(part => 
+      part.charAt(0).toUpperCase() + part.slice(1)
+    ).join('-').replace(/-([a-z]{2,3})$/i, '.$1'); // Keep extension with dot
+  } catch {
+    return url;
+  }
+}
+
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
   code: z.string().min(1, "Code is required"),
@@ -543,7 +560,7 @@ export default function EditPackingMaterial() {
                 </div>
                 <Separator />
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="cost"
@@ -580,26 +597,6 @@ export default function EditPackingMaterial() {
                       </FormItem>
                     )}
                   />
-
-                  <FormField
-                    control={form.control}
-                    name="supplier"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Supplier Link</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="https://top-obaly.cz" 
-                            {...field} 
-                            value={field.value || ""} 
-                            data-testid="input-supplier"
-                          />
-                        </FormControl>
-                        <FormDescription>Enter the supplier's website URL to quickly reorder this material</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -632,6 +629,54 @@ export default function EditPackingMaterial() {
                       </FormItem>
                     )}
                   />
+                </div>
+              </div>
+
+              {/* Supplier Information */}
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+                    Supplier Information
+                  </h3>
+                  <p className="text-sm text-muted-foreground">Supplier details and purchase link</p>
+                </div>
+                <Separator />
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="supplier"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Purchase Link</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="https://top-obaly.cz" 
+                            {...field} 
+                            value={field.value || ""} 
+                            data-testid="input-supplier"
+                          />
+                        </FormControl>
+                        <FormDescription>Enter the supplier's website URL</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormItem>
+                    <FormLabel>Supplier Name</FormLabel>
+                    <FormControl>
+                      <Input 
+                        value={formatSupplierName(form.watch('supplier') || '')}
+                        readOnly
+                        className="bg-muted"
+                        placeholder="Auto-generated from link"
+                        data-testid="input-supplier-name"
+                      />
+                    </FormControl>
+                    <FormDescription>Automatically formatted from purchase link</FormDescription>
+                  </FormItem>
                 </div>
               </div>
 
