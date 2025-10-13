@@ -40,6 +40,7 @@ function getDisplayUrl(url: string | null): { display: string; href: string } | 
 export default function PackingMaterials() {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [supplierFilter, setSupplierFilter] = useState<string>("all");
 
   const { data: allMaterials = [], isLoading } = useQuery<PackingMaterial[]>({
     queryKey: ["/api/packing-materials", searchQuery],
@@ -52,11 +53,35 @@ export default function PackingMaterials() {
     },
   });
 
-  // Filter materials by category
+  // Get unique suppliers for filter
+  const uniqueSuppliers = useMemo(() => {
+    const suppliers = allMaterials
+      .map(m => m.supplier)
+      .filter((url): url is string => Boolean(url))
+      .map(url => {
+        const info = getDisplayUrl(url);
+        return info ? info.display : url;
+      });
+    return Array.from(new Set(suppliers)).sort();
+  }, [allMaterials]);
+
+  // Filter materials by category and supplier
   const materials = useMemo(() => {
-    if (categoryFilter === "all") return allMaterials;
-    return allMaterials.filter(m => m.category === categoryFilter);
-  }, [allMaterials, categoryFilter]);
+    let filtered = allMaterials;
+    
+    if (categoryFilter !== "all") {
+      filtered = filtered.filter(m => m.category === categoryFilter);
+    }
+    
+    if (supplierFilter !== "all") {
+      filtered = filtered.filter(m => {
+        const info = getDisplayUrl(m.supplier);
+        return info?.display === supplierFilter;
+      });
+    }
+    
+    return filtered;
+  }, [allMaterials, categoryFilter, supplierFilter]);
 
   const columns: DataTableColumn<PackingMaterial>[] = [
     {
@@ -225,19 +250,34 @@ export default function PackingMaterials() {
             className="pl-10"
           />
         </div>
-        <div className="flex items-center gap-2 sm:w-auto">
-          <Filter className="h-4 w-4 text-muted-foreground hidden sm:block" />
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-full sm:w-[200px]">
-              <SelectValue placeholder="Filter by category" />
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground hidden sm:block" />
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                <SelectItem value="cartons">Cartons & Boxes</SelectItem>
+                <SelectItem value="filling">Filling Materials</SelectItem>
+                <SelectItem value="protective">Protective Materials</SelectItem>
+                <SelectItem value="supplies">General Supplies</SelectItem>
+                <SelectItem value="packaging">Product Packaging</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Select value={supplierFilter} onValueChange={setSupplierFilter}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Supplier" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              <SelectItem value="cartons">Cartons & Boxes</SelectItem>
-              <SelectItem value="filling">Filling Materials</SelectItem>
-              <SelectItem value="protective">Protective Materials</SelectItem>
-              <SelectItem value="supplies">General Supplies</SelectItem>
-              <SelectItem value="packaging">Product Packaging</SelectItem>
+              <SelectItem value="all">All Suppliers</SelectItem>
+              {uniqueSuppliers.map((supplier) => (
+                <SelectItem key={supplier} value={supplier}>
+                  {supplier}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
