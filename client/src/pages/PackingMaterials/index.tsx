@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Plus, Search, Package2, Edit, Trash2, DollarSign, Layers, Archive, ExternalLink, Filter } from "lucide-react";
+import { Plus, Search, Package2, Edit, Trash2, DollarSign, Layers, Archive, ExternalLink, Filter, ShoppingCart } from "lucide-react";
 import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -166,16 +166,33 @@ export default function PackingMaterials() {
       key: "actions",
       header: "Actions",
       className: "text-right",
-      cell: (material) => (
-        <div className="flex items-center justify-end gap-2">
-          <Link href={`/packing-materials/edit/${material.id}`}>
-            <Button variant="outline" size="sm">
-              <Edit className="h-4 w-4 mr-1" />
-              Edit
-            </Button>
-          </Link>
-        </div>
-      ),
+      cell: (material) => {
+        const urlInfo = getDisplayUrl(material.supplier);
+        
+        return (
+          <div className="flex items-center justify-end gap-2">
+            {urlInfo && (
+              <a 
+                href={urlInfo.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Button variant="default" size="sm" className="bg-blue-600 hover:bg-blue-700">
+                  <ShoppingCart className="h-4 w-4 mr-1" />
+                  Purchase
+                </Button>
+              </a>
+            )}
+            <Link href={`/packing-materials/edit/${material.id}`}>
+              <Button variant="outline" size="sm">
+                <Edit className="h-4 w-4 mr-1" />
+                Edit
+              </Button>
+            </Link>
+          </div>
+        );
+      },
     },
   ];
 
