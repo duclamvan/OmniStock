@@ -66,6 +66,7 @@ export default function PackingMaterials() {
     {
       key: "name",
       header: "Name",
+      sortable: true,
       cell: (material) => (
         <div className="min-w-[200px]">
           <div className="font-semibold text-base">{material.name}</div>
@@ -101,6 +102,7 @@ export default function PackingMaterials() {
     {
       key: "supplier",
       header: "Supplier",
+      sortable: true,
       className: "min-w-[150px]",
       cell: (material) => {
         const urlInfo = getDisplayUrl(material.supplier);
