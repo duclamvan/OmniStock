@@ -1,12 +1,19 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Plus, Search, Package2, Edit, Trash2, DollarSign, Layers, Archive, ExternalLink } from "lucide-react";
+import { Plus, Search, Package2, Edit, Trash2, DollarSign, Layers, Archive, ExternalLink, Filter } from "lucide-react";
 import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { PackingMaterial } from "@shared/schema";
 import { formatCurrency } from "@/lib/currencyUtils";
 
@@ -32,8 +39,9 @@ function getDisplayUrl(url: string | null): { display: string; href: string } | 
 
 export default function PackingMaterials() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
-  const { data: materials = [], isLoading } = useQuery<PackingMaterial[]>({
+  const { data: allMaterials = [], isLoading } = useQuery<PackingMaterial[]>({
     queryKey: ["/api/packing-materials", searchQuery],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -43,6 +51,12 @@ export default function PackingMaterials() {
       return response.json();
     },
   });
+
+  // Filter materials by category
+  const materials = useMemo(() => {
+    if (categoryFilter === "all") return allMaterials;
+    return allMaterials.filter(m => m.category === categoryFilter);
+  }, [allMaterials, categoryFilter]);
 
   const columns: DataTableColumn<PackingMaterial>[] = [
     {
@@ -201,7 +215,7 @@ export default function PackingMaterials() {
         </Card>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
@@ -210,6 +224,22 @@ export default function PackingMaterials() {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
           />
+        </div>
+        <div className="flex items-center gap-2 sm:w-auto">
+          <Filter className="h-4 w-4 text-muted-foreground hidden sm:block" />
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-full sm:w-[200px]">
+              <SelectValue placeholder="Filter by category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              <SelectItem value="cartons">Cartons & Boxes</SelectItem>
+              <SelectItem value="filling">Filling Materials</SelectItem>
+              <SelectItem value="protective">Protective Materials</SelectItem>
+              <SelectItem value="supplies">General Supplies</SelectItem>
+              <SelectItem value="packaging">Product Packaging</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
