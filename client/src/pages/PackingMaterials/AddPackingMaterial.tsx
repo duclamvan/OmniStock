@@ -615,30 +615,34 @@ export default function AddPackingMaterial() {
                     </div>
                   ) : (
                     <div className="relative border rounded-lg p-4 bg-gray-50">
-                      <div className="flex items-start gap-4">
-                        <img
-                          src={imagePreview}
-                          alt="Material preview"
-                          className="w-32 h-32 object-cover rounded-lg"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">
-                            {imageFile?.name}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {imageFile ? `${(imageFile.size / 1024 / 1024).toFixed(2)} MB` : ''}
-                          </p>
+                      <div className="flex flex-col sm:flex-row items-start gap-4">
+                        <div className="w-full sm:w-48 h-48 bg-white rounded-lg flex items-center justify-center overflow-hidden border">
+                          <img
+                            src={imagePreview}
+                            alt="Material preview"
+                            className="max-w-full max-h-full object-contain"
+                          />
                         </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={removeImage}
-                          className="h-8 w-8"
-                          data-testid="button-remove-image"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
+                        <div className="flex-1 min-w-0 flex items-start justify-between w-full sm:w-auto">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {imageFile?.name}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {imageFile ? `${(imageFile.size / 1024 / 1024).toFixed(2)} MB` : ''}
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={removeImage}
+                            className="h-8 w-8 ml-2"
+                            data-testid="button-remove-image"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   )}
