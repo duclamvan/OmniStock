@@ -78,6 +78,7 @@ export default function PackingMaterials() {
     {
       key: "category",
       header: "Category",
+      sortable: true,
       className: "min-w-[140px]",
       cell: (material) => {
         const categoryLabels: Record<string, string> = {
