@@ -30,16 +30,18 @@ export interface DataTableColumn<T> {
   className?: string;
 }
 
-type BulkAction<T> = 
+export type BulkAction<T> = 
   | {
       type: "button";
       label: string;
+      icon?: React.ComponentType<{ className?: string }>;
       action: (selectedItems: T[]) => void;
       variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
     }
   | {
       type: "select";
       label: string;
+      icon?: React.ComponentType<{ className?: string }>;
       placeholder?: string;
       options: { label: string; value: string }[];
       action: (selectedItems: T[], value: string) => void;

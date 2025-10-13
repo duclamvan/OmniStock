@@ -2275,6 +2275,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Bulk delete packing materials
+  app.post('/api/packing-materials/bulk-delete', async (req: any, res) => {
+    try {
+      const { ids } = req.body;
+      
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: "Invalid request: ids array required" });
+      }
+
+      // Delete all materials
+      await Promise.all(ids.map(id => storage.deletePackingMaterial(id)));
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'deleted',
+        entityType: 'packing_material',
+        entityId: ids.join(','),
+        description: `Bulk deleted ${ids.length} packing material(s)`,
+      });
+      
+      res.json({ message: `Successfully deleted ${ids.length} material(s)` });
+    } catch (error) {
+      console.error("Error bulk deleting packing materials:", error);
+      res.status(500).json({ message: "Failed to bulk delete packing materials" });
+    }
+  });
+
+  // Bulk update category
+  app.post('/api/packing-materials/bulk-update-category', async (req: any, res) => {
+    try {
+      const { ids, category } = req.body;
+      
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: "Invalid request: ids array required" });
+      }
+
+      if (!category) {
+        return res.status(400).json({ message: "Invalid request: category required" });
+      }
+
+      // Update all materials
+      const updatedMaterials = await Promise.all(
+        ids.map(id => storage.updatePackingMaterial(id, { category }))
+      );
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'updated',
+        entityType: 'packing_material',
+        entityId: ids.join(','),
+        description: `Bulk updated category to "${category}" for ${ids.length} material(s)`,
+      });
+      
+      res.json(updatedMaterials);
+    } catch (error) {
+      console.error("Error bulk updating packing materials:", error);
+      res.status(500).json({ message: "Failed to bulk update packing materials" });
+    }
+  });
+
   // PM Suppliers endpoints
   app.get('/api/pm-suppliers', async (req, res) => {
     try {

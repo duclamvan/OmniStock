@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Plus, Search, Package2, Edit, Trash2, DollarSign, Layers, Archive, ExternalLink, Filter, ShoppingCart } from "lucide-react";
-import { DataTable, DataTableColumn } from "@/components/ui/data-table";
+import { Plus, Search, Package2, Edit, Trash2, DollarSign, Layers, Archive, ExternalLink, Filter, ShoppingCart, Copy, Tag } from "lucide-react";
+import { DataTable, DataTableColumn, BulkAction } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/select";
 import type { PackingMaterial } from "@shared/schema";
 import { formatCurrency } from "@/lib/currencyUtils";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 // Helper function to extract domain from URL
 function getDisplayUrl(url: string | null): { display: string; href: string } | null {
@@ -41,6 +43,7 @@ export default function PackingMaterials() {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [supplierFilter, setSupplierFilter] = useState<string>("all");
+  const { toast } = useToast();
 
   const { data: allMaterials = [], isLoading } = useQuery<PackingMaterial[]>({
     queryKey: ["/api/packing-materials", searchQuery],
@@ -82,6 +85,108 @@ export default function PackingMaterials() {
     
     return filtered;
   }, [allMaterials, categoryFilter, supplierFilter]);
+
+  // Bulk action handlers
+  const handleCopyNames = async (selectedMaterials: PackingMaterial[]) => {
+    const names = selectedMaterials.map(m => m.name).join('\n');
+    try {
+      await navigator.clipboard.writeText(names);
+      toast({
+        title: "Copied to clipboard",
+        description: `Copied ${selectedMaterials.length} material name(s)`,
+      });
+    } catch (error) {
+      toast({
+        title: "Failed to copy",
+        description: "Could not copy to clipboard",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleBulkDelete = async (selectedMaterials: PackingMaterial[]) => {
+    if (!confirm(`Are you sure you want to delete ${selectedMaterials.length} material(s)?`)) {
+      return;
+    }
+
+    try {
+      const ids = selectedMaterials.map(m => m.id);
+      await apiRequest('POST', '/api/packing-materials/bulk-delete', { ids });
+
+      toast({
+        title: "Materials deleted",
+        description: `Successfully deleted ${selectedMaterials.length} material(s)`,
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['/api/packing-materials'] });
+    } catch (error) {
+      toast({
+        title: "Failed to delete",
+        description: "Could not delete materials",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleBulkUpdateCategory = async (selectedMaterials: PackingMaterial[], category: string) => {
+    try {
+      const ids = selectedMaterials.map(m => m.id);
+      await apiRequest('POST', '/api/packing-materials/bulk-update-category', { ids, category });
+
+      const categoryLabels: Record<string, string> = {
+        cartons: "Cartons & Boxes",
+        filling: "Filling Materials",
+        protective: "Protective Materials",
+        supplies: "General Supplies",
+        packaging: "Product Packaging"
+      };
+
+      toast({
+        title: "Category updated",
+        description: `Updated ${selectedMaterials.length} material(s) to ${categoryLabels[category]}`,
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['/api/packing-materials'] });
+    } catch (error) {
+      toast({
+        title: "Failed to update",
+        description: "Could not update category",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Define bulk actions
+  const bulkActions: BulkAction<PackingMaterial>[] = [
+    {
+      type: "button",
+      label: "Copy Names",
+      icon: Copy,
+      variant: "ghost",
+      action: handleCopyNames,
+    },
+    {
+      type: "button",
+      label: "Delete",
+      icon: Trash2,
+      variant: "ghost",
+      action: handleBulkDelete,
+    },
+    {
+      type: "select",
+      label: "Change Category",
+      icon: Tag,
+      placeholder: "Change category...",
+      options: [
+        { value: "cartons", label: "Cartons & Boxes" },
+        { value: "filling", label: "Filling Materials" },
+        { value: "protective", label: "Protective Materials" },
+        { value: "supplies", label: "General Supplies" },
+        { value: "packaging", label: "Product Packaging" },
+      ],
+      action: handleBulkUpdateCategory,
+    },
+  ];
 
   const columns: DataTableColumn<PackingMaterial>[] = [
     {
@@ -305,6 +410,7 @@ export default function PackingMaterials() {
           columns={columns}
           data={materials}
           getRowKey={(material: PackingMaterial) => material.id}
+          bulkActions={bulkActions}
         />
       </div>
     </div>
