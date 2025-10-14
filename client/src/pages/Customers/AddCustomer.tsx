@@ -641,11 +641,26 @@ export default function AddCustomer() {
       // Reset manual edit flag so label auto-generates from Smart Paste data
       setIsLabelManuallyEdited(false);
       
-      // Apply Vietnamese name detection and correction locally (defined below)
+      // Apply Vietnamese name detection and correction locally
       let firstName = fields.firstName || '';
       let lastName = fields.lastName || '';
+      let company = fields.company || '';
       
-      if (firstName || lastName) {
+      // If no personal name but there's a company/salon name, use it for names
+      if (!firstName && !lastName && company) {
+        const companyWords = company.trim().split(/\s+/);
+        
+        if (companyWords.length === 1) {
+          // Single word salon name - duplicate to all fields
+          firstName = company;
+          lastName = company;
+        } else {
+          // Multiple words - split like Vietnamese name (first word = last name, rest = first name)
+          lastName = companyWords[0];
+          firstName = companyWords.slice(1).join(' ');
+        }
+      } else if (firstName || lastName) {
+        // Apply Vietnamese name detection for actual names
         const corrected = detectAndCorrectVietnameseName(firstName, lastName);
         firstName = corrected.firstName;
         lastName = corrected.lastName;
@@ -654,7 +669,7 @@ export default function AddCustomer() {
       // Capitalize names
       if (firstName) shippingForm.setValue('firstName', capitalizeWords(firstName));
       if (lastName) shippingForm.setValue('lastName', capitalizeWords(lastName));
-      if (fields.company) shippingForm.setValue('company', fields.company);
+      if (company) shippingForm.setValue('company', company);
       if (fields.email) shippingForm.setValue('email', fields.email);
       if (fields.phone) shippingForm.setValue('tel', fields.phone);
       
@@ -747,8 +762,23 @@ export default function AddCustomer() {
       // Apply Vietnamese name detection and correction locally
       let firstName = fields.firstName || '';
       let lastName = fields.lastName || '';
+      let company = fields.company || '';
       
-      if (firstName || lastName) {
+      // If no personal name but there's a company/salon name, use it for names
+      if (!firstName && !lastName && company) {
+        const companyWords = company.trim().split(/\s+/);
+        
+        if (companyWords.length === 1) {
+          // Single word salon name - duplicate to all fields
+          firstName = company;
+          lastName = company;
+        } else {
+          // Multiple words - split like Vietnamese name (first word = last name, rest = first name)
+          lastName = companyWords[0];
+          firstName = companyWords.slice(1).join(' ');
+        }
+      } else if (firstName || lastName) {
+        // Apply Vietnamese name detection for actual names
         const corrected = detectAndCorrectVietnameseName(firstName, lastName);
         firstName = corrected.firstName;
         lastName = corrected.lastName;
@@ -757,11 +787,11 @@ export default function AddCustomer() {
       // Capitalize names
       if (firstName) form.setValue('billingFirstName', capitalizeWords(firstName));
       if (lastName) form.setValue('billingLastName', capitalizeWords(lastName));
-      if (fields.company) {
-        form.setValue('billingCompany', fields.company);
+      if (company) {
+        form.setValue('billingCompany', company);
         // If business name exists, also use it as the customer name
         if (!form.getValues('name')) {
-          form.setValue('name', fields.company);
+          form.setValue('name', company);
         }
       }
       if (fields.email) form.setValue('billingEmail', fields.email);
