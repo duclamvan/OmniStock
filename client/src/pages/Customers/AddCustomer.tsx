@@ -667,9 +667,19 @@ export default function AddCustomer() {
       // Reset manual edit flag so label auto-generates from Smart Paste data
       setIsLabelManuallyEdited(false);
       
+      // Apply Vietnamese name detection and correction locally (defined below)
+      let firstName = fields.firstName || '';
+      let lastName = fields.lastName || '';
+      
+      if (firstName || lastName) {
+        const corrected = detectAndCorrectVietnameseName(firstName, lastName);
+        firstName = corrected.firstName;
+        lastName = corrected.lastName;
+      }
+      
       // Capitalize names
-      if (fields.firstName) shippingForm.setValue('firstName', capitalizeWords(fields.firstName));
-      if (fields.lastName) shippingForm.setValue('lastName', capitalizeWords(fields.lastName));
+      if (firstName) shippingForm.setValue('firstName', capitalizeWords(firstName));
+      if (lastName) shippingForm.setValue('lastName', capitalizeWords(lastName));
       if (fields.company) shippingForm.setValue('company', fields.company);
       if (fields.email) shippingForm.setValue('email', fields.email);
       if (fields.phone) shippingForm.setValue('tel', fields.phone);
@@ -697,6 +707,61 @@ export default function AddCustomer() {
     },
   });
 
+  // Vietnamese name detection - runs locally on device
+  const detectAndCorrectVietnameseName = (firstName: string, lastName: string): { firstName: string; lastName: string } => {
+    // Common Vietnamese family names (always first word in Vietnamese convention)
+    const vietnameseFamilyNames = [
+      'Nguyễn', 'Nguyen', 'Trần', 'Tran', 'Lê', 'Le', 'Phạm', 'Pham', 'Hoàng', 'Hoang',
+      'Phan', 'Vũ', 'Vu', 'Đặng', 'Dang', 'Bùi', 'Bui', 'Đỗ', 'Do', 'Hồ', 'Ho',
+      'Ngô', 'Ngo', 'Dương', 'Duong', 'Lý', 'Ly', 'Mai', 'Võ', 'Vo', 'Đinh', 'Dinh',
+      'Tô', 'To', 'Trương', 'Truong', 'Đoàn', 'Doan', 'Huỳnh', 'Huynh', 'Chu', 'Cao',
+      'Thái', 'Thai', 'Tạ', 'Ta', 'Thạch', 'Thach', 'Lưu', 'Luu', 'Kiều', 'Kieu',
+      'Phùng', 'Phung', 'Từ', 'Tu', 'Quách', 'Quach', 'Trịnh', 'Trinh', 'Văn', 'Van'
+    ];
+
+    // Vietnamese diacritics pattern
+    const vietnameseDiacriticsPattern = /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđĐ]/i;
+
+    const firstNameTrimmed = firstName.trim();
+    const lastNameTrimmed = lastName.trim();
+
+    // Check if this appears to be Vietnamese naming
+    const hasVietnameseDiacritics = 
+      vietnameseDiacriticsPattern.test(firstNameTrimmed) || 
+      vietnameseDiacriticsPattern.test(lastNameTrimmed);
+
+    // Check if the "first name" (in Western order) matches a Vietnamese family name
+    const firstNameIsVietnameseFamilyName = vietnameseFamilyNames.some(
+      familyName => firstNameTrimmed.toLowerCase().startsWith(familyName.toLowerCase())
+    );
+
+    // If we detect Vietnamese naming pattern: swap to correct order
+    // In Vietnamese: Family name comes FIRST, so if AI put it in "firstName", we need to swap
+    if (hasVietnameseDiacritics && firstNameIsVietnameseFamilyName) {
+      // AI incorrectly put Vietnamese family name in firstName
+      // Correct: lastName = first word (family name), firstName = rest (given name)
+      const words = firstNameTrimmed.split(/\s+/);
+      return {
+        lastName: words[0], // Family name (first word)
+        firstName: words.slice(1).join(' ') || lastNameTrimmed // Given name (rest)
+      };
+    }
+
+    // Check if lastName contains Vietnamese family name at the beginning
+    const lastNameIsVietnameseFamilyName = vietnameseFamilyNames.some(
+      familyName => lastNameTrimmed.toLowerCase().startsWith(familyName.toLowerCase())
+    );
+
+    // If family name is already in lastName and we have Vietnamese diacritics
+    if (hasVietnameseDiacritics && lastNameIsVietnameseFamilyName) {
+      // Already in correct Vietnamese format
+      return { firstName: firstNameTrimmed, lastName: lastNameTrimmed };
+    }
+
+    // No Vietnamese pattern detected - return as is
+    return { firstName: firstNameTrimmed, lastName: lastNameTrimmed };
+  };
+
   const parseBillingAddressMutation = useMutation({
     mutationFn: async (rawAddress: string) => {
       const res = await apiRequest('POST', '/api/addresses/parse', { rawAddress });
@@ -705,9 +770,19 @@ export default function AddCustomer() {
     onSuccess: (data: { fields: any; confidence: string }) => {
       const { fields } = data;
       
+      // Apply Vietnamese name detection and correction locally
+      let firstName = fields.firstName || '';
+      let lastName = fields.lastName || '';
+      
+      if (firstName || lastName) {
+        const corrected = detectAndCorrectVietnameseName(firstName, lastName);
+        firstName = corrected.firstName;
+        lastName = corrected.lastName;
+      }
+      
       // Capitalize names
-      if (fields.firstName) form.setValue('billingFirstName', capitalizeWords(fields.firstName));
-      if (fields.lastName) form.setValue('billingLastName', capitalizeWords(fields.lastName));
+      if (firstName) form.setValue('billingFirstName', capitalizeWords(firstName));
+      if (lastName) form.setValue('billingLastName', capitalizeWords(lastName));
       if (fields.company) {
         form.setValue('billingCompany', fields.company);
         // If business name exists, also use it as the customer name
@@ -1155,9 +1230,9 @@ export default function AddCustomer() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="rawShippingAddress">Smart Paste</Label>
+                    <Label htmlFor="rawShippingAddress">Smart Paste 🇻🇳</Label>
                     <p className="text-sm text-muted-foreground">
-                      Paste any address info (name, company, email, phone, address) and we'll split it automatically
+                      Paste any address info (name, company, email, phone, address) - auto-detects Vietnamese names and splits them correctly
                     </p>
                     <div className="flex gap-2">
                       <Textarea
@@ -1493,9 +1568,9 @@ export default function AddCustomer() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="rawBillingAddress">Smart Paste</Label>
+              <Label htmlFor="rawBillingAddress">Smart Paste 🇻🇳</Label>
               <p className="text-sm text-muted-foreground">
-                Paste any address info (name, company, email, phone, address) and we'll split it automatically
+                Paste any address info (name, company, email, phone, address) - auto-detects Vietnamese names and splits them correctly
               </p>
               <div className="flex gap-2">
                 <Textarea
