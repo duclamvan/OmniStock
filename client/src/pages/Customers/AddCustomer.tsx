@@ -142,6 +142,10 @@ export default function AddCustomer() {
   const [rawBillingAddress, setRawBillingAddress] = useState("");
   const [isLabelManuallyEdited, setIsLabelManuallyEdited] = useState(false);
 
+  // Track Smart Paste confidence highlighting
+  const [shippingFieldConfidence, setShippingFieldConfidence] = useState<Record<string, string>>({});
+  const [billingFieldConfidence, setBillingFieldConfidence] = useState<Record<string, string>>({});
+
   const form = useForm<CustomerFormData>({
     resolver: zodResolver(customerFormSchema),
     defaultValues: {
@@ -630,6 +634,23 @@ export default function AddCustomer() {
     ).join(' ');
   };
 
+  // Get CSS class for field based on confidence level (color psychology)
+  const getConfidenceClass = (fieldName: string, confidenceMap: Record<string, string>) => {
+    const confidence = confidenceMap[fieldName];
+    if (!confidence) return '';
+    
+    switch (confidence.toLowerCase()) {
+      case 'high':
+        return 'bg-green-50 border-green-300 focus:border-green-500'; // Green = trust, accuracy
+      case 'medium':
+        return 'bg-amber-50 border-amber-300 focus:border-amber-500'; // Amber = caution, review
+      case 'low':
+        return 'bg-red-50 border-red-300 focus:border-red-500'; // Red = warning, verify
+      default:
+        return '';
+    }
+  };
+
   const parseShippingAddressMutation = useMutation({
     mutationFn: async (rawAddress: string) => {
       const res = await apiRequest('POST', '/api/addresses/parse', { rawAddress });
@@ -640,6 +661,9 @@ export default function AddCustomer() {
       
       // Reset manual edit flag so label auto-generates from Smart Paste data
       setIsLabelManuallyEdited(false);
+      
+      // Track which fields were filled and their confidence
+      const filledFields: Record<string, string> = {};
       
       // Apply Vietnamese name detection and correction locally
       let firstName = fields.firstName || '';
@@ -666,20 +690,56 @@ export default function AddCustomer() {
         lastName = corrected.lastName;
       }
       
-      // Capitalize names
-      if (firstName) shippingForm.setValue('firstName', capitalizeWords(firstName));
-      if (lastName) shippingForm.setValue('lastName', capitalizeWords(lastName));
-      if (company) shippingForm.setValue('company', company);
-      if (fields.email) shippingForm.setValue('email', fields.email);
-      if (fields.phone) shippingForm.setValue('tel', fields.phone);
+      // Capitalize names and track filled fields
+      if (firstName) {
+        shippingForm.setValue('firstName', capitalizeWords(firstName));
+        filledFields.firstName = data.confidence;
+      }
+      if (lastName) {
+        shippingForm.setValue('lastName', capitalizeWords(lastName));
+        filledFields.lastName = data.confidence;
+      }
+      if (company) {
+        shippingForm.setValue('company', company);
+        filledFields.company = data.confidence;
+      }
+      if (fields.email) {
+        shippingForm.setValue('email', fields.email);
+        filledFields.email = data.confidence;
+      }
+      if (fields.phone) {
+        shippingForm.setValue('tel', fields.phone);
+        filledFields.tel = data.confidence;
+      }
       
       // Use Nominatim-corrected address values (already properly formatted by backend with diacritics)
-      if (fields.street) shippingForm.setValue('street', fields.street);
-      if (fields.streetNumber) shippingForm.setValue('streetNumber', fields.streetNumber);
-      if (fields.city) shippingForm.setValue('city', fields.city);
-      if (fields.zipCode) shippingForm.setValue('zipCode', fields.zipCode);
-      if (fields.country) shippingForm.setValue('country', fields.country);
-      if (fields.state) shippingForm.setValue('state', fields.state);
+      if (fields.street) {
+        shippingForm.setValue('street', fields.street);
+        filledFields.street = data.confidence;
+      }
+      if (fields.streetNumber) {
+        shippingForm.setValue('streetNumber', fields.streetNumber);
+        filledFields.streetNumber = data.confidence;
+      }
+      if (fields.city) {
+        shippingForm.setValue('city', fields.city);
+        filledFields.city = data.confidence;
+      }
+      if (fields.zipCode) {
+        shippingForm.setValue('zipCode', fields.zipCode);
+        filledFields.zipCode = data.confidence;
+      }
+      if (fields.country) {
+        shippingForm.setValue('country', fields.country);
+        filledFields.country = data.confidence;
+      }
+      if (fields.state) {
+        shippingForm.setValue('state', fields.state);
+        filledFields.state = data.confidence;
+      }
+      
+      // Update confidence tracking
+      setShippingFieldConfidence(filledFields);
       
       toast({
         title: "Address Parsed",
@@ -759,6 +819,9 @@ export default function AddCustomer() {
     onSuccess: (data: { fields: any; confidence: string }) => {
       const { fields } = data;
       
+      // Track which fields were filled and their confidence
+      const filledFields: Record<string, string> = {};
+      
       // Apply Vietnamese name detection and correction locally
       let firstName = fields.firstName || '';
       let lastName = fields.lastName || '';
@@ -784,26 +847,60 @@ export default function AddCustomer() {
         lastName = corrected.lastName;
       }
       
-      // Capitalize names
-      if (firstName) form.setValue('billingFirstName', capitalizeWords(firstName));
-      if (lastName) form.setValue('billingLastName', capitalizeWords(lastName));
+      // Capitalize names and track filled fields
+      if (firstName) {
+        form.setValue('billingFirstName', capitalizeWords(firstName));
+        filledFields.billingFirstName = data.confidence;
+      }
+      if (lastName) {
+        form.setValue('billingLastName', capitalizeWords(lastName));
+        filledFields.billingLastName = data.confidence;
+      }
       if (company) {
         form.setValue('billingCompany', company);
+        filledFields.billingCompany = data.confidence;
         // If business name exists, also use it as the customer name
         if (!form.getValues('name')) {
           form.setValue('name', company);
         }
       }
-      if (fields.email) form.setValue('billingEmail', fields.email);
-      if (fields.phone) form.setValue('billingTel', fields.phone);
+      if (fields.email) {
+        form.setValue('billingEmail', fields.email);
+        filledFields.billingEmail = data.confidence;
+      }
+      if (fields.phone) {
+        form.setValue('billingTel', fields.phone);
+        filledFields.billingTel = data.confidence;
+      }
       
       // Use Nominatim-corrected address values (already properly formatted by backend with diacritics)
-      if (fields.street) form.setValue('billingStreet', fields.street);
-      if (fields.streetNumber) form.setValue('billingStreetNumber', fields.streetNumber);
-      if (fields.city) form.setValue('billingCity', fields.city);
-      if (fields.zipCode) form.setValue('billingZipCode', fields.zipCode);
-      if (fields.country) form.setValue('billingCountry', fields.country);
-      if (fields.state) form.setValue('billingState', fields.state);
+      if (fields.street) {
+        form.setValue('billingStreet', fields.street);
+        filledFields.billingStreet = data.confidence;
+      }
+      if (fields.streetNumber) {
+        form.setValue('billingStreetNumber', fields.streetNumber);
+        filledFields.billingStreetNumber = data.confidence;
+      }
+      if (fields.city) {
+        form.setValue('billingCity', fields.city);
+        filledFields.billingCity = data.confidence;
+      }
+      if (fields.zipCode) {
+        form.setValue('billingZipCode', fields.zipCode);
+        filledFields.billingZipCode = data.confidence;
+      }
+      if (fields.country) {
+        form.setValue('billingCountry', fields.country);
+        filledFields.billingCountry = data.confidence;
+      }
+      if (fields.state) {
+        form.setValue('billingState', fields.state);
+        filledFields.billingState = data.confidence;
+      }
+      
+      // Update confidence tracking
+      setBillingFieldConfidence(filledFields);
       
       toast({
         title: "Address Parsed",
@@ -1327,6 +1424,7 @@ export default function AddCustomer() {
                         id="shippingFirstName"
                         {...shippingForm.register('firstName')}
                         placeholder="First name"
+                        className={cn(getConfidenceClass('firstName', shippingFieldConfidence))}
                         data-testid="input-shippingFirstName"
                       />
                     </div>
@@ -1336,6 +1434,7 @@ export default function AddCustomer() {
                         id="shippingLastName"
                         {...shippingForm.register('lastName')}
                         placeholder="Last name"
+                        className={cn(getConfidenceClass('lastName', shippingFieldConfidence))}
                         data-testid="input-shippingLastName"
                       />
                     </div>
@@ -1347,6 +1446,7 @@ export default function AddCustomer() {
                       id="shippingCompany"
                       {...shippingForm.register('company')}
                       placeholder="Company name"
+                      className={cn(getConfidenceClass('company', shippingFieldConfidence))}
                       data-testid="input-shippingCompany"
                     />
                   </div>
@@ -1359,6 +1459,7 @@ export default function AddCustomer() {
                         type="email"
                         {...shippingForm.register('email')}
                         placeholder="email@example.com"
+                        className={cn(getConfidenceClass('email', shippingFieldConfidence))}
                         data-testid="input-shippingEmail"
                       />
                     </div>
@@ -1368,6 +1469,7 @@ export default function AddCustomer() {
                         id="shippingTel"
                         {...shippingForm.register('tel')}
                         placeholder="+420 123 456 789"
+                        className={cn(getConfidenceClass('tel', shippingFieldConfidence))}
                         data-testid="input-shippingTel"
                       />
                     </div>
@@ -1380,6 +1482,7 @@ export default function AddCustomer() {
                         id="shippingStreet"
                         {...shippingForm.register('street')}
                         placeholder="Street name"
+                        className={cn(getConfidenceClass('street', shippingFieldConfidence))}
                         data-testid="input-shippingStreet"
                       />
                     </div>
@@ -1389,6 +1492,7 @@ export default function AddCustomer() {
                         id="shippingStreetNumber"
                         {...shippingForm.register('streetNumber')}
                         placeholder="123"
+                        className={cn(getConfidenceClass('streetNumber', shippingFieldConfidence))}
                         data-testid="input-shippingStreetNumber"
                       />
                     </div>
@@ -1401,6 +1505,7 @@ export default function AddCustomer() {
                         id="shippingCity"
                         {...shippingForm.register('city')}
                         placeholder="City"
+                        className={cn(getConfidenceClass('city', shippingFieldConfidence))}
                         data-testid="input-shippingCity"
                       />
                     </div>
@@ -1410,6 +1515,7 @@ export default function AddCustomer() {
                         id="shippingZipCode"
                         {...shippingForm.register('zipCode')}
                         placeholder="12345"
+                        className={cn(getConfidenceClass('zipCode', shippingFieldConfidence))}
                         data-testid="input-shippingZipCode"
                       />
                     </div>
@@ -1419,6 +1525,7 @@ export default function AddCustomer() {
                         id="shippingCountry"
                         {...shippingForm.register('country')}
                         placeholder="Country"
+                        className={cn(getConfidenceClass('country', shippingFieldConfidence))}
                         data-testid="input-shippingCountry"
                       />
                     </div>
@@ -1670,6 +1777,7 @@ export default function AddCustomer() {
                     id="billingFirstName"
                     {...form.register('billingFirstName')}
                     placeholder="Jan"
+                    className={cn(getConfidenceClass('billingFirstName', billingFieldConfidence))}
                     data-testid="input-billingFirstName"
                   />
                   {form.formState.errors.billingFirstName && (
@@ -1682,6 +1790,7 @@ export default function AddCustomer() {
                     id="billingLastName"
                     {...form.register('billingLastName')}
                     placeholder="Novák"
+                    className={cn(getConfidenceClass('billingLastName', billingFieldConfidence))}
                     data-testid="input-billingLastName"
                   />
                   {form.formState.errors.billingLastName && (
@@ -1696,6 +1805,7 @@ export default function AddCustomer() {
                   id="billingCompany"
                   {...form.register('billingCompany')}
                   placeholder="Nail Salon Prague s.r.o."
+                  className={cn(getConfidenceClass('billingCompany', billingFieldConfidence))}
                   data-testid="input-billingCompany"
                 />
                 <p className="text-xs text-slate-500 mt-1">Leave empty for individual customers</p>
@@ -1708,6 +1818,7 @@ export default function AddCustomer() {
                     id="billingStreet"
                     {...form.register('billingStreet')}
                     placeholder="Main Street"
+                    className={cn(getConfidenceClass('billingStreet', billingFieldConfidence))}
                     data-testid="input-billingStreet"
                   />
                 </div>
@@ -1717,6 +1828,7 @@ export default function AddCustomer() {
                     id="billingStreetNumber"
                     {...form.register('billingStreetNumber')}
                     placeholder="123"
+                    className={cn(getConfidenceClass('billingStreetNumber', billingFieldConfidence))}
                     data-testid="input-billingStreetNumber"
                   />
                 </div>
@@ -1728,6 +1840,7 @@ export default function AddCustomer() {
                     id="billingCity"
                     {...form.register('billingCity')}
                     placeholder="Prague"
+                    className={cn(getConfidenceClass('billingCity', billingFieldConfidence))}
                     data-testid="input-billingCity"
                   />
                 </div>
@@ -1737,6 +1850,7 @@ export default function AddCustomer() {
                     id="billingZipCode"
                     {...form.register('billingZipCode')}
                     placeholder="110 00"
+                    className={cn(getConfidenceClass('billingZipCode', billingFieldConfidence))}
                     data-testid="input-billingZipCode"
                   />
                 </div>
@@ -1747,7 +1861,7 @@ export default function AddCustomer() {
                     {...form.register('billingCountry')}
                     placeholder="Czech Republic"
                     readOnly
-                    className="bg-slate-50"
+                    className={cn("bg-slate-50", getConfidenceClass('billingCountry', billingFieldConfidence))}
                     data-testid="input-billingCountry"
                   />
                 </div>
