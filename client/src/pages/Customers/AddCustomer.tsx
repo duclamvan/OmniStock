@@ -634,6 +634,39 @@ export default function AddCustomer() {
     ).join(' ');
   };
 
+  // Remove Vietnamese diacritics and convert to plain English letters
+  const removeVietnameseDiacritics = (str: string): string => {
+    const diacriticsMap: Record<string, string> = {
+      'à': 'a', 'á': 'a', 'ả': 'a', 'ã': 'a', 'ạ': 'a',
+      'ă': 'a', 'ằ': 'a', 'ắ': 'a', 'ẳ': 'a', 'ẵ': 'a', 'ặ': 'a',
+      'â': 'a', 'ầ': 'a', 'ấ': 'a', 'ẩ': 'a', 'ẫ': 'a', 'ậ': 'a',
+      'è': 'e', 'é': 'e', 'ẻ': 'e', 'ẽ': 'e', 'ẹ': 'e',
+      'ê': 'e', 'ề': 'e', 'ế': 'e', 'ể': 'e', 'ễ': 'e', 'ệ': 'e',
+      'ì': 'i', 'í': 'i', 'ỉ': 'i', 'ĩ': 'i', 'ị': 'i',
+      'ò': 'o', 'ó': 'o', 'ỏ': 'o', 'õ': 'o', 'ọ': 'o',
+      'ô': 'o', 'ồ': 'o', 'ố': 'o', 'ổ': 'o', 'ỗ': 'o', 'ộ': 'o',
+      'ơ': 'o', 'ờ': 'o', 'ớ': 'o', 'ở': 'o', 'ỡ': 'o', 'ợ': 'o',
+      'ù': 'u', 'ú': 'u', 'ủ': 'u', 'ũ': 'u', 'ụ': 'u',
+      'ư': 'u', 'ừ': 'u', 'ứ': 'u', 'ử': 'u', 'ữ': 'u', 'ự': 'u',
+      'ỳ': 'y', 'ý': 'y', 'ỷ': 'y', 'ỹ': 'y', 'ỵ': 'y',
+      'đ': 'd', 'Đ': 'D',
+      'À': 'A', 'Á': 'A', 'Ả': 'A', 'Ã': 'A', 'Ạ': 'A',
+      'Ă': 'A', 'Ằ': 'A', 'Ắ': 'A', 'Ẳ': 'A', 'Ẵ': 'A', 'Ặ': 'A',
+      'Â': 'A', 'Ầ': 'A', 'Ấ': 'A', 'Ẩ': 'A', 'Ẫ': 'A', 'Ậ': 'A',
+      'È': 'E', 'É': 'E', 'Ẻ': 'E', 'Ẽ': 'E', 'Ẹ': 'E',
+      'Ê': 'E', 'Ề': 'E', 'Ế': 'E', 'Ể': 'E', 'Ễ': 'E', 'Ệ': 'E',
+      'Ì': 'I', 'Í': 'I', 'Ỉ': 'I', 'Ĩ': 'I', 'Ị': 'I',
+      'Ò': 'O', 'Ó': 'O', 'Ỏ': 'O', 'Õ': 'O', 'Ọ': 'O',
+      'Ô': 'O', 'Ồ': 'O', 'Ố': 'O', 'Ổ': 'O', 'Ỗ': 'O', 'Ộ': 'O',
+      'Ơ': 'O', 'Ờ': 'O', 'Ớ': 'O', 'Ở': 'O', 'Ỡ': 'O', 'Ợ': 'O',
+      'Ù': 'U', 'Ú': 'U', 'Ủ': 'U', 'Ũ': 'U', 'Ụ': 'U',
+      'Ư': 'U', 'Ừ': 'U', 'Ứ': 'U', 'Ử': 'U', 'Ữ': 'U', 'Ự': 'U',
+      'Ỳ': 'Y', 'Ý': 'Y', 'Ỷ': 'Y', 'Ỹ': 'Y', 'Ỵ': 'Y',
+    };
+    
+    return str.split('').map(char => diacriticsMap[char] || char).join('');
+  };
+
   // Get CSS class for field based on confidence level (color psychology)
   const getConfidenceClass = (fieldName: string, confidenceMap: Record<string, string>) => {
     const confidence = confidenceMap[fieldName];
@@ -690,17 +723,20 @@ export default function AddCustomer() {
         lastName = corrected.lastName;
       }
       
-      // Capitalize names and track filled fields
+      // Remove Vietnamese diacritics, capitalize, and track filled fields
       if (firstName) {
-        shippingForm.setValue('firstName', capitalizeWords(firstName));
+        const cleanFirstName = removeVietnameseDiacritics(firstName);
+        shippingForm.setValue('firstName', capitalizeWords(cleanFirstName));
         filledFields.firstName = data.confidence;
       }
       if (lastName) {
-        shippingForm.setValue('lastName', capitalizeWords(lastName));
+        const cleanLastName = removeVietnameseDiacritics(lastName);
+        shippingForm.setValue('lastName', capitalizeWords(cleanLastName));
         filledFields.lastName = data.confidence;
       }
       if (company) {
-        shippingForm.setValue('company', company);
+        const cleanCompany = removeVietnameseDiacritics(company);
+        shippingForm.setValue('company', cleanCompany);
         filledFields.company = data.confidence;
       }
       if (fields.email) {
@@ -712,29 +748,29 @@ export default function AddCustomer() {
         filledFields.tel = data.confidence;
       }
       
-      // Use Nominatim-corrected address values (already properly formatted by backend with diacritics)
+      // Use Nominatim-validated address values, capitalize and format properly
       if (fields.street) {
-        shippingForm.setValue('street', fields.street);
+        shippingForm.setValue('street', capitalizeWords(fields.street));
         filledFields.street = data.confidence;
       }
       if (fields.streetNumber) {
-        shippingForm.setValue('streetNumber', fields.streetNumber);
+        shippingForm.setValue('streetNumber', fields.streetNumber.toUpperCase());
         filledFields.streetNumber = data.confidence;
       }
       if (fields.city) {
-        shippingForm.setValue('city', fields.city);
+        shippingForm.setValue('city', capitalizeWords(fields.city));
         filledFields.city = data.confidence;
       }
       if (fields.zipCode) {
-        shippingForm.setValue('zipCode', fields.zipCode);
+        shippingForm.setValue('zipCode', fields.zipCode.toUpperCase());
         filledFields.zipCode = data.confidence;
       }
       if (fields.country) {
-        shippingForm.setValue('country', fields.country);
+        shippingForm.setValue('country', capitalizeWords(fields.country));
         filledFields.country = data.confidence;
       }
       if (fields.state) {
-        shippingForm.setValue('state', fields.state);
+        shippingForm.setValue('state', capitalizeWords(fields.state));
         filledFields.state = data.confidence;
       }
       
@@ -847,21 +883,24 @@ export default function AddCustomer() {
         lastName = corrected.lastName;
       }
       
-      // Capitalize names and track filled fields
+      // Remove Vietnamese diacritics, capitalize, and track filled fields
       if (firstName) {
-        form.setValue('billingFirstName', capitalizeWords(firstName));
+        const cleanFirstName = removeVietnameseDiacritics(firstName);
+        form.setValue('billingFirstName', capitalizeWords(cleanFirstName));
         filledFields.billingFirstName = data.confidence;
       }
       if (lastName) {
-        form.setValue('billingLastName', capitalizeWords(lastName));
+        const cleanLastName = removeVietnameseDiacritics(lastName);
+        form.setValue('billingLastName', capitalizeWords(cleanLastName));
         filledFields.billingLastName = data.confidence;
       }
       if (company) {
-        form.setValue('billingCompany', company);
+        const cleanCompany = removeVietnameseDiacritics(company);
+        form.setValue('billingCompany', cleanCompany);
         filledFields.billingCompany = data.confidence;
         // If business name exists, also use it as the customer name
         if (!form.getValues('name')) {
-          form.setValue('name', company);
+          form.setValue('name', cleanCompany);
         }
       }
       if (fields.email) {
@@ -873,29 +912,29 @@ export default function AddCustomer() {
         filledFields.billingTel = data.confidence;
       }
       
-      // Use Nominatim-corrected address values (already properly formatted by backend with diacritics)
+      // Use Nominatim-validated address values, capitalize and format properly
       if (fields.street) {
-        form.setValue('billingStreet', fields.street);
+        form.setValue('billingStreet', capitalizeWords(fields.street));
         filledFields.billingStreet = data.confidence;
       }
       if (fields.streetNumber) {
-        form.setValue('billingStreetNumber', fields.streetNumber);
+        form.setValue('billingStreetNumber', fields.streetNumber.toUpperCase());
         filledFields.billingStreetNumber = data.confidence;
       }
       if (fields.city) {
-        form.setValue('billingCity', fields.city);
+        form.setValue('billingCity', capitalizeWords(fields.city));
         filledFields.billingCity = data.confidence;
       }
       if (fields.zipCode) {
-        form.setValue('billingZipCode', fields.zipCode);
+        form.setValue('billingZipCode', fields.zipCode.toUpperCase());
         filledFields.billingZipCode = data.confidence;
       }
       if (fields.country) {
-        form.setValue('billingCountry', fields.country);
+        form.setValue('billingCountry', capitalizeWords(fields.country));
         filledFields.billingCountry = data.confidence;
       }
       if (fields.state) {
-        form.setValue('billingState', fields.state);
+        form.setValue('billingState', capitalizeWords(fields.state));
         filledFields.billingState = data.confidence;
       }
       
@@ -1333,7 +1372,7 @@ export default function AddCustomer() {
                   <div className="space-y-2">
                     <Label htmlFor="rawShippingAddress">Smart Paste 🇻🇳</Label>
                     <p className="text-sm text-muted-foreground">
-                      Paste any address info (name, company, email, phone, address) - auto-detects Vietnamese names and splits them correctly
+                      Paste any address info (name, company, email, phone, address) - auto-detects Vietnamese names, converts to English letters, and validates addresses
                     </p>
                     <div className="flex gap-2">
                       <Textarea
@@ -1681,7 +1720,7 @@ export default function AddCustomer() {
             <div className="space-y-2">
               <Label htmlFor="rawBillingAddress">Smart Paste 🇻🇳</Label>
               <p className="text-sm text-muted-foreground">
-                Paste any address info (name, company, email, phone, address) - auto-detects Vietnamese names and splits them correctly
+                Paste any address info (name, company, email, phone, address) - auto-detects Vietnamese names, converts to English letters, and validates addresses
               </p>
               <div className="flex gap-2">
                 <Textarea
