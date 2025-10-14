@@ -443,7 +443,7 @@ export default function WarehouseDetails() {
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Upload Section */}
-              <div className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg p-6 hover:border-blue-400 dark:hover:border-blue-500 transition-colors" data-testid="section-upload">
+              <div className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg p-4 sm:p-6 hover:border-blue-400 dark:hover:border-blue-500 transition-colors" data-testid="section-upload">
                 <ObjectUploader
                   maxNumberOfFiles={10}
                   maxFileSize={50 * 1024 * 1024}
@@ -451,13 +451,13 @@ export default function WarehouseDetails() {
                   onComplete={handleFileUploadComplete}
                   buttonClassName="w-full"
                 >
-                  <div className="flex flex-col items-center gap-3 py-4">
-                    <div className="p-3 rounded-full bg-blue-50 dark:bg-blue-900/20">
-                      <UploadCloud className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                  <div className="flex flex-col items-center gap-2 sm:gap-3 py-3 sm:py-4">
+                    <div className="p-2 sm:p-3 rounded-full bg-blue-50 dark:bg-blue-900/20">
+                      <UploadCloud className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 dark:text-blue-400" />
                     </div>
-                    <div className="text-center">
-                      <p className="font-medium text-slate-900 dark:text-slate-100">Upload Files</p>
-                      <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                    <div className="text-center max-w-xs px-2">
+                      <p className="font-medium text-sm sm:text-base text-slate-900 dark:text-slate-100">Upload Files</p>
+                      <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
                         Drag & drop or click to browse
                       </p>
                       <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
