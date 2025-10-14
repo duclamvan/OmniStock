@@ -141,7 +141,6 @@ export default function AddCustomer() {
   const [rawShippingAddress, setRawShippingAddress] = useState("");
   const [rawBillingAddress, setRawBillingAddress] = useState("");
   const [isLabelManuallyEdited, setIsLabelManuallyEdited] = useState(false);
-  const [vietnameseFullName, setVietnameseFullName] = useState("");
 
   const form = useForm<CustomerFormData>({
     resolver: zodResolver(customerFormSchema),
@@ -386,31 +385,6 @@ export default function AddCustomer() {
     form.setValue('billingState', suggestion.state);
     setBillingAddressQuery(suggestion.displayName);
     setShowBillingDropdown(false);
-  };
-
-  // Vietnamese name auto-fill: First word = Last Name, Rest = First Name
-  const handleVietnameseNameChange = (fullName: string) => {
-    setVietnameseFullName(fullName);
-    
-    const trimmedName = fullName.trim();
-    if (!trimmedName) {
-      form.setValue('billingFirstName', '');
-      form.setValue('billingLastName', '');
-      return;
-    }
-
-    const nameParts = trimmedName.split(/\s+/);
-    
-    if (nameParts.length === 1) {
-      // Only one word - use it as last name
-      form.setValue('billingLastName', nameParts[0]);
-      form.setValue('billingFirstName', '');
-    } else {
-      // First word = Last Name (Family name)
-      // Everything else = First Name (Given name + Middle names)
-      form.setValue('billingLastName', nameParts[0]);
-      form.setValue('billingFirstName', nameParts.slice(1).join(' '));
-    }
   };
 
   const selectShippingAddress = (suggestion: AddressAutocompleteResult) => {
@@ -1658,24 +1632,6 @@ export default function AddCustomer() {
 
             <div className="pt-4 border-t">
               <h4 className="font-semibold mb-3">Or enter manually:</h4>
-              
-              {/* Vietnamese Name Auto-Fill */}
-              <div className="mb-4 p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-                <Label htmlFor="vietnameseFullName" className="flex items-center gap-2 text-blue-900 dark:text-blue-100">
-                  <span className="text-sm font-semibold">🇻🇳 Vietnamese Name Auto-Fill</span>
-                </Label>
-                <p className="text-xs text-blue-700 dark:text-blue-300 mt-1 mb-2">
-                  Enter full Vietnamese name (e.g., "Phung Thi Hong Tham") - auto-splits into Last Name (Phung) and First Name (Thi Hong Tham)
-                </p>
-                <Input
-                  id="vietnameseFullName"
-                  value={vietnameseFullName}
-                  onChange={(e) => handleVietnameseNameChange(e.target.value)}
-                  placeholder="e.g., Phung Thi Hong Tham"
-                  className="bg-white dark:bg-slate-900"
-                  data-testid="input-vietnameseFullName"
-                />
-              </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
