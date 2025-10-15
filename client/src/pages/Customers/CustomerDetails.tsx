@@ -135,92 +135,44 @@ export default function CustomerDetails() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile Header */}
-      <div className="sticky top-0 z-10 bg-white border-b lg:hidden">
-        <div className="px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate("/customers")}
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <div>
-                <h1 className="text-lg font-semibold text-slate-900">{customer.name}</h1>
-                <p className="text-xs text-slate-500">ID: {customer.id}</p>
-              </div>
-            </div>
-            <Link href={`/customers/${id}/edit`}>
-              <Button size="sm" variant="outline">
-                <Edit className="h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Desktop Header */}
-      <div className="hidden lg:block bg-white border-b">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+      {/* Header Section */}
+      <div className="bg-white border-b sticky top-0 z-20">
+        <div className="max-w-7xl mx-auto px-4 lg:px-6 py-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 lg:gap-4 flex-1 min-w-0">
               <Button
                 variant="outline"
                 size="icon"
                 onClick={() => navigate("/customers")}
+                className="shrink-0"
+                data-testid="button-back"
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
-              <div>
-                <h1 className="text-2xl font-bold text-slate-900">{customer.name}</h1>
-                <div className="flex items-center gap-4 mt-1">
-                  <span className="text-sm text-slate-500">Customer ID: {customer.id}</span>
+              <div className="min-w-0 flex-1">
+                <h1 className="text-lg lg:text-2xl font-bold text-slate-900 truncate">{customer.name}</h1>
+                <div className="flex items-center gap-2 lg:gap-3 mt-1 text-xs lg:text-sm text-slate-500 flex-wrap">
+                  <span className="shrink-0">ID: {customer.id?.slice(0, 8)}...</span>
                   {customerDuration && (
-                    <span className="text-sm text-slate-500">• Customer for {customerDuration}</span>
+                    <>
+                      <span className="hidden lg:inline">•</span>
+                      <span className="shrink-0">Customer for {customerDuration}</span>
+                    </>
                   )}
                 </div>
               </div>
             </div>
             <Link href={`/customers/${id}/edit`}>
-              <Button>
-                <Edit className="h-4 w-4 mr-2" />
-                Edit Customer
+              <Button data-testid="button-editCustomer" className="shrink-0">
+                <Edit className="h-4 w-4 lg:mr-2" />
+                <span className="hidden lg:inline">Edit</span>
               </Button>
             </Link>
           </div>
-        </div>
-      </div>
 
-      {/* Customer Badges - Mobile */}
-      {customerBadges.length > 0 && (
-        <div className="px-4 py-3 bg-white border-b lg:hidden">
-          <div className="flex flex-wrap gap-2">
-            {customerBadges.map((badge, index) => {
-              const Icon = badge.icon;
-              return (
-                <Badge key={index} variant="outline" className={badge.color}>
-                  <Icon className="mr-1 h-3 w-3" />
-                  {badge.label}
-                </Badge>
-              );
-            })}
-            {customer.hasPayLaterBadge && (
-              <Badge variant="outline" className="bg-yellow-50 border-yellow-300 text-yellow-700">
-                <CreditCard className="mr-1 h-3 w-3" />
-                Pay Later
-              </Badge>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Customer Badges - Desktop */}
-      {customerBadges.length > 0 && (
-        <div className="hidden lg:block bg-gray-50 border-b">
-          <div className="container mx-auto px-6 py-3">
-            <div className="flex flex-wrap gap-2">
+          {/* Badges */}
+          {customerBadges.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t">
               {customerBadges.map((badge, index) => {
                 const Icon = badge.icon;
                 return (
@@ -237,116 +189,129 @@ export default function CustomerDetails() {
                 </Badge>
               )}
             </div>
+          )}
+        </div>
+      </div>
+
+      {/* Quick Stats */}
+      <div className="max-w-7xl mx-auto px-4 lg:px-6 py-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+          <Card>
+            <CardContent className="p-4 lg:p-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 lg:p-3 bg-blue-50 rounded-lg">
+                  <Package className="h-5 w-5 lg:h-6 lg:w-6 text-blue-600" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xl lg:text-2xl font-bold text-slate-900">{orders.length}</p>
+                  <p className="text-xs lg:text-sm text-slate-500">Total Orders</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 lg:p-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 lg:p-3 bg-green-50 rounded-lg">
+                  <DollarSign className="h-5 w-5 lg:h-6 lg:w-6 text-green-600" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-base lg:text-xl font-bold text-slate-900 truncate">{formatCurrency(totalSpent, customerCurrency)}</p>
+                  <p className="text-xs lg:text-sm text-slate-500">Total Spent</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 lg:p-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 lg:p-3 bg-purple-50 rounded-lg">
+                  <ShoppingCart className="h-5 w-5 lg:h-6 lg:w-6 text-purple-600" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-base lg:text-xl font-bold text-slate-900 truncate">{formatCurrency(averageOrderValue, customerCurrency)}</p>
+                  <p className="text-xs lg:text-sm text-slate-500">Avg Order</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4 lg:p-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 lg:p-3 bg-orange-50 rounded-lg">
+                  <AlertCircle className="h-5 w-5 lg:h-6 lg:w-6 text-orange-600" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xl lg:text-2xl font-bold text-slate-900">{unpaidOrders}</p>
+                  <p className="text-xs lg:text-sm text-slate-500">Unpaid</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Tabs Section */}
+      <div className="max-w-7xl mx-auto px-4 lg:px-6 pb-6">
+        <Tabs defaultValue="details" className="space-y-6">
+          {/* Sticky Tab Navigation */}
+          <div className="sticky top-[113px] lg:top-[105px] z-10 bg-gray-50 -mx-4 lg:-mx-6 px-4 lg:px-6 py-3 border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+            <TabsList className="w-full lg:w-auto h-auto p-1 bg-slate-100">
+              <TabsTrigger 
+                value="details" 
+                className="flex-1 lg:flex-none lg:px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-sm text-sm font-medium"
+                data-testid="tab-details"
+              >
+                <FileText className="h-4 w-4 lg:mr-2" />
+                <span className="hidden lg:inline">Details</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="orders" 
+                className="flex-1 lg:flex-none lg:px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-sm text-sm font-medium"
+                data-testid="tab-orders"
+              >
+                <Package className="h-4 w-4 lg:mr-2" />
+                <span className="hidden lg:inline">Orders</span>
+                <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
+                  {orders.length}
+                </Badge>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="prices" 
+                className="flex-1 lg:flex-none lg:px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:shadow-sm text-sm font-medium"
+                data-testid="tab-prices"
+              >
+                <Tag className="h-4 w-4 lg:mr-2" />
+                <span className="hidden lg:inline">Prices</span>
+              </TabsTrigger>
+            </TabsList>
           </div>
-        </div>
-      )}
 
-      {/* Main Content */}
-      <div className="container mx-auto px-4 lg:px-6 py-4 lg:py-6">
-        {/* Quick Stats - Mobile */}
-        <div className="grid grid-cols-2 gap-3 mb-4 lg:hidden">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <Package className="h-8 w-8 text-blue-500" />
-                <div>
-                  <p className="text-2xl font-bold">{orders.length}</p>
-                  <p className="text-xs text-slate-500">Total Orders</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <DollarSign className="h-8 w-8 text-green-500" />
-                <div>
-                  <p className="text-lg font-bold">{formatCurrency(totalSpent, customerCurrency)}</p>
-                  <p className="text-xs text-slate-500">Total Spent</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Quick Stats - Desktop */}
-        <div className="hidden lg:grid lg:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600">Total Orders</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <Package className="h-5 w-5 text-blue-500" />
-                <p className="text-2xl font-bold">{orders.length}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600">Total Spent</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5 text-green-500" />
-                <p className="text-xl font-bold">{formatCurrency(totalSpent, customerCurrency)}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600">Average Order</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <ShoppingCart className="h-5 w-5 text-purple-500" />
-                <p className="text-xl font-bold">{formatCurrency(averageOrderValue, customerCurrency)}</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-slate-600">Unpaid Orders</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-orange-500" />
-                <p className="text-2xl font-bold">{unpaidOrders}</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Tabs */}
-        <Tabs defaultValue="details" className="space-y-4">
-          <TabsList className="w-full lg:w-auto">
-            <TabsTrigger value="details" className="flex-1 lg:flex-none">Details</TabsTrigger>
-            <TabsTrigger value="orders" className="flex-1 lg:flex-none">Orders</TabsTrigger>
-            <TabsTrigger value="prices" className="flex-1 lg:flex-none">Prices</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="details" className="space-y-4">
+          <TabsContent value="details" className="space-y-4 mt-0">
             {/* Contact Information */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base lg:text-lg">Contact Information</CardTitle>
+                <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
+                  <User className="h-5 w-5 text-blue-600" />
+                  Contact Information
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Tax Information */}
                 {(customer.vatId || customer.taxId) && (
                   <div className="pb-4 border-b">
-                    <h4 className="text-sm font-medium text-slate-700 mb-2">Business Information</h4>
+                    <h4 className="text-sm font-semibold text-slate-700 mb-3">Business Information</h4>
                     <div className="space-y-2">
                       {customer.country === 'Czech Republic' && customer.taxId && (
                         <div className="flex items-center gap-2 text-sm">
-                          <Building className="h-4 w-4 text-slate-400" />
+                          <Building className="h-4 w-4 text-slate-400 shrink-0" />
                           <span className="text-slate-600">IČO:</span>
                           <span className="font-medium">{customer.taxId}</span>
                         </div>
                       )}
                       {customer.vatId && (
                         <div className="flex items-center gap-2 text-sm">
-                          <Building className="h-4 w-4 text-slate-400" />
+                          <Building className="h-4 w-4 text-slate-400 shrink-0" />
                           <span className="text-slate-600">VAT ID:</span>
                           <span className="font-medium">{customer.vatId}</span>
                         </div>
@@ -356,16 +321,16 @@ export default function CustomerDetails() {
                 )}
                 
                 {/* Contact Details */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                   {customer.email && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Mail className="h-4 w-4 text-slate-400" />
+                    <div className="flex items-center gap-2 text-sm p-3 bg-slate-50 rounded-lg">
+                      <Mail className="h-4 w-4 text-slate-400 shrink-0" />
                       <span className="truncate">{customer.email}</span>
                     </div>
                   )}
                   {customer.phone && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Phone className="h-4 w-4 text-slate-400" />
+                    <div className="flex items-center gap-2 text-sm p-3 bg-slate-50 rounded-lg">
+                      <Phone className="h-4 w-4 text-slate-400 shrink-0" />
                       <span>{customer.phone}</span>
                     </div>
                   )}
@@ -373,8 +338,8 @@ export default function CustomerDetails() {
                 
                 {/* Address */}
                 {(customer.address || customer.city || customer.country) && (
-                  <div className="flex items-start gap-2 text-sm">
-                    <MapPin className="h-4 w-4 text-slate-400 mt-0.5" />
+                  <div className="flex items-start gap-3 text-sm p-3 bg-slate-50 rounded-lg">
+                    <MapPin className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
                     <div>
                       {customer.address && <p>{customer.address}</p>}
                       <p>
@@ -387,8 +352,8 @@ export default function CustomerDetails() {
 
                 {/* Facebook */}
                 {customer.facebookName && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <MessageCircle className="h-4 w-4 text-slate-400" />
+                  <div className="flex items-center gap-2 text-sm p-3 bg-slate-50 rounded-lg">
+                    <MessageCircle className="h-4 w-4 text-slate-400 shrink-0" />
                     <span>Facebook: {customer.facebookName}</span>
                   </div>
                 )}
@@ -399,10 +364,13 @@ export default function CustomerDetails() {
             {customer.notes && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base lg:text-lg">Notes</CardTitle>
+                  <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
+                    <FileText className="h-5 w-5 text-blue-600" />
+                    Notes
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-slate-600 whitespace-pre-wrap">{customer.notes}</p>
+                  <p className="text-sm text-slate-600 whitespace-pre-wrap p-3 bg-slate-50 rounded-lg">{customer.notes}</p>
                 </CardContent>
               </Card>
             )}
@@ -411,8 +379,8 @@ export default function CustomerDetails() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
-                  <FileText className="h-5 w-5 text-blue-600" />
-                  Files & Documents Sent
+                  <File className="h-5 w-5 text-blue-600" />
+                  Documents Sent
                 </CardTitle>
                 <p className="text-xs text-slate-500 mt-1">
                   History of all documents sent with orders
@@ -430,8 +398,8 @@ export default function CustomerDetails() {
 
                   if (ordersWithDocs.length === 0) {
                     return (
-                      <div className="text-center py-6 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
-                        <File className="mx-auto h-10 w-10 mb-2 text-slate-400" />
+                      <div className="text-center py-8 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
+                        <File className="mx-auto h-12 w-12 mb-3 text-slate-300" />
                         <p className="text-sm font-medium text-slate-700">No documents sent yet</p>
                         <p className="text-xs text-slate-500 mt-1">Documents will appear here when sent with orders</p>
                       </div>
@@ -441,15 +409,15 @@ export default function CustomerDetails() {
                   return (
                     <div className="space-y-3 max-h-96 overflow-y-auto">
                       {ordersWithDocs.map((order: any) => (
-                        <div key={order.id} className="border border-slate-200 rounded-lg p-3 bg-slate-50/50">
-                          <div className="flex items-start justify-between mb-2">
+                        <div key={order.id} className="border border-slate-200 rounded-lg p-4 bg-slate-50/50 hover:bg-slate-50 transition-colors">
+                          <div className="flex items-start justify-between mb-3">
                             <div>
                               <Link href={`/orders/${order.id}`}>
-                                <p className="text-sm font-medium text-blue-600 hover:underline cursor-pointer">
+                                <p className="text-sm font-semibold text-blue-600 hover:underline cursor-pointer">
                                   Order #{order.orderId || order.id}
                                 </p>
                               </Link>
-                              <p className="text-xs text-slate-500">
+                              <p className="text-xs text-slate-500 mt-0.5">
                                 {new Date(order.createdAt).toLocaleDateString('en-GB', { 
                                   day: '2-digit', 
                                   month: 'short', 
@@ -458,25 +426,25 @@ export default function CustomerDetails() {
                               </p>
                             </div>
                           </div>
-                          <div className="space-y-1">
+                          <div className="space-y-2">
                             {order.includedDocuments?.invoicePrint && (
-                              <div className="flex items-center gap-2 text-xs">
-                                <CheckCircle className="h-3 w-3 text-green-600" />
-                                <span className="text-slate-700">Invoice (Print Copy)</span>
+                              <div className="flex items-center gap-2 text-xs bg-green-50 p-2 rounded border border-green-200">
+                                <CheckCircle className="h-3.5 w-3.5 text-green-600 shrink-0" />
+                                <span className="text-slate-700 font-medium">Invoice (Print Copy)</span>
                               </div>
                             )}
                             {order.includedDocuments?.custom && (
-                              <div className="flex items-center gap-2 text-xs">
-                                <CheckCircle className="h-3 w-3 text-green-600" />
-                                <span className="text-slate-700">Custom Documents</span>
+                              <div className="flex items-center gap-2 text-xs bg-green-50 p-2 rounded border border-green-200">
+                                <CheckCircle className="h-3.5 w-3.5 text-green-600 shrink-0" />
+                                <span className="text-slate-700 font-medium">Custom Documents</span>
                               </div>
                             )}
                             {order.includedDocuments?.uploadedFiles?.map((file: any, idx: number) => (
-                              <div key={idx} className="flex items-center gap-2 text-xs">
-                                <FileText className="h-3 w-3 text-blue-600" />
-                                <span className="text-slate-700 truncate">{file.name}</span>
+                              <div key={idx} className="flex items-center gap-2 text-xs bg-blue-50 p-2 rounded border border-blue-200">
+                                <FileText className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                                <span className="text-slate-700 font-medium truncate flex-1">{file.name}</span>
                                 {file.size && (
-                                  <span className="text-slate-400">
+                                  <span className="text-slate-500 text-xs shrink-0">
                                     ({(file.size / 1024).toFixed(1)} KB)
                                   </span>
                                 )}
@@ -492,113 +460,74 @@ export default function CustomerDetails() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="orders" className="space-y-4">
+          <TabsContent value="orders" className="space-y-4 mt-0">
             <Card className="overflow-hidden">
-              <CardHeader className="px-4 lg:px-6">
+              <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base lg:text-lg">Order History</CardTitle>
-                  <span className="text-xs text-slate-500">{orders.length} orders</span>
+                  <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
+                    <Package className="h-5 w-5 text-blue-600" />
+                    Order History
+                  </CardTitle>
+                  <Badge variant="secondary" className="text-xs">
+                    {orders.length} orders
+                  </Badge>
                 </div>
               </CardHeader>
-              <CardContent className="px-3 lg:px-6">
+              <CardContent>
                 {orders.length === 0 ? (
-                  <p className="text-sm text-slate-500 text-center py-8">No orders found</p>
+                  <div className="text-center py-12 bg-slate-50 rounded-lg border-2 border-dashed border-slate-200">
+                    <Package className="mx-auto h-12 w-12 mb-3 text-slate-300" />
+                    <p className="text-sm font-medium text-slate-700">No orders found</p>
+                    <p className="text-xs text-slate-500 mt-1">Orders will appear here once created</p>
+                  </div>
                 ) : (
-                  <div className="space-y-2 max-h-[600px] overflow-y-auto">
+                  <div className="space-y-3 max-h-[600px] overflow-y-auto">
                     {orders.map((order: any) => (
                       <Link key={order.id} href={`/orders/${order.id}`}>
-                        <div className="border border-slate-200 rounded-md p-3 hover:bg-slate-50 cursor-pointer transition-colors">
-                          {/* Mobile Layout */}
-                          <div className="lg:hidden">
-                            <div className="flex justify-between items-start mb-2">
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium text-sm truncate">
-                                  #{order.orderId || order.id}
-                                </p>
-                                <div className="flex items-center gap-1 text-xs text-slate-500 mt-0.5">
-                                  <Calendar className="h-3 w-3 flex-shrink-0" />
-                                  <span>{new Date(order.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' })}</span>
-                                </div>
-                              </div>
-                              <div className="text-right ml-2">
-                                <p className="font-semibold text-sm whitespace-nowrap">
-                                  {formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}
-                                </p>
+                        <div className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 hover:border-slate-300 cursor-pointer transition-all">
+                          <div className="flex items-start justify-between gap-4 mb-3">
+                            <div className="min-w-0 flex-1">
+                              <p className="font-semibold text-sm text-slate-900">
+                                Order #{order.orderId || order.id}
+                              </p>
+                              <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
+                                <Calendar className="h-3 w-3 shrink-0" />
+                                <span>{new Date(order.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                               </div>
                             </div>
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-2">
-                                <Badge 
-                                  variant={
-                                    order.orderStatus === 'ready_to_ship' ? 'outline' :
-                                    order.orderStatus === 'delivered' ? 'default' :
-                                    order.orderStatus === 'shipped' ? 'secondary' :
-                                    order.orderStatus === 'cancelled' ? 'destructive' :
-                                    'secondary'
-                                  }
-                                  className="text-xs px-2 py-0 h-5"
-                                >
-                                  {order.orderStatus === 'to_fulfill' ? 'To Fulfill' :
-                                   order.orderStatus === 'ready_to_ship' ? 'Ready' :
-                                   order.orderStatus === 'delivered' ? 'Delivered' :
-                                   order.orderStatus === 'shipped' ? 'Shipped' :
-                                   order.orderStatus === 'cancelled' ? 'Cancelled' :
-                                   'Pending'}
-                                </Badge>
-                                <span className="text-xs text-slate-500">
-                                  {order.items?.length || 0} items
-                                </span>
-                              </div>
-                              <Badge 
-                                variant={order.paymentStatus === 'paid' ? 'outline' : 'secondary'}
-                                className="text-xs px-2 py-0 h-5"
-                              >
-                                {order.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}
-                              </Badge>
+                            <div className="text-right shrink-0">
+                              <p className="font-bold text-sm text-slate-900">
+                                {formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}
+                              </p>
+                              <p className="text-xs text-slate-500 mt-1">
+                                {order.items?.length || 0} items
+                              </p>
                             </div>
                           </div>
-
-                          {/* Desktop Layout */}
-                          <div className="hidden lg:block">
-                            <div className="flex items-start justify-between mb-2">
-                              <div className="space-y-1">
-                                <p className="font-medium text-sm">
-                                  Order #{order.orderId || order.id}
-                                </p>
-                                <div className="flex items-center gap-2 text-xs text-slate-500">
-                                  <Calendar className="h-3 w-3" />
-                                  <span>{new Date(order.createdAt).toLocaleDateString()}</span>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <p className="font-semibold text-sm">
-                                  {formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}
-                                </p>
-                                <Badge 
-                                  variant={
-                                    order.orderStatus === 'ready_to_ship' ? 'outline' :
-                                    order.orderStatus === 'delivered' ? 'default' :
-                                    order.orderStatus === 'shipped' ? 'secondary' :
-                                    order.orderStatus === 'cancelled' ? 'destructive' :
-                                    'secondary'
-                                  }
-                                  className="text-xs mt-1"
-                                >
-                                  {order.orderStatus?.replace(/_/g, ' ').toUpperCase() || 'PENDING'}
-                                </Badge>
-                              </div>
-                            </div>
-                            <div className="flex items-center justify-between pt-2 border-t">
-                              <span className="text-xs text-slate-500">
-                                {order.items?.length || 0} items
-                              </span>
-                              <Badge 
-                                variant={order.paymentStatus === 'paid' ? 'outline' : 'secondary'}
-                                className="text-xs"
-                              >
-                                {order.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}
-                              </Badge>
-                            </div>
+                          <div className="flex items-center justify-between gap-2 pt-3 border-t">
+                            <Badge 
+                              variant={
+                                order.orderStatus === 'ready_to_ship' ? 'outline' :
+                                order.orderStatus === 'delivered' ? 'default' :
+                                order.orderStatus === 'shipped' ? 'secondary' :
+                                order.orderStatus === 'cancelled' ? 'destructive' :
+                                'secondary'
+                              }
+                              className="text-xs"
+                            >
+                              {order.orderStatus === 'to_fulfill' ? 'To Fulfill' :
+                               order.orderStatus === 'ready_to_ship' ? 'Ready' :
+                               order.orderStatus === 'delivered' ? 'Delivered' :
+                               order.orderStatus === 'shipped' ? 'Shipped' :
+                               order.orderStatus === 'cancelled' ? 'Cancelled' :
+                               'Pending'}
+                            </Badge>
+                            <Badge 
+                              variant={order.paymentStatus === 'paid' ? 'outline' : 'secondary'}
+                              className={order.paymentStatus === 'paid' ? 'text-xs bg-green-50 border-green-300 text-green-700' : 'text-xs'}
+                            >
+                              {order.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}
+                            </Badge>
                           </div>
                         </div>
                       </Link>
@@ -609,7 +538,7 @@ export default function CustomerDetails() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="prices" className="space-y-4">
+          <TabsContent value="prices" className="space-y-4 mt-0">
             <CustomerPrices customerId={id || ''} />
           </TabsContent>
         </Tabs>
