@@ -138,6 +138,9 @@ export default function AddCustomer() {
   const [showShippingDropdown, setShowShippingDropdown] = useState(false);
   const [isLoadingShippingAutocomplete, setIsLoadingShippingAutocomplete] = useState(false);
 
+  const [shippingCountryQuery, setShippingCountryQuery] = useState("");
+  const [showShippingCountryDropdown, setShowShippingCountryDropdown] = useState(false);
+
   const [rawShippingAddress, setRawShippingAddress] = useState("");
   const [rawBillingAddress, setRawBillingAddress] = useState("");
   const [isLabelManuallyEdited, setIsLabelManuallyEdited] = useState(false);
@@ -1571,13 +1574,68 @@ export default function AddCustomer() {
                     </div>
                     <div>
                       <Label htmlFor="shippingCountry">Country</Label>
-                      <Input
-                        id="shippingCountry"
-                        {...shippingForm.register('country')}
-                        placeholder="Country"
-                        className={cn(getConfidenceClass('country', shippingFieldConfidence))}
-                        data-testid="input-shippingCountry"
-                      />
+                      <div className="relative">
+                        <Input
+                          id="shippingCountry"
+                          value={shippingCountryQuery || shippingForm.watch('country') || ''}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setShippingCountryQuery(value);
+                            setShowShippingCountryDropdown(true);
+                            if (!value) {
+                              shippingForm.setValue('country', '');
+                            }
+                          }}
+                          onFocus={() => setShowShippingCountryDropdown(true)}
+                          placeholder="Type to search countries..."
+                          className={cn(getConfidenceClass('country', shippingFieldConfidence))}
+                          data-testid="input-shippingCountry"
+                        />
+                        {(shippingCountryQuery || shippingForm.watch('country')) && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-1 top-1 h-8 w-8 p-0"
+                            onClick={() => {
+                              setShippingCountryQuery("");
+                              shippingForm.setValue('country', '');
+                              setShowShippingCountryDropdown(false);
+                            }}
+                            data-testid="button-clearShippingCountry"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {showShippingCountryDropdown && (
+                          <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-64 overflow-y-auto z-50">
+                            {europeanCountries
+                              .filter(country => 
+                                country.name.toLowerCase().includes((shippingCountryQuery || '').toLowerCase())
+                              )
+                              .map((country) => (
+                                <div
+                                  key={country.code}
+                                  className="p-3 hover:bg-slate-100 cursor-pointer border-b last:border-b-0 transition-colors flex items-center gap-2"
+                                  onClick={() => {
+                                    shippingForm.setValue('country', country.name);
+                                    setShippingCountryQuery('');
+                                    setShowShippingCountryDropdown(false);
+                                  }}
+                                  data-testid={`button-shippingCountry-${country.code}`}
+                                >
+                                  <span className="text-xl">{getCountryFlag(country.code)}</span>
+                                  <span>{country.name}</span>
+                                </div>
+                              ))}
+                            {europeanCountries.filter(country => 
+                              country.name.toLowerCase().includes((shippingCountryQuery || '').toLowerCase())
+                            ).length === 0 && (
+                              <div className="p-4 text-center text-slate-500">No countries found</div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
