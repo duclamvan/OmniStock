@@ -56,6 +56,7 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
+import { ImagePlaceholder } from "@/components/ImagePlaceholder";
 
 // Helper function to get status color
 const getStatusColor = (status: string) => {
@@ -407,30 +408,23 @@ export default function ReviewApprove() {
                         
                         // Get product image or use placeholder based on item type
                         const itemImage = item.purchaseItem?.imageUrl || null;
-                        const getPlaceholderIcon = () => {
-                          if (itemName.toLowerCase().includes('mask')) return '😷';
-                          if (itemName.toLowerCase().includes('glove')) return '🧤';
-                          if (itemName.toLowerCase().includes('sanitizer')) return '🧴';
-                          if (itemName.toLowerCase().includes('thermometer')) return '🌡️';
-                          if (itemName.toLowerCase().includes('oxygen') || itemName.toLowerCase().includes('monitor')) return '📊';
-                          return '📦';
-                        };
                         
                         return (
                           <TableRow key={item.id || index} className="hover:bg-muted/30">
                             {/* Image Column */}
                             <TableCell className="p-2">
-                              <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center overflow-hidden">
-                                {itemImage ? (
+                              {itemImage ? (
+                                <div className="w-10 h-10 rounded-lg overflow-hidden">
                                   <img 
                                     src={itemImage} 
                                     alt={itemName}
                                     className="w-full h-full object-contain bg-slate-50 dark:bg-slate-900"
+                                    data-testid={`img-item-${index}`}
                                   />
-                                ) : (
-                                  <span className="text-lg">{getPlaceholderIcon()}</span>
-                                )}
-                              </div>
+                                </div>
+                              ) : (
+                                <ImagePlaceholder size="xs" variant="subtle" data-testid={`placeholder-item-${index}`} />
+                              )}
                             </TableCell>
                             
                             {/* Item Details Column */}

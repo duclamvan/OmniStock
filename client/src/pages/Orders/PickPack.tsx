@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/dialog";
 import { Link } from "wouter";
 import logoPath from '@assets/logo_1754349267160.png';
+import { ImagePlaceholder } from "@/components/ImagePlaceholder";
 import { 
   Package, 
   Printer, 
@@ -232,10 +233,9 @@ const ProductImage = memo(({
               style={{ pointerEvents: 'none' }}
             />
           ) : (
-            <Package 
-              className="h-32 w-32 text-gray-300"
-              style={{ pointerEvents: 'none' }} 
-            />
+            <div style={{ pointerEvents: 'none' }}>
+              <ImagePlaceholder size="lg" variant="product" data-testid="placeholder-item-image-expanded" />
+            </div>
           )}
         </div>
         
@@ -290,7 +290,9 @@ const ProductImage = memo(({
             style={{ pointerEvents: 'none' }}
           />
         ) : (
-          <Package className="h-10 lg:h-16 w-10 lg:w-16 text-gray-300" style={{ pointerEvents: 'none' }} />
+          <div style={{ pointerEvents: 'none' }}>
+            <ImagePlaceholder size="xs" variant="product" data-testid="placeholder-item-image-compact" />
+          </div>
         )}
       </div>
       <div className="absolute -top-1 -right-1 lg:-top-2 lg:-right-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full w-8 h-8 lg:w-10 lg:h-10 flex items-center justify-center font-bold text-xs lg:text-base shadow-lg" style={{ pointerEvents: 'none' }}>

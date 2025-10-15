@@ -74,6 +74,7 @@ import {
   Edit,
   ListPlus
 } from "lucide-react";
+import { ImagePlaceholder } from "@/components/ImagePlaceholder";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -3151,7 +3152,7 @@ export default function ProductForm() {
                                           className="w-full h-full object-contain bg-slate-50 dark:bg-slate-900"
                                         />
                                       ) : (
-                                        <Package className="h-6 w-6 text-slate-400" />
+                                        <ImagePlaceholder size="xs" variant="product" data-testid="placeholder-packing-material" />
                                       )}
                                     </div>
                                     

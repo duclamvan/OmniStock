@@ -52,6 +52,7 @@ import CostHistoryChart from "@/components/products/CostHistoryChart";
 import ProductFiles from "@/components/ProductFiles";
 import ProductLocations from "@/components/ProductLocations";
 import ProductVariants from "@/components/ProductVariants";
+import { ImagePlaceholder } from "@/components/ImagePlaceholder";
 
 const IMAGE_PURPOSE_CONFIG = {
   main: {
@@ -263,9 +264,7 @@ export default function ProductDetails() {
                   data-testid="img-product-primary"
                 />
               ) : (
-                <div className="w-32 h-32 bg-gradient-to-br from-slate-100 to-slate-200 rounded-xl flex items-center justify-center border-2 border-slate-200">
-                  <Package className="h-20 w-20 text-slate-400" />
-                </div>
+                <ImagePlaceholder size="lg" variant="product" data-testid="placeholder-product-image" />
               )}
             </div>
 
@@ -712,9 +711,7 @@ export default function ProductDetails() {
             <AccordionContent className="px-4 pb-4">
               <div className="space-y-6 pt-2">
                 <div className="flex items-start gap-4">
-                  <div className="w-20 h-20 bg-gradient-to-br from-slate-100 to-slate-200 rounded-xl flex items-center justify-center border border-slate-200">
-                    <Building className="h-10 w-10 text-slate-400" />
-                  </div>
+                  <ImagePlaceholder size="lg" variant="building" data-testid="placeholder-supplier-image" />
                   <div className="flex-1">
                     <h3 className="text-xl font-bold text-slate-900" data-testid="text-supplier-name">{supplier.name}</h3>
                     {supplier.contactPerson && (
