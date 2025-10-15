@@ -30,7 +30,7 @@ The application uses PostgreSQL with Neon serverless driver and Drizzle ORM. The
 - **Supplier Management**: CRUD operations, file upload, and purchase history, with centralized supplier information.
 - **Warehouse Management**: Management with file handling, location codes, barcode scanning, and quantity tracking.
 - **Packing Materials Management**: Complete system for tracking packing materials inventory including cartons, filling materials, protective materials, and general supplies. Features include image upload with compression, dimension and weight tracking, cost management, and PM supplier integration with autocomplete search and "add new" dialog functionality.
-- **Returns Management**: Complete system integrated from order details.
+- **Returns Management**: Professional returns processing system with enhanced UX featuring auto-selection, order history display, and real-time invoice totals. Includes intelligent order auto-population (single-order customers), order item auto-import, live return total calculation, status tracking with visual indicators, and comprehensive order history sidebar. Integrated from order details with session-based pre-fill support.
 - **Expenses Management**: Streamlined UI and forms.
 - **Product Bundles**: Comprehensive system with variant support, multiple pricing modes, and image upload with visual card display.
 - **Point of Sale (POS)**: Full-featured system with thermal printer support, multi-currency, real-time cart, VAT calculation, and receipt generation, optimized for mobile.

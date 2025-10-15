@@ -12,7 +12,24 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ArrowLeft, Save, Plus, X, Search } from "lucide-react";
+import { 
+  ArrowLeft, 
+  Save, 
+  Plus, 
+  X, 
+  Search, 
+  Package, 
+  User, 
+  Calendar, 
+  FileText, 
+  TruckIcon, 
+  ShoppingCart,
+  Receipt,
+  CheckCircle2,
+  AlertCircle,
+  Clock,
+  Euro
+} from "lucide-react";
 import { format } from "date-fns";
 import {
   Command,
@@ -28,6 +45,8 @@ import {
 } from "@/components/ui/popover";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 const returnSchema = z.object({
   customerId: z.string().min(1, "Customer is required"),
@@ -35,6 +54,7 @@ const returnSchema = z.object({
   returnDate: z.string().min(1, "Return date is required"),
   returnType: z.enum(['exchange', 'refund', 'store_credit']),
   status: z.enum(['awaiting', 'processing', 'completed', 'cancelled']),
+  trackingNumber: z.string().optional(),
   shippingCarrier: z.string().optional(),
   notes: z.string().optional(),
   items: z.array(z.object({
@@ -55,6 +75,7 @@ export default function AddReturn() {
   const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
   const [orderSearchOpen, setOrderSearchOpen] = useState(false);
   const [productSearchOpen, setProductSearchOpen] = useState<number | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
 
   // Fetch customers
   const { data: customers = [] } = useQuery<any[]>({
@@ -79,6 +100,7 @@ export default function AddReturn() {
       returnDate: format(new Date(), 'yyyy-MM-dd'),
       returnType: "refund",
       status: "awaiting",
+      trackingNumber: "",
       shippingCarrier: "",
       notes: "",
       items: [],
@@ -96,20 +118,29 @@ export default function AddReturn() {
   // Filter orders by selected customer
   const customerOrders = orders.filter((order: any) => 
     order.customerId === watchCustomerId
-  );
+  ).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   // Generate return ID
   const generateReturnId = () => {
     const prefix = '#RET';
-    const timestamp = Date.now().toString().slice(-3);
-    const random = Math.random().toString(36).substring(2, 5).toUpperCase();
+    const timestamp = Date.now().toString().slice(-6);
+    const random = Math.random().toString(36).substring(2, 4).toUpperCase();
     return `${prefix}${timestamp}${random}`;
   };
 
   // Set initial return ID
-  useState(() => {
+  useEffect(() => {
     setReturnId(generateReturnId());
-  });
+  }, []);
+
+  // Auto-select order if customer has only one order
+  useEffect(() => {
+    if (watchCustomerId && customerOrders.length === 1 && !watchOrderId) {
+      const order = customerOrders[0];
+      form.setValue("orderId", order.id);
+      handleOrderSelect(order);
+    }
+  }, [watchCustomerId, customerOrders.length]);
 
   // Check for pre-filled data from Order Details
   useEffect(() => {
@@ -124,6 +155,10 @@ export default function AddReturn() {
         }
         if (data.orderId) {
           form.setValue('orderId', data.orderId);
+          const order = orders.find((o: any) => o.id === data.orderId);
+          if (order) {
+            setSelectedOrder(order);
+          }
         }
         if (data.reason) {
           form.setValue('notes', data.reason);
@@ -147,14 +182,43 @@ export default function AddReturn() {
         
         // Show success message
         toast({
-          title: "Return Ticket Pre-filled",
+          title: "Return Pre-filled",
           description: `Pre-filled return data for order ${data.orderNumber}`,
         });
       } catch (error) {
         console.error('Error parsing return form data:', error);
       }
     }
-  }, []);
+  }, [orders]);
+
+  const handleOrderSelect = (order: any) => {
+    setSelectedOrder(order);
+    
+    // Auto-populate items from order
+    if (order.items && order.items.length > 0) {
+      // Clear existing items
+      while (fields.length > 0) {
+        remove(0);
+      }
+      
+      // Add order items
+      order.items.forEach((item: any) => {
+        const product = products.find((p: any) => p.id === item.productId);
+        append({
+          productId: item.productId || '',
+          productName: product?.name || item.productName || '',
+          sku: product?.sku || item.sku || '',
+          quantity: item.quantity || 1,
+          price: parseFloat(item.price || product?.sellingPriceEur || "0"),
+        });
+      });
+
+      toast({
+        title: "Items Loaded",
+        description: `${order.items.length} items added from order`,
+      });
+    }
+  };
 
   const createReturnMutation = useMutation({
     mutationFn: (data: any) => apiRequest('POST', '/api/returns', data),
@@ -206,322 +270,487 @@ export default function AddReturn() {
     setProductSearchOpen(null);
   };
 
+  const selectedCustomer = customers.find((c: any) => c.id === watchCustomerId);
+  
+  // Calculate totals
+  const returnTotal = fields.reduce((sum, field, index) => {
+    const quantity = form.watch(`items.${index}.quantity`) || 0;
+    const price = form.watch(`items.${index}.price`) || 0;
+    return sum + (quantity * price);
+  }, 0);
+
+  const getStatusIcon = (status: string) => {
+    switch(status) {
+      case 'awaiting': return <Clock className="h-4 w-4" />;
+      case 'processing': return <AlertCircle className="h-4 w-4" />;
+      case 'completed': return <CheckCircle2 className="h-4 w-4" />;
+      default: return <X className="h-4 w-4" />;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch(status) {
+      case 'awaiting': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'processing': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'completed': return 'bg-green-100 text-green-800 border-green-200';
+      case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto">
       <div className="mb-6">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => navigate("/returns")}
           className="mb-4"
+          data-testid="button-back"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Returns
         </Button>
-        <h1 className="text-2xl font-bold">Add Return</h1>
-        <p className="text-gray-600">Add your return</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Create Return</h1>
+            <p className="text-muted-foreground mt-1">Process customer returns and refunds</p>
+          </div>
+          <div className="text-right">
+            <p className="text-sm text-muted-foreground">Return ID</p>
+            <p className="text-2xl font-bold text-primary">{returnId}</p>
+          </div>
+        </div>
       </div>
 
       <form onSubmit={form.handleSubmit(onSubmit)}>
-        <Card>
-          <CardContent className="space-y-6 pt-6">
-            {/* Return ID and Customer */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Return ID</Label>
-                <Input value={returnId} disabled className="bg-gray-50" />
-              </div>
-              <div>
-                <Label>Customer Name</Label>
-                <Popover open={customerSearchOpen} onOpenChange={setCustomerSearchOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={customerSearchOpen}
-                      className="w-full justify-between"
-                    >
-                      {watchCustomerId
-                        ? customers.find((customer: any) => customer.id === watchCustomerId)?.name
-                        : "Type here"}
-                      <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-full p-0">
-                    <Command>
-                      <CommandInput placeholder="Search customer..." />
-                      <CommandEmpty>No customer found.</CommandEmpty>
-                      <CommandGroup className="max-h-64 overflow-auto">
-                        {customers.map((customer: any) => (
-                          <CommandItem
-                            key={customer.id}
-                            value={customer.name}
-                            onSelect={() => {
-                              form.setValue("customerId", customer.id);
-                              setCustomerSearchOpen(false);
-                            }}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                watchCustomerId === customer.id ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                            {customer.name}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-                {form.formState.errors.customerId && (
-                  <p className="text-sm text-red-500 mt-1">{form.formState.errors.customerId.message}</p>
-                )}
-              </div>
-            </div>
-
-            {/* Order Number and Return Date */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Order Number</Label>
-                <Popover open={orderSearchOpen} onOpenChange={setOrderSearchOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={orderSearchOpen}
-                      className="w-full justify-between"
-                      disabled={!watchCustomerId || customerOrders.length === 0}
-                    >
-                      {watchOrderId
-                        ? orders.find((order: any) => order.id === watchOrderId)?.id.slice(0, 8).toUpperCase()
-                        : "Type here"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-full p-0">
-                    <Command>
-                      <CommandInput placeholder="Search order..." />
-                      <CommandEmpty>No order found.</CommandEmpty>
-                      <CommandGroup className="max-h-64 overflow-auto">
-                        {customerOrders.map((order: any) => (
-                          <CommandItem
-                            key={order.id}
-                            value={order.id}
-                            onSelect={() => {
-                              form.setValue("orderId", order.id);
-                              setOrderSearchOpen(false);
-                            }}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                watchOrderId === order.id ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                            {order.id.slice(0, 8).toUpperCase()} - {format(new Date(order.createdAt), 'dd/MM/yyyy')}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div>
-                <Label>Return Date</Label>
-                <Input 
-                  type="date"
-                  {...form.register("returnDate")}
-                />
-                {form.formState.errors.returnDate && (
-                  <p className="text-sm text-red-500 mt-1">{form.formState.errors.returnDate.message}</p>
-                )}
-              </div>
-            </div>
-
-            {/* Return Type and Status */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Return Type</Label>
-                <Select
-                  value={form.watch("returnType")}
-                  onValueChange={(value) => form.setValue("returnType", value as any)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Please select" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="exchange">Exchange</SelectItem>
-                    <SelectItem value="refund">Refund</SelectItem>
-                    <SelectItem value="store_credit">Store Credit</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Status</Label>
-                <Select
-                  value={form.watch("status")}
-                  onValueChange={(value) => form.setValue("status", value as any)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Please select" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="awaiting">Awaiting</SelectItem>
-                    <SelectItem value="processing">Processing</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Notes */}
-            <div>
-              <Label>Note</Label>
-              <Textarea 
-                {...form.register("notes")}
-                placeholder="Type here..."
-                className="h-24"
-              />
-            </div>
-
-            {/* Tracking Number and Shipping Carrier */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Tracking Number</Label>
-                <Input 
-                  {...form.register("notes")}
-                  placeholder="Type here"
-                />
-              </div>
-              <div>
-                <Label>Shipping Carrier</Label>
-                <Select
-                  value={form.watch("shippingCarrier")}
-                  onValueChange={(value) => form.setValue("shippingCarrier", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Please select" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="dhl">DHL</SelectItem>
-                    <SelectItem value="fedex">FedEx</SelectItem>
-                    <SelectItem value="ups">UPS</SelectItem>
-                    <SelectItem value="usps">USPS</SelectItem>
-                    <SelectItem value="vnpost">VN Post</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Items Returned */}
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <Label className="text-base font-semibold">Items Returned</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleAddItem}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add Items
-                </Button>
-              </div>
-
-              {fields.map((field, index) => (
-                <div key={field.id} className="border rounded-lg p-4 space-y-4">
-                  <div className="flex justify-between items-start">
-                    <div className="grid grid-cols-2 gap-4 flex-1">
-                      <div>
-                        <Label>Item Name</Label>
-                        <Popover open={productSearchOpen === index} onOpenChange={(open) => setProductSearchOpen(open ? index : null)}>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              role="combobox"
-                              aria-expanded={productSearchOpen === index}
-                              className="w-full justify-between"
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Main Form */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Customer & Order Selection */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5 text-blue-500" />
+                  Customer & Order Details
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="customer" className="text-base font-semibold">Customer *</Label>
+                  <Popover open={customerSearchOpen} onOpenChange={setCustomerSearchOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={customerSearchOpen}
+                        className="w-full justify-between h-11 text-base"
+                        data-testid="button-customer-select"
+                      >
+                        {watchCustomerId
+                          ? selectedCustomer?.name
+                          : "Select customer..."}
+                        <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search customer..." data-testid="input-customer-search" />
+                        <CommandEmpty>No customer found.</CommandEmpty>
+                        <CommandGroup className="max-h-64 overflow-auto">
+                          {customers.map((customer: any) => (
+                            <CommandItem
+                              key={customer.id}
+                              value={customer.name}
+                              onSelect={() => {
+                                form.setValue("customerId", customer.id);
+                                form.setValue("orderId", ""); // Reset order when customer changes
+                                setSelectedOrder(null);
+                                setCustomerSearchOpen(false);
+                              }}
+                              data-testid={`option-customer-${customer.id}`}
                             >
-                              {form.watch(`items.${index}.productName`) || "Type here"}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-full p-0">
-                            <Command>
-                              <CommandInput placeholder="Search product..." />
-                              <CommandEmpty>No product found.</CommandEmpty>
-                              <CommandGroup className="max-h-64 overflow-auto">
-                                {products.map((product: any) => (
-                                  <CommandItem
-                                    key={product.id}
-                                    value={product.name}
-                                    onSelect={() => handleProductSelect(product.id, index)}
-                                  >
-                                    <Check
-                                      className={cn(
-                                        "mr-2 h-4 w-4",
-                                        form.watch(`items.${index}.productId`) === product.id ? "opacity-100" : "opacity-0"
-                                      )}
-                                    />
-                                    {product.name}
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                      <div>
-                        <Label>Quantity</Label>
-                        <Input 
-                          type="number"
-                          {...form.register(`items.${index}.quantity`)}
-                          placeholder="Type here"
-                        />
-                      </div>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => remove(index)}
-                      className="ml-2 mt-6"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  watchCustomerId === customer.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {customer.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  {form.formState.errors.customerId && (
+                    <p className="text-sm text-red-500 mt-1">{form.formState.errors.customerId.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="order" className="text-base font-semibold">Order Number</Label>
+                  <p className="text-sm text-muted-foreground mb-2">Select the original order for this return</p>
+                  <Popover open={orderSearchOpen} onOpenChange={setOrderSearchOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={orderSearchOpen}
+                        className="w-full justify-between h-11 text-base"
+                        disabled={!watchCustomerId || customerOrders.length === 0}
+                        data-testid="button-order-select"
+                      >
+                        {watchOrderId && selectedOrder
+                          ? `#${selectedOrder.id.slice(0, 8).toUpperCase()} - ${format(new Date(selectedOrder.createdAt), 'dd/MM/yyyy')}`
+                          : customerOrders.length === 0 
+                            ? "No orders available"
+                            : "Select order..."}
+                        <ShoppingCart className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search order..." data-testid="input-order-search" />
+                        <CommandEmpty>No order found.</CommandEmpty>
+                        <CommandGroup className="max-h-64 overflow-auto">
+                          {customerOrders.map((order: any) => (
+                            <CommandItem
+                              key={order.id}
+                              value={order.id}
+                              onSelect={() => {
+                                form.setValue("orderId", order.id);
+                                handleOrderSelect(order);
+                                setOrderSearchOpen(false);
+                              }}
+                              data-testid={`option-order-${order.id}`}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  watchOrderId === order.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              <div className="flex flex-col">
+                                <span className="font-medium">#{order.id.slice(0, 8).toUpperCase()}</span>
+                                <span className="text-sm text-muted-foreground">
+                                  {format(new Date(order.createdAt), 'dd/MM/yyyy')} • €{order.totalPrice?.toFixed(2) || '0.00'}
+                                </span>
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Return Details */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-purple-500" />
+                  Return Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label>SKU</Label>
+                    <Label htmlFor="returnDate" className="text-base font-semibold">Return Date *</Label>
+                    <Input 
+                      id="returnDate"
+                      type="date"
+                      {...form.register("returnDate")}
+                      className="h-11"
+                      data-testid="input-returnDate"
+                    />
+                    {form.formState.errors.returnDate && (
+                      <p className="text-sm text-red-500 mt-1">{form.formState.errors.returnDate.message}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="returnType" className="text-base font-semibold">Return Type *</Label>
                     <Select
-                      value={form.watch(`items.${index}.sku`) || ""}
-                      onValueChange={(value) => form.setValue(`items.${index}.sku`, value)}
+                      value={form.watch("returnType")}
+                      onValueChange={(value) => form.setValue("returnType", value as any)}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Please select" />
+                      <SelectTrigger className="h-11" data-testid="select-returnType">
+                        <SelectValue placeholder="Select return type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value={form.watch(`items.${index}.sku`) || "default"}>
-                          {form.watch(`items.${index}.sku`) || "Default SKU"}
-                        </SelectItem>
+                        <SelectItem value="exchange">Exchange</SelectItem>
+                        <SelectItem value="refund">Refund</SelectItem>
+                        <SelectItem value="store_credit">Store Credit</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
-              ))}
 
-              {form.formState.errors.items && (
-                <p className="text-sm text-red-500">{form.formState.errors.items.message}</p>
-              )}
-            </div>
+                <div>
+                  <Label htmlFor="status" className="text-base font-semibold">Status *</Label>
+                  <Select
+                    value={form.watch("status")}
+                    onValueChange={(value) => form.setValue("status", value as any)}
+                  >
+                    <SelectTrigger className="h-11" data-testid="select-status">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="awaiting">
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4" />
+                          Awaiting
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="processing">
+                        <div className="flex items-center gap-2">
+                          <AlertCircle className="h-4 w-4" />
+                          Processing
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="completed">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="h-4 w-4" />
+                          Completed
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="cancelled">
+                        <div className="flex items-center gap-2">
+                          <X className="h-4 w-4" />
+                          Cancelled
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="notes" className="text-base font-semibold">Return Reason / Notes</Label>
+                  <Textarea 
+                    id="notes"
+                    {...form.register("notes")}
+                    placeholder="Describe the reason for return..."
+                    className="min-h-[100px]"
+                    data-testid="textarea-notes"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Shipping Details */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TruckIcon className="h-5 w-5 text-orange-500" />
+                  Shipping Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="trackingNumber" className="text-base font-semibold">Tracking Number</Label>
+                    <Input 
+                      id="trackingNumber"
+                      {...form.register("trackingNumber")}
+                      placeholder="Enter tracking number"
+                      className="h-11"
+                      data-testid="input-trackingNumber"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="shippingCarrier" className="text-base font-semibold">Shipping Carrier</Label>
+                    <Select
+                      value={form.watch("shippingCarrier")}
+                      onValueChange={(value) => form.setValue("shippingCarrier", value)}
+                    >
+                      <SelectTrigger className="h-11" data-testid="select-shippingCarrier">
+                        <SelectValue placeholder="Select carrier" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="dhl">DHL</SelectItem>
+                        <SelectItem value="fedex">FedEx</SelectItem>
+                        <SelectItem value="ups">UPS</SelectItem>
+                        <SelectItem value="usps">USPS</SelectItem>
+                        <SelectItem value="vnpost">VN Post</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Items Returned */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Package className="h-5 w-5 text-green-500" />
+                    Return Items
+                  </CardTitle>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAddItem}
+                    data-testid="button-addItem"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Item
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {fields.length === 0 ? (
+                  <div className="text-center py-12 bg-muted/50 rounded-lg">
+                    <Package className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-muted-foreground mb-4">No items added yet</p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleAddItem}
+                      data-testid="button-addFirstItem"
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add First Item
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    {fields.map((field, index) => (
+                      <div key={field.id} className="border rounded-lg p-4 space-y-4 bg-muted/20">
+                        <div className="flex justify-between items-start gap-4">
+                          <div className="flex-1 space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <Label className="text-sm font-medium">Product *</Label>
+                                <Popover open={productSearchOpen === index} onOpenChange={(open) => setProductSearchOpen(open ? index : null)}>
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      role="combobox"
+                                      aria-expanded={productSearchOpen === index}
+                                      className="w-full justify-between h-10"
+                                      data-testid={`button-product-${index}`}
+                                    >
+                                      {form.watch(`items.${index}.productName`) || "Select product..."}
+                                      <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-full p-0" align="start">
+                                    <Command>
+                                      <CommandInput placeholder="Search product..." data-testid={`input-product-search-${index}`} />
+                                      <CommandEmpty>No product found.</CommandEmpty>
+                                      <CommandGroup className="max-h-64 overflow-auto">
+                                        {products.map((product: any) => (
+                                          <CommandItem
+                                            key={product.id}
+                                            value={product.name}
+                                            onSelect={() => handleProductSelect(product.id, index)}
+                                            data-testid={`option-product-${product.id}-${index}`}
+                                          >
+                                            <Check
+                                              className={cn(
+                                                "mr-2 h-4 w-4",
+                                                form.watch(`items.${index}.productId`) === product.id ? "opacity-100" : "opacity-0"
+                                              )}
+                                            />
+                                            <div className="flex flex-col">
+                                              <span>{product.name}</span>
+                                              <span className="text-sm text-muted-foreground">{product.sku}</span>
+                                            </div>
+                                          </CommandItem>
+                                        ))}
+                                      </CommandGroup>
+                                    </Command>
+                                  </PopoverContent>
+                                </Popover>
+                              </div>
+
+                              <div>
+                                <Label className="text-sm font-medium">Quantity *</Label>
+                                <Input 
+                                  type="number"
+                                  min="1"
+                                  {...form.register(`items.${index}.quantity`)}
+                                  placeholder="1"
+                                  className="h-10"
+                                  data-testid={`input-quantity-${index}`}
+                                />
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <Label className="text-sm font-medium">SKU</Label>
+                                <Input
+                                  {...form.register(`items.${index}.sku`)}
+                                  placeholder="Product SKU"
+                                  className="h-10"
+                                  readOnly
+                                  data-testid={`input-sku-${index}`}
+                                />
+                              </div>
+
+                              <div>
+                                <Label className="text-sm font-medium">Price (€) *</Label>
+                                <Input 
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  {...form.register(`items.${index}.price`)}
+                                  placeholder="0.00"
+                                  className="h-10"
+                                  data-testid={`input-price-${index}`}
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => remove(index)}
+                            className="shrink-0"
+                            data-testid={`button-remove-${index}`}
+                          >
+                            <X className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </div>
+
+                        {/* Item Subtotal */}
+                        <div className="flex justify-end pt-2 border-t">
+                          <div className="text-sm">
+                            <span className="text-muted-foreground">Subtotal: </span>
+                            <span className="font-semibold">
+                              €{((form.watch(`items.${index}.quantity`) || 0) * (form.watch(`items.${index}.price`) || 0)).toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    {form.formState.errors.items && (
+                      <p className="text-sm text-red-500">{form.formState.errors.items.message}</p>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
 
             {/* Action Buttons */}
-            <div className="flex justify-end gap-4 pt-4 border-t">
+            <div className="flex justify-end gap-4">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => navigate("/returns")}
+                data-testid="button-cancel"
               >
                 Cancel
               </Button>
@@ -529,12 +758,160 @@ export default function AddReturn() {
                 type="submit"
                 disabled={createReturnMutation.isPending}
                 className="bg-teal-600 hover:bg-teal-700"
+                data-testid="button-submit"
               >
-                Save Now
+                <Save className="h-4 w-4 mr-2" />
+                {createReturnMutation.isPending ? "Creating..." : "Create Return"}
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+
+          {/* Right Column - Order Summary & History */}
+          <div className="lg:col-span-1 space-y-6">
+            {/* Return Summary */}
+            <Card className="sticky top-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Receipt className="h-5 w-5 text-teal-500" />
+                  Return Summary
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Customer</span>
+                    <span className="text-sm font-medium">
+                      {selectedCustomer?.name || '-'}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Order Number</span>
+                    <span className="text-sm font-medium">
+                      {selectedOrder ? `#${selectedOrder.id.slice(0, 8).toUpperCase()}` : '-'}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Return Type</span>
+                    <Badge variant="outline" className="capitalize">
+                      {form.watch("returnType").replace('_', ' ')}
+                    </Badge>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Status</span>
+                    <Badge className={cn("border", getStatusColor(form.watch("status")))}>
+                      <span className="flex items-center gap-1">
+                        {getStatusIcon(form.watch("status"))}
+                        <span className="capitalize">{form.watch("status")}</span>
+                      </span>
+                    </Badge>
+                  </div>
+
+                  <Separator />
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Items Count</span>
+                    <span className="text-sm font-medium">{fields.length}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center pt-2 border-t">
+                    <span className="text-base font-semibold">Return Total</span>
+                    <span className="text-xl font-bold text-teal-600">
+                      <Euro className="h-5 w-5 inline mr-1" />
+                      {returnTotal.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Original Order Details */}
+            {selectedOrder && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Original Order Details</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Order Date</span>
+                    <span className="text-sm font-medium">
+                      {format(new Date(selectedOrder.createdAt), 'dd/MM/yyyy')}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Original Total</span>
+                    <span className="text-sm font-semibold">
+                      €{selectedOrder.totalPrice?.toFixed(2) || '0.00'}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Items</span>
+                    <span className="text-sm font-medium">
+                      {selectedOrder.items?.length || 0}
+                    </span>
+                  </div>
+
+                  {selectedOrder.paymentStatus && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Payment</span>
+                      <Badge variant="outline" className="capitalize text-xs">
+                        {selectedOrder.paymentStatus.replace('_', ' ')}
+                      </Badge>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Customer Order History */}
+            {watchCustomerId && customerOrders.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Customer Order History</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="max-h-64 overflow-y-auto space-y-2">
+                    {customerOrders.slice(0, 5).map((order: any) => (
+                      <div 
+                        key={order.id}
+                        className={cn(
+                          "p-3 rounded-lg border cursor-pointer transition-colors",
+                          watchOrderId === order.id 
+                            ? "bg-primary/10 border-primary" 
+                            : "hover:bg-muted/50"
+                        )}
+                        onClick={() => {
+                          form.setValue("orderId", order.id);
+                          handleOrderSelect(order);
+                        }}
+                        data-testid={`order-history-${order.id}`}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-medium text-sm">#{order.id.slice(0, 8).toUpperCase()}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(order.createdAt), 'dd/MM/yyyy')}
+                            </p>
+                          </div>
+                          <p className="text-sm font-semibold">€{order.totalPrice?.toFixed(2) || '0.00'}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {customerOrders.length > 5 && (
+                    <p className="text-xs text-muted-foreground text-center pt-2">
+                      Showing 5 of {customerOrders.length} orders
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
       </form>
     </div>
   );
