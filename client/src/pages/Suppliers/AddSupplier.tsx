@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ArrowLeft, Check, ChevronsUpDown, Building2, User, Mail, Phone, Globe, MapPin, FileText, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
@@ -164,15 +165,16 @@ export default function AddSupplier() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           
-          {/* Basic Information */}
-          <Card className="border-l-4 border-l-blue-500">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Building2 className="h-5 w-5 text-blue-600" />
-                Basic Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <Accordion type="multiple" defaultValue={["basic-info", "contact-details"]} className="space-y-4">
+            {/* Basic Information */}
+            <AccordionItem value="basic-info" className="border-l-4 border-l-blue-500 rounded-lg border bg-card">
+              <AccordionTrigger className="px-6 py-4 hover:no-underline">
+                <div className="flex items-center gap-2 text-lg font-semibold">
+                  <Building2 className="h-5 w-5 text-blue-600" />
+                  Basic Information
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-6 pb-6 pt-0 space-y-4">
               <FormField
                 control={form.control}
                 name="name"
@@ -281,18 +283,18 @@ export default function AddSupplier() {
                   )}
                 />
               </div>
-            </CardContent>
-          </Card>
+              </AccordionContent>
+            </AccordionItem>
 
-          {/* Contact Details */}
-          <Card className="border-l-4 border-l-green-500">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Mail className="h-5 w-5 text-green-600" />
-                Contact Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            {/* Contact Details */}
+            <AccordionItem value="contact-details" className="border-l-4 border-l-green-500 rounded-lg border bg-card">
+              <AccordionTrigger className="px-6 py-4 hover:no-underline">
+                <div className="flex items-center gap-2 text-lg font-semibold">
+                  <Mail className="h-5 w-5 text-green-600" />
+                  Contact Details
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-6 pb-6 pt-0 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -362,18 +364,18 @@ export default function AddSupplier() {
                   </FormItem>
                 )}
               />
-            </CardContent>
-          </Card>
+              </AccordionContent>
+            </AccordionItem>
 
-          {/* Address Information */}
-          <Card className="border-l-4 border-l-purple-500">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <MapPin className="h-5 w-5 text-purple-600" />
-                Address Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            {/* Address Information */}
+            <AccordionItem value="address-info" className="border-l-4 border-l-purple-500 rounded-lg border bg-card">
+              <AccordionTrigger className="px-6 py-4 hover:no-underline">
+                <div className="flex items-center gap-2 text-lg font-semibold">
+                  <MapPin className="h-5 w-5 text-purple-600" />
+                  Address Information
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-6 pb-6 pt-0 space-y-4">
               <FormField
                 control={form.control}
                 name="address"
@@ -451,18 +453,18 @@ export default function AddSupplier() {
                   )}
                 />
               </div>
-            </CardContent>
-          </Card>
+              </AccordionContent>
+            </AccordionItem>
 
-          {/* Additional Information */}
-          <Card className="border-l-4 border-l-orange-500">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <FileText className="h-5 w-5 text-orange-600" />
-                Additional Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            {/* Additional Information */}
+            <AccordionItem value="additional-info" className="border-l-4 border-l-orange-500 rounded-lg border bg-card">
+              <AccordionTrigger className="px-6 py-4 hover:no-underline">
+                <div className="flex items-center gap-2 text-lg font-semibold">
+                  <FileText className="h-5 w-5 text-orange-600" />
+                  Additional Information
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-6 pb-6 pt-0 space-y-4">
               <FormField
                 control={form.control}
                 name="taxId"
@@ -504,8 +506,9 @@ export default function AddSupplier() {
                   </FormItem>
                 )}
               />
-            </CardContent>
-          </Card>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-4 pt-4">
