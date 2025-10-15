@@ -2646,6 +2646,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updates = req.body;
       const customer = await storage.updateCustomer(req.params.id, updates);
       
+      if (!customer) {
+        return res.status(404).json({ message: "Customer not found" });
+      }
+      
       await storage.createUserActivity({
         userId: "test-user",
         action: 'updated',

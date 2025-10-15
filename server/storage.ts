@@ -231,11 +231,11 @@ export interface IStorage {
   
   // Customers
   getCustomers(): Promise<Customer[]>;
-  getCustomer(id: number): Promise<Customer | undefined>;
-  getCustomerById(id: number): Promise<Customer | undefined>;
+  getCustomer(id: string): Promise<Customer | undefined>;
+  getCustomerById(id: string): Promise<Customer | undefined>;
   createCustomer(customer: any): Promise<Customer>;
-  updateCustomer(id: number, customer: any): Promise<Customer | undefined>;
-  deleteCustomer(id: number): Promise<boolean>;
+  updateCustomer(id: string, customer: any): Promise<Customer | undefined>;
+  deleteCustomer(id: string): Promise<boolean>;
   
   // Customer Shipping Addresses
   getCustomerShippingAddresses(customerId: string): Promise<CustomerShippingAddress[]>;
@@ -1748,9 +1748,9 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getCustomer(id: number): Promise<Customer | undefined> {
+  async getCustomer(id: string): Promise<Customer | undefined> {
     try {
-      const [customer] = await db.select().from(customers).where(eq(customers.id, String(id)));
+      const [customer] = await db.select().from(customers).where(eq(customers.id, id));
       return customer || undefined;
     } catch (error) {
       console.error('Error fetching customer:', error);
@@ -1758,7 +1758,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getCustomerById(id: number): Promise<Customer | undefined> {
+  async getCustomerById(id: string): Promise<Customer | undefined> {
     return this.getCustomer(id);
   }
 
@@ -1775,12 +1775,12 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateCustomer(id: number, customerData: any): Promise<Customer | undefined> {
+  async updateCustomer(id: string, customerData: any): Promise<Customer | undefined> {
     try {
       const [updated] = await db
         .update(customers)
         .set({ ...customerData, updatedAt: new Date() })
-        .where(eq(customers.id, String(id)))
+        .where(eq(customers.id, id))
         .returning();
       return updated || undefined;
     } catch (error) {
@@ -1789,11 +1789,11 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async deleteCustomer(id: number): Promise<boolean> {
+  async deleteCustomer(id: string): Promise<boolean> {
     try {
       const result = await db
         .delete(customers)
-        .where(eq(customers.id, String(id)));
+        .where(eq(customers.id, id));
       return (result.rowCount ?? 0) > 0;
     } catch (error) {
       console.error('Error deleting customer:', error);
