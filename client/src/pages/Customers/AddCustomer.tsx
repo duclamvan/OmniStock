@@ -52,7 +52,7 @@ const customerFormSchema = z.object({
 
 const shippingAddressSchema = z.object({
   id: z.number().optional(),
-  label: z.string().min(1, "Label is required"),
+  label: z.string().optional(),
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   company: z.string().optional(),
@@ -309,8 +309,18 @@ export default function AddCustomer() {
       parts.push(shippingCity.trim());
     }
     
-    // Generate label
-    const generatedLabel = parts.join(', ');
+    // Generate label with address count
+    let generatedLabel = parts.join(', ');
+    
+    // Add address count suffix if there are multiple addresses
+    const addressCount = shippingAddresses.length + 1; // +1 for the current one being added
+    if (generatedLabel) {
+      generatedLabel = `${generatedLabel} (#${addressCount})`;
+    } else {
+      // If no details available, use a simple format
+      generatedLabel = `Address #${addressCount}`;
+    }
+    
     if (generatedLabel) {
       shippingForm.setValue('label', generatedLabel);
     }
@@ -322,7 +332,8 @@ export default function AddCustomer() {
     shippingStreetNumber, 
     shippingCity,
     isLabelManuallyEdited,
-    shippingForm
+    shippingForm,
+    shippingAddresses.length
   ]);
 
   const debounce = <T extends (...args: any[]) => any>(
@@ -1355,13 +1366,13 @@ export default function AddCustomer() {
                 </h4>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="shippingLabel">Label / Name *</Label>
+                    <Label htmlFor="shippingLabel">Label</Label>
                     <Input
                       id="shippingLabel"
                       {...shippingForm.register('label', {
                         onChange: () => setIsLabelManuallyEdited(true)
                       })}
-                      placeholder="e.g., Main Office, Warehouse"
+                      placeholder="Auto-generated from address..."
                       data-testid="input-shippingLabel"
                     />
                     <p className="text-xs text-muted-foreground mt-1">
