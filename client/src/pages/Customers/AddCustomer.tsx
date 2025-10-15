@@ -27,7 +27,7 @@ const availableCountries = [
 
 const customerFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  country: z.string().min(1, "Country is required"),
+  country: z.string().optional(),
   facebookName: z.string().optional(),
   facebookUrl: z.string().optional(),
   profilePictureUrl: z.string().optional(),
@@ -625,6 +625,15 @@ export default function AddCustomer() {
     } else {
       setShippingAddresses([...shippingAddresses, data]);
     }
+    
+    // Auto-populate main country if empty and shipping address has a country
+    if (!form.getValues('country') && data.country) {
+      const countryCode = europeanCountries.find(c => c.name.toLowerCase() === data.country.toLowerCase())?.code;
+      if (countryCode) {
+        form.setValue('country', countryCode);
+      }
+    }
+    
     setIsAddingShipping(false);
     setIsLabelManuallyEdited(false); // Reset for next address
     shippingForm.reset();
@@ -1175,7 +1184,7 @@ export default function AddCustomer() {
                 </div>
 
                 <div>
-                  <Label htmlFor="country" className="text-base font-semibold">Country / Location *</Label>
+                  <Label htmlFor="country" className="text-base font-semibold">Country / Location</Label>
                   <p className="text-sm text-slate-500 mb-2">Select the primary country where this customer operates</p>
                   <Popover open={openCountryCombobox} onOpenChange={setOpenCountryCombobox}>
                     <PopoverTrigger asChild>
