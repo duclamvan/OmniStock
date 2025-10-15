@@ -11,6 +11,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { 
   ArrowLeft, 
   Save, 
@@ -20,7 +28,8 @@ import {
   X,
   User,
   Package,
-  Search
+  Search,
+  UserPlus
 } from "lucide-react";
 import {
   Select,
@@ -82,6 +91,13 @@ export default function AddPreOrder() {
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [productSearchOpen, setProductSearchOpen] = useState<Record<string, boolean>>({});
   const [selectedProducts, setSelectedProducts] = useState<Record<string, any>>({});
+  const [showNewCustomerDialog, setShowNewCustomerDialog] = useState(false);
+  const [newCustomerData, setNewCustomerData] = useState({
+    name: '',
+    email: '',
+    tel: '',
+    country: '',
+  });
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -104,6 +120,37 @@ export default function AddPreOrder() {
 
   const { data: preOrders } = useQuery<any[]>({
     queryKey: ['/api/pre-orders'],
+  });
+
+  const createCustomerMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest('POST', '/api/customers', {
+        ...data,
+        billingFirstName: data.name.split(' ')[0] || data.name,
+        billingLastName: data.name.split(' ').slice(1).join(' ') || data.name,
+        billingEmail: data.email || '',
+        billingTel: data.tel || '',
+        country: data.country || '',
+      });
+    },
+    onSuccess: (newCustomer) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
+      setSelectedCustomer(newCustomer);
+      form.setValue('customerId', newCustomer.id);
+      setShowNewCustomerDialog(false);
+      setNewCustomerData({ name: '', email: '', tel: '', country: '' });
+      toast({
+        title: "Success",
+        description: "Customer created successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create customer",
+        variant: "destructive",
+      });
+    },
   });
 
   const createPreOrderMutation = useMutation({
@@ -186,6 +233,18 @@ export default function AddPreOrder() {
     setProductSearchOpen(prev => ({ ...prev, [itemId]: false }));
   };
 
+  const handleCreateCustomer = () => {
+    if (!newCustomerData.name.trim()) {
+      toast({
+        title: "Error",
+        description: "Customer name is required",
+        variant: "destructive",
+      });
+      return;
+    }
+    createCustomerMutation.mutate(newCustomerData);
+  };
+
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
 
@@ -240,29 +299,49 @@ export default function AddPreOrder() {
           <CardContent className="space-y-4">
             {/* Customer Selector */}
             <div>
-              <Label htmlFor="customerId">Customer *</Label>
+              <Label htmlFor="customerId" className="text-sm font-medium text-slate-700">Customer *</Label>
               <Popover open={customerSearchOpen} onOpenChange={setCustomerSearchOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
                     role="combobox"
                     aria-expanded={customerSearchOpen}
-                    className="w-full justify-between"
+                    className="w-full justify-between font-normal h-10 mt-1.5 border-slate-300 hover:border-slate-400 hover:bg-slate-50 transition-colors"
                     data-testid="button-select-customer"
                   >
-                    {selectedCustomer ? selectedCustomer.name : "Select customer..."}
-                    <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    {selectedCustomer ? (
+                      <span className="truncate text-slate-900 font-medium">{selectedCustomer.name}</span>
+                    ) : (
+                      <span className="text-slate-500">Search customers...</span>
+                    )}
+                    <Search className="ml-2 h-4 w-4 shrink-0 text-slate-500" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-full p-0" align="start">
                   <Command>
                     <CommandInput 
-                      placeholder="Search customers..." 
+                      placeholder="Type to search customers..." 
                       data-testid="input-search-customer"
                     />
                     <CommandList>
-                      <CommandEmpty>No customer found.</CommandEmpty>
-                      <CommandGroup>
+                      <CommandEmpty>
+                        <div className="text-center py-6">
+                          <p className="text-sm text-slate-500 mb-3">No customer found</p>
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              setCustomerSearchOpen(false);
+                              setShowNewCustomerDialog(true);
+                            }}
+                            className="gap-2"
+                            data-testid="button-create-customer-empty"
+                          >
+                            <UserPlus className="h-4 w-4" />
+                            Create New Customer
+                          </Button>
+                        </div>
+                      </CommandEmpty>
+                      <CommandGroup heading="Customers">
                         {customers?.map((customer: any) => (
                           <CommandItem
                             key={customer.id}
@@ -274,9 +353,32 @@ export default function AddPreOrder() {
                             }}
                             data-testid={`option-customer-${customer.id}`}
                           >
-                            {customer.name}
+                            <div className="flex items-center gap-2">
+                              <User className="h-4 w-4 text-slate-500" />
+                              <div className="flex flex-col">
+                                <span className="font-medium">{customer.name}</span>
+                                {customer.billingEmail && (
+                                  <span className="text-xs text-slate-500">{customer.billingEmail}</span>
+                                )}
+                              </div>
+                            </div>
                           </CommandItem>
                         ))}
+                      </CommandGroup>
+                      <CommandGroup>
+                        <CommandItem
+                          onSelect={() => {
+                            setCustomerSearchOpen(false);
+                            setShowNewCustomerDialog(true);
+                          }}
+                          className="border-t bg-slate-50 aria-selected:bg-slate-100"
+                          data-testid="button-create-customer"
+                        >
+                          <div className="flex items-center gap-2 w-full justify-center py-1">
+                            <UserPlus className="h-4 w-4 text-blue-600" />
+                            <span className="font-medium text-blue-600">Create New Customer</span>
+                          </div>
+                        </CommandItem>
                       </CommandGroup>
                     </CommandList>
                   </Command>
@@ -551,6 +653,103 @@ export default function AddPreOrder() {
           </Button>
         </div>
       </form>
+
+      {/* Create New Customer Dialog */}
+      <Dialog open={showNewCustomerDialog} onOpenChange={setShowNewCustomerDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5 text-blue-600" />
+              Create New Customer
+            </DialogTitle>
+            <DialogDescription>
+              Add a new customer to your database. Fill in at least the customer name.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="newCustomerName" className="text-sm font-medium">
+                Customer Name *
+              </Label>
+              <Input
+                id="newCustomerName"
+                placeholder="e.g., John Doe or ABC Company"
+                value={newCustomerData.name}
+                onChange={(e) => setNewCustomerData(prev => ({ ...prev, name: e.target.value }))}
+                data-testid="input-new-customer-name"
+                className="mt-1.5"
+              />
+            </div>
+            <div>
+              <Label htmlFor="newCustomerEmail" className="text-sm font-medium">
+                Email (Optional)
+              </Label>
+              <Input
+                id="newCustomerEmail"
+                type="email"
+                placeholder="e.g., customer@example.com"
+                value={newCustomerData.email}
+                onChange={(e) => setNewCustomerData(prev => ({ ...prev, email: e.target.value }))}
+                data-testid="input-new-customer-email"
+                className="mt-1.5"
+              />
+            </div>
+            <div>
+              <Label htmlFor="newCustomerTel" className="text-sm font-medium">
+                Phone (Optional)
+              </Label>
+              <Input
+                id="newCustomerTel"
+                type="tel"
+                placeholder="e.g., +420 123 456 789"
+                value={newCustomerData.tel}
+                onChange={(e) => setNewCustomerData(prev => ({ ...prev, tel: e.target.value }))}
+                data-testid="input-new-customer-tel"
+                className="mt-1.5"
+              />
+            </div>
+            <div>
+              <Label htmlFor="newCustomerCountry" className="text-sm font-medium">
+                Country (Optional)
+              </Label>
+              <Input
+                id="newCustomerCountry"
+                placeholder="e.g., Czech Republic"
+                value={newCustomerData.country}
+                onChange={(e) => setNewCustomerData(prev => ({ ...prev, country: e.target.value }))}
+                data-testid="input-new-customer-country"
+                className="mt-1.5"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowNewCustomerDialog(false);
+                setNewCustomerData({ name: '', email: '', tel: '', country: '' });
+              }}
+              data-testid="button-cancel-customer"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreateCustomer}
+              disabled={createCustomerMutation.isPending || !newCustomerData.name.trim()}
+              data-testid="button-save-customer"
+            >
+              {createCustomerMutation.isPending ? (
+                <>Creating...</>
+              ) : (
+                <>
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Create Customer
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
