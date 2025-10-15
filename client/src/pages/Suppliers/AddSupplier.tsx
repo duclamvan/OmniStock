@@ -17,6 +17,65 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { countries } from "@/lib/countries";
 import { z } from "zod";
 
+const getCountryFlag = (country: string): string => {
+  const countryFlags: Record<string, string> = {
+    'China': '🇨🇳',
+    'Vietnam': '🇻🇳',
+    'Czech Republic': '🇨🇿',
+    'Germany': '🇩🇪',
+    'USA': '🇺🇸',
+    'UK': '🇬🇧',
+    'Poland': '🇵🇱',
+    'Slovakia': '🇸🇰',
+    'Austria': '🇦🇹',
+    'Hungary': '🇭🇺',
+    'Thailand': '🇹🇭',
+    'South Korea': '🇰🇷',
+    'Japan': '🇯🇵',
+    'Taiwan': '🇹🇼',
+    'Hong Kong': '🇭🇰',
+    'India': '🇮🇳',
+    'Indonesia': '🇮🇩',
+    'Malaysia': '🇲🇾',
+    'Singapore': '🇸🇬',
+    'Philippines': '🇵🇭',
+    'Australia': '🇦🇺',
+    'New Zealand': '🇳🇿',
+    'Canada': '🇨🇦',
+    'Mexico': '🇲🇽',
+    'Brazil': '🇧🇷',
+    'France': '🇫🇷',
+    'Italy': '🇮🇹',
+    'Spain': '🇪🇸',
+    'Netherlands': '🇳🇱',
+    'Belgium': '🇧🇪',
+    'Switzerland': '🇨🇭',
+    'Sweden': '🇸🇪',
+    'Norway': '🇳🇴',
+    'Denmark': '🇩🇰',
+    'Finland': '🇫🇮',
+    'Portugal': '🇵🇹',
+    'Greece': '🇬🇷',
+    'Turkey': '🇹🇷',
+    'Russia': '🇷🇺',
+    'Ukraine': '🇺🇦',
+    'Romania': '🇷🇴',
+    'Bulgaria': '🇧🇬',
+    'Croatia': '🇭🇷',
+    'Serbia': '🇷🇸',
+    'Slovenia': '🇸🇮',
+    'Lithuania': '🇱🇹',
+    'Latvia': '🇱🇻',
+    'Estonia': '🇪🇪',
+    'South Africa': '🇿🇦',
+    'Egypt': '🇪🇬',
+    'UAE': '🇦🇪',
+    'Saudi Arabia': '🇸🇦',
+    'Israel': '🇮🇱',
+  };
+  return countryFlags[country] || '🌍';
+};
+
 const insertSupplierSchema = z.object({
   name: z.string().min(1, "Supplier name is required"),
   contactPerson: z.string().optional(),
@@ -177,7 +236,14 @@ export default function AddSupplier() {
                               )}
                               data-testid="button-country-select"
                             >
-                              {field.value || "Select country..."}
+                              {field.value ? (
+                                <span className="flex items-center gap-2">
+                                  <span className="text-xl">{getCountryFlag(field.value)}</span>
+                                  {field.value}
+                                </span>
+                              ) : (
+                                "Select country..."
+                              )}
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
                           </FormControl>
@@ -202,6 +268,7 @@ export default function AddSupplier() {
                                       field.value === country ? "opacity-100" : "opacity-0"
                                     )}
                                   />
+                                  <span className="text-lg mr-2">{getCountryFlag(country)}</span>
                                   {country}
                                 </CommandItem>
                               ))}
