@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -1878,6 +1879,8 @@ export default function AddCustomer() {
                     </div>
                   </div>
 
+                  <Separator className="my-6" />
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="shippingFirstName">First Name *</Label>
@@ -1912,6 +1915,8 @@ export default function AddCustomer() {
                     />
                   </div>
 
+                  <Separator className="my-6" />
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="shippingEmail">Email</Label>
@@ -1935,6 +1940,8 @@ export default function AddCustomer() {
                       />
                     </div>
                   </div>
+
+                  <Separator className="my-6" />
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="md:col-span-2">
@@ -2264,6 +2271,8 @@ export default function AddCustomer() {
                     </div>
                   </div>
 
+                  <Separator className="my-6" />
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="billingFirstName">First Name</Label>
@@ -2298,6 +2307,8 @@ export default function AddCustomer() {
                     />
                   </div>
 
+                  <Separator className="my-6" />
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="billingEmail">Email</Label>
@@ -2321,6 +2332,8 @@ export default function AddCustomer() {
                       />
                     </div>
                   </div>
+
+                  <Separator className="my-6" />
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="md:col-span-2">
@@ -2443,6 +2456,8 @@ export default function AddCustomer() {
                       data-testid="input-billingState"
                     />
                   </div>
+
+                  <Separator className="my-6" />
 
                   <div className="flex items-center space-x-2">
                     <input
@@ -2768,6 +2783,8 @@ export default function AddCustomer() {
                 <p className="text-xs text-slate-500 mt-1">Leave empty for individual customers</p>
               </div>
 
+              <Separator className="my-6" />
+
               <div className="mb-4">
                 <Label htmlFor="billingEmail">Email</Label>
                 <Input
@@ -2794,6 +2811,8 @@ export default function AddCustomer() {
                   data-testid="input-billingTel"
                 />
               </div>
+
+              <Separator className="my-6" />
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="md:col-span-2">

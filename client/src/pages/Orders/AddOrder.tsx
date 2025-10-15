@@ -1872,6 +1872,8 @@ export default function AddOrder() {
                   </div>
                 </div>
 
+                <Separator className="my-6" />
+
                 {/* Smart Paste */}
                 <div className="space-y-2">
                   <Label htmlFor="rawNewCustomerAddress">Smart Paste</Label>
@@ -1979,6 +1981,8 @@ export default function AddOrder() {
                     Search for an official address to auto-fill the fields below
                   </p>
                 </div>
+
+                <Separator className="my-6" />
 
                 {/* Address Information */}
                 <div className="space-y-2">
