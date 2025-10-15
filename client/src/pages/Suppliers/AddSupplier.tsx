@@ -160,8 +160,8 @@ export default function AddSupplier() {
                   control={form.control}
                   name="country"
                   render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                      <FormLabel className="flex items-center gap-2 mb-2">
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2">
                         <Globe className="h-4 w-4 text-slate-500" />
                         Country
                       </FormLabel>
