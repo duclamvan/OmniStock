@@ -65,18 +65,7 @@ export default function CustomerDetails() {
   }
 
   if (!customer) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-center">
-          <AlertCircle className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-          <p className="text-slate-600 mb-4">Customer not found</p>
-          <Button onClick={() => navigate('/customers')}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Customers
-          </Button>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   // Calculate statistics
