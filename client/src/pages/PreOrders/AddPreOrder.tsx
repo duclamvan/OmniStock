@@ -55,6 +55,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { insertPreOrderSchema } from "@shared/schema";
+import { getCountryFlag } from "@/lib/countries";
 
 const formSchema = insertPreOrderSchema.extend({
   expectedDate: z.date().optional(),
@@ -370,7 +371,7 @@ export default function AddPreOrder() {
                             data-testid={`option-customer-${customer.id}`}
                           >
                             <div className="flex items-center gap-2">
-                              <User className="h-4 w-4 text-slate-500" />
+                              <span className="text-xl">{getCountryFlag(customer.country || '')}</span>
                               <div className="flex flex-col">
                                 <span className="font-medium">{customer.name}</span>
                                 {customer.billingEmail && (
