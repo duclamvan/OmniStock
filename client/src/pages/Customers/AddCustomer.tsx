@@ -1381,7 +1381,7 @@ export default function AddCustomer() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="rawShippingAddress">Smart Paste 🇻🇳</Label>
+                    <Label htmlFor="rawShippingAddress">Smart Paste</Label>
                     <p className="text-sm text-muted-foreground">
                       Paste any address info (name, company, email, phone, address) - auto-detects Vietnamese names, converts to English letters, and validates addresses
                     </p>
@@ -1762,7 +1762,7 @@ export default function AddCustomer() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="rawBillingAddress">Smart Paste 🇻🇳</Label>
+              <Label htmlFor="rawBillingAddress">Smart Paste</Label>
               <p className="text-sm text-muted-foreground">
                 Paste any address info (name, company, email, phone, address) - auto-detects Vietnamese names, converts to English letters, and validates addresses
               </p>
