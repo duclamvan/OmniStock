@@ -1138,31 +1138,21 @@ export default function AddCustomer() {
                       form.register('facebookUrl').onChange(e);
                       const extractedId = extractFacebookId(e.target.value);
                       setExtractedFacebookId(extractedId);
+                      checkDuplicateCustomer(extractedId);
                     }}
                   />
-                  <p className="text-xs text-slate-500 mt-1">Paste Facebook profile URL to auto-fill ID</p>
-                </div>
-
-                <div>
-                  <Label htmlFor="facebookId" className="text-base font-semibold">Facebook ID</Label>
-                  <div className="relative">
-                    <Input
-                      id="facebookId"
-                      value={extractedFacebookId || ''}
-                      onChange={(e) => {
-                        const newId = e.target.value;
-                        setExtractedFacebookId(newId);
-                        checkDuplicateCustomer(newId);
-                      }}
-                      placeholder="Numeric ID or username"
-                      className="text-base"
-                      data-testid="input-facebookId"
-                    />
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className="text-xs text-slate-500">Paste Facebook profile URL to auto-fill ID</p>
+                    {extractedFacebookId && (
+                      <>
+                        <span className="text-xs text-slate-400">•</span>
+                        <p className="text-xs text-slate-600 font-medium">ID: {extractedFacebookId}</p>
+                      </>
+                    )}
                     {isCheckingDuplicate && (
-                      <Loader2 className="absolute right-3 top-3 h-5 w-5 animate-spin text-slate-400" data-testid="loader-duplicate-check" />
+                      <Loader2 className="h-3 w-3 animate-spin text-slate-400" data-testid="loader-duplicate-check" />
                     )}
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">Auto-extracted from URL or enter manually</p>
                   
                   {duplicateCustomer && !isEditMode && (
                     <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-md" data-testid="alert-duplicate-customer">
