@@ -9,19 +9,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { ArrowLeft, Check, ChevronsUpDown } from "lucide-react";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
+import { ArrowLeft, Check, ChevronsUpDown, Building2, User, Mail, Phone, Globe, MapPin, FileText, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { countries } from "@/lib/countries";
 import { z } from "zod";
 
-// Temporary fix - create proper schema
 const insertSupplierSchema = z.object({
-  name: z.string(),
+  name: z.string().min(1, "Supplier name is required"),
   contactPerson: z.string().optional(),
-  email: z.string().email().optional(),
+  email: z.string().email("Invalid email address").optional().or(z.literal("")),
   phone: z.string().optional(),
   address: z.string().optional(),
   city: z.string().optional(),
@@ -49,9 +48,13 @@ export default function AddSupplier() {
       email: "",
       phone: "",
       address: "",
+      city: "",
+      state: "",
+      zipCode: "",
       country: "",
       website: "",
       notes: "",
+      taxId: "",
     },
   });
 
@@ -60,11 +63,18 @@ export default function AddSupplier() {
       apiRequest("POST", "/api/suppliers", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
-      toast({ description: "Supplier created successfully" });
+      toast({ 
+        title: "Success",
+        description: "Supplier created successfully" 
+      });
       setLocation("/suppliers");
     },
     onError: () => {
-      toast({ description: "Failed to create supplier", variant: "destructive" });
+      toast({ 
+        title: "Error",
+        description: "Failed to create supplier", 
+        variant: "destructive" 
+      });
       setIsSubmitting(false);
     },
   });
@@ -75,45 +85,71 @@ export default function AddSupplier() {
   };
 
   return (
-    <div className="space-y-4 max-w-2xl">
+    <div className="space-y-6 max-w-4xl mx-auto pb-8">
+      {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => setLocation("/suppliers")}>
+        <Button 
+          variant="outline" 
+          size="icon" 
+          onClick={() => setLocation("/suppliers")}
+          data-testid="button-back"
+        >
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <h1 className="text-2xl font-bold">Add New Supplier</h1>
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">Add New Supplier</h1>
+          <p className="text-slate-600 mt-1">Create a new supplier profile with contact and business details</p>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Supplier Information</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* Basic Information */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem className="md:col-span-2">
-                      <FormLabel>Supplier Name *</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Enter supplier name" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          
+          {/* Basic Information */}
+          <Card className="border-l-4 border-l-blue-500">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Building2 className="h-5 w-5 text-blue-600" />
+                Basic Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Supplier Name *</FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field} 
+                        placeholder="e.g., Venalisa Nail Art, Emma Beauty Supplies" 
+                        className="text-base"
+                        data-testid="input-name"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="contactPerson"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Contact Person</FormLabel>
+                      <FormLabel className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-slate-500" />
+                        Contact Person
+                      </FormLabel>
                       <FormControl>
-                        <Input {...field} value={field.value || ""} placeholder="Contact person name" />
+                        <Input 
+                          {...field} 
+                          value={field.value || ""} 
+                          placeholder="Emma Wang" 
+                          data-testid="input-contactPerson"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -125,7 +161,10 @@ export default function AddSupplier() {
                   name="country"
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
-                      <FormLabel>Country</FormLabel>
+                      <FormLabel className="flex items-center gap-2 mb-2">
+                        <Globe className="h-4 w-4 text-slate-500" />
+                        Country
+                      </FormLabel>
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
@@ -133,9 +172,10 @@ export default function AddSupplier() {
                               variant="outline"
                               role="combobox"
                               className={cn(
-                                "justify-between",
+                                "justify-between text-base",
                                 !field.value && "text-muted-foreground"
                               )}
+                              data-testid="button-country-select"
                             >
                               {field.value || "Select country..."}
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -154,6 +194,7 @@ export default function AddSupplier() {
                                   onSelect={() => {
                                     field.onChange(country);
                                   }}
+                                  data-testid={`option-country-${country}`}
                                 >
                                   <Check
                                     className={cn(
@@ -172,15 +213,37 @@ export default function AddSupplier() {
                     </FormItem>
                   )}
                 />
+              </div>
+            </CardContent>
+          </Card>
 
+          {/* Contact Details */}
+          <Card className="border-l-4 border-l-green-500">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Mail className="h-5 w-5 text-green-600" />
+                Contact Details
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel className="flex items-center gap-2">
+                        <Mail className="h-4 w-4 text-slate-500" />
+                        Email Address
+                      </FormLabel>
                       <FormControl>
-                        <Input {...field} value={field.value || ""} type="email" placeholder="supplier@example.com" />
+                        <Input 
+                          {...field} 
+                          value={field.value || ""} 
+                          type="email" 
+                          placeholder="supplier@example.com" 
+                          data-testid="input-email"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -192,9 +255,17 @@ export default function AddSupplier() {
                   name="phone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Phone</FormLabel>
+                      <FormLabel className="flex items-center gap-2">
+                        <Phone className="h-4 w-4 text-slate-500" />
+                        Phone Number
+                      </FormLabel>
                       <FormControl>
-                        <Input {...field} value={field.value || ""} placeholder="+420 123 456 789" />
+                        <Input 
+                          {...field} 
+                          value={field.value || ""} 
+                          placeholder="+86 123 456 7890" 
+                          data-testid="input-phone"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -202,34 +273,52 @@ export default function AddSupplier() {
                 />
               </div>
 
-              {/* Website */}
               <FormField
                 control={form.control}
                 name="website"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Website</FormLabel>
+                    <FormLabel className="flex items-center gap-2">
+                      <Globe className="h-4 w-4 text-slate-500" />
+                      Supplier Link / Website
+                    </FormLabel>
                     <FormControl>
-                      <Input {...field} value={field.value || ""} placeholder="https://supplier-website.com" />
+                      <Input 
+                        {...field} 
+                        value={field.value || ""} 
+                        placeholder="https://venalisa.en.alibaba.com" 
+                        data-testid="input-website"
+                      />
                     </FormControl>
+                    <FormDescription>Link to supplier's website or online store</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+            </CardContent>
+          </Card>
 
-              {/* Address */}
+          {/* Address Information */}
+          <Card className="border-l-4 border-l-purple-500">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <MapPin className="h-5 w-5 text-purple-600" />
+                Address Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <FormField
                 control={form.control}
                 name="address"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Address</FormLabel>
+                    <FormLabel>Street Address</FormLabel>
                     <FormControl>
-                      <Textarea
+                      <Input
                         {...field}
                         value={field.value || ""}
-                        placeholder="Enter supplier address"
-                        rows={2}
+                        placeholder="123 Main Street, Building A"
+                        data-testid="input-address"
                       />
                     </FormControl>
                     <FormMessage />
@@ -237,7 +326,96 @@ export default function AddSupplier() {
                 )}
               />
 
-              {/* Notes */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name="city"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>City</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          value={field.value || ""}
+                          placeholder="Shanghai"
+                          data-testid="input-city"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="state"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>State / Province</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          value={field.value || ""}
+                          placeholder="Guangdong"
+                          data-testid="input-state"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="zipCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Postal Code</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          value={field.value || ""}
+                          placeholder="200000"
+                          data-testid="input-zipCode"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Additional Information */}
+          <Card className="border-l-4 border-l-orange-500">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <FileText className="h-5 w-5 text-orange-600" />
+                Additional Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FormField
+                control={form.control}
+                name="taxId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tax ID / Business Registration</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        value={field.value || ""}
+                        placeholder="Enter tax ID or business registration number"
+                        data-testid="input-taxId"
+                      />
+                    </FormControl>
+                    <FormDescription>Business registration or tax identification number</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <FormField
                 control={form.control}
                 name="notes"
@@ -248,32 +426,49 @@ export default function AddSupplier() {
                       <Textarea
                         {...field}
                         value={field.value || ""}
-                        placeholder="Additional notes about the supplier"
+                        placeholder="Add any additional notes about the supplier (e.g., payment terms, minimum order quantity, shipping details)"
                         rows={4}
+                        className="resize-none"
+                        data-testid="textarea-notes"
                       />
                     </FormControl>
+                    <FormDescription>Internal notes about the supplier</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+            </CardContent>
+          </Card>
 
-              <div className="flex gap-4">
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Creating..." : "Create Supplier"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setLocation("/suppliers")}
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-4 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setLocation("/suppliers")}
+              disabled={isSubmitting}
+              data-testid="button-cancel"
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              disabled={isSubmitting}
+              className="min-w-[140px]"
+              data-testid="button-submit"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                "Create Supplier"
+              )}
+            </Button>
+          </div>
+        </form>
+      </Form>
     </div>
   );
 }
