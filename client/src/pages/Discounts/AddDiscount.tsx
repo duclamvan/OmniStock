@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ArrowLeft, Save, Plus, X, Percent, Banknote, ShoppingBag, Tag, Calendar, Info, Gift } from "lucide-react";
+import { ArrowLeft, Save, Plus, X, Percent, Banknote, ShoppingBag, Tag, Calendar, Info, Gift, Hash, FileText, Loader2, ChevronsUpDown } from "lucide-react";
 import { format } from "date-fns";
 import {
   Command,
@@ -211,427 +211,388 @@ export default function AddDiscount() {
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto">
+      {/* Header */}
       <div className="mb-6">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => navigate("/discounts")}
           className="mb-4"
+          data-testid="button-back"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Discounts
         </Button>
-        <h1 className="text-2xl font-bold">Add New Discount</h1>
+        <h1 className="text-3xl font-bold">Add New Discount</h1>
+        <p className="text-muted-foreground mt-1">Create promotional discounts for your products</p>
       </div>
 
-      <form onSubmit={form.handleSubmit(onSubmit)}>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Form */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Basic Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Info className="h-5 w-5" />
-                  Basic Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Discount ID</Label>
-                    <Input value={discountId || "Auto-generated"} disabled className="bg-gray-50" />
-                    <p className="text-xs text-gray-500 mt-1">Generated from name and date</p>
-                  </div>
-                  <div>
-                    <Label>Discount Name *</Label>
-                    <Input 
-                      {...form.register("name")}
-                      placeholder="e.g., Summer Sale"
-                      onBlur={(e) => setDisplayName(e.target.value)}
-                    />
-                    {form.formState.errors.name && (
-                      <p className="text-sm text-red-500 mt-1">{form.formState.errors.name.message}</p>
-                    )}
-                  </div>
-                </div>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {/* Basic Information */}
+        <Card className="border-l-4 border-l-blue-500">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Info className="h-5 w-5 text-blue-600" />
+              Basic Information
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label className="flex items-center gap-2">
+                  <Hash className="h-4 w-4 text-slate-500" />
+                  Discount ID
+                </Label>
+                <Input 
+                  value={discountId || "Auto-generated"} 
+                  disabled 
+                  className="bg-muted" 
+                  data-testid="input-discountId"
+                />
+                <p className="text-xs text-muted-foreground mt-1">Generated from name and date</p>
+              </div>
+              <div>
+                <Label className="flex items-center gap-2">
+                  <Tag className="h-4 w-4 text-slate-500" />
+                  Discount Name *
+                </Label>
+                <Input 
+                  {...form.register("name")}
+                  placeholder="e.g., Summer Sale 2024"
+                  onBlur={(e) => setDisplayName(e.target.value)}
+                  data-testid="input-name"
+                />
+                {form.formState.errors.name && (
+                  <p className="text-sm text-destructive mt-1">{form.formState.errors.name.message}</p>
+                )}
+              </div>
+            </div>
 
-                <div>
-                  <Label>Description</Label>
-                  <Textarea 
-                    {...form.register("description")}
-                    placeholder="Describe the discount..."
-                    rows={3}
-                  />
-                </div>
+            <div>
+              <Label className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-slate-500" />
+                Description
+              </Label>
+              <Textarea 
+                {...form.register("description")}
+                placeholder="Describe the discount and its terms..."
+                rows={3}
+                className="resize-none"
+                data-testid="textarea-description"
+              />
+            </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Start Date *</Label>
-                    <Input 
-                      type="datetime-local"
-                      {...form.register("startDate")}
-                    />
-                    {form.formState.errors.startDate && (
-                      <p className="text-sm text-red-500 mt-1">{form.formState.errors.startDate.message}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label>End Date *</Label>
-                    <Input 
-                      type="datetime-local"
-                      {...form.register("endDate")}
-                    />
-                    {form.formState.errors.endDate && (
-                      <p className="text-sm text-red-500 mt-1">{form.formState.errors.endDate.message}</p>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <Label>Status</Label>
-                  <Select value={form.watch('status')} onValueChange={(value) => form.setValue('status', value as any)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 w-2 bg-green-500 rounded-full" />
-                          Active
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="inactive">
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 w-2 bg-gray-500 rounded-full" />
-                          Inactive
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="finished">
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 w-2 bg-red-500 rounded-full" />
-                          Finished
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Discount Type */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Tag className="h-5 w-5" />
-                  Discount Type
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <RadioGroup 
-                  value={watchDiscountType} 
-                  onValueChange={(value) => form.setValue('discountType', value as any)}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-slate-500" />
+                  Start Date *
+                </Label>
+                <Input 
+                  type="datetime-local"
+                  {...form.register("startDate")}
+                  data-testid="input-startDate"
+                />
+                {form.formState.errors.startDate && (
+                  <p className="text-sm text-destructive mt-1">{form.formState.errors.startDate.message}</p>
+                )}
+              </div>
+              <div>
+                <Label className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-slate-500" />
+                  End Date *
+                </Label>
+                <Input 
+                  type="datetime-local"
+                  {...form.register("endDate")}
+                  data-testid="input-endDate"
+                />
+                {form.formState.errors.endDate && (
+                  <p className="text-sm text-destructive mt-1">{form.formState.errors.endDate.message}</p>
+                )}
+              </div>
+              <div>
+                <Label>Status</Label>
+                <Select 
+                  value={form.watch('status')} 
+                  onValueChange={(value) => form.setValue('status', value as any)}
                 >
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className={cn(
-                      "border rounded-lg p-4 cursor-pointer transition-all",
-                      watchDiscountType === 'percentage' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
-                    )}>
-                      <label htmlFor="percentage" className="cursor-pointer">
-                        <div className="flex items-start gap-3">
-                          <RadioGroupItem value="percentage" id="percentage" className="mt-1" />
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 font-medium">
-                              <Percent className="h-4 w-4" />
-                              Percentage
-                            </div>
-                            <p className="text-sm text-gray-600 mt-1">Discount by percentage</p>
-                          </div>
+                  <SelectTrigger data-testid="select-status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 bg-green-500 rounded-full" />
+                        Active
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="inactive">
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 bg-gray-500 rounded-full" />
+                        Inactive
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="finished">
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 bg-red-500 rounded-full" />
+                        Finished
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Discount Type */}
+        <Card className="border-l-4 border-l-green-500">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Percent className="h-5 w-5 text-green-600" />
+              Discount Type & Value
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <RadioGroup 
+              value={watchDiscountType} 
+              onValueChange={(value) => form.setValue('discountType', value as any)}
+            >
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div 
+                  className={cn(
+                    "border rounded-lg p-4 cursor-pointer transition-all",
+                    watchDiscountType === 'percentage' ? 'border-green-500 bg-green-50 dark:bg-green-950' : 'border-border hover:border-green-300'
+                  )}
+                  onClick={() => form.setValue('discountType', 'percentage')}
+                  data-testid="option-discount-percentage"
+                >
+                  <label htmlFor="percentage" className="cursor-pointer">
+                    <div className="flex items-start gap-3">
+                      <RadioGroupItem value="percentage" id="percentage" className="mt-1" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 font-medium">
+                          <Percent className="h-4 w-4 text-green-600" />
+                          Percentage Off
                         </div>
-                      </label>
+                        <p className="text-sm text-muted-foreground mt-1">Discount by percentage</p>
+                      </div>
                     </div>
+                  </label>
+                </div>
 
-                    <div className={cn(
-                      "border rounded-lg p-4 cursor-pointer transition-all",
-                      watchDiscountType === 'fixed_amount' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
-                    )}>
-                      <label htmlFor="fixed_amount" className="cursor-pointer">
-                        <div className="flex items-start gap-3">
-                          <RadioGroupItem value="fixed_amount" id="fixed_amount" className="mt-1" />
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 font-medium">
-                              <Banknote className="h-4 w-4" />
-                              Fixed Amount
-                            </div>
-                            <p className="text-sm text-gray-600 mt-1">Fixed discount amount</p>
-                          </div>
+                <div 
+                  className={cn(
+                    "border rounded-lg p-4 cursor-pointer transition-all",
+                    watchDiscountType === 'fixed_amount' ? 'border-green-500 bg-green-50 dark:bg-green-950' : 'border-border hover:border-green-300'
+                  )}
+                  onClick={() => form.setValue('discountType', 'fixed_amount')}
+                  data-testid="option-discount-fixed"
+                >
+                  <label htmlFor="fixed_amount" className="cursor-pointer">
+                    <div className="flex items-start gap-3">
+                      <RadioGroupItem value="fixed_amount" id="fixed_amount" className="mt-1" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 font-medium">
+                          <Banknote className="h-4 w-4 text-green-600" />
+                          Fixed Amount Off
                         </div>
-                      </label>
+                        <p className="text-sm text-muted-foreground mt-1">Fixed discount amount</p>
+                      </div>
                     </div>
+                  </label>
+                </div>
 
-                    <div className={cn(
-                      "border rounded-lg p-4 cursor-pointer transition-all",
-                      watchDiscountType === 'buy_x_get_y' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
-                    )}>
-                      <label htmlFor="buy_x_get_y" className="cursor-pointer">
-                        <div className="flex items-start gap-3">
-                          <RadioGroupItem value="buy_x_get_y" id="buy_x_get_y" className="mt-1" />
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 font-medium">
-                              <Gift className="h-4 w-4" />
-                              Buy X Get Y
-                            </div>
-                            <p className="text-sm text-gray-600 mt-1">Buy X items, get Y free</p>
-                          </div>
+                <div 
+                  className={cn(
+                    "border rounded-lg p-4 cursor-pointer transition-all",
+                    watchDiscountType === 'buy_x_get_y' ? 'border-green-500 bg-green-50 dark:bg-green-950' : 'border-border hover:border-green-300'
+                  )}
+                  onClick={() => form.setValue('discountType', 'buy_x_get_y')}
+                  data-testid="option-discount-buyxgety"
+                >
+                  <label htmlFor="buy_x_get_y" className="cursor-pointer">
+                    <div className="flex items-start gap-3">
+                      <RadioGroupItem value="buy_x_get_y" id="buy_x_get_y" className="mt-1" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 font-medium">
+                          <Gift className="h-4 w-4 text-green-600" />
+                          Buy X Get Y
                         </div>
-                      </label>
+                        <p className="text-sm text-muted-foreground mt-1">Buy X items, get Y free</p>
+                      </div>
                     </div>
-                  </div>
-                </RadioGroup>
+                  </label>
+                </div>
+              </div>
+            </RadioGroup>
 
-                <Separator />
+            <Separator />
 
-                {/* Discount Type Specific Fields */}
-                {watchDiscountType === 'percentage' && (
+            {/* Discount Type Specific Fields */}
+            {watchDiscountType === 'percentage' && (
+              <div>
+                <Label>Discount Percentage *</Label>
+                <div className="flex items-center gap-2 mt-2">
+                  <Input 
+                    type="number"
+                    min="1"
+                    max="100"
+                    {...form.register("percentage", { valueAsNumber: true })}
+                    placeholder="10"
+                    className="max-w-[120px]"
+                    data-testid="input-percentage"
+                  />
+                  <span className="text-muted-foreground font-medium">%</span>
+                </div>
+                {form.formState.errors.percentage && (
+                  <p className="text-sm text-destructive mt-1">{form.formState.errors.percentage.message}</p>
+                )}
+              </div>
+            )}
+
+            {watchDiscountType === 'fixed_amount' && (
+              <div>
+                <Label>Discount Amount *</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                   <div>
-                    <Label>Discount Percentage *</Label>
                     <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground font-medium min-w-[30px]">CZK</span>
                       <Input 
                         type="number"
-                        min="1"
-                        max="100"
-                        {...form.register("percentage", { valueAsNumber: true })}
-                        placeholder="10"
-                        className="max-w-[100px]"
+                        min="0.01"
+                        step="0.01"
+                        value={form.watch('fixedAmount') || ''}
+                        onChange={(e) => {
+                          const czkValue = parseFloat(e.target.value);
+                          if (!isNaN(czkValue)) {
+                            form.setValue('fixedAmount', czkValue);
+                            
+                            if (czkTimeoutRef.current) {
+                              clearTimeout(czkTimeoutRef.current);
+                            }
+                            
+                            czkTimeoutRef.current = setTimeout(() => {
+                              form.setValue('fixedAmountEur', parseFloat((czkValue / 25).toFixed(2)));
+                            }, 1500);
+                          } else {
+                            form.setValue('fixedAmount', undefined);
+                            if (czkTimeoutRef.current) {
+                              clearTimeout(czkTimeoutRef.current);
+                            }
+                          }
+                        }}
+                        placeholder="120.00"
+                        data-testid="input-fixedAmount-czk"
                       />
-                      <span className="text-gray-600">%</span>
                     </div>
-                    {form.formState.errors.percentage && (
-                      <p className="text-sm text-red-500 mt-1">{form.formState.errors.percentage.message}</p>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground font-medium min-w-[30px]">EUR</span>
+                      <Input 
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        value={form.watch('fixedAmountEur') || (form.watch('fixedAmount') && !czkTimeoutRef.current ? (form.watch('fixedAmount') / 25).toFixed(2) : '')}
+                        onChange={(e) => {
+                          const eurValue = parseFloat(e.target.value);
+                          if (!isNaN(eurValue)) {
+                            form.setValue('fixedAmountEur', eurValue);
+                            
+                            if (eurTimeoutRef.current) {
+                              clearTimeout(eurTimeoutRef.current);
+                            }
+                            
+                            eurTimeoutRef.current = setTimeout(() => {
+                              form.setValue('fixedAmount', parseFloat((eurValue * 25).toFixed(2)));
+                            }, 1500);
+                          } else {
+                            form.setValue('fixedAmountEur', undefined);
+                            if (eurTimeoutRef.current) {
+                              clearTimeout(eurTimeoutRef.current);
+                            }
+                          }
+                        }}
+                        placeholder="4.80"
+                        data-testid="input-fixedAmount-eur"
+                      />
+                    </div>
+                  </div>
+                </div>
+                {form.formState.errors.fixedAmount && (
+                  <p className="text-sm text-destructive mt-1">{form.formState.errors.fixedAmount.message}</p>
+                )}
+              </div>
+            )}
+
+            {watchDiscountType === 'buy_x_get_y' && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Buy Quantity *</Label>
+                    <Input 
+                      type="number"
+                      min="1"
+                      {...form.register("buyQuantity", { valueAsNumber: true })}
+                      placeholder="10"
+                      data-testid="input-buyQuantity"
+                    />
+                    {form.formState.errors.buyQuantity && (
+                      <p className="text-sm text-destructive mt-1">{form.formState.errors.buyQuantity.message}</p>
                     )}
                   </div>
-                )}
-
-                {watchDiscountType === 'fixed_amount' && (
-                  <div className="space-y-3">
-                    <Label>Discount Amount *</Label>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label className="text-sm text-gray-600">CZK</Label>
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-600">Kč</span>
-                          <Input 
-                            type="number"
-                            min="0.01"
-                            step="0.01"
-                            value={form.watch('fixedAmount') || ''}
-                            onChange={(e) => {
-                              const czkValue = parseFloat(e.target.value);
-                              if (!isNaN(czkValue)) {
-                                form.setValue('fixedAmount', czkValue);
-                                
-                                // Clear any existing timeout
-                                if (czkTimeoutRef.current) {
-                                  clearTimeout(czkTimeoutRef.current);
-                                }
-                                
-                                // Set new timeout for auto-conversion
-                                czkTimeoutRef.current = setTimeout(() => {
-                                  form.setValue('fixedAmountEur', parseFloat((czkValue / 25).toFixed(2)));
-                                }, 1500);
-                              } else {
-                                form.setValue('fixedAmount', undefined);
-                                if (czkTimeoutRef.current) {
-                                  clearTimeout(czkTimeoutRef.current);
-                                }
-                              }
-                            }}
-                            placeholder="120.00"
-                            className="max-w-[150px]"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <Label className="text-sm text-gray-600">EUR</Label>
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-600">€</span>
-                          <Input 
-                            type="number"
-                            min="0.01"
-                            step="0.01"
-                            value={form.watch('fixedAmountEur') || (form.watch('fixedAmount') && !czkTimeoutRef.current ? (form.watch('fixedAmount') / 25).toFixed(2) : '')}
-                            onChange={(e) => {
-                              const eurValue = parseFloat(e.target.value);
-                              if (!isNaN(eurValue)) {
-                                form.setValue('fixedAmountEur', eurValue);
-                                
-                                // Clear any existing timeout
-                                if (eurTimeoutRef.current) {
-                                  clearTimeout(eurTimeoutRef.current);
-                                }
-                                
-                                // Set new timeout for auto-conversion
-                                eurTimeoutRef.current = setTimeout(() => {
-                                  form.setValue('fixedAmount', parseFloat((eurValue * 25).toFixed(2)));
-                                }, 1500);
-                              } else {
-                                form.setValue('fixedAmountEur', undefined);
-                                if (eurTimeoutRef.current) {
-                                  clearTimeout(eurTimeoutRef.current);
-                                }
-                              }
-                            }}
-                            placeholder="4.80"
-                            className="max-w-[150px]"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    {form.formState.errors.fixedAmount && (
-                      <p className="text-sm text-red-500 mt-1">{form.formState.errors.fixedAmount.message}</p>
+                  <div>
+                    <Label>Get Free Quantity *</Label>
+                    <Input 
+                      type="number"
+                      min="1"
+                      {...form.register("getQuantity", { valueAsNumber: true })}
+                      placeholder="1"
+                      data-testid="input-getQuantity"
+                    />
+                    {form.formState.errors.getQuantity && (
+                      <p className="text-sm text-destructive mt-1">{form.formState.errors.getQuantity.message}</p>
                     )}
                   </div>
-                )}
-
-                {watchDiscountType === 'buy_x_get_y' && (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label>Buy Quantity *</Label>
-                        <Input 
-                          type="number"
-                          min="1"
-                          {...form.register("buyQuantity", { valueAsNumber: true })}
-                          placeholder="10"
-                        />
-                        {form.formState.errors.buyQuantity && (
-                          <p className="text-sm text-red-500 mt-1">{form.formState.errors.buyQuantity.message}</p>
-                        )}
-                      </div>
-                      <div>
-                        <Label>Get Free Quantity *</Label>
-                        <Input 
-                          type="number"
-                          min="1"
-                          {...form.register("getQuantity", { valueAsNumber: true })}
-                          placeholder="1"
-                        />
-                        {form.formState.errors.getQuantity && (
-                          <p className="text-sm text-red-500 mt-1">{form.formState.errors.getQuantity.message}</p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label>Free Product Type *</Label>
-                      <RadioGroup 
-                        value={watchGetProductType} 
-                        onValueChange={(value) => form.setValue('getProductType', value as any)}
-                      >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="same_product" id="same_product" />
-                          <label htmlFor="same_product" className="cursor-pointer">Same Product</label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="different_product" id="different_product" />
-                          <label htmlFor="different_product" className="cursor-pointer">Different Product</label>
-                        </div>
-                      </RadioGroup>
-                    </div>
-
-                    {watchGetProductType === 'different_product' && (
-                      <div>
-                        <Label>Select Free Product *</Label>
-                        <Popover open={getProductSearchOpen} onOpenChange={setGetProductSearchOpen}>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              role="combobox"
-                              aria-expanded={getProductSearchOpen}
-                              className="w-full justify-between"
-                            >
-                              {form.watch('getProductId')
-                                ? products.find((product) => product.id === form.watch('getProductId'))?.name
-                                : "Select product..."}
-                              <Check className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-full p-0">
-                            <Command>
-                              <CommandInput placeholder="Search products..." />
-                              <CommandEmpty>No product found.</CommandEmpty>
-                              <CommandGroup className="max-h-60 overflow-auto">
-                                {products.map((product) => (
-                                  <CommandItem
-                                    key={product.id}
-                                    onSelect={() => {
-                                      form.setValue('getProductId', product.id);
-                                      setGetProductSearchOpen(false);
-                                    }}
-                                  >
-                                    <Check
-                                      className={cn(
-                                        "mr-2 h-4 w-4",
-                                        form.watch('getProductId') === product.id ? "opacity-100" : "opacity-0"
-                                      )}
-                                    />
-                                    {product.name}
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Application Scope */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ShoppingBag className="h-5 w-5" />
-                  Application Scope
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label>Apply Discount To</Label>
-                  <Select 
-                    value={watchApplicationScope} 
-                    onValueChange={(value) => form.setValue('applicationScope', value as any)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all_products">All Products</SelectItem>
-                      <SelectItem value="specific_product">Specific Product</SelectItem>
-                      <SelectItem value="specific_category">Specific Category</SelectItem>
-                      <SelectItem value="selected_products">Selected Products</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
 
-                {watchApplicationScope === 'specific_product' && (
+                <div>
+                  <Label>Free Product Type *</Label>
+                  <RadioGroup 
+                    value={watchGetProductType} 
+                    onValueChange={(value) => form.setValue('getProductType', value as any)}
+                    className="mt-2"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="same_product" id="same_product" data-testid="radio-same-product" />
+                      <label htmlFor="same_product" className="cursor-pointer">Same Product</label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="different_product" id="different_product" data-testid="radio-different-product" />
+                      <label htmlFor="different_product" className="cursor-pointer">Different Product</label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                {watchGetProductType === 'different_product' && (
                   <div>
-                    <Label>Select Product</Label>
-                    <Popover open={productSearchOpen} onOpenChange={setProductSearchOpen}>
+                    <Label>Select Free Product *</Label>
+                    <Popover open={getProductSearchOpen} onOpenChange={setGetProductSearchOpen}>
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
                           role="combobox"
-                          aria-expanded={productSearchOpen}
-                          className="w-full justify-between"
+                          aria-expanded={getProductSearchOpen}
+                          className="w-full justify-between mt-2"
+                          data-testid="button-select-free-product"
                         >
-                          {form.watch('productId')
-                            ? products.find((product) => product.id === form.watch('productId'))?.name
+                          {form.watch('getProductId')
+                            ? products.find((product) => product.id === form.watch('getProductId'))?.name
                             : "Select product..."}
-                          <Check className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-full p-0">
@@ -643,14 +604,15 @@ export default function AddDiscount() {
                               <CommandItem
                                 key={product.id}
                                 onSelect={() => {
-                                  form.setValue('productId', product.id);
-                                  setProductSearchOpen(false);
+                                  form.setValue('getProductId', product.id);
+                                  setGetProductSearchOpen(false);
                                 }}
+                                data-testid={`option-free-product-${product.id}`}
                               >
                                 <Check
                                   className={cn(
                                     "mr-2 h-4 w-4",
-                                    form.watch('productId') === product.id ? "opacity-100" : "opacity-0"
+                                    form.watch('getProductId') === product.id ? "opacity-100" : "opacity-0"
                                   )}
                                 />
                                 {product.name}
@@ -662,263 +624,211 @@ export default function AddDiscount() {
                     </Popover>
                   </div>
                 )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-                {watchApplicationScope === 'specific_category' && (
-                  <div>
-                    <Label>Select Category</Label>
-                    <Popover open={categorySearchOpen} onOpenChange={setCategorySearchOpen}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          role="combobox"
-                          aria-expanded={categorySearchOpen}
-                          className="w-full justify-between"
-                        >
-                          {form.watch('categoryId')
-                            ? categories.find((category) => category.id === form.watch('categoryId'))?.name
-                            : "Select category..."}
-                          <Check className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-full p-0">
-                        <Command>
-                          <CommandInput placeholder="Search categories..." />
-                          <CommandEmpty>No category found.</CommandEmpty>
-                          <CommandGroup className="max-h-60 overflow-auto">
-                            {categories.map((category) => (
-                              <CommandItem
-                                key={category.id}
-                                onSelect={() => {
-                                  form.setValue('categoryId', category.id);
-                                  setCategorySearchOpen(false);
-                                }}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    form.watch('categoryId') === category.id ? "opacity-100" : "opacity-0"
-                                  )}
-                                />
-                                {category.name}
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                )}
+        {/* Application Scope */}
+        <Card className="border-l-4 border-l-purple-500">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <ShoppingBag className="h-5 w-5 text-purple-600" />
+              Application Scope
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label>Apply Discount To</Label>
+              <Select 
+                value={watchApplicationScope} 
+                onValueChange={(value) => form.setValue('applicationScope', value as any)}
+              >
+                <SelectTrigger className="mt-2" data-testid="select-applicationScope">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all_products">All Products</SelectItem>
+                  <SelectItem value="specific_product">Specific Product</SelectItem>
+                  <SelectItem value="specific_category">Specific Category</SelectItem>
+                  <SelectItem value="selected_products">Selected Products</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-                {watchApplicationScope === 'selected_products' && (
-                  <div className="space-y-2">
-                    <Label>Selected Products</Label>
-                    {fields.map((field, index) => (
-                      <div key={field.id} className="flex gap-2">
-                        <Select
-                          value={form.watch(`selectedProductIds.${index}.productId`)}
-                          onValueChange={(value) => form.setValue(`selectedProductIds.${index}.productId`, value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select product..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {products.map((product) => (
-                              <SelectItem key={product.id} value={product.id}>
-                                {product.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => remove(index)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
+            {watchApplicationScope === 'specific_product' && (
+              <div>
+                <Label>Select Product *</Label>
+                <Popover open={productSearchOpen} onOpenChange={setProductSearchOpen}>
+                  <PopoverTrigger asChild>
                     <Button
-                      type="button"
                       variant="outline"
-                      size="sm"
-                      onClick={() => append({ productId: "" })}
+                      role="combobox"
+                      aria-expanded={productSearchOpen}
+                      className="w-full justify-between mt-2"
+                      data-testid="button-select-product"
                     >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Product
+                      {form.watch('productId')
+                        ? products.find((product) => product.id === form.watch('productId'))?.name
+                        : "Select product..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search products..." />
+                      <CommandEmpty>No product found.</CommandEmpty>
+                      <CommandGroup className="max-h-60 overflow-auto">
+                        {products.map((product) => (
+                          <CommandItem
+                            key={product.id}
+                            onSelect={() => {
+                              form.setValue('productId', product.id);
+                              setProductSearchOpen(false);
+                            }}
+                            data-testid={`option-product-${product.id}`}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                form.watch('productId') === product.id ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {product.name}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            )}
 
-          {/* Summary Sidebar */}
-          <div className="lg:col-span-1">
-            <Card className="sticky top-20">
-              <CardHeader className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
-                <CardTitle className="text-xl">Discount Summary</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-6 space-y-4">
-                <div>
-                  <p className="text-sm text-gray-600">Discount Name</p>
-                  <p className="font-semibold">{displayName || "Enter name..."}</p>
+            {watchApplicationScope === 'specific_category' && (
+              <div>
+                <Label>Select Category *</Label>
+                <Popover open={categorySearchOpen} onOpenChange={setCategorySearchOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={categorySearchOpen}
+                      className="w-full justify-between mt-2"
+                      data-testid="button-select-category"
+                    >
+                      {form.watch('categoryId')
+                        ? categories.find((category) => category.id === form.watch('categoryId'))?.name
+                        : "Select category..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search categories..." />
+                      <CommandEmpty>No category found.</CommandEmpty>
+                      <CommandGroup className="max-h-60 overflow-auto">
+                        {categories.map((category) => (
+                          <CommandItem
+                            key={category.id}
+                            onSelect={() => {
+                              form.setValue('categoryId', category.id);
+                              setCategorySearchOpen(false);
+                            }}
+                            data-testid={`option-category-${category.id}`}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                form.watch('categoryId') === category.id ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {category.name}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            )}
+
+            {watchApplicationScope === 'selected_products' && (
+              <div className="space-y-2">
+                <Label>Selected Products *</Label>
+                <div className="space-y-2 mt-2">
+                  {fields.map((field, index) => (
+                    <div key={field.id} className="flex gap-2">
+                      <Select
+                        value={form.watch(`selectedProductIds.${index}.productId`)}
+                        onValueChange={(value) => form.setValue(`selectedProductIds.${index}.productId`, value)}
+                      >
+                        <SelectTrigger data-testid={`select-product-${index}`}>
+                          <SelectValue placeholder="Select product..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {products.map((product) => (
+                            <SelectItem key={product.id} value={product.id}>
+                              {product.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => remove(index)}
+                        data-testid={`button-remove-product-${index}`}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => append({ productId: "" })}
+                    data-testid="button-add-product"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Product
+                  </Button>
                 </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-                {!(watchApplicationScope === 'specific_product' && form.watch('productId')) && (
-                  <>
-                    <Separator />
-
-                    <div>
-                      <p className="text-sm text-gray-600">Discount Type</p>
-                      <p className="font-semibold capitalize">
-                        {watchDiscountType === 'buy_x_get_y' ? 'Buy X Get Y' : watchDiscountType.replace('_', ' ')}
-                      </p>
-                    </div>
-                  </>
-                )}
-
-                {watchDiscountType === 'percentage' && form.watch('percentage') > 0 && (
-                  <>
-                    <div>
-                      <p className="text-sm text-gray-600">Discount Value</p>
-                      <p className="font-semibold text-green-600 text-2xl">{form.watch('percentage')}% OFF</p>
-                    </div>
-                    {watchApplicationScope === 'specific_product' && form.watch('productId') && (() => {
-                      const selectedProduct = products.find(p => p.id === form.watch('productId'));
-                      const productPrice = selectedProduct?.priceCzk ? Number(selectedProduct.priceCzk) : 0;
-                      const discountAmount = productPrice * form.watch('percentage') / 100;
-                      const finalPrice = productPrice - discountAmount;
-                      
-                      return selectedProduct ? (
-                        <div className="bg-gray-50 rounded-lg p-3">
-                          <p className="text-sm font-medium">{selectedProduct.name}</p>
-                          <p className="text-sm mt-1">Item Price: Kč {productPrice.toFixed(0)}</p>
-                          <p className="text-sm text-green-600 font-semibold">
-                            Discount: Kč {discountAmount.toFixed(0)}
-                          </p>
-                          <p className="text-sm font-semibold">
-                            Final Price: Kč {finalPrice.toFixed(0)}
-                          </p>
-                        </div>
-                      ) : null;
-                    })()}
-                  </>
-                )}
-
-                {watchDiscountType === 'fixed_amount' && form.watch('fixedAmount') > 0 && (
-                  <>
-                    <div>
-                      <p className="text-sm text-gray-600">Discount Value</p>
-                      <div className="space-y-1">
-                        <p className="font-semibold text-green-600 text-xl">Kč {form.watch('fixedAmount')} OFF</p>
-                        <p className="text-sm text-gray-600">≈ €{(form.watch('fixedAmount') / 25).toFixed(2)}</p>
-                      </div>
-                    </div>
-                    {watchApplicationScope === 'specific_product' && form.watch('productId') && (() => {
-                      const selectedProduct = products.find(p => p.id === form.watch('productId'));
-                      const productPrice = selectedProduct?.priceCzk ? Number(selectedProduct.priceCzk) : 0;
-                      const discountAmount = form.watch('fixedAmount');
-                      const finalPrice = Math.max(0, productPrice - discountAmount);
-                      
-                      return selectedProduct ? (
-                        <div className="bg-gray-50 rounded-lg p-3">
-                          <p className="text-sm font-medium">{selectedProduct.name}</p>
-                          <p className="text-sm mt-1">Item Price: Kč {productPrice.toFixed(0)}</p>
-                          <p className="text-sm text-green-600 font-semibold">
-                            Discount: Kč {Math.min(discountAmount, productPrice).toFixed(0)}
-                          </p>
-                          <p className="text-sm font-semibold">
-                            Final Price: Kč {finalPrice.toFixed(0)}
-                          </p>
-                        </div>
-                      ) : null;
-                    })()}
-                  </>
-                )}
-
-                {watchDiscountType === 'buy_x_get_y' && (
-                  <>
-                    <div>
-                      <p className="text-sm text-gray-600">Promotion</p>
-                      <p className="font-semibold text-green-600 text-lg">
-                        Buy {form.watch('buyQuantity') || 0} Get {form.watch('getQuantity') || 0} Free
-                      </p>
-                    </div>
-                    {form.watch('buyQuantity') > 0 && form.watch('getQuantity') > 0 && (
-                      <div className="bg-gray-50 rounded-lg p-3">
-                        <p className="text-xs text-gray-600">Effective Discount</p>
-                        <p className="text-sm font-semibold text-green-600">
-                          {((form.watch('getQuantity') / (form.watch('buyQuantity') + form.watch('getQuantity'))) * 100).toFixed(1)}% OFF
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          on total {form.watch('buyQuantity') + form.watch('getQuantity')} items
-                        </p>
-                      </div>
-                    )}
-                  </>
-                )}
-
-                {!(watchApplicationScope === 'specific_product' && form.watch('productId')) && (
-                  <>
-                    <Separator />
-
-                    <div>
-                      <p className="text-sm text-gray-600">Application Scope</p>
-                      <p className="font-semibold">
-                        {watchApplicationScope === 'all_products' && 'All Products'}
-                        {watchApplicationScope === 'specific_product' && 'Specific Product (Not Selected)'}
-                        {watchApplicationScope === 'specific_category' && (
-                          <>
-                            Specific Category
-                            {form.watch('categoryId') && (
-                              <span className="block text-sm text-gray-600 font-normal mt-1">
-                                {categories.find(c => c.id === form.watch('categoryId'))?.name}
-                              </span>
-                            )}
-                          </>
-                        )}
-                        {watchApplicationScope === 'selected_products' && (
-                          <>
-                            Selected Products
-                            {form.watch('selectedProductIds')?.filter(item => item.productId).length > 0 && (
-                              <span className="block text-sm text-gray-600 font-normal mt-1">
-                                {form.watch('selectedProductIds').filter(item => item.productId).length} products selected
-                              </span>
-                            )}
-                          </>
-                        )}
-                      </p>
-                    </div>
-                  </>
-                )}
-
-                <div>
-                  <p className="text-sm text-gray-600">Status</p>
-                  <div className="flex items-center gap-2">
-                    <div className={cn(
-                      "h-2 w-2 rounded-full",
-                      form.watch('status') === 'active' ? 'bg-green-500' : 
-                      form.watch('status') === 'inactive' ? 'bg-gray-500' : 'bg-red-500'
-                    )} />
-                    <span className="font-semibold capitalize">{form.watch('status')}</span>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={createDiscountMutation.isPending}
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  {createDiscountMutation.isPending ? "Creating..." : "Create Discount"}
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+        {/* Action Buttons */}
+        <div className="flex justify-end gap-4 pt-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => navigate("/discounts")}
+            disabled={createDiscountMutation.isPending}
+            data-testid="button-cancel"
+          >
+            Cancel
+          </Button>
+          <Button 
+            type="submit" 
+            disabled={createDiscountMutation.isPending}
+            className="min-w-[160px]"
+            data-testid="button-submit"
+          >
+            {createDiscountMutation.isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Creating...
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4 mr-2" />
+                Create Discount
+              </>
+            )}
+          </Button>
         </div>
       </form>
     </div>
