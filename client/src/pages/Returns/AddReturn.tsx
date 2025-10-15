@@ -250,6 +250,7 @@ export default function AddReturn() {
   };
 
   const handleAddItem = () => {
+    const newIndex = fields.length;
     append({
       productId: "",
       productName: "",
@@ -257,6 +258,14 @@ export default function AddReturn() {
       quantity: 1,
       price: 0,
     });
+    
+    // Focus on the Product field (button) after adding the item
+    setTimeout(() => {
+      const productButton = document.querySelector(`[data-testid="button-product-${newIndex}"]`) as HTMLButtonElement;
+      if (productButton) {
+        productButton.focus();
+      }
+    }, 50);
   };
 
   const handleProductSelect = (productId: string, index: number) => {
