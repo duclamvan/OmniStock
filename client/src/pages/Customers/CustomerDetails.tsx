@@ -49,9 +49,9 @@ export default function CustomerDetails() {
     enabled: !!id,
   });
 
-  // Fetch customer orders
+  // Fetch customer orders with items
   const { data: orders = [], isLoading: ordersLoading } = useQuery<any[]>({
-    queryKey: [`/api/orders?customerId=${id}`],
+    queryKey: [`/api/orders?customerId=${id}&includeItems=true`],
     enabled: !!id,
   });
 
