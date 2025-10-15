@@ -589,6 +589,10 @@ export default function AddCustomer() {
     setIsAddingShipping(true);
     setIsLabelManuallyEdited(false); // Reset manual edit flag for new address
     
+    // Clear country query to show pre-filled value
+    setShippingCountryQuery("");
+    setShowShippingCountryDropdown(false);
+    
     // Auto-select country based on main customer country
     const mainCountryCode = form.getValues('country');
     const mainCountryName = mainCountryCode 
@@ -629,6 +633,11 @@ export default function AddCustomer() {
   const handleEditShippingAddress = (index: number) => {
     setEditingShippingIndex(index);
     setIsLabelManuallyEdited(true); // Preserve existing label when editing
+    
+    // Clear country query to show pre-filled value
+    setShippingCountryQuery("");
+    setShowShippingCountryDropdown(false);
+    
     shippingForm.reset(shippingAddresses[index]);
     setIsAddingShipping(true);
   };
