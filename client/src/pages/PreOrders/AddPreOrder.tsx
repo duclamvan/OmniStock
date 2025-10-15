@@ -42,8 +42,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
+import { format, addDays, addWeeks, addMonths } from "date-fns";
 import { cn } from "@/lib/utils";
 import { insertPreOrderSchema } from "@shared/schema";
 
@@ -70,6 +69,28 @@ interface ItemRow {
   itemDescription?: string;
   quantity: number;
 }
+
+// Date preset options
+const getDatePresets = () => {
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  const currentMonth = today.getMonth();
+  
+  // If we're in December, "End of December" = Dec 31 this year, otherwise next year
+  const endOfDecYear = currentMonth === 11 ? currentYear : currentYear;
+  
+  return [
+    { label: "Tomorrow", value: "tomorrow", date: addDays(today, 1) },
+    { label: "In 2 days", value: "2days", date: addDays(today, 2) },
+    { label: "In 3 days", value: "3days", date: addDays(today, 3) },
+    { label: "In 4 days", value: "4days", date: addDays(today, 4) },
+    { label: "In 5 days", value: "5days", date: addDays(today, 5) },
+    { label: "Next week", value: "nextweek", date: addWeeks(today, 1) },
+    { label: "In two weeks", value: "2weeks", date: addWeeks(today, 2) },
+    { label: "Next month", value: "nextmonth", date: addMonths(today, 1) },
+    { label: "End of December", value: "endofdec", date: new Date(endOfDecYear, 11, 31) },
+  ];
+};
 
 export default function AddPreOrder() {
   const [, navigate] = useLocation();
@@ -264,34 +285,43 @@ export default function AddPreOrder() {
             {/* Expected Date */}
             <div>
               <Label htmlFor="expectedDate">Expected Arrival Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !form.watch("expectedDate") && "text-muted-foreground"
-                    )}
-                    data-testid="button-select-date"
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
+              <Select
+                value={form.watch("expectedDate") ? "custom" : ""}
+                onValueChange={(value) => {
+                  const preset = getDatePresets().find(p => p.value === value);
+                  if (preset) {
+                    form.setValue("expectedDate", preset.date);
+                  }
+                }}
+              >
+                <SelectTrigger 
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !form.watch("expectedDate") && "text-muted-foreground"
+                  )}
+                  data-testid="select-expected-date"
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  <SelectValue>
                     {form.watch("expectedDate") ? (
                       format(form.watch("expectedDate")!, "PPP")
                     ) : (
                       <span>Pick a date</span>
                     )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={form.watch("expectedDate")}
-                    onSelect={(date) => form.setValue("expectedDate", date)}
-                    initialFocus
-                    data-testid="calendar-expected-date"
-                  />
-                </PopoverContent>
-              </Popover>
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {getDatePresets().map((preset) => (
+                    <SelectItem 
+                      key={preset.value} 
+                      value={preset.value}
+                      data-testid={`option-date-${preset.value}`}
+                    >
+                      {preset.label} ({format(preset.date, "MMM d, yyyy")})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Notes */}
