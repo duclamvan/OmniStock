@@ -535,40 +535,40 @@ export default function CustomerDetails() {
                     <p className="text-xs text-slate-500 mt-1">Orders will appear here once created</p>
                   </div>
                 ) : (
-                  <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+                  <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2">
                     {orders.map((order: any) => (
                       <div key={order.id} className="bg-white border border-slate-200 rounded-lg hover:shadow-md hover:border-blue-300 transition-all overflow-hidden">
                         {/* Header Section - Clickable */}
                         <Link href={`/orders/${order.id}`}>
-                          <div className="p-4 cursor-pointer group">
-                            <div className="flex items-start justify-between gap-4">
+                          <div className="p-3 cursor-pointer group">
+                            <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0 flex-1">
-                                <p className="font-bold text-base text-slate-900 group-hover:text-blue-600 transition-colors mb-1">
+                                <p className="font-bold text-sm text-slate-900 group-hover:text-blue-600 transition-colors mb-0.5">
                                   #{order.orderId || order.id}
                                 </p>
-                                <div className="flex items-center gap-3 text-xs text-slate-500">
-                                  <div className="flex items-center gap-1.5">
-                                    <Calendar className="h-3.5 w-3.5 shrink-0" />
+                                <div className="flex items-center gap-2 text-xs text-slate-500">
+                                  <div className="flex items-center gap-1">
+                                    <Calendar className="h-3 w-3 shrink-0" />
                                     <span>{new Date(order.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                                   </div>
                                   <span className="text-slate-300">•</span>
-                                  <div className="flex items-center gap-1.5">
-                                    <Package className="h-3.5 w-3.5 shrink-0" />
+                                  <div className="flex items-center gap-1">
+                                    <Package className="h-3 w-3 shrink-0" />
                                     <span>{order.items?.length || 0} {order.items?.length === 1 ? 'item' : 'items'}</span>
                                   </div>
                                 </div>
                               </div>
                               
                               <div className="text-right shrink-0">
-                                <p className="font-bold text-lg text-slate-900 group-hover:text-blue-600 transition-colors">
+                                <p className="font-bold text-base text-slate-900 group-hover:text-blue-600 transition-colors">
                                   {formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}
                                 </p>
                               </div>
                             </div>
                             
                             {/* Status Badges */}
-                            <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-slate-100">
-                              <div className="flex items-center gap-2 flex-wrap">
+                            <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-slate-100">
+                              <div className="flex items-center gap-1.5 flex-wrap">
                                 <Badge 
                                   variant={
                                     order.orderStatus === 'ready_to_ship' ? 'outline' :
@@ -577,7 +577,7 @@ export default function CustomerDetails() {
                                     order.orderStatus === 'cancelled' ? 'destructive' :
                                     'secondary'
                                   }
-                                  className="text-xs font-medium"
+                                  className="text-xs font-medium h-5 px-2"
                                 >
                                   {order.orderStatus === 'to_fulfill' ? 'To Fulfill' :
                                    order.orderStatus === 'ready_to_ship' ? 'Ready to Ship' :
@@ -589,8 +589,8 @@ export default function CustomerDetails() {
                                 <Badge 
                                   variant={order.paymentStatus === 'paid' ? 'outline' : 'secondary'}
                                   className={order.paymentStatus === 'paid' ? 
-                                    'text-xs font-medium bg-green-50 border-green-300 text-green-700' : 
-                                    'text-xs font-medium bg-orange-50 border-orange-300 text-orange-700'}
+                                    'text-xs font-medium h-5 px-2 bg-green-50 border-green-300 text-green-700' : 
+                                    'text-xs font-medium h-5 px-2 bg-orange-50 border-orange-300 text-orange-700'}
                                 >
                                   {order.paymentStatus === 'paid' ? '✓ Paid' : '⏳ Unpaid'}
                                 </Badge>
@@ -608,7 +608,7 @@ export default function CustomerDetails() {
                         {order.items && order.items.length > 0 && (
                           <>
                             <div 
-                              className="px-4 py-2 bg-slate-50 border-t border-slate-100 flex items-center justify-between cursor-pointer hover:bg-slate-100 transition-colors"
+                              className="px-3 py-1.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between cursor-pointer hover:bg-slate-100 transition-colors"
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
@@ -622,27 +622,27 @@ export default function CustomerDetails() {
                                 Order Items ({order.items.length})
                               </span>
                               {expandedOrders[order.id] ? (
-                                <ChevronUp className="h-4 w-4 text-slate-500" />
+                                <ChevronUp className="h-3.5 w-3.5 text-slate-500" />
                               ) : (
-                                <ChevronDown className="h-4 w-4 text-slate-500" />
+                                <ChevronDown className="h-3.5 w-3.5 text-slate-500" />
                               )}
                             </div>
                             
                             {expandedOrders[order.id] && (
-                              <div className="px-4 py-3 bg-slate-50/50 border-t border-slate-100">
-                                <div className="space-y-2">
+                              <div className="px-3 py-2 bg-slate-50/50 border-t border-slate-100">
+                                <div className="space-y-1.5">
                                   {order.items.map((item: any, idx: number) => (
-                                    <div key={idx} className="flex items-center justify-between gap-3 text-sm p-2 bg-white rounded border border-slate-100">
-                                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0"></div>
-                                        <span className="text-slate-700 truncate font-medium">
+                                    <div key={idx} className="flex items-center justify-between gap-2 text-sm p-1.5 bg-white rounded border border-slate-100">
+                                      <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                        <div className="w-1 h-1 rounded-full bg-blue-400 shrink-0"></div>
+                                        <span className="text-slate-700 truncate text-xs">
                                           {item.productName || item.name || 'Product'}
                                           {item.variantName && <span className="text-slate-500 font-normal"> - {item.variantName}</span>}
                                         </span>
                                       </div>
-                                      <div className="flex items-center gap-3 shrink-0">
-                                        <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">×{item.quantity}</span>
-                                        <span className="font-semibold text-slate-900 min-w-[70px] text-right">
+                                      <div className="flex items-center gap-2 shrink-0">
+                                        <span className="text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">×{item.quantity}</span>
+                                        <span className="font-semibold text-slate-900 text-xs min-w-[60px] text-right">
                                           {formatCurrency(item.price * item.quantity, order.currency || 'EUR')}
                                         </span>
                                       </div>
