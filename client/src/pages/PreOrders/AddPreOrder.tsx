@@ -80,6 +80,8 @@ export default function AddPreOrder() {
   ]);
   const [customerSearchOpen, setCustomerSearchOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+  const [productSearchOpen, setProductSearchOpen] = useState<Record<string, boolean>>({});
+  const [selectedProducts, setSelectedProducts] = useState<Record<string, any>>({});
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -98,6 +100,10 @@ export default function AddPreOrder() {
 
   const { data: products, isLoading: isLoadingProducts } = useQuery<any[]>({
     queryKey: ['/api/products'],
+  });
+
+  const { data: preOrders } = useQuery<any[]>({
+    queryKey: ['/api/pre-orders'],
   });
 
   const createPreOrderMutation = useMutation({
@@ -142,20 +148,42 @@ export default function AddPreOrder() {
     ));
   };
 
-  const handleProductSelect = (itemId: string, productId: string) => {
-    const product = products?.find((p: any) => p.id === productId);
-    if (product) {
-      setItems(items.map(item => 
-        item.id === itemId 
-          ? { 
-              ...item, 
-              productId: product.id,
-              itemName: product.name,
-              itemDescription: product.description || "",
-            } 
-          : item
-      ));
-    }
+  // Combine products and pre-order items for autocomplete
+  const getAllItems = () => {
+    const productItems = (products || []).map((p: any) => ({
+      id: p.id,
+      name: p.name,
+      sku: p.sku,
+      description: p.description,
+      type: 'product' as const,
+    }));
+
+    const preOrderItems = (preOrders || []).flatMap((po: any) => 
+      (po.items || []).map((item: any) => ({
+        id: `preorder-${po.id}-${item.id}`,
+        name: item.itemName,
+        description: item.itemDescription,
+        type: 'preorder' as const,
+        preOrderId: po.id,
+      }))
+    );
+
+    return [...productItems, ...preOrderItems];
+  };
+
+  const handleProductSelect = (itemId: string, selectedItem: any) => {
+    setSelectedProducts(prev => ({ ...prev, [itemId]: selectedItem }));
+    setItems(items.map(item => 
+      item.id === itemId 
+        ? { 
+            ...item, 
+            productId: selectedItem.type === 'product' ? selectedItem.id : undefined,
+            itemName: selectedItem.name,
+            itemDescription: selectedItem.description || "",
+          } 
+        : item
+    ));
+    setProductSearchOpen(prev => ({ ...prev, [itemId]: false }));
   };
 
   const onSubmit = async (data: FormData) => {
@@ -354,27 +382,92 @@ export default function AddPreOrder() {
                 {/* Product Selector (Optional) */}
                 <div>
                   <Label htmlFor={`product-${item.id}`} className="text-xs">
-                    Select Existing Product (Optional)
+                    Select Existing Product or Pre-Order Item (Optional)
                   </Label>
-                  <Select
-                    value={item.productId || ""}
-                    onValueChange={(value) => handleProductSelect(item.id, value)}
+                  <Popover 
+                    open={productSearchOpen[item.id] || false} 
+                    onOpenChange={(open) => setProductSearchOpen(prev => ({ ...prev, [item.id]: open }))}
                   >
-                    <SelectTrigger data-testid={`select-product-${index}`}>
-                      <SelectValue placeholder="Select a product or enter manually below" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {products?.map((product: any) => (
-                        <SelectItem 
-                          key={product.id} 
-                          value={product.id}
-                          data-testid={`option-product-${product.id}`}
-                        >
-                          {product.name} ({product.sku})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={productSearchOpen[item.id] || false}
+                        className="w-full justify-between font-normal"
+                        data-testid={`button-select-product-${index}`}
+                      >
+                        {selectedProducts[item.id] ? (
+                          <span className="truncate">
+                            {selectedProducts[item.id].name}
+                            {selectedProducts[item.id].sku && ` (${selectedProducts[item.id].sku})`}
+                            <span className="ml-2 text-xs text-slate-500">
+                              {selectedProducts[item.id].type === 'product' ? '📦 Product' : '🔄 Pre-Order'}
+                            </span>
+                          </span>
+                        ) : (
+                          "Search products or pre-order items..."
+                        )}
+                        <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput 
+                          placeholder="Search by name, SKU..." 
+                          data-testid={`input-search-product-${index}`}
+                        />
+                        <CommandList>
+                          <CommandEmpty>No items found.</CommandEmpty>
+                          <CommandGroup heading="Products">
+                            {getAllItems()
+                              .filter(i => i.type === 'product')
+                              .map((productItem: any) => (
+                                <CommandItem
+                                  key={productItem.id}
+                                  value={`${productItem.name} ${productItem.sku || ''}`}
+                                  onSelect={() => handleProductSelect(item.id, productItem)}
+                                  data-testid={`option-product-${productItem.id}`}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span>📦</span>
+                                    <div className="flex flex-col">
+                                      <span className="font-medium">{productItem.name}</span>
+                                      {productItem.sku && (
+                                        <span className="text-xs text-slate-500">{productItem.sku}</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </CommandItem>
+                              ))}
+                          </CommandGroup>
+                          <CommandGroup heading="Pre-Order Items">
+                            {getAllItems()
+                              .filter(i => i.type === 'preorder')
+                              .map((preOrderItem: any) => (
+                                <CommandItem
+                                  key={preOrderItem.id}
+                                  value={preOrderItem.name}
+                                  onSelect={() => handleProductSelect(item.id, preOrderItem)}
+                                  data-testid={`option-preorder-${preOrderItem.id}`}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span>🔄</span>
+                                    <div className="flex flex-col">
+                                      <span className="font-medium">{preOrderItem.name}</span>
+                                      {preOrderItem.description && (
+                                        <span className="text-xs text-slate-500 truncate max-w-[300px]">
+                                          {preOrderItem.description}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </CommandItem>
+                              ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
