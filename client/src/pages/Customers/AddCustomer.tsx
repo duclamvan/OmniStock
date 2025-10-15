@@ -588,6 +588,13 @@ export default function AddCustomer() {
   const handleAddShippingAddress = () => {
     setIsAddingShipping(true);
     setIsLabelManuallyEdited(false); // Reset manual edit flag for new address
+    
+    // Auto-select country based on main customer country
+    const mainCountryCode = form.getValues('country');
+    const mainCountryName = mainCountryCode 
+      ? availableCountries.find(c => c.code === mainCountryCode)?.name || ''
+      : '';
+    
     shippingForm.reset({
       label: "",
       firstName: form.getValues('billingFirstName') || "",
@@ -599,7 +606,7 @@ export default function AddCustomer() {
       streetNumber: "",
       city: "",
       zipCode: "",
-      country: form.getValues('billingCountry') || "",
+      country: mainCountryName || form.getValues('billingCountry') || "",
       state: "",
       isPrimary: shippingAddresses.length === 0,
     });
@@ -1200,6 +1207,12 @@ export default function AddCustomer() {
                                   value={country.code}
                                   onSelect={() => {
                                     form.setValue('country', country.code);
+                                    
+                                    // Auto-populate shipping country if shipping form is open and country is empty
+                                    if (isAddingShipping && !shippingForm.getValues('country')) {
+                                      shippingForm.setValue('country', country.name);
+                                    }
+                                    
                                     setOpenCountryCombobox(false);
                                     setCountrySearchQuery("");
                                   }}
@@ -1242,6 +1255,12 @@ export default function AddCustomer() {
                                   value={country.code}
                                   onSelect={() => {
                                     form.setValue('country', country.code);
+                                    
+                                    // Auto-populate shipping country if shipping form is open and country is empty
+                                    if (isAddingShipping && !shippingForm.getValues('country')) {
+                                      shippingForm.setValue('country', country.name);
+                                    }
+                                    
                                     setOpenCountryCombobox(false);
                                     setCountrySearchQuery("");
                                   }}
