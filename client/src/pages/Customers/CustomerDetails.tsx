@@ -271,7 +271,7 @@ export default function CustomerDetails() {
                 data-testid="tab-orders"
               >
                 <Package className="h-4 w-4 lg:mr-2" />
-                <span className="hidden lg:inline">Orders</span>
+                <span className="hidden sm:inline">Orders</span>
                 <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
                   {orders.length}
                 </Badge>
@@ -466,11 +466,8 @@ export default function CustomerDetails() {
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
                     <Package className="h-5 w-5 text-blue-600" />
-                    Order History
+                    Order History ({orders.length})
                   </CardTitle>
-                  <Badge variant="secondary" className="text-xs">
-                    {orders.length} orders
-                  </Badge>
                 </div>
               </CardHeader>
               <CardContent>
@@ -481,53 +478,59 @@ export default function CustomerDetails() {
                     <p className="text-xs text-slate-500 mt-1">Orders will appear here once created</p>
                   </div>
                 ) : (
-                  <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                  <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
                     {orders.map((order: any) => (
                       <Link key={order.id} href={`/orders/${order.id}`}>
-                        <div className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 hover:border-slate-300 cursor-pointer transition-all">
-                          <div className="flex items-start justify-between gap-4 mb-3">
-                            <div className="min-w-0 flex-1">
-                              <p className="font-semibold text-sm text-slate-900">
-                                Order #{order.orderId || order.id}
-                              </p>
-                              <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
-                                <Calendar className="h-3 w-3 shrink-0" />
-                                <span>{new Date(order.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                        <div className="bg-white border border-slate-200 rounded-lg p-4 hover:shadow-md hover:border-blue-300 cursor-pointer transition-all group">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="min-w-0 flex-1 space-y-2">
+                              <div>
+                                <p className="font-bold text-base text-slate-900 group-hover:text-blue-600 transition-colors">
+                                  #{order.orderId || order.id}
+                                </p>
+                                <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
+                                  <Calendar className="h-3.5 w-3.5 shrink-0" />
+                                  <span>{new Date(order.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                                  <span className="text-slate-300">•</span>
+                                  <Package className="h-3.5 w-3.5 shrink-0" />
+                                  <span>{order.items?.length || 0} {order.items?.length === 1 ? 'item' : 'items'}</span>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <Badge 
+                                  variant={
+                                    order.orderStatus === 'ready_to_ship' ? 'outline' :
+                                    order.orderStatus === 'delivered' ? 'default' :
+                                    order.orderStatus === 'shipped' ? 'secondary' :
+                                    order.orderStatus === 'cancelled' ? 'destructive' :
+                                    'secondary'
+                                  }
+                                  className="text-xs font-medium"
+                                >
+                                  {order.orderStatus === 'to_fulfill' ? 'To Fulfill' :
+                                   order.orderStatus === 'ready_to_ship' ? 'Ready to Ship' :
+                                   order.orderStatus === 'delivered' ? 'Delivered' :
+                                   order.orderStatus === 'shipped' ? 'Shipped' :
+                                   order.orderStatus === 'cancelled' ? 'Cancelled' :
+                                   'Pending'}
+                                </Badge>
+                                <Badge 
+                                  variant={order.paymentStatus === 'paid' ? 'outline' : 'secondary'}
+                                  className={order.paymentStatus === 'paid' ? 
+                                    'text-xs font-medium bg-green-50 border-green-300 text-green-700 hover:bg-green-100' : 
+                                    'text-xs font-medium bg-orange-50 border-orange-300 text-orange-700'}
+                                >
+                                  {order.paymentStatus === 'paid' ? '✓ Paid' : '⏳ Unpaid'}
+                                </Badge>
                               </div>
                             </div>
-                            <div className="text-right shrink-0">
-                              <p className="font-bold text-sm text-slate-900">
+                            
+                            <div className="text-right shrink-0 pt-1">
+                              <p className="font-bold text-lg text-slate-900 group-hover:text-blue-600 transition-colors">
                                 {formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}
                               </p>
-                              <p className="text-xs text-slate-500 mt-1">
-                                {order.items?.length || 0} items
-                              </p>
                             </div>
-                          </div>
-                          <div className="flex items-center justify-between gap-2 pt-3 border-t">
-                            <Badge 
-                              variant={
-                                order.orderStatus === 'ready_to_ship' ? 'outline' :
-                                order.orderStatus === 'delivered' ? 'default' :
-                                order.orderStatus === 'shipped' ? 'secondary' :
-                                order.orderStatus === 'cancelled' ? 'destructive' :
-                                'secondary'
-                              }
-                              className="text-xs"
-                            >
-                              {order.orderStatus === 'to_fulfill' ? 'To Fulfill' :
-                               order.orderStatus === 'ready_to_ship' ? 'Ready' :
-                               order.orderStatus === 'delivered' ? 'Delivered' :
-                               order.orderStatus === 'shipped' ? 'Shipped' :
-                               order.orderStatus === 'cancelled' ? 'Cancelled' :
-                               'Pending'}
-                            </Badge>
-                            <Badge 
-                              variant={order.paymentStatus === 'paid' ? 'outline' : 'secondary'}
-                              className={order.paymentStatus === 'paid' ? 'text-xs bg-green-50 border-green-300 text-green-700' : 'text-xs'}
-                            >
-                              {order.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}
-                            </Badge>
                           </div>
                         </div>
                       </Link>

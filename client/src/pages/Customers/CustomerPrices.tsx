@@ -16,7 +16,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, Plus, Upload, Edit, FileSpreadsheet, Download } from 'lucide-react';
+import { Trash2, Plus, Upload, Edit, FileSpreadsheet, Download, Tag } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -523,22 +523,33 @@ export function CustomerPrices({ customerId }: CustomerPricesProps) {
         </TooltipProvider>
       </div>
 
-      <Card className="overflow-hidden">
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <DataTable
-              columns={columns}
-              data={prices}
-              getRowKey={(price) => price.id}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {prices.length === 0 && (
-        <div className="text-center py-8 text-muted-foreground">
-          No custom prices set for this customer. Add custom prices to override default product pricing.
-        </div>
+      {prices.length === 0 ? (
+        <Card>
+          <CardContent className="p-8">
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-4">
+                <Tag className="h-8 w-8 text-slate-400" />
+              </div>
+              <p className="text-2xl font-bold text-slate-900 mb-2">0</p>
+              <p className="text-sm font-medium text-slate-700 mb-1">No custom prices</p>
+              <p className="text-xs text-slate-500">
+                Add custom prices to override default product pricing
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="overflow-hidden">
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <DataTable
+                columns={columns}
+                data={prices}
+                getRowKey={(price) => price.id}
+              />
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
