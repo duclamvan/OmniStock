@@ -14,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ArrowLeft, Plus, Trash2, Edit2, Check, X, Loader2, CheckCircle, XCircle, Globe, Building, MapPin, FileText, Truck, ChevronsUpDown, Pin, AlertCircle } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Edit2, Check, X, Loader2, CheckCircle, XCircle, Globe, Building, MapPin, FileText, Truck, ChevronsUpDown, Pin, AlertCircle, Copy } from "lucide-react";
 import { europeanCountries, euCountryCodes, getCountryFlag } from "@/lib/countries";
 import type { Customer, CustomerShippingAddress } from "@shared/schema";
 import { cn } from "@/lib/utils";
@@ -1722,10 +1722,43 @@ export default function AddCustomer() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-green-500" />
-              Billing Address
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="h-5 w-5 text-green-500" />
+                Billing Address
+              </CardTitle>
+              {shippingAddresses.length > 0 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const primaryAddress = shippingAddresses.find(addr => addr.isPrimary) || shippingAddresses[0];
+                    if (primaryAddress) {
+                      form.setValue('billingFirstName', primaryAddress.firstName);
+                      form.setValue('billingLastName', primaryAddress.lastName);
+                      form.setValue('billingCompany', primaryAddress.company || '');
+                      form.setValue('billingEmail', primaryAddress.email || '');
+                      form.setValue('billingTel', primaryAddress.tel || '');
+                      form.setValue('billingStreet', primaryAddress.street || '');
+                      form.setValue('billingStreetNumber', primaryAddress.streetNumber || '');
+                      form.setValue('billingCity', primaryAddress.city || '');
+                      form.setValue('billingZipCode', primaryAddress.zipCode || '');
+                      form.setValue('billingCountry', primaryAddress.country || '');
+                      form.setValue('billingState', primaryAddress.state || '');
+                      toast({
+                        title: "Address Copied",
+                        description: "Shipping address has been copied to billing address",
+                      });
+                    }
+                  }}
+                  data-testid="button-copy-shipping-address"
+                >
+                  <Copy className="h-4 w-4 mr-2" />
+                  Copy from Shipping
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -1859,6 +1892,33 @@ export default function AddCustomer() {
                   data-testid="input-billingCompany"
                 />
                 <p className="text-xs text-slate-500 mt-1">Leave empty for individual customers</p>
+              </div>
+
+              <div className="mb-4">
+                <Label htmlFor="billingEmail">Email</Label>
+                <Input
+                  id="billingEmail"
+                  {...form.register('billingEmail')}
+                  type="email"
+                  placeholder="customer@example.com"
+                  className={cn(getConfidenceClass('billingEmail', billingFieldConfidence))}
+                  data-testid="input-billingEmail"
+                />
+                {form.formState.errors.billingEmail && (
+                  <p className="text-sm text-red-500 mt-1">{form.formState.errors.billingEmail.message}</p>
+                )}
+              </div>
+
+              <div className="mb-4">
+                <Label htmlFor="billingTel">Phone</Label>
+                <Input
+                  id="billingTel"
+                  {...form.register('billingTel')}
+                  type="tel"
+                  placeholder="+420 123 456 789"
+                  className={cn(getConfidenceClass('billingTel', billingFieldConfidence))}
+                  data-testid="input-billingTel"
+                />
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
