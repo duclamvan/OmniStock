@@ -9,6 +9,7 @@ import {
   deliveryHistory,
   customers,
   customerShippingAddresses,
+  customerBillingAddresses,
   suppliers,
   products,
   productVariants,
@@ -52,6 +53,8 @@ import {
   type InsertCustomer,
   type CustomerShippingAddress,
   type InsertCustomerShippingAddress,
+  type CustomerBillingAddress,
+  type InsertCustomerBillingAddress,
   type Supplier,
   type InsertSupplier,
   type Product,
@@ -244,6 +247,14 @@ export interface IStorage {
   updateCustomerShippingAddress(id: string, address: Partial<InsertCustomerShippingAddress>): Promise<CustomerShippingAddress | undefined>;
   deleteCustomerShippingAddress(id: string): Promise<boolean>;
   setPrimaryShippingAddress(customerId: string, addressId: string): Promise<void>;
+  
+  // Customer Billing Addresses
+  getCustomerBillingAddresses(customerId: string): Promise<CustomerBillingAddress[]>;
+  getCustomerBillingAddress(id: string): Promise<CustomerBillingAddress | undefined>;
+  createCustomerBillingAddress(address: InsertCustomerBillingAddress): Promise<CustomerBillingAddress>;
+  updateCustomerBillingAddress(id: string, address: Partial<InsertCustomerBillingAddress>): Promise<CustomerBillingAddress | undefined>;
+  deleteCustomerBillingAddress(id: string): Promise<boolean>;
+  setPrimaryBillingAddress(customerId: string, addressId: string): Promise<void>;
   
   // Discounts
   getDiscounts(): Promise<Discount[]>;
@@ -1885,6 +1896,94 @@ export class DatabaseStorage implements IStorage {
       });
     } catch (error) {
       console.error('Error setting primary shipping address:', error);
+      throw error;
+    }
+  }
+
+  // Customer Billing Addresses
+  async getCustomerBillingAddresses(customerId: string): Promise<CustomerBillingAddress[]> {
+    try {
+      const addresses = await db
+        .select()
+        .from(customerBillingAddresses)
+        .where(eq(customerBillingAddresses.customerId, customerId))
+        .orderBy(desc(customerBillingAddresses.isPrimary), desc(customerBillingAddresses.createdAt));
+      return addresses;
+    } catch (error) {
+      console.error('Error fetching customer billing addresses:', error);
+      return [];
+    }
+  }
+
+  async getCustomerBillingAddress(id: string): Promise<CustomerBillingAddress | undefined> {
+    try {
+      const [address] = await db
+        .select()
+        .from(customerBillingAddresses)
+        .where(eq(customerBillingAddresses.id, id));
+      return address || undefined;
+    } catch (error) {
+      console.error('Error fetching customer billing address:', error);
+      return undefined;
+    }
+  }
+
+  async createCustomerBillingAddress(address: InsertCustomerBillingAddress): Promise<CustomerBillingAddress> {
+    try {
+      const [newAddress] = await db
+        .insert(customerBillingAddresses)
+        .values(address)
+        .returning();
+      return newAddress;
+    } catch (error) {
+      console.error('Error creating customer billing address:', error);
+      throw error;
+    }
+  }
+
+  async updateCustomerBillingAddress(id: string, address: Partial<InsertCustomerBillingAddress>): Promise<CustomerBillingAddress | undefined> {
+    try {
+      const [updated] = await db
+        .update(customerBillingAddresses)
+        .set({ ...address, updatedAt: new Date() })
+        .where(eq(customerBillingAddresses.id, id))
+        .returning();
+      return updated || undefined;
+    } catch (error) {
+      console.error('Error updating customer billing address:', error);
+      return undefined;
+    }
+  }
+
+  async deleteCustomerBillingAddress(id: string): Promise<boolean> {
+    try {
+      const result = await db
+        .delete(customerBillingAddresses)
+        .where(eq(customerBillingAddresses.id, id));
+      return (result.rowCount ?? 0) > 0;
+    } catch (error) {
+      console.error('Error deleting customer billing address:', error);
+      return false;
+    }
+  }
+
+  async setPrimaryBillingAddress(customerId: string, addressId: string): Promise<void> {
+    try {
+      await db.transaction(async (tx) => {
+        // First, set all addresses for this customer to non-primary
+        await tx
+          .update(customerBillingAddresses)
+          .set({ isPrimary: false, updatedAt: new Date() })
+          .where(eq(customerBillingAddresses.customerId, customerId));
+        
+        // Then, set the specified address to primary
+        await tx
+          .update(customerBillingAddresses)
+          .set({ isPrimary: true, updatedAt: new Date() })
+          .where(eq(customerBillingAddresses.id, addressId));
+      });
+    } catch (error) {
+      console.error('Error setting primary billing address:', error);
       throw error;
     }
   }

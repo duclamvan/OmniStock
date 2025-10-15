@@ -10,6 +10,7 @@ import { promises as fs } from "fs";
 import {
   insertCategorySchema,
   insertCustomerSchema,
+  insertCustomerBillingAddressSchema,
   insertSupplierSchema,
   insertProductSchema,
   insertProductVariantSchema,
@@ -2809,6 +2810,141 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error setting primary shipping address:", error);
       res.status(500).json({ message: "Failed to set primary shipping address" });
+    }
+  });
+
+  // Customer Billing Addresses endpoints
+  app.get('/api/customers/:customerId/billing-addresses', async (req, res) => {
+    try {
+      const { customerId } = req.params;
+      const addresses = await storage.getCustomerBillingAddresses(customerId);
+      res.json(addresses);
+    } catch (error) {
+      console.error("Error fetching customer billing addresses:", error);
+      res.status(500).json({ message: "Failed to fetch billing addresses" });
+    }
+  });
+
+  app.get('/api/billing-addresses/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const address = await storage.getCustomerBillingAddress(id);
+      if (!address) {
+        return res.status(404).json({ message: 'Address not found' });
+      }
+      res.json(address);
+    } catch (error) {
+      console.error("Error fetching billing address:", error);
+      res.status(500).json({ message: "Failed to fetch billing address" });
+    }
+  });
+
+  app.post('/api/customers/:customerId/billing-addresses', async (req: any, res) => {
+    try {
+      const { customerId } = req.params;
+      
+      // Validate request body and omit customerId to prevent override
+      const validatedData = insertCustomerBillingAddressSchema.omit({ customerId: true }).parse(req.body);
+      
+      // Create address with customerId from path parameter
+      const address = await storage.createCustomerBillingAddress({
+        ...validatedData,
+        customerId,
+      });
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'created',
+        entityType: 'billing_address',
+        entityId: address.id,
+        description: `Created billing address for customer ${customerId}`,
+      });
+      
+      res.status(201).json(address);
+    } catch (error) {
+      console.error("Error creating billing address:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create billing address" });
+    }
+  });
+
+  app.patch('/api/billing-addresses/:id', async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Validate request body and omit customerId to prevent override
+      const validatedData = insertCustomerBillingAddressSchema.partial().omit({ customerId: true }).parse(req.body);
+      
+      const address = await storage.updateCustomerBillingAddress(id, validatedData);
+      if (!address) {
+        return res.status(404).json({ message: 'Address not found' });
+      }
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'updated',
+        entityType: 'billing_address',
+        entityId: address.id,
+        description: `Updated billing address`,
+      });
+      
+      res.json(address);
+    } catch (error) {
+      console.error("Error updating billing address:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update billing address" });
+    }
+  });
+
+  app.delete('/api/billing-addresses/:id', async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const success = await storage.deleteCustomerBillingAddress(id);
+      if (!success) {
+        return res.status(404).json({ message: 'Address not found' });
+      }
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'deleted',
+        entityType: 'billing_address',
+        entityId: id,
+        description: `Deleted billing address`,
+      });
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting billing address:", error);
+      res.status(500).json({ message: "Failed to delete billing address" });
+    }
+  });
+
+  app.patch('/api/billing-addresses/:id/set-primary', async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const address = await storage.getCustomerBillingAddress(id);
+      if (!address) {
+        return res.status(404).json({ message: 'Address not found' });
+      }
+      
+      await storage.setPrimaryBillingAddress(address.customerId, id);
+      
+      await storage.createUserActivity({
+        userId: "test-user",
+        action: 'updated',
+        entityType: 'billing_address',
+        entityId: id,
+        description: `Set billing address as primary for customer ${address.customerId}`,
+      });
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error setting primary billing address:", error);
+      res.status(500).json({ message: "Failed to set primary billing address" });
     }
   });
 

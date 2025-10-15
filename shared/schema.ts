@@ -298,6 +298,27 @@ export const customerShippingAddresses = pgTable('customer_shipping_addresses', 
   updatedAt: timestamp('updated_at').defaultNow(),
 });
 
+// Customer billing addresses (multiple per customer)
+export const customerBillingAddresses = pgTable('customer_billing_addresses', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  customerId: varchar('customer_id').notNull().references(() => customers.id, { onDelete: 'cascade' }),
+  firstName: varchar('first_name'),
+  lastName: varchar('last_name'),
+  company: varchar('company'),
+  email: varchar('email'),
+  tel: varchar('tel'),
+  street: varchar('street'),
+  streetNumber: varchar('street_number'),
+  city: varchar('city'),
+  zipCode: varchar('zip_code'),
+  country: varchar('country'),
+  state: varchar('state'),
+  isPrimary: boolean('is_primary').default(false), // Mark one as default
+  label: varchar('label'), // e.g., "Main Office", "Secondary Office", "Accounting"
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
 export const suppliers = pgTable('suppliers', {
   id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
   name: varchar('name').notNull(),
@@ -987,6 +1008,7 @@ export const insertLandedCostSchema = createInsertSchema(landedCosts).omit({ id:
 // Core business schemas
 export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCustomerShippingAddressSchema = createInsertSchema(customerShippingAddresses).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertCustomerBillingAddressSchema = createInsertSchema(customerBillingAddresses).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true, createdAt: true });
 export const insertWarehouseSchema = createInsertSchema(warehouses).omit({ createdAt: true });
 export const insertWarehouseFileSchema = createInsertSchema(warehouseFiles).omit({ id: true, createdAt: true });
@@ -1061,6 +1083,8 @@ export type Customer = typeof customers.$inferSelect;
 export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
 export type CustomerShippingAddress = typeof customerShippingAddresses.$inferSelect;
 export type InsertCustomerShippingAddress = z.infer<typeof insertCustomerShippingAddressSchema>;
+export type CustomerBillingAddress = typeof customerBillingAddresses.$inferSelect;
+export type InsertCustomerBillingAddress = z.infer<typeof insertCustomerBillingAddressSchema>;
 export type Supplier = typeof suppliers.$inferSelect;
 export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
 export type Warehouse = typeof warehouses.$inferSelect;
