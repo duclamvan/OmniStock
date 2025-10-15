@@ -11,12 +11,14 @@ import {
   Pencil, 
   Trash2, 
   Eye,
-  Package,
-  Banknote,
+  Building2,
   TrendingUp,
   Calendar,
-  Building2,
-  ShoppingCart
+  ShoppingBag,
+  MoreVertical,
+  ExternalLink,
+  Mail,
+  Phone
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
@@ -35,7 +37,31 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
+
+const getCountryFlag = (country: string): string => {
+  const countryFlags: Record<string, string> = {
+    'China': '🇨🇳',
+    'Vietnam': '🇻🇳',
+    'Czech Republic': '🇨🇿',
+    'Germany': '🇩🇪',
+    'USA': '🇺🇸',
+    'UK': '🇬🇧',
+    'Poland': '🇵🇱',
+    'Slovakia': '🇸🇰',
+    'Austria': '🇦🇹',
+    'Hungary': '🇭🇺',
+  };
+  return countryFlags[country] || '🌍';
+};
 
 export default function AllSuppliers() {
   const [, navigate] = useLocation();
@@ -158,71 +184,105 @@ export default function AllSuppliers() {
     }
   };
 
+  const getStatusBadge = (supplier: Supplier) => {
+    if (!supplier.lastPurchaseDate) {
+      return <Badge variant="secondary" className="bg-slate-100 text-slate-700">New</Badge>;
+    }
+    const lastPurchase = new Date(supplier.lastPurchaseDate);
+    const daysSince = (Date.now() - lastPurchase.getTime()) / (1000 * 60 * 60 * 24);
+    
+    if (daysSince <= 30) {
+      return <Badge className="bg-green-100 text-green-800 border-green-200">Active</Badge>;
+    } else if (daysSince <= 90) {
+      return <Badge className="bg-blue-100 text-blue-800 border-blue-200">Regular</Badge>;
+    } else {
+      return <Badge variant="outline" className="text-slate-500">Inactive</Badge>;
+    }
+  };
+
   const columns: DataTableColumn<Supplier>[] = [
     {
       key: "name",
-      header: "Supplier Name",
+      header: "Supplier",
       cell: (supplier) => (
-        <Link href={`/suppliers/${supplier.id}`}>
-          <div className="cursor-pointer">
-            <span className="font-medium text-blue-600 hover:underline">
+        <div className="min-w-[180px]">
+          <Link href={`/suppliers/${supplier.id}`}>
+            <span className="font-semibold text-slate-900 hover:text-blue-600 cursor-pointer block">
               {supplier.name}
             </span>
-            {supplier.contactPerson && (
-              <p className="text-xs text-slate-500">{supplier.contactPerson}</p>
-            )}
-          </div>
-        </Link>
+          </Link>
+          {supplier.contactPerson && (
+            <p className="text-sm text-slate-500 mt-0.5">{supplier.contactPerson}</p>
+          )}
+        </div>
       ),
     },
     {
-      key: "supplierLink",
-      header: "Supplier Link",
-      cell: (supplier) => {
-        const link = supplier.supplierLink;
-        if (!link) return "-";
-        return (
-          <a
-            href={link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 hover:underline truncate block max-w-[200px]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {link}
-          </a>
-        );
-      },
+      key: "contact",
+      header: "Contact",
+      cell: (supplier) => (
+        <div className="space-y-1 min-w-[160px]">
+          {supplier.email && (
+            <div className="flex items-center gap-1.5 text-sm text-slate-600">
+              <Mail className="h-3.5 w-3.5 text-slate-400" />
+              <a 
+                href={`mailto:${supplier.email}`} 
+                className="hover:text-blue-600 truncate max-w-[200px]"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {supplier.email}
+              </a>
+            </div>
+          )}
+          {supplier.phone && (
+            <div className="flex items-center gap-1.5 text-sm text-slate-600">
+              <Phone className="h-3.5 w-3.5 text-slate-400" />
+              <a 
+                href={`tel:${supplier.phone}`} 
+                className="hover:text-blue-600"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {supplier.phone}
+              </a>
+            </div>
+          )}
+          {!supplier.email && !supplier.phone && (
+            <span className="text-sm text-slate-400">-</span>
+          )}
+        </div>
+      ),
     },
     {
       key: "lastPurchaseDate",
       header: "Last Purchase",
       cell: (supplier) => {
         const dateStr = formatDate(supplier.lastPurchaseDate);
-        if (dateStr === '-') return '-';
+        if (dateStr === '-') {
+          return <span className="text-slate-400">Never</span>;
+        }
         
         const lastPurchase = new Date(supplier.lastPurchaseDate!);
         const daysSince = Math.floor((Date.now() - lastPurchase.getTime()) / (1000 * 60 * 60 * 24));
         
         return (
-          <div>
-            <span className="font-medium">{dateStr}</span>
-            <p className="text-xs text-slate-500">
+          <div className="min-w-[100px]">
+            <span className="font-medium text-slate-900 block">{dateStr}</span>
+            <span className="text-sm text-slate-500">
               {daysSince === 0 ? 'Today' : 
                daysSince === 1 ? 'Yesterday' :
-               `${daysSince} days ago`}
-            </p>
+               `${daysSince}d ago`}
+            </span>
           </div>
         );
       },
     },
     {
       key: "totalPurchased",
-      header: "Total Purchased",
+      header: "Total Value",
       cell: (supplier) => {
         const amount = parseFloat(supplier.totalPurchased || '0');
         return (
-          <span className="font-medium">
+          <span className="font-semibold text-slate-900">
             ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
         );
@@ -231,50 +291,68 @@ export default function AllSuppliers() {
     {
       key: "country",
       header: "Location",
-      cell: (supplier) => (
-        <div>
-          <p className="font-medium">{supplier.country || '-'}</p>
-          {supplier.address && (
-            <p className="text-xs text-slate-500">{supplier.address}</p>
-          )}
-        </div>
-      ),
+      cell: (supplier) => {
+        if (!supplier.country) return <span className="text-slate-400">-</span>;
+        return (
+          <div className="flex items-center gap-2">
+            <span className="text-xl">{getCountryFlag(supplier.country)}</span>
+            <span className="font-medium text-slate-700">{supplier.country}</span>
+          </div>
+        );
+      },
     },
     {
       key: "status",
       header: "Status",
-      cell: (supplier) => {
-        if (!supplier.lastPurchaseDate) {
-          return <Badge variant="secondary">New</Badge>;
-        }
-        const lastPurchase = new Date(supplier.lastPurchaseDate);
-        const daysSince = (Date.now() - lastPurchase.getTime()) / (1000 * 60 * 60 * 24);
-        
-        if (daysSince <= 30) {
-          return <Badge variant="default">Active</Badge>;
-        } else if (daysSince <= 90) {
-          return <Badge variant="secondary">Regular</Badge>;
-        } else {
-          return <Badge variant="outline">Inactive</Badge>;
-        }
-      },
+      cell: (supplier) => getStatusBadge(supplier),
     },
     {
       key: "actions",
-      header: "Actions",
+      header: "",
       cell: (supplier) => (
-        <div className="flex gap-2">
-          <Link href={`/suppliers/${supplier.id}`}>
-            <Button variant="ghost" size="icon">
-              <Eye className="h-4 w-4" />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <MoreVertical className="h-4 w-4" />
             </Button>
-          </Link>
-          <Link href={`/suppliers/${supplier.id}/edit`}>
-            <Button variant="ghost" size="icon">
-              <Pencil className="h-4 w-4" />
-            </Button>
-          </Link>
-        </div>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => navigate(`/suppliers/${supplier.id}`)}>
+              <Eye className="h-4 w-4 mr-2" />
+              View Details
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate(`/suppliers/${supplier.id}/edit`)}>
+              <Pencil className="h-4 w-4 mr-2" />
+              Edit Supplier
+            </DropdownMenuItem>
+            {supplier.supplierLink && (
+              <DropdownMenuItem asChild>
+                <a
+                  href={supplier.supplierLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center"
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Visit Website
+                </a>
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => {
+                setDeleteSupplier(supplier);
+                setShowDeleteDialog(true);
+              }}
+              className="text-red-600 focus:text-red-600"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       ),
     },
   ];
@@ -291,17 +369,15 @@ export default function AllSuppliers() {
     },
   ];
 
-  // Remove loading state to prevent UI refresh indicators
-
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Suppliers</h1>
-          <p className="text-slate-600 mt-1">Manage your supplier relationships and purchases</p>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Suppliers</h1>
+          <p className="text-slate-600 mt-1">Manage supplier relationships and track purchases</p>
         </div>
-        <Button onClick={() => navigate('/suppliers/new')} size="lg">
+        <Button onClick={() => navigate('/suppliers/new')} size="lg" data-testid="button-add-supplier">
           <Plus className="mr-2 h-5 w-5" />
           Add Supplier
         </Button>
@@ -309,49 +385,57 @@ export default function AllSuppliers() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
+        <Card className="border-l-4 border-l-blue-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Suppliers</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-slate-600">Total Suppliers</CardTitle>
+            <div className="h-10 w-10 rounded-lg bg-blue-50 flex items-center justify-center">
+              <Building2 className="h-5 w-5 text-blue-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalSuppliers}</div>
-            <p className="text-xs text-muted-foreground">Registered suppliers</p>
+            <div className="text-3xl font-bold text-slate-900">{totalSuppliers}</div>
+            <p className="text-xs text-slate-500 mt-1">Registered suppliers</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-l-4 border-l-green-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Suppliers</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-slate-600">Active Suppliers</CardTitle>
+            <div className="h-10 w-10 rounded-lg bg-green-50 flex items-center justify-center">
+              <TrendingUp className="h-5 w-5 text-green-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{activeSuppliers.length}</div>
-            <p className="text-xs text-muted-foreground">Purchased in last 90 days</p>
+            <div className="text-3xl font-bold text-slate-900">{activeSuppliers.length}</div>
+            <p className="text-xs text-slate-500 mt-1">Last 90 days activity</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-l-4 border-l-purple-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Purchases</CardTitle>
-            <Banknote className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-slate-600">Total Value</CardTitle>
+            <div className="h-10 w-10 rounded-lg bg-purple-50 flex items-center justify-center">
+              <ShoppingBag className="h-5 w-5 text-purple-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-3xl font-bold text-slate-900">
               ${totalPurchaseValue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
             </div>
-            <p className="text-xs text-muted-foreground">All time value</p>
+            <p className="text-xs text-slate-500 mt-1">All time purchases</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-l-4 border-l-orange-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">New This Month</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-slate-600">New This Month</CardTitle>
+            <div className="h-10 w-10 rounded-lg bg-orange-50 flex items-center justify-center">
+              <Calendar className="h-5 w-5 text-orange-600" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{newSuppliersThisMonth.length}</div>
-            <p className="text-xs text-muted-foreground">Recently added</p>
+            <div className="text-3xl font-bold text-slate-900">{newSuppliersThisMonth.length}</div>
+            <p className="text-xs text-slate-500 mt-1">Recently added</p>
           </CardContent>
         </Card>
       </div>
@@ -365,14 +449,17 @@ export default function AllSuppliers() {
             bulkActions={bulkActions}
             getRowKey={(supplier) => supplier.id}
             renderBulkActions={({ selectedRows, selectedItems, bulkActions: actions }) => (
-              <div className="px-4 sm:px-0 pb-3">
-                <div className="flex items-center justify-between gap-3">
+              <div className="px-4 sm:px-0 pb-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className="text-mobile-lg font-semibold">All Suppliers ({filteredSuppliers?.length || 0})</h2>
+                    <h2 className="text-lg font-semibold text-slate-900">All Suppliers</h2>
+                    <Badge variant="secondary" className="text-sm">
+                      {filteredSuppliers?.length || 0}
+                    </Badge>
                     {selectedRows.size > 0 && (
                       <>
-                        <Badge variant="secondary" className="text-xs h-6 px-2">
-                          {selectedRows.size}
+                        <Badge variant="outline" className="text-sm border-blue-500 text-blue-700">
+                          {selectedRows.size} selected
                         </Badge>
                         {actions.map((action, index) => {
                           if (action.type === "button") {
@@ -382,8 +469,9 @@ export default function AllSuppliers() {
                                 size="sm"
                                 variant={action.variant || "ghost"}
                                 onClick={() => action.action(selectedItems)}
-                                className="h-6 px-2 text-xs"
+                                data-testid="button-delete-selected"
                               >
+                                <Trash2 className="h-4 w-4 mr-1" />
                                 {action.label}
                               </Button>
                             );
@@ -394,12 +482,13 @@ export default function AllSuppliers() {
                     )}
                   </div>
                   <div className="relative w-full sm:w-80">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     <Input
                       placeholder="Search suppliers..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="pl-9"
+                      data-testid="input-search-suppliers"
                     />
                   </div>
                 </div>
@@ -413,15 +502,23 @@ export default function AllSuppliers() {
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>Delete Supplier{selectedSuppliers.length > 1 ? 's' : ''}?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete {selectedSuppliers.length} supplier(s). 
-              This action cannot be undone.
+              {selectedSuppliers.length > 1 
+                ? `This will permanently delete ${selectedSuppliers.length} suppliers.` 
+                : deleteSupplier 
+                ? `This will permanently delete "${deleteSupplier.name}".`
+                : 'This will permanently delete the selected supplier.'}
+              {' '}This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleBulkDelete}>
+            <AlertDialogCancel data-testid="button-cancel-delete">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleBulkDelete}
+              className="bg-red-600 hover:bg-red-700"
+              data-testid="button-confirm-delete"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
