@@ -122,6 +122,10 @@ export default function AddPreOrder() {
     queryKey: ['/api/pre-orders'],
   });
 
+  const { data: purchases } = useQuery<any[]>({
+    queryKey: ['/api/imports/purchases'],
+  });
+
   const createCustomerMutation = useMutation({
     mutationFn: async (data: any) => {
       return await apiRequest('POST', '/api/customers', {
@@ -195,7 +199,7 @@ export default function AddPreOrder() {
     ));
   };
 
-  // Combine products and pre-order items for autocomplete
+  // Combine products, pre-order items, and purchase items for autocomplete
   const getAllItems = () => {
     const productItems = (products || []).map((p: any) => ({
       id: p.id,
@@ -215,7 +219,19 @@ export default function AddPreOrder() {
       }))
     );
 
-    return [...productItems, ...preOrderItems];
+    const purchaseItems = (purchases || []).flatMap((purchase: any) =>
+      (purchase.items || []).map((item: any) => ({
+        id: `purchase-${purchase.id}-${item.id}`,
+        name: item.name,
+        sku: item.sku,
+        description: item.notes,
+        type: 'purchase' as const,
+        purchaseId: purchase.id,
+        supplier: purchase.supplier,
+      }))
+    );
+
+    return [...productItems, ...preOrderItems, ...purchaseItems];
   };
 
   const handleProductSelect = (itemId: string, selectedItem: any) => {
@@ -484,7 +500,7 @@ export default function AddPreOrder() {
                 {/* Product Selector (Optional) */}
                 <div>
                   <Label htmlFor={`product-${item.id}`} className="text-xs">
-                    Select Existing Product or Pre-Order Item (Optional)
+                    Select Existing Item (Optional)
                   </Label>
                   <Popover 
                     open={productSearchOpen[item.id] || false} 
@@ -503,11 +519,13 @@ export default function AddPreOrder() {
                             {selectedProducts[item.id].name}
                             {selectedProducts[item.id].sku && ` (${selectedProducts[item.id].sku})`}
                             <span className="ml-2 text-xs text-slate-500">
-                              {selectedProducts[item.id].type === 'product' ? '📦 Product' : '🔄 Pre-Order'}
+                              {selectedProducts[item.id].type === 'product' ? '📦 Product' : 
+                               selectedProducts[item.id].type === 'preorder' ? '🔄 Pre-Order' :
+                               '🚚 Supplier'}
                             </span>
                           </span>
                         ) : (
-                          "Search products or pre-order items..."
+                          "Search products, pre-orders, or supplier items..."
                         )}
                         <Search className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
@@ -561,6 +579,34 @@ export default function AddPreOrder() {
                                           {preOrderItem.description}
                                         </span>
                                       )}
+                                    </div>
+                                  </div>
+                                </CommandItem>
+                              ))}
+                          </CommandGroup>
+                          <CommandGroup heading="Supplier Processing Items">
+                            {getAllItems()
+                              .filter(i => i.type === 'purchase')
+                              .map((purchaseItem: any) => (
+                                <CommandItem
+                                  key={purchaseItem.id}
+                                  value={`${purchaseItem.name} ${purchaseItem.sku || ''}`}
+                                  onSelect={() => handleProductSelect(item.id, purchaseItem)}
+                                  data-testid={`option-purchase-${purchaseItem.id}`}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span>🚚</span>
+                                    <div className="flex flex-col">
+                                      <span className="font-medium">{purchaseItem.name}</span>
+                                      <div className="flex items-center gap-2 text-xs text-slate-500">
+                                        {purchaseItem.sku && <span>{purchaseItem.sku}</span>}
+                                        {purchaseItem.supplier && (
+                                          <>
+                                            {purchaseItem.sku && <span>•</span>}
+                                            <span>{purchaseItem.supplier}</span>
+                                          </>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
                                 </CommandItem>
