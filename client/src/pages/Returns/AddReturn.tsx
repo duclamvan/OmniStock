@@ -275,10 +275,19 @@ export default function AddReturn() {
   const handleProductSelect = (productId: string, index: number) => {
     const product = products.find((p: any) => p.id === productId);
     if (product) {
+      // Try to get price from selected order items first
+      let price = parseFloat(product.sellingPriceEur || "0");
+      if (selectedOrder?.items) {
+        const orderItem = selectedOrder.items.find((item: any) => item.productId === productId);
+        if (orderItem && orderItem.price) {
+          price = parseFloat(orderItem.price);
+        }
+      }
+      
       form.setValue(`items.${index}.productId`, product.id);
       form.setValue(`items.${index}.productName`, product.name);
       form.setValue(`items.${index}.sku`, product.sku || "");
-      form.setValue(`items.${index}.price`, parseFloat(product.sellingPriceEur || "0"));
+      form.setValue(`items.${index}.price`, price);
     }
     setProductSearchOpen(null);
   };
@@ -347,13 +356,22 @@ export default function AddReturn() {
           description: `${product.name} - Quantity: ${currentQuantity + 1}`,
         });
       } else {
+        // Try to get price from selected order items first
+        let price = parseFloat(product.priceEur || product.sellingPriceEur || "0");
+        if (selectedOrder?.items) {
+          const orderItem = selectedOrder.items.find((item: any) => item.productId === product.id);
+          if (orderItem && orderItem.price) {
+            price = parseFloat(orderItem.price);
+          }
+        }
+        
         // Add new item if product doesn't exist
         append({
           productId: product.id,
           productName: product.name,
           sku: product.sku || "",
           quantity: 1,
-          price: parseFloat(product.priceEur || product.sellingPriceEur || "0"),
+          price: price,
         });
         
         toast({
