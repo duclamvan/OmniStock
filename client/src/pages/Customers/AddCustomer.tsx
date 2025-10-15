@@ -723,6 +723,19 @@ export default function AddCustomer() {
     }
   };
 
+  // Helper function to find country code from country name
+  const findCountryCode = (countryName: string): string | null => {
+    if (!countryName) return null;
+    
+    const normalizedName = countryName.toLowerCase().trim();
+    const country = availableCountries.find(
+      c => c.name.toLowerCase() === normalizedName || 
+           c.code.toLowerCase() === normalizedName
+    );
+    
+    return country ? country.code : null;
+  };
+
   const parseShippingAddressMutation = useMutation({
     mutationFn: async (rawAddress: string) => {
       const res = await apiRequest('POST', '/api/addresses/parse', { rawAddress });
@@ -807,6 +820,15 @@ export default function AddCustomer() {
       if (fields.country) {
         shippingForm.setValue('country', capitalizeWords(fields.country));
         filledFields.country = data.confidence;
+        
+        // Auto-select main country dropdown if not already set
+        const currentCountry = form.getValues('country');
+        if (!currentCountry) {
+          const countryCode = findCountryCode(fields.country);
+          if (countryCode) {
+            form.setValue('country', countryCode);
+          }
+        }
       }
       if (fields.state) {
         shippingForm.setValue('state', capitalizeWords(fields.state));
@@ -971,6 +993,15 @@ export default function AddCustomer() {
       if (fields.country) {
         form.setValue('billingCountry', capitalizeWords(fields.country));
         filledFields.billingCountry = data.confidence;
+        
+        // Auto-select main country dropdown if not already set
+        const currentCountry = form.getValues('country');
+        if (!currentCountry) {
+          const countryCode = findCountryCode(fields.country);
+          if (countryCode) {
+            form.setValue('country', countryCode);
+          }
+        }
       }
       if (fields.state) {
         form.setValue('billingState', capitalizeWords(fields.state));
