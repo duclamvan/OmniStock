@@ -24,6 +24,7 @@ import {
   warehouses,
   warehouseFiles,
   services,
+  serviceItems,
   preOrders,
   preOrderItems,
   packingCartons,
@@ -83,6 +84,8 @@ import {
   type InsertWarehouseFile,
   type Service,
   type InsertService,
+  type ServiceItem,
+  type InsertServiceItem,
   type PreOrder,
   type InsertPreOrder,
   type PreOrderItem,
@@ -302,10 +305,16 @@ export interface IStorage {
   deleteExpense(id: string): Promise<boolean>;
   
   // Services
-  getServices(): Promise<AppService[]>;
-  createService(service: any): Promise<AppService>;
-  updateService(id: string, service: any): Promise<AppService>;
-  deleteService(id: string): Promise<boolean>;
+  getServices(): Promise<Service[]>;
+  getServiceById(id: string): Promise<Service | undefined>;
+  createService(service: InsertService, items: InsertServiceItem[]): Promise<Service>;
+  updateService(id: string, service: Partial<InsertService>): Promise<Service | undefined>;
+  deleteService(id: string): Promise<void>;
+  
+  // Service Items
+  getServiceItems(serviceId: string): Promise<ServiceItem[]>;
+  updateServiceItem(id: string, item: Partial<InsertServiceItem>): Promise<ServiceItem | undefined>;
+  deleteServiceItem(id: string): Promise<void>;
   
   // Pre-Orders
   getPreOrders(): Promise<PreOrder[]>;
@@ -2209,31 +2218,222 @@ export class DatabaseStorage implements IStorage {
   async updateExpense(id: string, expense: any): Promise<Expense | undefined> { return { id, ...expense }; }
   async deleteExpense(id: string): Promise<boolean> { return true; }
 
-  async getServices(): Promise<AppService[]> {
-    return await db.select().from(services).orderBy(desc(services.createdAt));
+  async getServices(): Promise<Service[]> {
+    const result = await db
+      .select({
+        id: services.id,
+        customerId: services.customerId,
+        name: services.name,
+        description: services.description,
+        serviceDate: services.serviceDate,
+        serviceCost: services.serviceCost,
+        partsCost: services.partsCost,
+        totalCost: services.totalCost,
+        status: services.status,
+        notes: services.notes,
+        createdAt: services.createdAt,
+        updatedAt: services.updatedAt,
+        customer: customers
+      })
+      .from(services)
+      .leftJoin(customers, eq(services.customerId, customers.id))
+      .orderBy(desc(services.createdAt));
+    
+    return result.map(row => ({
+      ...row,
+      customer: row.customer || undefined
+    }));
   }
 
-  async createService(service: InsertService): Promise<AppService> {
-    const [newService] = await db.insert(services).values(service).returning();
-    return newService;
+  async getServiceById(id: string): Promise<Service | undefined> {
+    const [result] = await db
+      .select({
+        id: services.id,
+        customerId: services.customerId,
+        name: services.name,
+        description: services.description,
+        serviceDate: services.serviceDate,
+        serviceCost: services.serviceCost,
+        partsCost: services.partsCost,
+        totalCost: services.totalCost,
+        status: services.status,
+        notes: services.notes,
+        createdAt: services.createdAt,
+        updatedAt: services.updatedAt,
+        customer: customers
+      })
+      .from(services)
+      .leftJoin(customers, eq(services.customerId, customers.id))
+      .where(eq(services.id, id));
+    
+    if (!result) return undefined;
+    
+    return {
+      ...result,
+      customer: result.customer || undefined
+    };
   }
 
-  async updateService(id: string, service: Partial<InsertService>): Promise<AppService> {
-    const [updated] = await db.update(services)
+  async createService(service: InsertService, items: InsertServiceItem[]): Promise<Service> {
+    return await db.transaction(async (tx) => {
+      // Calculate partsCost from items
+      const partsCost = items.reduce((sum, item) => {
+        return sum + parseFloat(item.totalPrice as string);
+      }, 0);
+      
+      // Calculate totalCost = serviceCost + partsCost
+      const serviceCost = parseFloat(service.serviceCost as string || '0');
+      const totalCost = serviceCost + partsCost;
+      
+      // Insert service with calculated costs
+      const [newService] = await tx
+        .insert(services)
+        .values({
+          ...service,
+          partsCost: partsCost.toFixed(2),
+          totalCost: totalCost.toFixed(2)
+        })
+        .returning();
+      
+      // Insert service items
+      if (items.length > 0) {
+        await tx.insert(serviceItems).values(
+          items.map(item => ({
+            ...item,
+            serviceId: newService.id
+          }))
+        );
+      }
+      
+      // Fetch the created service with customer info
+      const [result] = await tx
+        .select({
+          id: services.id,
+          customerId: services.customerId,
+          name: services.name,
+          description: services.description,
+          serviceDate: services.serviceDate,
+          serviceCost: services.serviceCost,
+          partsCost: services.partsCost,
+          totalCost: services.totalCost,
+          status: services.status,
+          notes: services.notes,
+          createdAt: services.createdAt,
+          updatedAt: services.updatedAt,
+          customer: customers
+        })
+        .from(services)
+        .leftJoin(customers, eq(services.customerId, customers.id))
+        .where(eq(services.id, newService.id));
+      
+      return {
+        ...result,
+        customer: result.customer || undefined
+      };
+    });
+  }
+
+  async updateService(id: string, service: Partial<InsertService>): Promise<Service | undefined> {
+    const [updated] = await db
+      .update(services)
       .set({ ...service, updatedAt: new Date() })
       .where(eq(services.id, id))
       .returning();
-    return updated;
+    
+    if (!updated) return undefined;
+    
+    // Fetch with customer info
+    const [result] = await db
+      .select({
+        id: services.id,
+        customerId: services.customerId,
+        name: services.name,
+        description: services.description,
+        serviceDate: services.serviceDate,
+        serviceCost: services.serviceCost,
+        partsCost: services.partsCost,
+        totalCost: services.totalCost,
+        status: services.status,
+        notes: services.notes,
+        createdAt: services.createdAt,
+        updatedAt: services.updatedAt,
+        customer: customers
+      })
+      .from(services)
+      .leftJoin(customers, eq(services.customerId, customers.id))
+      .where(eq(services.id, id));
+    
+    return {
+      ...result,
+      customer: result.customer || undefined
+    };
   }
 
-  async deleteService(id: string): Promise<boolean> {
-    try {
-      const result = await db.delete(services).where(eq(services.id, id));
-      return (result.rowCount ?? 0) > 0;
-    } catch (error) {
-      console.error('Error deleting service:', error);
-      return false;
-    }
+  async deleteService(id: string): Promise<void> {
+    await db.delete(services).where(eq(services.id, id));
+  }
+
+  async getServiceItems(serviceId: string): Promise<ServiceItem[]> {
+    const result = await db
+      .select({
+        id: serviceItems.id,
+        serviceId: serviceItems.serviceId,
+        productId: serviceItems.productId,
+        productName: serviceItems.productName,
+        sku: serviceItems.sku,
+        quantity: serviceItems.quantity,
+        unitPrice: serviceItems.unitPrice,
+        totalPrice: serviceItems.totalPrice,
+        createdAt: serviceItems.createdAt,
+        updatedAt: serviceItems.updatedAt,
+        product: products
+      })
+      .from(serviceItems)
+      .leftJoin(products, eq(serviceItems.productId, products.id))
+      .where(eq(serviceItems.serviceId, serviceId));
+    
+    return result.map(row => ({
+      ...row,
+      product: row.product || undefined
+    }));
+  }
+
+  async updateServiceItem(id: string, item: Partial<InsertServiceItem>): Promise<ServiceItem | undefined> {
+    const [updated] = await db
+      .update(serviceItems)
+      .set({ ...item, updatedAt: new Date() })
+      .where(eq(serviceItems.id, id))
+      .returning();
+    
+    if (!updated) return undefined;
+    
+    // Fetch with product info
+    const [result] = await db
+      .select({
+        id: serviceItems.id,
+        serviceId: serviceItems.serviceId,
+        productId: serviceItems.productId,
+        productName: serviceItems.productName,
+        sku: serviceItems.sku,
+        quantity: serviceItems.quantity,
+        unitPrice: serviceItems.unitPrice,
+        totalPrice: serviceItems.totalPrice,
+        createdAt: serviceItems.createdAt,
+        updatedAt: serviceItems.updatedAt,
+        product: products
+      })
+      .from(serviceItems)
+      .leftJoin(products, eq(serviceItems.productId, products.id))
+      .where(eq(serviceItems.id, id));
+    
+    return {
+      ...result,
+      product: result.product || undefined
+    };
+  }
+
+  async deleteServiceItem(id: string): Promise<void> {
+    await db.delete(serviceItems).where(eq(serviceItems.id, id));
   }
 
   async getPreOrders(): Promise<PreOrder[]> {

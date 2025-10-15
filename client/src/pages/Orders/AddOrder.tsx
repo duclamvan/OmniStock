@@ -57,7 +57,8 @@ import {
   Loader2,
   Upload,
   Download,
-  Pencil
+  Pencil,
+  Wrench
 } from "lucide-react";
 import MarginPill from "@/components/orders/MarginPill";
 import {
@@ -97,7 +98,8 @@ const addOrderSchema = z.object({
 
 interface OrderItem {
   id: string;
-  productId: string;
+  productId?: string;
+  serviceId?: string;
   productName: string;
   sku: string;
   quantity: number;
@@ -427,6 +429,12 @@ export default function AddOrder() {
     staleTime: 5 * 60 * 1000, // 5 minutes - products don't change frequently
   });
 
+  // Fetch all services for real-time filtering
+  const { data: allServices } = useQuery({
+    queryKey: ['/api/services'],
+    staleTime: 5 * 60 * 1000, // 5 minutes - services don't change frequently
+  });
+
   // Fetch all customers for real-time filtering
   const { data: allCustomers } = useQuery({
     queryKey: ['/api/customers'],
@@ -735,6 +743,7 @@ export default function AddOrder() {
       
       const items = orderItems.map(item => ({
         productId: item.productId,
+        serviceId: item.serviceId,
         productName: item.productName,
         sku: item.sku,
         quantity: item.quantity,
@@ -776,84 +785,120 @@ export default function AddOrder() {
   };
 
   const addProductToOrder = async (product: any) => {
-    const existingItem = orderItems.find(item => item.productId === product.id);
+    // Check if this is a service
+    if (product.isService) {
+      // Check if service already exists in order
+      const existingItem = orderItems.find(item => item.serviceId === product.id);
 
-    if (existingItem) {
-      setOrderItems(items =>
-        items.map(item =>
-          item.productId === product.id
-            ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * item.price }
-            : item
-        )
-      );
+      if (existingItem) {
+        setOrderItems(items =>
+          items.map(item =>
+            item.serviceId === product.id
+              ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * item.price }
+              : item
+          )
+        );
+      } else {
+        const servicePrice = parseFloat(product.totalCost || '0');
+        const newItem: OrderItem = {
+          id: Math.random().toString(36).substr(2, 9),
+          serviceId: product.id,
+          productName: product.name,
+          sku: 'SERVICE',
+          quantity: 1,
+          price: servicePrice,
+          discount: 0,
+          tax: 0,
+          total: servicePrice,
+        };
+        setOrderItems(items => [...items, newItem]);
+        // Auto-focus quantity input for the newly added item
+        setTimeout(() => {
+          const quantityInput = document.querySelector(`[data-testid="input-quantity-${newItem.id}"]`) as HTMLInputElement;
+          quantityInput?.focus();
+        }, 100);
+      }
     } else {
-      // Get the price based on the selected currency
-      const selectedCurrency = form.watch('currency') || 'EUR';
-      let productPrice = 0;
+      // Handle regular product
+      const existingItem = orderItems.find(item => item.productId === product.id);
 
-      // Check for customer-specific pricing if a customer is selected
-      if (selectedCustomer?.id) {
-        try {
-          const response = await fetch(`/api/customers/${selectedCustomer.id}/prices`);
-          if (response.ok) {
-            const customerPrices = await response.json();
-            const today = new Date();
+      if (existingItem) {
+        setOrderItems(items =>
+          items.map(item =>
+            item.productId === product.id
+              ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * item.price }
+              : item
+          )
+        );
+      } else {
+        // Get the price based on the selected currency
+        const selectedCurrency = form.watch('currency') || 'EUR';
+        let productPrice = 0;
 
-            // Find applicable customer price for this product and currency
-            const applicablePrice = customerPrices.find((cp: any) => {
-              const validFrom = new Date(cp.validFrom);
-              const validTo = cp.validTo ? new Date(cp.validTo) : null;
+        // Check for customer-specific pricing if a customer is selected
+        if (selectedCustomer?.id) {
+          try {
+            const response = await fetch(`/api/customers/${selectedCustomer.id}/prices`);
+            if (response.ok) {
+              const customerPrices = await response.json();
+              const today = new Date();
 
-              return cp.productId === product.id &&
-                     cp.currency === selectedCurrency &&
-                     cp.isActive &&
-                     validFrom <= today &&
-                     (!validTo || validTo >= today);
-            });
+              // Find applicable customer price for this product and currency
+              const applicablePrice = customerPrices.find((cp: any) => {
+                const validFrom = new Date(cp.validFrom);
+                const validTo = cp.validTo ? new Date(cp.validTo) : null;
 
-            if (applicablePrice) {
-              productPrice = parseFloat(applicablePrice.price);
-              toast({
-                title: "Customer Price Applied",
-                description: `Using customer-specific price: ${productPrice} ${selectedCurrency}`,
+                return cp.productId === product.id &&
+                       cp.currency === selectedCurrency &&
+                       cp.isActive &&
+                       validFrom <= today &&
+                       (!validTo || validTo >= today);
               });
+
+              if (applicablePrice) {
+                productPrice = parseFloat(applicablePrice.price);
+                toast({
+                  title: "Customer Price Applied",
+                  description: `Using customer-specific price: ${productPrice} ${selectedCurrency}`,
+                });
+              }
             }
+          } catch (error) {
+            console.error('Error fetching customer prices:', error);
           }
-        } catch (error) {
-          console.error('Error fetching customer prices:', error);
         }
-      }
 
-      // If no customer price found, use default product price
-      if (productPrice === 0) {
-        if (selectedCurrency === 'CZK' && product.priceCzk) {
-          productPrice = parseFloat(product.priceCzk);
-        } else if (selectedCurrency === 'EUR' && product.priceEur) {
-          productPrice = parseFloat(product.priceEur);
-        } else {
-          // Fallback to any available price if specific currency price is not available
-          productPrice = parseFloat(product.priceEur || product.priceCzk || '0');
+        // If no customer price found, use default product price
+        if (productPrice === 0) {
+          if (selectedCurrency === 'CZK' && product.priceCzk) {
+            productPrice = parseFloat(product.priceCzk);
+          } else if (selectedCurrency === 'EUR' && product.priceEur) {
+            productPrice = parseFloat(product.priceEur);
+          } else {
+            // Fallback to any available price if specific currency price is not available
+            productPrice = parseFloat(product.priceEur || product.priceCzk || '0');
+          }
         }
-      }
 
-      const newItem: OrderItem = {
-        id: Math.random().toString(36).substr(2, 9),
-        productId: product.id,
-        productName: product.name,
-        sku: product.sku,
-        quantity: 1,
-        price: productPrice,
-        discount: 0,
-        tax: 0,
-        total: productPrice,
-        landingCost: product.landingCost || product.latestLandingCost || null,
-      };
-      setOrderItems(items => [...items, newItem]);
-      // Auto-focus quantity input for the newly added item
-      setTimeout(() => {
-        const quantityInput = document.querySelector(`[data-testid="input-quantity-${newItem.id}"]`) as HTMLInputElement;
-        quantityInput?.focus();
-      }, 100);
+        const newItem: OrderItem = {
+          id: Math.random().toString(36).substr(2, 9),
+          productId: product.id,
+          productName: product.name,
+          sku: product.sku,
+          quantity: 1,
+          price: productPrice,
+          discount: 0,
+          tax: 0,
+          total: productPrice,
+          landingCost: product.landingCost || product.latestLandingCost || null,
+        };
+        setOrderItems(items => [...items, newItem]);
+        // Auto-focus quantity input for the newly added item
+        setTimeout(() => {
+          const quantityInput = document.querySelector(`[data-testid="input-quantity-${newItem.id}"]`) as HTMLInputElement;
+          quantityInput?.focus();
+        }, 100);
+      }
     }
     setProductSearch("");
     setShowProductDropdown(false);
@@ -951,6 +996,7 @@ export default function AddOrder() {
       actualShippingCost: (data.actualShippingCost || 0).toString(),
       items: orderItems.map(item => ({
         productId: item.productId,
+        serviceId: item.serviceId,
         productName: item.productName,
         sku: item.sku,
         quantity: item.quantity,
@@ -986,74 +1032,101 @@ export default function AddOrder() {
     return frequency;
   }, [allOrders]);
 
-  // Filter products with Vietnamese search, grouped by category, ordered by frequency (memoized for performance)
+  // Filter products and services with Vietnamese search, grouped by category, ordered by frequency (memoized for performance)
   const filteredProducts = useMemo(() => {
-    if (!Array.isArray(allProducts)) return [];
+    const categorizedItems: Array<{ category: string; products: any[]; isService?: boolean }> = [];
+    let totalItemsCount = 0;
+    const maxTotalItems = 20; // Limit total items shown
 
-    // If there's a search query, filter products
-    let products = allProducts;
-    if (debouncedProductSearch && debouncedProductSearch.length >= 2) {
-      const matcher = createVietnameseSearchMatcher(debouncedProductSearch);
-      products = allProducts.filter((product: any) => {
-        return matcher(product.name) || 
-               matcher(product.sku) || 
-               matcher(product.description || '') ||
-               matcher(product.categoryName || '');
-      });
-    }
-
-    // Group products by category
-    const groupedByCategory: Record<string, any[]> = {};
-    products.forEach((product: any) => {
-      const categoryName = product.categoryName || 'Uncategorized';
-      if (!groupedByCategory[categoryName]) {
-        groupedByCategory[categoryName] = [];
-      }
-      groupedByCategory[categoryName].push(product);
-    });
-
-    // Sort products within each category by frequency (descending), then alphabetically by name
-    Object.keys(groupedByCategory).forEach(categoryName => {
-      groupedByCategory[categoryName].sort((a, b) => {
-        const freqA = productFrequency[a.id] || 0;
-        const freqB = productFrequency[b.id] || 0;
-        
-        if (freqB !== freqA) {
-          return freqB - freqA; // Higher frequency first
-        }
-        
-        // If same frequency, sort alphabetically
-        return a.name.localeCompare(b.name);
-      });
-    });
-
-    // Convert to array of { category, products } and limit total products
-    const categorizedProducts: Array<{ category: string; products: any[] }> = [];
-    let totalProductsCount = 0;
-    const maxTotalProducts = 20; // Limit total products shown
-
-    // Sort categories alphabetically
-    const sortedCategories = Object.keys(groupedByCategory).sort();
-
-    for (const categoryName of sortedCategories) {
-      const categoryProducts = groupedByCategory[categoryName];
-      const remainingSlots = maxTotalProducts - totalProductsCount;
-      
-      if (remainingSlots <= 0) break;
-
-      const productsToShow = categoryProducts.slice(0, Math.min(categoryProducts.length, remainingSlots));
-      
-      if (productsToShow.length > 0) {
-        categorizedProducts.push({
-          category: categoryName,
-          products: productsToShow
+    // Process products
+    if (Array.isArray(allProducts)) {
+      let products = allProducts;
+      if (debouncedProductSearch && debouncedProductSearch.length >= 2) {
+        const matcher = createVietnameseSearchMatcher(debouncedProductSearch);
+        products = allProducts.filter((product: any) => {
+          return matcher(product.name) || 
+                 matcher(product.sku) || 
+                 matcher(product.description || '') ||
+                 matcher(product.categoryName || '');
         });
-        totalProductsCount += productsToShow.length;
+      }
+
+      // Group products by category
+      const groupedByCategory: Record<string, any[]> = {};
+      products.forEach((product: any) => {
+        const categoryName = product.categoryName || 'Uncategorized';
+        if (!groupedByCategory[categoryName]) {
+          groupedByCategory[categoryName] = [];
+        }
+        groupedByCategory[categoryName].push(product);
+      });
+
+      // Sort products within each category by frequency (descending), then alphabetically by name
+      Object.keys(groupedByCategory).forEach(categoryName => {
+        groupedByCategory[categoryName].sort((a, b) => {
+          const freqA = productFrequency[a.id] || 0;
+          const freqB = productFrequency[b.id] || 0;
+          
+          if (freqB !== freqA) {
+            return freqB - freqA; // Higher frequency first
+          }
+          
+          return a.name.localeCompare(b.name);
+        });
+      });
+
+      // Sort categories alphabetically
+      const sortedCategories = Object.keys(groupedByCategory).sort();
+
+      for (const categoryName of sortedCategories) {
+        const categoryProducts = groupedByCategory[categoryName];
+        const remainingSlots = maxTotalItems - totalItemsCount;
+        
+        if (remainingSlots <= 0) break;
+
+        const productsToShow = categoryProducts.slice(0, Math.min(categoryProducts.length, remainingSlots));
+        
+        if (productsToShow.length > 0) {
+          categorizedItems.push({
+            category: categoryName,
+            products: productsToShow,
+            isService: false
+          });
+          totalItemsCount += productsToShow.length;
+        }
       }
     }
 
-    return categorizedProducts;
-  }, [allProducts, debouncedProductSearch, productFrequency]);
+    // Process services
+    if (Array.isArray(allServices) && totalItemsCount < maxTotalItems) {
+      let services = allServices;
+      if (debouncedProductSearch && debouncedProductSearch.length >= 2) {
+        const matcher = createVietnameseSearchMatcher(debouncedProductSearch);
+        services = allServices.filter((service: any) => {
+          return matcher(service.name) || 
+                 matcher(service.description || '');
+        });
+      }
+
+      const remainingSlots = maxTotalItems - totalItemsCount;
+      const servicesToShow = services.slice(0, Math.min(services.length, remainingSlots));
+      
+      if (servicesToShow.length > 0) {
+        categorizedItems.push({
+          category: 'Services',
+          products: servicesToShow.map((service: any) => ({
+            ...service,
+            isService: true,
+            // Format display name to include price
+            displayName: `${service.name} - €${Number(service.totalCost || 0).toFixed(2)}`
+          })),
+          isService: true
+        });
+      }
+    }
+
+    return categorizedItems;
+  }, [allProducts, allServices, debouncedProductSearch, productFrequency]);
 
   // Filter customers with Vietnamese search (memoized for performance)
   const filteredCustomers = useMemo(() => {
@@ -2070,9 +2143,10 @@ export default function AddOrder() {
                       <div className="bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700 sticky top-8 z-10 border-b border-slate-200">
                         {categoryGroup.category}
                       </div>
-                      {/* Products in Category */}
+                      {/* Products/Services in Category */}
                       {categoryGroup.products.map((product: any) => {
                         const frequency = productFrequency[product.id] || 0;
+                        const isService = product.isService || categoryGroup.isService;
                         return (
                           <button
                             type="button"
@@ -2081,41 +2155,60 @@ export default function AddOrder() {
                             onClick={() => {
                               addProductToOrder(product);
                             }}
-                            data-testid={`product-item-${product.id}`}
+                            data-testid={`${isService ? 'service' : 'product'}-item-${product.id}`}
                           >
                             <div className="flex items-center justify-between">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2">
+                                  {isService && <Wrench className="h-4 w-4 text-orange-500" />}
                                   <div className="font-medium text-slate-900">{product.name}</div>
-                                  {frequency > 0 && (
+                                  {isService && (
+                                    <Badge variant="outline" className="text-xs px-1.5 py-0 border-orange-500 text-orange-600">
+                                      Service
+                                    </Badge>
+                                  )}
+                                  {!isService && frequency > 0 && (
                                     <Badge variant="secondary" className="text-xs px-1.5 py-0">
                                       {frequency}x
                                     </Badge>
                                   )}
                                 </div>
-                                <div className="text-sm text-slate-500">SKU: {product.sku}</div>
+                                {!isService && (
+                                  <div className="text-sm text-slate-500">SKU: {product.sku}</div>
+                                )}
+                                {isService && product.description && (
+                                  <div className="text-sm text-slate-500">{product.description}</div>
+                                )}
                               </div>
                               <div className="text-right ml-4">
                                 <div className="font-medium text-slate-900">
-                                  {(() => {
-                                    const selectedCurrency = form.watch('currency') || 'EUR';
-                                    let price = 0;
-                                    if (selectedCurrency === 'CZK' && product.priceCzk) {
-                                      price = parseFloat(product.priceCzk);
-                                    } else if (selectedCurrency === 'EUR' && product.priceEur) {
-                                      price = parseFloat(product.priceEur);
-                                    } else {
-                                      // Fallback to any available price
-                                      price = parseFloat(product.priceEur || product.priceCzk || '0');
-                                    }
-                                    return formatCurrency(price, selectedCurrency);
-                                  })()}
+                                  {isService ? (
+                                    formatCurrency(parseFloat(product.totalCost || '0'), 'EUR')
+                                  ) : (
+                                    (() => {
+                                      const selectedCurrency = form.watch('currency') || 'EUR';
+                                      let price = 0;
+                                      if (selectedCurrency === 'CZK' && product.priceCzk) {
+                                        price = parseFloat(product.priceCzk);
+                                      } else if (selectedCurrency === 'EUR' && product.priceEur) {
+                                        price = parseFloat(product.priceEur);
+                                      } else {
+                                        // Fallback to any available price
+                                        price = parseFloat(product.priceEur || product.priceCzk || '0');
+                                      }
+                                      return formatCurrency(price, selectedCurrency);
+                                    })()
+                                  )}
                                 </div>
-                                <div className="text-sm text-slate-500">
-                                  Stock: {product.stockQuantity || 0}
-                                </div>
-                                {product.warehouseName && (
-                                  <div className="text-xs text-slate-400">{product.warehouseName}</div>
+                                {!isService && (
+                                  <>
+                                    <div className="text-sm text-slate-500">
+                                      Stock: {product.stockQuantity || 0}
+                                    </div>
+                                    {product.warehouseName && (
+                                      <div className="text-xs text-slate-400">{product.warehouseName}</div>
+                                    )}
+                                  </>
                                 )}
                               </div>
                             </div>
@@ -2215,11 +2308,19 @@ export default function AddOrder() {
                           >
                             <TableCell className="py-3">
                               <div className="flex flex-col gap-1">
-                                <span className="font-medium text-slate-900 dark:text-slate-100">
-                                  {item.productName}
-                                </span>
+                                <div className="flex items-center gap-2">
+                                  {item.serviceId && <Wrench className="h-4 w-4 text-orange-500" />}
+                                  <span className="font-medium text-slate-900 dark:text-slate-100">
+                                    {item.productName}
+                                  </span>
+                                  {item.serviceId && (
+                                    <Badge variant="outline" className="text-xs px-1.5 py-0 border-orange-500 text-orange-600">
+                                      Service
+                                    </Badge>
+                                  )}
+                                </div>
                                 <span className="text-xs text-slate-500 dark:text-slate-400">
-                                  SKU: {item.sku}
+                                  {item.serviceId ? 'Service Item' : `SKU: ${item.sku}`}
                                 </span>
                               </div>
                             </TableCell>

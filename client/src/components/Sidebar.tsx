@@ -15,7 +15,8 @@ import {
   Ship,
   FileText,
   Globe,
-  PackageCheck
+  PackageCheck,
+  Wrench
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -67,6 +68,11 @@ const navigation = [
     name: "Files",
     href: "/files",
     icon: FileText,
+  },
+  {
+    name: "Services",
+    href: "/services",
+    icon: Wrench,
   },
   {
     name: "Imports",

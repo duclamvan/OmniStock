@@ -43,7 +43,8 @@ import AllExpenses from "@/pages/Expenses/AllExpenses";
 import AddExpense from "@/pages/Expenses/AddExpense";
 import EditExpense from "@/pages/Expenses/EditExpense";
 import ExpenseDetails from "@/pages/Expenses/ExpenseDetails";
-import Services from "@/pages/Services";
+import Services from "@/pages/Services/Services";
+import AddService from "@/pages/Services/AddService";
 import POS from "@/pages/POS/POS";
 import AllPreOrders from "@/pages/PreOrders/AllPreOrders";
 import AddPreOrder from "@/pages/PreOrders/AddPreOrder";
@@ -158,6 +159,8 @@ function Router() {
         <Route path="/expenses/edit/:id" component={EditExpense} />
         <Route path="/expenses/:id" component={ExpenseDetails} />
         <Route path="/services" component={Services} />
+        <Route path="/services/add" component={AddService} />
+        <Route path="/services/:id/edit" component={AddService} />
         <Route path="/pos" component={POS} />
         <Route path="/shipping" component={ShippingManagement} />
         <Route path="/files" component={Files} />

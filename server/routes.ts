@@ -21,6 +21,7 @@ import {
   insertDiscountSchema,
   insertExpenseSchema,
   insertServiceSchema,
+  insertServiceItemSchema,
   insertUserActivitySchema,
   insertPreOrderSchema,
   insertPreOrderItemSchema,
@@ -4040,6 +4041,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const orderItem = {
             orderId: order.id,
             productId: item.productId,
+            serviceId: item.serviceId,
             productName: item.productName,
             sku: item.sku,
             quantity: item.quantity || 1,
@@ -4712,34 +4714,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/services/:id', async (req, res) => {
+    try {
+      const service = await storage.getServiceById(req.params.id);
+      if (!service) {
+        return res.status(404).json({ message: "Service not found" });
+      }
+      
+      const items = await storage.getServiceItems(req.params.id);
+      res.json({ ...service, items });
+    } catch (error) {
+      console.error("Error fetching service:", error);
+      res.status(500).json({ message: "Failed to fetch service" });
+    }
+  });
+
   app.post('/api/services', async (req: any, res) => {
     try {
-      const data = insertServiceSchema.parse(req.body);
-      const service = await storage.createService(data);
-      res.json(service);
+      // Validate service data
+      const serviceData = insertServiceSchema.parse(req.body.service || req.body);
+      
+      // Validate items array
+      const items = z.array(insertServiceItemSchema).parse(req.body.items || []);
+      
+      // Create service with items in transaction
+      const service = await storage.createService(serviceData, items);
+      
+      // Fetch items to return complete service
+      const serviceItems = await storage.getServiceItems(service.id);
+      
+      res.status(201).json({ ...service, items: serviceItems });
     } catch (error) {
       console.error("Error creating service:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
       res.status(500).json({ message: "Failed to create service" });
     }
   });
 
   app.patch('/api/services/:id', async (req: any, res) => {
     try {
-      const service = await storage.updateService(req.params.id, req.body);
-      res.json(service);
+      const service = await storage.getServiceById(req.params.id);
+      if (!service) {
+        return res.status(404).json({ message: "Service not found" });
+      }
+      
+      const updates = insertServiceSchema.partial().parse(req.body);
+      const updatedService = await storage.updateService(req.params.id, updates);
+      
+      if (!updatedService) {
+        return res.status(404).json({ message: "Service not found" });
+      }
+      
+      res.json(updatedService);
     } catch (error) {
       console.error("Error updating service:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Validation error", errors: error.errors });
+      }
       res.status(500).json({ message: "Failed to update service" });
     }
   });
 
   app.delete('/api/services/:id', async (req: any, res) => {
     try {
+      const service = await storage.getServiceById(req.params.id);
+      if (!service) {
+        return res.status(404).json({ message: "Service not found" });
+      }
+      
       await storage.deleteService(req.params.id);
       res.status(204).send();
     } catch (error) {
       console.error("Error deleting service:", error);
       res.status(500).json({ message: "Failed to delete service" });
+    }
+  });
+
+  app.get('/api/services/:id/items', async (req, res) => {
+    try {
+      const items = await storage.getServiceItems(req.params.id);
+      res.json(items);
+    } catch (error) {
+      console.error("Error fetching service items:", error);
+      res.status(500).json({ message: "Failed to fetch service items" });
     }
   });
 

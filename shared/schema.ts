@@ -548,7 +548,8 @@ export const productFiles = pgTable('product_files', {
 export const orderItems = pgTable('order_items', {
   id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
   orderId: varchar('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
-  productId: varchar('product_id').notNull().references(() => products.id),
+  productId: varchar('product_id').references(() => products.id),
+  serviceId: varchar('service_id').references(() => services.id),
   productName: varchar('product_name'),
   sku: varchar('sku'),
   quantity: integer('quantity').notNull(),
@@ -710,12 +711,29 @@ export const expenses = pgTable('expenses', {
 // Services table for service management (repairs, etc.)
 export const services = pgTable('services', {
   id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  customerId: varchar('customer_id').references(() => customers.id),
   name: varchar('name').notNull(),
   description: text('description'),
-  dueDate: date('due_date'),
-  priceCzk: decimal('price_czk', { precision: 10, scale: 2 }),
-  priceEur: decimal('price_eur', { precision: 10, scale: 2 }),
+  serviceDate: date('service_date'),
+  serviceCost: decimal('service_cost', { precision: 10, scale: 2 }).default('0'),
+  partsCost: decimal('parts_cost', { precision: 10, scale: 2 }).default('0'),
+  totalCost: decimal('total_cost', { precision: 10, scale: 2 }).default('0'),
   status: varchar('status').notNull().default('pending'),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
+
+// Service Items table for tracking parts used in services
+export const serviceItems = pgTable('service_items', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  serviceId: varchar('service_id').notNull().references(() => services.id, { onDelete: 'cascade' }),
+  productId: varchar('product_id').notNull().references(() => products.id),
+  productName: varchar('product_name').notNull(),
+  sku: varchar('sku'),
+  quantity: integer('quantity').notNull(),
+  unitPrice: decimal('unit_price', { precision: 10, scale: 2 }).notNull(),
+  totalPrice: decimal('total_price', { precision: 10, scale: 2 }).notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow()
 });
@@ -992,6 +1010,25 @@ export const productCostHistoryRelations = relations(productCostHistory, ({ one 
   })
 }));
 
+export const servicesRelations = relations(services, ({ one, many }) => ({
+  customer: one(customers, {
+    fields: [services.customerId],
+    references: [customers.id]
+  }),
+  items: many(serviceItems)
+}));
+
+export const serviceItemsRelations = relations(serviceItems, ({ one }) => ({
+  service: one(services, {
+    fields: [serviceItems.serviceId],
+    references: [services.id]
+  }),
+  product: one(products, {
+    fields: [serviceItems.productId],
+    references: [products.id]
+  })
+}));
+
 // Export schemas
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertCategorySchema = createInsertSchema(categories).omit({ id: true, createdAt: true, updatedAt: true });
@@ -1044,6 +1081,7 @@ export const insertPmSupplierSchema = createInsertSchema(pmSuppliers).omit({ id:
 export const insertDiscountSchema = createInsertSchema(discounts).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertExpenseSchema = createInsertSchema(expenses).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertServiceSchema = createInsertSchema(services).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertServiceItemSchema = createInsertSchema(serviceItems).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertPreOrderSchema = createInsertSchema(preOrders).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertPreOrderItemSchema = createInsertSchema(preOrderItems).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertUserActivitySchema = createInsertSchema(userActivities).omit({ id: true, createdAt: true });
@@ -1134,6 +1172,8 @@ export type Expense = typeof expenses.$inferSelect;
 export type InsertExpense = z.infer<typeof insertExpenseSchema>;
 export type Service = typeof services.$inferSelect;
 export type InsertService = z.infer<typeof insertServiceSchema>;
+export type ServiceItem = typeof serviceItems.$inferSelect;
+export type InsertServiceItem = z.infer<typeof insertServiceItemSchema>;
 export type PreOrder = typeof preOrders.$inferSelect;
 export type InsertPreOrder = z.infer<typeof insertPreOrderSchema>;
 export type PreOrderItem = typeof preOrderItems.$inferSelect;
