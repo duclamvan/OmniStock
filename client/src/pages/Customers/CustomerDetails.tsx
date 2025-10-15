@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link } from "wouter";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   ArrowLeft, 
   Edit, 
@@ -33,15 +33,23 @@ import {
   CheckCircle,
   File,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Maximize2,
+  Minimize2
 } from "lucide-react";
 import { formatCurrency } from "@/lib/currencyUtils";
 import { CustomerPrices } from "./CustomerPrices";
+
+const EXPAND_ALL_KEY = 'customerOrdersExpandAll';
 
 export default function CustomerDetails() {
   const { id } = useParams();
   const [, navigate] = useLocation();
   const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>({});
+  const [expandAll, setExpandAll] = useState<boolean>(() => {
+    const saved = localStorage.getItem(EXPAND_ALL_KEY);
+    return saved === 'true';
+  });
 
   // Fetch customer data
   const { data: customer, isLoading: customerLoading } = useQuery<any>({
@@ -56,6 +64,30 @@ export default function CustomerDetails() {
   });
 
   const isLoading = customerLoading || ordersLoading;
+
+  // Update expanded orders when orders change or expandAll changes
+  useEffect(() => {
+    if (orders.length > 0) {
+      if (expandAll) {
+        // Expand all orders
+        const allExpanded: Record<string, boolean> = {};
+        orders.forEach(order => {
+          allExpanded[order.id] = true;
+        });
+        setExpandedOrders(allExpanded);
+      } else {
+        // Collapse all orders
+        setExpandedOrders({});
+      }
+    }
+  }, [orders, expandAll]);
+
+  // Save expandAll preference to localStorage
+  const handleToggleExpandAll = () => {
+    const newValue = !expandAll;
+    setExpandAll(newValue);
+    localStorage.setItem(EXPAND_ALL_KEY, String(newValue));
+  };
 
   if (isLoading) {
     return (
@@ -472,6 +504,27 @@ export default function CustomerDetails() {
                     <Package className="h-5 w-5 text-blue-600" />
                     Order History ({orders.length})
                   </CardTitle>
+                  {orders.length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleToggleExpandAll}
+                      className="gap-2"
+                      data-testid="button-toggleExpandAll"
+                    >
+                      {expandAll ? (
+                        <>
+                          <Minimize2 className="h-4 w-4" />
+                          <span className="hidden sm:inline">Collapse All</span>
+                        </>
+                      ) : (
+                        <>
+                          <Maximize2 className="h-4 w-4" />
+                          <span className="hidden sm:inline">Expand All</span>
+                        </>
+                      )}
+                    </Button>
+                  )}
                 </div>
               </CardHeader>
               <CardContent>
