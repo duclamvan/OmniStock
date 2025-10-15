@@ -718,7 +718,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/suppliers/:id', async (req, res) => {
     try {
-      const supplier = await storage.getSupplierById(req.params.id);
+      const supplier = await storage.getSupplier(req.params.id);
       if (!supplier) {
         return res.status(404).json({ message: "Supplier not found" });
       }
@@ -779,7 +779,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete('/api/suppliers/:id', async (req: any, res) => {
     try {
-      const supplier = await storage.getSupplierById(req.params.id);
+      const supplier = await storage.getSupplier(req.params.id);
       if (!supplier) {
         return res.status(404).json({ message: "Supplier not found" });
       }
@@ -812,8 +812,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Supplier Files endpoints
   app.get('/api/suppliers/:id/files', async (req, res) => {
     try {
-      const files = await storage.getSupplierFiles(req.params.id);
-      res.json(files);
+      // TODO: Implement supplier files feature
+      res.json([]);
     } catch (error) {
       console.error("Error fetching supplier files:", error);
       res.status(500).json({ message: "Failed to fetch supplier files" });
