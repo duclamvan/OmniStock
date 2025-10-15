@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -28,7 +28,8 @@ import {
   CheckCircle2,
   AlertCircle,
   Clock,
-  Euro
+  Euro,
+  Scan
 } from "lucide-react";
 import { format } from "date-fns";
 import {
@@ -76,6 +77,8 @@ export default function AddReturn() {
   const [orderSearchOpen, setOrderSearchOpen] = useState(false);
   const [productSearchOpen, setProductSearchOpen] = useState<number | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [barcodeInput, setBarcodeInput] = useState("");
+  const barcodeInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch customers
   const { data: customers = [] } = useQuery<any[]>({
@@ -88,9 +91,10 @@ export default function AddReturn() {
   });
 
   // Fetch products
-  const { data: products = [] } = useQuery<any[]>({
+  const productsQuery = useQuery<any[]>({
     queryKey: ['/api/products'],
   });
+  const products = productsQuery.data || [];
 
   const form = useForm<ReturnFormData>({
     resolver: zodResolver(returnSchema),
@@ -277,6 +281,109 @@ export default function AddReturn() {
       form.setValue(`items.${index}.price`, parseFloat(product.sellingPriceEur || "0"));
     }
     setProductSearchOpen(null);
+  };
+
+  const playSound = (frequency: number, duration: number) => {
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = frequency;
+      oscillator.type = 'sine';
+      
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + duration / 1000);
+    } catch (error) {
+      console.error('Error playing sound:', error);
+    }
+  };
+
+  const handleBarcodeScan = (barcode: string) => {
+    // Trim and clean the input
+    const cleanBarcode = barcode.trim();
+    
+    // Handle empty barcodes
+    if (!cleanBarcode) {
+      return;
+    }
+
+    // Check if products are still loading
+    if (productsQuery.isLoading) {
+      toast({
+        title: "Please wait, loading products...",
+        description: "Products are still being loaded",
+      });
+      return;
+    }
+
+    // Search for product by barcode or SKU
+    const product = products.find((p: any) => 
+      p.barcode === cleanBarcode || p.sku === cleanBarcode
+    );
+
+    if (product) {
+      // Play success sound
+      playSound(440, 100);
+      
+      // Check if product already exists in items
+      const existingItemIndex = fields.findIndex((field, idx) => 
+        form.watch(`items.${idx}.productId`) === product.id
+      );
+
+      if (existingItemIndex >= 0) {
+        // Increment quantity if product exists
+        const currentQuantity = form.watch(`items.${existingItemIndex}.quantity`) || 0;
+        form.setValue(`items.${existingItemIndex}.quantity`, currentQuantity + 1);
+        
+        toast({
+          title: "Product added",
+          description: `${product.name} - Quantity: ${currentQuantity + 1}`,
+        });
+      } else {
+        // Add new item if product doesn't exist
+        append({
+          productId: product.id,
+          productName: product.name,
+          sku: product.sku || "",
+          quantity: 1,
+          price: parseFloat(product.priceEur || product.sellingPriceEur || "0"),
+        });
+        
+        toast({
+          title: "Product added",
+          description: product.name,
+        });
+      }
+
+      // Clear input and keep focus
+      setBarcodeInput("");
+      setTimeout(() => {
+        barcodeInputRef.current?.focus();
+      }, 50);
+    } else {
+      // Play error sound
+      playSound(200, 150);
+      
+      // Product not found
+      toast({
+        title: "Product not found",
+        description: `Product not found with barcode: ${cleanBarcode}`,
+        variant: "destructive",
+      });
+      
+      // Clear input and keep focus
+      setBarcodeInput("");
+      setTimeout(() => {
+        barcodeInputRef.current?.focus();
+      }, 50);
+    }
   };
 
   const selectedCustomer = customers.find((c: any) => c.id === watchCustomerId);
@@ -614,6 +721,78 @@ export default function AddReturn() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Barcode Scanner Section */}
+                <div className={cn(
+                  "border-2 rounded-lg p-4 transition-all",
+                  productsQuery.isLoading 
+                    ? "border-gray-300 bg-gray-50/50 dark:bg-gray-900/20 opacity-60" 
+                    : "border-blue-500 bg-blue-50/50 dark:bg-blue-950/20"
+                )}>
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "flex items-center justify-center w-10 h-10 rounded-full text-white shrink-0",
+                      productsQuery.isLoading ? "bg-gray-400" : "bg-blue-500"
+                    )}>
+                      <Scan className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Label htmlFor="barcode-scan" className={cn(
+                          "text-sm font-semibold",
+                          productsQuery.isLoading 
+                            ? "text-gray-500 dark:text-gray-400" 
+                            : "text-blue-700 dark:text-blue-300"
+                        )}>
+                          Quick Add by Barcode
+                        </Label>
+                        {productsQuery.isLoading && (
+                          <Badge variant="secondary" className="text-xs">
+                            Loading products...
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="relative">
+                        <Input
+                          ref={barcodeInputRef}
+                          id="barcode-scan"
+                          type="text"
+                          value={barcodeInput}
+                          onChange={(e) => setBarcodeInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleBarcodeScan(barcodeInput);
+                            }
+                          }}
+                          placeholder={productsQuery.isLoading ? "Loading products..." : "Scan barcode or enter SKU..."}
+                          className={cn(
+                            "h-11 pr-10",
+                            productsQuery.isLoading 
+                              ? "border-gray-300 bg-gray-100 dark:bg-gray-800 cursor-not-allowed" 
+                              : "border-blue-300 focus:border-blue-500 focus:ring-blue-500"
+                          )}
+                          disabled={productsQuery.isLoading}
+                          data-testid="input-barcode-scan"
+                        />
+                        <div className={cn(
+                          "absolute right-3 top-1/2 -translate-y-1/2",
+                          productsQuery.isLoading ? "text-gray-400" : "text-blue-400"
+                        )}>
+                          <Search className="h-4 w-4" />
+                        </div>
+                      </div>
+                      <p className={cn(
+                        "text-xs mt-1",
+                        productsQuery.isLoading 
+                          ? "text-gray-500 dark:text-gray-400" 
+                          : "text-blue-600 dark:text-blue-400"
+                      )}>
+                        {productsQuery.isLoading ? "Please wait for products to load..." : "Press Enter to add product"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 {fields.length === 0 ? (
                   <div className="text-center py-12 bg-muted/50 rounded-lg">
                     <Package className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
