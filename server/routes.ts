@@ -6178,14 +6178,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const prompt = `You are an address parsing engine. Extract contact and address information from the text below.
 
-IMPORTANT NAME PARSING RULES:
-- For Vietnamese names (family name comes FIRST in Vietnamese culture):
+IMPORTANT NAME AND COMPANY PARSING RULES:
+- **Detect business/company names by keywords**: Nail, Salon, Spa, Shop, Store, Studio, Beauty, Hair, Massage, Restaurant, Cafe, Bar, Boutique, etc.
+- **When a line contains BOTH a person name AND business keywords**:
+  * Separate the person name from the company name
+  * Example: "Van Hang Bui Rosa Nail" → firstName: "Van Hang", lastName: "Bui", company: "Rosa Nail"
+  * Example: "Nguyen Thi Mai Nail Studio" → firstName: "Thi Mai", lastName: "Nguyen", company: "Nail Studio"
+
+- **For Vietnamese names** (family name comes FIRST):
+  * Common family names: Nguyen, Tran, Le, Pham, Hoang, Phan, Vu, Vo, Dang, Bui, Do, Ho, Ngo, Duong, Ly, Phung, Trinh, Dinh, Mai, Cao, Lam
   * The FIRST word is the lastName (family name)
-  * All remaining words are the firstName (given name)
+  * Words after family name but BEFORE business keywords are firstName (given name)
+  * Example: "Van Hang Bui" → lastName: "Bui", firstName: "Van Hang" (Bui is a family name)
   * Example: "Phung Thi Hong Tham" → lastName: "Phung", firstName: "Thi Hong Tham"
-  * Example: "Nguyen Van Minh" → lastName: "Nguyen", firstName: "Van Minh"
-- For Western names: First word is firstName, remaining words are lastName
-- Detect Vietnamese names by checking for common family names: Nguyen, Tran, Le, Pham, Hoang, Phan, Vu, Vo, Dang, Bui, Do, Ho, Ngo, Duong, Ly, Phung, Trinh, Dinh, etc.
+
+- **For Western names**: First word is firstName, remaining words (before any company) are lastName
 - Always preserve name capitalization as given
 
 PHONE NUMBER RULES:
