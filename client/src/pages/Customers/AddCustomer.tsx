@@ -10,13 +10,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ArrowLeft, Plus, Trash2, Edit2, Check, X, Loader2, CheckCircle, XCircle, Globe, Building, MapPin, FileText, Truck, ChevronsUpDown, Pin, AlertCircle, Copy } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Edit2, Check, X, Loader2, CheckCircle, XCircle, Globe, Building, MapPin, FileText, Truck, ChevronsUpDown, Pin, AlertCircle, Copy, Receipt } from "lucide-react";
 import { europeanCountries, euCountryCodes, getCountryFlag } from "@/lib/countries";
-import type { Customer, CustomerShippingAddress } from "@shared/schema";
+import type { Customer, CustomerShippingAddress, CustomerBillingAddress } from "@shared/schema";
 import { cn } from "@/lib/utils";
 
 const availableCountries = [
@@ -67,8 +68,26 @@ const shippingAddressSchema = z.object({
   isPrimary: z.boolean().default(false),
 });
 
+const billingAddressSchema = z.object({
+  id: z.string().optional(),
+  label: z.string().optional(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  company: z.string().optional(),
+  email: z.string().email("Invalid email").optional().or(z.literal("")),
+  tel: z.string().optional(),
+  street: z.string().optional(),
+  streetNumber: z.string().optional(),
+  city: z.string().optional(),
+  zipCode: z.string().optional(),
+  country: z.string().optional(),
+  state: z.string().optional(),
+  isPrimary: z.boolean().default(false),
+});
+
 type CustomerFormData = z.infer<typeof customerFormSchema>;
 type ShippingAddressFormData = z.infer<typeof shippingAddressSchema>;
+type BillingAddressFormData = z.infer<typeof billingAddressSchema>;
 
 interface AddressAutocompleteResult {
   displayName: string;
@@ -145,9 +164,25 @@ export default function AddCustomer() {
   const [rawBillingAddress, setRawBillingAddress] = useState("");
   const [isLabelManuallyEdited, setIsLabelManuallyEdited] = useState(false);
 
+  // Billing addresses state (multiple addresses)
+  const [billingAddresses, setBillingAddresses] = useState<BillingAddressFormData[]>([]);
+  const [isAddingBilling, setIsAddingBilling] = useState(false);
+  const [editingBillingIndex, setEditingBillingIndex] = useState<number | null>(null);
+  const [billingAddressQueryAutocomplete, setBillingAddressQueryAutocomplete] = useState("");
+  const [billingAddressSuggestionsAutocomplete, setBillingAddressSuggestionsAutocomplete] = useState<AddressAutocompleteResult[]>([]);
+  const [showBillingAutocompleteDropdown, setShowBillingAutocompleteDropdown] = useState(false);
+  const [isLoadingBillingAddressAutocomplete, setIsLoadingBillingAddressAutocomplete] = useState(false);
+  const [billingCountryQuery, setBillingCountryQuery] = useState("");
+  const [showBillingCountryDropdown, setShowBillingCountryDropdown] = useState(false);
+  const [rawBillingAddressForm, setRawBillingAddressForm] = useState("");
+  const [isBillingLabelManuallyEdited, setIsBillingLabelManuallyEdited] = useState(false);
+  const [deletingBillingAddressId, setDeletingBillingAddressId] = useState<string | null>(null);
+  const [deleteBillingIndex, setDeleteBillingIndex] = useState<number | null>(null);
+
   // Track Smart Paste confidence highlighting
   const [shippingFieldConfidence, setShippingFieldConfidence] = useState<Record<string, string>>({});
   const [billingFieldConfidence, setBillingFieldConfidence] = useState<Record<string, string>>({});
+  const [billingAddressFieldConfidence, setBillingAddressFieldConfidence] = useState<Record<string, string>>({});
 
   const form = useForm<CustomerFormData>({
     resolver: zodResolver(customerFormSchema),
@@ -196,13 +231,37 @@ export default function AddCustomer() {
     },
   });
 
-  const { data: existingCustomer, isLoading: isLoadingCustomer } = useQuery<Customer>({
+  const billingAddressForm = useForm<BillingAddressFormData>({
+    resolver: zodResolver(billingAddressSchema),
+    defaultValues: {
+      label: "",
+      firstName: "",
+      lastName: "",
+      company: "",
+      email: "",
+      tel: "",
+      street: "",
+      streetNumber: "",
+      city: "",
+      zipCode: "",
+      country: "",
+      state: "",
+      isPrimary: false,
+    },
+  });
+
+  const { data: existingCustomer, isLoading: isLoadingCustomer} = useQuery<Customer>({
     queryKey: ['/api/customers', customerId],
     enabled: isEditMode,
   });
 
   const { data: existingShippingAddresses } = useQuery<CustomerShippingAddress[]>({
     queryKey: ['/api/customers', customerId, 'shipping-addresses'],
+    enabled: isEditMode,
+  });
+
+  const { data: existingBillingAddresses } = useQuery<CustomerBillingAddress[]>({
+    queryKey: ['/api/customers', customerId, 'billing-addresses'],
     enabled: isEditMode,
   });
 
@@ -267,6 +326,27 @@ export default function AddCustomer() {
       })));
     }
   }, [existingShippingAddresses]);
+
+  useEffect(() => {
+    if (existingBillingAddresses) {
+      setBillingAddresses(existingBillingAddresses.map(addr => ({
+        id: addr.id,
+        label: addr.label || "",
+        firstName: addr.firstName || "",
+        lastName: addr.lastName || "",
+        company: addr.company || "",
+        email: addr.email || "",
+        tel: addr.tel || "",
+        street: addr.street || "",
+        streetNumber: addr.streetNumber || "",
+        city: addr.city || "",
+        zipCode: addr.zipCode || "",
+        country: addr.country || "",
+        state: addr.state || "",
+        isPrimary: addr.isPrimary || false,
+      })));
+    }
+  }, [existingBillingAddresses]);
 
   const selectedCountry = form.watch('country');
   const nameValue = form.watch('name');
@@ -337,6 +417,59 @@ export default function AddCustomer() {
     isLabelManuallyEdited,
     shippingForm,
     shippingAddresses.length
+  ]);
+
+  // Auto-generate billing address label
+  const billingFirstName = billingAddressForm.watch('firstName');
+  const billingLastName = billingAddressForm.watch('lastName');
+  const billingCompany = billingAddressForm.watch('company');
+  const billingStreet = billingAddressForm.watch('street');
+  const billingStreetNumber = billingAddressForm.watch('streetNumber');
+  const billingCity = billingAddressForm.watch('city');
+  
+  useEffect(() => {
+    if (isBillingLabelManuallyEdited) return;
+    
+    const parts: string[] = [];
+    
+    if (billingCompany?.trim()) {
+      parts.push(billingCompany.trim());
+    } else if (billingFirstName?.trim() || billingLastName?.trim()) {
+      const fullName = [billingFirstName?.trim(), billingLastName?.trim()].filter(Boolean).join(' ');
+      if (fullName) parts.push(fullName);
+    }
+    
+    if (billingStreet?.trim()) {
+      const streetPart = [billingStreet.trim(), billingStreetNumber?.trim()].filter(Boolean).join(' ');
+      if (streetPart) parts.push(streetPart);
+    }
+    
+    if (billingCity?.trim()) {
+      parts.push(billingCity.trim());
+    }
+    
+    let generatedLabel = parts.join(', ');
+    
+    const addressCount = billingAddresses.length + 1;
+    if (generatedLabel) {
+      generatedLabel = `${generatedLabel} (#${addressCount})`;
+    } else {
+      generatedLabel = `Address #${addressCount}`;
+    }
+    
+    if (generatedLabel) {
+      billingAddressForm.setValue('label', generatedLabel);
+    }
+  }, [
+    billingFirstName, 
+    billingLastName, 
+    billingCompany, 
+    billingStreet, 
+    billingStreetNumber, 
+    billingCity,
+    isBillingLabelManuallyEdited,
+    billingAddressForm,
+    billingAddresses.length
   ]);
 
   const debounce = <T extends (...args: any[]) => any>(
@@ -417,6 +550,35 @@ export default function AddCustomer() {
     shippingForm.setValue('state', suggestion.state);
     setShippingAddressQuery(suggestion.displayName);
     setShowShippingDropdown(false);
+  };
+
+  const searchBillingAddressForm = useCallback(
+    debounce(async (query: string) => {
+      if (query.length < 3) {
+        setBillingAddressSuggestionsAutocomplete([]);
+        setShowBillingAutocompleteDropdown(false);
+        return;
+      }
+      setIsLoadingBillingAddressAutocomplete(true);
+      setShowBillingAutocompleteDropdown(true);
+      const results = await fetchAddressAutocomplete(query);
+      setBillingAddressSuggestionsAutocomplete(results);
+      setIsLoadingBillingAddressAutocomplete(false);
+    }, 300),
+    []
+  );
+
+  const selectBillingAddressForm = (suggestion: AddressAutocompleteResult) => {
+    setIsBillingLabelManuallyEdited(false);
+    
+    billingAddressForm.setValue('street', suggestion.street);
+    billingAddressForm.setValue('streetNumber', suggestion.streetNumber);
+    billingAddressForm.setValue('city', suggestion.city);
+    billingAddressForm.setValue('zipCode', suggestion.zipCode);
+    billingAddressForm.setValue('country', suggestion.country);
+    billingAddressForm.setValue('state', suggestion.state);
+    setBillingAddressQueryAutocomplete(suggestion.displayName);
+    setShowBillingAutocompleteDropdown(false);
   };
 
   const handleAresLookup = async (ico: string) => {
@@ -665,6 +827,85 @@ export default function AddCustomer() {
       isPrimary: i === index,
     }));
     setShippingAddresses(updated);
+  };
+
+  // Billing address handlers
+  const handleAddBillingAddress = () => {
+    setIsAddingBilling(true);
+    setIsBillingLabelManuallyEdited(false);
+    
+    setBillingCountryQuery("");
+    setShowBillingCountryDropdown(false);
+    
+    const mainCountryCode = form.getValues('country');
+    const mainCountryName = mainCountryCode 
+      ? availableCountries.find(c => c.code === mainCountryCode)?.name || ''
+      : '';
+    
+    billingAddressForm.reset({
+      label: "",
+      firstName: form.getValues('billingFirstName') || "",
+      lastName: form.getValues('billingLastName') || "",
+      company: form.getValues('billingCompany') || "",
+      email: form.getValues('billingEmail') || "",
+      tel: form.getValues('billingTel') || "",
+      street: "",
+      streetNumber: "",
+      city: "",
+      zipCode: "",
+      country: mainCountryName || form.getValues('billingCountry') || "",
+      state: "",
+      isPrimary: billingAddresses.length === 0,
+    });
+  };
+
+  const handleSaveBillingAddress = (data: BillingAddressFormData) => {
+    if (editingBillingIndex !== null) {
+      const updated = [...billingAddresses];
+      updated[editingBillingIndex] = data;
+      setBillingAddresses(updated);
+      setEditingBillingIndex(null);
+    } else {
+      setBillingAddresses([...billingAddresses, data]);
+    }
+    
+    setIsAddingBilling(false);
+    setIsBillingLabelManuallyEdited(false);
+    billingAddressForm.reset();
+  };
+
+  const handleEditBillingAddress = (index: number) => {
+    setEditingBillingIndex(index);
+    setIsBillingLabelManuallyEdited(true);
+    
+    setBillingCountryQuery("");
+    setShowBillingCountryDropdown(false);
+    
+    billingAddressForm.reset(billingAddresses[index]);
+    setIsAddingBilling(true);
+  };
+
+  const handleDeleteBillingAddress = (index: number) => {
+    const updated = billingAddresses.filter((_, i) => i !== index);
+    if (billingAddresses[index].isPrimary && updated.length > 0) {
+      updated[0].isPrimary = true;
+    }
+    setBillingAddresses(updated);
+  };
+
+  const confirmDeleteBillingAddress = () => {
+    if (deleteBillingIndex !== null) {
+      handleDeleteBillingAddress(deleteBillingIndex);
+      setDeleteBillingIndex(null);
+    }
+  };
+
+  const handleSetBillingPrimary = (index: number) => {
+    const updated = billingAddresses.map((addr, i) => ({
+      ...addr,
+      isPrimary: i === index,
+    }));
+    setBillingAddresses(updated);
   };
 
   const capitalizeWords = (str: string) => {
@@ -1026,6 +1267,102 @@ export default function AddCustomer() {
     },
   });
 
+  const parseBillingAddressFormMutation = useMutation({
+    mutationFn: async (rawAddress: string) => {
+      const res = await apiRequest('POST', '/api/addresses/parse', { rawAddress });
+      return res.json();
+    },
+    onSuccess: (data: { fields: any; confidence: string }) => {
+      const { fields } = data;
+      
+      const filledFields: Record<string, string> = {};
+      
+      let firstName = fields.firstName || '';
+      let lastName = fields.lastName || '';
+      let company = fields.company || '';
+      
+      if (!firstName && !lastName && company) {
+        const companyWords = company.trim().split(/\s+/);
+        
+        if (companyWords.length === 1) {
+          firstName = company;
+          lastName = company;
+        } else {
+          lastName = companyWords[0];
+          firstName = companyWords.slice(1).join(' ');
+        }
+      } else if (firstName || lastName) {
+        const corrected = detectAndCorrectVietnameseName(firstName, lastName);
+        firstName = corrected.firstName;
+        lastName = corrected.lastName;
+      }
+      
+      if (firstName) {
+        const cleanFirstName = removeVietnameseDiacritics(firstName);
+        billingAddressForm.setValue('firstName', capitalizeWords(cleanFirstName));
+        filledFields.firstName = data.confidence;
+      }
+      if (lastName) {
+        const cleanLastName = removeVietnameseDiacritics(lastName);
+        billingAddressForm.setValue('lastName', capitalizeWords(cleanLastName));
+        filledFields.lastName = data.confidence;
+      }
+      if (company) {
+        const cleanCompany = removeVietnameseDiacritics(company);
+        billingAddressForm.setValue('company', cleanCompany);
+        filledFields.company = data.confidence;
+      }
+      if (fields.email) {
+        billingAddressForm.setValue('email', fields.email);
+        filledFields.email = data.confidence;
+      }
+      if (fields.phone) {
+        billingAddressForm.setValue('tel', fields.phone);
+        filledFields.tel = data.confidence;
+      }
+      
+      if (fields.street) {
+        billingAddressForm.setValue('street', capitalizeWords(fields.street));
+        filledFields.street = data.confidence;
+      }
+      if (fields.streetNumber) {
+        billingAddressForm.setValue('streetNumber', fields.streetNumber.toUpperCase());
+        filledFields.streetNumber = data.confidence;
+      }
+      if (fields.city) {
+        billingAddressForm.setValue('city', capitalizeWords(fields.city));
+        filledFields.city = data.confidence;
+      }
+      if (fields.zipCode) {
+        billingAddressForm.setValue('zipCode', fields.zipCode.toUpperCase());
+        filledFields.zipCode = data.confidence;
+      }
+      if (fields.country) {
+        billingAddressForm.setValue('country', capitalizeWords(fields.country));
+        filledFields.country = data.confidence;
+      }
+      if (fields.state) {
+        billingAddressForm.setValue('state', capitalizeWords(fields.state));
+        filledFields.state = data.confidence;
+      }
+      
+      setBillingAddressFieldConfidence(filledFields);
+      
+      toast({
+        title: "Address Parsed",
+        description: `Successfully parsed address with ${data.confidence} confidence`,
+      });
+      setRawBillingAddressForm("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Parse Failed",
+        description: error.message || "Failed to parse address",
+        variant: "destructive",
+      });
+    },
+  });
+
   const createOrUpdateCustomerMutation = useMutation({
     mutationFn: async (data: CustomerFormData) => {
       if (isEditMode) {
@@ -1045,6 +1382,19 @@ export default function AddCustomer() {
           await apiRequest('POST', `/api/customers/${customer.id}/shipping-addresses`, shippingData);
         }
       }
+      
+      for (const billingAddr of billingAddresses) {
+        const billingData = {
+          customerId: customer.id,
+          ...billingAddr,
+        };
+        if (billingAddr.id && isEditMode) {
+          await apiRequest('PATCH', `/api/billing-addresses/${billingAddr.id}`, billingData);
+        } else {
+          await apiRequest('POST', `/api/customers/${customer.id}/billing-addresses`, billingData);
+        }
+      }
+      
       queryClient.invalidateQueries({ queryKey: ['/api/customers'] });
       toast({
         title: "Success",
@@ -1731,6 +2081,414 @@ export default function AddCustomer() {
           </CardContent>
         </Card>
 
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Receipt className="h-5 w-5 text-blue-500" />
+                Billing Addresses
+              </span>
+              {!isAddingBilling && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddBillingAddress}
+                  data-testid="button-addBilling"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Billing Address
+                </Button>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {billingAddresses.map((addr, index) => (
+              <div key={index} className="p-4 border rounded-lg bg-slate-50">
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-semibold">{addr.label}</h4>
+                    {addr.isPrimary && (
+                      <Badge variant="default" data-testid={`badge-billingPrimary-${index}`}>Primary</Badge>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    {!addr.isPrimary && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSetBillingPrimary(index)}
+                        data-testid={`button-setBillingPrimary-${index}`}
+                      >
+                        Set Primary
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditBillingAddress(index)}
+                      data-testid={`button-editBilling-${index}`}
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setDeleteBillingIndex(index)}
+                      data-testid={`button-deleteBilling-${index}`}
+                    >
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="text-sm text-slate-600" data-testid={`text-billingAddress-${index}`}>
+                  {addr.company && <p className="font-medium">{addr.company}</p>}
+                  <p>{addr.firstName} {addr.lastName}</p>
+                  {addr.street && <p>{addr.street} {addr.streetNumber}</p>}
+                  {addr.city && <p>{addr.zipCode} {addr.city}</p>}
+                  {addr.country && <p>{addr.country}</p>}
+                  {addr.tel && <p>Tel: {addr.tel}</p>}
+                  {addr.email && <p>Email: {addr.email}</p>}
+                </div>
+              </div>
+            ))}
+
+            {isAddingBilling && (
+              <div className="p-4 border rounded-lg bg-slate-50">
+                <h4 className="font-semibold mb-4">
+                  {editingBillingIndex !== null ? 'Edit' : 'Add'} Billing Address
+                </h4>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="billingLabel">Label</Label>
+                    <Input
+                      id="billingLabel"
+                      {...billingAddressForm.register('label', {
+                        onChange: () => setIsBillingLabelManuallyEdited(true)
+                      })}
+                      placeholder="Auto-generated from address..."
+                      data-testid="input-billingLabel"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Auto-generated from address fields (editable)
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="rawBillingAddressForm">Smart Paste</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Paste any address info (name, company, email, phone, address) - auto-detects Vietnamese names, converts to English letters, and validates addresses
+                    </p>
+                    <div className="flex gap-2">
+                      <Textarea
+                        id="rawBillingAddressForm"
+                        value={rawBillingAddressForm}
+                        onChange={(e) => setRawBillingAddressForm(e.target.value)}
+                        placeholder="e.g., John Doe, ABC Company, john@example.com, +420123456789, Main Street 123, Prague 110 00, Czech Republic"
+                        className="min-h-[100px]"
+                        data-testid="textarea-rawBillingAddressForm"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={() => parseBillingAddressFormMutation.mutate(rawBillingAddressForm)}
+                      disabled={!rawBillingAddressForm.trim() || parseBillingAddressFormMutation.isPending}
+                      className="w-full"
+                      data-testid="button-parseBillingAddressForm"
+                    >
+                      {parseBillingAddressFormMutation.isPending ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Parsing...
+                        </>
+                      ) : (
+                        'Parse & Fill'
+                      )}
+                    </Button>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="billingAddressAutocomplete">Search Address</Label>
+                    <div className="relative">
+                      <Input
+                        id="billingAddressAutocomplete"
+                        value={billingAddressQuery}
+                        onChange={(e) => {
+                          setBillingAddressQuery(e.target.value);
+                          searchBillingAddress(e.target.value);
+                        }}
+                        placeholder="Start typing to search..."
+                        data-testid="input-billingAddressAutocomplete"
+                      />
+                      {billingAddressQuery && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-1 top-1 h-8 w-8 p-0"
+                          onClick={() => {
+                            setBillingAddressQuery("");
+                            setBillingAddressSuggestions([]);
+                            setShowBillingDropdown(false);
+                          }}
+                          data-testid="button-clearBillingAutocomplete"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {showBillingDropdown && (
+                        <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-72 overflow-y-auto z-50">
+                          {isLoadingBillingAutocomplete ? (
+                            <div className="p-4 text-center" data-testid="text-billingAutocompleteLoading">
+                              <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+                            </div>
+                          ) : billingAddressSuggestions.length > 0 ? (
+                            billingAddressSuggestions.map((suggestion, index) => (
+                              <div
+                                key={index}
+                                className="p-3 hover:bg-slate-100 cursor-pointer border-b last:border-b-0 transition-colors"
+                                onClick={() => selectBillingAddress(suggestion)}
+                                data-testid={`button-billingAddressSuggestion-${index}`}
+                              >
+                                {suggestion.displayName}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="p-4 text-center text-slate-500">No addresses found</div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="billingFirstName">First Name</Label>
+                      <Input
+                        id="billingFirstName"
+                        {...billingAddressForm.register('firstName')}
+                        placeholder="First name"
+                        className={cn(getConfidenceClass('firstName', billingAddressFieldConfidence))}
+                        data-testid="input-billingFirstName"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="billingLastName">Last Name</Label>
+                      <Input
+                        id="billingLastName"
+                        {...billingAddressForm.register('lastName')}
+                        placeholder="Last name"
+                        className={cn(getConfidenceClass('lastName', billingAddressFieldConfidence))}
+                        data-testid="input-billingLastName"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="billingCompany">Company</Label>
+                    <Input
+                      id="billingCompany"
+                      {...billingAddressForm.register('company')}
+                      placeholder="Company name"
+                      className={cn(getConfidenceClass('company', billingAddressFieldConfidence))}
+                      data-testid="input-billingCompany"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="billingEmail">Email</Label>
+                      <Input
+                        id="billingEmail"
+                        type="email"
+                        {...billingAddressForm.register('email')}
+                        placeholder="email@example.com"
+                        className={cn(getConfidenceClass('email', billingAddressFieldConfidence))}
+                        data-testid="input-billingEmail"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="billingTel">Phone</Label>
+                      <Input
+                        id="billingTel"
+                        {...billingAddressForm.register('tel')}
+                        placeholder="+420 123 456 789"
+                        className={cn(getConfidenceClass('tel', billingAddressFieldConfidence))}
+                        data-testid="input-billingTel"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="md:col-span-2">
+                      <Label htmlFor="billingStreet">Street</Label>
+                      <Input
+                        id="billingStreet"
+                        {...billingAddressForm.register('street')}
+                        placeholder="Street name"
+                        className={cn(getConfidenceClass('street', billingAddressFieldConfidence))}
+                        data-testid="input-billingStreet"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="billingStreetNumber">Number</Label>
+                      <Input
+                        id="billingStreetNumber"
+                        {...billingAddressForm.register('streetNumber')}
+                        placeholder="123"
+                        className={cn(getConfidenceClass('streetNumber', billingAddressFieldConfidence))}
+                        data-testid="input-billingStreetNumber"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="billingCity">City</Label>
+                      <Input
+                        id="billingCity"
+                        {...billingAddressForm.register('city')}
+                        placeholder="City"
+                        className={cn(getConfidenceClass('city', billingAddressFieldConfidence))}
+                        data-testid="input-billingCity"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="billingZipCode">Postal Code</Label>
+                      <Input
+                        id="billingZipCode"
+                        {...billingAddressForm.register('zipCode')}
+                        placeholder="12345"
+                        className={cn(getConfidenceClass('zipCode', billingAddressFieldConfidence))}
+                        data-testid="input-billingZipCode"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="billingCountry">Country</Label>
+                      <div className="relative">
+                        <Input
+                          id="billingCountry"
+                          value={billingCountryQuery || billingAddressForm.watch('country') || ''}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setBillingCountryQuery(value);
+                            setShowBillingCountryDropdown(true);
+                            if (!value) {
+                              billingAddressForm.setValue('country', '');
+                            }
+                          }}
+                          onFocus={() => setShowBillingCountryDropdown(true)}
+                          placeholder="Type to search countries..."
+                          className={cn(getConfidenceClass('country', billingAddressFieldConfidence))}
+                          data-testid="input-billingCountry"
+                        />
+                        {(billingCountryQuery || billingAddressForm.watch('country')) && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-1 top-1 h-8 w-8 p-0"
+                            onClick={() => {
+                              setBillingCountryQuery("");
+                              billingAddressForm.setValue('country', '');
+                              setShowBillingCountryDropdown(false);
+                            }}
+                            data-testid="button-clearBillingCountry"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {showBillingCountryDropdown && (
+                          <div className="absolute top-full left-0 right-0 mt-1 border rounded-md shadow-lg bg-white max-h-64 overflow-y-auto z-50">
+                            {europeanCountries
+                              .filter(country => 
+                                country.name.toLowerCase().includes((billingCountryQuery || '').toLowerCase())
+                              )
+                              .map((country) => (
+                                <div
+                                  key={country.code}
+                                  className="p-3 hover:bg-slate-100 cursor-pointer border-b last:border-b-0 transition-colors flex items-center gap-2"
+                                  onClick={() => {
+                                    billingAddressForm.setValue('country', country.name);
+                                    setBillingCountryQuery('');
+                                    setShowBillingCountryDropdown(false);
+                                  }}
+                                  data-testid={`button-billingCountry-${country.code}`}
+                                >
+                                  <span className="text-xl">{getCountryFlag(country.code)}</span>
+                                  <span>{country.name}</span>
+                                </div>
+                              ))}
+                            {europeanCountries.filter(country => 
+                              country.name.toLowerCase().includes((billingCountryQuery || '').toLowerCase())
+                            ).length === 0 && (
+                              <div className="p-4 text-center text-slate-500">No countries found</div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="billingState">State</Label>
+                    <Input
+                      id="billingState"
+                      {...billingAddressForm.register('state')}
+                      placeholder="State/Province"
+                      className={cn(getConfidenceClass('state', billingAddressFieldConfidence))}
+                      data-testid="input-billingState"
+                    />
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <input
+                      id="billingIsPrimary"
+                      type="checkbox"
+                      {...billingAddressForm.register('isPrimary')}
+                      className="rounded border-gray-300"
+                      data-testid="checkbox-billingIsPrimary"
+                    />
+                    <Label htmlFor="billingIsPrimary">Set as primary billing address</Label>
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-4 border-t">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setIsAddingBilling(false);
+                        setEditingBillingIndex(null);
+                        setIsBillingLabelManuallyEdited(false);
+                        billingAddressForm.reset();
+                      }}
+                      data-testid="button-cancelBilling"
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={billingAddressForm.handleSubmit(handleSaveBillingAddress)}
+                      data-testid="button-saveBilling"
+                    >
+                      <Check className="h-4 w-4 mr-2" />
+                      Save Address
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {billingAddresses.length === 0 && !isAddingBilling && (
+              <p className="text-center text-slate-500 py-8">No billing addresses added yet</p>
+            )}
+          </CardContent>
+        </Card>
+
         {(isCzech || isEU) && (
           <Card>
             <CardHeader>
@@ -2121,6 +2879,27 @@ export default function AddCustomer() {
           </Button>
         </div>
       </form>
+
+      <AlertDialog open={deleteBillingIndex !== null} onOpenChange={() => setDeleteBillingIndex(null)}>
+        <AlertDialogContent data-testid="dialog-deleteBillingConfirm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Billing Address</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this billing address? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancelDeleteBilling">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteBillingAddress}
+              className="bg-red-500 hover:bg-red-600"
+              data-testid="button-confirmDeleteBilling"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
