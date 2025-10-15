@@ -2165,9 +2165,42 @@ export default function AddCustomer() {
 
             {isAddingBilling && (
               <div className="p-4 border rounded-lg bg-slate-50">
-                <h4 className="font-semibold mb-4">
-                  {editingBillingIndex !== null ? 'Edit' : 'Add'} Billing Address
-                </h4>
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-semibold">
+                    {editingBillingIndex !== null ? 'Edit' : 'Add'} Billing Address
+                  </h4>
+                  {shippingAddresses.length > 0 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const primaryAddress = shippingAddresses.find(addr => addr.isPrimary) || shippingAddresses[0];
+                        if (primaryAddress) {
+                          billingAddressForm.setValue('firstName', primaryAddress.firstName);
+                          billingAddressForm.setValue('lastName', primaryAddress.lastName);
+                          billingAddressForm.setValue('company', primaryAddress.company || '');
+                          billingAddressForm.setValue('email', primaryAddress.email || '');
+                          billingAddressForm.setValue('tel', primaryAddress.tel || '');
+                          billingAddressForm.setValue('street', primaryAddress.street || '');
+                          billingAddressForm.setValue('streetNumber', primaryAddress.streetNumber || '');
+                          billingAddressForm.setValue('city', primaryAddress.city || '');
+                          billingAddressForm.setValue('zipCode', primaryAddress.zipCode || '');
+                          billingAddressForm.setValue('country', primaryAddress.country || '');
+                          billingAddressForm.setValue('state', primaryAddress.state || '');
+                          toast({
+                            title: "Address Copied",
+                            description: "Shipping address has been copied to billing address",
+                          });
+                        }
+                      }}
+                      data-testid="button-copy-shipping-to-billing"
+                    >
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copy from Shipping
+                    </Button>
+                  )}
+                </div>
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="billingLabel">Label</Label>
