@@ -32,8 +32,8 @@ const customerFormSchema = z.object({
   facebookUrl: z.string().optional(),
   profilePictureUrl: z.string().optional(),
   billingCompany: z.string().optional(),
-  billingFirstName: z.string().min(1, "First name is required"),
-  billingLastName: z.string().min(1, "Last name is required"),
+  billingFirstName: z.string().optional(),
+  billingLastName: z.string().optional(),
   billingEmail: z.string().email("Invalid email").optional().or(z.literal("")),
   billingTel: z.string().optional(),
   billingStreet: z.string().optional(),
@@ -1981,7 +1981,7 @@ export default function AddCustomer() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <Label htmlFor="billingFirstName">First Name *</Label>
+                  <Label htmlFor="billingFirstName">First Name</Label>
                   <Input
                     id="billingFirstName"
                     {...form.register('billingFirstName')}
@@ -1994,7 +1994,7 @@ export default function AddCustomer() {
                   )}
                 </div>
                 <div>
-                  <Label htmlFor="billingLastName">Last Name *</Label>
+                  <Label htmlFor="billingLastName">Last Name</Label>
                   <Input
                     id="billingLastName"
                     {...form.register('billingLastName')}
