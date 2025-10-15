@@ -6179,9 +6179,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const prompt = `You are an address parsing engine. Extract contact and address information from the text below.
 
 IMPORTANT NAME PARSING RULES:
-- For Vietnamese names (e.g., "Nguyen anh van"): Take the LAST word as lastName, all other words as firstName
-  Example: "Nguyen anh van" → firstName: "Nguyen anh", lastName: "van"
+- For Vietnamese names (family name comes FIRST in Vietnamese culture):
+  * The FIRST word is the lastName (family name)
+  * All remaining words are the firstName (given name)
+  * Example: "Phung Thi Hong Tham" → lastName: "Phung", firstName: "Thi Hong Tham"
+  * Example: "Nguyen Van Minh" → lastName: "Nguyen", firstName: "Van Minh"
 - For Western names: First word is firstName, remaining words are lastName
+- Detect Vietnamese names by checking for common family names: Nguyen, Tran, Le, Pham, Hoang, Phan, Vu, Vo, Dang, Bui, Do, Ho, Ngo, Duong, Ly, Phung, Trinh, Dinh, etc.
 - Always preserve name capitalization as given
 
 PHONE NUMBER RULES:
