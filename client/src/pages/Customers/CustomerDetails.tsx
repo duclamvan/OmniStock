@@ -478,59 +478,102 @@ export default function CustomerDetails() {
                     <p className="text-xs text-slate-500 mt-1">Orders will appear here once created</p>
                   </div>
                 ) : (
-                  <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+                  <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
                     {orders.map((order: any) => (
                       <Link key={order.id} href={`/orders/${order.id}`}>
-                        <div className="bg-white border border-slate-200 rounded-lg p-4 hover:shadow-md hover:border-blue-300 cursor-pointer transition-all group">
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="min-w-0 flex-1 space-y-2">
-                              <div>
-                                <p className="font-bold text-base text-slate-900 group-hover:text-blue-600 transition-colors">
+                        <div className="bg-white border border-slate-200 rounded-lg hover:shadow-md hover:border-blue-300 cursor-pointer transition-all group overflow-hidden">
+                          {/* Header Section */}
+                          <div className="p-4 pb-3 border-b border-slate-100">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="min-w-0 flex-1">
+                                <p className="font-bold text-lg text-slate-900 group-hover:text-blue-600 transition-colors mb-1">
                                   #{order.orderId || order.id}
                                 </p>
-                                <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
-                                  <Calendar className="h-3.5 w-3.5 shrink-0" />
-                                  <span>{new Date(order.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                                <div className="flex items-center gap-3 text-xs text-slate-500">
+                                  <div className="flex items-center gap-1.5">
+                                    <Calendar className="h-3.5 w-3.5 shrink-0" />
+                                    <span>{new Date(order.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                                  </div>
                                   <span className="text-slate-300">•</span>
-                                  <Package className="h-3.5 w-3.5 shrink-0" />
-                                  <span>{order.items?.length || 0} {order.items?.length === 1 ? 'item' : 'items'}</span>
+                                  <div className="flex items-center gap-1.5">
+                                    <Package className="h-3.5 w-3.5 shrink-0" />
+                                    <span>{order.items?.length || 0} {order.items?.length === 1 ? 'item' : 'items'}</span>
+                                  </div>
                                 </div>
                               </div>
                               
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <Badge 
-                                  variant={
-                                    order.orderStatus === 'ready_to_ship' ? 'outline' :
-                                    order.orderStatus === 'delivered' ? 'default' :
-                                    order.orderStatus === 'shipped' ? 'secondary' :
-                                    order.orderStatus === 'cancelled' ? 'destructive' :
-                                    'secondary'
-                                  }
-                                  className="text-xs font-medium"
-                                >
-                                  {order.orderStatus === 'to_fulfill' ? 'To Fulfill' :
-                                   order.orderStatus === 'ready_to_ship' ? 'Ready to Ship' :
-                                   order.orderStatus === 'delivered' ? 'Delivered' :
-                                   order.orderStatus === 'shipped' ? 'Shipped' :
-                                   order.orderStatus === 'cancelled' ? 'Cancelled' :
-                                   'Pending'}
-                                </Badge>
-                                <Badge 
-                                  variant={order.paymentStatus === 'paid' ? 'outline' : 'secondary'}
-                                  className={order.paymentStatus === 'paid' ? 
-                                    'text-xs font-medium bg-green-50 border-green-300 text-green-700 hover:bg-green-100' : 
-                                    'text-xs font-medium bg-orange-50 border-orange-300 text-orange-700'}
-                                >
-                                  {order.paymentStatus === 'paid' ? '✓ Paid' : '⏳ Unpaid'}
-                                </Badge>
+                              <div className="text-right shrink-0">
+                                <p className="font-bold text-xl text-slate-900 group-hover:text-blue-600 transition-colors">
+                                  {formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}
+                                </p>
                               </div>
                             </div>
-                            
-                            <div className="text-right shrink-0 pt-1">
-                              <p className="font-bold text-lg text-slate-900 group-hover:text-blue-600 transition-colors">
-                                {formatCurrency(order.grandTotal || 0, order.currency || 'EUR')}
-                              </p>
+                          </div>
+                          
+                          {/* Items Section */}
+                          {order.items && order.items.length > 0 && (
+                            <div className="px-4 py-3 bg-slate-50/50">
+                              <div className="space-y-2">
+                                {order.items.slice(0, 3).map((item: any, idx: number) => (
+                                  <div key={idx} className="flex items-center justify-between gap-3 text-sm">
+                                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                                      <div className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0"></div>
+                                      <span className="text-slate-700 truncate">
+                                        {item.productName || item.name || 'Product'}
+                                        {item.variantName && <span className="text-slate-500"> - {item.variantName}</span>}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                      <span className="text-xs text-slate-500">×{item.quantity}</span>
+                                      <span className="font-medium text-slate-700 min-w-[60px] text-right">
+                                        {formatCurrency(item.price * item.quantity, order.currency || 'EUR')}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                                {order.items.length > 3 && (
+                                  <div className="text-xs text-slate-500 pt-1 text-center">
+                                    +{order.items.length - 3} more {order.items.length - 3 === 1 ? 'item' : 'items'}
+                                  </div>
+                                )}
+                              </div>
                             </div>
+                          )}
+                          
+                          {/* Footer Section */}
+                          <div className="px-4 py-3 bg-white flex items-center justify-between gap-2 border-t border-slate-100">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Badge 
+                                variant={
+                                  order.orderStatus === 'ready_to_ship' ? 'outline' :
+                                  order.orderStatus === 'delivered' ? 'default' :
+                                  order.orderStatus === 'shipped' ? 'secondary' :
+                                  order.orderStatus === 'cancelled' ? 'destructive' :
+                                  'secondary'
+                                }
+                                className="text-xs font-medium"
+                              >
+                                {order.orderStatus === 'to_fulfill' ? 'To Fulfill' :
+                                 order.orderStatus === 'ready_to_ship' ? 'Ready to Ship' :
+                                 order.orderStatus === 'delivered' ? 'Delivered' :
+                                 order.orderStatus === 'shipped' ? 'Shipped' :
+                                 order.orderStatus === 'cancelled' ? 'Cancelled' :
+                                 'Pending'}
+                              </Badge>
+                              <Badge 
+                                variant={order.paymentStatus === 'paid' ? 'outline' : 'secondary'}
+                                className={order.paymentStatus === 'paid' ? 
+                                  'text-xs font-medium bg-green-50 border-green-300 text-green-700 hover:bg-green-100' : 
+                                  'text-xs font-medium bg-orange-50 border-orange-300 text-orange-700'}
+                              >
+                                {order.paymentStatus === 'paid' ? '✓ Paid' : '⏳ Unpaid'}
+                              </Badge>
+                            </div>
+                            {order.shippingMethod && (
+                              <span className="text-xs text-slate-500 truncate">
+                                {order.shippingMethod}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </Link>
