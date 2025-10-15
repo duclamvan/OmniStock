@@ -6261,7 +6261,7 @@ Text: ${rawAddress}`;
             parsedFields.street,
             parsedFields.city,
             parsedFields.zipCode,
-            parsedFields.country || 'Czech Republic' // Default to Czech Republic if country not detected
+            parsedFields.country // Let Nominatim detect country from address components
           ].filter(Boolean).join(' ');
           
           const nominatimUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(searchQuery)}&format=json&addressdetails=1&limit=1`;
