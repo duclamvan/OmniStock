@@ -951,7 +951,23 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                       <div className="flex items-start justify-between gap-3 mb-1">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-semibold text-sm">{order.orderId}</span>
+                            {(() => {
+                              const orderType = order.orderId?.split('-')[0] || 'ORD';
+                              const typeColors: Record<string, string> = {
+                                'ORD': 'bg-blue-500',
+                                'POS': 'bg-green-500',
+                                'SER': 'bg-purple-500',
+                                'PRE': 'bg-orange-500',
+                              };
+                              const bulletColor = typeColors[orderType] || 'bg-slate-500';
+                              
+                              return (
+                                <div className="flex items-center gap-1.5">
+                                  <div className={`w-2 h-2 rounded-full ${bulletColor}`} />
+                                  <span className="font-semibold text-sm">{order.orderId}</span>
+                                </div>
+                              );
+                            })()}
                             <Badge
                               variant={
                                 order.status === 'to_fulfill' ? 'default' :
@@ -969,8 +985,30 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                               {order.paymentStatus}
                             </Badge>
                           </div>
-                          <div className="text-xs text-slate-600 mt-0.5">
-                            {order.customer?.name || 'N/A'} • {formatDate(order.createdAt)}
+                          <div className="text-xs mt-0.5">
+                            {(() => {
+                              const customerName = order.customer?.name || 'N/A';
+                              // Generate consistent color based on customer name hash
+                              const hash = customerName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                              const colors = [
+                                'text-blue-600',
+                                'text-emerald-600', 
+                                'text-violet-600',
+                                'text-rose-600',
+                                'text-amber-600',
+                                'text-cyan-600',
+                                'text-pink-600',
+                                'text-indigo-600',
+                              ];
+                              const colorClass = colors[hash % colors.length];
+                              
+                              return (
+                                <>
+                                  <span className={`font-medium ${colorClass}`}>{customerName}</span>
+                                  <span className="text-slate-600"> • {formatDate(order.createdAt)}</span>
+                                </>
+                              );
+                            })()}
                           </div>
                         </div>
                         <div className="text-right">
