@@ -56,15 +56,27 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     return saved === 'true';
   });
 
-  // Save scroll position before navigating away
+  // Prevent initial scroll to top and restore position
   useEffect(() => {
+    // Check if we have a saved position first
+    const savedScrollPosition = sessionStorage.getItem('ordersScrollPosition');
+    
+    // Prevent default scroll restoration
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+
+    // Save scroll position before navigating away
     const saveScrollPosition = () => {
       sessionStorage.setItem('ordersScrollPosition', window.scrollY.toString());
     };
 
-    // Save on route change (when clicking a link to order details)
+    // Cleanup: save position and restore default behavior
     return () => {
       saveScrollPosition();
+      if ('scrollRestoration' in window.history) {
+        window.history.scrollRestoration = 'auto';
+      }
     };
   }, []);
 
@@ -153,16 +165,19 @@ export default function AllOrders({ filter }: AllOrdersProps) {
     if (!isLoading && orders.length > 0) {
       const savedScrollPosition = sessionStorage.getItem('ordersScrollPosition');
       if (savedScrollPosition) {
-        // Use requestAnimationFrame for better timing after render
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            window.scrollTo({
-              top: parseInt(savedScrollPosition, 10),
-              behavior: 'instant' as ScrollBehavior
-            });
-            sessionStorage.removeItem('ordersScrollPosition');
+        const scrollPos = parseInt(savedScrollPosition, 10);
+        
+        // Use setTimeout to ensure DOM is fully rendered
+        const timeoutId = setTimeout(() => {
+          window.scrollTo({
+            top: scrollPos,
+            behavior: 'auto' // Instant scroll without animation
           });
-        });
+          // Clean up after successful restoration
+          sessionStorage.removeItem('ordersScrollPosition');
+        }, 50);
+
+        return () => clearTimeout(timeoutId);
       }
     }
   }, [isLoading, orders]);
