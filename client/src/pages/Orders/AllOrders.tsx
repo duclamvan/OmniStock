@@ -95,17 +95,15 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       } catch {
         return {
           order: true,
-          total: true,
-          profit: true,
-          tracking: true,
+          profit: false,
+          tracking: false,
         };
       }
     }
     return {
       order: true,
-      total: true,
-      profit: true,
-      tracking: true,
+      profit: false,
+      tracking: false,
     };
   });
   
@@ -515,9 +513,8 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   const columns: DataTableColumn<any>[] = [
     {
       key: "order",
-      header: "Order",
-      sortable: true,
-      sortKey: "orderId",
+      header: "",
+      sortable: false,
       cell: (order) => {
         const statusColors: Record<string, string> = {
           'pending': 'bg-amber-500',
@@ -530,57 +527,69 @@ export default function AllOrders({ filter }: AllOrdersProps) {
         const customerName = order.customer?.name || 'N/A';
         
         return (
-          <div className="py-1">
-            {/* Order ID with status badges */}
-            <div className="flex items-center gap-2 mb-1">
-              <div className={`w-2 h-2 rounded-full ${bulletColor} flex-shrink-0`} />
-              <span className="font-semibold text-sm text-slate-900">{order.orderId}</span>
-              <Badge
-                className={cn(
-                  "text-xs h-5 px-1.5 border",
-                  order.orderStatus === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                  order.orderStatus === 'to_fulfill' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                  order.orderStatus === 'ready_to_ship' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                  order.orderStatus === 'shipped' ? 'bg-green-50 text-green-700 border-green-200' :
-                  order.orderStatus === 'cancelled' ? 'bg-red-50 text-red-700 border-red-200' :
-                  'bg-slate-50 text-slate-700 border-slate-200'
-                )}
-              >
-                {order.orderStatus?.replace('_', ' ')}
-              </Badge>
-              <Badge
-                className={cn(
-                  "text-xs h-5 px-1.5 border",
-                  order.paymentStatus === 'paid' ? 'bg-green-50 text-green-700 border-green-200' :
-                  order.paymentStatus === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                  order.paymentStatus === 'pay_later' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                  'bg-slate-50 text-slate-700 border-slate-200'
-                )}
-              >
-                {order.paymentStatus?.replace('_', ' ')}
-              </Badge>
+          <div className="py-2">
+            {/* Order header with badges and total */}
+            <div className="flex items-start justify-between gap-3 mb-1.5">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <div className="flex items-center gap-1.5">
+                    <div className={`w-2 h-2 rounded-full ${bulletColor} flex-shrink-0`} />
+                    <span className="font-semibold text-sm text-slate-900">{order.orderId}</span>
+                  </div>
+                  <Badge
+                    className={cn(
+                      "text-xs h-5 px-1.5 border",
+                      order.orderStatus === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                      order.orderStatus === 'to_fulfill' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                      order.orderStatus === 'ready_to_ship' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                      order.orderStatus === 'shipped' ? 'bg-green-50 text-green-700 border-green-200' :
+                      order.orderStatus === 'cancelled' ? 'bg-red-50 text-red-700 border-red-200' :
+                      'bg-slate-50 text-slate-700 border-slate-200'
+                    )}
+                  >
+                    {order.orderStatus?.replace('_', ' ')}
+                  </Badge>
+                  <Badge
+                    className={cn(
+                      "text-xs h-5 px-1.5 border",
+                      order.paymentStatus === 'paid' ? 'bg-green-50 text-green-700 border-green-200' :
+                      order.paymentStatus === 'pending' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                      order.paymentStatus === 'pay_later' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                      'bg-slate-50 text-slate-700 border-slate-200'
+                    )}
+                  >
+                    {order.paymentStatus?.replace('_', ' ')}
+                  </Badge>
+                </div>
+                <div className="text-xs text-slate-600">
+                  {customerName} • {formatDate(order.createdAt)}
+                </div>
+              </div>
+              <div className="text-right flex-shrink-0">
+                <div className="font-bold text-base text-slate-900">
+                  {formatCurrency(parseFloat(order.grandTotal || '0'), order.currency)}
+                </div>
+              </div>
             </div>
-            {/* Customer name and date */}
-            <div className="text-xs text-slate-600">
-              {customerName} • {formatDate(order.createdAt)}
-            </div>
+            {/* Order items inline like Compact view */}
+            {order.items && order.items.length > 0 && (
+              <div className="mt-2 text-xs text-slate-700 space-y-1 pl-3 border-l-2 border-slate-200">
+                {order.items.map((item: any, idx: number) => (
+                  <div key={idx} className="flex items-center justify-between">
+                    <span className="truncate">
+                      {item.quantity}× {item.productName}
+                      {item.sku && <span className="text-slate-500"> ({item.sku})</span>}
+                    </span>
+                    <span className="ml-3 text-slate-600 flex-shrink-0">
+                      {formatCurrency(item.total || 0, order.currency || 'EUR')}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         );
       },
-    },
-    {
-      key: "total",
-      header: "Total",
-      sortable: true,
-      sortKey: "grandTotal",
-      cell: (order) => (
-        <div className="text-right">
-          <div className="font-bold text-base text-slate-900">
-            {formatCurrency(parseFloat(order.grandTotal || '0'), order.currency)}
-          </div>
-        </div>
-      ),
-      className: "text-right",
     },
     {
       key: "profit",
@@ -856,6 +865,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
           </div>
 
           {viewMode === 'normal' ? (
+            <div className="[&_.rounded-md.border]:border-0 [&_table]:border-separate [&_table]:border-spacing-0 [&_tbody_tr]:border-b [&_tbody_tr]:border-slate-200 [&_tbody_tr]:hover:bg-slate-50 [&_thead]:hidden">
             <DataTable
               data={filteredOrders}
               columns={visibleColumnsFiltered}
@@ -1044,6 +1054,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
               ),
             }}
             />
+            </div>
           ) : (
             <div className="space-y-1">
                 {filteredOrders.map((order: any) => (
