@@ -6384,12 +6384,15 @@ IMPORTANT NAME AND COMPANY PARSING RULES:
   * Example: "Van Hang Bui Rosa Nail" → firstName: "Van Hang", lastName: "Bui", company: "Rosa Nail"
   * Example: "Nguyen Thi Mai Nail Studio" → firstName: "Thi Mai", lastName: "Nguyen", company: "Nail Studio"
 
-- **For Vietnamese names** (family name comes FIRST):
-  * Common family names: Nguyen, Tran, Le, Pham, Hoang, Phan, Vu, Vo, Dang, Bui, Do, Ho, Ngo, Duong, Ly, Phung, Trinh, Dinh, Mai, Cao, Lam
-  * The FIRST word is the lastName (family name)
-  * Words after family name but BEFORE business keywords are firstName (given name)
-  * Example: "Van Hang Bui" → lastName: "Bui", firstName: "Van Hang" (Bui is a family name)
-  * Example: "Phung Thi Hong Tham" → lastName: "Phung", firstName: "Thi Hong Tham"
+- **For Vietnamese names** (family name detection):
+  * Common family names: Nguyen, Tran, Le, Pham, Hoang, Phan, Vu, Vo, Dang, Bui, Do, Ho, Ngo, Duong, Ly, Phung, Trinh, Dinh, Mai, Cao, Lam, Vuong, Ta, Huynh, Luu, Dao, Tong, Thai
+  * **If a known family name is present**: That word is lastName, all words BEFORE it are firstName
+    - Example: "Van Hang Bui" → firstName: "Van Hang", lastName: "Bui" (Bui is a known family name)
+    - Example: "Phung Thi Hong Tham" → firstName: "Thi Hong Tham", lastName: "Phung" (Phung is a known family name)
+  * **For 2-word names without known family names**: First word is lastName, second word is firstName
+    - Example: "Huong Vuong" → firstName: "Vuong", lastName: "Huong"
+  * **For 3+ word names without known family names**: First word is lastName, remaining words are firstName
+    - Example: "Minh Tuan Hoang" → firstName: "Tuan Hoang", lastName: "Minh"
 
 - **For Western names**: First word is firstName, remaining words (before any company) are lastName
 - Always preserve name capitalization as given
