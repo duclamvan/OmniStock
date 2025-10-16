@@ -64,7 +64,7 @@ import {
 } from "lucide-react";
 import MarginPill from "@/components/orders/MarginPill";
 import { cn } from "@/lib/utils";
-import { formatCurrency } from "@/lib/currencyUtils";
+import { formatCurrency, formatDate } from "@/lib/currencyUtils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from "recharts";
@@ -510,7 +510,7 @@ export default function OrderDetails() {
                 <div className="flex items-center gap-3 text-xs text-slate-500">
                   <div className="flex items-center gap-1">
                     <Clock className="h-3.5 w-3.5" />
-                    <span>{new Date(order.createdAt).toLocaleString()}</span>
+                    <span>{formatDate(order.createdAt)}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Package className="h-3.5 w-3.5" />
@@ -1368,7 +1368,7 @@ export default function OrderDetails() {
               <div>
                 <Label className="text-sm text-slate-600">Order Date</Label>
                 <p className="font-medium">
-                  {order?.createdAt && new Date(order.createdAt).toLocaleDateString()}
+                  {order?.createdAt && formatDate(order.createdAt)}
                 </p>
               </div>
               <div>

@@ -25,7 +25,7 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { formatCurrency } from "@/lib/currencyUtils";
+import { formatCurrency, formatDate } from "@/lib/currencyUtils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -5470,7 +5470,7 @@ export default function PickPack() {
                   <CardTitle className="text-base sm:text-lg flex items-center justify-between">
                     <span>Today's Activity</span>
                     <Badge variant="outline" className="text-xs">
-                      {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      {formatDate(new Date())}
                     </Badge>
                   </CardTitle>
                 </CardHeader>

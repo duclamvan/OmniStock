@@ -30,7 +30,7 @@ import {
   ArrowUpDown,
   UploadCloud
 } from "lucide-react";
-import { format } from "date-fns";
+import { formatDate } from "@/lib/currencyUtils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Warehouse, WarehouseFile } from "@shared/schema";
@@ -411,7 +411,7 @@ export default function WarehouseDetails() {
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-slate-400" />
                     <p className="text-slate-900 dark:text-slate-100" data-testid="text-rented-date">
-                      {format(new Date(warehouse.rentedFromDate), 'MMM dd, yyyy')}
+                      {formatDate(warehouse.rentedFromDate)}
                     </p>
                   </div>
                 </div>
@@ -517,7 +517,7 @@ export default function WarehouseDetails() {
                           <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 mt-1">
                             <span data-testid={`text-filesize-${file.id}`}>{formatFileSize(file.fileSize)}</span>
                             <span>•</span>
-                            <span data-testid={`text-filedate-${file.id}`}>{format(new Date(file.createdAt), 'MMM dd, yyyy')}</span>
+                            <span data-testid={`text-filedate-${file.id}`}>{formatDate(file.createdAt)}</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

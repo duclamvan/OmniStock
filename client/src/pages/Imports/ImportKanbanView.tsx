@@ -14,8 +14,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { formatCurrency } from "@/lib/currencyUtils";
-import { format, differenceInDays } from "date-fns";
+import { formatCurrency, formatDate } from "@/lib/currencyUtils";
+import { differenceInDays } from "date-fns";
 import { 
   Package,
   ArrowLeft,
@@ -1584,7 +1584,7 @@ export default function ImportKanbanView() {
                         </TableCell>
                         <TableCell>
                           <div className="text-sm">
-                            <div>{format(new Date(order.estimatedArrival), 'MMM d')}</div>
+                            <div>{formatDate(order.estimatedArrival)}</div>
                             <div className="text-xs text-muted-foreground">
                               {getDaysUntilArrival(order.estimatedArrival)}
                             </div>
@@ -1736,7 +1736,7 @@ export default function ImportKanbanView() {
                             {order.supplier} • {order.totalItems} items • {formatCurrency(order.totalValue, order.currency)}
                           </p>
                           <p className="text-xs text-muted-foreground mt-1">
-                            ETA: {format(new Date(order.estimatedArrival), 'MMM d, yyyy')} ({getDaysUntilArrival(order.estimatedArrival)})
+                            ETA: {formatDate(order.estimatedArrival)} ({getDaysUntilArrival(order.estimatedArrival)})
                           </p>
                         </div>
                         <Link href={`/imports/orders/${order.id}`}>

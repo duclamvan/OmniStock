@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { formatDate } from "@/lib/currencyUtils";
 import { Plus, Wrench, Trash2, Edit } from "lucide-react";
 import {
   Dialog,
@@ -154,11 +155,6 @@ export default function Services() {
     setEditingService(null);
     resetForm();
     setIsDialogOpen(true);
-  };
-
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "—";
-    return new Date(dateString).toLocaleDateString('en-US');
   };
 
   const formatPrice = (price: string | null, currency: string) => {

@@ -27,7 +27,7 @@ import {
   Download,
   Search
 } from "lucide-react";
-import { formatCurrency } from "@/lib/currencyUtils";
+import { formatCurrency, formatDate } from "@/lib/currencyUtils";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { UploadResult } from "@uppy/core";
@@ -343,7 +343,7 @@ export default function SupplierDetails() {
                             {formatCurrency(parseFloat(purchase.importPrice), purchase.importCurrency)}
                           </p>
                           <p className="text-xs text-slate-500">
-                            {purchase.createdAt ? new Date(purchase.createdAt).toLocaleDateString() : ''}
+                            {purchase.createdAt ? formatDate(purchase.createdAt) : ''}
                           </p>
                         </div>
                       </div>
@@ -403,7 +403,7 @@ export default function SupplierDetails() {
                           <p className="font-medium">{file.fileName}</p>
                           <p className="text-sm text-slate-500">
                             {file.fileSize ? `${(file.fileSize / 1024 / 1024).toFixed(2)} MB` : 'Unknown size'} • 
-                            {file.createdAt ? new Date(file.createdAt).toLocaleDateString() : ''}
+                            {file.createdAt ? formatDate(file.createdAt) : ''}
                           </p>
                         </div>
                       </div>
@@ -460,9 +460,9 @@ export default function SupplierDetails() {
                   <p className="text-sm text-slate-600">Last Purchase</p>
                   <p className="font-medium">
                     {supplierPurchases.length > 0 && supplierPurchases[0].createdAt
-                      ? new Date(supplierPurchases[0].createdAt).toLocaleDateString()
+                      ? formatDate(supplierPurchases[0].createdAt)
                       : supplier.lastPurchaseDate 
-                        ? new Date(supplier.lastPurchaseDate).toLocaleDateString()
+                        ? formatDate(supplier.lastPurchaseDate)
                         : "No purchases yet"
                     }
                   </p>
@@ -519,7 +519,7 @@ export default function SupplierDetails() {
                 </div>
                 <div>
                   <p className="text-slate-600">Created</p>
-                  <p>{supplier.createdAt ? new Date(supplier.createdAt).toLocaleString() : ''}</p>
+                  <p>{supplier.createdAt ? formatDate(supplier.createdAt) : ''}</p>
                 </div>
               </div>
             </CardContent>

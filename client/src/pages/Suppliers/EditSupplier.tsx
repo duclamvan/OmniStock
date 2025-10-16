@@ -18,6 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { countries } from "@/lib/countries";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import type { UploadResult } from "@uppy/core";
+import { formatDate } from "@/lib/currencyUtils";
 import { z } from "zod";
 
 const getCountryFlag = (country: string): string => {
@@ -673,7 +674,7 @@ export default function EditSupplier() {
                       <p className="font-medium">{file.fileName}</p>
                       <p className="text-sm text-slate-500">
                         {file.fileSize ? `${(file.fileSize / 1024 / 1024).toFixed(2)} MB` : 'Unknown size'} • 
-                        {file.createdAt ? new Date(file.createdAt).toLocaleDateString() : ''}
+                        {file.createdAt ? formatDate(file.createdAt) : ''}
                       </p>
                     </div>
                   </div>

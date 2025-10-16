@@ -37,7 +37,7 @@ import {
   Maximize2,
   Minimize2
 } from "lucide-react";
-import { formatCurrency } from "@/lib/currencyUtils";
+import { formatCurrency, formatDate } from "@/lib/currencyUtils";
 import { CustomerPrices } from "./CustomerPrices";
 
 const EXPAND_ALL_KEY = 'customerOrdersExpandAll';
@@ -454,11 +454,7 @@ export default function CustomerDetails() {
                                 </p>
                               </Link>
                               <p className="text-xs text-slate-500 mt-0.5">
-                                {new Date(order.createdAt).toLocaleDateString('en-GB', { 
-                                  day: '2-digit', 
-                                  month: 'short', 
-                                  year: 'numeric' 
-                                })}
+                                {formatDate(order.createdAt)}
                               </p>
                             </div>
                           </div>
@@ -549,7 +545,7 @@ export default function CustomerDetails() {
                                 <div className="flex items-center gap-2 text-xs text-slate-500">
                                   <div className="flex items-center gap-1">
                                     <Calendar className="h-3 w-3 shrink-0" />
-                                    <span>{new Date(order.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                                    <span>{formatDate(order.createdAt)}</span>
                                   </div>
                                   <span className="text-slate-300">•</span>
                                   <div className="flex items-center gap-1">

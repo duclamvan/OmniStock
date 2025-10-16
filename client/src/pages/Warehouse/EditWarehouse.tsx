@@ -34,6 +34,7 @@ import {
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { formatDate } from "@/lib/currencyUtils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -598,7 +599,7 @@ export default function EditWarehouse() {
                 <div className="pt-3 space-y-2 text-sm text-slate-600">
                   <div className="flex items-center gap-2">
                     <AlertCircle className="h-4 w-4" />
-                    <span>Last updated: {warehouse?.updatedAt ? new Date(warehouse.updatedAt).toLocaleDateString() : 'Never'}</span>
+                    <span>Last updated: {warehouse?.updatedAt ? formatDate(warehouse.updatedAt) : 'Never'}</span>
                   </div>
                 </div>
               </CardContent>

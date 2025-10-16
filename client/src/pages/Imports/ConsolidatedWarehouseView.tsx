@@ -9,8 +9,8 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatCurrency } from "@/lib/currencyUtils";
-import { format, differenceInDays } from "date-fns";
+import { formatCurrency, formatDate } from "@/lib/currencyUtils";
+import { differenceInDays } from "date-fns";
 import { 
   Package,
   ArrowLeft,
@@ -420,7 +420,7 @@ export default function ConsolidatedWarehouseView() {
                       <p className="text-sm font-medium">{activity.description}</p>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-xs text-muted-foreground">
-                          {format(new Date(activity.date), 'MMM d, h:mm a')}
+                          {formatDate(activity.date)}
                         </span>
                         {activity.value && (
                           <>
@@ -553,7 +553,7 @@ export default function ConsolidatedWarehouseView() {
                         </div>
                         <div className="text-xs">
                           <span className="text-muted-foreground">Last Received:</span>
-                          <p>{format(new Date(item.lastReceived), 'MMM d, yyyy')}</p>
+                          <p>{formatDate(item.lastReceived)}</p>
                         </div>
                       </div>
                     </CardContent>
@@ -588,7 +588,7 @@ export default function ConsolidatedWarehouseView() {
                         <TableCell className="text-right font-medium">
                           {formatCurrency(item.quantity * item.unitCost, currentWarehouse.currency)}
                         </TableCell>
-                        <TableCell>{format(new Date(item.lastReceived), 'MMM d, yyyy')}</TableCell>
+                        <TableCell>{formatDate(item.lastReceived)}</TableCell>
                         <TableCell>
                           <Badge className={getStatusColor(item.status)}>
                             {item.status.replace('_', ' ')}

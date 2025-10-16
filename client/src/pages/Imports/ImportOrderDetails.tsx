@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { formatCurrency } from "@/lib/currencyUtils";
-import { format } from "date-fns";
+import { formatCurrency, formatDate } from "@/lib/currencyUtils";
 import {
   ArrowLeft,
   Package,
@@ -186,7 +185,7 @@ export default function ImportOrderDetails() {
                 </Badge>
               </div>
               <p className="text-xs md:text-sm text-muted-foreground">
-                Last updated {format(new Date(order.lastUpdated), 'MMM d, yyyy HH:mm')}
+                Last updated {formatDate(order.lastUpdated)}
               </p>
             </div>
           </div>
@@ -217,8 +216,8 @@ export default function ImportOrderDetails() {
             </div>
             <Progress value={order.progress} className="h-2" />
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>Created {format(new Date(order.createdDate), 'MMM d')}</span>
-              <span>ETA {format(new Date(order.estimatedArrival), 'MMM d')}</span>
+              <span>Created {formatDate(order.createdDate)}</span>
+              <span>ETA {formatDate(order.estimatedArrival)}</span>
             </div>
           </div>
         </CardContent>
@@ -307,12 +306,12 @@ export default function ImportOrderDetails() {
                   <div className="flex items-center gap-2 text-sm">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     <span className="text-muted-foreground">Created:</span>
-                    <span className="font-medium">{format(new Date(order.createdDate), 'MMM d, yyyy')}</span>
+                    <span className="font-medium">{formatDate(order.createdDate)}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <Clock className="h-4 w-4 text-muted-foreground" />
                     <span className="text-muted-foreground">ETA:</span>
-                    <span className="font-medium">{format(new Date(order.estimatedArrival), 'MMM d, yyyy')}</span>
+                    <span className="font-medium">{formatDate(order.estimatedArrival)}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <User className="h-4 w-4 text-muted-foreground" />

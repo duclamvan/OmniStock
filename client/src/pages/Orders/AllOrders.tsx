@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
-import { formatCurrency } from "@/lib/currencyUtils";
+import { formatCurrency, formatDate } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { getCountryFlag } from "@/lib/countries";
 import { Plus, Search, Filter, Download, FileText, Edit, Trash2, Package, Eye, ChevronDown, ChevronUp, Settings, Check } from "lucide-react";
@@ -491,7 +491,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       key: "createdAt",
       header: "Date",
       sortable: true,
-      cell: (order) => new Date(order.createdAt).toLocaleDateString('vi-VN'),
+      cell: (order) => formatDate(order.createdAt),
     },
     {
       key: "total",

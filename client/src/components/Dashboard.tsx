@@ -8,7 +8,7 @@ import { MobileCardView } from "@/components/ui/responsive-table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Truck, Package, Euro, TrendingUp, Filter, ArrowUpDown, Bell, Info, AlertCircle, CheckCircle2 } from "lucide-react";
-import { formatCurrency } from "@/lib/currencyUtils";
+import { formatCurrency, formatDate } from "@/lib/currencyUtils";
 import { FixedSizeList as List } from "react-window";
 import { useToast } from "@/hooks/use-toast";
 
@@ -548,7 +548,7 @@ export function Dashboard() {
                         </div>
                         <div>
                           <span className="text-gray-500">Date:</span>
-                          <p className="font-medium">{new Date(order.createdAt).toLocaleDateString()}</p>
+                          <p className="font-medium">{formatDate(order.createdAt)}</p>
                         </div>
                       </div>
                       <div className="pt-2 border-t">
@@ -583,7 +583,7 @@ export function Dashboard() {
                           </TableCell>
                           <TableCell>{order.orderId}</TableCell>
                           <TableCell>
-                            {new Date(order.createdAt).toLocaleDateString()}
+                            {formatDate(order.createdAt)}
                           </TableCell>
                           <TableCell>
                             {formatCurrency(parseFloat(order.grandTotal), order.currency)}

@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DataTable, DataTableColumn } from "@/components/ui/data-table";
-import { formatCurrency } from "@/lib/currencyUtils";
+import { formatCurrency, formatDate } from "@/lib/currencyUtils";
 import { 
   Plus, 
   Search, 
@@ -27,7 +27,6 @@ import {
   BarChart3,
   Columns
 } from "lucide-react";
-import { format } from "date-fns";
 
 export default function AllImports() {
   const { toast } = useToast();
@@ -177,10 +176,7 @@ export default function AllImports() {
       sortable: true,
       cell: (order) => order.estimatedArrival ? (
         <div>
-          <div>{format(new Date(order.estimatedArrival), 'MMM dd')}</div>
-          <div className="text-xs text-gray-500">
-            {format(new Date(order.estimatedArrival), 'yyyy')}
-          </div>
+          <div>{formatDate(order.estimatedArrival)}</div>
         </div>
       ) : '-',
     },

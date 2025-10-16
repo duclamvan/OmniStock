@@ -46,7 +46,7 @@ import {
   Phone,
   Globe
 } from "lucide-react";
-import { formatCurrency } from "@/lib/currencyUtils";
+import { formatCurrency, formatDate } from "@/lib/currencyUtils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import CostHistoryChart from "@/components/products/CostHistoryChart";
 import ProductFiles from "@/components/ProductFiles";
@@ -1085,7 +1085,7 @@ export default function ProductDetails() {
                             </div>
                           </TableCell>
                           <TableCell className="text-sm">
-                            {order.orderDate ? new Date(order.orderDate).toLocaleDateString() : '-'}
+                            {order.orderDate ? formatDate(order.orderDate) : '-'}
                           </TableCell>
                           <TableCell className="text-right font-medium">{order.quantity}</TableCell>
                           <TableCell className="text-right">

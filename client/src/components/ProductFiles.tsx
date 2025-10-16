@@ -49,6 +49,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { formatDate } from '@/lib/currencyUtils';
 import {
   FileText,
   Shield,
@@ -601,7 +602,7 @@ export default function ProductFiles({ productId }: ProductFilesProps) {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            {new Date(file.uploadedAt).toLocaleDateString()}
+                            {formatDate(file.uploadedAt)}
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">

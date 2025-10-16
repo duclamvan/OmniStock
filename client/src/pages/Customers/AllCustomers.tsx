@@ -9,7 +9,7 @@ import { DataTable, DataTableColumn } from "@/components/ui/data-table";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { createVietnameseSearchMatcher } from "@/lib/vietnameseSearch";
-import { formatCurrency } from "@/lib/currencyUtils";
+import { formatCurrency, formatDate } from "@/lib/currencyUtils";
 import { Plus, Search, Edit, Trash2, User, Mail, Phone, Star, MessageCircle, MapPin, MoreVertical, Ban } from "lucide-react";
 import {
   AlertDialog,
@@ -121,7 +121,7 @@ export default function AllCustomers() {
       cell: (customer) => (
         <span className="text-xs">
           {customer.lastOrderDate 
-            ? new Date(customer.lastOrderDate).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' }) 
+            ? formatDate(customer.lastOrderDate) 
             : '-'}
         </span>
       ),
