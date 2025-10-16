@@ -94,6 +94,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
         return JSON.parse(saved);
       } catch {
         return {
+          orderId: true,
           customer: true,
           createdAt: true,
           total: true,
@@ -105,6 +106,7 @@ export default function AllOrders({ filter }: AllOrdersProps) {
       }
     }
     return {
+      orderId: true,
       customer: true,
       createdAt: true,
       total: true,
@@ -520,58 +522,124 @@ export default function AllOrders({ filter }: AllOrdersProps) {
   // Define table columns
   const columns: DataTableColumn<any>[] = [
     {
+      key: "orderId",
+      header: "Order ID",
+      sortable: true,
+      cell: (order) => {
+        const statusColors: Record<string, string> = {
+          'pending': 'bg-amber-500',
+          'to_fulfill': 'bg-blue-500',
+          'ready_to_ship': 'bg-blue-500',
+          'shipped': 'bg-green-500',
+          'cancelled': 'bg-red-500',
+        };
+        const bulletColor = statusColors[order.orderStatus] || 'bg-slate-500';
+        
+        return (
+          <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${bulletColor} flex-shrink-0`} />
+            <span className="font-semibold text-sm">{order.orderId}</span>
+          </div>
+        );
+      },
+    },
+    {
       key: "customer",
       header: "Customer",
       sortable: true,
-      sortKey: "customer.name", // Sort by nested customer.name property
-      cell: (order) => (
-        <div className="flex items-center gap-2">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={order.customer?.profileImageUrl} />
-            <AvatarFallback>{order.customer?.name?.charAt(0) || 'C'}</AvatarFallback>
-          </Avatar>
-          <div>
-            <div className="font-medium flex items-center gap-1.5">
-              {order.customer?.billingCountry && (
-                <span className="text-base" title={order.customer.billingCountry}>
-                  {getCountryFlag(order.customer.billingCountry)}
-                </span>
+      sortKey: "customer.name",
+      cell: (order) => {
+        const customerName = order.customer?.name || 'N/A';
+        const hash = customerName.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
+        const colors = [
+          'text-blue-600',
+          'text-emerald-600',
+          'text-violet-600',
+          'text-rose-600',
+          'text-amber-600',
+          'text-cyan-600',
+          'text-pink-600',
+          'text-indigo-600',
+        ];
+        const colorClass = colors[hash % colors.length];
+        
+        return (
+          <div className="flex items-center gap-2">
+            <Avatar className="h-7 w-7 flex-shrink-0">
+              <AvatarImage src={order.customer?.profileImageUrl} />
+              <AvatarFallback className="text-xs">{customerName.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                {order.customer?.billingCountry && (
+                  <span className="text-base flex-shrink-0" title={order.customer.billingCountry}>
+                    {getCountryFlag(order.customer.billingCountry)}
+                  </span>
+                )}
+                <span className={`font-medium ${colorClass} truncate`}>{customerName}</span>
+              </div>
+              {order.customer?.facebookName && (
+                <div className="text-xs text-slate-500 truncate">FB: {order.customer.facebookName}</div>
               )}
-              <span>{order.customer?.name || 'N/A'}</span>
             </div>
-            {order.customer?.facebookName && (
-              <div className="text-xs text-gray-500">FB: {order.customer.facebookName}</div>
-            )}
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       key: "createdAt",
       header: "Date",
       sortable: true,
-      cell: (order) => formatDate(order.createdAt),
+      cell: (order) => <span className="text-sm text-slate-600">{formatDate(order.createdAt)}</span>,
     },
     {
       key: "total",
       header: "Total",
       sortable: true,
-      sortKey: "grandTotal", // Sort by grandTotal property
-      cell: (order) => formatCurrency(parseFloat(order.grandTotal || '0'), order.currency),
+      sortKey: "grandTotal",
+      cell: (order) => (
+        <span className="font-semibold text-sm">{formatCurrency(parseFloat(order.grandTotal || '0'), order.currency)}</span>
+      ),
       className: "text-right",
     },
     {
       key: "status",
       header: "Status",
       sortable: true,
-      sortKey: "orderStatus", // Sort by orderStatus property
-      cell: (order) => getStatusBadge(order.orderStatus),
+      sortKey: "orderStatus",
+      cell: (order) => (
+        <Badge
+          className={cn(
+            "text-xs h-5 px-1.5 border",
+            order.orderStatus === 'pending' ? 'bg-amber-100 text-amber-800 border-amber-200' :
+            order.orderStatus === 'to_fulfill' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+            order.orderStatus === 'ready_to_ship' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+            order.orderStatus === 'shipped' ? 'bg-green-100 text-green-800 border-green-200' :
+            order.orderStatus === 'cancelled' ? 'bg-red-100 text-red-800 border-red-200' :
+            'bg-slate-100 text-slate-800 border-slate-200'
+          )}
+        >
+          {order.orderStatus?.replace('_', ' ')}
+        </Badge>
+      ),
     },
     {
       key: "paymentStatus",
       header: "Payment",
       sortable: true,
-      cell: (order) => getPaymentStatusBadge(order.paymentStatus),
+      cell: (order) => (
+        <Badge
+          className={cn(
+            "text-xs h-5 px-1.5 border",
+            order.paymentStatus === 'paid' ? 'bg-green-100 text-green-800 border-green-200' :
+            order.paymentStatus === 'pending' ? 'bg-amber-100 text-amber-800 border-amber-200' :
+            order.paymentStatus === 'pay_later' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+            'bg-slate-100 text-slate-800 border-slate-200'
+          )}
+        >
+          {order.paymentStatus?.replace('_', ' ')}
+        </Badge>
+      ),
     },
     {
       key: "profit",
