@@ -17,7 +17,7 @@ import { formatCurrency, formatDate } from "@/lib/currencyUtils";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { getCountryFlag } from "@/lib/countries";
 import { cn } from "@/lib/utils";
-import { Plus, Search, Filter, Download, FileText, Edit, Trash2, Package, Eye, ChevronDown, ChevronUp, Settings, Check, List, AlignJustify, Star, Trophy, Award, Clock } from "lucide-react";
+import { Plus, Search, Filter, Download, FileText, Edit, Trash2, Package, Eye, ChevronDown, ChevronUp, Settings, Check, List, AlignJustify, Star, Trophy, Award, Clock, ExternalLink, Gem, Medal } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -877,34 +877,78 @@ export default function AllOrders({ filter }: AllOrdersProps) {
                     {/* Customer Info Header */}
                     <div className="flex items-center gap-3 pb-3 border-b border-slate-200">
                       <div className="flex-1">
-                        <h3 className="text-base font-semibold text-slate-900">
-                          {order.customer?.name || 'Unknown Customer'}
-                        </h3>
+                        {order.customerId ? (
+                          <Link 
+                            href={`/customers/${order.customerId}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="group text-base font-semibold text-slate-900 hover:text-blue-600 transition-colors inline-flex items-center gap-1"
+                          >
+                            {order.customer?.name || 'Unknown Customer'}
+                            <ExternalLink className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </Link>
+                        ) : (
+                          <h3 className="text-base font-semibold text-slate-900">
+                            {order.customer?.name || 'Unknown Customer'}
+                          </h3>
+                        )}
                         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                          {/* VIP Badge */}
                           {order.customer?.type === 'vip' && (
                             <Badge className="bg-yellow-100 text-yellow-800 border-yellow-300 text-xs">
                               <Star className="h-3 w-3 mr-1" />
                               VIP
                             </Badge>
                           )}
+                          
+                          {/* Spending Tier Badges */}
+                          {(() => {
+                            const totalSpent = parseFloat(order.customer?.totalSpent || '0');
+                            if (totalSpent >= 100000) {
+                              return (
+                                <Badge className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-900 border-purple-300 text-xs">
+                                  <Gem className="h-3 w-3 mr-1" />
+                                  Diamond
+                                </Badge>
+                              );
+                            } else if (totalSpent >= 50000) {
+                              return (
+                                <Badge className="bg-gradient-to-r from-slate-200 to-slate-100 text-slate-800 border-slate-300 text-xs">
+                                  <Award className="h-3 w-3 mr-1" />
+                                  Platinum
+                                </Badge>
+                              );
+                            } else if (totalSpent >= 25000) {
+                              return (
+                                <Badge className="bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 border-amber-300 text-xs">
+                                  <Medal className="h-3 w-3 mr-1" />
+                                  Gold
+                                </Badge>
+                              );
+                            }
+                            return null;
+                          })()}
+                          
+                          {/* Country-Specific TOP Badges */}
                           {order.customer?.customerRank === 'TOP10' && (
                             <Badge className="bg-yellow-50 text-yellow-700 border-yellow-300 text-xs">
                               <Trophy className="h-3 w-3 mr-1" />
-                              TOP 10
+                              TOP 10{order.customer?.country ? ` in ${order.customer.country}` : ''}
                             </Badge>
                           )}
                           {order.customer?.customerRank === 'TOP50' && (
                             <Badge className="bg-blue-50 text-blue-700 border-blue-300 text-xs">
                               <Award className="h-3 w-3 mr-1" />
-                              TOP 50
+                              TOP 50{order.customer?.country ? ` in ${order.customer.country}` : ''}
                             </Badge>
                           )}
                           {order.customer?.customerRank === 'TOP100' && (
                             <Badge className="bg-slate-50 text-slate-700 border-slate-300 text-xs">
                               <Star className="h-3 w-3 mr-1" />
-                              TOP 100
+                              TOP 100{order.customer?.country ? ` in ${order.customer.country}` : ''}
                             </Badge>
                           )}
+                          
+                          {/* Pay Later Badge */}
                           {order.paymentStatus === 'pay_later' && (
                             <Badge className="bg-purple-50 text-purple-700 border-purple-300 text-xs">
                               <Clock className="h-3 w-3 mr-1" />
